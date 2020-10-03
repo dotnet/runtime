@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>exe</OutputType>
     <CLRTestKind>BuildAndRun</CLRTestKind>
+    <GCStressIncompatible>true</GCStressIncompatible> <!-- https://github.com/dotnet/runtime/issues/39933 -->
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <CLRTestPriority>0</CLRTestPriority>
 

@@ -10,7 +10,7 @@ namespace MS.Internal.Xml.XPath
         private XPathEmptyIterator() { }
         public override XPathNodeIterator Clone() { return this; }
 
-        public override XPathNavigator Current
+        public override XPathNavigator? Current
         {
             get { return null; }
         }

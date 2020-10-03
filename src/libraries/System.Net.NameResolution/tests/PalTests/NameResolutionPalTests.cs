@@ -3,7 +3,6 @@
 
 using System.IO;
 using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -59,7 +58,7 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(hostName);
 
             SocketError error = NameResolutionPal.TryGetAddrInfo(hostName, justAddresses, out hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode);
-            if (error == SocketError.HostNotFound && (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX)))
+            if (error == SocketError.HostNotFound && (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS()))
             {
                 // On Unix, we are not guaranteed to be able to resove the local host. The ability to do so depends on the
                 // machine configurations, which varies by distro and is often inconsistent.

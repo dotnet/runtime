@@ -9,13 +9,10 @@
     <IlasmRoundTripIncompatible>true</IlasmRoundTripIncompatible>
     
     <!-- Crossgen2 currently targets x64 and ARM64 only -->
-    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64'">true</CLRTestTargetUnsupported>
-
-    <!-- Generate ILDLL so that the DLL can be the crossgenned assembly -->
-    <TargetExt>.ildll</TargetExt>
+    <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64' and '$(TargetArchitecture)' != 'arm64' and '$(TargetArchitecture)' != 'x86'">true</CLRTestTargetUnsupported>
 
     <!-- This is an explicit crossgen test -->
-    <CrossGenTest>false</CrossGenTest>
+    <AlwaysUseCrossGen2>true</AlwaysUseCrossGen2>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include=".\helperdll.csproj" />
@@ -24,18 +21,4 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
   </ItemGroup>
-  <PropertyGroup>
-    <CLRTestBatchPreCommands><![CDATA[
-$(CLRTestBatchPreCommands)
-copy helperildll.dll helperildll.ildll
-%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll --verify-type-and-field-layout -r:%Core_Root%\*.dll -r:helperdll.dll -o:helperildll.dll helperildll.ildll
-%Core_Root%\CoreRun.exe %Core_Root%\crossgen2\crossgen2.dll --verify-type-and-field-layout -r:%Core_Root%\*.dll -r:helperdll.dll -r:helperildll.dll -o:crossgen2smoke.dll crossgen2smoke.ildll
-]]></CLRTestBatchPreCommands>
-    <BashCLRTestPreCommands><![CDATA[
-$(BashCLRTestPreCommands)
-cp helperildll.dll helperildll.ildll
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --verify-type-and-field-layout -r:$CORE_ROOT/*.dll -r:helperdll.dll -o:helperildll.dll helperildll.ildll
-$CORE_ROOT/corerun $CORE_ROOT/crossgen2/crossgen2.dll --verify-type-and-field-layout -r:$CORE_ROOT/*.dll -r:helperdll.dll -r:helperildll.dll -o:crossgen2smoke.dll crossgen2smoke.ildll
-]]></BashCLRTestPreCommands>
-  </PropertyGroup>
 </Project>

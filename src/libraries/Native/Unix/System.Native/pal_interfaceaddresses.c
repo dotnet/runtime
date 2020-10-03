@@ -473,7 +473,8 @@ int32_t SystemNative_EnumerateGatewayAddressesForInterface(uint32_t interfaceInd
         }
 
         byteCount = tmpEstimatedSize;
-        buffer = realloc(buffer, byteCount);
+        free(buffer);
+        buffer = malloc(byteCount);
         if (buffer == NULL)
         {
             errno = ENOMEM;

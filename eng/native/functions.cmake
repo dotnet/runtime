@@ -148,7 +148,7 @@ function(preprocess_compile_asm)
   set(options "")
   set(oneValueArgs TARGET OUTPUT_OBJECTS)
   set(multiValueArgs ASM_FILES)
-  cmake_parse_arguments(PARSE_ARGV 0 COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}")
+  cmake_parse_arguments(COMPILE_ASM "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
 
   get_include_directories_asm(ASM_INCLUDE_DIRECTORIES)
 
@@ -241,7 +241,7 @@ function(target_precompile_header)
   set(options "")
   set(oneValueArgs TARGET HEADER)
   set(multiValueArgs ADDITIONAL_INCLUDE_DIRECTORIES)
-  cmake_parse_arguments(PARSE_ARGV 0 PRECOMPILE_HEADERS "${options}" "${oneValueArgs}" "${multiValueArgs}")
+  cmake_parse_arguments(PRECOMPILE_HEADERS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGV})
 
   if ("${PRECOMPILE_HEADERS_TARGET}" STREQUAL "")
   message(SEND_ERROR "No target supplied to target_precompile_header.")
@@ -323,7 +323,7 @@ function(strip_symbols targetName outputFilename)
         POST_BUILD
         VERBATIM
         COMMAND ${CMAKE_OBJCOPY} --only-keep-debug ${strip_source_file} ${strip_destination_file}
-        COMMAND ${CMAKE_OBJCOPY} --strip-debug ${strip_source_file}
+        COMMAND ${CMAKE_OBJCOPY} --strip-unneeded ${strip_source_file}
         COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=${strip_destination_file} ${strip_source_file}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )
@@ -336,8 +336,10 @@ function(strip_symbols targetName outputFilename)
 endfunction()
 
 function(install_with_stripped_symbols targetName kind destination)
-    strip_symbols(${targetName} symbol_file)
-    install_symbols(${symbol_file} ${destination})
+    if(NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+      strip_symbols(${targetName} symbol_file)
+      install_symbols(${symbol_file} ${destination})
+    endif()
     if ("${kind}" STREQUAL "TARGETS")
       set(install_source ${targetName})
     elseif("${kind}" STREQUAL "PROGRAMS")
@@ -356,11 +358,10 @@ function(install_symbols symbol_file destination_path)
   endif()
 endfunction()
 
-# install_clr(TARGETS TARGETS targetName [targetName2 ...] [ADDITIONAL_DESTINATION destination])
+# install_clr(TARGETS TARGETS targetName [targetName2 ...] [ADDITIONAL_DESTINATIONS destination])
 function(install_clr)
-  set(oneValueArgs ADDITIONAL_DESTINATION)
-  set(multiValueArgs TARGETS)
-  cmake_parse_arguments(PARSE_ARGV 0 INSTALL_CLR "${options}" "${oneValueArgs}" "${multiValueArgs}")
+  set(multiValueArgs TARGETS ADDITIONAL_DESTINATIONS)
+  cmake_parse_arguments(INSTALL_CLR "" "" "${multiValueArgs}" ${ARGV})
 
   if ("${INSTALL_CLR_TARGETS}" STREQUAL "")
     message(FATAL_ERROR "At least one target must be passed to install_clr(TARGETS )")
@@ -368,20 +369,24 @@ function(install_clr)
 
   set(destinations ".")
 
-  if (NOT "${INSTALL_CLR_ADDITIONAL_DESTINATION}" STREQUAL "")
-    list(APPEND destinations ${INSTALL_CLR_ADDITIONAL_DESTINATION})
+  if (NOT "${INSTALL_CLR_ADDITIONAL_DESTINATIONS}" STREQUAL "")
+    list(APPEND destinations ${INSTALL_CLR_ADDITIONAL_DESTINATIONS})
   endif()
 
   foreach(targetName ${INSTALL_CLR_TARGETS})
     list(FIND CLR_CROSS_COMPONENTS_LIST ${targetName} INDEX)
     if (NOT DEFINED CLR_CROSS_COMPONENTS_LIST OR NOT ${INDEX} EQUAL -1)
-        strip_symbols(${targetName} symbol_file)
+        if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+          strip_symbols(${targetName} symbol_file)
+        endif()
 
         foreach(destination ${destinations})
           # We don't need to install the export libraries for our DLLs
           # since they won't be directly linked against.
           install(PROGRAMS $<TARGET_FILE:${targetName}> DESTINATION ${destination})
-          install_symbols(${symbol_file} ${destination})
+          if (NOT CLR_CMAKE_KEEP_NATIVE_SYMBOLS)
+            install_symbols(${symbol_file} ${destination})
+          endif()
 
           if(CLR_CMAKE_PGO_INSTRUMENT)
               if(WIN32)
@@ -416,6 +421,15 @@ function(disable_pax_mprotect targetName)
   endif()
 endfunction()
 
+if (CMAKE_VERSION VERSION_LESS "3.12")
+  # Polyfill add_compile_definitions when it is unavailable
+  function(add_compile_definitions)
+    get_directory_property(DIR_COMPILE_DEFINITIONS COMPILE_DEFINITIONS)
+    list(APPEND DIR_COMPILE_DEFINITIONS ${ARGV})
+    set_directory_properties(PROPERTIES COMPILE_DEFINITIONS "${DIR_COMPILE_DEFINITIONS}")
+  endfunction()
+endif()
+
 function(_add_executable)
     if(NOT WIN32)
       add_executable(${ARGV} ${VERSION_FILE_PATH})
@@ -430,11 +444,11 @@ function(_add_executable)
 endfunction()
 
 function(_add_library)
-    if(NOT WIN32)
+    if(NOT WIN32 AND "${ARGV1}" STREQUAL "SHARED")
       add_library(${ARGV} ${VERSION_FILE_PATH})
     else()
       add_library(${ARGV})
-    endif(NOT WIN32)
+    endif(NOT WIN32 AND "${ARGV1}" STREQUAL "SHARED")
     list(FIND CLR_CROSS_COMPONENTS_LIST ${ARGV0} INDEX)
     if (DEFINED CLR_CROSS_COMPONENTS_LIST AND ${INDEX} EQUAL -1)
      set_target_properties(${ARGV0} PROPERTIES EXCLUDE_FROM_ALL 1)
@@ -479,3 +493,16 @@ function(generate_module_index Target ModuleIndexFile)
         DEPENDS ${ModuleIndexFile}
     )
 endfunction(generate_module_index)
+
+# add_linker_flag(Flag [Config1 Config2 ...])
+function(add_linker_flag Flag)
+  if (ARGN STREQUAL "")
+    set("CMAKE_EXE_LINKER_FLAGS" "${CMAKE_EXE_LINKER_FLAGS} ${Flag}" PARENT_SCOPE)
+    set("CMAKE_SHARED_LINKER_FLAGS" "${CMAKE_SHARED_LINKER_FLAGS} ${Flag}" PARENT_SCOPE)
+  else()
+    foreach(Config ${ARGN})
+      set("CMAKE_EXE_LINKER_FLAGS_${Config}" "${CMAKE_EXE_LINKER_FLAGS_${Config}} ${Flag}" PARENT_SCOPE)
+      set("CMAKE_SHARED_LINKER_FLAGS_${Config}" "${CMAKE_SHARED_LINKER_FLAGS_${Config}} ${Flag}" PARENT_SCOPE)
+    endforeach()
+  endif()
+endfunction()

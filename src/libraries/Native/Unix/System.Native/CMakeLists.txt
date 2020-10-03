@@ -16,6 +16,7 @@ set(NATIVE_SOURCES
     pal_signal.c
     pal_string.c
     pal_tcpstate.c
+    pal_threading.c
     pal_time.c
     pal_uid.c
     pal_datetime.c

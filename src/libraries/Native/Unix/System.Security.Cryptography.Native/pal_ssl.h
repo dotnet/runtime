@@ -143,7 +143,7 @@ Shims the SSL_CTX_new method.
 
 Returns the new SSL_CTX instance.
 */
-PALEXPORT SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method);
+PALEXPORT SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method);
 
 /*
 Sets the specified protocols in the SSL_CTX options.
@@ -397,3 +397,8 @@ Looks up a cipher by the IANA identifier, returns a shared string for the OpenSS
 and emits a value indicating if the cipher belongs to the SSL2-TLS1.2 list, or the TLS1.3+ list.
 */
 PALEXPORT const char* CryptoNative_GetOpenSslCipherSuiteName(SSL* ssl, int32_t cipherSuite, int32_t* isTls12OrLower);
+
+/*
+Checks if given protocol version is supported.
+*/
+PALEXPORT int32_t CryptoNative_OpenSslGetProtocolSupport(SslProtocols protocol);

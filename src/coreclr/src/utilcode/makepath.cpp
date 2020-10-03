@@ -100,16 +100,12 @@ void MakePath (
                         _ASSERTE(count < maxCount);
                 }
 
-#ifdef _MBCS
-                if (*(p=_mbsdec(dir,p)) != _T('/') && *p != _T('\\')) {
-#else  /* _MBCS */
                 // suppress warning for the following line; this is safe but would require significant code
                 // delta for prefast to understand.
 #ifdef _PREFAST_
                 #pragma warning( suppress: 26001 )
 #endif
                 if (*(p-1) != _T('/') && *(p-1) != _T('\\')) {
-#endif  /* _MBCS */
                         *path++ = _T('\\');
                         count++;
 

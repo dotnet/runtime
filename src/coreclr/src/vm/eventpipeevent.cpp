@@ -74,7 +74,7 @@ BYTE *EventPipeEvent::BuildMinimumMetadata()
     BYTE *minmumMetadata = new BYTE[MinimumMetadataLength];
     BYTE *currentPtr = minmumMetadata;
 
-    // the order of fields is defined in coreclr\src\mscorlib\shared\System\Diagnostics\Tracing\EventSource.cs DefineEventPipeEvents method
+    // the order of fields is defined in EventSource.cs DefineEventPipeEvents method
     memcpy(currentPtr, &m_eventID, sizeof(m_eventID));
     currentPtr += sizeof(m_eventID);
 

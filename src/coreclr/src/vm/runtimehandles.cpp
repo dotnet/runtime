@@ -736,7 +736,7 @@ PTRARRAYREF CopyRuntimeTypeHandles(TypeHandle * prgTH, FixupPointer<TypeHandle> 
     }
 
     GCPROTECT_BEGIN(refArray);
-    TypeHandle thRuntimeType = TypeHandle(MscorlibBinder::GetClass(arrayElemType));
+    TypeHandle thRuntimeType = TypeHandle(CoreLibBinder::GetClass(arrayElemType));
     TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(thRuntimeType, ELEMENT_TYPE_SZARRAY);
     refArray = (PTRARRAYREF)AllocateSzArray(arrayHandle, numTypeHandles);
 
@@ -1954,7 +1954,7 @@ FCIMPL3(Object *, SignatureNative::GetCustomModifiers, SignatureNative* pSignatu
         // modifiers now that we know how long they should be.
         sp = argument;
 
-        MethodTable *pMT = MscorlibBinder::GetClass(CLASS__TYPE);
+        MethodTable *pMT = CoreLibBinder::GetClass(CLASS__TYPE);
         TypeHandle arrayHandle = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pMT), ELEMENT_TYPE_SZARRAY);
 
         gc.retVal = (PTRARRAYREF) AllocateSzArray(arrayHandle, cMods);
@@ -2466,10 +2466,10 @@ FCIMPL2(RuntimeMethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodOb
 
         if (pILHeader)
         {
-            MethodTable * pExceptionHandlingClauseMT = MscorlibBinder::GetClass(CLASS__RUNTIME_EH_CLAUSE);
+            MethodTable * pExceptionHandlingClauseMT = CoreLibBinder::GetClass(CLASS__RUNTIME_EH_CLAUSE);
             TypeHandle thEHClauseArray = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pExceptionHandlingClauseMT), ELEMENT_TYPE_SZARRAY);
 
-            MethodTable * pLocalVariableMT = MscorlibBinder::GetClass(CLASS__RUNTIME_LOCAL_VARIABLE_INFO);
+            MethodTable * pLocalVariableMT = CoreLibBinder::GetClass(CLASS__RUNTIME_LOCAL_VARIABLE_INFO);
             TypeHandle thLocalVariableArray = ClassLoader::LoadArrayTypeThrowing(TypeHandle(pLocalVariableMT), ELEMENT_TYPE_SZARRAY);
 
             Module* pModule = pMethod->GetModule();
@@ -2489,7 +2489,7 @@ FCIMPL2(RuntimeMethodBody *, RuntimeMethodHandle::GetMethodBody, ReflectMethodOb
                 }
             }
 
-            gc.MethodBodyObj = (RUNTIMEMETHODBODYREF)AllocateObject(MscorlibBinder::GetClass(CLASS__RUNTIME_METHOD_BODY));
+            gc.MethodBodyObj = (RUNTIMEMETHODBODYREF)AllocateObject(CoreLibBinder::GetClass(CLASS__RUNTIME_METHOD_BODY));
 
             gc.MethodBodyObj->_maxStackSize = header.GetMaxStack();
             gc.MethodBodyObj->_initLocals = !!(header.GetFlags() & CorILMethod_InitLocals);

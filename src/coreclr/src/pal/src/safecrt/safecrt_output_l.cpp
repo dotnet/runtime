@@ -91,11 +91,6 @@ Buffer size required to be passed to _gcvt, fcvt and other fp conversion routine
 #define _CLDCVT _cldcvt
 #endif  /* _CLDCVT */
 
-#ifdef _MBCS
-#undef  _MBCS
-#endif  /* _MBCS */
-//#include <tchar.h>
-
 /* this macro defines a function which is private and as fast as possible: */
 /* for example, in C 6.0, it might be static _fastcall <type> near. */
 #define LOCAL(x) static x __cdecl

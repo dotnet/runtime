@@ -9,11 +9,11 @@ namespace System.Xml
     // Contains a notation declared in the DTD or schema.
     public class XmlNotation : XmlNode
     {
-        private readonly string _publicId;
-        private readonly string _systemId;
+        private readonly string? _publicId;
+        private readonly string? _systemId;
         private readonly string _name;
 
-        internal XmlNotation(string name, string publicId, string systemId, XmlDocument doc) : base(doc)
+        internal XmlNotation(string name, string? publicId, string? systemId, XmlDocument doc) : base(doc)
         {
             _name = doc.NameTable.Add(name);
             _publicId = publicId;
@@ -58,14 +58,14 @@ namespace System.Xml
         }
 
         // Gets the value of the public identifier on the notation declaration.
-        public string PublicId
+        public string? PublicId
         {
             get { return _publicId; }
         }
 
         // Gets the value of
         // the system identifier on the notation declaration.
-        public string SystemId
+        public string? SystemId
         {
             get { return _systemId; }
         }

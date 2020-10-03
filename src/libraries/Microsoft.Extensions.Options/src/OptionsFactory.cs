@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Microsoft.Extensions.Options
 {
@@ -10,7 +11,9 @@ namespace Microsoft.Extensions.Options
     /// Implementation of <see cref="IOptionsFactory{TOptions}"/>.
     /// </summary>
     /// <typeparam name="TOptions">The type of options being requested.</typeparam>
-    public class OptionsFactory<TOptions> : IOptionsFactory<TOptions> where TOptions : class
+    public class OptionsFactory<[DynamicallyAccessedMembers(Options.DynamicallyAccessedMembers)] TOptions> :
+        IOptionsFactory<TOptions>
+        where TOptions : class
     {
         private readonly IEnumerable<IConfigureOptions<TOptions>> _setups;
         private readonly IEnumerable<IPostConfigureOptions<TOptions>> _postConfigures;
@@ -65,7 +68,7 @@ namespace Microsoft.Extensions.Options
                 foreach (IValidateOptions<TOptions> validate in _validations)
                 {
                     ValidateOptionsResult result = validate.Validate(name, options);
-                    if (result.Failed)
+                    if (result is not null && result.Failed)
                     {
                         failures.AddRange(result.Failures);
                     }

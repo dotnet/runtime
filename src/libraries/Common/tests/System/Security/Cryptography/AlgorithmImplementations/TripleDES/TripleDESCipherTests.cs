@@ -1,12 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.IO;
 using System.Text;
 using Test.Cryptography;
 using Xunit;
 
 namespace System.Security.Cryptography.Encryption.TripleDes.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static class TripleDESCipherTests
     {
         [Fact]
@@ -38,6 +40,455 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
                 Assert.Throws<CryptographicException>(() => des.KeySize = 128 - des.BlockSize);
                 Assert.Throws<CryptographicException>(() => des.KeySize = 192 + des.BlockSize);
             }
+        }
+
+        [Fact]
+        public static void VerifyKnownTransform_CFB8_NoPadding_0()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=0
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "fb978a0b6dc2c467e3cb52329de95161fb978a0b6dc2c467".HexToByteArray(),
+                iv: "8b97579ea5ac300f".HexToByteArray(),
+                plainBytes: "80".HexToByteArray(),
+                cipherBytes: "05".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [Fact]
+        public static void VerifyKnownTransform_CFB8_NoPadding_1()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=1
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "9b04c86dd31a8a589876101549d6e0109b04c86dd31a8a58".HexToByteArray(),
+                iv: "52cd77d49fc72347".HexToByteArray(),
+                plainBytes: "2fef".HexToByteArray(),
+                cipherBytes: "5818".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [Fact]
+        public static void VerifyKnownTransform_CFB8_NoPadding_2()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=2
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "fbb667e340586b5b5ef7c87049b93257fbb667e340586b5b".HexToByteArray(),
+                iv: "459e8b8736715791".HexToByteArray(),
+                plainBytes: "061704".HexToByteArray(),
+                cipherBytes: "93b378".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [Fact]
+        public static void VerifyKnownTransform_CFB8_PKCS7_2()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=2
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.PKCS7,
+                key: "fbb667e340586b5b5ef7c87049b93257fbb667e340586b5b".HexToByteArray(),
+                iv: "459e8b8736715791".HexToByteArray(),
+                plainBytes: "061704".HexToByteArray(),
+                cipherBytes: "93b37808".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB64_PKCS7_2()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=2
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.PKCS7,
+                key: "fbb667e340586b5b5ef7c87049b93257fbb667e340586b5b".HexToByteArray(),
+                iv: "459e8b8736715791".HexToByteArray(),
+                plainBytes: "061704".HexToByteArray(),
+                cipherBytes: "931f41eccdab4f99".HexToByteArray(),
+                feedbackSize: 64
+            );
+        }
+
+        [Fact]
+        public static void VerifyKnownTransform_CFB8_NoPadding_3()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=3
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "4a575d02515d40b0a40d830bd9b315134a575d02515d40b0".HexToByteArray(),
+                iv: "ab27e9f02affa532".HexToByteArray(),
+                plainBytes: "55f75b95".HexToByteArray(),
+                cipherBytes: "2ef5dddc".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [Fact]
+        public static void VerifyKnownTransform_CFB8_NoPadding_4()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=4
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "91a834855e6bab31c7fd6be657ceb9ec91a834855e6bab31".HexToByteArray(),
+                iv: "7838aaad4e64640b".HexToByteArray(),
+                plainBytes: "c3851c0ab4".HexToByteArray(),
+                cipherBytes: "fe451f35f1".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [Fact]
+        public static void VerifyKnownTransform_CFB8_NoPadding_5()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=5
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "04d923abd9291c3e4954a8b52fdabcc804d923abd9291c3e".HexToByteArray(),
+                iv: "191f8794944e601c".HexToByteArray(),
+                plainBytes: "6fe8f67d2af1".HexToByteArray(),
+                cipherBytes: "3bd78a8d24ad".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [Fact]
+        public static void VerifyKnownTransform_CFB8_NoPadding_6()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=6
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "a7799e7f5dfe54ce13376401e96de075a7799e7f5dfe54ce".HexToByteArray(),
+                iv: "370184c749d04a20".HexToByteArray(),
+                plainBytes: "2b4228b769795b".HexToByteArray(),
+                cipherBytes: "6f32e4495e4259".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [Fact]
+        public static void VerifyKnownTransform_CFB8_NoPadding_7()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=7
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "6bfe3d3df8c1e0d34ffe0dbf854c940e6bfe3d3df8c1e0d3".HexToByteArray(),
+                iv: "51e4c5c29e858da6".HexToByteArray(),
+                plainBytes: "4cb3554fd0b9ec82".HexToByteArray(),
+                cipherBytes: "72e1738d80d285e2".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [Fact]
+        public static void VerifyKnownTransform_CFB8_NoPadding_8()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=8
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "e0264aec13e63db991f8c120c4b9b6dae0264aec13e63db9".HexToByteArray(),
+                iv: "bd8795dba79930d6".HexToByteArray(),
+                plainBytes: "79068e2943f02914af".HexToByteArray(),
+                cipherBytes: "9b78c5636c5965f88e".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [Fact]
+        public static void VerifyKnownTransform_CFB8_NoPadding_9()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB8MMT2.rsp, [DECRYPT] COUNT=9
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "7ca28938ba6bec1ffec78f7cd69761947ca28938ba6bec1f".HexToByteArray(),
+                iv: "953896586e49d38f".HexToByteArray(),
+                plainBytes: "2ea956d4a211db6859b7".HexToByteArray(),
+                cipherBytes: "f20e536674a66fa73805".HexToByteArray(),
+                feedbackSize: 8
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB64_NoPadding_0()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB64MMT2.rsp, [DECRYPT] COUNT=0
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "9ee0b59b25865154588551341c4fef9e9ee0b59b25865154".HexToByteArray(),
+                iv: "6e37d197376db595".HexToByteArray(),
+                plainBytes: "dcd3cf9746d6e42b".HexToByteArray(),
+                cipherBytes: "63cad52260e0a1cd".HexToByteArray(),
+                feedbackSize: 64
+            );
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [InlineData(CipherMode.CBC, 0)]
+        [InlineData(CipherMode.CFB, 8)]
+        [InlineData(CipherMode.CFB, 64)]
+        [InlineData(CipherMode.ECB, 0)]
+        public static void EncryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        {
+            // AppleCCCryptor does not allow calling Reset on CFB cipher.
+            // this test validates that the behavior is taken into consideration.
+            var input = "b72606c98d8e4fabf08839abf7a0ac61".HexToByteArray();
+
+            using (TripleDES tdes = TripleDESFactory.Create())
+            {
+                tdes.Mode = cipherMode;
+
+                if (feedbackSize > 0)
+                {
+                    tdes.FeedbackSize = feedbackSize;
+                }
+
+                using (ICryptoTransform transform = tdes.CreateEncryptor())
+                {
+                    byte[] output1 = transform.TransformFinalBlock(input, 0, input.Length);
+                    byte[] output2 = transform.TransformFinalBlock(input, 0, input.Length);
+
+                    Assert.Equal(output1, output2);
+                }
+            }
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        [InlineData(CipherMode.CBC, 0)]
+        [InlineData(CipherMode.CFB, 8)]
+        [InlineData(CipherMode.CFB, 64)]
+        [InlineData(CipherMode.ECB, 0)]
+        public static void DecryptorReuse_LeadsToSameResults(CipherMode cipherMode, int feedbackSize)
+        {
+            // AppleCCCryptor does not allow calling Reset on CFB cipher.
+            // this test validates that the behavior is taken into consideration.
+            var input = "896072ab28e5fdfc9e8b3610627bf27a".HexToByteArray();
+            var key = "c179d0fdd073a1910e51f1d5fe70047ac179d0fdd073a191".HexToByteArray();
+            var iv = "b956d5426d02b247".HexToByteArray();
+
+            using (TripleDES tdes = TripleDESFactory.Create())
+            {
+                tdes.Mode = cipherMode;
+                tdes.Key = key;
+                tdes.IV = iv;
+                tdes.Padding = PaddingMode.None;
+
+                if (feedbackSize > 0)
+                {
+                    tdes.FeedbackSize = feedbackSize;
+                }
+
+                using (ICryptoTransform transform = tdes.CreateDecryptor())
+                {
+                    byte[] output1 = transform.TransformFinalBlock(input, 0, input.Length);
+                    byte[] output2 = transform.TransformFinalBlock(input, 0, input.Length);
+
+                    Assert.Equal(output1, output2);
+                }
+            }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB64_NoPadding_1()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB64MMT2.rsp, [DECRYPT] COUNT=1
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "c179d0fdd073a1910e51f1d5fe70047ac179d0fdd073a191".HexToByteArray(),
+                iv: "b956d5426d02b247".HexToByteArray(),
+                plainBytes: "32bd529065e26a27643097925e3a726b".HexToByteArray(),
+                cipherBytes: "896072ab28e5fdfc9e8b3610627bf27a".HexToByteArray(),
+                feedbackSize: 64
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB64_NoPadding_2()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB64MMT2.rsp, [DECRYPT] COUNT=2
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "a8084a04495bfb45b3575ee03d732967a8084a04495bfb45".HexToByteArray(),
+                iv: "00fd7b4fdb4b3382".HexToByteArray(),
+                plainBytes: "c20c7041007a67de7b4355be7406095496923b75dfb98080".HexToByteArray(),
+                cipherBytes: "9198c138edb037de25d0bcdebe7b9be10ebd7e7ea103edae".HexToByteArray(),
+                feedbackSize: 64
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB64_NoPadding_3()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB64MMT2.rsp, [DECRYPT] COUNT=3
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "c1497fdf67cecbab80d543f16d13c8d5c1497fdf67cecbab".HexToByteArray(),
+                iv: "a1241ca0fe9378cd".HexToByteArray(),
+                plainBytes: "157dcfa7ad6758335e561fa7dd7f98dca592e9128e7be30ccd1af7dc5a4536d5".HexToByteArray(),
+                cipherBytes: "08fcace492f82282fb3255884a64a231dd438069ffbcb432bd7ec446f5b8adfd".HexToByteArray(),
+                feedbackSize: 64
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB64_NoPadding_4()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB64MMT2.rsp, [DECRYPT] COUNT=4
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "fd0e3262ec38fe5710389d0779c2fb43fd0e3262ec38fe57".HexToByteArray(),
+                iv: "33c9e4adfb4634ac".HexToByteArray(),
+                plainBytes: "37536dda516aab8a992131004134ce48c56fee05261164aae0a88db0f43410617f105e20940cf3e9".HexToByteArray(),
+                cipherBytes: "80e8a96c3fe83857fc738ac7b6639f0d8c28bfa617c56a60fd1b8fbdc36afe9ce3151e161fa5e3a7".HexToByteArray(),
+                feedbackSize: 64
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB64_NoPadding_5()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB64MMT2.rsp, [DECRYPT] COUNT=5
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "ae32253be61040157a7c10b6011fcde3ae32253be6104015".HexToByteArray(),
+                iv: "47be2286dbccdfe6".HexToByteArray(),
+                plainBytes: "e579282129c123c914c700ad8c099b593fe83fdef7be7e5ffb36add9c6b91644cc79c1e457212017488963e16198c528".HexToByteArray(),
+                cipherBytes: "7185c5800ca4d5432b50f5b7920e26296c2913e7e3f847a1ef639e156ba4f9ec6e4b36ded885601d2b9d22f19dc3829f".HexToByteArray(),
+                feedbackSize: 64
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB64_NoPadding_6()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB64MMT2.rsp, [DECRYPT] COUNT=6
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "df83498cec83084acb7aaef26e58f1e0df83498cec83084a".HexToByteArray(),
+                iv: "158d2ca6e70b18f6".HexToByteArray(),
+                plainBytes: "4fb7cf2a244ff20beddf8719b2d9c78ab0710703036f804f08bc1f7927ea9906ba1ef57afd1553c5304c0b72694cd88bb6cb1289772dfff0".HexToByteArray(),
+                cipherBytes: "158b396cd1969a07042e808d0c875d74166ce77291df233fe300c29c5a30b1946575ec02042093537dae3f8d51ed96906e601d9da6e34e14".HexToByteArray(),
+                feedbackSize: 64
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB64_NoPadding_7()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB64MMT2.rsp, [DECRYPT] COUNT=7
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "ce31cd2067c157199bfb3b8ad9ef9223ce31cd2067c15719".HexToByteArray(),
+                iv: "d31741512b6a7471".HexToByteArray(),
+                plainBytes: "a0447f5abebf8623db81b600699ce8373353442908fefe8c63f5e29e22ba1057f759635505ed0ac059887def2d31f6996128d4fbe2df6534429744d7f6496768".HexToByteArray(),
+                cipherBytes: "b3a791b128f003bc28cd17bbb5c68990faec73f88c10b664f1349b045f3fba24c5f51bbb10259c41a72492c2377bb331b6dd34fea25c2eea8adc461bd0c78d6b".HexToByteArray(),
+                feedbackSize: 64
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB64_NoPadding_8()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB64MMT2.rsp, [DECRYPT] COUNT=8
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "5bbc3423bf67e05262d65740708019f15bbc3423bf67e052".HexToByteArray(),
+                iv: "14544ea4813c49d9".HexToByteArray(),
+                plainBytes: "a21f26496f74fd8a93aa5423e2a4fc76facbff015db2f4ef14f08b8c13a29d0561e4e57d04b0b00211f8fba46d025a9c0727c8aebb7d25f27f1606321909ba50e660fa25358c63f9".HexToByteArray(),
+                cipherBytes: "c3acc89b9b6037effc65eacdc23b36c38d0e609566d360eba594e4481108983b4a67a5d9647c776ad5fcc4639116ca95734bd8a3df800fb9a6526a7b29a9fc3cc29079715f44f865".HexToByteArray(),
+                feedbackSize: 64
+            );
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
+        public static void VerifyKnownTransform_CFB64_NoPadding_9()
+        {
+            // NIST CAVS TDESMMT.ZIP TCFB64MMT2.rsp, [DECRYPT] COUNT=9
+            TestTripleDESTransformDirectKey(
+                CipherMode.CFB,
+                PaddingMode.None,
+                key: "197c738cfb6e0bc2fee57ffb1ca72675197c738cfb6e0bc2".HexToByteArray(),
+                iv: "f1a42447a333caa3".HexToByteArray(),
+                plainBytes: "6f914b6996ee8e7ea625b2fddd7677b4384320be0aba3af81d1210965ac37983f340d5698ddf35d45dfccbf783a50c6eed1a730b5c98675cb6b7645fc8374e10d8b340c44b0eae988c1ef635fab913da".HexToByteArray(),
+                cipherBytes: "8aabb83216e4bd5a3dd20586e598bb8e956dcbf7d09cde17a2cf8b7a788ecb853503ae5981004dfa644300b115f8d1ae0c7f30f25e70e86c4adc51620fd6c71301325c9bdc8dca16588eac08fe6aedfd".HexToByteArray(),
+                feedbackSize: 64
+            );
+        }
+
+        private static byte[] TripleDESEncryptDirectKey(TripleDES tdes, byte[] key, byte[] iv, byte[] plainBytes)
+        {
+            using (MemoryStream output = new MemoryStream())
+            using (CryptoStream cryptoStream = new CryptoStream(output, tdes.CreateEncryptor(key, iv), CryptoStreamMode.Write))
+            {
+                cryptoStream.Write(plainBytes, 0, plainBytes.Length);
+                cryptoStream.FlushFinalBlock();
+
+                return output.ToArray();
+            }
+        }
+
+        private static byte[] TripleDESDecryptDirectKey(TripleDES tdes, byte[] key, byte[] iv, byte[] cipherBytes)
+        {
+            using (MemoryStream output = new MemoryStream())
+            using (CryptoStream cryptoStream = new CryptoStream(output, tdes.CreateDecryptor(key, iv), CryptoStreamMode.Write))
+            {
+                cryptoStream.Write(cipherBytes, 0, cipherBytes.Length);
+                cryptoStream.FlushFinalBlock();
+
+                return output.ToArray();
+            }
+        }
+
+        private static void TestTripleDESTransformDirectKey(
+            CipherMode cipherMode,
+            PaddingMode paddingMode,
+            byte[] key,
+            byte[] iv,
+            byte[] plainBytes,
+            byte[] cipherBytes,
+            int? feedbackSize = default)
+        {
+            byte[] liveEncryptBytes;
+            byte[] liveDecryptBytes;
+
+            using (TripleDES tdes = TripleDESFactory.Create())
+            {
+                tdes.Mode = cipherMode;
+                tdes.Padding = paddingMode;
+
+                if (feedbackSize.HasValue)
+                {
+                    tdes.FeedbackSize = feedbackSize.Value;
+                }
+
+                liveEncryptBytes = TripleDESEncryptDirectKey(tdes, key, iv, plainBytes);
+                liveDecryptBytes = TripleDESDecryptDirectKey(tdes, key, iv, cipherBytes);
+            }
+
+            Assert.Equal(cipherBytes, liveEncryptBytes);
+            Assert.Equal(plainBytes, liveDecryptBytes);
         }
 
         [Theory]

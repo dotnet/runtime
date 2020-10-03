@@ -109,6 +109,12 @@ jobs:
     - ${{ if eq(parameters.testGroup, 'clrinterpreter') }}:
       - name: clrInterpreterBuildArg
         value: '-cmakeargs "-DFEATURE_INTERPRETER=1"'
+    
+    - name: clrBuildPALTestsBuildArg
+      value: ''
+    - ${{ if ne(parameters.testGroup, 'innerloop') }}:
+      - name: clrBuildPALTestsBuildArg
+        value: '-paltests '
 
     - ${{ parameters.variables }}
 
@@ -133,7 +139,7 @@ jobs:
     - ${{ if and(eq(variables['System.TeamProject'], 'internal'), ne(variables['Build.Reason'], 'PullRequest')) }}:
       - template: /eng/pipelines/common/restore-internal-tools.yml
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
@@ -141,24 +147,20 @@ jobs:
 
     # Build CoreCLR Runtime
     - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
-      - script: $(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: $(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) $(crossArg) $(osArg) -ci $(compilerArg) $(clrBuildPALTestsBuildArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
+      - script: set __TestIntermediateDir=int&&$(Build.SourcesDirectory)/src/coreclr/build-runtime$(scriptExt) $(buildConfig) $(archType) -ci $(enforcePgoArg) $(officialBuildIdArg) $(clrInterpreterBuildArg)
         displayName: Build CoreCLR Runtime
 
-    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}: 
+    - ${{ if in(parameters.osGroup, 'OSX', 'iOS','tvOS') }}:
       - script: |
           du -sh $(Build.SourcesDirectory)/*
           df -h
         displayName: Disk Usage after Build
 
-    - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), ne(parameters.archType, 'x86')) }}:
-      - script: set __TestIntermediateDir=int&&$(coreClrRepoRootDir)build-runtime$(scriptExt) $(buildConfig) $(archType) -ci -linuxdac $(officialBuildIdArg)
-        displayName: Build Cross OS Linux DAC for Windows
-
     # Build CoreCLR Managed Components
-    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
+    - script: $(Build.SourcesDirectory)$(dir)build$(scriptExt) -subset clr.corelib+clr.nativecorelib+clr.tools+clr.packages+clr.paltestlist $(crossArg) -arch $(archType) $(osArg) -c $(buildConfig) $(officialBuildIdArg) -ci
       displayName: Build managed product components and packages
 
     # Run CoreCLR Tools unit tests
@@ -168,8 +170,30 @@ jobs:
 
     # Build native test components
     - ${{ if ne(parameters.isOfficialBuild, true) }}:
-      - script: $(coreClrRepoRootDir)build-test$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
+      - script: $(Build.SourcesDirectory)/src/tests/build$(scriptExt) skipstressdependencies skipmanaged skipgeneratelayout $(buildConfig) $(archType) $(crossArg) $(osArg) $(priorityArg) $(compilerArg)
         displayName: Build native test components
+
+    # Sign and add entitlements to these MacOS binaries
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - ${{ if eq(parameters.osGroup, 'OSX') }}:
+
+        - template: /eng/pipelines/common/macos-sign-with-entitlements.yml
+          parameters:
+            filesToSign:
+            - name: createdump
+              path: $(buildProductRootFolderPath)
+              entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/createdump-entitlements.plist
+            - name: corerun
+              path: $(buildProductRootFolderPath)
+              entitlementsFile: $(Build.SourcesDirectory)/eng/pipelines/common/entitlements.plist
+
+        - task: CopyFiles@2
+          displayName: 'Copy signed createdump to sharedFramework'
+          inputs:
+            contents: createdump
+            sourceFolder: $(buildProductRootFolderPath)
+            targetFolder: $(buildProductRootFolderPath)/sharedFramework
+            overWrite: true
 
     # Sign on Windows
     - ${{ if and(eq(parameters.osGroup, 'Windows_NT'), eq(parameters.signBinaries, 'true'), ne(parameters.testGroup, 'clrTools')) }}:
@@ -196,6 +220,13 @@ jobs:
           archiveExtension: $(archiveExtension)
           artifactName: $(buildProductArtifactName)
           displayName: 'product build'
+
+    - ${{ if and(in(parameters.osGroup, 'Windows_NT', 'Linux'), ne(parameters.archType, 'x86'), ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, 'clrTools')) }}:
+      - template: /eng/pipelines/coreclr/templates/crossdac-build.yml
+        parameters:
+          archType: ${{ parameters.archType }}
+          osGroup: ${{ parameters.osGroup }}
+          osSubgroup: ${{ parameters.osSubgroup }}
 
     - ${{ if and(ne(parameters.compilerName, 'gcc'), ne(parameters.testGroup, ''), ne(parameters.testGroup, 'clrTools')) }}:
       # Publish test native components for consumption by test execution.

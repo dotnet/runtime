@@ -73,7 +73,7 @@ VOID BaseAssemblySpec::CloneFieldsToStackingAllocator( StackingAllocator* alloc)
 }
 
 #ifndef DACCESS_COMPILE
-BOOL BaseAssemblySpec::IsMscorlib()
+BOOL BaseAssemblySpec::IsCoreLib()
 {
     CONTRACTL
     {
@@ -106,7 +106,7 @@ BOOL BaseAssemblySpec::IsMscorlib()
                ( (iNameLen == CoreLibNameLen) || (m_pAssemblyName[CoreLibNameLen] == ',') ) ) ) );
 }
 
-BOOL BaseAssemblySpec::IsAssemblySpecForMscorlib()
+BOOL BaseAssemblySpec::IsAssemblySpecForCoreLib()
 {
     CONTRACTL
     {
@@ -118,28 +118,28 @@ BOOL BaseAssemblySpec::IsAssemblySpecForMscorlib()
     }
     CONTRACTL_END;
 
-    BOOL fIsAssemblySpecForMscorlib = FALSE;
+    BOOL fIsAssemblySpecForCoreLib = FALSE;
 
     if (m_pAssemblyName)
     {
         size_t iNameLen = strlen(m_pAssemblyName);
-        fIsAssemblySpecForMscorlib = ( (iNameLen >= CoreLibNameLen) &&
+        fIsAssemblySpecForCoreLib = ( (iNameLen >= CoreLibNameLen) &&
                  ( (!_stricmp(m_pAssemblyName, g_psBaseLibrary)) ||
                  ( (!_strnicmp(m_pAssemblyName, g_psBaseLibraryName, CoreLibNameLen)) &&
                    ( (iNameLen == CoreLibNameLen) || (m_pAssemblyName[CoreLibNameLen] == ',') ) ) ) );
     }
 
-    return fIsAssemblySpecForMscorlib;
+    return fIsAssemblySpecForCoreLib;
 }
 
-#define MSCORLIB_PUBLICKEY g_rbTheSilverlightPlatformKey
+#define CORELIB_PUBLICKEY g_rbTheSilverlightPlatformKey
 
 
-// A satellite assembly for mscorlib is named "mscorlib.resources" or
-// mscorlib.debug.resources.dll and uses the same public key as mscorlib.
+// A satellite assembly for CoreLib is named "System.Private.CoreLib.resources" or
+// System.Private.CoreLib.debug.resources.dll and uses the same public key as CoreLib.
 // It does not necessarily have the same version, and the Culture will
 // always be set to something like "jp-JP".
-BOOL BaseAssemblySpec::IsMscorlibSatellite() const
+BOOL BaseAssemblySpec::IsCoreLibSatellite() const
 {
     CONTRACTL
     {
@@ -168,13 +168,13 @@ BOOL BaseAssemblySpec::IsMscorlibSatellite() const
     // <TODO>More of bug 213471</TODO>
     size_t iNameLen = strlen(m_pAssemblyName);
 
-    // we allow name to be of the form mscorlib.resources.dll only
-    BOOL r = ( (m_cbPublicKeyOrToken == sizeof(MSCORLIB_PUBLICKEY)) &&
+    // we allow name to be of the form System.Private.CoreLib.resources.dll only
+    BOOL r = ( (m_cbPublicKeyOrToken == sizeof(CORELIB_PUBLICKEY)) &&
              (iNameLen >= CoreLibSatelliteNameLen) &&
              (!SString::_strnicmp(m_pAssemblyName, g_psBaseLibrarySatelliteAssemblyName, CoreLibSatelliteNameLen)) &&
              ( (iNameLen == CoreLibSatelliteNameLen) || (m_pAssemblyName[CoreLibSatelliteNameLen] == ',') ) );
 
-    r = r && ( memcmp(m_pbPublicKeyOrToken,MSCORLIB_PUBLICKEY,sizeof(MSCORLIB_PUBLICKEY)) == 0);
+    r = r && ( memcmp(m_pbPublicKeyOrToken,CORELIB_PUBLICKEY,sizeof(CORELIB_PUBLICKEY)) == 0);
 
     return r;
 }

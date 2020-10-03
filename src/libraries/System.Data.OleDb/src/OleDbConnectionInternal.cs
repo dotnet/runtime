@@ -15,7 +15,7 @@ namespace System.Data.OleDb
 
     internal sealed class OleDbConnectionInternal : DbConnectionInternal, IDisposable
     {
-        private static volatile OleDbServicesWrapper idataInitialize;
+        private static volatile OleDbServicesWrapper? idataInitialize;
         private static readonly object dataInitializeLock = new object();
 
         internal readonly OleDbConnectionString ConnectionString; // parsed connection string attributes
@@ -50,18 +50,18 @@ namespace System.Data.OleDb
         // offered much better performance.
 
         // the "Data Source object".
-        private readonly DataSourceWrapper _datasrcwrp;
+        private readonly DataSourceWrapper? _datasrcwrp;
 
         // the "Session object".
-        private readonly SessionWrapper _sessionwrp;
+        private readonly SessionWrapper? _sessionwrp;
 
-        private WeakReference weakTransaction;
+        private WeakReference? weakTransaction;
 
         // When set to true the current connection is enlisted in a transaction that must be
         // un-enlisted during Deactivate.
         private bool _unEnlistDuringDeactivate;
 
-        internal OleDbConnectionInternal(OleDbConnectionString constr, OleDbConnection connection) : base()
+        internal OleDbConnectionInternal(OleDbConnectionString constr, OleDbConnection? connection) : base()
         {
             Debug.Assert((null != constr) && !constr.IsEmpty, "empty connectionstring");
             ConnectionString = constr;
@@ -100,7 +100,7 @@ namespace System.Data.OleDb
                     }
                     else
                     {
-                        Exception e = OleDbConnection.ProcessResults(hr, null, null);
+                        Exception? e = OleDbConnection.ProcessResults(hr, null, null);
                         Debug.Assert(null != e, "CreateSessionError");
                         throw e;
                     }
@@ -123,11 +123,11 @@ namespace System.Data.OleDb
             }
         }
 
-        internal OleDbConnection Connection
+        internal OleDbConnection? Connection
         {
             get
             {
-                return (OleDbConnection)Owner;
+                return (OleDbConnection?)Owner;
             }
         }
 
@@ -139,14 +139,14 @@ namespace System.Data.OleDb
             }
         }
 
-        internal OleDbTransaction LocalTransaction
+        internal OleDbTransaction? LocalTransaction
         {
             get
             {
-                OleDbTransaction result = null;
+                OleDbTransaction? result = null;
                 if (null != weakTransaction)
                 {
-                    result = ((OleDbTransaction)weakTransaction.Target);
+                    result = ((OleDbTransaction?)weakTransaction.Target);
                 }
                 return result;
             }
@@ -171,8 +171,8 @@ namespace System.Data.OleDb
             // consider making a method, not a property
             get
             {
-                object value = GetDataSourceValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_DBMSVER);
-                return Convert.ToString(value, CultureInfo.InvariantCulture);
+                object value = GetDataSourceValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_DBMSVER)!;
+                return Convert.ToString(value, CultureInfo.InvariantCulture)!;
             }
         }
 
@@ -218,12 +218,12 @@ namespace System.Data.OleDb
         }
 
         // optional interface, unsafe cast
-        internal UnsafeNativeMethods.ICommandText ICommandText()
+        internal UnsafeNativeMethods.ICommandText? ICommandText()
         {
             Debug.Assert(null != _datasrcwrp, "IDBCreateCommand: null datasource");
             Debug.Assert(null != _sessionwrp, "IDBCreateCommand: null session");
 
-            object icommandText = null;
+            object? icommandText = null;
             OleDbHResult hr = _sessionwrp.CreateCommand(ref icommandText);
 
             Debug.Assert((0 <= hr) || (null == icommandText), "CreateICommandText: error with ICommandText");
@@ -238,23 +238,23 @@ namespace System.Data.OleDb
                     SafeNativeMethods.Wrapper.ClearErrorInfo();
                 }
             }
-            return (UnsafeNativeMethods.ICommandText)icommandText;
+            return (UnsafeNativeMethods.ICommandText?)icommandText;
         }
 
-        protected override void Activate(SysTx.Transaction transaction)
+        protected override void Activate(SysTx.Transaction? transaction)
         {
             throw ADP.NotSupported();
         }
 
         public override DbTransaction BeginTransaction(IsolationLevel isolationLevel)
         {
-            OleDbConnection outerConnection = Connection;
+            OleDbConnection outerConnection = Connection!;
             if (null != LocalTransaction)
             {
                 throw ADP.ParallelTransactionsNotSupported(outerConnection);
             }
 
-            object unknown = null;
+            object? unknown = null;
             OleDbTransaction transaction;
             try
             {
@@ -262,10 +262,10 @@ namespace System.Data.OleDb
                 Debug.Assert(null != _datasrcwrp, "ITransactionLocal: null datasource");
                 Debug.Assert(null != _sessionwrp, "ITransactionLocal: null session");
                 unknown = _sessionwrp.ComWrapper();
-                UnsafeNativeMethods.ITransactionLocal value = (unknown as UnsafeNativeMethods.ITransactionLocal);
+                UnsafeNativeMethods.ITransactionLocal? value = (unknown as UnsafeNativeMethods.ITransactionLocal);
                 if (null == value)
                 {
-                    throw ODB.TransactionsNotSupported(Provider, (Exception)null);
+                    throw ODB.TransactionsNotSupported(Provider, null);
                 }
                 transaction.BeginInternal(value);
             }
@@ -294,7 +294,7 @@ namespace System.Data.OleDb
                 // Un-enlist transaction as OLEDB connection pool is unaware of managed transactions.
                 EnlistTransactionInternal(null);
             }
-            OleDbTransaction transaction = LocalTransaction;
+            OleDbTransaction? transaction = LocalTransaction;
             if (null != transaction)
             {
                 LocalTransaction = null;
@@ -318,7 +318,7 @@ namespace System.Data.OleDb
             base.Dispose();
         }
 
-        public override void EnlistTransaction(SysTx.Transaction transaction)
+        public override void EnlistTransaction(SysTx.Transaction? transaction)
         {
             if (null != LocalTransaction)
             {
@@ -327,15 +327,15 @@ namespace System.Data.OleDb
             EnlistTransactionInternal(transaction);
         }
 
-        internal void EnlistTransactionInternal(SysTx.Transaction transaction)
+        internal void EnlistTransactionInternal(SysTx.Transaction? transaction)
         {
-            SysTx.IDtcTransaction oleTxTransaction = ADP.GetOletxTransaction(transaction);
+            SysTx.IDtcTransaction? oleTxTransaction = ADP.GetOletxTransaction(transaction);
 
             using (ITransactionJoinWrapper transactionJoin = ITransactionJoin())
             {
                 if (null == transactionJoin.Value)
                 {
-                    throw ODB.TransactionsNotSupported(Provider, (Exception)null);
+                    throw ODB.TransactionsNotSupported(Provider, null);
                 }
                 transactionJoin.Value.JoinTransaction(oleTxTransaction, (int)IsolationLevel.Unspecified, 0, IntPtr.Zero);
                 _unEnlistDuringDeactivate = (null != transaction);
@@ -343,9 +343,9 @@ namespace System.Data.OleDb
             EnlistedTransaction = transaction;
         }
 
-        internal object GetDataSourceValue(Guid propertySet, int propertyID)
+        internal object? GetDataSourceValue(Guid propertySet, int propertyID)
         {
-            object value = GetDataSourcePropertyValue(propertySet, propertyID);
+            object? value = GetDataSourcePropertyValue(propertySet, propertyID);
             if ((value is OleDbPropertyStatus) || Convert.IsDBNull(value))
             {
                 value = null;
@@ -353,7 +353,7 @@ namespace System.Data.OleDb
             return value;
         }
 
-        internal object GetDataSourcePropertyValue(Guid propertySet, int propertyID)
+        internal object? GetDataSourcePropertyValue(Guid propertySet, int propertyID)
         {
             OleDbHResult hr;
             ItagDBPROP[] dbprops;
@@ -380,11 +380,12 @@ namespace System.Data.OleDb
             return dbprops[0].dwStatus;
         }
 
-        internal DataTable BuildInfoLiterals()
+        internal DataTable? BuildInfoLiterals()
         {
             using (IDBInfoWrapper wrapper = IDBInfo())
             {
                 UnsafeNativeMethods.IDBInfo dbInfo = wrapper.Value;
+                // TODO-NULLABLE: check may not be necessary (and thus method may return non-nullable)
                 if (null == dbInfo)
                 {
                     return null;
@@ -445,9 +446,9 @@ namespace System.Data.OleDb
             }
         }
 
-        internal DataTable BuildInfoKeywords()
+        internal DataTable? BuildInfoKeywords()
         {
-            DataTable table = new DataTable(ODB.DbInfoKeywords);
+            DataTable? table = new DataTable(ODB.DbInfoKeywords);
             table.Locale = CultureInfo.InvariantCulture;
             DataColumn keyword = new DataColumn(ODB.Keyword, typeof(string));
             table.Columns.Add(keyword);
@@ -506,7 +507,7 @@ namespace System.Data.OleDb
             table.Columns.Add(schemaGuid);
             table.Columns.Add(restrictionSupport);
 
-            SchemaSupport[] supportedSchemas = GetSchemaRowsetInformation();
+            SchemaSupport[]? supportedSchemas = GetSchemaRowsetInformation();
 
             if (null != supportedSchemas)
             {
@@ -523,7 +524,7 @@ namespace System.Data.OleDb
             return table;
         }
 
-        internal string GetLiteralInfo(int literal)
+        internal string? GetLiteralInfo(int literal)
         {
             using (IDBInfoWrapper wrapper = IDBInfo())
             {
@@ -532,7 +533,7 @@ namespace System.Data.OleDb
                 {
                     return null;
                 }
-                string literalValue = null;
+                string? literalValue = null;
                 IntPtr literalInfo = ADP.PtrZero;
                 int literalCount = 0;
                 OleDbHResult hr;
@@ -560,17 +561,17 @@ namespace System.Data.OleDb
             }
         }
 
-        internal SchemaSupport[] GetSchemaRowsetInformation()
+        internal SchemaSupport[]? GetSchemaRowsetInformation()
         {
             OleDbConnectionString constr = ConnectionString;
-            SchemaSupport[] supportedSchemas = constr.SchemaSupport;
+            SchemaSupport[]? supportedSchemas = constr.SchemaSupport;
             if (null != supportedSchemas)
             {
                 return supportedSchemas;
             }
             using (IDBSchemaRowsetWrapper wrapper = IDBSchemaRowset())
             {
-                UnsafeNativeMethods.IDBSchemaRowset dbSchemaRowset = wrapper.Value;
+                UnsafeNativeMethods.IDBSchemaRowset? dbSchemaRowset = wrapper.Value;
                 if (null == dbSchemaRowset)
                 {
                     return null; // IDBSchemaRowset not supported
@@ -595,7 +596,7 @@ namespace System.Data.OleDb
                         for (int i = 0, offset = 0; i < supportedSchemas.Length; ++i, offset += ODB.SizeOf_Guid)
                         {
                             IntPtr ptr = ADP.IntPtrOffset(schemaGuids, i * ODB.SizeOf_Guid);
-                            supportedSchemas[i]._schemaRowset = (Guid)Marshal.PtrToStructure(ptr, typeof(Guid));
+                            supportedSchemas[i]._schemaRowset = (Guid)Marshal.PtrToStructure(ptr, typeof(Guid))!;
                         }
                     }
                     if (ADP.PtrZero != schemaRestrictions)
@@ -611,13 +612,13 @@ namespace System.Data.OleDb
             }
         }
 
-        internal DataTable GetSchemaRowset(Guid schema, object[] restrictions)
+        internal DataTable? GetSchemaRowset(Guid schema, object?[]? restrictions)
         {
             if (null == restrictions)
             {
                 restrictions = Array.Empty<object>();
             }
-            DataTable dataTable = null;
+            DataTable? dataTable = null;
             using (IDBSchemaRowsetWrapper wrapper = IDBSchemaRowset())
             {
                 UnsafeNativeMethods.IDBSchemaRowset dbSchemaRowset = wrapper.Value;
@@ -626,7 +627,7 @@ namespace System.Data.OleDb
                     throw ODB.SchemaRowsetsNotSupported(Provider);
                 }
 
-                UnsafeNativeMethods.IRowset rowset = null;
+                UnsafeNativeMethods.IRowset? rowset = null;
                 OleDbHResult hr;
                 hr = dbSchemaRowset.GetRowset(ADP.PtrZero, ref schema, restrictions.Length, restrictions, ref ODB.IID_IRowset, 0, ADP.PtrZero, out rowset);
 
@@ -656,7 +657,7 @@ namespace System.Data.OleDb
         // returns true if there is an active data reader on the specified command
         internal bool HasLiveReader(OleDbCommand cmd)
         {
-            OleDbDataReader reader = null;
+            OleDbDataReader? reader = null;
 
             if (null != ReferenceCollection)
             {
@@ -668,15 +669,15 @@ namespace System.Data.OleDb
 
         private void ProcessResults(OleDbHResult hr)
         {
-            OleDbConnection connection = Connection; // get value from weakref only once
-            Exception e = OleDbConnection.ProcessResults(hr, connection, connection);
+            OleDbConnection? connection = Connection; // get value from weakref only once
+            Exception? e = OleDbConnection.ProcessResults(hr, connection, connection);
             if (null != e)
             { throw e; }
         }
 
         internal bool SupportSchemaRowset(Guid schema)
         {
-            SchemaSupport[] schemaSupport = GetSchemaRowsetInformation();
+            SchemaSupport[]? schemaSupport = GetSchemaRowsetInformation();
             if (null != schemaSupport)
             {
                 for (int i = 0; i < schemaSupport.Length; ++i)
@@ -692,8 +693,8 @@ namespace System.Data.OleDb
 
         private static object CreateInstanceDataLinks()
         {
-            Type datalink = Type.GetTypeFromCLSID(ODB.CLSID_DataLinks, true);
-            return Activator.CreateInstance(datalink, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, CultureInfo.InvariantCulture, null);
+            Type datalink = Type.GetTypeFromCLSID(ODB.CLSID_DataLinks, true)!;
+            return Activator.CreateInstance(datalink, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance, null, null, CultureInfo.InvariantCulture, null)!;
         }
 
         // @devnote: should be multithread safe access to OleDbConnection.idataInitialize,
@@ -701,7 +702,7 @@ namespace System.Data.OleDb
         // OLE DB will ensure I'll work with just the single pool
         private static OleDbServicesWrapper GetObjectPool()
         {
-            OleDbServicesWrapper wrapper = OleDbConnectionInternal.idataInitialize;
+            OleDbServicesWrapper? wrapper = OleDbConnectionInternal.idataInitialize;
             if (null == wrapper)
             {
                 lock (dataInitializeLock)
@@ -764,11 +765,11 @@ namespace System.Data.OleDb
             OleDbConnectionInternal.idataInitialize = null;
         }
 
-        internal OleDbTransaction ValidateTransaction(OleDbTransaction transaction, string method)
+        internal OleDbTransaction? ValidateTransaction(OleDbTransaction? transaction, string method)
         {
             if (null != this.weakTransaction)
             {
-                OleDbTransaction head = (OleDbTransaction)this.weakTransaction.Target;
+                OleDbTransaction? head = (OleDbTransaction?)this.weakTransaction.Target;
                 if ((null != head) && this.weakTransaction.IsAlive)
                 {
                     head = OleDbTransaction.TransactionUpdate(head);
@@ -817,9 +818,9 @@ namespace System.Data.OleDb
             return null;
         }
 
-        internal Dictionary<string, OleDbPropertyInfo> GetPropertyInfo(Guid[] propertySets)
+        internal Dictionary<string, OleDbPropertyInfo>? GetPropertyInfo(Guid[] propertySets)
         {
-            Dictionary<string, OleDbPropertyInfo> properties = null;
+            Dictionary<string, OleDbPropertyInfo>? properties = null;
 
             if (null == propertySets)
             {

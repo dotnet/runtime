@@ -38,14 +38,13 @@
           DependsOnTargets="ConvertItems"
           BeforeTargets="GetPackageFiles">
     <ItemGroup>
-      <RuntimeFile Include="@(File->HasMetadata('TargetPath'))" />
+      <RuntimeFile Include="@(File->HasMetadata('TargetPath'))" Exclude="$(PackageIconFullPath)" />
       <File Remove="@(RuntimeFile)" />
     </ItemGroup>
 
     <PropertyGroup>
       <TargetOSComponent>unix</TargetOSComponent>
       <TargetOSComponent Condition="'$(TargetOS)' == 'Windows_NT'">win</TargetOSComponent>
-      <TargetSpec>$(TargetOSComponent)-$(TargetArchitecture)</TargetSpec>
     </PropertyGroup>
 
     <ItemGroup>
@@ -54,8 +53,14 @@
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)ILCompiler*.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)Microsoft.DiaSymReader.dll" />
       <Crossgen2File Include="$(CoreCLRCrossgen2Dir)System.CommandLine.dll" />
-      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface$(LibraryFileExtension)" />
-      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit-$(TargetSpec)$(LibraryFileExtension)" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)jitinterface_$(TargetArchitecture)$(LibraryFileExtension)" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_win_x86_$(TargetArchitecture)$(LibraryFileExtension)" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_win_arm_$(TargetArchitecture)$(LibraryFileExtension)" />
+      <Crossgen2File Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_unix_arm_$(TargetArchitecture)$(LibraryFileExtension)" />
+      <Crossgen2File Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_win_x64_$(TargetArchitecture)$(LibraryFileExtension)" />
+      <Crossgen2File Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_win_arm64_$(TargetArchitecture)$(LibraryFileExtension)" />
+      <Crossgen2File Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_unix_x64_$(TargetArchitecture)$(LibraryFileExtension)" />
+      <Crossgen2File Condition="'$(TargetArchitecture)' == 'arm64' or  '$(TargetArchitecture)' == 'x64'" Include="$(CoreCLRCrossgen2Dir)$(LibraryFilePrefix)clrjit_unix_arm64_$(TargetArchitecture)$(LibraryFileExtension)" />
       <!-- Include the native and managed files from the Microsoft.NETCore.App shared framework -->
       <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/native' and '%(RuntimeFile.Extension)' != '$(StaticLibraryFileExtension)'" />
       <Crossgen2File Include="@(RuntimeFile)" Condition="'%(RuntimeFile.TargetPath)' == 'runtimes/$(PackageRID)/lib/$(NetCoreAppCurrent)'" />
@@ -87,9 +92,19 @@
     </MSBuild>
 
     <ItemGroup>
-      <File Include="@(Crossgen2File)">
+      <!-- Avoid having two copies of System.Private.CoreLib.ni.pdb in the same directory -->
+      <Crossgen2File Update="@(Crossgen2File)" SavedIdentity="%(Identity)" />
+      <Crossgen2FileDistinct Include="@(Crossgen2File->'%(Filename)%(Extension)'->Distinct())" />
+
+      <File Include="@(Crossgen2FileDistinct->'%(SavedIdentity)')" RemoveMetadata="SavedIdentity">
         <TargetPath>tools</TargetPath>
       </File>
+      <!-- 
+        System.Private.CoreLib's R2R pdb ends up in two locations (CoreCLR and the depproj output).
+        Remove them here and let the symbol file location infra find exactly one.
+      -->
+      <CoreLibSymbolFile Include="@(Crossgen2File)" Condition="'%(FileName)%(Extension)' == 'System.Private.CoreLib.ni.pdb'" />
+      <File Remove="@(CoreLibSymbolFile)" />
     </ItemGroup>
 
   </Target>

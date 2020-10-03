@@ -74,7 +74,7 @@ namespace System.Globalization
             }
         }
 
-        private static int NlsIndexOfOrdinalCore(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase, bool fromBeginning)
+        internal static int NlsIndexOfOrdinalCore(ReadOnlySpan<char> source, ReadOnlySpan<char> value, bool ignoreCase, bool fromBeginning)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
@@ -86,7 +86,7 @@ namespace System.Globalization
             return FindStringOrdinal(positionFlag, source, value, ignoreCase);
         }
 
-        private static int NlsLastIndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
+        internal static int NlsLastIndexOfOrdinalCore(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
@@ -181,7 +181,7 @@ namespace System.Globalization
             }
         }
 
-        private static unsafe int NlsCompareStringOrdinalIgnoreCase(ref char string1, int count1, ref char string2, int count2)
+        internal static unsafe int NlsCompareStringOrdinalIgnoreCase(ref char string1, int count1, ref char string2, int count2)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
@@ -317,7 +317,7 @@ namespace System.Globalization
             return FindString(positionFlag | (uint)GetNativeCompareFlags(options), source, target, matchLengthPtr);
         }
 
-        private unsafe bool NlsStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options)
+        private unsafe bool NlsStartsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> prefix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
@@ -325,10 +325,20 @@ namespace System.Globalization
             Debug.Assert(!prefix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            return FindString(FIND_STARTSWITH | (uint)GetNativeCompareFlags(options), source, prefix, null) >= 0;
+            int idx = FindString(FIND_STARTSWITH | (uint)GetNativeCompareFlags(options), source, prefix, matchLengthPtr);
+            if (idx >= 0)
+            {
+                if (matchLengthPtr != null)
+                {
+                    *matchLengthPtr += idx; // account for chars we skipped at the front of the string
+                }
+                return true;
+            }
+
+            return false;
         }
 
-        private unsafe bool NlsEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options)
+        private unsafe bool NlsEndsWith(ReadOnlySpan<char> source, ReadOnlySpan<char> suffix, CompareOptions options, int* matchLengthPtr)
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
@@ -336,7 +346,17 @@ namespace System.Globalization
             Debug.Assert(!suffix.IsEmpty);
             Debug.Assert((options & (CompareOptions.Ordinal | CompareOptions.OrdinalIgnoreCase)) == 0);
 
-            return FindString(FIND_ENDSWITH | (uint)GetNativeCompareFlags(options), source, suffix, null) >= 0;
+            int idx = FindString(FIND_ENDSWITH | (uint)GetNativeCompareFlags(options), source, suffix, pcchFound: null);
+            if (idx >= 0)
+            {
+                if (matchLengthPtr != null)
+                {
+                    *matchLengthPtr = source.Length - idx; // all chars from idx to the end of the string are consumed
+                }
+                return true;
+            }
+
+            return false;
         }
 
         private const uint LCMAP_SORTKEY = 0x00000400;

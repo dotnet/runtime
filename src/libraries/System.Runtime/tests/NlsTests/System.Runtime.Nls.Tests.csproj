@@ -4,6 +4,7 @@
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT</TargetFrameworks>
+    <NoWarn>$(NoWarn),SYSLIB0013</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\Helpers.cs"

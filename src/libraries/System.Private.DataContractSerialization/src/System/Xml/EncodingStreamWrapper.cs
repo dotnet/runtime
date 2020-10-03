@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.Serialization; // For SR
 using System.Text;
@@ -36,21 +38,21 @@ namespace System.Xml
         private static readonly byte[] s_encodingUnicodeBE = new byte[] { (byte)'u', (byte)'t', (byte)'f', (byte)'-', (byte)'1', (byte)'6', (byte)'b', (byte)'e' };
 
         private SupportedEncoding _encodingCode;
-        private Encoding _encoding;
-        private readonly Encoder _enc;
-        private readonly Decoder _dec;
+        private Encoding? _encoding;
+        private readonly Encoder? _enc;
+        private readonly Decoder? _dec;
         private readonly bool _isReading;
 
         private readonly Stream _stream;
-        private char[] _chars;
-        private byte[] _bytes;
+        private char[]? _chars;
+        private byte[]? _bytes;
         private int _byteOffset;
         private int _byteCount;
 
         private readonly byte[] _byteBuffer = new byte[1];
 
         // Reading constructor
-        public EncodingStreamWrapper(Stream stream, Encoding encoding)
+        public EncodingStreamWrapper(Stream stream, Encoding? encoding)
         {
             try
             {
@@ -111,6 +113,7 @@ namespace System.Xml
             }
         }
 
+        [MemberNotNull(nameof(_encoding))]
         private void SetReadDocumentEncoding(SupportedEncoding e)
         {
             EnsureBuffers();
@@ -145,7 +148,7 @@ namespace System.Xml
                 _ => throw new XmlException(SR.XmlEncodingNotSupported),
             };
 
-        private static SupportedEncoding GetSupportedEncoding(Encoding encoding)
+        private static SupportedEncoding GetSupportedEncoding(Encoding? encoding)
         {
             if (encoding == null)
                 return SupportedEncoding.None;
@@ -185,6 +188,7 @@ namespace System.Xml
             }
         }
 
+        [MemberNotNull(nameof(_bytes))]
         private SupportedEncoding ReadBOMEncoding(bool notOutOfBand)
         {
             int b1 = _stream.ReadByte();
@@ -279,7 +283,7 @@ namespace System.Xml
             count -= _byteCount;
             while (count > 0)
             {
-                int read = _stream.Read(_bytes, _byteOffset + _byteCount, count);
+                int read = _stream.Read(_bytes!, _byteOffset + _byteCount, count);
                 if (read == 0)
                     break;
 
@@ -288,6 +292,8 @@ namespace System.Xml
             }
         }
 
+        [MemberNotNull(nameof(_bytes))]
+        [MemberNotNull(nameof(_chars))]
         private void EnsureBuffers()
         {
             EnsureByteBuffer();
@@ -295,6 +301,7 @@ namespace System.Xml
                 _chars = new char[BufferLength];
         }
 
+        [MemberNotNull(nameof(_bytes))]
         private void EnsureByteBuffer()
         {
             if (_bytes != null)
@@ -439,7 +446,7 @@ namespace System.Xml
             return ch == (byte)' ' || ch == (byte)'\n' || ch == (byte)'\t' || ch == (byte)'\r';
         }
 
-        internal static ArraySegment<byte> ProcessBuffer(byte[] buffer, int offset, int count, Encoding encoding)
+        internal static ArraySegment<byte> ProcessBuffer(byte[] buffer, int offset, int count, Encoding? encoding)
         {
             if (count < 4)
                 throw new XmlException(SR.UnexpectedEndOfFile);
@@ -600,6 +607,9 @@ namespace System.Xml
                     if (_encodingCode == SupportedEncoding.UTF8)
                         return _stream.Read(buffer, offset, count);
 
+                    Debug.Assert(_bytes != null);
+                    Debug.Assert(_chars != null);
+
                     // No more bytes than can be turned into characters
                     _byteOffset = 0;
                     _byteCount = _stream.Read(_bytes, _byteCount, (_chars.Length - 1) * 2);
@@ -612,14 +622,14 @@ namespace System.Xml
                     CleanupCharBreak();
 
                     // Change encoding
-                    int charCount = _encoding.GetChars(_bytes, 0, _byteCount, _chars, 0);
+                    int charCount = _encoding!.GetChars(_bytes, 0, _byteCount, _chars, 0);
                     _byteCount = Encoding.UTF8.GetBytes(_chars, 0, charCount, _bytes, 0);
                 }
 
                 // Give them bytes
                 if (_byteCount < count)
                     count = _byteCount;
-                Buffer.BlockCopy(_bytes, _byteOffset, buffer, offset, count);
+                Buffer.BlockCopy(_bytes!, _byteOffset, buffer, offset, count);
                 _byteOffset += count;
                 _byteCount -= count;
                 return count;
@@ -632,6 +642,8 @@ namespace System.Xml
 
         private void CleanupCharBreak()
         {
+            Debug.Assert(_bytes != null);
+
             int max = _byteOffset + _byteCount;
 
             // Read on 2 byte boundaries
@@ -692,11 +704,14 @@ namespace System.Xml
                 return;
             }
 
+            Debug.Assert(_bytes != null);
+            Debug.Assert(_chars != null);
+
             while (count > 0)
             {
                 int size = _chars.Length < count ? _chars.Length : count;
-                int charCount = _dec.GetChars(buffer, offset, size, _chars, 0, false);
-                _byteCount = _enc.GetBytes(_chars, 0, charCount, _bytes, 0, false);
+                int charCount = _dec!.GetChars(buffer, offset, size, _chars, 0, false);
+                _byteCount = _enc!.GetBytes(_chars, 0, charCount, _bytes, 0, false);
                 _stream.Write(_bytes, 0, _byteCount);
                 offset += size;
                 count -= size;

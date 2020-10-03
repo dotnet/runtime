@@ -14,10 +14,10 @@ namespace System.Runtime.Serialization.Json
         {
         }
 
-        public override object ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson context)
+        public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
-            object obj;
-            string contentMode = jsonReader.GetAttribute(JsonGlobals.typeString);
+            object? obj;
+            string? contentMode = jsonReader.GetAttribute(JsonGlobals.typeString);
 
             switch (contentMode)
             {
@@ -53,7 +53,7 @@ namespace System.Runtime.Serialization.Json
             return obj;
         }
 
-        public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, RuntimeTypeHandle declaredTypeHandle)
+        public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             jsonWriter.WriteAttributeString(null, JsonGlobals.typeString, null, JsonGlobals.objectString);
         }

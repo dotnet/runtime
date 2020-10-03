@@ -27,7 +27,7 @@ namespace System.Data.Common
             int GetOptionsObject(IntPtr ppOptions);
 
             void JoinTransaction(
-                [In, MarshalAs(UnmanagedType.Interface)] object punkTransactionCoord,
+                [In, MarshalAs(UnmanagedType.Interface)] object? punkTransactionCoord,
                 [In] int isoLevel,
                 [In] int isoFlags,
                 [In] IntPtr pOtherOptions);
@@ -35,20 +35,6 @@ namespace System.Data.Common
 
         [DllImport(Interop.Libraries.Kernel32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         internal static extern IntPtr MapViewOfFile(IntPtr hFileMappingObject, int dwDesiredAccess, int dwFileOffsetHigh, int dwFileOffsetLow, IntPtr dwNumberOfBytesToMap);
-
-        // OpenFileMappingA contains a security venerability, in the unicode->ansi conversion
-        // Its possible to spoof the directory and construct ../ sequeences,  See FxCop Warrning
-        // Specify marshaling for pinvoke string arguments
-        [DllImport(Interop.Libraries.Kernel32, CharSet = System.Runtime.InteropServices.CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        //        [DllImport(Interop.Libraries.Kernel32, CharSet=System.Runtime.InteropServices.CharSet.Ansi)]
-        internal static extern IntPtr OpenFileMappingA(int dwDesiredAccess, bool bInheritHandle, [MarshalAs(UnmanagedType.LPStr)] string lpName);
-
-        // CreateFileMappingA contains a security venerability, in the unicode->ansi conversion
-        // Its possible to spoof the directory and construct ../ sequeences,  See FxCop Warrning
-        // Specify marshaling for pinvoke string arguments
-        [DllImport(Interop.Libraries.Kernel32, CharSet = System.Runtime.InteropServices.CharSet.Ansi, BestFitMapping = false, ThrowOnUnmappableChar = true)]
-        //        [DllImport(Interop.Libraries.Kernel32, CharSet=System.Runtime.InteropServices.CharSet.Ansi)]
-        internal static extern IntPtr CreateFileMappingA(IntPtr hFile, IntPtr pAttr, int flProtect, int dwMaximumSizeHigh, int dwMaximumSizeLow, [MarshalAs(UnmanagedType.LPStr)] string lpName);
 
         [DllImport(Interop.Libraries.Kernel32, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Auto)]
         internal static extern bool UnmapViewOfFile(IntPtr lpBaseAddress);

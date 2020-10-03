@@ -28,7 +28,7 @@ namespace System.Threading
             CreateEventCore(initialState, mode, name, out createdNew);
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static EventWaitHandle OpenExisting(string name)
         {
             switch (OpenExistingWorker(name, out EventWaitHandle? result))
@@ -45,7 +45,7 @@ namespace System.Threading
             }
         }
 
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static bool TryOpenExisting(string name, [NotNullWhen(true)] out EventWaitHandle? result) =>
             OpenExistingWorker(name, out result!) == OpenExistingResult.Success;
     }

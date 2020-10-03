@@ -58,15 +58,5 @@ namespace Internal.Cryptography
             }
             return oddParityKey;
         }
-
-        internal static void ConvertIntToByteArray(uint value, byte[] dest)
-        {
-            Debug.Assert(dest != null);
-            Debug.Assert(dest.Length == 4);
-            dest[0] = (byte)((value & 0xFF000000) >> 24);
-            dest[1] = (byte)((value & 0xFF0000) >> 16);
-            dest[2] = (byte)((value & 0xFF00) >> 8);
-            dest[3] = (byte)(value & 0xFF);
-        }
     }
 }

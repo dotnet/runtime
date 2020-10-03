@@ -12,51 +12,7 @@
 **===================================================================*/
 #include <palsuite.h>
 
-/* 
- * Tokens 0 and 1 are events.  Token 2 is the thread.
- */
-#define NUM_TOKENS 3                             
-
-HANDLE hToken[NUM_TOKENS];
-CRITICAL_SECTION CriticalSection;
-
-BOOL CleanupHelper (HANDLE *hArray, DWORD dwIndex)
-{
-    BOOL bCHRet;
-
-    bCHRet = CloseHandle(hArray[dwIndex]);
-    if (!bCHRet)
-    {
-        Trace("PALSUITE ERROR: Unable to execute CloseHandle(%p) during "
-              "clean up.\nGetLastError returned '%u'.\n", hArray[dwIndex],
-              GetLastError());
-    }
-
-    return (bCHRet);
-}
-
-BOOL Cleanup(HANDLE *hArray, DWORD dwIndex)
-{
-    BOOL bCRet;
-    BOOL bCHRet = 0;
-
-    while (--dwIndex > 0)
-    {
-        bCHRet = CleanupHelper(&hArray[0], dwIndex); 
-    }
-   
-    bCRet = CloseHandle(hArray[0]);
-    if (!bCRet)
-    {
-        Trace("PALSUITE ERROR: Unable to execute CloseHandle(%p) during "
-              "clean up.\nGetLastError returned '%u'.\n", hArray[dwIndex],
-              GetLastError());  
-    }
-    
-    return (bCRet&&bCHRet);
-}
-
-DWORD PALAPI Thread(LPVOID lpParam)
+DWORD PALAPI Thread_CriticalSectionFunctions_test7(LPVOID lpParam)
 {
     DWORD dwTRet;
 
@@ -93,7 +49,7 @@ DWORD PALAPI Thread(LPVOID lpParam)
     return 0;
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_CriticalSectionFunctions_test7_paltest_criticalsectionfunctions_test7, "threading/CriticalSectionFunctions/test7/paltest_criticalsectionfunctions_test7")
 {
     DWORD dwThreadId;
     DWORD dwMRet;
@@ -127,7 +83,7 @@ int __cdecl main(int argc, char **argv)
 
     hToken[2] = CreateThread(NULL,
                            0,
-                           &Thread,
+                           &Thread_CriticalSectionFunctions_test7,
                            (LPVOID) NULL,
                            0,
                            &dwThreadId);

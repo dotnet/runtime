@@ -182,6 +182,7 @@ BEGIN
     IDS_EE_NDIRECT_UNSUPPORTED_SIG          "Method's type signature is not PInvoke compatible."
     IDS_EE_COM_UNSUPPORTED_SIG              "Method's type signature is not Interop compatible."
     IDS_EE_COM_UNSUPPORTED_TYPE             "The method returned a COM Variant type that is not Interop compatible."
+    IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED    "Multiple unmanaged calling conventions are specified. Only a single calling convention is supported."
     IDS_EE_NDIRECT_BADNATL                  "Invalid PInvoke or UnmanagedFunctionPointer metadata format."
     IDS_EE_NDIRECT_BADNATL_CALLCONV         "Invalid PInvoke or UnmanagedFunctionPointer calling convention."
     IDS_EE_NDIRECT_BADNATL_VARARGS_CALLCONV "Invalid PInvoke calling convention. Vararg functions must use the cdecl calling convention."

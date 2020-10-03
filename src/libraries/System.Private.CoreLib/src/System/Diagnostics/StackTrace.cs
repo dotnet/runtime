@@ -227,8 +227,8 @@ namespace System.Diagnostics
                     bool methodChanged = false;
                     if (declaringType != null && declaringType.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false))
                     {
-                        isAsync = typeof(IAsyncStateMachine).IsAssignableFrom(declaringType);
-                        if (isAsync || typeof(IEnumerator).IsAssignableFrom(declaringType))
+                        isAsync = declaringType.IsAssignableTo(typeof(IAsyncStateMachine));
+                        if (isAsync || declaringType.IsAssignableTo(typeof(IEnumerator)))
                         {
                             methodChanged = TryResolveStateMachineMethod(ref mb, out declaringType);
                         }

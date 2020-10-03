@@ -18,7 +18,7 @@ namespace System.Data.ProviderBase
         {
         }
 
-        internal WrappedIUnknown(object unknown) : this()
+        internal WrappedIUnknown(object? unknown) : this()
         {
             if (null != unknown)
             {
@@ -44,7 +44,7 @@ namespace System.Data.ProviderBase
         {
             // NOTE: Method, instead of property, to avoid being evaluated at
             // runtime in the debugger.
-            object value = null;
+            object? value = null;
             bool mustRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();
             try

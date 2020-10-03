@@ -39,5 +39,14 @@ namespace System
 
         internal const string BinaryFormatterMessage = "BinaryFormatter serialization is obsolete and should not be used. See https://aka.ms/binaryformatter for more information.";
         internal const string BinaryFormatterDiagId = "SYSLIB0011";
+
+        internal const string CodeBaseMessage = "Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location instead.";
+        internal const string CodeBaseDiagId = "SYSLIB0012";
+
+        internal const string EscapeUriStringMessage = "Uri.EscapeUriString can corrupt the Uri string in some cases. Consider using Uri.EscapeDataString for query string components instead.";
+        internal const string EscapeUriStringDiagId = "SYSLIB0013";
+
+        internal const string WebRequestMessage = "Use HttpClient instead.";
+        internal const string WebRequestDiagId = "SYSLIB0014";
     }
 }

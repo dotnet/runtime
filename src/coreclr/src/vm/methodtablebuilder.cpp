@@ -565,9 +565,9 @@ MethodTableBuilder::LoadApproxInterfaceMap()
             bmtGenerics->Debug_GetTypicalMethodTable()->Debug_HasInjectedInterfaceDuplicates();
 
         if (GetModule() == g_pObjectClass->GetModule())
-        {   // mscorlib has some weird hardcoded information about interfaces (e.g.
+        {   // CoreLib has some weird hardcoded information about interfaces (e.g.
             // code:CEEPreloader::ApplyTypeDependencyForSZArrayHelper), so we don't inject duplicates into
-            // mscorlib types
+            // CoreLib types
             bmtInterface->dbg_fShouldInjectInterfaceDuplicates = FALSE;
         }
     }
@@ -1350,7 +1350,7 @@ MethodTableBuilder::BuildMethodTableThrowing(
     ));
 #endif // _DEBUG
 
-    // If this is mscorlib, then don't perform some sanity checks on the layout
+    // If this is CoreLib, then don't perform some sanity checks on the layout
     bmtProp->fNoSanityChecks = pModule->IsSystem() ||
 #ifdef FEATURE_READYTORUN
         // No sanity checks for ready-to-run compiled images if possible
@@ -2410,6 +2410,7 @@ MethodTableBuilder::EnumerateMethodImpls()
 
                         compatibleSignatures = TRUE;
                         bmtMetaData->rgMethodImplTokens[i].fRequiresCovariantReturnTypeChecking = true;
+                        bmtMetaData->fHasCovariantOverride = true;
                     }
                 }
 
@@ -3003,7 +3004,7 @@ MethodTableBuilder::EnumerateClassMethods()
             }
             //@GENERICS:
             // Generic methods or methods in generic classes
-            // may not be part of a COM Import class, PInvoke, internal call outside mscorlib.
+            // may not be part of a COM Import class, PInvoke, internal call outside CoreLib.
             if ((bmtGenerics->GetNumGenericArgs() != 0 || numGenericMethodArgs != 0) &&
                 (
 #ifdef FEATURE_COMINTEROP
@@ -3025,8 +3026,9 @@ MethodTableBuilder::EnumerateClassMethods()
             }
 
             // Check the appearance of covariant and contravariant in the method signature
-            // Note that variance is only supported for interfaces
-            if (bmtGenerics->pVarianceInfo != NULL)
+            // Note that variance is only supported for interfaces, and these rules are not
+            // checked for static methods as they cannot be called variantly.
+            if ((bmtGenerics->pVarianceInfo != NULL) && !IsMdStatic(dwMemberAttrs))
             {
                 SigPointer sp(pMemberSignature, cMemberSignature);
                 ULONG callConv;
@@ -3513,7 +3515,7 @@ VOID    MethodTableBuilder::AllocateWorkingSlotTables()
         // This is broken because
         // (a) g_pObjectClass->FindMethod("Equals", &gsig_IM_Obj_RetBool); will return
         //      the EqualsValue method
-        // (b) When mscorlib has been preloaded (and thus the munge already done
+        // (b) When CoreLib has been preloaded (and thus the munge already done
         //      ahead of time), we cannot easily find both methods
         //      to compute EqualsAddr & EqualsSlot
         //
@@ -4870,15 +4872,15 @@ MethodTableBuilder::ValidateMethods()
 
     Signature sig;
 
-    sig = MscorlibBinder::GetSignature(&gsig_SM_RetVoid);
+    sig = CoreLibBinder::GetSignature(&gsig_SM_RetVoid);
 
-    MethodSignature cctorSig(MscorlibBinder::GetModule(),
+    MethodSignature cctorSig(CoreLibBinder::GetModule(),
                              COR_CCTOR_METHOD_NAME,
                              sig.GetRawSig(), sig.GetRawSigLen());
 
-    sig = MscorlibBinder::GetSignature(&gsig_IM_RetVoid);
+    sig = CoreLibBinder::GetSignature(&gsig_IM_RetVoid);
 
-    MethodSignature defaultCtorSig(MscorlibBinder::GetModule(),
+    MethodSignature defaultCtorSig(CoreLibBinder::GetModule(),
                                    COR_CTOR_METHOD_NAME,
                                    sig.GetRawSig(), sig.GetRawSigLen());
 
@@ -5589,6 +5591,19 @@ MethodTableBuilder::ProcessMethodImpls()
 {
     STANDARD_VM_CONTRACT;
 
+    if (bmtMetaData->fHasCovariantOverride)
+    {
+        GetHalfBakedClass()->SetHasCovariantOverride();
+    }
+    if (GetParentMethodTable() != NULL)
+    {
+        EEClass* parentClass = GetParentMethodTable()->GetClass();
+        if (parentClass->HasCovariantOverride())
+            GetHalfBakedClass()->SetHasCovariantOverride();
+        if (parentClass->HasVTableMethodImpl())
+            GetHalfBakedClass()->SetHasVTableMethodImpl();
+    }
+
     if (bmtMethod->dwNumberMethodImpls == 0)
         return;
 
@@ -5680,6 +5695,7 @@ MethodTableBuilder::ProcessMethodImpls()
                         }
 
                         Substitution *pDeclSubst = &bmtMetaData->pMethodDeclSubsts[m];
+                        
                         MethodTable * pDeclMT = NULL;
                         MethodSignature declSig(GetModule(), szName, pSig, cbSig, NULL);
 
@@ -5784,6 +5800,7 @@ MethodTableBuilder::ProcessMethodImpls()
                             }
                             else
                             {
+                                GetHalfBakedClass()->SetHasVTableMethodImpl();
                                 declMethod = FindDeclMethodOnClassInHierarchy(it, pDeclMT, declSig);
                             }
 
@@ -8747,8 +8764,10 @@ MethodTableBuilder::HandleGCForExplicitLayout()
         if (bmtParent->NumParentPointerSeries != 0)
         {
             size_t ParentGCSize = CGCDesc::ComputeSize(bmtParent->NumParentPointerSeries);
-            memcpy( (PVOID) (((BYTE*) pMT) - ParentGCSize),  (PVOID) (((BYTE*) GetParentMethodTable()) - ParentGCSize), ParentGCSize - sizeof(UINT) );
-
+            memcpy( (PVOID) (((BYTE*) pMT) - ParentGCSize),
+                    (PVOID) (((BYTE*) GetParentMethodTable()) - ParentGCSize),
+                    ParentGCSize - sizeof(size_t)   // sizeof(size_t) is the NumSeries count
+                  );
         }
 
         UINT32 dwInstanceSliceOffset = AlignUp(HasParent() ? GetParentMethodTable()->GetNumInstanceFieldBytes() : 0, TARGET_POINTER_SIZE);
@@ -8761,6 +8780,16 @@ MethodTableBuilder::HandleGCForExplicitLayout()
 
             pSeries->SetSeriesSize( (size_t) bmtGCSeries->pSeries[i].len - (size_t) pMT->GetBaseSize() );
             pSeries->SetSeriesOffset(bmtGCSeries->pSeries[i].offset + OBJECT_SIZE + dwInstanceSliceOffset);
+            pSeries++;
+        }
+
+        // Adjust the inherited series - since the base size has increased by "# new field instance bytes", we need to
+        // subtract that from all the series (since the series always has BaseSize subtracted for it - see gcdesc.h)
+        CGCDescSeries *pHighest = CGCDesc::GetCGCDescFromMT(pMT)->GetHighestSeries();
+        while (pSeries <= pHighest)
+        {
+            CONSISTENCY_CHECK(CheckPointer(GetParentMethodTable()));
+            pSeries->SetSeriesSize( pSeries->GetSeriesSize() - ((size_t) pMT->GetBaseSize() - (size_t) GetParentMethodTable()->GetBaseSize()) );
             pSeries++;
         }
     }
@@ -9559,7 +9588,7 @@ void MethodTableBuilder::CheckForSystemTypes()
 #ifdef CROSSGEN_COMPILE
                 // Disable AOT compiling for the SIMD hardware intrinsic types. These types require special
                 // ABI handling as they represent fundamental data types (__m64, __m128, and __m256) and not
-                // aggregate or union types. See https://github.com/dotnet/coreclr/issues/15943
+                // aggregate or union types. See https://github.com/dotnet/runtime/issues/9578
                 //
                 // Once they are properly handled according to the ABI requirements, we can remove this check
                 // and allow them to be used in crossgen/AOT scenarios.
@@ -10085,10 +10114,12 @@ MethodTableBuilder::SetupMethodTable2(
 
     EEClass *pClass = GetHalfBakedClass();
 
-    DWORD cbDict = bmtGenerics->HasInstantiation()
-                   ?  DictionaryLayout::GetDictionarySizeFromLayout(
-                          bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout())
-                   : 0;
+    DWORD cbDictSlotSize = 0;
+    DWORD cbDictAllocSize = 0;
+    if (bmtGenerics->HasInstantiation())
+    {
+        cbDictAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(bmtGenerics->GetNumGenericArgs(), pClass->GetDictionaryLayout(), &cbDictSlotSize);
+    }
 
 #ifdef FEATURE_COLLECTIBLE_TYPES
     BOOL fCollectible = pLoaderModule->IsCollectible();
@@ -10121,7 +10152,7 @@ MethodTableBuilder::SetupMethodTable2(
                                    dwGCSize,
                                    bmtInterface->dwInterfaceMapSize,
                                    bmtGenerics->numDicts,
-                                   cbDict,
+                                   cbDictAllocSize,
                                    GetParentMethodTable(),
                                    GetClassLoader(),
                                    bmtAllocator,
@@ -10341,7 +10372,7 @@ MethodTableBuilder::SetupMethodTable2(
 
             PTR_Dictionary pDictionarySlots = pMT->GetPerInstInfo()[bmtGenerics->numDicts - 1].GetValue();
             DWORD* pSizeSlot = (DWORD*)(pDictionarySlots + bmtGenerics->GetNumGenericArgs());
-            *pSizeSlot = cbDict;
+            *pSizeSlot = cbDictSlotSize;
         }
     }
 
@@ -10380,7 +10411,6 @@ MethodTableBuilder::SetupMethodTable2(
 
     if (GetModule()->IsSystem())
     {
-        // we are in mscorlib
         CheckForSystemTypes();
     }
 
@@ -11025,7 +11055,7 @@ VOID MethodTableBuilder::CheckForSpecialTypes()
     IMDInternalImport *pMDImport = pModule->GetMDImport();
 
     // Check to see if this type is a managed standard interface. All the managed
-    // standard interfaces live in mscorlib.dll so checking for that first
+    // standard interfaces live in CoreLib so checking for that first
     // makes the strcmp that comes afterwards acceptable.
     if (pModule->IsSystem())
     {
@@ -11572,6 +11602,29 @@ BOOL MethodTableBuilder::ChangesImplementationOfVirtualSlot(SLOT_INDEX idx)
         // methods.
         if (!fChangesImplementation && (ParentImpl.GetSlotIndex() != idx))
             fChangesImplementation = TRUE;
+
+        // If the current vtable slot is MethodImpl, is it possible that it will be updated by
+        // the ClassLoader::PropagateCovariantReturnMethodImplSlots.
+        if (!fChangesImplementation && VTImpl.GetMethodDesc()->IsMethodImpl())
+        {
+            // Note: to know exactly whether the slot will be updated or not, we would need to check the
+            // PreserveBaseOverridesAttribute presence on the current vtable slot and in the worst case
+            // on all of its ancestors. This is expensive, so we don't do that check here and accept
+            // the fact that we get some false positives and end up sharing less vtable chunks.
+
+            // Search the previous slots in the parent vtable for the same implementation. If it exists and it was
+            // overriden, the ClassLoader::PropagateCovariantReturnMethodImplSlots will propagate the change to the current
+            // slot (idx), so the implementation of it will change.
+            MethodDesc* pParentMD = ParentImpl.GetMethodDesc();
+            for (SLOT_INDEX i = 0; i < idx; i++)
+            {
+                if ((*bmtParent)[i].Impl().GetMethodDesc() == pParentMD && (*bmtVT)[i].Impl().GetMethodDesc() != pParentMD)
+                {
+                    fChangesImplementation = TRUE;
+                    break;
+                }
+            }
+        }
     }
 
     return fChangesImplementation;

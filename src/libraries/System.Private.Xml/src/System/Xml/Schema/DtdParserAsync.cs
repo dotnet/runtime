@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -1133,7 +1132,7 @@ namespace System.Xml
 
                 // verify if it contains chars valid for public ids
                 int i;
-                if ((i = _xmlCharType.IsPublicId(publicId)) >= 0)
+                if ((i = XmlCharType.IsPublicId(publicId)) >= 0)
                 {
                     ThrowInvalidChar(_curPos - 1 - publicId.Length + i, publicId, i);
                 }
@@ -1235,7 +1234,7 @@ namespace System.Xml
                         {
                             goto ReadData;
                         }
-                        if (!_xmlCharType.IsWhiteSpace(_chars[_curPos + 1]))
+                        if (!XmlCharType.IsWhiteSpace(_chars[_curPos + 1]))
                         {
                             if (IgnoreEntityReferences)
                             {
@@ -1865,7 +1864,7 @@ namespace System.Xml
 
             while (true)
             {
-                while (_xmlCharType.IsAttributeValueChar(_chars[_curPos]) && _chars[_curPos] != '%')
+                while (XmlCharType.IsAttributeValueChar(_chars[_curPos]) && _chars[_curPos] != '%')
                 {
                     _curPos++;
                 }
@@ -2243,7 +2242,7 @@ namespace System.Xml
                         }
                         if (_chars[_curPos + 1] != 'C' || _chars[_curPos + 2] != 'L' ||
                              _chars[_curPos + 3] != 'U' || _chars[_curPos + 4] != 'D' ||
-                             _chars[_curPos + 5] != 'E' || _xmlCharType.IsNameSingleChar(_chars[_curPos + 6]))
+                             _chars[_curPos + 5] != 'E' || XmlCharType.IsNameSingleChar(_chars[_curPos + 6]))
                         {
                             goto default;
                         }
@@ -2254,7 +2253,7 @@ namespace System.Xml
                     case 'G':
                         if (_chars[_curPos + 1] != 'N' || _chars[_curPos + 2] != 'O' ||
                              _chars[_curPos + 3] != 'R' || _chars[_curPos + 4] != 'E' ||
-                             _xmlCharType.IsNameSingleChar(_chars[_curPos + 5]))
+                             XmlCharType.IsNameSingleChar(_chars[_curPos + 5]))
                         {
                             goto default;
                         }
@@ -2281,7 +2280,7 @@ namespace System.Xml
             // skip ignored part
             while (true)
             {
-                while (_xmlCharType.IsTextChar(_chars[_curPos]) && _chars[_curPos] != ']')
+                while (XmlCharType.IsTextChar(_chars[_curPos]) && _chars[_curPos] != ']')
                 {
                     _curPos++;
                 }
@@ -2408,7 +2407,7 @@ namespace System.Xml
 
             while (true)
             {
-                if (_xmlCharType.IsStartNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
+                if (XmlCharType.IsStartNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
                 {
                     _curPos++;
                 }
@@ -2431,7 +2430,7 @@ namespace System.Xml
             ContinueName:
                 while (true)
                 {
-                    if (_xmlCharType.IsNCNameSingleChar(_chars[_curPos]))
+                    if (XmlCharType.IsNCNameSingleChar(_chars[_curPos]))
                     {
                         _curPos++;
                     }
@@ -2495,7 +2494,7 @@ namespace System.Xml
             {
                 while (true)
                 {
-                    if (_xmlCharType.IsNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
+                    if (XmlCharType.IsNCNameSingleChar(_chars[_curPos]) || _chars[_curPos] == ':')
                     {
                         _curPos++;
                     }

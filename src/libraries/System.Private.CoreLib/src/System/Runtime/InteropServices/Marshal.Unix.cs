@@ -61,5 +61,143 @@ namespace System.Runtime.InteropServices
             int actualByteLength = Encoding.UTF8.GetBytes(chars, bytes);
             bytes[actualByteLength] = 0;
         }
+
+        public static IntPtr AllocHGlobal(IntPtr cb)
+        {
+            nuint cbNative = (nuint)(nint)cb;
+
+            // Avoid undefined malloc behavior by always allocating at least one byte
+            IntPtr pNewMem = Interop.Sys.MemAlloc((cbNative != 0) ? cbNative : 1);
+            if (pNewMem == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            return pNewMem;
+        }
+
+        public static void FreeHGlobal(IntPtr hglobal)
+        {
+            if (hglobal != IntPtr.Zero)
+            {
+                Interop.Sys.MemFree(hglobal);
+            }
+        }
+
+        public static IntPtr ReAllocHGlobal(IntPtr pv, IntPtr cb)
+        {
+            nuint cbNative = (nuint)(nint)cb;
+
+            if (cbNative == 0)
+            {
+                // ReAllocHGlobal never returns null, even for 0 size (different from standard C/C++ realloc)
+
+                // Avoid undefined realloc behavior by always allocating at least one byte
+                cbNative = 1;
+            }
+
+            IntPtr pNewMem = Interop.Sys.MemReAlloc(pv, cbNative);
+            if (pNewMem == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return pNewMem;
+        }
+
+        public static IntPtr AllocCoTaskMem(int cb) => AllocHGlobal((nint)(uint)cb);
+
+        public static void FreeCoTaskMem(IntPtr ptr) => FreeHGlobal(ptr);
+
+        public static IntPtr ReAllocCoTaskMem(IntPtr pv, int cb)
+        {
+            nuint cbNative = (nuint)(uint)cb;
+
+            if (cbNative == 0)
+            {
+                if (pv != IntPtr.Zero)
+                {
+                    Interop.Sys.MemFree(pv);
+                    return IntPtr.Zero;
+                }
+                // Avoid undefined realloc behavior by always allocating at least one byte
+                cbNative = 1;
+            }
+
+            IntPtr pNewMem = Interop.Sys.MemReAlloc(pv, cbNative);
+            if (pNewMem == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+            return pNewMem;
+        }
+
+        internal static unsafe IntPtr AllocBSTR(int length)
+        {
+            // SysAllocString on Windows aligns the memory block size up
+            const nuint WIN32_ALLOC_ALIGN = 15;
+
+            ulong cbNative = 2 * (ulong)(uint)length + (uint)sizeof(IntPtr) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
+            if (cbNative > uint.MaxValue)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            IntPtr p = Interop.Sys.MemAlloc((nuint)cbNative & ~WIN32_ALLOC_ALIGN);
+            if (p == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            IntPtr s = p + sizeof(IntPtr);
+            *(((uint*)s) - 1) = (uint)(length * sizeof(char));
+
+            return s;
+        }
+
+        internal static unsafe IntPtr AllocBSTRByteLen(uint length)
+        {
+            // SysAllocString on Windows aligns the memory block size up
+            const nuint WIN32_ALLOC_ALIGN = 15;
+
+            ulong cbNative = (ulong)(uint)length + (uint)sizeof(IntPtr) + (uint)sizeof(char) + WIN32_ALLOC_ALIGN;
+            if (cbNative > uint.MaxValue)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            IntPtr p = Interop.Sys.MemAlloc((nuint)cbNative & ~WIN32_ALLOC_ALIGN);
+            if (p == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+
+            IntPtr s = p + sizeof(IntPtr);
+            *(((uint*)s) - 1) = (uint)length;
+
+            // NULL-terminate with both a narrow and wide zero.
+            *(byte*)((byte*)s + length) = (byte)'\0';
+            *(short*)((byte*)s + ((length + 1) & ~1)) = 0;
+
+            return s;
+        }
+
+        public static unsafe void FreeBSTR(IntPtr ptr)
+        {
+            if (ptr != IntPtr.Zero)
+            {
+                Interop.Sys.MemFree(ptr - sizeof(IntPtr));
+            }
+        }
+
+        internal static Type? GetTypeFromProgID(string progID, string? server, bool throwOnError)
+        {
+            if (progID == null)
+                throw new ArgumentNullException(nameof(progID));
+
+            if (throwOnError)
+                throw new PlatformNotSupportedException(SR.PlatformNotSupported_ComInterop);
+
+            return null;
+        }
     }
 }

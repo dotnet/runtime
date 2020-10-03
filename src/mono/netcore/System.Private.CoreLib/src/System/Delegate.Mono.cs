@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // Authors:
 //   Miguel de Icaza (miguel@ximian.com)
@@ -177,7 +178,7 @@ namespace System
                 return null;
             }
 
-            return CreateDelegate_internal(type, null, info, throwOnBindFailure);
+            return CreateDelegate_internal(type, target, info, throwOnBindFailure);
         }
 
         [RequiresUnreferencedCode("The target method might be removed")]
@@ -250,7 +251,7 @@ namespace System
             return null;
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Invoke method is never removed from delegates")]
         private static bool IsMatchingCandidate(Type type, object? target, MethodInfo method, bool allowClosed, out DelegateData? delegateData)
         {

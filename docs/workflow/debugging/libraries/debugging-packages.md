@@ -14,13 +14,13 @@ Debugging CoreFX build issues
 
 (This documentation is work in progress.)
 
-I found the following process to help when investigating some of the build issues caused by incorrect packaging. 
+I found the following process to help when investigating some of the build issues caused by incorrect packaging.
 
-To quickly validate if a given project compiles on all supported configurations use `dotnet build /t:RebuildAll`. This applies for running tests as well. For more information, see [Building individual libraries](../../building/libraries/README.md#building-individual-libraries) 
+To quickly validate if a given project compiles on all supported configurations use `dotnet build /t:RebuildAll`. This applies for running tests as well. For more information, see [Building individual libraries](../../building/libraries/README.md#building-individual-libraries)
 
 Assuming the current directory is `\src\contractname\`:
 
-1. Build the `\ref` folder: `dotnet build` 
+1. Build the `\ref` folder: `dotnet build`
 
 
 Check the logs for output such as:
@@ -58,7 +58,7 @@ Use the same technique above to ensure that the binaries include the correct imp
 
 Ensure that all Build Pivots are actually being built. This should build all .\ref and .\src variations as well as actually creating the NuGet packages.
 
-Verify that the contents of the nuspec as well as the actual package is correct. You can find the packages by searching for the following pattern in the msbuild output: 
+Verify that the contents of the nuspec as well as the actual package is correct. You can find the packages by searching for the following pattern in the msbuild output:
 
 ```
 GetPkgProjPackageDependencies:

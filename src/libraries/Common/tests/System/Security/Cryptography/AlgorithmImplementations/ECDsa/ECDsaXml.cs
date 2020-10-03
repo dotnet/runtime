@@ -5,6 +5,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.EcDsa.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public partial class ECDsaXml : ECDsaTestsBase
     {
         [Fact]

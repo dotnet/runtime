@@ -36,10 +36,12 @@ namespace System.ComponentModel.Composition
 
     public class AssemblyCatalogTestsHelper
     {
+#pragma warning disable SYSLIB0012
         protected string GetAttributedAssemblyCodeBase()
         {
             return Assembly.GetExecutingAssembly().CodeBase;
         }
+#pragma warning restore SYSLIB0012
 
         protected Assembly GetAttributedAssembly()
         {
@@ -74,7 +76,9 @@ namespace System.ComponentModel.Composition
 
             foreach (var e in expectations)
             {
+#pragma warning disable SYSLIB0012
                 var catalog = catalogCreator(e.CodeBase);
+#pragma warning restore SYSLIB0012
 
                 Assert.Same(e, catalog.Assembly);
             }
@@ -694,6 +698,7 @@ namespace System.ComponentModel.Composition
             });
         }
 
+#pragma warning disable SYSLIB0012
         [Fact]
         public void Constructor8_NullDefinitionOriginArgument_ShouldThrowArgumentNull()
         {
@@ -702,6 +707,7 @@ namespace System.ComponentModel.Composition
                 return new AssemblyCatalog(GetAttributedAssembly().CodeBase, new AssemblyCatalogTestsReflectionContext(), dO);
             });
         }
+#pragma warning restore SYSLIB0012
 
         //=========================================================================================================================================
         //  Test cases for Assemblies decorated with the CatalogDiscoveryAttribute

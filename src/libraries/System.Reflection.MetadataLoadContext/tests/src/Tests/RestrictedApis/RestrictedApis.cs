@@ -12,10 +12,12 @@ namespace System.Reflection.Tests
         {
             using (MetadataLoadContext lc = new MetadataLoadContext(new EmptyCoreMetadataAssemblyResolver()))
             {
-                Assembly a = lc.LoadFromAssemblyPath(typeof(TopLevelType).Assembly.Location);
+                Assembly a = lc.LoadFromAssemblyPath(AssemblyPathHelper.GetAssemblyLocation(typeof(TopLevelType).Assembly));
 
+#pragma warning disable SYSLIB0012
                 Assert.Throws<NotSupportedException>(() => a.CodeBase);
                 Assert.Throws<NotSupportedException>(() => a.EscapedCodeBase);
+#pragma warning restore SYSLIB0012
                 Assert.Throws<NotSupportedException>(() => a.GetObjectData(null, default));
                 Assert.Throws<NotSupportedException>(() => a.GetSatelliteAssembly(null));
                 Assert.Throws<NotSupportedException>(() => a.GetSatelliteAssembly(null, null));

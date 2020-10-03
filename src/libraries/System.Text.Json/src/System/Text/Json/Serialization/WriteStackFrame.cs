@@ -68,6 +68,9 @@ namespace System.Text.Json
         /// </remarks>
         public JsonPropertyInfo? PolymorphicJsonPropertyInfo;
 
+        // Whether to use custom number handling.
+        public JsonNumberHandling? NumberHandling;
+
         public void EndDictionaryElement()
         {
             PropertyState = StackFramePropertyState.None;

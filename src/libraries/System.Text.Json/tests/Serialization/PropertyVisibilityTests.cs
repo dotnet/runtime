@@ -3,8 +3,8 @@
 
 using System.Collections.Generic;
 using System.Collections.Concurrent;
-using Xunit;
 using System.Numerics;
+using Xunit;
 
 namespace System.Text.Json.Serialization.Tests
 {
@@ -2366,6 +2366,190 @@ namespace System.Text.Json.Serialization.Tests
             [JsonInclude]
             [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public Point_2D_Struct MyBadMember { get; set; }
+        }
+
+        private interface IUseCustomConverter { }
+
+        [JsonConverter(typeof(MyCustomConverter))]
+        private struct MyValueTypeWithProperties : IUseCustomConverter
+        {
+            public int PrimitiveValue { get; set; }
+            public object RefValue { get; set; }
+        }
+
+        private class MyCustomConverter : JsonConverter<IUseCustomConverter>
+        {
+            public override bool CanConvert(Type typeToConvert)
+            {
+                return typeof(IUseCustomConverter).IsAssignableFrom(typeToConvert);
+            }
+
+            public override IUseCustomConverter Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) =>
+                throw new NotImplementedException();
+
+            public override void Write(Utf8JsonWriter writer, IUseCustomConverter value, JsonSerializerOptions options)
+            {
+                MyValueTypeWithProperties obj = (MyValueTypeWithProperties)value;
+                writer.WriteNumberValue(obj.PrimitiveValue + 100);
+                // Ignore obj.RefValue
+            }
+        }
+
+        private class MyClassWithValueType
+        {
+            public MyClassWithValueType() { }
+
+            public MyValueTypeWithProperties Value { get; set; }
+        }
+
+        [Fact]
+        public static void JsonIgnoreCondition_WhenWritingDefault_OnValueTypeWithCustomConverter()
+        {
+            var obj = new MyClassWithValueType();
+
+            // Baseline without custom options.
+            Assert.True(EqualityComparer<MyValueTypeWithProperties>.Default.Equals(default, obj.Value));
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Equal("{\"Value\":100}", json);
+
+            var options = new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
+            };
+
+            // Verify ignored.
+            Assert.True(EqualityComparer<MyValueTypeWithProperties>.Default.Equals(default, obj.Value));
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("{}", json);
+
+            // Change a primitive value so it's no longer a default value.
+            obj.Value = new MyValueTypeWithProperties { PrimitiveValue = 1 };
+            Assert.False(EqualityComparer<MyValueTypeWithProperties>.Default.Equals(default, obj.Value));
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("{\"Value\":101}", json);
+
+            // Change reference value so it's no longer a default value.
+            obj.Value = new MyValueTypeWithProperties { RefValue = 1 };
+            Assert.False(EqualityComparer<MyValueTypeWithProperties>.Default.Equals(default, obj.Value));
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("{\"Value\":100}", json);
+        }
+
+        [Fact]
+        public static void JsonIgnoreCondition_ConverterCalledOnDeserialize()
+        {
+            // Verify converter is called.
+            Assert.Throws<NotImplementedException>(() => JsonSerializer.Deserialize<MyValueTypeWithProperties>("{}"));
+
+            var options = new JsonSerializerOptions
+            {
+                IgnoreNullValues = true
+            };
+
+            Assert.Throws<NotImplementedException>(() => JsonSerializer.Deserialize<MyValueTypeWithProperties>("{}", options));
+        }
+
+        [Fact]
+        public static void JsonIgnoreCondition_WhenWritingNull_OnValueTypeWithCustomConverter()
+        {
+            string json;
+            var obj = new MyClassWithValueType();
+
+            // Baseline without custom options.
+            Assert.True(EqualityComparer<MyValueTypeWithProperties>.Default.Equals(default, obj.Value));
+            json = JsonSerializer.Serialize(obj);
+            Assert.Equal("{\"Value\":100}", json);
+
+            var options = new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+            };
+
+            // Verify not ignored; MyValueTypeWithProperties is not null.
+            Assert.True(EqualityComparer<MyValueTypeWithProperties>.Default.Equals(default, obj.Value));
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("{\"Value\":100}", json);
+        }
+
+        [Fact]
+        public static void JsonIgnoreCondition_WhenWritingDefault_OnRootTypes()
+        {
+            string json;
+            int i = 0;
+            object obj = null;
+
+            // Baseline without custom options.
+            json = JsonSerializer.Serialize(obj);
+            Assert.Equal("null", json);
+
+            json = JsonSerializer.Serialize(i);
+            Assert.Equal("0", json);
+
+            var options = new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
+            };
+
+            // We don't ignore when applied to root types; only properties.
+
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("null", json);
+
+            json = JsonSerializer.Serialize(i, options);
+            Assert.Equal("0", json);
+        }
+
+        private struct MyValueTypeWithBoxedPrimitive
+        {
+            public object BoxedPrimitive { get; set; }
+        }
+
+        [Fact]
+        public static void JsonIgnoreCondition_WhenWritingDefault_OnBoxedPrimitive()
+        {
+            string json;
+
+            MyValueTypeWithBoxedPrimitive obj = new MyValueTypeWithBoxedPrimitive { BoxedPrimitive = 0 };
+
+            // Baseline without custom options.
+            json = JsonSerializer.Serialize(obj);
+            Assert.Equal("{\"BoxedPrimitive\":0}", json);
+
+            var options = new JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault
+            };
+
+            // No check if the boxed object's value type is a default value (0 in this case).
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("{\"BoxedPrimitive\":0}", json);
+
+            obj = new MyValueTypeWithBoxedPrimitive();
+            json = JsonSerializer.Serialize(obj, options);
+            Assert.Equal("{}", json);
+        }
+
+        private class MyClassWithValueTypeInterfaceProperty
+        {
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+            public IInterface MyProp { get; set; }
+
+            public interface IInterface { }
+            public struct MyStruct : IInterface { }
+        }
+
+        [Fact]
+        public static void JsonIgnoreCondition_WhenWritingDefault_OnInterface()
+        {
+            // MyProp should be ignored due to [JsonIgnore].
+            var obj = new MyClassWithValueTypeInterfaceProperty();
+            string json = JsonSerializer.Serialize(obj);
+            Assert.Equal("{}", json);
+
+            // No check if the interface property's value type is a default value.
+            obj = new MyClassWithValueTypeInterfaceProperty { MyProp = new MyClassWithValueTypeInterfaceProperty.MyStruct() };
+            json = JsonSerializer.Serialize(obj);
+            Assert.Equal("{\"MyProp\":{}}", json);
         }
     }
 }

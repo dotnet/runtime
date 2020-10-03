@@ -134,7 +134,6 @@ struct _EventPipeBufferManager_Internal {
 	uint32_t num_buffers_stolen;
 	uint32_t num_buffers_leaked;
 #endif
-	volatile uint32_t write_event_suspending;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BUFFER_MANAGER_GETTER_SETTER)

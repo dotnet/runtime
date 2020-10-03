@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Threading;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using Internal.Runtime.CompilerServices;
 
 namespace System.Runtime.InteropServices
@@ -68,6 +69,7 @@ namespace System.Runtime.InteropServices
     /// <summary>
     /// Class for managing wrappers of COM IUnknown types.
     /// </summary>
+    [SupportedOSPlatform("windows")]
     [CLSCompliant(false)]
     public abstract partial class ComWrappers
     {

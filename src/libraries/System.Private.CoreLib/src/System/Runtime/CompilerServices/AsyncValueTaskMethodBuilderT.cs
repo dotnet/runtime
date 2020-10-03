@@ -364,8 +364,7 @@ namespace System.Runtime.CompilerServices
             /// <summary>If this box is stored in the cache, the next box in the cache.</summary>
             private StateMachineBox<TStateMachine>? _next;
             /// <summary>The state machine itself.</summary>
-            [AllowNull, MaybeNull]
-            public TStateMachine StateMachine = default;
+            public TStateMachine? StateMachine;
 
             /// <summary>Gets a box object to use for an operation.  This may be a reused, pooled object, or it may be new.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)] // only one caller

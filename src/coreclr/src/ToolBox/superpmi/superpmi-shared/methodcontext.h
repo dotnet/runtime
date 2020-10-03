@@ -422,6 +422,12 @@ public:
         DWORDLONG method;
         DWORDLONG delegateCls;
     };
+    struct Agnostic_AllocMethodBlockCounts
+    {
+        DWORDLONG address;
+        DWORD count;
+        DWORD result;
+    };
     struct Agnostic_GetMethodBlockCounts
     {
         DWORD count;
@@ -1168,6 +1174,10 @@ public:
     void dmpGetFieldThreadLocalStoreID(DWORDLONG key, DLD value);
     DWORD repGetFieldThreadLocalStoreID(CORINFO_FIELD_HANDLE field, void** ppIndirection);
 
+    void recAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts, HRESULT result);
+    void dmpAllocMethodBlockCounts(DWORD key, const Agnostic_AllocMethodBlockCounts& value);
+    HRESULT repAllocMethodBlockCounts(ULONG count, ICorJitInfo::BlockCounts** pBlockCounts);
+
     void recGetMethodBlockCounts(CORINFO_METHOD_HANDLE        ftnHnd,
                                  UINT32 *                     pCount,
                                  ICorJitInfo::BlockCounts**   pBlockCounts,
@@ -1338,6 +1348,7 @@ private:
 // *************************************************************************************
 enum mcPackets
 {
+    Packet_AllocMethodBlockCounts     = 131,
     Packet_AppendClassName            = 149, // Added 8/6/2014 - needed for SIMD
     Packet_AreTypesEquivalent         = 1,
     Packet_AsCorInfoType              = 2,
@@ -1493,7 +1504,6 @@ enum mcPackets
     Packet_ShouldEnforceCallvirtRestriction              = 112, // Retired 2/18/2020
 
     PacketCR_AddressMap                        = 113,
-    PacketCR_AllocMethodBlockCounts            = 131,
     PacketCR_AllocGCInfo                       = 114,
     PacketCR_AllocMem                          = 115,
     PacketCR_AllocUnwindInfo                   = 132,
@@ -1515,7 +1525,9 @@ enum mcPackets
     PacketCR_SetMethodAttribs                  = 129,
     PacketCR_SetVars                           = 130,
     PacketCR_SetPatchpointInfo                 = 176, // added 8/5/2019
-    PacketCR_RecordCallSite                    = 146, // Added 10/28/2013 - to support indirect calls
+    PacketCR_RecordCallSite                    = 146, // Retired 9/13/2020
+    PacketCR_RecordCallSiteWithSignature       = 179, // Added 9/13/2020
+    PacketCR_RecordCallSiteWithoutSignature    = 180, // Added 9/13/2020
 };
 
 #endif

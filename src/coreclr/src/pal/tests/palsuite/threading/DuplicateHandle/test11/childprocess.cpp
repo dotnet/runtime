@@ -20,7 +20,7 @@
 #include "myexitcode.h"
 
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_DuplicateHandle_test11_paltest_duplicatehandle_test11_child, "threading/DuplicateHandle/test11/paltest_duplicatehandle_test11_child")
 {
     HANDLE hMutex;
     WCHAR wszMutexName[] = { 'T','E','S','T','1','1','\0' };

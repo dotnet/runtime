@@ -14,43 +14,50 @@ namespace Internal.Cryptography
             byte[] key,
             byte[]? iv,
             int blockSize,
+            int paddingSize,
+            int feedback,
             bool encrypting)
         {
             // The algorithm pointer is a static pointer, so not having any cleanup code is correct.
-            IntPtr algorithm = GetAlgorithm(key.Length * 8, cipherMode);
+            IntPtr algorithm = GetAlgorithm(key.Length * 8, feedback * 8, cipherMode);
 
-            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, key, 0, iv, encrypting);
+            BasicSymmetricCipher cipher = new OpenSslCipher(algorithm, cipherMode, blockSize, paddingSize, key, 0, iv, encrypting);
             return UniversalCryptoTransform.Create(paddingMode, cipher, encrypting);
         }
 
-        private static readonly Tuple<int, CipherMode, Func<IntPtr>>[] s_algorithmInitializers =
+        private static readonly Tuple<int, int, CipherMode, Func<IntPtr>>[] s_algorithmInitializers =
         {
             // Neither OpenSSL nor Cng Aes support CTS mode.
-            // Cng Aes doesn't seem to support CFB mode, and that would
-            // require passing in the feedback size.  Since Windows doesn't support it,
-            // we can skip it here, too.
-            Tuple.Create(128, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes128Cbc),
-            Tuple.Create(128, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes128Ecb),
+            // second parameter is feedback size (required only for CFB).
 
-            Tuple.Create(192, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes192Cbc),
-            Tuple.Create(192, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes192Ecb),
+            Tuple.Create(128, 0, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes128Cbc),
+            Tuple.Create(128, 0, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes128Ecb),
+            Tuple.Create(128, 8, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes128Cfb8),
+            Tuple.Create(128, 128, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes128Cfb128),
 
-            Tuple.Create(256, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes256Cbc),
-            Tuple.Create(256, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes256Ecb),
+            Tuple.Create(192, 0, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes192Cbc),
+            Tuple.Create(192, 0, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes192Ecb),
+            Tuple.Create(192, 8, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes192Cfb8),
+            Tuple.Create(192, 128, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes192Cfb128),
+
+            Tuple.Create(256, 0, CipherMode.CBC, (Func<IntPtr>)Interop.Crypto.EvpAes256Cbc),
+            Tuple.Create(256, 0, CipherMode.ECB, (Func<IntPtr>)Interop.Crypto.EvpAes256Ecb),
+            Tuple.Create(256, 8, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes256Cfb8),
+            Tuple.Create(256, 128, CipherMode.CFB, (Func<IntPtr>)Interop.Crypto.EvpAes256Cfb128),
         };
 
-        private static IntPtr GetAlgorithm(int keySize, CipherMode cipherMode)
+        private static IntPtr GetAlgorithm(int keySize, int feedback, CipherMode cipherMode)
         {
             bool foundKeysize = false;
 
-            foreach (var triplet in s_algorithmInitializers)
+            foreach (var tuple in s_algorithmInitializers)
             {
-                if (triplet.Item1 == keySize && triplet.Item2 == cipherMode)
+                if (tuple.Item1 == keySize && (tuple.Item2 == 0 || tuple.Item2 == feedback) && tuple.Item3 == cipherMode)
                 {
-                    return triplet.Item3();
+                    return tuple.Item4();
                 }
 
-                if (triplet.Item1 == keySize)
+                if (tuple.Item1 == keySize)
                 {
                     foundKeysize = true;
                 }

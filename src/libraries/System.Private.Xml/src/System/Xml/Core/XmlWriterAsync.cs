@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System.Threading.Tasks;
 
 using System;
@@ -71,7 +70,7 @@ namespace System.Xml
         }
 
         // Writes out the attribute with the specified prefix, LocalName, NamespaceURI and value.
-        public Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string value)
+        public Task WriteAttributeStringAsync(string? prefix, string localName, string? ns, string? value)
         {
             Task task = WriteStartAttributeAsync(prefix, localName, ns);
             if (task.IsSuccess())
@@ -84,7 +83,7 @@ namespace System.Xml
             }
         }
 
-        private async Task WriteAttributeStringAsyncHelper(Task task, string value)
+        private async Task WriteAttributeStringAsyncHelper(Task task, string? value)
         {
             await task.ConfigureAwait(false);
             await WriteStringAsync(value).ConfigureAwait(false);
@@ -107,21 +106,21 @@ namespace System.Xml
 
         // Writes out a <![CDATA[...]]>; block containing the specified text.
 
-        public virtual Task WriteCDataAsync(string text)
+        public virtual Task WriteCDataAsync(string? text)
         {
             throw new NotImplementedException();
         }
 
         // Writes out a comment <!--...-->; containing the specified text.
 
-        public virtual Task WriteCommentAsync(string text)
+        public virtual Task WriteCommentAsync(string? text)
         {
             throw new NotImplementedException();
         }
 
         // Writes out a processing instruction with a space between the name and text as follows: <?name text?>
 
-        public virtual Task WriteProcessingInstructionAsync(string name, string text)
+        public virtual Task WriteProcessingInstructionAsync(string name, string? text)
         {
             throw new NotImplementedException();
         }
@@ -142,14 +141,14 @@ namespace System.Xml
 
         // Writes out the given whitespace.
 
-        public virtual Task WriteWhitespaceAsync(string ws)
+        public virtual Task WriteWhitespaceAsync(string? ws)
         {
             throw new NotImplementedException();
         }
 
         // Writes out the specified text content.
 
-        public virtual Task WriteStringAsync(string text)
+        public virtual Task WriteStringAsync(string? text)
         {
             throw new NotImplementedException();
         }
@@ -466,7 +465,7 @@ namespace System.Xml
                         {
                             do
                             {
-                                IXmlSchemaInfo schemaInfo = navigator.SchemaInfo;
+                                IXmlSchemaInfo? schemaInfo = navigator.SchemaInfo;
                                 if (defattr || (schemaInfo == null || !schemaInfo.IsDefault))
                                 {
                                     await WriteStartAttributeAsync(navigator.Prefix, navigator.LocalName, navigator.NamespaceURI).ConfigureAwait(false);

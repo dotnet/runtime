@@ -33,7 +33,7 @@ namespace System.Data.OleDb
         internal OleDbMetaDataFactory(Stream XMLStream,
                                     string serverVersion,
                                     string serverVersionNormalized,
-                                    SchemaSupport[] schemaSupport) :
+                                    SchemaSupport[]? schemaSupport) :
             base(XMLStream, serverVersion, serverVersionNormalized)
         {
             // set up the colletion mane schema rowset guid mapping
@@ -50,7 +50,7 @@ namespace System.Data.OleDb
                  new SchemaRowsetName(OleDbMetaDataCollectionNames.Views, OleDbSchemaGuid.Views)};
 
             // verify the existance of the table in the data set
-            DataTable metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections];
+            DataTable? metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections];
             if (metaDataCollectionsTable == null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.MetaDataCollections);
@@ -60,7 +60,7 @@ namespace System.Data.OleDb
             metaDataCollectionsTable = CloneAndFilterCollection(DbMetaDataCollectionNames.MetaDataCollections, null);
 
             // verify the existance of the table in the data set
-            DataTable restrictionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions];
+            DataTable? restrictionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions];
             if (restrictionsTable != null)
             {
                 // copy the table filtering out any rows that don't apply to the current version of the provider
@@ -72,17 +72,17 @@ namespace System.Data.OleDb
             // 2) it is in the collection to schema rowset mapping above
             // 3) the provider does not support the necessary schema rowset
 
-            DataColumn populationMechanism = metaDataCollectionsTable.Columns[_populationMechanism];
+            DataColumn? populationMechanism = metaDataCollectionsTable.Columns[_populationMechanism];
             if ((null == populationMechanism) || (typeof(string) != populationMechanism.DataType))
             {
                 throw ADP.InvalidXmlMissingColumn(DbMetaDataCollectionNames.MetaDataCollections, _populationMechanism);
             }
-            DataColumn collectionName = metaDataCollectionsTable.Columns[_collectionName];
+            DataColumn? collectionName = metaDataCollectionsTable.Columns[_collectionName];
             if ((null == collectionName) || (typeof(string) != collectionName.DataType))
             {
                 throw ADP.InvalidXmlMissingColumn(DbMetaDataCollectionNames.MetaDataCollections, _collectionName);
             }
-            DataColumn restrictionCollectionName = null;
+            DataColumn? restrictionCollectionName = null;
             if (restrictionsTable != null)
             {
                 restrictionCollectionName = restrictionsTable.Columns[_collectionName];
@@ -94,12 +94,12 @@ namespace System.Data.OleDb
 
             foreach (DataRow collection in metaDataCollectionsTable.Rows)
             {
-                string populationMechanismValue = collection[populationMechanism] as string;
+                string? populationMechanismValue = collection[populationMechanism] as string;
                 if (ADP.IsEmpty(populationMechanismValue))
                 {
                     throw ADP.InvalidXmlInvalidValue(DbMetaDataCollectionNames.MetaDataCollections, _populationMechanism);
                 }
-                string collectionNameValue = collection[collectionName] as string;
+                string? collectionNameValue = collection[collectionName] as string;
                 if (ADP.IsEmpty(collectionNameValue))
                 {
                     throw ADP.InvalidXmlInvalidValue(DbMetaDataCollectionNames.MetaDataCollections, _collectionName);
@@ -144,7 +144,7 @@ namespace System.Data.OleDb
                         {
                             foreach (DataRow restriction in restrictionsTable.Rows)
                             {
-                                string restrictionCollectionNameValue = restriction[restrictionCollectionName] as string;
+                                string? restrictionCollectionNameValue = restriction[restrictionCollectionName!] as string;
                                 if (ADP.IsEmpty(restrictionCollectionNameValue))
                                 {
                                     throw ADP.InvalidXmlInvalidValue(DbMetaDataCollectionNames.Restrictions, _collectionName);
@@ -164,12 +164,12 @@ namespace System.Data.OleDb
 
             // replace the original table with the updated one
             metaDataCollectionsTable.AcceptChanges();
-            CollectionDataSet.Tables.Remove(CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]);
+            CollectionDataSet.Tables.Remove(CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]!);
             CollectionDataSet.Tables.Add(metaDataCollectionsTable);
 
             if (restrictionsTable != null)
             {
-                CollectionDataSet.Tables.Remove(CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions]);
+                CollectionDataSet.Tables.Remove(CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions]!);
                 CollectionDataSet.Tables.Add(restrictionsTable);
             }
 
@@ -189,7 +189,7 @@ namespace System.Data.OleDb
         private DataTable GetDataSourceInformationTable(OleDbConnection connection, OleDbConnectionInternal internalConnection)
         {
             // verify that the data source information table is in the data set
-            DataTable dataSourceInformationTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataSourceInformation];
+            DataTable? dataSourceInformationTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataSourceInformation];
             if (dataSourceInformationTable == null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.DataSourceInformation);
@@ -206,8 +206,8 @@ namespace System.Data.OleDb
             DataRow dataSourceInformation = dataSourceInformationTable.Rows[0];
 
             // update the identifier separator
-            string catalogSeparatorPattern = internalConnection.GetLiteralInfo(ODB.DBLITERAL_CATALOG_SEPARATOR);
-            string schemaSeparatorPattern = internalConnection.GetLiteralInfo(ODB.DBLITERAL_SCHEMA_SEPARATOR);
+            string? catalogSeparatorPattern = internalConnection.GetLiteralInfo(ODB.DBLITERAL_CATALOG_SEPARATOR);
+            string? schemaSeparatorPattern = internalConnection.GetLiteralInfo(ODB.DBLITERAL_SCHEMA_SEPARATOR);
 
             if (catalogSeparatorPattern != null)
             {
@@ -233,7 +233,7 @@ namespace System.Data.OleDb
             }
 
             // update the DataSourceProductName
-            object property;
+            object? property;
             property = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_DBMSNAME);
             if (property != null)
             {
@@ -283,7 +283,7 @@ namespace System.Data.OleDb
                 dataSourceInformation[DbMetaDataColumnNames.OrderByColumnsInSelect] = (bool)property;
             }
 
-            DataTable infoLiterals = internalConnection.BuildInfoLiterals();
+            DataTable? infoLiterals = internalConnection.BuildInfoLiterals();
             if (infoLiterals != null)
             {
                 DataRow[] tableNameRow = infoLiterals.Select("Literal = " + ODB.DBLITERAL_TABLE_NAME.ToString(CultureInfo.InvariantCulture));
@@ -353,7 +353,7 @@ namespace System.Data.OleDb
         private DataTable GetDataTypesTable(OleDbConnection connection)
         {
             // verify the existance of the table in the data set
-            DataTable dataTypesTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataTypes];
+            DataTable? dataTypesTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataTypes];
             if (dataTypesTable == null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.DataTypes);
@@ -362,9 +362,9 @@ namespace System.Data.OleDb
             // copy the table filtering out any rows that don't apply to tho current version of the prrovider
             dataTypesTable = CloneAndFilterCollection(DbMetaDataCollectionNames.DataTypes, null);
 
-            DataTable providerTypesTable = connection.GetOleDbSchemaTable(OleDbSchemaGuid.Provider_Types, null);
+            DataTable providerTypesTable = connection.GetOleDbSchemaTable(OleDbSchemaGuid.Provider_Types, null)!;
 
-            DataColumn[] targetColumns = new DataColumn[] {
+            DataColumn?[] targetColumns = new DataColumn?[] {
                 dataTypesTable.Columns[DbMetaDataColumnNames.TypeName],
                 dataTypesTable.Columns[DbMetaDataColumnNames.ColumnSize],
                 dataTypesTable.Columns[DbMetaDataColumnNames.CreateParameters],
@@ -381,7 +381,7 @@ namespace System.Data.OleDb
                 dataTypesTable.Columns[DbMetaDataColumnNames.LiteralSuffix],
                 dataTypesTable.Columns[OleDbMetaDataColumnNames.NativeDataType]};
 
-            DataColumn[] sourceColumns = new DataColumn[] {
+            DataColumn?[] sourceColumns = new DataColumn?[] {
                 providerTypesTable.Columns["TYPE_NAME"],
                 providerTypesTable.Columns["COLUMN_SIZE"],
                 providerTypesTable.Columns["CREATE_PARAMS"],
@@ -400,31 +400,31 @@ namespace System.Data.OleDb
 
             Debug.Assert(sourceColumns.Length == targetColumns.Length);
 
-            DataColumn isSearchable = dataTypesTable.Columns[DbMetaDataColumnNames.IsSearchable];
-            DataColumn isSearchableWithLike = dataTypesTable.Columns[DbMetaDataColumnNames.IsSearchableWithLike];
-            DataColumn providerDbType = dataTypesTable.Columns[DbMetaDataColumnNames.ProviderDbType];
-            DataColumn clrType = dataTypesTable.Columns[DbMetaDataColumnNames.DataType];
-            DataColumn isLong = dataTypesTable.Columns[DbMetaDataColumnNames.IsLong];
-            DataColumn isFixed = dataTypesTable.Columns[DbMetaDataColumnNames.IsFixedLength];
-            DataColumn sourceOleDbType = providerTypesTable.Columns["DATA_TYPE"];
+            DataColumn isSearchable = dataTypesTable.Columns[DbMetaDataColumnNames.IsSearchable]!;
+            DataColumn isSearchableWithLike = dataTypesTable.Columns[DbMetaDataColumnNames.IsSearchableWithLike]!;
+            DataColumn providerDbType = dataTypesTable.Columns[DbMetaDataColumnNames.ProviderDbType]!;
+            DataColumn clrType = dataTypesTable.Columns[DbMetaDataColumnNames.DataType]!;
+            DataColumn isLong = dataTypesTable.Columns[DbMetaDataColumnNames.IsLong]!;
+            DataColumn isFixed = dataTypesTable.Columns[DbMetaDataColumnNames.IsFixedLength]!;
+            DataColumn sourceOleDbType = providerTypesTable.Columns["DATA_TYPE"]!;
 
-            DataColumn searchable = providerTypesTable.Columns["SEARCHABLE"];
+            DataColumn searchable = providerTypesTable.Columns["SEARCHABLE"]!;
 
             foreach (DataRow sourceRow in providerTypesTable.Rows)
             {
                 DataRow newRow = dataTypesTable.NewRow();
                 for (int i = 0; i < sourceColumns.Length; i++)
                 {
-                    if ((sourceColumns[i] != null) && (targetColumns[i] != null))
+                    if ((sourceColumns[i] is DataColumn sourceColumn) && (targetColumns[i] is DataColumn targetColumn))
                     {
-                        newRow[targetColumns[i]] = sourceRow[sourceColumns[i]];
+                        newRow[targetColumn] = sourceRow[sourceColumn];
                     }
                 }
 
                 short nativeDataType = (short)Convert.ChangeType(sourceRow[sourceOleDbType], typeof(short), CultureInfo.InvariantCulture);
                 NativeDBType nativeType = NativeDBType.FromDBType(nativeDataType, (bool)newRow[isLong], (bool)newRow[isFixed]);
 
-                newRow[clrType] = nativeType.dataType.FullName;
+                newRow[clrType] = nativeType.dataType!.FullName;
                 newRow[providerDbType] = nativeType.enumOleDbType;
 
                 // searchable has to be special cased becasue it is not an eaxct mapping
@@ -472,7 +472,7 @@ namespace System.Data.OleDb
         private DataTable GetReservedWordsTable(OleDbConnectionInternal internalConnection)
         {
             // verify the existance of the table in the data set
-            DataTable reservedWordsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.ReservedWords];
+            DataTable? reservedWordsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.ReservedWords];
             if (null == reservedWordsTable)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.ReservedWords);
@@ -481,7 +481,7 @@ namespace System.Data.OleDb
             // copy the table filtering out any rows that don't apply to tho current version of the prrovider
             reservedWordsTable = CloneAndFilterCollection(DbMetaDataCollectionNames.ReservedWords, null);
 
-            DataColumn reservedWordColumn = reservedWordsTable.Columns[DbMetaDataColumnNames.ReservedWord];
+            DataColumn? reservedWordColumn = reservedWordsTable.Columns[DbMetaDataColumnNames.ReservedWord];
             if (null == reservedWordColumn)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.ReservedWords);
@@ -495,11 +495,11 @@ namespace System.Data.OleDb
             return reservedWordsTable;
         }
 
-        protected override DataTable PrepareCollection(string collectionName, string[] restrictions, DbConnection connection)
+        protected override DataTable PrepareCollection(string collectionName, string?[]? restrictions, DbConnection connection)
         {
             OleDbConnection oleDbConnection = (OleDbConnection)connection;
             OleDbConnectionInternal oleDbInternalConnection = (OleDbConnectionInternal)(oleDbConnection.InnerConnection);
-            DataTable resultTable = null;
+            DataTable? resultTable = null;
             if (collectionName == DbMetaDataCollectionNames.DataSourceInformation)
             {
                 if (ADP.IsEmptyArray(restrictions) == false)
@@ -532,12 +532,12 @@ namespace System.Data.OleDb
                     {
                         // need to special case the oledb schema rowset restrictions on columns that are not
                         // string tpyes
-                        object[] mungedRestrictions = restrictions;
+                        object?[]? mungedRestrictions = restrictions;
                         ;
                         if (restrictions != null)
                         {
                             //verify that there are not too many restrictions
-                            DataTable metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections];
+                            DataTable metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]!;
                             int numberOfSupportedRestictions = -1;
                             // prepare colletion is called with the exact collection name so
                             // we can do an exact string comparision here
@@ -595,7 +595,7 @@ namespace System.Data.OleDb
                                 }
                                 else
                                 {
-                                    throw ADP.InvalidRestrictionValue(collectionName, "TYPE", restrictions[indexRestrictionTypeSlot]);
+                                    throw ADP.InvalidRestrictionValue(collectionName, "TYPE", restrictions[indexRestrictionTypeSlot]!);
                                 }
 
                                 mungedRestrictions[indexRestrictionTypeSlot] = indexTypeValue;
@@ -634,7 +634,7 @@ namespace System.Data.OleDb
                                 }
                                 else
                                 {
-                                    throw ADP.InvalidRestrictionValue(collectionName, "PROCEDURE_TYPE", restrictions[procedureRestrictionTypeSlot]);
+                                    throw ADP.InvalidRestrictionValue(collectionName, "PROCEDURE_TYPE", restrictions[procedureRestrictionTypeSlot]!);
                                 }
 
                                 mungedRestrictions[procedureRestrictionTypeSlot] = procedureTypeValue;
@@ -658,7 +658,7 @@ namespace System.Data.OleDb
 
         private void SetIdentifierCase(string columnName, int propertyID, DataRow row, OleDbConnection connection)
         {
-            object property = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, propertyID);
+            object? property = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, propertyID);
             IdentifierCase identifierCase = IdentifierCase.Unknown;
             if (property != null)
             {

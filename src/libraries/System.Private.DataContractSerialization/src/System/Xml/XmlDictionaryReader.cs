@@ -9,7 +9,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Runtime.Serialization;
 using System.Globalization;
-
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -24,7 +24,7 @@ namespace System.Xml
             if (reader == null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
 
-            XmlDictionaryReader dictionaryReader = reader as XmlDictionaryReader;
+            XmlDictionaryReader? dictionaryReader = reader as XmlDictionaryReader;
 
             if (dictionaryReader == null)
             {
@@ -46,21 +46,21 @@ namespace System.Xml
             return CreateBinaryReader(buffer, offset, count, null, quotas);
         }
 
-        public static XmlDictionaryReader CreateBinaryReader(byte[] buffer, int offset, int count, IXmlDictionary dictionary, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateBinaryReader(byte[] buffer, int offset, int count, IXmlDictionary? dictionary, XmlDictionaryReaderQuotas quotas)
         {
             return CreateBinaryReader(buffer, offset, count, dictionary, quotas, null);
         }
 
-        public static XmlDictionaryReader CreateBinaryReader(byte[] buffer, int offset, int count, IXmlDictionary dictionary, XmlDictionaryReaderQuotas quotas, XmlBinaryReaderSession session)
+        public static XmlDictionaryReader CreateBinaryReader(byte[] buffer, int offset, int count, IXmlDictionary? dictionary, XmlDictionaryReaderQuotas quotas, XmlBinaryReaderSession? session)
         {
             return CreateBinaryReader(buffer, offset, count, dictionary, quotas, session, onClose: null);
         }
 
         public static XmlDictionaryReader CreateBinaryReader(byte[] buffer, int offset, int count,
-                                                             IXmlDictionary dictionary,
+                                                             IXmlDictionary? dictionary,
                                                              XmlDictionaryReaderQuotas quotas,
-                                                             XmlBinaryReaderSession session,
-                                                             OnXmlDictionaryReaderClose onClose)
+                                                             XmlBinaryReaderSession? session,
+                                                             OnXmlDictionaryReaderClose? onClose)
         {
             XmlBinaryReader reader = new XmlBinaryReader();
             reader.SetInput(buffer, offset, count, dictionary, quotas, session, onClose);
@@ -72,21 +72,21 @@ namespace System.Xml
             return CreateBinaryReader(stream, null, quotas);
         }
 
-        public static XmlDictionaryReader CreateBinaryReader(Stream stream, IXmlDictionary dictionary, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateBinaryReader(Stream stream, IXmlDictionary? dictionary, XmlDictionaryReaderQuotas quotas)
         {
             return CreateBinaryReader(stream, dictionary, quotas, null);
         }
 
-        public static XmlDictionaryReader CreateBinaryReader(Stream stream, IXmlDictionary dictionary, XmlDictionaryReaderQuotas quotas, XmlBinaryReaderSession session)
+        public static XmlDictionaryReader CreateBinaryReader(Stream stream, IXmlDictionary? dictionary, XmlDictionaryReaderQuotas quotas, XmlBinaryReaderSession? session)
         {
             return CreateBinaryReader(stream, dictionary, quotas, session, onClose: null);
         }
 
         public static XmlDictionaryReader CreateBinaryReader(Stream stream,
-                                                             IXmlDictionary dictionary,
+                                                             IXmlDictionary? dictionary,
                                                              XmlDictionaryReaderQuotas quotas,
-                                                             XmlBinaryReaderSession session,
-                                                             OnXmlDictionaryReaderClose onClose)
+                                                             XmlBinaryReaderSession? session,
+                                                             OnXmlDictionaryReaderClose? onClose)
         {
             XmlBinaryReader reader = new XmlBinaryReader();
             reader.SetInput(stream, dictionary, quotas, session, onClose);
@@ -106,9 +106,9 @@ namespace System.Xml
         }
 
         public static XmlDictionaryReader CreateTextReader(byte[] buffer, int offset, int count,
-                                                           Encoding encoding,
+                                                           Encoding? encoding,
                                                            XmlDictionaryReaderQuotas quotas,
-                                                           OnXmlDictionaryReaderClose onClose)
+                                                           OnXmlDictionaryReaderClose? onClose)
         {
             XmlUTF8TextReader reader = new XmlUTF8TextReader();
             reader.SetInput(buffer, offset, count, encoding, quotas, onClose);
@@ -120,9 +120,9 @@ namespace System.Xml
             return CreateTextReader(stream, null, quotas, null);
         }
 
-        public static XmlDictionaryReader CreateTextReader(Stream stream, Encoding encoding,
+        public static XmlDictionaryReader CreateTextReader(Stream stream, Encoding? encoding,
                                                            XmlDictionaryReaderQuotas quotas,
-                                                           OnXmlDictionaryReaderClose onClose)
+                                                           OnXmlDictionaryReaderClose? onClose)
         {
             XmlUTF8TextReader reader = new XmlUTF8TextReader();
             reader.SetInput(stream, encoding, quotas, onClose);
@@ -142,13 +142,13 @@ namespace System.Xml
             return CreateMtomReader(stream, encodings, null, quotas);
         }
 
-        public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding[] encodings, string contentType, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding[] encodings, string? contentType, XmlDictionaryReaderQuotas quotas)
         {
             return CreateMtomReader(stream, encodings, contentType, quotas, int.MaxValue, null);
         }
 
-        public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding[] encodings, string contentType,
-            XmlDictionaryReaderQuotas quotas, int maxBufferSize, OnXmlDictionaryReaderClose onClose)
+        public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding[] encodings, string? contentType,
+            XmlDictionaryReaderQuotas quotas, int maxBufferSize, OnXmlDictionaryReaderClose? onClose)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_MtomEncoding);
         }
@@ -166,13 +166,13 @@ namespace System.Xml
             return CreateMtomReader(buffer, offset, count, encodings, null, quotas);
         }
 
-        public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding[] encodings, string contentType, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding[] encodings, string? contentType, XmlDictionaryReaderQuotas quotas)
         {
             return CreateMtomReader(buffer, offset, count, encodings, contentType, quotas, int.MaxValue, null);
         }
 
-        public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding[] encodings, string contentType,
-            XmlDictionaryReaderQuotas quotas, int maxBufferSize, OnXmlDictionaryReaderClose onClose)
+        public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding[] encodings, string? contentType,
+            XmlDictionaryReaderQuotas quotas, int maxBufferSize, OnXmlDictionaryReaderClose? onClose)
         {
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_MtomEncoding);
         }
@@ -193,7 +193,7 @@ namespace System.Xml
             }
         }
 
-        public virtual void StartCanonicalization(Stream stream, bool includeComments, string[] inclusivePrefixes)
+        public virtual void StartCanonicalization(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException());
         }
@@ -349,7 +349,7 @@ namespace System.Xml
             return -1;
         }
 
-        public virtual string GetAttribute(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
+        public virtual string? GetAttribute(XmlDictionaryString localName, XmlDictionaryString namespaceUri)
         {
             return GetAttribute(XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri));
         }
@@ -399,7 +399,7 @@ namespace System.Xml
 
         protected string ReadContentAsString(int maxStringContentLength)
         {
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             string result = string.Empty;
             bool done = false;
             while (true)
@@ -480,7 +480,7 @@ namespace System.Xml
                 if (this.NodeType == XmlNodeType.EndElement)
                     return string.Empty;
             }
-            StringBuilder sb = null;
+            StringBuilder? sb = null;
             string result = string.Empty;
             while (IsTextNode(this.NodeType))
             {
@@ -599,7 +599,7 @@ namespace System.Xml
             return read;
         }
 
-        public override object ReadContentAs(Type type, IXmlNamespaceResolver namespaceResolver)
+        public override object ReadContentAs(Type type, IXmlNamespaceResolver? namespaceResolver)
         {
             if (type == typeof(Guid[]))
             {
@@ -689,7 +689,7 @@ namespace System.Xml
         {
             string prefix;
             XmlConverter.ToQualifiedName(ReadContentAsString(), out prefix, out localName);
-            namespaceUri = LookupNamespace(prefix);
+            namespaceUri = LookupNamespace(prefix)!;
             if (namespaceUri == null)
                 XmlExceptionHelper.ThrowUndefinedPrefix(this, prefix);
         }
@@ -998,19 +998,19 @@ namespace System.Xml
             namespaceUri = NamespaceURI;
         }
 
-        public virtual bool TryGetLocalNameAsDictionaryString(out XmlDictionaryString localName)
+        public virtual bool TryGetLocalNameAsDictionaryString([NotNullWhen(true)] out XmlDictionaryString? localName)
         {
             localName = null;
             return false;
         }
 
-        public virtual bool TryGetNamespaceUriAsDictionaryString(out XmlDictionaryString namespaceUri)
+        public virtual bool TryGetNamespaceUriAsDictionaryString([NotNullWhen(true)] out XmlDictionaryString? namespaceUri)
         {
             namespaceUri = null;
             return false;
         }
 
-        public virtual bool TryGetValueAsDictionaryString(out XmlDictionaryString value)
+        public virtual bool TryGetValueAsDictionaryString([NotNullWhen(true)] out XmlDictionaryString? value)
         {
             value = null;
             return false;
@@ -1030,7 +1030,7 @@ namespace System.Xml
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(count), SR.Format(SR.SizeExceedsRemainingBufferSpace, array.Length - offset)));
         }
 
-        public virtual bool IsStartArray(out Type type)
+        public virtual bool IsStartArray([NotNullWhen(true)] out Type? type)
         {
             type = null;
             return false;
@@ -1328,9 +1328,9 @@ namespace System.Xml
         private class XmlWrappedReader : XmlDictionaryReader, IXmlLineInfo
         {
             private readonly XmlReader _reader;
-            private XmlNamespaceManager _nsMgr;
+            private XmlNamespaceManager? _nsMgr;
 
-            public XmlWrappedReader(XmlReader reader, XmlNamespaceManager nsMgr)
+            public XmlWrappedReader(XmlReader reader, XmlNamespaceManager? nsMgr)
             {
                 _reader = reader;
                 _nsMgr = nsMgr;
@@ -1344,7 +1344,7 @@ namespace System.Xml
                 }
             }
 
-            public override string BaseURI
+            public override string? BaseURI
             {
                 get
                 {
@@ -1389,12 +1389,12 @@ namespace System.Xml
                 return _reader.GetAttribute(index);
             }
 
-            public override string GetAttribute(string name)
+            public override string? GetAttribute(string name)
             {
                 return _reader.GetAttribute(name);
             }
 
-            public override string GetAttribute(string name, string namespaceUri)
+            public override string? GetAttribute(string name, string? namespaceUri)
             {
                 return _reader.GetAttribute(name, namespaceUri);
             }
@@ -1441,7 +1441,7 @@ namespace System.Xml
                 }
             }
 
-            public override string LookupNamespace(string namespaceUri)
+            public override string? LookupNamespace(string namespaceUri)
             {
                 return _reader.LookupNamespace(namespaceUri);
             }
@@ -1456,7 +1456,7 @@ namespace System.Xml
                 return _reader.MoveToAttribute(name);
             }
 
-            public override bool MoveToAttribute(string name, string namespaceUri)
+            public override bool MoveToAttribute(string name, string? namespaceUri)
             {
                 return _reader.MoveToAttribute(name, namespaceUri);
             }
@@ -1574,7 +1574,7 @@ namespace System.Xml
                 }
             }
 
-            public override string this[string name]
+            public override string? this[string name]
             {
                 get
                 {
@@ -1582,11 +1582,12 @@ namespace System.Xml
                 }
             }
 
-            public override string this[string name, string namespaceUri]
+            public override string? this[string name, string? namespaceUri]
             {
                 get
                 {
-                    return _reader[name, namespaceUri];
+                    // TODO-NULLABLE - unnecessary namespaceUri! - https://github.com/dotnet/roslyn/issues/47221
+                    return _reader[name, namespaceUri!];
                 }
             }
 
@@ -1784,14 +1785,14 @@ namespace System.Xml
                 }
             }
 
-            public override object ReadContentAs(Type type, IXmlNamespaceResolver namespaceResolver)
+            public override object ReadContentAs(Type type, IXmlNamespaceResolver? namespaceResolver)
             {
                 return _reader.ReadContentAs(type, namespaceResolver);
             }
 
             public bool HasLineInfo()
             {
-                IXmlLineInfo lineInfo = _reader as IXmlLineInfo;
+                IXmlLineInfo? lineInfo = _reader as IXmlLineInfo;
 
                 if (lineInfo == null)
                     return false;
@@ -1803,7 +1804,7 @@ namespace System.Xml
             {
                 get
                 {
-                    IXmlLineInfo lineInfo = _reader as IXmlLineInfo;
+                    IXmlLineInfo? lineInfo = _reader as IXmlLineInfo;
 
                     if (lineInfo == null)
                         return 1;
@@ -1816,7 +1817,7 @@ namespace System.Xml
             {
                 get
                 {
-                    IXmlLineInfo lineInfo = _reader as IXmlLineInfo;
+                    IXmlLineInfo? lineInfo = _reader as IXmlLineInfo;
 
                     if (lineInfo == null)
                         return 1;

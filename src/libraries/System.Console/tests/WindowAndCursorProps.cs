@@ -4,7 +4,6 @@
 using System;
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
@@ -227,7 +226,7 @@ public class WindowAndCursorProps
         Assert.NotNull(Console.Title);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void Title_Get_Windows_NoNulls()
     {
@@ -236,9 +235,9 @@ public class WindowAndCursorProps
         Assert.Equal(trimmedTitle, title);
     }
 
-    private static bool IsNotWindowsNanoServerAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+    private static bool IsNotWindowsNanoServerAndNotServerCoreAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsNanoNorServerCore && RemoteExecutor.IsSupported;
 
-    [ConditionalTheory(nameof(IsNotWindowsNanoServerAndRemoteExecutorSupported))] // Nano currently ignores set title
+    [ConditionalTheory(nameof(IsNotWindowsNanoServerAndNotServerCoreAndRemoteExecutorSupported))] // Nano and Server Core currently ignore set title
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34454", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     [InlineData(0)]
     [InlineData(1)]
@@ -323,7 +322,7 @@ public class WindowAndCursorProps
     [OuterLoop] // clears the screen, not very inner-loop friendly
     public static void Clear_Invoke_Success()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
+        if (!OperatingSystem.IsWindows() || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
         {
             // Nothing to verify; just run the code.
             Console.Clear();
@@ -341,7 +340,7 @@ public class WindowAndCursorProps
     [PlatformSpecific(~TestPlatforms.Browser)]
     public static void SetCursorPosition_Invoke_Success()
     {
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
+        if (!OperatingSystem.IsWindows() || (!Console.IsInputRedirected && !Console.IsOutputRedirected))
         {
             int origLeft = Console.CursorLeft;
             int origTop = Console.CursorTop;
@@ -383,7 +382,7 @@ public class WindowAndCursorProps
             Assert.Equal(origTop, Console.CursorTop);
             Assert.Equal(origTuple, Console.GetCursorPosition());
         }
-        else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (!OperatingSystem.IsWindows())
         {
             Assert.Equal(0, Console.CursorLeft);
             Assert.Equal(0, Console.CursorTop);
@@ -405,7 +404,7 @@ public class WindowAndCursorProps
             Console.CursorLeft = origLeft;
             Assert.Equal(origLeft, Console.CursorLeft);
         }
-        else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (!OperatingSystem.IsWindows())
         {
             Assert.Equal(0, Console.CursorLeft);
         }
@@ -448,7 +447,7 @@ public class WindowAndCursorProps
             Console.CursorTop = origTop;
             Assert.Equal(origTop, Console.CursorTop);
         }
-        else if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        else if (!OperatingSystem.IsWindows())
         {
             Assert.Equal(0, Console.CursorTop);
         }
@@ -561,7 +560,7 @@ public class WindowAndCursorProps
     }
 
     [PlatformSpecific(TestPlatforms.Windows)]
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
     public void SetWindowSize_GetWindowSize_ReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)

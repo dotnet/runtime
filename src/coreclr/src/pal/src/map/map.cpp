@@ -312,73 +312,6 @@ ExitFileMappingInitializationRoutine:
 
 /*++
 Function:
-  CreateFileMappingA
-
-Note:
-  File mapping are used to do inter-process communication.
-
-See MSDN doc.
---*/
-HANDLE
-PALAPI
-CreateFileMappingA(
-                   IN HANDLE hFile,
-                   IN LPSECURITY_ATTRIBUTES lpFileMappingAttributes,
-                   IN DWORD flProtect,
-                   IN DWORD dwMaximumSizeHigh,
-                   IN DWORD dwMaximumSizeLow,
-                   IN LPCSTR lpName)
-{
-    HANDLE hFileMapping = NULL;
-    CPalThread *pThread = NULL;
-    PAL_ERROR palError = NO_ERROR;
-
-    PERF_ENTRY(CreateFileMappingA);
-    ENTRY("CreateFileMappingA(hFile=%p, lpAttributes=%p, flProtect=%#x, "
-          "dwMaxSizeH=%d, dwMaxSizeL=%d, lpName=%p (%s))\n",
-          hFile, lpFileMappingAttributes, flProtect,
-          dwMaximumSizeHigh, dwMaximumSizeLow,
-          lpName?lpName:"NULL",
-          lpName?lpName:"NULL");
-
-    pThread = InternalGetCurrentThread();
-
-    if (lpName != nullptr)
-    {
-        ASSERT("lpName: Cross-process named objects are not supported in PAL");
-        palError = ERROR_NOT_SUPPORTED;
-    }
-    else
-    {
-        palError = InternalCreateFileMapping(
-            pThread,
-            hFile,
-            lpFileMappingAttributes,
-            flProtect,
-            dwMaximumSizeHigh,
-            dwMaximumSizeLow,
-            NULL,
-            &hFileMapping
-            );
-    }
-
-
-    //
-    // We always need to set last error, even on success:
-    // we need to protect ourselves from the situation
-    // where last error is set to ERROR_ALREADY_EXISTS on
-    // entry to the function
-    //
-
-    pThread->SetLastError(palError);
-
-    LOGEXIT( "CreateFileMappingA returns HANDLE %p. \n", hFileMapping );
-    PERF_EXIT(CreateFileMappingA);
-    return hFileMapping;
-}
-
-/*++
-Function:
   CreateFileMappingW
 
 Note:
@@ -830,50 +763,6 @@ ExitInternalCreateFileMapping:
 
     return palError;
 }
-
-/*++
-Function:
-  OpenFileMappingA
-
-See MSDN doc.
---*/
-HANDLE
-PALAPI
-OpenFileMappingA(
-         IN DWORD dwDesiredAccess,
-         IN BOOL bInheritHandle,
-         IN LPCSTR lpName)
-{
-    HANDLE hFileMapping = NULL;
-    CPalThread *pThread = NULL;
-    PAL_ERROR palError = NO_ERROR;
-
-    PERF_ENTRY(OpenFileMappingA);
-    ENTRY("OpenFileMappingA(dwDesiredAccess=%u, bInheritHandle=%d, lpName=%p (%s)\n",
-          dwDesiredAccess, bInheritHandle, lpName?lpName:"NULL", lpName?lpName:"NULL");
-
-    pThread = InternalGetCurrentThread();
-
-    if (lpName == nullptr)
-    {
-        ERROR("name is NULL\n");
-        palError = ERROR_INVALID_PARAMETER;
-    }
-    else
-    {
-        ASSERT("lpName: Cross-process named objects are not supported in PAL");
-        palError = ERROR_NOT_SUPPORTED;
-    }
-
-    if (NO_ERROR != palError)
-    {
-        pThread->SetLastError(palError);
-    }
-    LOGEXIT( "OpenFileMappingA returning %p\n", hFileMapping );
-    PERF_EXIT(OpenFileMappingA);
-    return hFileMapping;
-}
-
 
 /*++
 Function:
@@ -2137,7 +2026,7 @@ MAPRecordMapping(
     return palError;
 }
 
-static size_t OffsetWithinPage(off_t addr)
+size_t OffsetWithinPage(off_t addr)
 {
     return addr & (GetVirtualPageSize() - 1);
 }
@@ -2173,7 +2062,7 @@ MAPmmapAndRecord(
     // Ensure address and offset arguments mmap() are page-aligned.
     _ASSERTE(OffsetWithinPage(offset - adjust) == 0);
     _ASSERTE(OffsetWithinPage((off_t)pvBaseAddress) == 0);
-    
+
 #ifdef __APPLE__
     if ((prot & PROT_EXEC) != 0 && IsRunningOnMojaveHardenedRuntime())
     {

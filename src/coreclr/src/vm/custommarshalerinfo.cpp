@@ -43,7 +43,7 @@ CustomMarshalerInfo::CustomMarshalerInfo(LoaderAllocator *pLoaderAllocator, Type
 
 
     // Make sure the custom marshaller implements ICustomMarshaler.
-    if (!hndCustomMarshalerType.GetMethodTable()->CanCastToInterface(MscorlibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)))
+    if (!hndCustomMarshalerType.GetMethodTable()->CanCastToInterface(CoreLibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)))
     {
         DefineFullyQualifiedNameForClassW()
         COMPlusThrow(kApplicationException,
@@ -304,7 +304,7 @@ MethodDesc *CustomMarshalerInfo::GetCustomMarshalerMD(EnumCustomMarshalerMethods
 
     MethodTable *pMT = hndCustomMarshalertype.AsMethodTable();
 
-    _ASSERTE(pMT->CanCastToInterface(MscorlibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)));
+    _ASSERTE(pMT->CanCastToInterface(CoreLibBinder::GetClass(CLASS__ICUSTOM_MARSHALER)));
 
     MethodDesc *pMD = NULL;
 
@@ -312,28 +312,28 @@ MethodDesc *CustomMarshalerInfo::GetCustomMarshalerMD(EnumCustomMarshalerMethods
     {
         case CustomMarshalerMethods_MarshalNativeToManaged:
             pMD = pMT->GetMethodDescForInterfaceMethod(
-                       MscorlibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__MARSHAL_NATIVE_TO_MANAGED),
+                       CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__MARSHAL_NATIVE_TO_MANAGED),
                        TRUE /* throwOnConflict */);
             break;
         case CustomMarshalerMethods_MarshalManagedToNative:
             pMD = pMT->GetMethodDescForInterfaceMethod(
-                       MscorlibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__MARSHAL_MANAGED_TO_NATIVE),
+                       CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__MARSHAL_MANAGED_TO_NATIVE),
                        TRUE /* throwOnConflict */);
             break;
         case CustomMarshalerMethods_CleanUpNativeData:
             pMD = pMT->GetMethodDescForInterfaceMethod(
-                        MscorlibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__CLEANUP_NATIVE_DATA),
+                        CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__CLEANUP_NATIVE_DATA),
                         TRUE /* throwOnConflict */);
             break;
 
         case CustomMarshalerMethods_CleanUpManagedData:
             pMD = pMT->GetMethodDescForInterfaceMethod(
-                        MscorlibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__CLEANUP_MANAGED_DATA),
+                        CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__CLEANUP_MANAGED_DATA),
                         TRUE /* throwOnConflict */);
             break;
         case CustomMarshalerMethods_GetNativeDataSize:
             pMD = pMT->GetMethodDescForInterfaceMethod(
-                        MscorlibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__GET_NATIVE_DATA_SIZE),
+                        CoreLibBinder::GetMethod(METHOD__ICUSTOM_MARSHALER__GET_NATIVE_DATA_SIZE),
                         TRUE /* throwOnConflict */);
             break;
         case CustomMarshalerMethods_GetInstance:

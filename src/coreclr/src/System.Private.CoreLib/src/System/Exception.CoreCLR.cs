@@ -266,8 +266,8 @@ namespace System
         }
 
         // This piece of infrastructure exists to help avoid deadlocks
-        // between parts of mscorlib that might throw an exception while
-        // holding a lock that are also used by mscorlib's ResourceManager
+        // between parts of CoreLib that might throw an exception while
+        // holding a lock that are also used by CoreLib's ResourceManager
         // instance.  As a special case of code that may throw while holding
         // a lock, we also need to fix our asynchronous exceptions to use
         // Win32 resources as well (assuming we ever call a managed

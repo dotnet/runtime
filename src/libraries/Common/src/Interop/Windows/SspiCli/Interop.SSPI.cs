@@ -172,21 +172,14 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct SCHANNEL_CRED
+        internal unsafe struct SCHANNEL_CRED
         {
             public const int CurrentVersion = 0x4;
 
             public int dwVersion;
             public int cCreds;
 
-            // ptr to an array of pointers
-            // There is a hack done with this field.  AcquireCredentialsHandle requires an array of
-            // certificate handles; we only ever use one.  In order to avoid pinning a one element array,
-            // we copy this value onto the stack, create a pointer on the stack to the copied value,
-            // and replace this field with the pointer, during the call to AcquireCredentialsHandle.
-            // Then we fix it up afterwards.  Fine as long as all the SSPI credentials are not
-            // supposed to be threadsafe.
-            public IntPtr paCred;
+            public Crypt32.CERT_CONTEXT** paCred;
 
             public IntPtr hRootStore;               // == always null, OTHERWISE NOT RELIABLE
             public int cMappers;
@@ -223,9 +216,7 @@ internal static partial class Interop
             public int dwCredformat;
             public int cCreds;
 
-            // This is pointer to arry of CERT_CONTEXT*
-            // We do not use it directly in .NET. Instead, we wrap returned OS pointer in safe handle.
-            public void* paCred;
+            public Crypt32.CERT_CONTEXT** paCred;
 
             public IntPtr hRootStore;               // == always null, OTHERWISE NOT RELIABLE
             public int cMappers;
@@ -287,8 +278,8 @@ internal static partial class Interop
             public UNICODE_STRING* strCngAlgId;         // CNG algorithm identifier.
             public int cChainingModes;                  // Set to 0 if CNG algorithm does not have a chaining mode.
             public UNICODE_STRING* rgstrChainingModes;  // Set to NULL if CNG algorithm does not have a chaining mode.
-            public int dwMinBitLength;                  // Blacklist key sizes less than this. Set to 0 if not defined or CNG algorithm implies bit length.
-            public int dwMaxBitLength;                  // Blacklist key sizes greater than this. Set to 0 if not defined or CNG algorithm implies bit length.
+            public int dwMinBitLength;                  // Minimum bit length for the specified CNG algorithm. Set to 0 if not defined or CNG algorithm implies bit length.
+            public int dwMaxBitLength;                  // Maximum bit length for the specified CNG algorithm. Set to 0 if not defined or CNG algorithm implies bit length.
 
             public enum TlsAlgorithmUsage
             {
@@ -423,7 +414,7 @@ internal static partial class Interop
                   [In] string moduleName,
                   [In] int usage,
                   [In] void* logonID,
-                  [In] ref SCHANNEL_CRED authData,
+                  [In] SCHANNEL_CRED* authData,
                   [In] void* keyCallback,
                   [In] void* keyArgument,
                   ref CredHandle handlePtr,

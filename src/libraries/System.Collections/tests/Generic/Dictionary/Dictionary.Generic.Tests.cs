@@ -3,7 +3,9 @@
 
 using Common.System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Runtime.Serialization;
 using Xunit;
 
 namespace System.Collections.Tests
@@ -609,6 +611,38 @@ namespace System.Collections.Tests
             Assert.Throws<InvalidOperationException>(() => enumerator.MoveNext());
         }
 
+        #endregion
+
+        #region Non-randomized comparers
+        [Fact]
+        public void Dictionary_Comparer_NonRandomizedStringComparers()
+        {
+            RunTest(null);
+            RunTest(EqualityComparer<string>.Default);
+            RunTest(StringComparer.Ordinal);
+            RunTest(StringComparer.OrdinalIgnoreCase);
+            RunTest(StringComparer.InvariantCulture);
+            RunTest(StringComparer.InvariantCultureIgnoreCase);
+            RunTest(StringComparer.Create(CultureInfo.InvariantCulture, ignoreCase: false));
+            RunTest(StringComparer.Create(CultureInfo.InvariantCulture, ignoreCase: true));
+
+            void RunTest(IEqualityComparer<string> comparer)
+            {
+                // First, instantiate the dictionary and check its Comparer property
+
+                Dictionary<string, object> dict = new Dictionary<string, object>(comparer);
+                object expected = comparer ?? EqualityComparer<string>.Default;
+
+                Assert.Same(expected, dict.Comparer);
+
+                // Then pretend to serialize the dictionary and check the stored Comparer instance
+
+                SerializationInfo si = new SerializationInfo(typeof(Dictionary<string, object>), new FormatterConverter());
+                dict.GetObjectData(si, new StreamingContext(StreamingContextStates.All));
+
+                Assert.Same(expected, si.GetValue("Comparer", typeof(IEqualityComparer<string>)));
+            }
+        }
         #endregion
     }
 }

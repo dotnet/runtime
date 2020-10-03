@@ -13,14 +13,10 @@
 // #define FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
 #endif
 
-#if ES_BUILD_STANDALONE
 using System;
-using System.Diagnostics;
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
-using EventDescriptor = Microsoft.Diagnostics.Tracing.EventDescriptor;
-#endif
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -440,7 +436,7 @@ namespace System.Diagnostics.Tracing
                 descriptors[1].SetMetadata(pMetadata1, nameInfo.nameMetadata.Length, 1);
                 descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
 
-#if (!ES_BUILD_PCL && !NETCOREAPP)
+#if ES_BUILD_STANDALONE
                 System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                 try
@@ -624,7 +620,7 @@ namespace System.Diagnostics.Tracing
                         descriptors[2].SetMetadata(pMetadata2, eventTypes.typeMetadata.Length, 1);
 #endif // FEATURE_MANAGED_ETW
 
-#if (!ES_BUILD_PCL && !NETCOREAPP)
+#if ES_BUILD_STANDALONE
                         System.Runtime.CompilerServices.RuntimeHelpers.PrepareConstrainedRegions();
 #endif
                         EventOpcode opcode = (EventOpcode)descriptor.Opcode;
@@ -731,7 +727,7 @@ namespace System.Diagnostics.Tracing
             DispatchToAllListeners(-1, eventCallbackArgs);
         }
 
-#if (!ES_BUILD_PCL && !NETCOREAPP)
+#if ES_BUILD_STANDALONE
         [System.Runtime.ConstrainedExecution.ReliabilityContract(
             System.Runtime.ConstrainedExecution.Consistency.WillNotCorruptState,
             System.Runtime.ConstrainedExecution.Cer.Success)]

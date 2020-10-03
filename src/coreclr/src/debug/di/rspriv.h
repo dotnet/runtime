@@ -4139,7 +4139,8 @@ private:
 class CordbModule : public CordbBase,
                     public ICorDebugModule,
                     public ICorDebugModule2,
-                    public ICorDebugModule3
+                    public ICorDebugModule3,
+                    public ICorDebugModule4
 {
 public:
     CordbModule(CordbProcess *      process,
@@ -4233,6 +4234,11 @@ public:
     //-----------------------------------------------------------
     COM_METHOD CreateReaderForInMemorySymbols(REFIID riid,
                                               void** ppObj);
+
+    //-----------------------------------------------------------
+    // ICorDebugModule4
+    //-----------------------------------------------------------
+    COM_METHOD IsMappedLayout(BOOL *isMapped);
 
     //-----------------------------------------------------------
     // Internal members

@@ -70,6 +70,16 @@ namespace TypeSystemTests
         }
 
         [Fact]
+        public void TestSignatureMatchesModoptOnPointerOrRefModifiedType()
+        {
+            MetadataType modOptTester = _testModule.GetType("", "ModOptTester");
+            MethodSignature methodWithModOpt = modOptTester.GetMethods().Single(m => string.Equals(m.Name, "Method3")).Signature;
+            Assert.Equal(MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(0), methodWithModOpt.GetEmbeddedSignatureData()[0].index);
+            Assert.Equal(MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(1), methodWithModOpt.GetEmbeddedSignatureData()[1].index);
+            Assert.Equal(MethodSignature.GetIndexOfCustomModifierOnPointedAtTypeByParameterIndex(2), methodWithModOpt.GetEmbeddedSignatureData()[2].index);
+        }
+
+        [Fact]
         public void TestSignatureMatches()
         {
             MetadataType atomType = _testModule.GetType("", "Atom");

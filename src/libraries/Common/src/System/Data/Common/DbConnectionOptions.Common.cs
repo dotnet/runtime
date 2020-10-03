@@ -1,10 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO: Remove this after System.Data.{Odbc,OleDb} are null-annotated
-#nullable disable
-#pragma warning disable CS8632
-
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -416,8 +412,7 @@ namespace System.Data.Common
             return true;
         }
 
-        // TODO: Annotate with [NotNullWhen(true)] when annotating System.Data.{Odbc,OleDb}
-        private static bool IsKeyNameValid(string? keyname)
+        private static bool IsKeyNameValid([NotNullWhen(true)] string? keyname)
         {
             if (null != keyname)
             {

@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // System.Reflection.Emit.ConstructorBuilder.cs
 //
@@ -150,7 +151,7 @@ namespace System.Reflection.Emit
             return parameters![pos];
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2075:UnrecognizedReflectionPattern",
             Justification = "Linker doesn't analyze RuntimeResolve but it's an identity function")]
         internal MethodBase RuntimeResolve()
         {

@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -8,8 +8,8 @@
   </PropertyGroup>
   <!-- Do not reference these assemblies from the TargetingPack since we are building part of the source code for tests. -->
   <ItemGroup>
-    <DefaultReferenceExclusions Include="System.Net.Http" />
-    <DefaultReferenceExclusions Include="System.Net.Mail" />
+    <DefaultReferenceExclusion Include="System.Net.Http" />
+    <DefaultReferenceExclusion Include="System.Net.Mail" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonPath)System\HexConverter.cs"
@@ -70,6 +70,8 @@
              Link="ProductionCode\Common\System\Threading\Tasks\TaskToApm.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\AuthenticationHelper.Digest.cs" />
+    <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs"
+             Link="ProductionCode\System\Net\Http\SocketsHttpHandler\HttpKeepAlivePingPolicy.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpBaseStream.cs"
              Link="ProductionCode\System\Net\Http\HttpBaseStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\ByteArrayContent.cs"
@@ -90,6 +92,8 @@
          Link="ProductionCode\System\Net\Http\EmptyReadStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\FormUrlEncodedContent.cs"
              Link="ProductionCode\System\Net\Http\FormUrlEncodedContent.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HeaderEncodingSelector.cs"
+             Link="ProductionCode\System\Net\Http\HeaderEncodingSelector.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\AltSvcHeaderParser.cs"
              Link="ProductionCode\System\Net\Http\Headers\AltSvcHeaderParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\AltSvcHeaderValue.cs"
@@ -188,6 +192,8 @@
              Link="ProductionCode\System\Net\Http\Headers\WarningHeaderValue.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpClient.cs"
              Link="ProductionCode\System\Net\Http\HttpClient.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpHandlerDefaults.cs"
+             Link="ProductionCode\System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpCompletionOption.cs"
              Link="ProductionCode\System\Net\Http\HttpCompletionOption.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpContent.cs"
@@ -206,12 +212,18 @@
              Link="ProductionCode\System\Net\Http\RequestRetryType.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpRequestMessage.cs"
              Link="ProductionCode\System\Net\Http\HttpRequestMessage.cs" />
+   <Compile Include="..\..\src\System\Net\Http\HttpRequestOptions.cs"
+             Link="ProductionCode\System\Net\Http\HttpRequestOptions.cs" />
+   <Compile Include="..\..\src\System\Net\Http\HttpRequestOptionsKey.cs"
+             Link="ProductionCode\System\Net\Http\HttpRequestOptionsKey.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpResponseMessage.cs"
              Link="ProductionCode\System\Net\Http\HttpResponseMessage.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpRuleParser.cs"
              Link="ProductionCode\System\Net\Http\HttpRuleParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpUtilities.cs"
              Link="ProductionCode\System\Net\Http\HttpUtilities.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpVersionPolicy.cs"
+             Link="ProductionCode\System\Net\Http\HttpVersionPolicy.cs" />
     <Compile Include="..\..\src\System\Net\Http\MessageProcessingHandler.cs"
              Link="ProductionCode\System\Net\Http\MessageProcessingHandler.cs" />
     <Compile Include="..\..\src\System\Net\Http\MultipartContent.cs"
@@ -240,10 +252,13 @@
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Unix.cs" />
     <Compile Include="..\..\src\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" Condition=" '$(TargetsWindows)' == 'true' and '$(TargetFramework)' == '$(NetCoreAppCurrent)'"
              Link="ProductionCode\System\Net\Http\SocketsHttpHandler\SystemProxyInfo.Windows.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpUtilities.AnyOS.cs"
+             Link="ProductionCode\System\Net\Http\HttpUtilities.AnyOS.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\HttpHandlerDefaults.cs"
              Link="ProductionCode\System\Net\Http\HttpHandlerDefaults.cs" />
     <Compile Include="DigestAuthenticationTests.cs" />
     <Compile Include="Fakes\HttpClientHandler.cs" />
+    <Compile Include="Fakes\HttpTelemetry.cs" />
     <Compile Include="Fakes\MacProxy.cs" Condition=" ('$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true') and '$(TargetFramework)' == '$(NetCoreAppCurrent)'" />
     <Compile Include="Headers\AltSvcHeaderParserTest.cs" />
     <Compile Include="Headers\AuthenticationHeaderValueTest.cs" />
@@ -269,6 +284,7 @@
     <Compile Include="Headers\GenericHeaderParserTest\TokenListParserTest.cs" />
     <Compile Include="Headers\GenericHeaderParserTest\ViaParserTest.cs" />
     <Compile Include="Headers\GenericHeaderParserTest\WarningParserTest.cs" />
+    <Compile Include="Headers\HeaderEncodingTest.cs" />
     <Compile Include="Headers\HeaderUtilitiesTest.cs" />
     <Compile Include="Headers\HttpContentHeadersTest.cs" />
     <Compile Include="Headers\HttpHeadersTest.cs" />
@@ -281,6 +297,7 @@
     <Compile Include="Headers\MediaTypeHeaderParserTest.cs" />
     <Compile Include="Headers\MediaTypeHeaderValueTest.cs" />
     <Compile Include="Headers\MediaTypeWithQualityHeaderValueTest.cs" />
+    <Compile Include="Headers\MultipartContentTest.cs" />
     <Compile Include="Headers\NameValueHeaderValueTest.cs" />
     <Compile Include="Headers\NameValueWithParametersHeaderValueTest.cs" />
     <Compile Include="Headers\ObjectCollectionTest.cs" />
@@ -332,10 +349,6 @@
              Link="ProductionCode\System\Net\Http\WinHttpTraceHelper.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs"
-             Link="ProductionCode\Common\Interop\Windows\Crypt32\Interop.CertEnumCertificatesInStore.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Crypt32\Interop.certificates_types.cs"
-             Link="ProductionCode\Common\Interop\Windows\Crypt32\Interop.certificates_types.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.HRESULT_FROM_WIN32.cs"
              Link="ProductionCode\Common\Interop\Windows\Interop.HRESULT_FROM_WIN32.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinHttp\Interop.SafeWinHttpHandle.cs"

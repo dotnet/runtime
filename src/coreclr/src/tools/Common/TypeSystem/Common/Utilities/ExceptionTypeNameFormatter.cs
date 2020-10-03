@@ -28,7 +28,7 @@ namespace Internal.TypeSystem
 
         public override void AppendName(StringBuilder sb, SignatureTypeVariable type)
         {
-            sb.Append("!");
+            sb.Append('!');
             sb.Append(type.Index.ToStringInvariant());
         }
 
@@ -114,4 +114,3 @@ namespace Internal.TypeSystem
         }
     }
 }
-

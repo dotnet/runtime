@@ -81,12 +81,15 @@
 // means that the problem is already quite complex and we should not be dealing with it - see
 // ComEventsMethod.Invoke
 
+using System.Runtime.Versioning;
+
 namespace System.Runtime.InteropServices
 {
     /// <summary>
     /// The static methods provided in ComEventsHelper allow using .NET delegates to subscribe to events
     /// raised COM objects.
     /// </summary>
+    [SupportedOSPlatform("windows")]
     public static class ComEventsHelper
     {
         /// <summary>

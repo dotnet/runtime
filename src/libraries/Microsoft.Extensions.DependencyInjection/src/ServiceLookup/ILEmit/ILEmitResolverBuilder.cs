@@ -4,7 +4,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
@@ -151,7 +150,12 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             foreach (ServiceCallSite parameterCallSite in constructorCallSite.ParameterCallSites)
             {
                 VisitCallSite(parameterCallSite, argument);
+                if (parameterCallSite.ServiceType.IsValueType)
+                {
+                    argument.Generator.Emit(OpCodes.Unbox_Any, parameterCallSite.ServiceType);
+                }
             }
+
             argument.Generator.Emit(OpCodes.Newobj, constructorCallSite.ConstructorInfo);
             return null;
         }
@@ -185,12 +189,6 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         protected override object VisitConstant(ConstantCallSite constantCallSite, ILEmitResolverBuilderContext argument)
         {
             AddConstant(argument, constantCallSite.DefaultValue);
-
-            if (constantCallSite.ServiceType.IsValueType)
-            {
-                argument.Generator.Emit(OpCodes.Unbox_Any, constantCallSite.ServiceType);
-            }
-
             return null;
         }
 
@@ -213,11 +211,10 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             if (enumerableCallSite.ServiceCallSites.Length == 0)
             {
-                argument.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.ArrayEmptyMethodInfo.MakeGenericMethod(enumerableCallSite.ItemType));
+                argument.Generator.Emit(OpCodes.Call, ExpressionResolverBuilder.GetArrayEmptyMethodInfo(enumerableCallSite.ItemType));
             }
             else
             {
-
                 // var array = new ItemType[];
                 // array[0] = [Create argument0];
                 // array[1] = [Create argument1];
@@ -231,7 +228,13 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
                     // push index
                     argument.Generator.Emit(OpCodes.Ldc_I4, i);
                     // create parameter
-                    VisitCallSite(enumerableCallSite.ServiceCallSites[i], argument);
+                    ServiceCallSite parameterCallSite = enumerableCallSite.ServiceCallSites[i];
+                    VisitCallSite(parameterCallSite, argument);
+                    if (parameterCallSite.ServiceType.IsValueType)
+                    {
+                        argument.Generator.Emit(OpCodes.Unbox_Any, parameterCallSite.ServiceType);
+                    }
+
                     // store
                     argument.Generator.Emit(OpCodes.Stelem, enumerableCallSite.ItemType);
                 }

@@ -4,6 +4,7 @@ trigger:
     include:
     - master
     - release/*
+    - internal/release/*
   paths:
     include:
     - '*'
@@ -53,6 +54,7 @@ stages:
       - Linux_arm
       - Linux_arm64
       - Linux_musl_x64
+      - Linux_musl_arm
       - Linux_musl_arm64
       - Windows_NT_x86
       - Windows_NT_x64
@@ -61,6 +63,24 @@ stages:
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
 
+  - template: /eng/pipelines/common/platform-matrix.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/crossdac-pack.yml
+      buildConfig: release
+      platforms:
+      - Linux_musl_x64
+      jobParameters:
+        isOfficialBuild: ${{ variables.isOfficialBuild }}
+        crossDacPlatforms:
+        - Linux_x64
+        - Linux_arm
+        - Linux_arm64
+        - Linux_musl_x64
+        - Linux_musl_arm
+        - Linux_musl_arm64
+        - Windows_NT_x64
+        - Windows_NT_arm
+        - Windows_NT_arm64
   #
   # Build Mono runtime packs
   #
@@ -86,6 +106,7 @@ stages:
       - Linux_arm64
       - Linux_musl_x64
       - Browser_wasm
+      # - Linux_musl_arm
       # - Linux_musl_arm64
       # - Windows_NT_x64 enable once coreclr.dll has a version header: https://github.com/dotnet/runtime/issues/37503
       # - Windows_NT_x86
@@ -121,7 +142,8 @@ stages:
         buildConfig: release
         runtimeFlavor: mono
         jobParameters:
-          buildArgs: -s mono+libs+installer -c $(_BuildConfig) /p:MonoEnableLLVM=true
+          buildArgs: -s mono+libs+installer -c $(_BuildConfig)
+                     /p:MonoEnableLLVM=true /p:MonoBundleLLVMOptimizer=false
           nameSuffix: AllSubsets_Mono_LLVMJIT
           runtimeVariant: LLVMJIT
           isOfficialBuild: ${{ variables.isOfficialBuild }}
@@ -155,6 +177,7 @@ stages:
       - Linux_arm
       - Linux_arm64
       - Linux_musl_x64
+      - Linux_musl_arm
       - Linux_musl_arm64
       - Windows_NT_x86
       - Windows_NT_x64
@@ -196,6 +219,7 @@ stages:
       - Linux_arm
       - Linux_arm64
       - Linux_musl_x64
+      - Linux_musl_arm
       - Linux_musl_arm64
       - Windows_NT_x86
       - Windows_NT_x64

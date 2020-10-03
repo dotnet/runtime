@@ -320,7 +320,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_Enable (
 		(EventPipeSerializationFormat)format,
 		true,
 		NULL,
-		true);
+		NULL);
 	ep_start_streaming (session_id);
 
 	if (config_providers) {
@@ -341,7 +341,7 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_EventActivityIdControl (
 	/* GUID * */uint8_t *activity_id)
 {
 	int32_t result = 0;
-	EventPipeThread *thread = ep_thread_get ();
+	EventPipeThread *thread = ep_thread_get_or_create ();
 
 	if (thread == NULL)
 		return 1;
@@ -359,9 +359,14 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_EventActivityIdControl (
 		ep_thread_create_activity_id (activity_id, EP_ACTIVITY_ID_SIZE);
 		break;
 	case EP_ACTIVITY_CONTROL_GET_SET_ID:
+		ep_thread_get_activity_id (thread, current_activity_id, EP_ACTIVITY_ID_SIZE);
+		ep_thread_set_activity_id (thread, activity_id, EP_ACTIVITY_ID_SIZE);
+		memcpy (activity_id, current_activity_id, EP_ACTIVITY_ID_SIZE);
+		break;
+	case EP_ACTIVITY_CONTROL_CREATE_SET_ID:
 		ep_thread_get_activity_id (thread, activity_id, EP_ACTIVITY_ID_SIZE);
-		ep_thread_create_activity_id (current_activity_id, G_N_ELEMENTS (current_activity_id));
-		ep_thread_set_activity_id (thread, current_activity_id, G_N_ELEMENTS (current_activity_id));
+		ep_thread_create_activity_id (current_activity_id, EP_ACTIVITY_ID_SIZE);
+		ep_thread_set_activity_id (thread, current_activity_id, EP_ACTIVITY_ID_SIZE);
 		break;
 	default:
 		result = 1;

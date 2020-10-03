@@ -257,6 +257,24 @@ ep_on_error:
 	ep_exit_error_handler ();
 }
 
+void
+ep_provider_set_delete_deferred (
+	EventPipeProvider *provider,
+	bool deferred)
+{
+	EP_ASSERT (provider != NULL);
+	provider->delete_deferred = deferred;
+
+	// EventSources will be collected once they ungregister themselves,
+	// so we can't call back in to them.
+	if (provider->callback_func && provider->callback_data_free_func)
+		provider->callback_data_free_func (provider->callback_func, provider->callback_data);
+
+	provider->callback_func = NULL;
+	provider->callback_data_free_func = NULL;
+	provider->callback_data = NULL;
+}
+
 const EventPipeProviderCallbackData *
 provider_set_config (
 	EventPipeProvider *provider,

@@ -86,11 +86,13 @@
 
     <PropertyGroup Condition="'$(RuntimeFlavor)' == 'CoreCLR'">
       <CoreCLRArtifactsPath>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)'))</CoreCLRArtifactsPath>
+      <CoreCLRArtifactsPdbDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','PDB'))</CoreCLRArtifactsPdbDir>
       <!--
         Even though CoreCLRSharedFrameworkDir is statically initialized, set it again in case the
         value is different after CoreCLRArtifactsPath is normalized.
       -->
       <CoreCLRSharedFrameworkDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','sharedFramework'))</CoreCLRSharedFrameworkDir>
+      <CoreCLRSharedFrameworkPdbDir>$([MSBuild]::NormalizeDirectory('$(CoreCLRSharedFrameworkDir)','PDB'))</CoreCLRSharedFrameworkPdbDir>
       <CoreCLRCrossTargetComponentDir
         Condition="'$(CoreCLRCrossTargetComponentDirName)' != ''">$([MSBuild]::NormalizeDirectory('$(CoreCLRArtifactsPath)','$(CoreCLRCrossTargetComponentDirName)','sharedFramework'))</CoreCLRCrossTargetComponentDir>
     </PropertyGroup>
@@ -112,18 +114,19 @@
       <RuntimeFiles Include="@(_systemPrivateCoreLib)" />
       <RuntimeFiles
         Include="
-          $(CoreCLRSharedFrameworkDir)PDB/*.pdb;
-          $(CoreCLRSharedFrameworkDir)PDB/*.dbg;
-          $(CoreCLRSharedFrameworkDir)PDB/*.dwarf" />
+          $(CoreCLRSharedFrameworkPdbDir)*.pdb;
+          $(CoreCLRSharedFrameworkPdbDir)*.dbg;
+          $(CoreCLRSharedFrameworkPdbDir)*.dwarf" />
       <RuntimeFiles
-        Include="$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.pdb;" />
-      <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.ni.pdb')"
-        Include="$(CoreCLRArtifactsPath)PDB/System.Private.CoreLib.ni.pdb" />
+        Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.pdb" />
+      <RuntimeFiles Condition="Exists('$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb')"
+        Include="$(CoreCLRArtifactsPdbDir)System.Private.CoreLib.ni.pdb" />
+
       <CoreCLRCrossTargetFiles Condition="'$(CoreCLRCrossTargetComponentDir)' != ''"
         Include="
-          $(CoreCLRCrossTargetComponentDir)PDB/*.pdb;
-          $(CoreCLRCrossTargetComponentDir)PDB/*.dbg;
-          $(CoreCLRCrossTargetComponentDir)PDB/*.dwarf" />
+          $(CoreCLRSharedFrameworkPdbDir)*.pdb;
+          $(CoreCLRSharedFrameworkPdbDir)*.dbg;
+          $(CoreCLRSharedFrameworkPdbDir)*.dwarf" />
 
       <CoreCLRCrossTargetFiles>
         <TargetPath>runtime/$(CoreCLRCrossTargetComponentDirName)_$(TargetArchitecture)/native</TargetPath>
@@ -192,7 +195,7 @@
         $(LibrariesNativeArtifactsPath)dotnet.js;
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
         $(LibrariesNativeArtifactsPath)dotnet.timezones.blat;
-        $(LibrariesNativeArtifactsPath)icudt.dat;"
+        $(LibrariesNativeArtifactsPath)*.dat;"
         IsNative="true" />
     </ItemGroup>
 

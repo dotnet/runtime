@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 using Internal.Runtime;
 using Internal.Text;
@@ -119,6 +120,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 // Skip empty entries
                 if (!relocsOnly && item.Node is ObjectNode on && on.ShouldSkipEmittingObjectNode(factory))
                     continue;
+
+                // Unmarked nodes are not part of the graph
+                if (!item.Node.Marked && !(item.Node is ObjectNode))
+                {
+                    Debug.Assert(item.Node is DelayLoadMethodCallThunkNodeRange);
+                    continue;
+                }
 
                 builder.EmitInt((int)item.Id);
 

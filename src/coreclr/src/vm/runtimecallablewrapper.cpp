@@ -483,12 +483,12 @@ IClassFactory *ComClassFactory::GetIClassFactory()
     GCX_PREEMP();
 
     // If a server name is specified, then first try CLSCTX_REMOTE_SERVER.
-    if (m_pwszServer)
+    if (m_wszServer)
     {
         // Set up the COSERVERINFO struct.
         COSERVERINFO ServerInfo;
         memset(&ServerInfo, 0, sizeof(COSERVERINFO));
-        ServerInfo.pwszName = m_pwszServer;
+        ServerInfo.pwszName = (LPWSTR)m_wszServer;
 
         // Try to retrieve the IClassFactory passing in CLSCTX_REMOTE_SERVER.
         hr = CoGetClassObject(m_rclsid, CLSCTX_REMOTE_SERVER, &ServerInfo, IID_IClassFactory, (void**)&pClassFactory);
@@ -519,10 +519,10 @@ IClassFactory *ComClassFactory::GetIClassFactory()
         GetHRMsg(hr, strHRDescription);
 
         // Throw the actual exception indicating we couldn't find the class factory.
-        if (m_pwszServer == NULL)
+        if (m_wszServer == NULL)
             COMPlusThrowHR(hr, IDS_EE_LOCAL_COGETCLASSOBJECT_FAILED, strHRHex, strClsid, strHRDescription.GetUnicode());
         else
-            COMPlusThrowHR(hr, IDS_EE_REMOTE_COGETCLASSOBJECT_FAILED, strHRHex, strClsid, m_pwszServer, strHRDescription.GetUnicode());
+            COMPlusThrowHR(hr, IDS_EE_REMOTE_COGETCLASSOBJECT_FAILED, strHRHex, strClsid, m_wszServer, strHRDescription.GetUnicode());
     }
 
     RETURN pClassFactory;
@@ -587,12 +587,11 @@ OBJECTREF ComClassFactory::CreateInstance(MethodTable* pMTClass, BOOL ForManaged
 
 //--------------------------------------------------------------
 // Init the ComClassFactory.
-void ComClassFactory::Init(__in_opt WCHAR* pwszProgID, __in_opt WCHAR* pwszServer, MethodTable* pClassMT)
+void ComClassFactory::Init(__in_opt PCWSTR wszServer, MethodTable* pClassMT)
 {
     LIMITED_METHOD_CONTRACT;
 
-    m_pwszProgID = pwszProgID;
-    m_pwszServer = pwszServer;
+    m_wszServer = wszServer;
     m_pClassMT = pClassMT;
 }
 
@@ -610,11 +609,8 @@ void ComClassFactory::Cleanup()
     if (m_bManagedVersion)
         return;
 
-    if (m_pwszProgID != NULL)
-        delete [] m_pwszProgID;
-
-    if (m_pwszServer != NULL)
-        delete [] m_pwszServer;
+    if (m_wszServer != NULL)
+        delete [] m_wszServer;
 
     delete this;
 }
@@ -2248,9 +2244,9 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
 #endif //#ifndef CROSSGEN_COMPILE
 
 // Helper method to allow us to compare a MethodTable against a known method table
-// from mscorlib.  If the mscorlib type isn't loaded, we don't load it because we
+// from CoreLib.  If the CoreLib type isn't loaded, we don't load it because we
 // know that it can't be the MethodTable we're curious about.
-static bool MethodTableHasSameTypeDefAsMscorlibClass(MethodTable* pMT, BinderClassID classId)
+static bool MethodTableHasSameTypeDefAsCoreLibClass(MethodTable* pMT, BinderClassID classId)
 {
     CONTRACTL
     {
@@ -2260,11 +2256,11 @@ static bool MethodTableHasSameTypeDefAsMscorlibClass(MethodTable* pMT, BinderCla
     }
     CONTRACTL_END;
 
-    MethodTable* pMT_MscorlibClass = MscorlibBinder::GetClassIfExist(classId);
-    if (pMT_MscorlibClass == NULL)
+    MethodTable* pMT_CoreLibClass = CoreLibBinder::GetClassIfExist(classId);
+    if (pMT_CoreLibClass == NULL)
         return false;
 
-    return (pMT->HasSameTypeDefAs(pMT_MscorlibClass) != FALSE);
+    return (pMT->HasSameTypeDefAs(pMT_CoreLibClass) != FALSE);
 }
 
 #ifndef CROSSGEN_COMPILE
@@ -2542,7 +2538,7 @@ bool RCW::SupportsMngStdInterface(MethodTable *pItfMT)
 
         // If the requested interface is IEnumerable then we need to check to see if the
         // COM object implements IDispatch and has a member with DISPID_NEWENUM.
-        if (pItfMT == MscorlibBinder::GetClass(CLASS__IENUMERABLE))
+        if (pItfMT == CoreLibBinder::GetClass(CLASS__IENUMERABLE))
         {
             SafeComHolder<IDispatch> pDisp = GetIDispatch();
             if (pDisp)
@@ -2632,6 +2628,11 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
 
     // Make sure the interface method table has been restored.
     pIntfTable->CheckRestore();
+
+    if (pIntfTable->GetComInterfaceType() == ifInspectable)
+    {
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
+    }
 
     // Check to see if the static class definition indicates we implement the interface.
     MethodTable *pMT = oref->GetMethodTable();
@@ -2824,7 +2825,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_EVENTITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),
                 strCastToName.GetUnicode(), strIID, strSrcItfIID);
         }
-        else if (thCastTo == TypeHandle(MscorlibBinder::GetClass(CLASS__IENUMERABLE)))
+        else if (thCastTo == TypeHandle(CoreLibBinder::GetClass(CLASS__IENUMERABLE)))
         {
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_IENUMERABLE,
                 strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(), strCastToName.GetUnicode(), strIID);

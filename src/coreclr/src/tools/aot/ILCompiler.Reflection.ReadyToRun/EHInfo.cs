@@ -101,7 +101,7 @@ namespace ILCompiler.Reflection.ReadyToRun
                 }
                 else
                 {
-                    ClassName = MetadataNameFormatter.FormatHandle(reader.GetGlobalMetadataReader(), MetadataTokens.Handle((int)ClassTokenOrFilterOffset));
+                    ClassName = MetadataNameFormatter.FormatHandle(reader.GetGlobalMetadata()?.MetadataReader, MetadataTokens.Handle((int)ClassTokenOrFilterOffset));
                 }
             }
         }
@@ -111,13 +111,21 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// </summary>
         /// <param name="writer">Output writer for the textual representation</param>
         /// <param name="methodRva">Starting RVA of the runtime function is used to display the try / handler info as RVA intervals</param>
-        public void WriteTo(TextWriter writer, int methodRva)
+        public void WriteTo(TextWriter writer, int methodRva, bool dumpRva)
         {
             writer.Write($@"Flags {(uint)Flags:X2} ");
-            writer.Write($@"TryOff {TryOffset:X4} (RVA {(TryOffset + methodRva):X4}) ");
-            writer.Write($@"TryEnd {TryEnd:X4} (RVA {(TryEnd + methodRva):X4}) ");
-            writer.Write($@"HndOff {HandlerOffset:X4} (RVA {(HandlerOffset + methodRva):X4}) ");
-            writer.Write($@"HndEnd {HandlerEnd:X4} (RVA {(HandlerEnd + methodRva):X4}) ");
+            writer.Write($@"TryOff {TryOffset:X4} ");
+            if (dumpRva)
+                writer.Write(@"(RVA {(TryOffset + methodRva):X4}) ");
+            writer.Write($@"TryEnd {TryEnd:X4} ");
+            if (dumpRva)
+                writer.Write(@"(RVA {(TryEnd + methodRva):X4}) ");
+            writer.Write($@"HndOff {HandlerOffset:X4} ");
+            if (dumpRva)
+                writer.Write(@"(RVA {(HandlerOffset + methodRva):X4}) ");
+            writer.Write($@"HndEnd {HandlerEnd:X4} ");
+            if (dumpRva)
+                writer.Write(@"(RVA {(HandlerEnd + methodRva):X4}) ");
             writer.Write($@"ClsFlt {ClassTokenOrFilterOffset:X4}");
 
             switch (Flags & CorExceptionFlag.COR_ILEXCEPTION_CLAUSE_KIND_MASK)
@@ -220,11 +228,11 @@ namespace ILCompiler.Reflection.ReadyToRun
         /// <summary>
         /// Emit the textual representation of the EH info into a given writer.
         /// </summary>
-        public void WriteTo(TextWriter writer)
+        public void WriteTo(TextWriter writer, bool dumpRva)
         {
             foreach (EHClause ehClause in EHClauses)
             {
-                ehClause.WriteTo(writer, MethodRelativeVirtualAddress);
+                ehClause.WriteTo(writer, MethodRelativeVirtualAddress, dumpRva: dumpRva);
                 writer.WriteLine();
             }
         }

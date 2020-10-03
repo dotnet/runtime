@@ -26,10 +26,12 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         private EcmaModule _module;
         private NativeDebugDirectoryEntryNode _nativeEntry;
+        private bool _insertDeterministicEntry;
 
         public DebugDirectoryNode(EcmaModule sourceModule, string outputFileName)
         {
             _module = sourceModule;
+            _insertDeterministicEntry = sourceModule == null; // Mark module as deterministic if generating composite image
             string pdbNameRoot = Path.GetFileNameWithoutExtension(outputFileName);
             if (sourceModule != null)
             {
@@ -50,7 +52,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
         public int Offset => 0;
 
-        public int Size => (GetNumDebugDirectoryEntriesInModule() + 1) * ImageDebugDirectorySize;
+        public int Size => (GetNumDebugDirectoryEntriesInModule() + 1 + (_insertDeterministicEntry ? 1 : 0)) * ImageDebugDirectorySize;
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
         {
@@ -112,8 +114,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 builder.EmitReloc(entry, RelocType.IMAGE_REL_FILE_ABSOLUTE);
             }
 
+            // If generating a composite image, emit the deterministic marker
+            if (_insertDeterministicEntry)
+            {
+                builder.EmitUInt(0 /* Characteristics */);
+                builder.EmitUInt(0);
+                builder.EmitUShort(0);
+                builder.EmitUShort(0);
+                builder.EmitInt((int)DebugDirectoryEntryType.Reproducible);
+                builder.EmitInt(0);
+                builder.EmitUInt(0);
+                builder.EmitUInt(0);
+            }
+
             // Second, copy existing entries from input module
-            for(int i = 0; i < numEntries; i++)
+            for (int i = 0; i < numEntries; i++)
             {
                 builder.EmitUInt(0 /* Characteristics */);
                 builder.EmitUInt(entries[i].Stamp);

@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
@@ -10,6 +11,7 @@ namespace System.Security.Cryptography
     // preexisting contract from the .NET Framework locks all of these into deriving directly from HMAC, it can't be helped.
     //
 
+    [UnsupportedOSPlatform("browser")]
     public class HMACMD5 : HMAC
     {
         public HMACMD5()

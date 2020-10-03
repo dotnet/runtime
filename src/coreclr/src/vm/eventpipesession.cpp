@@ -81,6 +81,7 @@ EventPipeSession::EventPipeSession(
 
     GetSystemTimeAsFileTime(&m_sessionStartTime);
     QueryPerformanceCounter(&m_sessionStartTimeStamp);
+    this->m_paused = false;
 }
 
 EventPipeSession::~EventPipeSession()
@@ -315,6 +316,16 @@ bool EventPipeSession::WriteAllBuffersToFile(bool *pEventsWritten)
     return !m_pFile->HasErrors();
 }
 
+void EventPipeSession::Pause()
+{
+    this->m_paused = true;
+}
+
+void EventPipeSession::Resume()
+{
+    this->m_paused = false;
+}
+
 bool EventPipeSession::WriteEvent(
     Thread *pThread,
     EventPipeEvent &event,
@@ -331,6 +342,11 @@ bool EventPipeSession::WriteEvent(
         MODE_ANY;
     }
     CONTRACTL_END;
+
+    if (this->m_paused)
+    {
+        return true;
+    }
 
     // Filter events specific to "this" session based on precomputed flag on provider/events.
     if (event.IsEnabled(GetMask()))

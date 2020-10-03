@@ -12,6 +12,8 @@ namespace System.Net.Http
     {
         private abstract class HttpContentWriteStream : HttpContentStream
         {
+            public long BytesWritten { get; protected set; }
+
             public HttpContentWriteStream(HttpConnection connection) : base(connection) =>
                 Debug.Assert(connection != null);
 

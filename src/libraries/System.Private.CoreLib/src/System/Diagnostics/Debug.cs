@@ -5,6 +5,7 @@
 #define DEBUG
 
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace System.Diagnostics
@@ -114,6 +115,7 @@ namespace System.Diagnostics
 
         [System.Diagnostics.Conditional("DEBUG")]
         [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)] // Preserve the frame for debugger
         public static void Fail(string? message, string? detailMessage) =>
             s_provider.Fail(message, detailMessage);
 

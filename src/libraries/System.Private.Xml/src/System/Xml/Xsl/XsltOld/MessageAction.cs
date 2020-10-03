@@ -54,7 +54,7 @@ namespace System.Xml.Xsl.XsltOld
                     break;
 
                 case ProcessingChildren:
-                    TextOnlyOutput recOutput = processor.PopOutput() as TextOnlyOutput;
+                    TextOnlyOutput? recOutput = processor.PopOutput() as TextOnlyOutput;
                     Debug.Assert(recOutput != null);
 
                     if (_Terminate)

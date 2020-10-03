@@ -169,7 +169,7 @@ CustomAttributeManagedValues Attribute::GetManagedCaValue(CaValue* pCaVal)
 
             if (length != (ULONG)-1)
             {
-                gc.array = (CaValueArrayREF)AllocateSzArray(TypeHandle(MscorlibBinder::GetClass(CLASS__CUSTOM_ATTRIBUTE_ENCODED_ARGUMENT)).MakeSZArray(), length);
+                gc.array = (CaValueArrayREF)AllocateSzArray(TypeHandle(CoreLibBinder::GetClass(CLASS__CUSTOM_ATTRIBUTE_ENCODED_ARGUMENT)).MakeSZArray(), length);
                 CustomAttributeValue* pValues = gc.array->GetDirectPointerToNonObjectElements();
 
                 for (COUNT_T i = 0; i < length; i ++)
@@ -929,9 +929,9 @@ FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObjec
                 {
                     // load the proper type so that code in managed knows which property to load
                     if (fieldType == SERIALIZATION_TYPE_STRING)
-                        *pType = MscorlibBinder::GetElementType(ELEMENT_TYPE_STRING)->GetManagedClassObject();
+                        *pType = CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING)->GetManagedClassObject();
                     else if (fieldType == SERIALIZATION_TYPE_TYPE)
-                        *pType = MscorlibBinder::GetClass(CLASS__TYPE)->GetManagedClassObject();
+                        *pType = CoreLibBinder::GetClass(CLASS__TYPE)->GetManagedClassObject();
                 }
                 break;
             case SERIALIZATION_TYPE_SZARRAY:
@@ -942,9 +942,9 @@ FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObjec
                 {
                     _ASSERTE(!bObjectCreated);
                     if (arrayType == SERIALIZATION_TYPE_STRING)
-                        nullTH = TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_STRING));
+                        nullTH = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING));
                     else if (arrayType == SERIALIZATION_TYPE_TYPE)
-                        nullTH = TypeHandle(MscorlibBinder::GetClass(CLASS__TYPE));
+                        nullTH = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPE));
                     else if (arrayType == SERIALIZATION_TYPE_TAGGED_OBJECT)
                         nullTH = TypeHandle(g_pObjectClass);
                     ReadArray(pCtorAssembly, arrayType, arraySize, nullTH, &pBlob, pBlobEnd, pModule, (BASEARRAYREF*)value);
@@ -955,17 +955,17 @@ FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObjec
                     switch (arrayType)
                     {
                         case SERIALIZATION_TYPE_STRING:
-                            arrayTH = TypeHandle(MscorlibBinder::GetElementType(ELEMENT_TYPE_STRING));
+                            arrayTH = TypeHandle(CoreLibBinder::GetElementType(ELEMENT_TYPE_STRING));
                             break;
                         case SERIALIZATION_TYPE_TYPE:
-                            arrayTH = TypeHandle(MscorlibBinder::GetClass(CLASS__TYPE));
+                            arrayTH = TypeHandle(CoreLibBinder::GetClass(CLASS__TYPE));
                             break;
                         case SERIALIZATION_TYPE_TAGGED_OBJECT:
                             arrayTH = TypeHandle(g_pObjectClass);
                             break;
                         default:
                             if (SERIALIZATION_TYPE_BOOLEAN <= arrayType && arrayType <= SERIALIZATION_TYPE_R8)
-                                arrayTH = TypeHandle(MscorlibBinder::GetElementType((CorElementType)arrayType));
+                                arrayTH = TypeHandle(CoreLibBinder::GetElementType((CorElementType)arrayType));
                     }
                     if (!arrayTH.IsNull())
                     {
@@ -977,7 +977,7 @@ FCIMPL7(void, COMCustomAttribute::GetPropertyOrFieldData, ReflectModuleBaseObjec
             }
             default:
                 if (SERIALIZATION_TYPE_BOOLEAN <= fieldType && fieldType <= SERIALIZATION_TYPE_R8)
-                    pMTValue = MscorlibBinder::GetElementType((CorElementType)fieldType);
+                    pMTValue = CoreLibBinder::GetElementType((CorElementType)fieldType);
                 else if(fieldType == SERIALIZATION_TYPE_ENUM)
                     fieldType = (CorSerializationType)pMTValue->GetInternalCorElementType();
                 else
@@ -1027,12 +1027,12 @@ TypeHandle COMCustomAttribute::GetTypeHandleFromBlob(Assembly *pCtorAssembly,
     case SERIALIZATION_TYPE_U8:
     case SERIALIZATION_TYPE_R8:
     case SERIALIZATION_TYPE_STRING:
-        pMTType = MscorlibBinder::GetElementType((CorElementType)objType);
+        pMTType = CoreLibBinder::GetElementType((CorElementType)objType);
         RtnTypeHnd = TypeHandle(pMTType);
         break;
 
     case ELEMENT_TYPE_CLASS:
-        pMTType = MscorlibBinder::GetClass(CLASS__TYPE);
+        pMTType = CoreLibBinder::GetClass(CLASS__TYPE);
         RtnTypeHnd = TypeHandle(pMTType);
         break;
 
@@ -1386,7 +1386,7 @@ ARG_SLOT COMCustomAttribute::GetDataFromBlob(Assembly *pCtorAssembly,
                 goto stringType;
             else if (pMT == g_pObjectClass)
                 goto typeObject;
-            else if (MscorlibBinder::IsClass(pMT, CLASS__TYPE))
+            else if (CoreLibBinder::IsClass(pMT, CLASS__TYPE))
                 goto typeType;
         }
 

@@ -90,9 +90,9 @@ namespace System.Data.ProviderBase
 
         internal sealed class Counter
         {
-            private PerformanceCounter _instance;
+            private PerformanceCounter? _instance;
 
-            internal Counter(string categoryName, string instanceName, string counterName, PerformanceCounterType counterType)
+            internal Counter(string? categoryName, string? instanceName, string counterName, PerformanceCounterType counterType)
             {
                 if (ADP.IsPlatformNT5)
                 {
@@ -120,7 +120,7 @@ namespace System.Data.ProviderBase
 
             internal void Decrement()
             {
-                PerformanceCounter instance = _instance;
+                PerformanceCounter? instance = _instance;
                 if (null != instance)
                 {
                     instance.Decrement();
@@ -129,7 +129,7 @@ namespace System.Data.ProviderBase
 
             internal void Dispose()
             { // TODO: race condition, Dispose at the same time as Increment/Decrement
-                PerformanceCounter instance = _instance;
+                PerformanceCounter? instance = _instance;
                 _instance = null;
                 if (null != instance)
                 {
@@ -142,7 +142,7 @@ namespace System.Data.ProviderBase
 
             internal void Increment()
             {
-                PerformanceCounter instance = _instance;
+                PerformanceCounter? instance = _instance;
                 if (null != instance)
                 {
                     instance.Increment();
@@ -171,13 +171,13 @@ namespace System.Data.ProviderBase
         {
         }
 
-        protected DbConnectionPoolCounters(string categoryName, string categoryHelp)
+        protected DbConnectionPoolCounters(string? categoryName, string? categoryHelp)
         {
             AppDomain.CurrentDomain.DomainUnload += new EventHandler(this.UnloadEventHandler);
             AppDomain.CurrentDomain.ProcessExit += new EventHandler(this.ExitEventHandler);
             AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(this.ExceptionEventHandler);
 
-            string instanceName = null;
+            string? instanceName = null;
 
             if (!ADP.IsEmpty(categoryName))
             {
@@ -188,7 +188,7 @@ namespace System.Data.ProviderBase
             }
 
             // level 0-3: hard connects/disconnects, plus basic pool/pool entry statistics
-            string basicCategoryName = categoryName;
+            string? basicCategoryName = categoryName;
             HardConnectsPerSecond = new Counter(basicCategoryName, instanceName, CreationData.HardConnectsPerSecond.CounterName, CreationData.HardConnectsPerSecond.CounterType);
             HardDisconnectsPerSecond = new Counter(basicCategoryName, instanceName, CreationData.HardDisconnectsPerSecond.CounterName, CreationData.HardDisconnectsPerSecond.CounterType);
             NumberOfNonPooledConnections = new Counter(basicCategoryName, instanceName, CreationData.NumberOfNonPooledConnections.CounterName, CreationData.NumberOfNonPooledConnections.CounterType);
@@ -201,7 +201,7 @@ namespace System.Data.ProviderBase
             NumberOfReclaimedConnections = new Counter(basicCategoryName, instanceName, CreationData.NumberOfReclaimedConnections.CounterName, CreationData.NumberOfReclaimedConnections.CounterType);
 
             // level 4: expensive stuff
-            string verboseCategoryName = null;
+            string? verboseCategoryName = null;
             if (!ADP.IsEmpty(categoryName))
             {
                 // don't load TraceSwitch if no categoryName so that Odbc/OleDb have a chance of not loading TraceSwitch
@@ -217,12 +217,12 @@ namespace System.Data.ProviderBase
             NumberOfActiveConnections = new Counter(verboseCategoryName, instanceName, CreationData.NumberOfActiveConnections.CounterName, CreationData.NumberOfActiveConnections.CounterType);
             NumberOfFreeConnections = new Counter(verboseCategoryName, instanceName, CreationData.NumberOfFreeConnections.CounterName, CreationData.NumberOfFreeConnections.CounterType);
         }
-        private string GetAssemblyName()
+        private string? GetAssemblyName()
         {
-            string result = null;
+            string? result = null;
 
             // First try GetEntryAssembly name, then AppDomain.FriendlyName.
-            Assembly assembly = Assembly.GetEntryAssembly();
+            Assembly? assembly = Assembly.GetEntryAssembly();
 
             if (null != assembly)
             {
@@ -239,9 +239,9 @@ namespace System.Data.ProviderBase
         // TODO: remove the Resource* attributes if you do not use GetCurrentProcessId after the fix
         private string GetInstanceName()
         {
-            string result = null;
+            string? result = null;
 
-            string instanceName = GetAssemblyName(); // instance perfcounter name
+            string? instanceName = GetAssemblyName(); // instance perfcounter name
 
             if (ADP.IsEmpty(instanceName))
             {
@@ -259,7 +259,7 @@ namespace System.Data.ProviderBase
             // to PERFMON.  They recommend that we translate them as shown below, to
             // prevent problems.
 
-            result = string.Format((IFormatProvider)null, "{0}[{1}]", instanceName, pid);
+            result = string.Format(null, "{0}[{1}]", instanceName, pid);
             result = result.Replace('(', '[').Replace(')', ']').Replace('#', '_').Replace('/', '_').Replace('\\', '_');
 
             // counter instance name cannot be greater than 127
@@ -272,13 +272,13 @@ namespace System.Data.ProviderBase
                 const string insertString = "[...]";
                 int firstPartLength = (CounterInstanceNameMaxLength - insertString.Length) / 2;
                 int lastPartLength = CounterInstanceNameMaxLength - firstPartLength - insertString.Length;
-                result = string.Format((IFormatProvider)null, "{0}{1}{2}",
+                result = string.Format(null, "{0}{1}{2}",
                     result.Substring(0, firstPartLength),
                     insertString,
                     result.Substring(result.Length - lastPartLength, lastPartLength));
 
                 Debug.Assert(result.Length == CounterInstanceNameMaxLength,
-                    string.Format((IFormatProvider)null, "wrong calculation of the instance name: expected {0}, actual: {1}", CounterInstanceNameMaxLength, result.Length));
+                    string.Format(null, "wrong calculation of the instance name: expected {0}, actual: {1}", CounterInstanceNameMaxLength, result.Length));
             }
 
             return result;
@@ -319,12 +319,12 @@ namespace System.Data.ProviderBase
             }
         }
 
-        private void ExitEventHandler(object sender, EventArgs e)
+        private void ExitEventHandler(object? sender, EventArgs e)
         {
             Dispose();
         }
 
-        private void UnloadEventHandler(object sender, EventArgs e)
+        private void UnloadEventHandler(object? sender, EventArgs e)
         {
             Dispose();
         }

@@ -303,7 +303,6 @@ typedef union _ULARGE_INTEGER {
 /******************* OLE, BSTR, VARIANT *************************/
 
 STDAPI_VIS(DLLEXPORT, LPVOID) CoTaskMemAlloc(SIZE_T cb);
-STDAPI_VIS(DLLEXPORT, LPVOID) CoTaskMemRealloc(LPVOID pv, SIZE_T cb);
 STDAPI_VIS(DLLEXPORT, void) CoTaskMemFree(LPVOID pv);
 
 typedef SHORT VARIANT_BOOL;
@@ -708,10 +707,6 @@ STDAPI_(LPWSTR) StrCatBuffW(LPWSTR pszDest, LPCWSTR pszSrc, int cchDestBuffSize)
 #define _SAFECRT_SET_ERRNO 0
 #define _SAFECRT_DEFINE_MBS_FUNCTIONS 0
 #define _SAFECRT_DEFINE_TCS_MACROS 1
-/*
-#define _SAFECRT__ISMBBLEAD(_Character) 0
-#define _SAFECRT__MBSDEC(_String, _Current) (_Current - 1)
-*/
 #include "safecrt.h"
 #include "specstrings.h"
 
@@ -875,8 +870,6 @@ typedef HANDLE HWND;
 
 #define IS_TEXT_UNICODE_SIGNATURE             0x0008
 #define IS_TEXT_UNICODE_UNICODE_MASK          0x000F
-
-BOOL IsTextUnicode(CONST VOID* lpv, int iSize, LPINT lpiResult);
 
 typedef struct _LIST_ENTRY {
    struct _LIST_ENTRY *Flink;

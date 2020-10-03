@@ -324,6 +324,21 @@ namespace Server.Contract
         bool EqualByCCW(object obj);
         bool NotEqualByRCW(object obj);
     }
+
+    [ComVisible(true)]
+    [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
+    [Guid("3021236a-2a9e-4a29-bf14-533842c55262")]
+    internal interface IInspectableTesting
+    {
+    }
+
+    [ComImport]
+    [InterfaceType(ComInterfaceType.InterfaceIsIInspectable)]
+    [Guid("e9e1ccf9-8e93-4850-ac1c-a71692cb68c5")]
+    internal interface IInspectableTesting2
+    {
+        int Add(int i, int j);
+    }
 }
 
 #pragma warning restore 618 // Must test deprecated features

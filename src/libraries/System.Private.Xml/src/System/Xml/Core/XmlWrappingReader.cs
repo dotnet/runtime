@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.Xml;
 using System.Xml.Schema;
@@ -61,7 +60,7 @@ namespace System.Xml
             return reader.GetAttribute(name);
         }
 
-        public override string? GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             return reader.GetAttribute(name, namespaceURI);
         }
@@ -76,7 +75,7 @@ namespace System.Xml
             return reader.MoveToAttribute(name);
         }
 
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             return reader.MoveToAttribute(name, ns);
         }

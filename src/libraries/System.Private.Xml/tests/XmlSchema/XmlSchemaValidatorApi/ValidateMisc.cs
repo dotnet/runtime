@@ -43,7 +43,7 @@ namespace System.Xml.Tests
             XmlSchema Schema = XmlSchema.Read(XmlReader.Create(xsd), ValidationCallback);
             ss.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema Schema1 = ss.Add(Schema);
+            ss.Add(Schema);
             ValidateSchemaSet(ss, expCount, false, 0, 0, 0, "Validation after add");
             ValidateWithSchemaInfo(ss);
 
@@ -51,9 +51,8 @@ namespace System.Xml.Tests
             ValidateSchemaSet(ss, expCount, true, expCountGT, expCountGE, expCountGA, "Validation after add/comp");
             ValidateWithSchemaInfo(ss);
 
-            XmlSchema Schema2 = null;
             foreach (XmlSchema schema in ss.Schemas())
-                Schema2 = ss.Reprocess(schema);
+                ss.Reprocess(schema);
 
             ValidateSchemaSet(ss, expCount, false, 1, 0, 0, "Validation after repr");
             ValidateWithSchemaInfo(ss);
@@ -98,7 +97,7 @@ namespace System.Xml.Tests
             XmlSchema Schema = XmlSchema.Read(XmlReader.Create(xsd), ValidationCallback);
             ss.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema Schema1 = ss.Add(Schema);
+            ss.Add(Schema);
             ValidateSchemaSet(ss, expCount, false, 0, 0, 0, "Validation after add");
             ValidateWithXmlReader(ss, xml, xsd);
 
@@ -162,7 +161,7 @@ namespace System.Xml.Tests
             XmlSchema Schema = XmlSchema.Read(XmlReader.Create(xsd), ValidationCallback);
             ss.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema Schema1 = ss.Add(Schema);
+            ss.Add(Schema);
             ValidateSchemaSet(ss, expCount, false, 0, 0, 0, "Validation after add");
             ValidateWithSchemaInfo(ss);
 
@@ -227,7 +226,7 @@ namespace System.Xml.Tests
             XmlSchema Schema = XmlSchema.Read(XmlReader.Create(xsd), ValidationCallback);
             ss.XmlResolver = new XmlUrlResolver();
 
-            XmlSchema Schema1 = ss.Add(Schema);
+            ss.Add(Schema);
             ValidateSchemaSet(ss, expCount, false, 0, 0, 0, "Validation after add");
             ValidateWithXmlReader(ss, xml, xsd);
 
@@ -243,10 +242,9 @@ namespace System.Xml.Tests
             ValidateSchemaSet(ss, expCount - 1, true, expCountGERC, expCountGER, 0, "Validation after add");
             ValidateWithXmlReader(ss, xml, xsd);
 
-            XmlSchema Schema2 = null;
             try
             {
-                Schema2 = ss.Reprocess(Schema);
+                ss.Reprocess(Schema);
                 Assert.True(false);
             }
             catch (ArgumentException e)
@@ -429,7 +427,7 @@ namespace System.Xml.Tests
             XmlSchemaSet ss = new XmlSchemaSet();
             ss.XmlResolver = new XmlUrlResolver();
             XmlSchema Schema = XmlSchema.Read(XmlReader.Create(xsd), null);
-            XmlSchema Schema1 = ss.Add(Schema);
+            ss.Add(Schema);
             ValidateSchemaSet(ss, expCount, false, 0, 0, 0, "Validation after add");
 
             ss.Compile();
@@ -455,7 +453,7 @@ namespace System.Xml.Tests
 
             XmlSchemaSet ss = new XmlSchemaSet();
             XmlSchema Schema = XmlSchema.Read(XmlReader.Create(xsd), null);
-            XmlSchema Schema1 = ss.Add(Schema);
+            ss.Add(Schema);
             ValidateSchemaSet(ss, 1, false, 0, 0, 0, "Validation after add");
 
             ss.Compile();
@@ -679,7 +677,7 @@ namespace System.Xml.Tests
                 }
             }
 
-            XmlSchema removedSchema = ss.Remove(schema);
+            ss.Remove(schema);
             Assert.Equal(0, ss.Count);
             ss.Compile();
             Assert.Equal(0, ss.Count);
@@ -721,7 +719,7 @@ namespace System.Xml.Tests
                 while (xmlReader.Read()) ;
             }
 
-            XmlSchema removedSchema = ss.Remove(schema);
+            ss.Remove(schema);
             Assert.Equal(0, ss.Count);
             ss.Compile();
             Assert.Equal(0, ss.Count);
@@ -1092,7 +1090,6 @@ namespace System.Xml.Tests
         {
             Initialize();
 
-            Regex regex = new Regex(@"^\w+$");
             string schemaContent = @"<xs:schema elementFormDefault='qualified' xmlns:xs='http://www.w3.org/2001/XMLSchema'>
 <xs:element name='validationTest'>
 <xs:simpleType>

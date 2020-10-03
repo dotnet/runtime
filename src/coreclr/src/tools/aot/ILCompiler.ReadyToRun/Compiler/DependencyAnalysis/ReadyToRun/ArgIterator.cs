@@ -120,8 +120,19 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return CorElementType.ELEMENT_TYPE_BYREF;
             }
 
+            Internal.TypeSystem.TypeFlags category;
+            switch (_type.Context.Target.Architecture)
+            {
+                case TargetArchitecture.X86:
+                    category = ((CompilerTypeSystemContext)_type.Context).NormalizedCategoryFor4ByteStructOnX86(_type.UnderlyingType);
+                    break;
+
+                default:
+                    category = _type.UnderlyingType.Category;
+                    break;
+            }
             // We use the UnderlyingType to handle Enums properly
-            return _type.UnderlyingType.Category switch
+            return category switch
             {
                 Internal.TypeSystem.TypeFlags.Boolean => CorElementType.ELEMENT_TYPE_BOOLEAN,
                 Internal.TypeSystem.TypeFlags.Char => CorElementType.ELEMENT_TYPE_CHAR,
@@ -308,7 +319,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
         //  fieldBytes - size of the structure
         internal void ReportPointersFromStructInRegisters(TypeDesc type, int delta, CORCOMPILE_GCREFMAP_TOKENS[] frame)
         {
-            // SPAN-TODO: GC reporting - https://github.com/dotnet/coreclr/issues/8517
+            // SPAN-TODO: GC reporting - https://github.com/dotnet/runtime/issues/7103
 
             Debug.Assert(IsStructPassedInRegs());
 
@@ -682,9 +693,9 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 switch (_paramTypeLoc)
                 {
                     case ParamTypeLocation.Ecx:// PARAM_TYPE_REGISTER_ECX:
-                        return _transitionBlock.OffsetOfArgumentRegisters + OffsetOfEcx;
+                        return _transitionBlock.OffsetOfArgumentRegisters + TransitionBlock.X86Constants.OffsetOfEcx;
                     case ParamTypeLocation.Edx:
-                        return _transitionBlock.OffsetOfArgumentRegisters + OffsetOfEdx;
+                        return _transitionBlock.OffsetOfArgumentRegisters + TransitionBlock.X86Constants.OffsetOfEdx;
                     default:
                         break;
                 }
@@ -726,16 +737,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             if (!_ITERATION_STARTED)
             {
                 int numRegistersUsed = 0;
+
+#if PROJECTN || FEATURE_INTERPRETER
                 int initialArgOffset = 0;
+#endif
                 if (HasThis)
                     numRegistersUsed++;
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
+#if PROJECTN
                     if (!_transitionBlock.IsX86)
+#endif
                     {
                         numRegistersUsed++;
                     }
+#if PROJECTN
                     else
                     {
                         // DESKTOP BEHAVIOR is to do nothing here, as ret buf is never reached by the scan algorithm that walks backwards
@@ -743,14 +760,20 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         // on the stack)
                         initialArgOffset = _transitionBlock.PointerSize;
                     }
+#endif
                 }
 
                 Debug.Assert(!IsVarArg || !HasParamType);
 
+#if !PROJECTN
                 // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on .NET Framework x86.
-                if (HasParamType)
+                if (!_transitionBlock.IsX86)
+#endif
                 {
-                    numRegistersUsed++;
+                    if (HasParamType)
+                    {
+                        numRegistersUsed++;
+                    }
                 }
 
                 if (!_transitionBlock.IsX86 && IsVarArg)
@@ -787,8 +810,11 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         }
 #endif
                         _x86NumRegistersUsed = numRegistersUsed;
-                        // DESKTOP BEHAVIOR _curOfs = (int)(TransitionBlock.GetOffsetOfArgs() + SizeOfArgStack());
+#if PROJECTN
                         _x86CurOfs = (int)(_transitionBlock.OffsetOfArgs + initialArgOffset);
+#else
+                        _x86CurOfs = (int)(_transitionBlock.OffsetOfArgs + SizeOfArgStack());
+#endif
                         break;
 
                     case TargetArchitecture.X64:
@@ -862,10 +888,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         return _transitionBlock.OffsetOfArgumentRegisters + (_transitionBlock.NumArgumentRegisters - _x86NumRegistersUsed) * _transitionBlock.PointerSize;
                     }
 
-                    // DESKTOP BEHAVIOR _curOfs -= ArchitectureConstants.StackElemSize(argSize);
-                    // DESKTOP BEHAVIOR return _curOfs;
+#if PROJECTN
                     argOfs = _x86CurOfs;
                     _x86CurOfs += _transitionBlock.StackElemSize(argSize);
+#else
+                    _x86CurOfs -= _transitionBlock.StackElemSize(argSize);
+                    argOfs = _x86CurOfs;
+#endif
                     Debug.Assert(argOfs >= _transitionBlock.OffsetOfArgs);
                     return argOfs;
 
@@ -1321,11 +1350,15 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
 
                 if (HasRetBuffArg() && _transitionBlock.IsRetBuffPassedAsFirstArg)
                 {
-                    // DESKTOP BEHAVIOR                numRegistersUsed++;
+#if PROJECTN
                     // On ProjectN ret buff arg is passed on the call stack as the top stack arg
                     nSizeOfArgStack += _transitionBlock.PointerSize;
+#else
+                    numRegistersUsed++;
+#endif
                 }
 
+#if PROJECTN
                 // DESKTOP BEHAVIOR - This block is disabled for x86 as the param arg is the last argument on .NET Framework x86.
                 if (HasParamType)
                 {
@@ -1334,6 +1367,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         ParamTypeLocation.Ecx : ParamTypeLocation.Edx;
                     Debug.Assert(numRegistersUsed <= 2);
                 }
+#endif
 
                 if (IsVarArg)
                 {
@@ -1380,22 +1414,22 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     }
                 }
 
-#if DESKTOP            // DESKTOP BEHAVIOR
-                if (HasParamType())
+#if !PROJECTN
+                if (HasParamType)
                 {
-                    if (numRegistersUsed < ArchitectureConstants.NUM_ARGUMENT_REGISTERS)
+                    if (numRegistersUsed < _transitionBlock.NumArgumentRegisters)
                     {
                         numRegistersUsed++;
-                        paramTypeLoc = (numRegistersUsed == 1) ?
+                        _paramTypeLoc = (numRegistersUsed == 1) ?
                             ParamTypeLocation.Ecx : ParamTypeLocation.Edx;
                     }
                     else
                     {
                         nSizeOfArgStack += _transitionBlock.PointerSize;
-                        paramTypeLoc = ParamTypeLocation.Stack;
+                        _paramTypeLoc = ParamTypeLocation.Stack;
                     }
                 }
-#endif // DESKTOP BEHAVIOR
+#endif
             }
             else
             {
@@ -1654,8 +1688,6 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             Ecx,
             Edx
         }
-        private const int OffsetOfEcx = 0 * sizeof(int);
-        private const int OffsetOfEdx = 1 * sizeof(int);
 
         private ParamTypeLocation _paramTypeLoc;
         /* X86: PARAM_TYPE_REGISTER_MASK        = 0x0030,

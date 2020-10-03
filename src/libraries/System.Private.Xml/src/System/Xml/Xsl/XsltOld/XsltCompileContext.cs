@@ -13,11 +13,12 @@ namespace System.Xml.Xsl.XsltOld
     using System.Reflection;
     using System.Security;
     using System.Runtime.Versioning;
+    using System.Diagnostics.CodeAnalysis;
 
     internal class XsltCompileContext : XsltContext
     {
-        private InputScopeManager _manager;
-        private Processor _processor;
+        private InputScopeManager? _manager;
+        private Processor? _processor;
 
         // storage for the functions
         private static readonly Hashtable s_FunctionTable = CreateFunctionTable();
@@ -57,7 +58,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public override string LookupNamespace(string prefix)
         {
-            return _manager.ResolveXPathNamespace(prefix);
+            return _manager!.ResolveXPathNamespace(prefix);
         }
 
         // --------------------------- XsltContext -------------------
@@ -67,7 +68,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             string namespaceURI = this.LookupNamespace(prefix);
             XmlQualifiedName qname = new XmlQualifiedName(name, namespaceURI);
-            IXsltContextVariable variable = _manager.VariableScope.ResolveVariable(qname);
+            IXsltContextVariable? variable = _manager!.VariableScope.ResolveVariable(qname);
             if (variable == null)
             {
                 throw XsltException.Create(SR.Xslt_InvalidVariable, qname.ToString());
@@ -77,11 +78,11 @@ namespace System.Xml.Xsl.XsltOld
 
         internal object EvaluateVariable(VariableAction variable)
         {
-            object result = _processor.GetVariableValue(variable);
+            object result = _processor!.GetVariableValue(variable);
             if (result == null && !variable.IsGlobal)
             {
                 // This was uninitialized local variable. May be we have sutable global var too?
-                VariableAction global = _manager.VariableScope.ResolveGlobalVariable(variable.Name);
+                VariableAction? global = _manager!.VariableScope.ResolveGlobalVariable(variable.Name!);
                 if (global != null)
                 {
                     result = _processor.GetVariableValue(global);
@@ -89,7 +90,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             if (result == null)
             {
-                throw XsltException.Create(SR.Xslt_InvalidVariable, variable.Name.ToString());
+                throw XsltException.Create(SR.Xslt_InvalidVariable, variable.Name!.ToString());
             }
             return result;
         }
@@ -97,17 +98,17 @@ namespace System.Xml.Xsl.XsltOld
         // Whitespace stripping support
         public override bool Whitespace
         {
-            get { return _processor.Stylesheet.Whitespace; }
+            get { return _processor!.Stylesheet.Whitespace; }
         }
 
         public override bool PreserveWhitespace(XPathNavigator node)
         {
             node = node.Clone();
             node.MoveToParent();
-            return _processor.Stylesheet.PreserveWhiteSpace(_processor, node);
+            return _processor!.Stylesheet.PreserveWhiteSpace(_processor, node);
         }
 
-        private MethodInfo FindBestMethod(MethodInfo[] methods, bool ignoreCase, bool publicOnly, string name, XPathResultType[] argTypes)
+        private MethodInfo? FindBestMethod(MethodInfo[] methods, bool ignoreCase, bool publicOnly, string name, XPathResultType[]? argTypes)
         {
             int length = methods.Length;
             int free = 0;
@@ -182,13 +183,13 @@ namespace System.Xml.Xsl.XsltOld
         }
 
         private const BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
-        private IXsltContextFunction GetExtentionMethod(string ns, string name, XPathResultType[] argTypes, out object extension)
+        private IXsltContextFunction? GetExtentionMethod(string ns, string name, XPathResultType[]? argTypes, out object? extension)
         {
-            FuncExtension result = null;
-            extension = _processor.GetScriptObject(ns);
+            FuncExtension? result = null;
+            extension = _processor!.GetScriptObject(ns);
             if (extension != null)
             {
-                MethodInfo method = FindBestMethod(extension.GetType().GetMethods(bindingFlags), /*ignoreCase:*/true, /*publicOnly:*/false, name, argTypes);
+                MethodInfo? method = FindBestMethod(extension.GetType().GetMethods(bindingFlags), /*ignoreCase:*/true, /*publicOnly:*/false, name, argTypes);
                 if (method != null)
                 {
                     result = new FuncExtension(extension, method);
@@ -199,7 +200,7 @@ namespace System.Xml.Xsl.XsltOld
             extension = _processor.GetExtensionObject(ns);
             if (extension != null)
             {
-                MethodInfo method = FindBestMethod(extension.GetType().GetMethods(bindingFlags), /*ignoreCase:*/false, /*publicOnly:*/true, name, argTypes);
+                MethodInfo? method = FindBestMethod(extension.GetType().GetMethods(bindingFlags), /*ignoreCase:*/false, /*publicOnly:*/true, name, argTypes);
                 if (method != null)
                 {
                     result = new FuncExtension(extension, method);
@@ -212,7 +213,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public override IXsltContextFunction ResolveFunction(string prefix, string name, XPathResultType[] argTypes)
         {
-            IXsltContextFunction func = null;
+            IXsltContextFunction? func = null;
             if (prefix.Length == 0)
             {
                 func = s_FunctionTable[name] as IXsltContextFunction;
@@ -226,7 +227,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 else
                 {
-                    object extension;
+                    object? extension;
                     func = GetExtentionMethod(ns, name, argTypes, out extension);
                     if (extension == null)
                     {
@@ -251,8 +252,8 @@ namespace System.Xml.Xsl.XsltOld
         private Uri ComposeUri(string thisUri, string baseUri)
         {
             Debug.Assert(thisUri != null && baseUri != null);
-            XmlResolver resolver = _processor.Resolver;
-            Uri uriBase = null;
+            XmlResolver resolver = _processor!.Resolver;
+            Uri? uriBase = null;
             if (baseUri.Length != 0)
             {
                 uriBase = resolver.ResolveUri(null, baseUri);
@@ -260,20 +261,20 @@ namespace System.Xml.Xsl.XsltOld
             return resolver.ResolveUri(uriBase, thisUri);
         }
 
-        private XPathNodeIterator Document(object arg0, string baseUri)
+        private XPathNodeIterator Document(object arg0, string? baseUri)
         {
-            XPathNodeIterator it = arg0 as XPathNodeIterator;
+            XPathNodeIterator? it = arg0 as XPathNodeIterator;
             if (it != null)
             {
                 ArrayList list = new ArrayList();
                 Hashtable documents = new Hashtable();
                 while (it.MoveNext())
                 {
-                    Uri uri = ComposeUri(it.Current.Value, baseUri ?? it.Current.BaseURI);
+                    Uri uri = ComposeUri(it.Current!.Value, baseUri ?? it.Current.BaseURI);
                     if (!documents.ContainsKey(uri))
                     {
                         documents.Add(uri, null);
-                        list.Add(_processor.GetNavigator(uri));
+                        list.Add(_processor!.GetNavigator(uri));
                     }
                 }
                 return new XPathArrayIterator(list);
@@ -281,8 +282,8 @@ namespace System.Xml.Xsl.XsltOld
             else
             {
                 return new XPathSingletonIterator(
-                    _processor.GetNavigator(
-                        ComposeUri(XmlConvert.ToXPathString(arg0), baseUri ?? _manager.Navigator.BaseURI)
+                    _processor!.GetNavigator(
+                        ComposeUri(XmlConvert.ToXPathString(arg0)!, baseUri ?? _manager!.Navigator.BaseURI)
                     )
                 );
             }
@@ -292,7 +293,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             Hashtable keyTable = new Hashtable();
 
-            string matchStr = _processor.GetQueryExpression(key.MatchKey);
+            string matchStr = _processor!.GetQueryExpression(key.MatchKey);
             Query matchExpr = _processor.GetCompiledQuery(key.MatchKey);
             Query useExpr = _processor.GetCompiledQuery(key.UseKey);
 
@@ -300,7 +301,7 @@ namespace System.Xml.Xsl.XsltOld
 
             while (sel.MoveNext())
             {
-                XPathNavigator node = sel.Current;
+                XPathNavigator node = sel.Current!;
                 EvaluateKey(node, matchExpr, matchStr, useExpr, keyTable);
                 if (node.MoveToFirstAttribute())
                 {
@@ -316,7 +317,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private static void AddKeyValue(Hashtable keyTable, string key, XPathNavigator value, bool checkDuplicates)
         {
-            ArrayList list = (ArrayList)keyTable[key];
+            ArrayList? list = (ArrayList?)keyTable[key];
             if (list == null)
             {
                 list = new ArrayList();
@@ -325,14 +326,14 @@ namespace System.Xml.Xsl.XsltOld
             else
             {
                 Debug.Assert(
-                    value.ComparePosition((XPathNavigator)list[list.Count - 1]) != XmlNodeOrder.Before,
+                    value.ComparePosition((XPathNavigator?)list[list.Count - 1]) != XmlNodeOrder.Before,
                     "The way we traversing nodes should garantees node-order"
                 );
                 if (checkDuplicates)
                 {
                     // it's posible that this value already was assosiated with current node
                     // but if this happened the node is last in the list of values.
-                    if (value.ComparePosition((XPathNavigator)list[list.Count - 1]) == XmlNodeOrder.Same)
+                    if (value.ComparePosition((XPathNavigator?)list[list.Count - 1]) == XmlNodeOrder.Same)
                     {
                         return;
                     }
@@ -340,7 +341,7 @@ namespace System.Xml.Xsl.XsltOld
                 else
                 {
                     Debug.Assert(
-                        value.ComparePosition((XPathNavigator)list[list.Count - 1]) != XmlNodeOrder.Same,
+                        value.ComparePosition((XPathNavigator?)list[list.Count - 1]) != XmlNodeOrder.Same,
                         "checkDuplicates == false : We can't have duplicates"
                     );
                 }
@@ -348,7 +349,7 @@ namespace System.Xml.Xsl.XsltOld
             list.Add(value.Clone());
         }
 
-        private static void EvaluateKey(XPathNavigator node, Query matchExpr, string matchStr, Query useExpr, Hashtable keyTable)
+        private static void EvaluateKey(XPathNavigator? node, Query matchExpr, string matchStr, Query useExpr, Hashtable keyTable)
         {
             try
             {
@@ -361,25 +362,25 @@ namespace System.Xml.Xsl.XsltOld
             {
                 throw XsltException.Create(SR.Xslt_InvalidPattern, matchStr);
             }
-            object result = useExpr.Evaluate(new XPathSingletonIterator(node, /*moved:*/true));
-            XPathNodeIterator it = result as XPathNodeIterator;
+            object result = useExpr.Evaluate(new XPathSingletonIterator(node!, /*moved:*/true));
+            XPathNodeIterator? it = result as XPathNodeIterator;
             if (it != null)
             {
                 bool checkDuplicates = false;
                 while (it.MoveNext())
                 {
-                    AddKeyValue(keyTable, /*key:*/it.Current.Value, /*value:*/node, checkDuplicates);
+                    AddKeyValue(keyTable, /*key:*/it.Current!.Value!, /*value:*/node!, checkDuplicates);
                     checkDuplicates = true;
                 }
             }
             else
             {
-                string key = XmlConvert.ToXPathString(result);
-                AddKeyValue(keyTable, key, /*value:*/node, /*checkDuplicates:*/ false);
+                string key = XmlConvert.ToXPathString(result)!;
+                AddKeyValue(keyTable, key, /*value:*/node!, /*checkDuplicates:*/ false);
             }
         }
 
-        private DecimalFormat ResolveFormatName(string formatName)
+        private DecimalFormat ResolveFormatName(string? formatName)
         {
             string ns = string.Empty, local = string.Empty;
             if (formatName != null)
@@ -388,7 +389,7 @@ namespace System.Xml.Xsl.XsltOld
                 PrefixQName.ParseQualifiedName(formatName, out prefix, out local);
                 ns = LookupNamespace(prefix);
             }
-            DecimalFormat formatInfo = _processor.RootAction.GetDecimalFormat(new XmlQualifiedName(local, ns));
+            DecimalFormat? formatInfo = _processor!.RootAction!.GetDecimalFormat(new XmlQualifiedName(local, ns));
             if (formatInfo == null)
             {
                 if (formatName != null)
@@ -405,7 +406,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             string name, prefix;
             PrefixQName.ParseQualifiedName(qname, out prefix, out name);
-            string ns = _manager.ResolveXmlNamespace(prefix);
+            string ns = _manager!.ResolveXmlNamespace(prefix);
             // msxsl:script - is not an "instruction" so we return false for it.
             if (ns == XmlReservedNs.NsXslt)
             {
@@ -482,14 +483,14 @@ namespace System.Xml.Xsl.XsltOld
             else
             {
                 // Is this script or extention function?
-                object extension;
+                object? extension;
                 return GetExtentionMethod(ns, name, /*argTypes*/null, out extension) != null;
             }
         }
 
         private XPathNodeIterator Current()
         {
-            XPathNavigator nav = _processor.Current;
+            XPathNavigator? nav = _processor!.Current;
             if (nav != null)
             {
                 return new XPathSingletonIterator(nav.Clone());
@@ -602,7 +603,7 @@ namespace System.Xml.Xsl.XsltOld
             private int _minargs;
             private int _maxargs;
             private XPathResultType _returnType;
-            private XPathResultType[] _argTypes;
+            private XPathResultType[] _argTypes = null!; // TODO-NULLABLE: public constructor doesn't initialize it but also seem to have no references, consider removing
 
             public XsltFunctionImpl() { }
             public XsltFunctionImpl(int minArgs, int maxArgs, XPathResultType returnType, XPathResultType[] argTypes)
@@ -626,7 +627,7 @@ namespace System.Xml.Xsl.XsltOld
             // static helper methods:
             public static XPathNodeIterator ToIterator(object argument)
             {
-                XPathNodeIterator it = argument as XPathNodeIterator;
+                XPathNodeIterator? it = argument as XPathNodeIterator;
                 if (it == null)
                 {
                     throw XsltException.Create(SR.Xslt_NoNodeSetConversion);
@@ -636,7 +637,7 @@ namespace System.Xml.Xsl.XsltOld
 
             public static XPathNavigator ToNavigator(object argument)
             {
-                XPathNavigator nav = argument as XPathNavigator;
+                XPathNavigator? nav = argument as XPathNavigator;
                 if (nav == null)
                 {
                     throw XsltException.Create(SR.Xslt_NoNavigatorConversion);
@@ -649,14 +650,15 @@ namespace System.Xml.Xsl.XsltOld
                 Debug.Assert(it != null);
                 if (it.MoveNext())
                 {
-                    return it.Current.Value;
+                    return it.Current!.Value;
                 }
                 return string.Empty;
             }
 
-            public static string ToString(object argument)
+            [return: NotNullIfNotNull("argument")]
+            public static string? ToString(object argument)
             {
-                XPathNodeIterator it = argument as XPathNodeIterator;
+                XPathNodeIterator? it = argument as XPathNodeIterator;
                 if (it != null)
                 {
                     return IteratorToString(it);
@@ -669,12 +671,12 @@ namespace System.Xml.Xsl.XsltOld
 
             public static bool ToBoolean(object argument)
             {
-                XPathNodeIterator it = argument as XPathNodeIterator;
+                XPathNodeIterator? it = argument as XPathNodeIterator;
                 if (it != null)
                 {
                     return Convert.ToBoolean(IteratorToString(it), CultureInfo.InvariantCulture);
                 }
-                XPathNavigator nav = argument as XPathNavigator;
+                XPathNavigator? nav = argument as XPathNavigator;
                 if (nav != null)
                 {
                     return Convert.ToBoolean(nav.ToString(), CultureInfo.InvariantCulture);
@@ -684,12 +686,12 @@ namespace System.Xml.Xsl.XsltOld
 
             public static double ToNumber(object argument)
             {
-                XPathNodeIterator it = argument as XPathNodeIterator;
+                XPathNodeIterator? it = argument as XPathNodeIterator;
                 if (it != null)
                 {
                     return XmlConvert.ToXPathDouble(IteratorToString(it));
                 }
-                XPathNavigator nav = argument as XPathNavigator;
+                XPathNavigator? nav = argument as XPathNavigator;
                 if (nav != null)
                 {
                     return XmlConvert.ToXPathDouble(nav.ToString());
@@ -759,7 +761,7 @@ namespace System.Xml.Xsl.XsltOld
                     XPathNodeIterator it = ToIterator(args[0]);
                     if (it.MoveNext())
                     {
-                        return it.Current.UniqueId;
+                        return it.Current!.UniqueId;
                     }
                     else
                     {
@@ -811,13 +813,13 @@ namespace System.Xml.Xsl.XsltOld
             // It's OK to suppress the SxS warning.
             public override object Invoke(XsltContext xsltContext, object[] args, XPathNavigator docContext)
             {
-                string baseUri = null;
+                string? baseUri = null;
                 if (args.Length == 2)
                 {
                     XPathNodeIterator it = ToIterator(args[1]);
                     if (it.MoveNext())
                     {
-                        baseUri = it.Current.BaseURI;
+                        baseUri = it.Current!.BaseURI;
                     }
                     else
                     {
@@ -851,37 +853,37 @@ namespace System.Xml.Xsl.XsltOld
 
                 string local, prefix;
                 PrefixQName.ParseQualifiedName(ToString(args[0]), out prefix, out local);
-                string ns = xsltContext.LookupNamespace(prefix);
+                string? ns = xsltContext.LookupNamespace(prefix);
                 XmlQualifiedName keyName = new XmlQualifiedName(local, ns);
 
                 XPathNavigator root = docContext.Clone();
                 root.MoveToRoot();
 
-                ArrayList resultCollection = null;
+                ArrayList? resultCollection = null;
 
-                foreach (Key key in xsltCompileContext._processor.KeyList)
+                foreach (Key key in xsltCompileContext._processor!.KeyList!)
                 {
                     if (key.Name == keyName)
                     {
-                        Hashtable keyTable = key.GetKeys(root);
+                        Hashtable? keyTable = key.GetKeys(root);
                         if (keyTable == null)
                         {
                             keyTable = xsltCompileContext.BuildKeyTable(key, root);
                             key.AddKey(root, keyTable);
                         }
 
-                        XPathNodeIterator it = args[1] as XPathNodeIterator;
+                        XPathNodeIterator? it = args[1] as XPathNodeIterator;
                         if (it != null)
                         {
                             it = it.Clone();
                             while (it.MoveNext())
                             {
-                                resultCollection = AddToList(resultCollection, (ArrayList)keyTable[it.Current.Value]);
+                                resultCollection = AddToList(resultCollection, (ArrayList?)keyTable[it.Current!.Value]);
                             }
                         }
                         else
                         {
-                            resultCollection = AddToList(resultCollection, (ArrayList)keyTable[ToString(args[1])]);
+                            resultCollection = AddToList(resultCollection, (ArrayList?)keyTable[ToString(args[1])]);
                         }
                     }
                 }
@@ -899,7 +901,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
             }
 
-            private static ArrayList AddToList(ArrayList resultCollection, ArrayList newList)
+            private static ArrayList? AddToList(ArrayList? resultCollection, ArrayList? newList)
             {
                 if (newList == null)
                 {
@@ -989,7 +991,7 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     args[i] = ConvertToXPathType(args[i], this.ArgTypes[i], _types[i]);
                 }
-                return _method.Invoke(_extension, args);
+                return _method.Invoke(_extension, args)!;
             }
         }
     }

@@ -5,6 +5,12 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class SingleConverter : JsonConverter<float>
     {
+
+        public SingleConverter()
+        {
+            IsInternalConverterForNumberType = true;
+        }
+
         public override float Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
             return reader.GetSingle();
@@ -23,6 +29,39 @@ namespace System.Text.Json.Serialization.Converters
         internal override void WriteWithQuotes(Utf8JsonWriter writer, float value, JsonSerializerOptions options, ref WriteStack state)
         {
             writer.WritePropertyName(value);
+        }
+
+        internal override float ReadNumberWithCustomHandling(ref Utf8JsonReader reader, JsonNumberHandling handling)
+        {
+            if (reader.TokenType == JsonTokenType.String)
+            {
+                if ((JsonNumberHandling.AllowReadingFromString & handling) != 0)
+                {
+                    return reader.GetSingleWithQuotes();
+                }
+                else if ((JsonNumberHandling.AllowNamedFloatingPointLiterals & handling) != 0)
+                {
+                    return reader.GetSingleFloatingPointConstant();
+                }
+            }
+
+            return reader.GetSingle();
+        }
+
+        internal override void WriteNumberWithCustomHandling(Utf8JsonWriter writer, float value, JsonNumberHandling handling)
+        {
+            if ((JsonNumberHandling.WriteAsString & handling) != 0)
+            {
+                writer.WriteNumberValueAsString(value);
+            }
+            else if ((JsonNumberHandling.AllowNamedFloatingPointLiterals & handling) != 0)
+            {
+                writer.WriteFloatingPointConstant(value);
+            }
+            else
+            {
+                writer.WriteNumberValue(value);
+            }
         }
     }
 }

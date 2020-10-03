@@ -3443,10 +3443,15 @@ int LinearScan::BuildReturn(GenTree* tree)
         if (varTypeIsSIMD(tree) && !op1->IsMultiRegLclVar())
         {
             useCandidates = allSIMDRegs();
+            if (op1->OperGet() == GT_LCL_VAR)
+            {
+                assert(op1->TypeGet() != TYP_SIMD32);
+                useCandidates = RBM_DOUBLERET;
+            }
             BuildUse(op1, useCandidates);
             return 1;
         }
-#endif // !TARGET_ARM64
+#endif // TARGET_ARM64
 
         if (varTypeIsStruct(tree))
         {
@@ -3470,7 +3475,7 @@ int LinearScan::BuildReturn(GenTree* tree)
                     assert(compiler->lvaEnregMultiRegVars);
                     LclVarDsc*     varDsc = compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum());
                     ReturnTypeDesc retTypeDesc;
-                    retTypeDesc.InitializeStructReturnType(compiler, varDsc->lvVerTypeInfo.GetClassHandle());
+                    retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd());
                     pRetTypeDesc = &retTypeDesc;
                     assert(compiler->lvaGetDesc(op1->AsLclVar()->GetLclNum())->lvFieldCnt ==
                            retTypeDesc.GetReturnRegCount());

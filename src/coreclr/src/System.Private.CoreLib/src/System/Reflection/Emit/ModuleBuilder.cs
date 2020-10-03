@@ -122,16 +122,6 @@ namespace System.Reflection.Emit
             return SymbolType.FormCompoundType(strFormat, baseType, 0);
         }
 
-        internal void CheckContext(params Type[]?[]? typess)
-        {
-            AssemblyBuilder.CheckContext(typess);
-        }
-
-        internal void CheckContext(params Type?[]? types)
-        {
-            AssemblyBuilder.CheckContext(types);
-        }
-
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
         private static extern int GetTypeRef(QCallModule module, string strFullName, QCallModule refedModule, string? strRefedModuleFileName, int tkResolution);
 
@@ -357,12 +347,11 @@ namespace System.Reflection.Emit
             return (m as RuntimeModule)!;
         }
 
-        private int GetMemberRefToken(MethodBase method, IEnumerable<Type>? optionalParameterTypes)
+        private int GetMemberRefToken(MethodBase method, Type[]? optionalParameterTypes)
         {
-            Type[] parameterTypes;
-            Type? returnType;
             int tkParent;
             int cGenericParameters = 0;
+            SignatureHelper sigHelp;
 
             if (method.IsGenericMethod)
             {
@@ -387,55 +376,22 @@ namespace System.Reflection.Emit
 
             if (method.DeclaringType!.IsGenericType)
             {
-                MethodBase methDef; // methodInfo = G<Foo>.M<Bar> ==> methDef = G<T>.M<S>
+                MethodBase methDef = GetGenericMethodBaseDefinition(method);
 
-                if (method is MethodOnTypeBuilderInstantiation motbi)
-                {
-                    methDef = motbi.m_method;
-                }
-                else if (method is ConstructorOnTypeBuilderInstantiation cotbi)
-                {
-                    methDef = cotbi.m_ctor;
-                }
-                else if (method is MethodBuilder || method is ConstructorBuilder)
-                {
-                    // methodInfo must be GenericMethodDefinition; trying to emit G<?>.M<S>
-                    methDef = method;
-                }
-                else
-                {
-                    Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
-
-                    if (method.IsGenericMethod)
-                    {
-                        Debug.Assert(masmi != null);
-
-                        methDef = masmi.GetGenericMethodDefinition()!;
-                        methDef = methDef.Module.ResolveMethod(
-                            method.MetadataToken,
-                            methDef.DeclaringType?.GetGenericArguments(),
-                            methDef.GetGenericArguments())!;
-                    }
-                    else
-                    {
-                        methDef = method.Module.ResolveMethod(
-                            method.MetadataToken,
-                            method.DeclaringType?.GetGenericArguments(),
-                            null)!;
-                    }
-                }
-
-                parameterTypes = methDef.GetParameterTypes();
-                returnType = MethodBuilder.GetMethodBaseReturnType(methDef);
+                sigHelp = GetMemberRefSignature(methDef, cGenericParameters);
             }
             else
             {
-                parameterTypes = method.GetParameterTypes();
-                returnType = MethodBuilder.GetMethodBaseReturnType(method);
+                sigHelp = GetMemberRefSignature(method, cGenericParameters);
             }
 
-            byte[] sigBytes = GetMemberRefSignature(method.CallingConvention, returnType, parameterTypes,
-                optionalParameterTypes, cGenericParameters).InternalGetSignature(out int sigLength);
+            if (optionalParameterTypes?.Length > 0)
+            {
+                sigHelp.AddSentinel();
+                sigHelp.AddArguments(optionalParameterTypes, null, null);
+            }
+
+            byte[] sigBytes = sigHelp.InternalGetSignature(out int sigLength);
 
             if (method.DeclaringType!.IsGenericType)
             {
@@ -460,15 +416,16 @@ namespace System.Reflection.Emit
         }
 
         internal SignatureHelper GetMemberRefSignature(CallingConventions call, Type? returnType,
-            Type[]? parameterTypes, IEnumerable<Type>? optionalParameterTypes, int cGenericParameters)
+            Type[]? parameterTypes, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers,
+            IEnumerable<Type>? optionalParameterTypes, int cGenericParameters)
         {
             SignatureHelper sig = SignatureHelper.GetMethodSigHelper(this, call, returnType, cGenericParameters);
 
             if (parameterTypes != null)
             {
-                foreach (Type t in parameterTypes)
+                for (int i = 0; i < parameterTypes.Length; i++)
                 {
-                    sig.AddArgument(t);
+                    sig.AddArgument(parameterTypes[i], requiredCustomModifiers![i], optionalCustomModifiers![i]);
                 }
             }
 
@@ -489,6 +446,90 @@ namespace System.Reflection.Emit
             }
 
             return sig;
+        }
+
+        private static MethodBase GetGenericMethodBaseDefinition(MethodBase methodBase)
+        {
+            // methodInfo = G<Foo>.M<Bar> ==> methDef = G<T>.M<S>
+            MethodInfo? masmi = methodBase as MethodInfo;
+            MethodBase methDef;
+
+            if (methodBase is MethodOnTypeBuilderInstantiation motbi)
+            {
+                methDef = motbi.m_method;
+            }
+            else if (methodBase is ConstructorOnTypeBuilderInstantiation cotbi)
+            {
+                methDef = cotbi.m_ctor;
+            }
+            else if (methodBase is MethodBuilder || methodBase is ConstructorBuilder)
+            {
+                // methodInfo must be GenericMethodDefinition; trying to emit G<?>.M<S>
+                methDef = methodBase;
+            }
+            else
+            {
+                Debug.Assert(methodBase is RuntimeMethodInfo || methodBase is RuntimeConstructorInfo);
+
+                if (methodBase.IsGenericMethod)
+                {
+                    Debug.Assert(masmi != null);
+
+                    methDef = masmi.GetGenericMethodDefinition()!;
+                    methDef = methDef.Module.ResolveMethod(
+                        methodBase.MetadataToken,
+                        methDef.DeclaringType?.GetGenericArguments(),
+                        methDef.GetGenericArguments())!;
+                }
+                else
+                {
+                    methDef = methodBase.Module.ResolveMethod(
+                        methodBase.MetadataToken,
+                        methodBase.DeclaringType?.GetGenericArguments(),
+                        null)!;
+                }
+            }
+
+            return methDef;
+        }
+
+        internal SignatureHelper GetMemberRefSignature(MethodBase? method, int cGenericParameters)
+        {
+            switch (method)
+            {
+                case MethodBuilder methodBuilder:
+                    return methodBuilder.GetMethodSignature();
+                case ConstructorBuilder constructorBuilder:
+                    return constructorBuilder.GetMethodSignature();
+                case MethodOnTypeBuilderInstantiation motbi when motbi.m_method is MethodBuilder methodBuilder:
+                    return methodBuilder.GetMethodSignature();
+                case MethodOnTypeBuilderInstantiation motbi:
+                    method = motbi.m_method;
+                    break;
+                case ConstructorOnTypeBuilderInstantiation cotbi when cotbi.m_ctor is ConstructorBuilder constructorBuilder:
+                    return constructorBuilder.GetMethodSignature();
+                case ConstructorOnTypeBuilderInstantiation cotbi:
+                    method = cotbi.m_ctor;
+                    break;
+            }
+
+            Debug.Assert(method is RuntimeMethodInfo || method is RuntimeConstructorInfo);
+            ParameterInfo[] parameters = method.GetParametersNoCopy();
+
+            Type[] parameterTypes = new Type[parameters.Length];
+            Type[][] requiredCustomModifiers = new Type[parameterTypes.Length][];
+            Type[][] optionalCustomModifiers = new Type[parameterTypes.Length][];
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                parameterTypes[i] = parameters[i].ParameterType;
+                requiredCustomModifiers[i] = parameters[i].GetRequiredCustomModifiers();
+                optionalCustomModifiers[i] = parameters[i].GetOptionalCustomModifiers();
+            }
+
+            ParameterInfo? returnParameter = method is MethodInfo mi ? mi.ReturnParameter : null;
+            SignatureHelper sigHelp = SignatureHelper.GetMethodSigHelper(this, method.CallingConvention, cGenericParameters, returnParameter?.ParameterType, returnParameter?.GetRequiredCustomModifiers(), returnParameter?.GetOptionalCustomModifiers(), parameterTypes, requiredCustomModifiers, optionalCustomModifiers);
+            return sigHelp;
         }
 
         #endregion
@@ -742,13 +783,13 @@ namespace System.Reflection.Emit
             return InternalModule.GetField(name, bindingAttr);
         }
 
-        [RequiresUnreferencedCode("Fields might be removed")]
+        [RequiresUnreferencedCode("Methods might be removed")]
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
             return InternalModule.GetMethods(bindingFlags);
         }
 
-        [RequiresUnreferencedCode("Fields might be removed")]
+        [RequiresUnreferencedCode("Methods might be removed")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder,
             CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
@@ -788,7 +829,7 @@ namespace System.Reflection.Emit
         {
             lock (SyncRoot)
             {
-                CheckContext(parent);
+                AssemblyBuilder.CheckContext(parent);
 
                 return DefineTypeNoLock(name, attr, parent, null, PackingSize.Unspecified, TypeBuilder.UnspecifiedTypeSize);
             }
@@ -844,7 +885,7 @@ namespace System.Reflection.Emit
         // Nested enum types can be defined manually using ModuleBuilder.DefineType.
         public EnumBuilder DefineEnum(string name, TypeAttributes visibility, Type underlyingType)
         {
-            CheckContext(underlyingType);
+            AssemblyBuilder.CheckContext(underlyingType);
             lock (SyncRoot)
             {
                 EnumBuilder enumBuilder = DefineEnumNoLock(name, visibility, underlyingType);
@@ -885,8 +926,8 @@ namespace System.Reflection.Emit
                     throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
                 }
 
-                CheckContext(returnType);
-                CheckContext(parameterTypes);
+                AssemblyBuilder.CheckContext(returnType);
+                AssemblyBuilder.CheckContext(parameterTypes);
 
                 return _moduleData._globalTypeBuilder.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
             }
@@ -936,10 +977,10 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_GlobalFunctionHasToBeStatic);
             }
 
-            CheckContext(returnType);
-            CheckContext(requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers, parameterTypes);
-            CheckContext(requiredParameterTypeCustomModifiers);
-            CheckContext(optionalParameterTypeCustomModifiers);
+            AssemblyBuilder.CheckContext(returnType);
+            AssemblyBuilder.CheckContext(requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers, parameterTypes);
+            AssemblyBuilder.CheckContext(requiredParameterTypeCustomModifiers);
+            AssemblyBuilder.CheckContext(optionalParameterTypeCustomModifiers);
 
             return _moduleData._globalTypeBuilder.DefineMethod(name, attributes, callingConvention,
                 returnType, requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers,
@@ -1049,7 +1090,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentNullException(nameof(type));
             }
 
-            CheckContext(type);
+            AssemblyBuilder.CheckContext(type);
 
             // Return a token for the class relative to the Module.  Tokens
             // are used to indentify objects when the objects are used in IL
@@ -1261,7 +1302,7 @@ namespace System.Reflection.Emit
             return new MethodToken(mr);
         }
 
-        internal int GetMethodTokenInternal(MethodBase method, IEnumerable<Type>? optionalParameterTypes, bool useMethodDef)
+        internal int GetMethodTokenInternal(MethodBase method, Type[]? optionalParameterTypes, bool useMethodDef)
         {
             int tk;
             MethodInfo? methodInfo = method as MethodInfo;
@@ -1355,8 +1396,8 @@ namespace System.Reflection.Emit
                 throw new ArgumentException(SR.Argument_HasToBeArrayClass);
             }
 
-            CheckContext(returnType, arrayClass);
-            CheckContext(parameterTypes);
+            AssemblyBuilder.CheckContext(returnType, arrayClass);
+            AssemblyBuilder.CheckContext(parameterTypes);
 
             // Return a token for the MethodInfo for a method on an Array.  This is primarily
             // used to get the LoadElementAddress method.
@@ -1373,8 +1414,8 @@ namespace System.Reflection.Emit
         public MethodInfo GetArrayMethod(Type arrayClass, string methodName, CallingConventions callingConvention,
             Type? returnType, Type[]? parameterTypes)
         {
-            CheckContext(returnType, arrayClass);
-            CheckContext(parameterTypes);
+            AssemblyBuilder.CheckContext(returnType, arrayClass);
+            AssemblyBuilder.CheckContext(parameterTypes);
 
             // GetArrayMethod is useful when you have an array of a type whose definition has not been completed and
             // you want to access methods defined on Array. For example, you might define a type and want to define a

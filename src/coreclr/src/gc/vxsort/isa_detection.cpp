@@ -2,7 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "common.h"
+
+#ifdef TARGET_WINDOWS
 #include <intrin.h>
+#include <windows.h>
+#endif
 
 #include "do_vxsort.h"
 
@@ -17,13 +21,11 @@ enum class SupportedISA
 
 static DWORD64 GetEnabledXStateFeaturesHelper()
 {
-    LIMITED_METHOD_CONTRACT;
-
     // On Windows we have an api(GetEnabledXStateFeatures) to check if AVX is supported
     typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
 
-    HMODULE hMod = WszLoadLibraryEx(WINDOWS_KERNEL32_DLLNAME_W, NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    HMODULE hMod = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
     if (hMod == NULL)
         return 0;
 
@@ -54,10 +56,11 @@ SupportedISA DetermineSupportedISA()
     // bit definitions to make code more readable
     enum bits
     {
-        OCXSAVE = 1<<27,
-        AVX = 1<<28,
-        AVX2 = 1<<5,
-        AVX512F=1<<16,
+        OCXSAVE  = 1<<27,
+        AVX      = 1<<28,
+        AVX2     = 1<< 5,
+        AVX512F  = 1<<16,
+        AVX512DQ = 1<<17,
     };
     int reg[COUNT];
 
@@ -80,8 +83,8 @@ SupportedISA DetermineSupportedISA()
     // get processor extended feature flag info
     __cpuid(reg, 7);
 
-    // check if both AVX2 and AVX512F are supported by both processor and OS
-    if ((reg[EBX] & (AVX2 | AVX512F)) == (AVX2 | AVX512F) &&
+    // check if all of AVX2, AVX512F and AVX512DQ are supported by both processor and OS
+    if ((reg[EBX] & (AVX2 | AVX512F | AVX512DQ)) == (AVX2 | AVX512F | AVX512DQ) &&
         (xcr0 & 0xe6) == 0xe6 &&
         (FeatureMask & (XSTATE_MASK_AVX | XSTATE_MASK_AVX512)) == (XSTATE_MASK_AVX | XSTATE_MASK_AVX512))
     {

@@ -4,6 +4,7 @@
 using System;
 using System.Text;
 using Xunit;
+using System.Collections.Generic;
 
 namespace System.Globalization.Tests
 {
@@ -38,18 +39,28 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentNullException>("strInput", () => StringNormalizationExtensions.IsNormalized(null));
         }
 
+        public static IEnumerable<object[]> NormalizeTestData()
+        {
+            yield return new object[] { "", NormalizationForm.FormC, "" };
+            yield return new object[] { "\u00C4\u00C7", NormalizationForm.FormD, "A\u0308C\u0327" };
+            yield return new object[] { "A\u0308C\u0327", NormalizationForm.FormC, "\u00C4\u00C7" };
+            yield return new object[] { "\uFB01", NormalizationForm.FormC, "\uFB01" };
+            yield return new object[] { "\uFB01", NormalizationForm.FormD, "\uFB01" };
+            yield return new object[] { "\u1E9b\u0323", NormalizationForm.FormC, "\u1E9b\u0323" };
+            yield return new object[] { "\u1E9b\u0323", NormalizationForm.FormD, "\u017f\u0323\u0307" };
+
+            if (PlatformDetection.IsNotBrowser)
+            {
+                // Browser's ICU doesn't support FormKC and FormKD
+                yield return new object[] { "\uFB01", NormalizationForm.FormKC, "fi" };
+                yield return new object[] { "\uFB01", NormalizationForm.FormKD, "fi" };
+                yield return new object[] { "\u1E9b\u0323", NormalizationForm.FormKC, "\u1E69" };
+                yield return new object[] { "\u1E9b\u0323", NormalizationForm.FormKD, "\u0073\u0323\u0307" };
+            }
+        }
+
         [Theory]
-        [InlineData("", NormalizationForm.FormC, "")]
-        [InlineData("\u00C4\u00C7", NormalizationForm.FormD, "A\u0308C\u0327")]
-        [InlineData("A\u0308C\u0327", NormalizationForm.FormC, "\u00C4\u00C7")]
-        [InlineData("\uFB01", NormalizationForm.FormC, "\uFB01")]
-        [InlineData("\uFB01", NormalizationForm.FormD, "\uFB01")]
-        [InlineData("\uFB01", NormalizationForm.FormKC, "fi")]
-        [InlineData("\uFB01", NormalizationForm.FormKD, "fi")]
-        [InlineData("\u1E9b\u0323", NormalizationForm.FormC, "\u1E9b\u0323")]
-        [InlineData("\u1E9b\u0323", NormalizationForm.FormD, "\u017f\u0323\u0307")]
-        [InlineData("\u1E9b\u0323", NormalizationForm.FormKC, "\u1E69")]
-        [InlineData("\u1E9b\u0323", NormalizationForm.FormKD, "\u0073\u0323\u0307")]
+        [MemberData(nameof(NormalizeTestData))]
         public void Normalize(string value, NormalizationForm normalizationForm, string expected)
         {
             if (normalizationForm == NormalizationForm.FormC)

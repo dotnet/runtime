@@ -533,9 +533,9 @@ namespace System.Text.Json.Serialization.Tests
         public static void PredefinedSerializerOptions_Web()
         {
             var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-            JsonNamingPolicy policy = options.PropertyNamingPolicy;
             Assert.True(options.PropertyNameCaseInsensitive);
-            Assert.Same(JsonNamingPolicy.CamelCase, policy);
+            Assert.Same(JsonNamingPolicy.CamelCase, options.PropertyNamingPolicy);
+            Assert.Equal(JsonNumberHandling.AllowReadingFromString, options.NumberHandling);
         }
 
         [Theory]
@@ -589,6 +589,7 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     options.ReadCommentHandling = JsonCommentHandling.Disallow;
                     options.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingDefault;
+                    options.NumberHandling = JsonNumberHandling.AllowReadingFromString;
                 }
                 else
                 {
@@ -635,6 +636,10 @@ namespace System.Text.Json.Serialization.Tests
                     else if (property.Name == "DefaultIgnoreCondition")
                     {
                         Assert.Equal(options.DefaultIgnoreCondition, newOptions.DefaultIgnoreCondition);
+                    }
+                    else if (property.Name == "NumberHandling")
+                    {
+                        Assert.Equal(options.NumberHandling, newOptions.NumberHandling);
                     }
                     else
                     {

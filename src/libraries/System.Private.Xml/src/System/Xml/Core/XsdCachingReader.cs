@@ -8,6 +8,7 @@ using System.Xml.XPath;
 using System.Diagnostics;
 using System.Globalization;
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml
 {
@@ -29,7 +30,7 @@ namespace System.Xml
         private ValidatingReaderNodeData[] _contentEvents;
         private ValidatingReaderNodeData[] _attributeEvents;
 
-        private ValidatingReaderNodeData _cachedNode;
+        private ValidatingReaderNodeData? _cachedNode;
 
         private CachingReaderState _cacheState;
         private int _contentIndex;
@@ -45,17 +46,17 @@ namespace System.Xml
         private bool _readAhead;
 
         //Lineinfo
-        private readonly IXmlLineInfo _lineInfo;
+        private readonly IXmlLineInfo? _lineInfo;
 
         //ReadAttributeValue TextNode
-        private ValidatingReaderNodeData _textNode;
+        private ValidatingReaderNodeData? _textNode;
 
         //Constants
         private const int InitialAttributeCount = 8;
         private const int InitialContentCount = 4;
 
         //Constructor
-        internal XsdCachingReader(XmlReader reader, IXmlLineInfo lineInfo, CachingEventHandler handlerMethod)
+        internal XsdCachingReader(XmlReader reader, IXmlLineInfo? lineInfo, CachingEventHandler handlerMethod)
         {
             _coreReader = reader;
             _lineInfo = lineInfo;
@@ -65,6 +66,7 @@ namespace System.Xml
             Init();
         }
 
+        [MemberNotNull(nameof(_coreReaderNameTable))]
         private void Init()
         {
             _coreReaderNameTable = _coreReader.NameTable;
@@ -92,7 +94,7 @@ namespace System.Xml
         }
 
         // Settings
-        public override XmlReaderSettings Settings
+        public override XmlReaderSettings? Settings
         {
             get
             {
@@ -107,7 +109,7 @@ namespace System.Xml
         {
             get
             {
-                return _cachedNode.NodeType;
+                return _cachedNode!.NodeType;
             }
         }
 
@@ -116,7 +118,7 @@ namespace System.Xml
         {
             get
             {
-                return _cachedNode.GetAtomizedNameWPrefix(_coreReaderNameTable);
+                return _cachedNode!.GetAtomizedNameWPrefix(_coreReaderNameTable);
             }
         }
 
@@ -125,7 +127,7 @@ namespace System.Xml
         {
             get
             {
-                return _cachedNode.LocalName;
+                return _cachedNode!.LocalName;
             }
         }
 
@@ -134,7 +136,7 @@ namespace System.Xml
         {
             get
             {
-                return _cachedNode.Namespace;
+                return _cachedNode!.Namespace;
             }
         }
 
@@ -143,7 +145,7 @@ namespace System.Xml
         {
             get
             {
-                return _cachedNode.Prefix;
+                return _cachedNode!.Prefix;
             }
         }
 
@@ -152,7 +154,7 @@ namespace System.Xml
         {
             get
             {
-                return XmlReader.HasValueInternal(_cachedNode.NodeType);
+                return XmlReader.HasValueInternal(_cachedNode!.NodeType);
             }
         }
 
@@ -161,7 +163,7 @@ namespace System.Xml
         {
             get
             {
-                return _returnOriginalStringValues ? _cachedNode.OriginalStringValue : _cachedNode.RawValue;
+                return _returnOriginalStringValues ? _cachedNode!.OriginalStringValue! : _cachedNode!.RawValue;
             }
         }
 
@@ -170,12 +172,12 @@ namespace System.Xml
         {
             get
             {
-                return _cachedNode.Depth;
+                return _cachedNode!.Depth;
             }
         }
 
         // Gets the base URI of the current node.
-        public override string BaseURI
+        public override string? BaseURI
         {
             get
             {
@@ -241,7 +243,7 @@ namespace System.Xml
         }
 
         // Gets the value of the attribute with the specified Name.
-        public override string GetAttribute(string name)
+        public override string? GetAttribute(string name)
         {
             int i;
             if (!name.Contains(':'))
@@ -252,23 +254,25 @@ namespace System.Xml
             {
                 i = GetAttributeIndexWithPrefix(name);
             }
+
             return (i >= 0) ? _attributeEvents[i].RawValue : null;
         }
 
         // Gets the value of the attribute with the specified LocalName and NamespaceURI.
-        public override string GetAttribute(string name, string namespaceURI)
+        public override string? GetAttribute(string name, string? namespaceURI)
         {
             namespaceURI = (namespaceURI == null) ? string.Empty : _coreReaderNameTable.Get(namespaceURI);
-            name = _coreReaderNameTable.Get(name);
+            string? atomizedName = _coreReaderNameTable.Get(name);
             ValidatingReaderNodeData attribute;
             for (int i = 0; i < _attributeCount; i++)
             {
                 attribute = _attributeEvents[i];
-                if (Ref.Equal(attribute.LocalName, name) && Ref.Equal(attribute.Namespace, namespaceURI))
+                if (Ref.Equal(attribute.LocalName, atomizedName) && Ref.Equal(attribute.Namespace, namespaceURI))
                 {
                     return attribute.RawValue;
                 }
             }
+
             return null;
         }
 
@@ -279,6 +283,7 @@ namespace System.Xml
             {
                 throw new ArgumentOutOfRangeException(nameof(i));
             }
+
             return _attributeEvents[i].RawValue;
         }
 
@@ -292,7 +297,7 @@ namespace System.Xml
         }
 
         // Gets the value of the attribute with the specified LocalName and NamespaceURI.
-        public override string this[string name, string namespaceURI]
+        public override string? this[string name, string? namespaceURI]
         {
             get
             {
@@ -326,15 +331,15 @@ namespace System.Xml
         }
 
         // Moves to the attribute with the specified LocalName and NamespaceURI
-        public override bool MoveToAttribute(string name, string ns)
+        public override bool MoveToAttribute(string name, string? ns)
         {
             ns = (ns == null) ? string.Empty : _coreReaderNameTable.Get(ns);
-            name = _coreReaderNameTable.Get(name);
+            string? atomizedName = _coreReaderNameTable.Get(name);
             ValidatingReaderNodeData attribute;
             for (int i = 0; i < _attributeCount; i++)
             {
                 attribute = _attributeEvents[i];
-                if (Ref.Equal(attribute.LocalName, name) &&
+                if (Ref.Equal(attribute.LocalName, atomizedName) &&
                      Ref.Equal(attribute.Namespace, ns))
                 {
                     _currentAttrIndex = i;
@@ -342,6 +347,7 @@ namespace System.Xml
                     return true;
                 }
             }
+
             return false;
         }
 
@@ -382,10 +388,11 @@ namespace System.Xml
         // Moves to the element that contains the current attribute node.
         public override bool MoveToElement()
         {
-            if (_cacheState != CachingReaderState.Replay || _cachedNode.NodeType != XmlNodeType.Attribute)
+            if (_cacheState != CachingReaderState.Replay || _cachedNode!.NodeType != XmlNodeType.Attribute)
             {
                 return false;
             }
+
             _currentContentIndex = 0;
             _currentAttrIndex = -1;
             Read();
@@ -402,7 +409,7 @@ namespace System.Xml
                     goto case CachingReaderState.Record;
 
                 case CachingReaderState.Record:
-                    ValidatingReaderNodeData recordedNode = null;
+                    ValidatingReaderNodeData? recordedNode = null;
                     if (_coreReader.Read())
                     {
                         switch (_coreReader.NodeType)
@@ -466,7 +473,7 @@ namespace System.Xml
             }
         }
 
-        internal ValidatingReaderNodeData RecordTextNode(string textValue, string originalStringValue, int depth, int lineNo, int linePos)
+        internal ValidatingReaderNodeData RecordTextNode(string textValue, string? originalStringValue, int depth, int lineNo, int linePos)
         {
             ValidatingReaderNodeData textNode = AddContent(XmlNodeType.Text);
             textNode.SetItemData(textValue, originalStringValue);
@@ -475,7 +482,7 @@ namespace System.Xml
             return textNode;
         }
 
-        internal void SwitchTextNodeAndEndElement(string textValue, string originalStringValue)
+        internal void SwitchTextNodeAndEndElement(string textValue, string? originalStringValue)
         {
             Debug.Assert(_coreReader.NodeType == XmlNodeType.EndElement || (_coreReader.NodeType == XmlNodeType.Element && _coreReader.IsEmptyElement));
 
@@ -536,7 +543,7 @@ namespace System.Xml
         public override void Skip()
         {
             //Skip on caching reader should move to the end of the subtree, past all cached events
-            switch (_cachedNode.NodeType)
+            switch (_cachedNode!.NodeType)
             {
                 case XmlNodeType.Element:
                     if (_coreReader.NodeType != XmlNodeType.EndElement && !_readAhead)
@@ -571,7 +578,7 @@ namespace System.Xml
         }
 
         // Resolves a namespace prefix in the current element's scope.
-        public override string LookupNamespace(string prefix)
+        public override string? LookupNamespace(string prefix)
         {
             return _coreReader.LookupNamespace(prefix);
         }
@@ -586,10 +593,11 @@ namespace System.Xml
         public override bool ReadAttributeValue()
         {
             Debug.Assert(_cacheState == CachingReaderState.Replay);
-            if (_cachedNode.NodeType != XmlNodeType.Attribute)
+            if (_cachedNode!.NodeType != XmlNodeType.Attribute)
             {
                 return false;
             }
+
             _cachedNode = CreateDummyTextNode(_cachedNode.RawValue, _cachedNode.Depth + 1);
             return true;
         }
@@ -607,7 +615,7 @@ namespace System.Xml
         {
             get
             {
-                return _cachedNode.LineNumber;
+                return _cachedNode!.LineNumber;
             }
         }
 
@@ -615,7 +623,7 @@ namespace System.Xml
         {
             get
             {
-                return _cachedNode.LinePosition;
+                return _cachedNode!.LinePosition;
             }
         }
 
@@ -633,7 +641,7 @@ namespace System.Xml
             return _coreReader;
         }
 
-        internal IXmlLineInfo GetLineInfo()
+        internal IXmlLineInfo? GetLineInfo()
         {
             return _lineInfo;
         }
@@ -716,16 +724,17 @@ namespace System.Xml
 
         private int GetAttributeIndexWithoutPrefix(string name)
         {
-            name = _coreReaderNameTable.Get(name);
-            if (name == null)
+            string? atomizedName = _coreReaderNameTable.Get(name);
+            if (atomizedName == null)
             {
                 return -1;
             }
+
             ValidatingReaderNodeData attribute;
             for (int i = 0; i < _attributeCount; i++)
             {
                 attribute = _attributeEvents[i];
-                if (Ref.Equal(attribute.LocalName, name) && attribute.Prefix.Length == 0)
+                if (Ref.Equal(attribute.LocalName, atomizedName) && attribute.Prefix.Length == 0)
                 {
                     return i;
                 }
@@ -735,8 +744,8 @@ namespace System.Xml
 
         private int GetAttributeIndexWithPrefix(string name)
         {
-            name = _coreReaderNameTable.Get(name);
-            if (name == null)
+            string? atomizedName = _coreReaderNameTable.Get(name);
+            if (atomizedName == null)
             {
                 return -1;
             }
@@ -744,11 +753,12 @@ namespace System.Xml
             for (int i = 0; i < _attributeCount; i++)
             {
                 attribute = _attributeEvents[i];
-                if (Ref.Equal(attribute.GetAtomizedNameWPrefix(_coreReaderNameTable), name))
+                if (Ref.Equal(attribute.GetAtomizedNameWPrefix(_coreReaderNameTable), atomizedName))
                 {
                     return i;
                 }
             }
+
             return -1;
         }
 
@@ -758,6 +768,7 @@ namespace System.Xml
             {
                 _textNode = new ValidatingReaderNodeData(XmlNodeType.Text);
             }
+
             _textNode.Depth = depth;
             _textNode.RawValue = attributeValue;
             return _textNode;

@@ -164,9 +164,6 @@
   <data name="net_io_eof" xml:space="preserve">
     <value> Received an unexpected EOF or 0 bytes from the transport stream.</value>
   </data>
-  <data name="net_io_async_result" xml:space="preserve">
-    <value>The parameter: {0} is not valid. Use the object returned from corresponding Begin async call.</value>
-  </data>
   <data name="net_ssl_io_frame" xml:space="preserve">
     <value>The handshake failed due to an unexpected packet format.</value>
   </data>
@@ -174,7 +171,13 @@
     <value>The remote party requested renegotiation when AllowRenegotiation was set to false.</value>
   </data>
   <data name="net_ssl_io_cert_validation" xml:space="preserve">
-    <value>The remote certificate is invalid according to the validation procedure.</value>
+    <value>The remote certificate is invalid according to the validation procedure: {0}</value>
+  </data>
+  <data name="net_ssl_io_cert_chain_validation" xml:space="preserve">
+    <value>The remote certificate is invalid because of errors in the certificate chain: {0}</value>
+  </data>
+  <data name="net_ssl_io_cert_custom_validation" xml:space="preserve">
+    <value>The remote certificate was rejected by the provided RemoteCertificateValidationCallback.</value>
   </data>
   <data name="net_ssl_io_no_server_cert" xml:space="preserve">
     <value>The server mode SSL must use a certificate with the associated private key.</value>

@@ -37,7 +37,7 @@ namespace System.Data.SqlTypes.Tests
 
         private static readonly UnicodeEncoding s_unicodeEncoding = new UnicodeEncoding(bigEndian: false, byteOrderMark: false, throwOnInvalidBytes: true);
 
-        [ConditionalTheory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [InlineData("ja-JP", 0x0411)] // Japanese - Japan
         [InlineData("ar-SA", 0x0401)] // Arabic - Saudi Arabia
         [InlineData("de-DE", 0x0407)] // German - Germany

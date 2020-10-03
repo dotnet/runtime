@@ -74,20 +74,59 @@ namespace System.Net.Sockets
             return t;
         }
 
-        internal Task ConnectAsync(EndPoint remoteEP)
+        internal Task ConnectAsync(EndPoint remoteEP) => ConnectAsync(remoteEP, default).AsTask();
+
+        internal ValueTask ConnectAsync(EndPoint remoteEP, CancellationToken cancellationToken)
         {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return ValueTask.FromCanceled(cancellationToken);
+            }
+
             // Use _singleBufferReceiveEventArgs so the AwaitableSocketAsyncEventArgs can be re-used later for receives.
             AwaitableSocketAsyncEventArgs saea =
                 Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null) ??
                 new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: true);
 
             saea.RemoteEndPoint = remoteEP;
-            return saea.ConnectAsync(this).AsTask();
+
+            ValueTask connectTask = saea.ConnectAsync(this);
+            if (connectTask.IsCompleted || !cancellationToken.CanBeCanceled)
+            {
+                // Avoid async invocation overhead
+                return connectTask;
+            }
+            else
+            {
+                return WaitForConnectWithCancellation(saea, connectTask, cancellationToken);
+            }
+
+            async ValueTask WaitForConnectWithCancellation(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+            {
+                Debug.Assert(cancellationToken.CanBeCanceled);
+                try
+                {
+                    using (cancellationToken.UnsafeRegister(o => CancelConnectAsync((SocketAsyncEventArgs)o!), saea))
+                    {
+                        await connectTask.ConfigureAwait(false);
+                    }
+                }
+                catch (SocketException se) when (se.SocketErrorCode == SocketError.OperationAborted)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    throw;
+                }
+            }
+
         }
 
         internal Task ConnectAsync(IPAddress address, int port) => ConnectAsync(new IPEndPoint(address, port));
 
-        internal Task ConnectAsync(IPAddress[] addresses, int port)
+        internal ValueTask ConnectAsync(IPAddress address, int port, CancellationToken cancellationToken) => ConnectAsync(new IPEndPoint(address, port), cancellationToken);
+
+        internal Task ConnectAsync(IPAddress[] addresses, int port) => ConnectAsync(addresses, port, CancellationToken.None).AsTask();
+
+        internal ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken)
         {
             if (addresses == null)
             {
@@ -98,20 +137,20 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.net_invalidAddressList, nameof(addresses));
             }
 
-            return DoConnectAsync(addresses, port);
+            return DoConnectAsync(addresses, port, cancellationToken);
         }
 
-        private async Task DoConnectAsync(IPAddress[] addresses, int port)
+        private async ValueTask DoConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken)
         {
             Exception? lastException = null;
             foreach (IPAddress address in addresses)
             {
                 try
                 {
-                    await ConnectAsync(address, port).ConfigureAwait(false);
+                    await ConnectAsync(address, port, cancellationToken).ConfigureAwait(false);
                     return;
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     lastException = ex;
                 }
@@ -121,7 +160,9 @@ namespace System.Net.Sockets
             ExceptionDispatchInfo.Throw(lastException);
         }
 
-        internal Task ConnectAsync(string host, int port)
+        internal Task ConnectAsync(string host, int port) => ConnectAsync(host, port, default).AsTask();
+
+        internal ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
             if (host == null)
             {
@@ -131,7 +172,7 @@ namespace System.Net.Sockets
             EndPoint ep = IPAddress.TryParse(host, out IPAddress? parsedAddress) ? (EndPoint)
                 new IPEndPoint(parsedAddress, port) :
                 new DnsEndPoint(host, port);
-            return ConnectAsync(ep);
+            return ConnectAsync(ep, cancellationToken);
         }
 
         internal Task<int> ReceiveAsync(ArraySegment<byte> buffer, SocketFlags socketFlags, bool fromNetworkStream)
@@ -154,7 +195,7 @@ namespace System.Net.Sockets
             Debug.Assert(saea.BufferList == null);
             saea.SetBuffer(buffer);
             saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInIOExceptions = fromNetworkStream;
+            saea.WrapExceptionsForNetworkStream = fromNetworkStream;
             return saea.ReceiveAsync(this, cancellationToken);
         }
 
@@ -237,7 +278,7 @@ namespace System.Net.Sockets
             Debug.Assert(saea.BufferList == null);
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInIOExceptions = false;
+            saea.WrapExceptionsForNetworkStream = false;
             return saea.SendAsync(this, cancellationToken);
         }
 
@@ -255,7 +296,7 @@ namespace System.Net.Sockets
             Debug.Assert(saea.BufferList == null);
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
-            saea.WrapExceptionsInIOExceptions = true;
+            saea.WrapExceptionsForNetworkStream = true;
             return saea.SendAsyncForNetworkStream(this, cancellationToken);
         }
 
@@ -577,7 +618,7 @@ namespace System.Net.Sockets
                 _isReadForCaching = isReceiveForCaching;
             }
 
-            public bool WrapExceptionsInIOExceptions { get; set; }
+            public bool WrapExceptionsForNetworkStream { get; set; }
 
             private void Release()
             {
@@ -885,8 +926,8 @@ namespace System.Net.Sockets
                     e = ExceptionDispatchInfo.SetCurrentStackTrace(e);
                 }
 
-                return WrapExceptionsInIOExceptions ?
-                    new IOException(SR.Format(SR.net_io_readfailure, e.Message), e) :
+                return WrapExceptionsForNetworkStream ?
+                    new IOException(SR.Format(_isReadForCaching ? SR.net_io_readfailure : SR.net_io_writefailure, e.Message), e) :
                     e;
             }
         }

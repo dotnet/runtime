@@ -57,6 +57,7 @@ namespace System.ServiceProcess
         public void ServiceMainCallback(int argCount, System.IntPtr argPointer) { }
         public void Stop() { }
     }
+    [System.ComponentModel.DesignerAttribute("System.ServiceProcess.Design.ServiceControllerDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ServiceController : System.ComponentModel.Component
     {
         public ServiceController() { }

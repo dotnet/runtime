@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Schema;
-
 
 namespace System.Xml.Serialization
 {
@@ -13,8 +13,8 @@ namespace System.Xml.Serialization
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property | AttributeTargets.Parameter | AttributeTargets.ReturnValue, AllowMultiple = true)]
     public class XmlAnyElementAttribute : System.Attribute
     {
-        private string _name;
-        private string _ns;
+        private string? _name;
+        private string? _ns;
         private int _order = -1;
         private bool _nsSpecified;
 
@@ -28,7 +28,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAnyElementAttribute(string name)
+        public XmlAnyElementAttribute(string? name)
         {
             _name = name;
         }
@@ -36,7 +36,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public XmlAnyElementAttribute(string name, string ns)
+        public XmlAnyElementAttribute(string? name, string? ns)
         {
             _name = name;
             _ns = ns;
@@ -46,6 +46,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
+        [AllowNull]
         public string Name
         {
             get { return _name == null ? string.Empty : _name; }
@@ -55,7 +56,7 @@ namespace System.Xml.Serialization
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        public string Namespace
+        public string? Namespace
         {
             get { return _ns; }
             set

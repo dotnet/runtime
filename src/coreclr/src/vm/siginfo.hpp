@@ -566,7 +566,7 @@ class MetaSig
 
         MetaSig(FieldDesc *pFD, TypeHandle declaringType = TypeHandle());
 
-        // Used to avoid touching metadata for mscorlib methods.  Nb. only use for non-generic methods.
+        // Used to avoid touching metadata for CoreLib methods.  Nb. only use for non-generic methods.
         MetaSig(BinderMethodID id);
 
         MetaSig(LPHARDCODEDMETASIG pwzMetaSig);
@@ -781,20 +781,20 @@ class MetaSig
 
         //----------------------------------------------------------
         // Gets the unmanaged calling convention by reading any modopts.
-        // If there are multiple modopts specifying recognized calling
-        // conventions, the first one that is found in the metadata wins.
-        // Note: the order in the metadata is the reverse of that in IL.
         //
         // Returns:
-        //   E_FAIL - Signature had an invalid format
         //   S_OK - Calling convention was read from modopt
         //   S_FALSE - Calling convention was not read from modopt
+        //   COR_E_BADIMAGEFORMAT - Signature had an invalid format
+        //   COR_E_INVALIDPROGRAM - Program is considered invalid (more
+        //                          than one calling convention specified)
         //----------------------------------------------------------
         static HRESULT TryGetUnmanagedCallingConventionFromModOpt(
             _In_ Module *pModule,
             _In_ PCCOR_SIGNATURE pSig,
             _In_ ULONG cSig,
-            _Out_ CorUnmanagedCallingConvention *callConvOut);
+            _Out_ CorUnmanagedCallingConvention *callConvOut,
+            _Out_ UINT *errorResID);
 
         static CorUnmanagedCallingConvention GetDefaultUnmanagedCallingConvention()
         {

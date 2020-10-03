@@ -12,7 +12,7 @@ namespace System.Data.Common
 {
     internal sealed class SqlInt64Storage : DataStorage
     {
-        private SqlInt64[] _values = default!;
+        private SqlInt64[] _values = default!; // Late-initialized
 
         public SqlInt64Storage(DataColumn column)
         : base(column, typeof(SqlInt64), SqlInt64.Null, SqlInt64.Null, StorageType.SqlInt64)

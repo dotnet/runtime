@@ -265,4 +265,7 @@
   <data name="SystemNetSockets_PlatformNotSupported" xml:space="preserve">
     <value>System.Net.Sockets is not supported on this platform.</value>
   </data>
+  <data name="net_sockets_accept_receive_apm_notsupported" xml:space="preserve">
+    <value>This platform does not support receiving data with Socket.BeginAccept/EndAccept.  Instead, make a separate call to ReceiveAsync or BeginReceive/EndReceive.</value>
+  </data>
 </root>

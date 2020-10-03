@@ -3,7 +3,6 @@
 
 using Microsoft.Win32.SafeHandles;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 
@@ -90,7 +89,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    if ((RuntimeInformation.IsOSPlatform(OSPlatform.OSX) || PlatformDetection.IsInContainer) &&
+                    if ((OperatingSystem.IsMacOS() || PlatformDetection.IsInContainer) &&
                         (viewAccess == MemoryMappedFileAccess.ReadExecute || viewAccess == MemoryMappedFileAccess.ReadWriteExecute))
                     {
                         // Containers and OSX with SIP enabled do not have execute permissions by default.
@@ -186,7 +185,7 @@ namespace System.IO.MemoryMappedFiles.Tests
                     using (MemoryMappedViewStream s = mmf.CreateViewStream(MapLength, 0))
                     {
                         Assert.Equal(
-                            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MapLength : 0,
+                            OperatingSystem.IsWindows() ? MapLength : 0,
                             s.PointerOffset);
                     }
                 }

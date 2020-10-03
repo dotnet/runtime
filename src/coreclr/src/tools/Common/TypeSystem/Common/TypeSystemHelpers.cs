@@ -211,7 +211,7 @@ namespace Internal.TypeSystem
             }
             else
             {
-                // The method will be null if calling a non-virtual instance 
+                // The method will be null if calling a non-virtual instance
                 // methods on System.Object, i.e. when these are used as a constraint.
                 method = null;
             }
@@ -223,7 +223,7 @@ namespace Internal.TypeSystem
             }
 
             //#TryResolveConstraintMethodApprox_DoNotReturnParentMethod
-            // Only return a method if the value type itself declares the method, 
+            // Only return a method if the value type itself declares the method,
             // otherwise we might get a method from Object or System.ValueType
             if (!method.OwningType.IsValueType)
             {
@@ -250,7 +250,7 @@ namespace Internal.TypeSystem
         public static string GetFullName(this DefType metadataType)
         {
             string ns = metadataType.Namespace;
-            return ns.Length > 0 ? String.Concat(ns, ".", metadataType.Name) : metadataType.Name;
+            return ns.Length > 0 ? string.Concat(ns, ".", metadataType.Name) : metadataType.Name;
         }
 
         /// <summary>
@@ -350,7 +350,7 @@ namespace Internal.TypeSystem
         }
 
         /// <summary>
-        /// Scan the type and its base types for an implementation of an interface method. Returns null if no 
+        /// Scan the type and its base types for an implementation of an interface method. Returns null if no
         /// implementation is found.
         /// </summary>
         public static MethodDesc ResolveInterfaceMethodTarget(this TypeDesc thisType, MethodDesc interfaceMethodToResolve)

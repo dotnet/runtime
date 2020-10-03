@@ -6,11 +6,11 @@ using System;
 //
 // Native Format
 //
-// NativeFormat is a binary metadata format. It primarily designed for storing layout decisions done by static code 
-// generator that the dynamic code generator needs to be aware of. However, it can be also used for storing general 
+// NativeFormat is a binary metadata format. It primarily designed for storing layout decisions done by static code
+// generator that the dynamic code generator needs to be aware of. However, it can be also used for storing general
 // managed code metadata in future. The key properties of the format are:
 //
-// - Extensible: It should be possible to attach new data to existing records without breaking existing consumers that 
+// - Extensible: It should be possible to attach new data to existing records without breaking existing consumers that
 //   do not understand the new data yet.
 //
 // - Naturally compressed: Integers are stored using variable length encoding. Offsets are stored as relative offsets.
@@ -25,7 +25,7 @@ using System;
 namespace Internal.NativeFormat
 {
     //
-    // Bag is the key record type for extensibility. It is a list <id, data> pairs. Data is integer that 
+    // Bag is the key record type for extensibility. It is a list <id, data> pairs. Data is integer that
     // is interpretted according to the id. It is typically relative offset of another record.
     //
 #if NATIVEFORMAT_PUBLICWRITER
@@ -84,8 +84,8 @@ namespace Internal.NativeFormat
         MethodLdToken               = 0x08,
         AllocateObject              = 0x09,
         DefaultConstructor          = 0x0a,
-        TlsIndex                    = 0x0b,
-        TlsOffset                   = 0x0c,
+        ThreadStaticIndex           = 0x0b,
+        // unused                   = 0x0c,
         Method                      = 0x0d,
         IsInst                      = 0x0e,
         CastClass                   = 0x0f,
@@ -105,7 +105,7 @@ namespace Internal.NativeFormat
     }
 
     //
-    // TypeSignature describes type. The low 4 bits of the integer that is starts with describe the kind. Upper 28 bits are kind 
+    // TypeSignature describes type. The low 4 bits of the integer that is starts with describe the kind. Upper 28 bits are kind
     // specific data. The argument signatures immediately follow for nested types.
     //
 #if NATIVEFORMAT_PUBLICWRITER

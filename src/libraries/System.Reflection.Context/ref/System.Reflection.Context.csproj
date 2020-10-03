@@ -10,8 +10,4 @@
   <ItemGroup>
     <Compile Include="System.Reflection.Context.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard1.1'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Reflection" />
-  </ItemGroup>
 </Project>

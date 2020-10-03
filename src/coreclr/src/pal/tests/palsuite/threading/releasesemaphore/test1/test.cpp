@@ -5,9 +5,9 @@
 **
 ** Source: releasesemaphore/test1/createsemaphore.c
 **
-** Purpose: Check that ReleaseSemaphore fails when using a semaphore handle 
+** Purpose: Check that ReleaseSemaphore fails when using a semaphore handle
 ** which has been closed by a call to CloseHandle.  Check that
-** ReleaseSemaphore fails when using a ReleaseCount of zero or less than 
+** ReleaseSemaphore fails when using a ReleaseCount of zero or less than
 ** zero.
 **
 **
@@ -15,28 +15,28 @@
 
 #include <palsuite.h>
 
-HANDLE hSemaphore;
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(threading_releasesemaphore_test1_paltest_releasesemaphore_test1, "threading/releasesemaphore/test1/paltest_releasesemaphore_test1")
 {
+    HANDLE hSemaphore;
     if(0 != (PAL_Initialize(argc, argv)))
     {
 	return (FAIL);
     }
-    hSemaphore = CreateSemaphoreA (NULL, 1, 2, NULL); 
-        
+    hSemaphore = CreateSemaphoreExW (NULL, 1, 2, NULL, 0, 0);
+
     if (NULL == hSemaphore)
     {
-        Fail("PALSUITE ERROR: CreateSemaphoreA ('%p' '%ld' '%ld' "
-             "'%p') returned NULL.\nGetLastError returned %d.\n", 
-             NULL, 1, 2, NULL, GetLastError()); 
+        Fail("PALSUITE ERROR: CreateSemaphoreExW ('%p' '%ld' '%ld' "
+             "'%p' '0' '0') returned NULL.\nGetLastError returned %d.\n",
+             NULL, 1, 2, NULL, GetLastError());
     }
 
     if(ReleaseSemaphore(hSemaphore, 0, NULL))
     {
         Fail("PALSUITE ERROR: ReleaseSemaphore('%p' '%ld' '%p') "
              "call returned %d\nwhen it should have returned "
-             "%d.\nGetLastError returned %d.\n", 
+             "%d.\nGetLastError returned %d.\n",
              hSemaphore, 0, NULL, FALSE, TRUE, GetLastError());
     }
 
@@ -44,7 +44,7 @@ int __cdecl main (int argc, char **argv)
     {
         Fail("PALSUITE ERROR: ReleaseSemaphore('%p' '%ld' '%p') "
              "call returned %d\nwhen it should have returned "
-             "%d.\nGetLastError returned %d.\n", 
+             "%d.\nGetLastError returned %d.\n",
              hSemaphore, -1, NULL, TRUE, FALSE, GetLastError());
     }
 
@@ -61,7 +61,7 @@ int __cdecl main (int argc, char **argv)
              "was closed by a call to CloseHandle.\n GetLastError returned "
              "%d.\n", hSemaphore, -1, NULL, hSemaphore, GetLastError());
     }
-    
+
     PAL_Terminate();
     return (PASS);
 }

@@ -396,7 +396,7 @@ typedef enum
      * They are currently used for EnC for adding new field members to existing instantiations under EnC modes where
      * the primary object is the original instantiation and the secondary represents the added field.
      *
-     * They are also used to implement the ConditionalWeakTable class in mscorlib.dll. If you want to use
+     * They are also used to implement the managed ConditionalWeakTable class. If you want to use
      * these from managed code, they are exposed to BCL through the managed DependentHandle class.
      *
      *
@@ -587,7 +587,7 @@ public:
 
     /*
     ===========================================================================
-    BCL routines. These are routines that are directly exposed by mscorlib
+    BCL routines. These are routines that are directly exposed by CoreLib
     as a part of the `System.GC` class. These routines behave in the same
     manner as the functions on `System.GC`.
     ===========================================================================
@@ -640,14 +640,14 @@ public:
     virtual int GetGcLatencyMode() = 0;
 
     // Sets the current GC latency mode. newLatencyMode has already been
-    // verified by mscorlib to be valid.
+    // verified by CoreLib to be valid.
     virtual int SetGcLatencyMode(int newLatencyMode) = 0;
 
     // Gets the current LOH compaction mode.
     virtual int GetLOHCompactionMode() = 0;
 
     // Sets the current LOH compaction mode. newLOHCompactionMode has
-    // already been verified by mscorlib to be valid.
+    // already been verified by CoreLib to be valid.
     virtual void SetLOHCompactionMode(int newLOHCompactionMode) = 0;
 
     // Registers for a full GC notification, raising a notification if the gen 2 or

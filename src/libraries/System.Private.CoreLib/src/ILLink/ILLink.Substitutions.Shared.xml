@@ -15,5 +15,8 @@
     <type fullname="System.Resources.ResourceReader">
       <method signature="System.Boolean InitializeBinaryFormatter()" body="stub" value="false" feature="System.Runtime.Serialization.EnableUnsafeBinaryFormatterSerialization" featurevalue="false" />
     </type>
+    <type fullname="System.Threading.Tasks.Task" feature="System.Diagnostics.Debugger.IsSupported" featurevalue="false">
+      <field name="s_asyncDebuggingEnabled" value="false" initialize="false" />
+    </type>
   </assembly>
 </linker>

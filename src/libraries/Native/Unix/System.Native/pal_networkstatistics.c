@@ -6,7 +6,7 @@
 // These functions are only used for platforms which support
 // using sysctl to gather protocol statistics information.
 // Currently, this is all keyed off of whether the include tcp_var.h
-// exists, but we may want to make this more granular for differnet platforms.
+// exists, but we may want to make this more granular for different platforms.
 
 #if HAVE_NETINET_TCP_VAR_H
 
@@ -27,6 +27,7 @@
 #include <net/if.h>
 
 #include <sys/types.h>
+#include <stdatomic.h>
 #if HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
 #endif
@@ -55,6 +56,17 @@
 #if HAVE_NETINET_ICMP_VAR_H
 #include <netinet/icmp_var.h>
 #endif
+
+static _Atomic(int) icmp6statSize = sizeof(struct icmp6stat);
+
+static size_t GetEstimatedSize(const char* name)
+{
+    void* oldp = NULL;
+    size_t oldlenp = 0;
+
+    sysctlbyname(name, oldp, &oldlenp, NULL, 0);
+    return oldlenp;
+}
 
 int32_t SystemNative_GetTcpGlobalStatistics(TcpGlobalStatistics* retStats)
 {
@@ -193,8 +205,8 @@ int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
         return -1;
     }
 
-    __typeof(systemStats.icps_inhist[0])* inHist = systemStats.icps_inhist;
-    __typeof(systemStats.icps_outhist[0])* outHist = systemStats.icps_outhist;
+    TYPEOF(systemStats.icps_inhist[0])* inHist = systemStats.icps_inhist;
+    TYPEOF(systemStats.icps_outhist[0])* outHist = systemStats.icps_outhist;
 
     retStats->AddressMaskRepliesReceived = inHist[ICMP_MASKREPLY];
     retStats->AddressMaskRepliesSent = outHist[ICMP_MASKREPLY];
@@ -228,20 +240,54 @@ int32_t SystemNative_GetIcmpv4GlobalStatistics(Icmpv4GlobalStatistics* retStats)
 
 int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
 {
-    size_t oldlenp;
-
     assert(retStats != NULL);
 
-    struct icmp6stat systemStats;
-    oldlenp = sizeof(systemStats);
-    if (sysctlbyname("net.inet6.icmp6.stats", &systemStats, &oldlenp, NULL, 0))
+    size_t oldlenp = (size_t)atomic_load(&icmp6statSize);
+    const char* sysctlName = "net.inet6.icmp6.stats";
+    void* buffer = malloc(oldlenp);
+    if (!buffer)
     {
+        memset(retStats, 0, sizeof(Icmpv6GlobalStatistics));
+        errno = ENOMEM;
+        return -1;
+    }
+
+    int result = sysctlbyname(sysctlName, buffer, &oldlenp, NULL, 0);
+    if (result && errno == ENOMEM)
+    {
+        // We did not provide enough memory.
+        // macOS 11.0 added new member to icmp6stat so as FreeBSD reported changes between versions.
+        oldlenp = GetEstimatedSize(sysctlName);
+        free(buffer);
+        buffer = malloc(oldlenp);
+        if (!buffer)
+        {
+            memset(retStats, 0, sizeof(Icmpv6GlobalStatistics));
+            errno = ENOMEM;
+            return -1;
+        }
+
+        result = sysctlbyname(sysctlName, buffer, &oldlenp, NULL, 0);
+        if (result == 0)
+        {
+            // if the call succeeded, update icmp6statSize
+            atomic_store(&icmp6statSize, oldlenp);
+        }
+    }
+
+    if (result)
+    {
+        if (buffer)
+        {
+            free(buffer);
+        }
+
         memset(retStats, 0, sizeof(Icmpv6GlobalStatistics));
         return -1;
     }
 
-    uint64_t* inHist = systemStats.icp6s_inhist;
-    uint64_t* outHist = systemStats.icp6s_outhist;
+    uint64_t* inHist = ((struct icmp6stat*)(buffer))->icp6s_inhist;
+    uint64_t* outHist = ((struct icmp6stat*)(buffer))->icp6s_outhist;
 
     retStats->DestinationUnreachableMessagesReceived = inHist[ICMP6_DST_UNREACH];
     retStats->DestinationUnreachableMessagesSent = outHist[ICMP6_DST_UNREACH];
@@ -272,6 +318,8 @@ int32_t SystemNative_GetIcmpv6GlobalStatistics(Icmpv6GlobalStatistics* retStats)
     retStats->TimeExceededMessagesReceived = inHist[ICMP6_TIME_EXCEEDED];
     retStats->TimeExceededMessagesSent = outHist[ICMP6_TIME_EXCEEDED];
 
+    free(buffer);
+
     return 0;
 }
 
@@ -290,22 +338,14 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(__attribute__((unused)) NativeT
     return 0;
 }
 #else
-static size_t GetEstimatedTcpPcbSize()
-{
-    void* oldp = NULL;
-    void* newp = NULL;
-    size_t oldlenp, newlen = 0;
-
-    sysctlbyname("net.inet.tcp.pcblist", oldp, &oldlenp, newp, newlen);
-    return oldlenp;
-}
-
 int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation* infos, int32_t* infoCount)
 {
     assert(infos != NULL);
     assert(infoCount != NULL);
 
-    size_t estimatedSize = GetEstimatedTcpPcbSize();
+    const char* sysctlName = "net.inet.tcp.pcblist";
+
+    size_t estimatedSize = GetEstimatedSize(sysctlName);
     uint8_t* buffer = (uint8_t*)malloc(estimatedSize * sizeof(uint8_t));
     if (buffer == NULL)
     {
@@ -316,7 +356,7 @@ int32_t SystemNative_GetActiveTcpConnectionInfos(NativeTcpConnectionInformation*
     void* newp = NULL;
     size_t newlen = 0;
 
-    while (sysctlbyname("net.inet.tcp.pcblist", buffer, &estimatedSize, newp, newlen) != 0)
+    while (sysctlbyname(sysctlName, buffer, &estimatedSize, newp, newlen) != 0)
     {
         free(buffer);
         size_t tmpEstimatedSize;
@@ -398,22 +438,14 @@ int32_t SystemNative_GetActiveUdpListeners(__attribute__((unused)) IPEndPointInf
     return 0;
 }
 #else
-static size_t GetEstimatedUdpPcbSize()
-{
-    void* oldp = NULL;
-    void* newp = NULL;
-    size_t oldlenp, newlen = 0;
-
-    sysctlbyname("net.inet.udp.pcblist", oldp, &oldlenp, newp, newlen);
-    return oldlenp;
-}
-
 int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoCount)
 {
     assert(infos != NULL);
     assert(infoCount != NULL);
 
-    size_t estimatedSize = GetEstimatedUdpPcbSize();
+    const char* sysctlName = "net.inet.udp.pcblist";
+
+    size_t estimatedSize = GetEstimatedSize(sysctlName);
     uint8_t* buffer = (uint8_t*)malloc(estimatedSize * sizeof(uint8_t));
     if (buffer == NULL)
     {
@@ -424,7 +456,7 @@ int32_t SystemNative_GetActiveUdpListeners(IPEndPointInfo* infos, int32_t* infoC
     void* newp = NULL;
     size_t newlen = 0;
 
-    while (sysctlbyname("net.inet.udp.pcblist", buffer, &estimatedSize, newp, newlen) != 0)
+    while (sysctlbyname(sysctlName, buffer, &estimatedSize, newp, newlen) != 0)
     {
         free(buffer);
         size_t tmpEstimatedSize;

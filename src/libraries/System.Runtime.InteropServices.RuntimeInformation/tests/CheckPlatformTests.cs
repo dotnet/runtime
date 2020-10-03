@@ -51,10 +51,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.OSX));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("OSX")));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("osx")));
-            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.macOS));
-            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("MACOS")));
-            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("macOS")));
-            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("macos")));
 
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("FREEBSD")));
             Assert.False(RuntimeInformation.IsOSPlatform(OSPlatform.Create("NETBSD")));
@@ -71,7 +67,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [Fact, PlatformSpecific(TestPlatforms.iOS)]  // Tests RuntimeInformation OS platform
         public void CheckiOS()
         {
-            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.iOS));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("IOS")));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("iOS")));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("ios")));
@@ -92,7 +87,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [Fact, PlatformSpecific(TestPlatforms.tvOS)]  // Tests RuntimeInformation OS platform
         public void ChecktvOS()
         {
-            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.tvOS));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("TVOS")));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("tvOS")));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("tvos")));
@@ -113,7 +107,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [Fact, PlatformSpecific(TestPlatforms.Android)]  // Tests RuntimeInformation OS platform
         public void CheckAndroid()
         {
-            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Android));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("ANDROID")));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("android")));
 
@@ -133,7 +126,6 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
         [Fact, PlatformSpecific(TestPlatforms.Browser)]  // Tests RuntimeInformation OS platform
         public void CheckBrowser()
         {
-            Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Browser));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("BROWSER")));
             Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Create("browser")));
 

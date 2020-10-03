@@ -213,7 +213,7 @@ This would be done in multiple phases:
       for a general idea of the kinds of VM changes that may be required.
   * Defer retyping of struct return types (`Compiler::impFixupStructReturnType()` and
     `Compiler::impFixupCallStructReturn()`)
-    * This is probably the "right" way to fix [#26491](https://github.com/dotnet/coreclr/issues/26491).
+    * This is probably the "right" way to fix [#13355](https://github.com/dotnet/runtime/issues/13355).
   * Next, eliminate the "pessimizations".
     * For cases where `GT_LCL_FLD` is currently used to "retype" the struct, change it to use *either*
       `GT_LCL_FLD`, if it is already address-taken, or to use a `GT_BITCAST` otherwise.
@@ -230,7 +230,7 @@ This would be done in multiple phases:
     * The removal of each of these pessimizations should result in improved code generation
       in cases where previously disabled optimizations are now enabled.
   * Other ABI-related issues:
-    * [#8289](https://github.com/dotnet/coreclr/issues/8289) - code generation for x86 promoted struct args.
+    * [#7048](https://github.com/dotnet/runtime/issues/7048) - code generation for x86 promoted struct args.
 
 Related issues: #1133 (maybe), #4766, #23675, #23129
 
@@ -262,14 +262,14 @@ This would be enabled first by [Defer ABI-specific transformations to Lowering](
    (#10019, #9594, #7313)
  * Support partial struct promotion when some fields are more frequently accessed.
  * Aggressively promote lclVar struct incoming or outgoing args or returns whose fields match the ABI requirements.
-   * This should address [\#26710](https://github.com/dotnet/coreclr/issues/26710).
+   * This should address [\#13417](https://github.com/dotnet/runtime/issues/13417).
  * Aggressively promote pointer-sized fields of structs used as args or returns
  * Allow struct promotion of locals that are passed or returned in a way that doesn't match
    the field types.
  * Investigate whether it would be useful to re-type single-field structs, rather than creating new lclVars.
    This would complicate type analysis when copied, passed or returned, but would avoid unnecessarily expanding
    the lclVar data structures.
- * Allow promotion of 32-byte SIMD on 16-byte alignment [\#24368](https://github.com/dotnet/coreclr/issues/24368)
+ * Allow promotion of 32-byte SIMD on 16-byte alignment [\#12623](https://github.com/dotnet/runtime/issues/12623)
  * Related: #6839, #9477, #16887
  * Also, #11888, which suggests adding a struct promotion stress mode.
 
@@ -294,7 +294,7 @@ Struct-Related Issues in RyuJIT
 The following issues illustrate some of the motivation for improving the handling of value types
 (structs) in RyuJIT:
 
-* [\#11407 [RyuJIT] Fully enregister structs that fit into a single register when profitable](https://github.com/dotnet/coreclr/issues/11407), also VSO Bug 98404: .NET JIT x86 - poor code generated for value type initialization
+* [\#8016 [RyuJIT] Fully enregister structs that fit into a single register when profitable](https://github.com/dotnet/runtime/issues/8016), also VSO Bug 98404: .NET JIT x86 - poor code generated for value type initialization
   * This is a simple test case that should generate simply `xor eax; ret` on x86 and x64, but
     instead generates many unnecessary copies. It is addressed by full enregistration of
     structs that fit into a register. See [Support Full Enregistration of Struct Types](#support-full-enregistration-of-struct-types):
@@ -304,7 +304,7 @@ struct foo { public byte b1, b2, b3, b4; }
 static foo getfoo() { return new foo(); }
 ```
 
-* [\#1133 JIT: Excessive copies when inlining](https://github.com/dotnet/coreclr/issues/1133)
+* [\#4308 JIT: Excessive copies when inlining](https://github.com/dotnet/runtime/issues/4308)
   * The scenario given in this issue involves a struct that is larger than 8 bytes, so
     it is not impacted by the fixed-size types. However, by enabling value numbering and assertion propagation
     for struct types (which, in turn is made easier by using normal assignments), the
@@ -314,54 +314,54 @@ static foo getfoo() { return new foo(); }
       in the first place.
   * This case may now be handled; needs verification
 
-* [\#1161  RyuJIT properly optimizes structs with a single field if the field type is int but not if it is double](https://github.com/dotnet/coreclr/issues/1161)
+* [\#4323  RyuJIT properly optimizes structs with a single field if the field type is int but not if it is double](https://github.com/dotnet/runtime/issues/4323)
   * This issue arises because we never promote a struct with a single double field, due to
     the fact that such a struct may be passed or returned in a general purpose register.
     This issue could be addressed independently, but should "fall out" of improved heuristics
     for when to promote and enregister structs.
-  * Related: [\#8828](https://github.com/dotnet/coreclr/issues/8828)
+  * Related: [\#7200](https://github.com/dotnet/runtime/issues/7200)
 
 * [\#1636 Add optimization to avoid copying a struct if passed by reference and there are no
-  writes to and no reads after passed to a callee](https://github.com/dotnet/coreclr/issues/1636).
+  writes to and no reads after passed to a callee](https://github.com/dotnet/runtime/issues/4524).
   * This issue is related to #1133, except that in this case the desire is to
     eliminate unneeded copies locally (i.e. not just due to inlining), in the case where
     the struct may or may not be passed or returned directly.
   * Unfortunately, there is not currently a scenario or test case for this issue.
 
-* [\#19425 Unix: Unnecessary struct copy while passsing struct of size <=16](https://github.com/dotnet/coreclr/issues/19425)
-* [\#16619 [RyuJIT] Eliminate unecessary copies when passing structs](https://github.com/dotnet/coreclr/issues/16619)
+* [\#10879 Unix: Unnecessary struct copy while passsing struct of size <=16](https://github.com/dotnet/runtime/issues/10879)
+* [\#9839 [RyuJIT] Eliminate unecessary copies when passing structs](https://github.com/dotnet/runtime/issues/9839)
   * These require changing both the callsite and the callee to avoid copying the parameter onto the stack.
 
-* [\#3144 Avoid marking tmp as DoNotEnregister in tmp=GT_CALL() where call returns a
-  enregisterable struct in two return registers](https://github.com/dotnet/coreclr/issues/3144)
+* [\#5112 Avoid marking tmp as DoNotEnregister in tmp=GT_CALL() where call returns a
+  enregisterable struct in two return registers](https://github.com/dotnet/runtime/issues/5112)
   * This issue could be addressed without First Class Structs. However, it
     should be done along with the streamlining of the handling of ABI-specific struct passing
     and return values.
 
-* [\#4766 Pi-Digits: Extra Struct copies of BigInteger](https://github.com/dotnet/coreclr/issues/4766)
+* [\#5785 Pi-Digits: Extra Struct copies of BigInteger](https://github.com/dotnet/runtime/issues/5785)
   * In addition to suffering from the same issue as #1133, this has a struct that is promoted even though it is
     passed (by reference) to its non-inlined constructor. This means that any copy to/from this struct will be field-by-field.
 
-* [\#11816 Extra zeroing with structs and inlining](https://github.com/dotnet/coreclr/issues/11816)
+* [\#8186 Extra zeroing with structs and inlining](https://github.com/dotnet/runtime/issues/8186)
   * This issue illustrates the failure of the JIT to eliminate zero-initialization of structs that are subsequently fully
     defined. It is a related but somewhat different manifestation of the issue in #1133, i.e. that structs are not
     fully supported in value numbering and optimization.
 
-* [\#12865 JIT: inefficient codegen for calls returning 16-byte structs on Linux x64](https://github.com/dotnet/coreclr/issues/12865)
+* [\#8571 JIT: inefficient codegen for calls returning 16-byte structs on Linux x64](https://github.com/dotnet/runtime/issues/8571)
   * This is related to #3144, and requires supporting the assignment of a multi-reg call return into a promoted local variable,
     and enabling subsequent elimination of any redundant copies.
 
-* [\#22445](https://github.com/dotnet/coreclr/issues/22445) and [\#22319](https://github.com/dotnet/coreclr/issues/22319)
+* [\#11992](https://github.com/dotnet/runtime/issues/11992) and [\#11940](https://github.com/dotnet/runtime/issues/11940)
   * These are both cases where we introduce a `GT_LCL_FLD` to retype a value that needs
     to be passed in a register.
 
 ## Other Struct-related Issues
 
-* [\#17207](https://github.com/dotnet/coreclr/issues/17207)
+* [\#10029](https://github.com/dotnet/runtime/issues/10029)
   * This suffers from pessimization due to poor handling of conversion (`Unsafe.As`) from `Quaternion` to `Vector4`.
     It's not immediately clear what's the best way to improve this.
 
-* [#7740](https://github.com/dotnet/coreclr/issues/7740)
+* [#6858](https://github.com/dotnet/runtime/issues/6858)
   * Addressing mode expression optimization for struct fields
 
 Sample IR

@@ -1483,6 +1483,7 @@ internal class Program
     private unsafe static bool ExplicitlySizedStructTest()
     {
         {
+            Console.WriteLine($"sizeof(ExplicitlySizedStructSequential) != 0x14 {sizeof(ExplicitlySizedStructSequential)} != 0x14");
             if (sizeof(ExplicitlySizedStructSequential) != 0x14)
                 return false;
             
@@ -1494,6 +1495,7 @@ internal class Program
         }
 
         {
+            Console.WriteLine($"sizeof(ExplicitlySizedStructSequentialSizeTooSmall) != 0x14 {sizeof(ExplicitlySizedStructSequentialSizeTooSmall)} != 0x14");
             if (sizeof(ExplicitlySizedStructSequentialSizeTooSmall) != 0x14)
                 return false;
             
@@ -1505,6 +1507,7 @@ internal class Program
         }
 
         {
+            Console.WriteLine($"sizeof(ExplicitlySizedStructExplicit) != 0x15 {sizeof(ExplicitlySizedStructExplicit)} != 0x15");
             if (sizeof(ExplicitlySizedStructExplicit) != 0x15)
                 return false;
             
@@ -1516,6 +1519,7 @@ internal class Program
         }
 
         {
+            Console.WriteLine($"sizeof(ExplicitlySizedStructExplicitSizeTooSmall) != 0x15 {sizeof(ExplicitlySizedStructExplicitSizeTooSmall)} != 0x15");
             if (sizeof(ExplicitlySizedStructExplicitSizeTooSmall) != 0x15)
                 return false;
             
@@ -1527,6 +1531,7 @@ internal class Program
         }
 
         {
+            Console.WriteLine($"sizeof(ExplicitlySizedStructExplicitSizeZero) != sizeof(NormalStruct) {sizeof(ExplicitlySizedStructExplicitSizeZero)} != {sizeof(NormalStruct)}");
             if (sizeof(ExplicitlySizedStructExplicitSizeZero) != sizeof(NormalStruct))
                 return false;
             
@@ -1538,7 +1543,8 @@ internal class Program
         }
 
         {
-            if (sizeof(ExplicitlySizedStructAuto) != sizeof(NormalStruct))
+            Console.WriteLine($"sizeof(ExplicitlySizedStructAuto) != sizeof(NormalStruct) {sizeof(ExplicitlySizedStructAuto)} != {sizeof(NormalStruct)}");
+            if ((sizeof(IntPtr) == 8) && sizeof(ExplicitlySizedStructAuto) != sizeof(NormalStruct)) // This test isn't right for 32 bit platforms
                 return false;
             
             ExplicitlySizedStructAuto str6 = new ExplicitlySizedStructAuto();
@@ -1549,7 +1555,8 @@ internal class Program
         }
 
         {
-            if (sizeof(ExplicitlySizedStructAutoSizeTooSmall) != sizeof(NormalStruct))
+            Console.WriteLine($"sizeof(ExplicitlySizedStructAutoSizeTooSmall) != sizeof(NormalStruct) {sizeof(ExplicitlySizedStructAutoSizeTooSmall)} != {sizeof(NormalStruct)}");
+            if ((sizeof(IntPtr) == 8) && sizeof(ExplicitlySizedStructAutoSizeTooSmall) != sizeof(NormalStruct)) // This test isn't right for 32 bit platforms
                 return false;
             
             ExplicitlySizedStructAutoSizeTooSmall str7 = new ExplicitlySizedStructAutoSizeTooSmall();
@@ -1626,6 +1633,305 @@ internal class Program
         return true;
     }
 
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool CheckArrayVal<T>(ref T refVal, T testValue) where T:IEquatable<T>
+    {
+        return refVal.Equals(testValue);
+    }
+
+    struct SomeLargeStruct : IEquatable<SomeLargeStruct>
+    {
+        public SomeLargeStruct(int _xVal)
+        {
+            x = _xVal;
+            y = 0;
+            z = 0;
+            w = 0;
+        }
+        public int x;
+        public int y;
+        public int z;
+        public int w;
+
+        public bool Equals(SomeLargeStruct other)
+        {
+            return (x == other.x) && (y == other.y) && (z == other.z) && (w == other.w);
+        }
+        public override bool Equals(object other)
+        {
+            return Equals((SomeLargeStruct)other);
+        }
+
+        public override int GetHashCode() { return x; }
+    }
+
+    class SomeClass : IEquatable<SomeClass>
+    {
+        public SomeClass(int _xVal)
+        {
+            x = _xVal;
+            y = 0;
+            z = 0;
+            w = 0;
+        }
+        public int x;
+        public int y;
+        public int z;
+        public int w;
+
+        public bool Equals(SomeClass other)
+        {
+            return (x == other.x) && (y == other.y) && (z == other.z) && (w == other.w);
+        }
+        public override bool Equals(object other)
+        {
+            return Equals((SomeClass)other);
+        }
+
+        public override int GetHashCode() { return x; }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool DoLargeStructMDArrayTest(SomeLargeStruct testValue)
+    {
+        SomeLargeStruct[,] array = new SomeLargeStruct[2,2];
+        array[0,0] = testValue;
+        if (!CheckArrayVal(ref array[0,0], testValue))
+        {
+            return false;
+        }
+        if (!testValue.Equals(array[0,0]))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool DoGenericArrayTest<T> (T testValue) where T:IEquatable<T>
+    {
+        T[,] array = new T[2,2];
+        array[0,0] = testValue;
+        if (!CheckArrayVal(ref array[0,0], testValue))
+        {
+            return false;
+        }
+        if (!testValue.Equals(array[0,0]))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool TestGenericMDArrayBehavior()
+    {
+        if (!DoGenericArrayTest<int>(42))
+        {
+            return false;
+        }
+
+        if (!DoGenericArrayTest<SomeClass>(new SomeClass(42)))
+        {
+            return false;
+        }
+
+        SomeLargeStruct testStruct = new SomeLargeStruct(42);
+        if (!DoGenericArrayTest<SomeLargeStruct>(testStruct))
+        {
+            return false;
+        }
+
+        if (!DoLargeStructMDArrayTest(testStruct))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool ArrayLdtokenTests()
+    {
+        // We're testing that mapping from ldtoken to RuntimeMethodHandle works for various ways that 
+        // ldtokens can be referenced (either via a generic token, or not.
+        // (there are slightly different codepaths in crossgen for this)
+        // Incorrect encoding will trigger a BadImageFormatException
+        RuntimeMethodHandle rmhCtor1 = default(RuntimeMethodHandle);
+        RuntimeMethodHandle rmhCtor2 = default(RuntimeMethodHandle);
+        RuntimeMethodHandle rmhSet = default(RuntimeMethodHandle);
+        RuntimeMethodHandle rmhGet = default(RuntimeMethodHandle);
+        RuntimeMethodHandle rmhAddress = default(RuntimeMethodHandle);
+        HelperGenericILCode<string>.LdTokenArrayMethods(ref rmhCtor1, ref rmhCtor2, ref rmhSet, ref rmhGet, ref rmhAddress);
+        HelperGenericILCode<object>.LdTokenArrayMethods(ref rmhCtor1, ref rmhCtor2, ref rmhSet, ref rmhGet, ref rmhAddress);
+        HelperILCode.LdTokenArrayMethodsInt(ref rmhCtor1, ref rmhCtor2, ref rmhSet, ref rmhGet, ref rmhAddress);
+        HelperILCode.LdTokenArrayMethodsString(ref rmhCtor1, ref rmhCtor2, ref rmhSet, ref rmhGet, ref rmhAddress);
+
+        return true;
+    }
+
+    [StructLayout(LayoutKind.Explicit)]
+    struct ExplicitLayoutStruct16
+    {
+        [FieldOffset(0)]
+        public int x;
+        [FieldOffset(4)]
+        public int y;
+        [FieldOffset(8)]
+        public int z;
+        [FieldOffset(12)]
+        public int w;
+        public override string ToString() { return $"{x}{y}{z}{w}"; }
+    }
+    struct BlittableStruct<T>
+    {
+	public ExplicitLayoutStruct16 _explict;
+        public override string ToString() { return $"{_explict}"; }
+    }
+
+    struct StructWithGenericBlittableStruct
+    {
+        public BlittableStruct<short> _blittableGeneric;
+        public int _int;
+        public override string ToString() { return $"{_blittableGeneric}{_int}"; }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveOptimization)]    
+    private static bool TestWithStructureNonBlittableFieldDueToGenerics_StringCompare(ref StructWithGenericBlittableStruct input)
+    {
+        StructWithGenericBlittableStruct s = new StructWithGenericBlittableStruct();
+        s._blittableGeneric._explict.x = 1;
+        s._blittableGeneric._explict.y = 2;
+        s._blittableGeneric._explict.z = 3;
+        s._blittableGeneric._explict.w = 4;
+        s._int = 5;
+
+        Console.WriteLine(input);
+        Console.WriteLine(s);
+
+        return s.Equals(input) && input.ToString() == "12345";
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool TestWithStructureNonBlittableFieldDueToGenerics()
+    {
+        StructWithGenericBlittableStruct s = new StructWithGenericBlittableStruct();
+        s._blittableGeneric._explict.x = 1;
+        s._blittableGeneric._explict.y = 2;
+        s._blittableGeneric._explict.z = 3;
+        s._blittableGeneric._explict.w = 4;
+        s._int = 5;
+
+        return TestWithStructureNonBlittableFieldDueToGenerics_StringCompare(ref s);
+    }
+
+    private static object s_knownObject = new object();
+
+    struct SingleElementStruct_I1 { public sbyte _val; }
+    struct SingleElementStruct_I2 { public short _val; }
+    struct SingleElementStruct_I4 { public int _val; }
+    struct SingleElementStruct_I8 { public double _val; }
+    struct SingleElementStruct_U1 { public sbyte _val; }
+    struct SingleElementStruct_U2 { public short _val; }
+    struct SingleElementStruct_U4 { public int _val; }
+    struct SingleElementStruct_U8 { public double _val; }
+    struct SingleElementStruct_R4 { public float _val; }
+    struct SingleElementStruct_R8 { public double _val; }
+    struct SingleElementStruct_Obj { public object _val; }
+    struct SingleElementStruct_Ptr { public object _val; }
+    unsafe struct SingleElementStruct_FuncPtr { public delegate*<string, int> _val; }
+    [StructLayout(LayoutKind.Explicit, Size = 0x4)] public unsafe struct SingleElementStruct_Empty {}
+    struct SingleElementStruct_IntEnum { public IntEnum _val; }
+
+    struct SingleElementStruct_NestedI1 { public SingleElementStruct_I1 _val; }
+    struct SingleElementStruct_NestedI2 { public SingleElementStruct_I2 _val; }
+    struct SingleElementStruct_NestedI4 { public SingleElementStruct_I4 _val; }
+    struct SingleElementStruct_NestedI8 { public SingleElementStruct_I8 _val; }
+    struct SingleElementStruct_NestedU1 { public SingleElementStruct_U1 _val; }
+    struct SingleElementStruct_NestedU2 { public SingleElementStruct_U2 _val; }
+    struct SingleElementStruct_NestedU4 { public SingleElementStruct_U4 _val; }
+    struct SingleElementStruct_NestedU8 { public SingleElementStruct_U8 _val; }
+    struct SingleElementStruct_NestedR4 { public SingleElementStruct_R4 _val; }
+    struct SingleElementStruct_NestedR8 { public SingleElementStruct_R8 _val; }
+    struct SingleElementStruct_NestedObj { public SingleElementStruct_Obj _val; }
+    struct SingleElementStruct_NestedPtr { public SingleElementStruct_Ptr _val; }
+    struct SingleElementStruct_NestedFuncPtr { public SingleElementStruct_FuncPtr _val; }
+    struct SingleElementStruct_NestedEmpty { public SingleElementStruct_Empty _val; }
+    struct SingleElementStruct_NestedIntEnum { public SingleElementStruct_IntEnum _val; }
+
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_I1(SingleElementStruct_I1 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_I2(SingleElementStruct_I2 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_I4(SingleElementStruct_I4 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_I8(SingleElementStruct_I8 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_U1(SingleElementStruct_U1 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_U2(SingleElementStruct_U2 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_U4(SingleElementStruct_U4 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_U8(SingleElementStruct_U8 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_R4(SingleElementStruct_R4 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_R8(SingleElementStruct_R8 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_Obj(SingleElementStruct_Obj _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_Ptr(SingleElementStruct_Ptr _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_FuncPtr(SingleElementStruct_FuncPtr _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_Empty(SingleElementStruct_Empty _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_IntEnum(SingleElementStruct_IntEnum _, object obj) { return obj == s_knownObject; }
+
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedI1(SingleElementStruct_NestedI1 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedI2(SingleElementStruct_NestedI2 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedI4(SingleElementStruct_NestedI4 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedI8(SingleElementStruct_NestedI8 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedU1(SingleElementStruct_NestedU1 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedU2(SingleElementStruct_NestedU2 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedU4(SingleElementStruct_NestedU4 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedU8(SingleElementStruct_NestedU8 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedR4(SingleElementStruct_NestedR4 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedR8(SingleElementStruct_NestedR8 _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedObj(SingleElementStruct_NestedObj _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedPtr(SingleElementStruct_NestedPtr _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedFuncPtr(SingleElementStruct_NestedFuncPtr _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedEmpty(SingleElementStruct_NestedEmpty _, object obj) { return obj == s_knownObject; }
+    [MethodImpl(MethodImplOptions.NoInlining)] static bool TestSES_NestedIntEnum(SingleElementStruct_NestedIntEnum _, object obj) { return obj == s_knownObject; }
+
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static bool TestSingleElementStructABI()
+    {
+        if (!TestSES_I1(default(SingleElementStruct_I1), s_knownObject)) return false;
+        if (!TestSES_I2(default(SingleElementStruct_I2), s_knownObject)) return false;
+        if (!TestSES_I4(default(SingleElementStruct_I4), s_knownObject)) return false;
+        if (!TestSES_I8(default(SingleElementStruct_I8), s_knownObject)) return false;
+        if (!TestSES_U1(default(SingleElementStruct_U1), s_knownObject)) return false;
+        if (!TestSES_U2(default(SingleElementStruct_U2), s_knownObject)) return false;
+        if (!TestSES_U4(default(SingleElementStruct_U4), s_knownObject)) return false;
+        if (!TestSES_U8(default(SingleElementStruct_U8), s_knownObject)) return false;
+        if (!TestSES_R4(default(SingleElementStruct_R4), s_knownObject)) return false;
+        if (!TestSES_R8(default(SingleElementStruct_R8), s_knownObject)) return false;
+        if (!TestSES_Obj(default(SingleElementStruct_Obj), s_knownObject)) return false;
+        if (!TestSES_Ptr(default(SingleElementStruct_Ptr), s_knownObject)) return false;
+        if (!TestSES_FuncPtr(default(SingleElementStruct_FuncPtr), s_knownObject)) return false;
+        if (!TestSES_Empty(default(SingleElementStruct_Empty), s_knownObject)) return false;
+        if (!TestSES_IntEnum(default(SingleElementStruct_IntEnum), s_knownObject)) return false;
+
+        if (!TestSES_NestedI1(default(SingleElementStruct_NestedI1), s_knownObject)) return false;
+        if (!TestSES_NestedI2(default(SingleElementStruct_NestedI2), s_knownObject)) return false;
+        if (!TestSES_NestedI4(default(SingleElementStruct_NestedI4), s_knownObject)) return false;
+        if (!TestSES_NestedI8(default(SingleElementStruct_NestedI8), s_knownObject)) return false;
+        if (!TestSES_NestedU1(default(SingleElementStruct_NestedU1), s_knownObject)) return false;
+        if (!TestSES_NestedU2(default(SingleElementStruct_NestedU2), s_knownObject)) return false;
+        if (!TestSES_NestedU4(default(SingleElementStruct_NestedU4), s_knownObject)) return false;
+        if (!TestSES_NestedU8(default(SingleElementStruct_NestedU8), s_knownObject)) return false;
+        if (!TestSES_NestedR4(default(SingleElementStruct_NestedR4), s_knownObject)) return false;
+        if (!TestSES_NestedR8(default(SingleElementStruct_NestedR8), s_knownObject)) return false;
+        if (!TestSES_NestedObj(default(SingleElementStruct_NestedObj), s_knownObject)) return false;
+        if (!TestSES_NestedPtr(default(SingleElementStruct_NestedPtr), s_knownObject)) return false;
+        if (!TestSES_NestedFuncPtr(default(SingleElementStruct_NestedFuncPtr), s_knownObject)) return false;
+        if (!TestSES_NestedEmpty(default(SingleElementStruct_NestedEmpty), s_knownObject)) return false;
+        if (!TestSES_NestedIntEnum(default(SingleElementStruct_NestedIntEnum), s_knownObject)) return false;
+
+        return true;
+    }
+
     public static int Main(string[] args)
     {
         _passedTests = new List<string>();
@@ -1691,6 +1997,10 @@ internal class Program
         RunTest("ExplicitlySizedStructTest", ExplicitlySizedStructTest());
         RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
+        RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
+        RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
+        RunTest("TestWithStructureNonBlittableFieldDueToGenerics", TestWithStructureNonBlittableFieldDueToGenerics());
+        RunTest("TestSingleElementStructABI", TestSingleElementStructABI());
 
         File.Delete(TextFileName);
 

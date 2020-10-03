@@ -27,7 +27,7 @@ static void* mono_code_manager_heap;
 #endif
 
 #include <mono/utils/mono-os-mutex.h>
-
+#include <mono/utils/mono-tls.h>
 
 static uintptr_t code_memory_used = 0;
 static size_t dynamic_code_alloc_count;
@@ -102,6 +102,7 @@ struct _MonoCodeManager {
 
 static mono_mutex_t valloc_mutex;
 static GHashTable *valloc_freelists;
+static MonoNativeTlsKey write_level_tls_id;
 
 static void*
 codechunk_valloc (void *preferred, guint32 size)
@@ -121,7 +122,9 @@ codechunk_valloc (void *preferred, guint32 size)
 	freelist = (GSList *) g_hash_table_lookup (valloc_freelists, GUINT_TO_POINTER (size));
 	if (freelist) {
 		ptr = freelist->data;
+		mono_codeman_enable_write ();
 		memset (ptr, 0, size);
+		mono_codeman_disable_write ();
 		freelist = g_slist_delete_link (freelist, freelist);
 		g_hash_table_insert (valloc_freelists, GUINT_TO_POINTER (size), freelist);
 	} else {
@@ -176,6 +179,8 @@ mono_code_manager_init (void)
 	mono_counters_register ("Dynamic code allocs", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_alloc_count);
 	mono_counters_register ("Dynamic code bytes", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_bytes_count);
 	mono_counters_register ("Dynamic code frees", MONO_COUNTER_JIT | MONO_COUNTER_ULONG, &dynamic_code_frees_count);
+
+	mono_native_tls_alloc (&write_level_tls_id, NULL);
 }
 
 void
@@ -271,7 +276,10 @@ mono_codeman_malloc (gsize n)
 	g_assert (heap);
 	return HeapAlloc (heap, 0, n);
 #else
-	return dlmemalign (MIN_ALIGN, n);
+	mono_codeman_enable_write ();
+	gpointer res = dlmemalign (MIN_ALIGN, n);
+	mono_codeman_disable_write ();
+	return res;
 #endif
 }
 
@@ -285,7 +293,9 @@ mono_codeman_free (gpointer p)
 	g_assert (heap);
 	HeapFree (heap, 0, p);
 #else
+	mono_codeman_enable_write ();
 	dlfree (p);
+	mono_codeman_disable_write ();
 #endif
 }
 
@@ -476,7 +486,9 @@ new_codechunk (MonoCodeManager *cman, int size)
 #ifdef BIND_ROOM
 	if (flags == CODE_FLAG_MALLOC) {
 		/* Make sure the thunks area is zeroed */
+		mono_codeman_enable_write ();
 		memset (ptr, 0, bsize);
+		mono_codeman_disable_write ();
 	}
 #endif
 
@@ -638,4 +650,44 @@ mono_code_manager_size (MonoCodeManager *cman, int *used_size)
 	if (used_size)
 		*used_size = used;
 	return size;
+}
+
+/*
+ * mono_codeman_enable_write ():
+ *
+ *   Enable writing to code memory on the current thread on platforms that need it.
+ * Calls can be nested.
+ */
+void
+mono_codeman_enable_write (void)
+{
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+	if (__builtin_available (macOS 11, *)) {
+		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
+		level ++;
+		mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
+		pthread_jit_write_protect_np (0);
+	}
+#endif
+}
+
+/*
+ * mono_codeman_disable_write ():
+ *
+ *   Disable writing to code memory on the current thread on platforms that need it.
+ * Calls can be nested.
+ */
+void
+mono_codeman_disable_write (void)
+{
+#ifdef HAVE_PTHREAD_JIT_WRITE_PROTECT_NP
+	if (__builtin_available (macOS 11, *)) {
+		int level = GPOINTER_TO_INT (mono_native_tls_get_value (write_level_tls_id));
+		g_assert (level);
+		level --;
+		mono_native_tls_set_value (write_level_tls_id, GINT_TO_POINTER (level));
+		if (level == 0)
+			pthread_jit_write_protect_np (1);
+	}
+#endif
 }

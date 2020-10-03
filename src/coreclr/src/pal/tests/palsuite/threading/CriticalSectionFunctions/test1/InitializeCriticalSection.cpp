@@ -26,11 +26,11 @@
 
 #define _BUF_SIZE 10
 
-DWORD dwThreadId;  /* consumer thread identifier */
+DWORD dwThreadId_CriticalSectionFunctions_test1;  /* consumer thread identifier */
 
-HANDLE hThread; /* handle to consumer thread */
+HANDLE hThread_CriticalSectionFunctions_test1; /* handle to consumer thread */
 
-CRITICAL_SECTION CriticalSectionM; /* Critical Section Object (used as mutex) */
+CRITICAL_SECTION CriticalSectionM_CriticalSectionFunctions_test1; /* Critical Section Object (used as mutex) */
 
 typedef struct Buffer
 {
@@ -40,16 +40,16 @@ typedef struct Buffer
 
 } BufferStructure;
 
-CHAR producerItems[PRODUCTION_TOTAL + 1];
+CHAR producerItems_CriticalSectionFunctions_test1[PRODUCTION_TOTAL + 1];
 
-CHAR consumerItems[PRODUCTION_TOTAL + 1];
+CHAR consumerItems_CriticalSectionFunctions_test1[PRODUCTION_TOTAL + 1];
 
 /* 
  * Read next message from the Buffer into provided pointer.
  * Returns:  0 on failure, 1 on success. 
  */
 int
-readBuf(BufferStructure *Buffer, char *c)
+readBuf_CriticalSectionFunctions_test1(BufferStructure *Buffer, char *c)
 {
     if( Buffer -> writeIndex == Buffer -> readIndex )
     {
@@ -65,7 +65,7 @@ readBuf(BufferStructure *Buffer, char *c)
  * Returns:  0 on failure, 1 on success.
  */
 int 
-writeBuf(BufferStructure *Buffer, CHAR c)
+writeBuf_CriticalSectionFunctions_test1(BufferStructure *Buffer, CHAR c)
 {
     if( ( ((Buffer -> writeIndex) + 1) % _BUF_SIZE) ==
 	(Buffer -> readIndex) )
@@ -81,7 +81,7 @@ writeBuf(BufferStructure *Buffer, CHAR c)
  * Sleep 500 milleseconds.
  */
 VOID 
-consumerSleep(VOID)
+consumerSleep_CriticalSectionFunctions_test1(VOID)
 {
     Sleep(500);
 }
@@ -90,7 +90,7 @@ consumerSleep(VOID)
  * Sleep between 10 milleseconds.
  */
 VOID 
-producerSleep(VOID)
+producerSleep_CriticalSectionFunctions_test1(VOID)
 {
     Sleep(10);
 }
@@ -99,7 +99,7 @@ producerSleep(VOID)
  * Produce a message and write the message to Buffer.
  */
 VOID
-producer(BufferStructure *Buffer)
+producer_CriticalSectionFunctions_test1(BufferStructure *Buffer)
 {
 
     int n = 0;
@@ -109,17 +109,17 @@ producer(BufferStructure *Buffer)
     {
 	c = 'A' + n ;   /* Produce Item */   
 	
-	EnterCriticalSection(&CriticalSectionM);
+	EnterCriticalSection(&CriticalSectionM_CriticalSectionFunctions_test1);
 	
-	if (writeBuf(Buffer, c)) 
+	if (writeBuf_CriticalSectionFunctions_test1(Buffer, c)) 
 	{
             printf("Producer produces %c.\n", c);
-	    producerItems[n++] = c;
+	    producerItems_CriticalSectionFunctions_test1[n++] = c;
 	}
 	
-	LeaveCriticalSection(&CriticalSectionM);
+	LeaveCriticalSection(&CriticalSectionM_CriticalSectionFunctions_test1);
 	
-	producerSleep();
+	producerSleep_CriticalSectionFunctions_test1();
     }
 
     return;
@@ -130,33 +130,33 @@ producer(BufferStructure *Buffer)
  */
 DWORD
 PALAPI 
-consumer( LPVOID lpParam )
+consumer_CriticalSectionFunctions_test1( LPVOID lpParam )
 {
     int n = 0;
     char c; 
     
-    consumerSleep();
+    consumerSleep_CriticalSectionFunctions_test1();
     
     while (n < PRODUCTION_TOTAL) 
     {
 	
-	EnterCriticalSection(&CriticalSectionM);
+	EnterCriticalSection(&CriticalSectionM_CriticalSectionFunctions_test1);
 	
-	if (readBuf((BufferStructure*)lpParam, &c)) 
+	if (readBuf_CriticalSectionFunctions_test1((BufferStructure*)lpParam, &c)) 
 	{
 	    printf("\tConsumer consumes %c.\n", c);
-	    consumerItems[n++] = c;
+	    consumerItems_CriticalSectionFunctions_test1[n++] = c;
 	}
 	
-	LeaveCriticalSection(&CriticalSectionM);
+	LeaveCriticalSection(&CriticalSectionM_CriticalSectionFunctions_test1);
 	
-	consumerSleep();
+	consumerSleep_CriticalSectionFunctions_test1();
     }
     
     return 0;
 }
 
-int __cdecl main (int argc, char **argv) 
+PALTEST(threading_CriticalSectionFunctions_test1_paltest_criticalsectionfunctions_test1, "threading/CriticalSectionFunctions/test1/paltest_criticalsectionfunctions_test1")
 {
 
     BufferStructure Buffer, *pBuffer;
@@ -172,7 +172,7 @@ int __cdecl main (int argc, char **argv)
      * Create mutual exclusion mechanisms
      */
     
-    InitializeCriticalSection ( &CriticalSectionM );
+    InitializeCriticalSection ( &CriticalSectionM_CriticalSectionFunctions_test1 );
     
     /* 
      * Initialize Buffer
@@ -184,15 +184,15 @@ int __cdecl main (int argc, char **argv)
     /* 
      * Create Consumer
      */
-    hThread = CreateThread(
+    hThread_CriticalSectionFunctions_test1 = CreateThread(
 	NULL,         
 	0,            
-	consumer,     
+	consumer_CriticalSectionFunctions_test1,     
 	&Buffer,     
 	0,           
-	&dwThreadId);
+	&dwThreadId_CriticalSectionFunctions_test1);
     
-    if ( NULL == hThread ) 
+    if ( NULL == hThread_CriticalSectionFunctions_test1 ) 
     {
 	Fail ( "CreateThread() returned NULL.  Failing test.\n"
 	       "GetLastError returned %d\n", GetLastError());   
@@ -201,30 +201,30 @@ int __cdecl main (int argc, char **argv)
     /* 
      * Start producing 
      */
-    producer(pBuffer);
+    producer_CriticalSectionFunctions_test1(pBuffer);
     
     /*
      * Wait for consumer to complete
      */
-    WaitForSingleObject (hThread, INFINITE);
+    WaitForSingleObject (hThread_CriticalSectionFunctions_test1, INFINITE);
     
     /* 
      * Compare items produced vs. items consumed
      */
-    if ( 0 != strncmp (producerItems, consumerItems, PRODUCTION_TOTAL) )
+    if ( 0 != strncmp (producerItems_CriticalSectionFunctions_test1, consumerItems_CriticalSectionFunctions_test1, PRODUCTION_TOTAL) )
     {
-	Fail("The producerItems string %s\n and the consumerItems string "
+	Fail("The producerItems_CriticalSectionFunctions_test1 string %s\n and the consumerItems_CriticalSectionFunctions_test1 string "
 	     "%s\ndo not match. This could be a problem with the strncmp()"
 	     " function\n FailingTest\nGetLastError() returned %d\n", 
-	     producerItems, consumerItems, GetLastError());
+	     producerItems_CriticalSectionFunctions_test1, consumerItems_CriticalSectionFunctions_test1, GetLastError());
     }
     
     /* 
      * Clean up Critical Section object 
      */
-    DeleteCriticalSection(&CriticalSectionM);
+    DeleteCriticalSection(&CriticalSectionM_CriticalSectionFunctions_test1);
     
-    Trace("producerItems and consumerItems arrays match.  All %d\nitems "
+    Trace("producerItems_CriticalSectionFunctions_test1 and consumerItems_CriticalSectionFunctions_test1 arrays match.  All %d\nitems "
 	  "were produced and consumed in order.\nTest passed.\n",
 	  PRODUCTION_TOTAL);
     

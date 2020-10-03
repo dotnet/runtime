@@ -18,7 +18,6 @@
 
 #include "specstrings.h"
 #include <string.h>             // for strcmp
-#include <mbstring.h>           // for _mbsinc
 #include <ctype.h>                      // for isspace
 #include "openum.h"             // for CEE_*
 #include <stdarg.h>         // for vararg macros

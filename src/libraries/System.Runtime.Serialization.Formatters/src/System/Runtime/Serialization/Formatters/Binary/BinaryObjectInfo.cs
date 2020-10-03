@@ -268,8 +268,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal string GetAssemblyString() => _binderAssemblyString ?? _cache._assemblyString;
 
-        private void InvokeSerializationBinder(SerializationBinder? binder) =>
+        private void InvokeSerializationBinder(SerializationBinder? binder)
+        {
+            BinaryFormatterEventSource.Log.SerializingObject(_objectType!);
             binder?.BindToName(_objectType!, out _binderAssemblyString, out _binderTypeName);
+        }
 
         internal void GetMemberInfo(out string[]? outMemberNames, out Type[]? outMemberTypes, out object?[]? outMemberData)
         {
@@ -392,6 +395,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         private void InitReadConstructor(Type objectType, ISurrogateSelector? surrogateSelector, StreamingContext context)
         {
+            BinaryFormatterEventSource.Log.DeserializingObject(objectType);
+
             if (objectType.IsArray)
             {
                 InitNoMembers();

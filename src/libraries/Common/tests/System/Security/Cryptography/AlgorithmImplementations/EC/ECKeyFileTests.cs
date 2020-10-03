@@ -7,6 +7,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public abstract partial class ECKeyFileTests<T> where T : AsymmetricAlgorithm
     {
         protected abstract T CreateKey();
@@ -16,6 +17,8 @@ namespace System.Security.Cryptography.Tests
         protected abstract void ImportParameters(T key, ECParameters ecParameters);
         protected abstract ECParameters ExportParameters(T key, bool includePrivate);
         protected abstract void Exercise(T key);
+        protected virtual Func<T, byte[]> PublicKeyWriteArrayFunc { get; } = null;
+        protected virtual WriteKeyToSpanFunc PublicKeyWriteSpanFunc { get; } = null;
 
         public static bool SupportsBrainpool { get; } = IsCurveSupported(ECCurve.NamedCurves.brainpoolP160r1.Oid);
         public static bool SupportsSect163k1 { get; } = IsCurveSupported(EccTestData.Sect163k1Key1.Curve.Oid);
@@ -176,6 +179,7 @@ qtlbnispri1a/EghiaPQ0po=";
         public void ReadNistP521EncryptedPkcs8_Pbes2_Aes128_Sha384_PasswordBytes()
         {
             // PBES2, PBKDF2 (SHA384), AES128
+            // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
             const string base64 = @"
 MIIBXTBXBgkqhkiG9w0BBQ0wSjApBgkqhkiG9w0BBQwwHAQI/JyXWyp/t3kCAggA
 MAwGCCqGSIb3DQIKBQAwHQYJYIZIAWUDBAECBBA3H8mbFK5afB5GzIemCCQkBIIB
@@ -951,6 +955,41 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
             }
         }
 
+        [Fact]
+        public void DecryptPkcs12PbeTooManyIterations()
+        {
+            // pbeWithSHAAnd3-KeyTripleDES-CBC with 600,001 iterations
+            byte[] high3DesIterationKey = Convert.FromBase64String(@"
+MIG6MCUGCiqGSIb3DQEMAQMwFwQQWOZyFrGwhyGTEd2nbKuLSQIDCSfBBIGQCgPLkx0OwmK3lJ9o
+VAdJAg/2nvOhboOHciu5I6oh5dRkxeDjUJixsadd3uhiZb5v7UgiohBQsFv+PWU12rmz6sgWR9rK
+V2UqV6Y5vrHJDlNJGI+CQKzOTF7LXyOT+EqaXHD+25TM2/kcZjZrOdigkgQBAFhbfn2/hV/t0TPe
+Tj/54rcY3i0gXT6da/r/o+qV");
+
+            using (T key = CreateKey())
+            {
+                Assert.ThrowsAny<CryptographicException>(
+                    () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
+            }
+        }
+
+        [Fact]
+        public void ReadWriteEc256EncryptedPkcs8_Pbes2HighIterations()
+        {
+            // pkcs5PBES2 hmacWithSHA256 aes128-CBC with 600,001 iterations
+            ReadWriteBase64EncryptedPkcs8(@"
+MIH1MGAGCSqGSIb3DQEFDTBTMDIGCSqGSIb3DQEFDDAlBBA+rne0bUkwr614vLfQkwO4AgMJJ8Ew
+DAYIKoZIhvcNAgkFADAdBglghkgBZQMEAQIEEIm3c9r5igQ9Vlv1mKTZYp0EgZC8KZfmJtfYmsl4
+Z0Dc85ugFvtFHVeRbcvfYmFns23WL3gpGQ0mj4BKxttX+WuDk9duAsCslNLvXFY7m3MQRkWA6QHT
+A8DiR3j0l5TGBkErbTUrjmB3ftvEmmF9mleRLj6qEYmmKdCV2Tfk1YBOZ2mpB9bpCPipUansyqWs
+xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
+                "test",
+                new PbeParameters(
+                    PbeEncryptionAlgorithm.Aes128Cbc,
+                    HashAlgorithmName.SHA256,
+                    600_001),
+                EccTestData.GetNistP256ReferenceKey());
+        }
+
         private void ReadWriteBase64EncryptedPkcs8(
             string base64EncryptedPkcs8,
             string password,
@@ -1116,7 +1155,9 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
                         key.ImportSubjectPublicKeyInfo(source, out read),
                     key => key.ExportSubjectPublicKeyInfo(),
                     (T key, Span<byte> destination, out int written) =>
-                        key.TryExportSubjectPublicKeyInfo(destination, out written));
+                        key.TryExportSubjectPublicKeyInfo(destination, out written),
+                    writePublicArrayFunc: PublicKeyWriteArrayFunc,
+                    writePublicSpanFunc: PublicKeyWriteSpanFunc);
             }
             else
             {
@@ -1138,7 +1179,9 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
             ReadKeyAction readAction,
             Func<T, byte[]> writeArrayFunc,
             WriteKeyToSpanFunc writeSpanFunc,
-            bool isEncrypted = false)
+            bool isEncrypted = false,
+            Func<T, byte[]> writePublicArrayFunc = null,
+            WriteKeyToSpanFunc writePublicSpanFunc = null)
         {
             bool isPrivateKey = expected.D != null;
 
@@ -1154,6 +1197,16 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
                 Assert.Equal(derBytes.Length, bytesRead);
 
                 arrayExport = writeArrayFunc(key);
+
+                if (writePublicArrayFunc is not null)
+                {
+                    byte[] publicArrayExport = writePublicArrayFunc(key);
+                    Assert.Equal(arrayExport, publicArrayExport);
+
+                    Assert.True(writePublicSpanFunc(key, publicArrayExport, out int publicExportWritten));
+                    Assert.Equal(publicExportWritten, publicArrayExport.Length);
+                    Assert.Equal(arrayExport, publicArrayExport);
+                }
 
                 ECParameters ecParameters = ExportParameters(key, isPrivateKey);
                 EccTestBase.AssertEqual(expected, ecParameters);
@@ -1249,7 +1302,7 @@ HMdNrq/BAgECAywABAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr
             }
         }
 
-        private delegate void ReadKeyAction(T key, ReadOnlySpan<byte> source, out int bytesRead);
-        private delegate bool WriteKeyToSpanFunc(T key, Span<byte> destination, out int bytesWritten);
+        protected delegate void ReadKeyAction(T key, ReadOnlySpan<byte> source, out int bytesRead);
+        protected delegate bool WriteKeyToSpanFunc(T key, Span<byte> destination, out int bytesWritten);
     }
 }

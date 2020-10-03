@@ -1335,6 +1335,14 @@ extern "C" PCODE STDCALL StubDispatchFixupWorker(TransitionBlock * pTransitionBl
     pTarget = pMgr->ResolveWorker(&callSite, protectedObj, token, VirtualCallStubManager::SK_LOOKUP);
     _ASSERTE(pTarget != NULL);
 
+#if _DEBUG
+    if (pSDFrame->GetGCRefMap() != NULL)
+    {
+        GCX_PREEMP();
+        _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
+    }
+#endif // _DEBUG
+
     // Ready to return
 
     UNINSTALL_UNWIND_AND_CONTINUE_HANDLER;
@@ -1651,6 +1659,14 @@ PCODE VSD_ResolveWorker(TransitionBlock * pTransitionBlock,
 #endif
 
     target = pMgr->ResolveWorker(&callSite, protectedObj, representativeToken, stubKind);
+
+#if _DEBUG
+    if (pSDFrame->GetGCRefMap() != NULL)
+    {
+        GCX_PREEMP();
+        _ASSERTE(CheckGCRefMapEqual(pSDFrame->GetGCRefMap(), pSDFrame->GetFunction(), true));
+    }
+#endif // _DEBUG
 
     GCPROTECT_END();
 
@@ -2765,7 +2781,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStub(PCODE            ad
         TADDR slot = holder->stub()->implTargetSlot(&slotType);
         pMD->RecordAndBackpatchEntryPointSlot(m_loaderAllocator, slot, slotType);
 
-        // RecordAndBackpatchEntryPointSlot() takes a lock that would exit and reenter cooperative GC mode
+        // RecordAndBackpatchEntryPointSlot() may exit and reenter cooperative GC mode
         *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif
@@ -2827,7 +2843,7 @@ DispatchHolder *VirtualCallStubManager::GenerateDispatchStubLong(PCODE          
         TADDR slot = holder->stub()->implTargetSlot(&slotType);
         pMD->RecordAndBackpatchEntryPointSlot(m_loaderAllocator, slot, slotType);
 
-        // RecordAndBackpatchEntryPointSlot() takes a lock that would exit and reenter cooperative GC mode
+        // RecordAndBackpatchEntryPointSlot() may exit and reenter cooperative GC mode
         *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif
@@ -3020,7 +3036,7 @@ ResolveCacheElem *VirtualCallStubManager::GenerateResolveCacheElem(void *addrOfC
             (TADDR)&e->target,
             EntryPointSlots::SlotType_Normal);
 
-        // RecordAndBackpatchEntryPointSlot() takes a lock that would exit and reenter cooperative GC mode
+        // RecordAndBackpatchEntryPointSlot() may exit and reenter cooperative GC mode
         *pMayHaveReenteredCooperativeGCMode = true;
     }
 #endif

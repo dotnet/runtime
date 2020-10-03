@@ -1,6 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Linq;
+using System.Reflection;
+
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprProperty : ExprWithArgs
@@ -28,7 +31,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (mwtSet != null)
             {
                 MethWithTypeSet = mwtSet;
-                Flags = EXPRFLAG.EXF_LVALUE;
+                if (!HasIsExternalInitModifier(mwtSet))
+                {
+                    Flags = EXPRFLAG.EXF_LVALUE;
+                }
             }
         }
 
@@ -39,5 +45,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public MethWithType MethWithTypeSet { get; }
 
         public override SymWithType GetSymWithType() => PropWithTypeSlot;
+
+        internal static bool HasIsExternalInitModifier(MethWithType mwtSet)
+        {
+            var types = (mwtSet.Meth()?.AssociatedMemberInfo as MethodInfo)?.ReturnParameter.GetRequiredCustomModifiers();
+            return types != null &&
+                types.Any(type => type.Name == "IsExternalInit" && !type.IsNested && type.Namespace == "System.Runtime.CompilerServices");
+        }
     }
 }

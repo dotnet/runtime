@@ -221,7 +221,7 @@ namespace System.Text.RegularExpressions
                     state.prevat = match.Index + match.Length;
                     state.thisRef.ReplacementImpl(ref state.segments, match);
                     return --state.count != 0;
-                });
+                }, reuseMatchObject: true);
 
                 if (state.segments.Count == 0)
                 {
@@ -240,7 +240,7 @@ namespace System.Text.RegularExpressions
                     state.prevat = match.Index;
                     state.thisRef.ReplacementImplRTL(ref state.segments, match);
                     return --state.count != 0;
-                });
+                }, reuseMatchObject: true);
 
                 if (state.segments.Count == 0)
                 {

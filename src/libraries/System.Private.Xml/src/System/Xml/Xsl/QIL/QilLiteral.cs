@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.Qil
 {
@@ -14,7 +15,7 @@ namespace System.Xml.Xsl.Qil
     /// </remarks>
     internal class QilLiteral : QilNode
     {
-        private object _value;
+        private object? _value;
 
 
         //-----------------------------------------------
@@ -24,7 +25,7 @@ namespace System.Xml.Xsl.Qil
         /// <summary>
         /// Construct a new node
         /// </summary>
-        public QilLiteral(QilNodeType nodeType, object value) : base(nodeType)
+        public QilLiteral(QilNodeType nodeType, object? value) : base(nodeType)
         {
             Value = value;
         }
@@ -33,8 +34,7 @@ namespace System.Xml.Xsl.Qil
         //-----------------------------------------------
         // QilLiteral methods
         //-----------------------------------------------
-
-        public object Value
+        public object? Value
         {
             get { return _value; }
             set { _value = value; }
@@ -42,32 +42,32 @@ namespace System.Xml.Xsl.Qil
 
         public static implicit operator string(QilLiteral literal)
         {
-            return (string)literal._value;
+            return (string)literal._value!;
         }
 
         public static implicit operator int(QilLiteral literal)
         {
-            return (int)literal._value;
+            return (int)literal._value!;
         }
 
         public static implicit operator long(QilLiteral literal)
         {
-            return (long)literal._value;
+            return (long)literal._value!;
         }
 
         public static implicit operator double(QilLiteral literal)
         {
-            return (double)literal._value;
+            return (double)literal._value!;
         }
 
         public static implicit operator decimal(QilLiteral literal)
         {
-            return (decimal)literal._value;
+            return (decimal)literal._value!;
         }
 
         public static implicit operator XmlQueryType(QilLiteral literal)
         {
-            return (XmlQueryType)literal._value;
+            return (XmlQueryType)literal._value!;
         }
     }
 }

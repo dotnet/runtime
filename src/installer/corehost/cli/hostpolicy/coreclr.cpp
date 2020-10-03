@@ -147,7 +147,8 @@ namespace
         _X("APP_PATHS"),
         _X("APP_NI_PATHS"),
         _X("RUNTIME_IDENTIFIER"),
-        _X("BUNDLE_PROBE")
+        _X("BUNDLE_PROBE"),
+        _X("HOSTPOLICY_EMBEDDED")
     };
 
     static_assert((sizeof(PropertyNameMapping) / sizeof(*PropertyNameMapping)) == static_cast<size_t>(common_property::Last), "Invalid property count");

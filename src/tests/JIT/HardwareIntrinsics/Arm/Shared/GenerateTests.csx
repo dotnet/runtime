@@ -2456,7 +2456,7 @@ private static readonly (string templateFileName, Dictionary<string, string> tem
 private static void ProcessInputs(string groupName, (string templateFileName, Dictionary<string, string> templateData)[] inputs)
 {
     // Too many tests may time out in CI or various stress modes
-    const int MaxGroupSize = 256;
+    const int MaxGroupSize = 100;
 
     var numGroups = (inputs.Length + (MaxGroupSize - 1)) / MaxGroupSize;
 

@@ -298,6 +298,9 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData(typeof(ClassWithPrivateField_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithInternalField_WithJsonIncludeProperty))]
         [InlineData(typeof(ClassWithProtectedField_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty))]
+        [InlineData(typeof(ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty))]
         public static void NonPublicProperty_WithJsonInclude_Invalid(Type type)
         {
             InvalidOperationException ex = Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize("", type));
@@ -349,6 +352,24 @@ namespace System.Text.Json.Serialization.Tests
         {
             [JsonInclude]
             protected string MyString = null;
+        }
+
+        private class ClassWithPrivate_InitOnlyProperty_WithJsonIncludeProperty
+        {
+            [JsonInclude]
+            private string MyString { get; init; }
+        }
+
+        private class ClassWithInternal_InitOnlyProperty_WithJsonIncludeProperty
+        {
+            [JsonInclude]
+            internal string MyString { get; init; }
+        }
+
+        private class ClassWithProtected_InitOnlyProperty_WithJsonIncludeProperty
+        {
+            [JsonInclude]
+            protected string MyString { get; init; }
         }
     }
 }

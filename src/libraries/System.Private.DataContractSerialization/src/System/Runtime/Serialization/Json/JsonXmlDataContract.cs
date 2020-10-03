@@ -15,7 +15,7 @@ namespace System.Runtime.Serialization.Json
         {
         }
 
-        public override object ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson context)
+        public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
             string xmlContent = jsonReader.ReadElementContentAsString();
 
@@ -23,8 +23,8 @@ namespace System.Runtime.Serialization.Json
                 GetKnownTypesFromContext(context, (context == null) ? null : context.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
 
             MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent));
-            object xmlValue;
-            XmlDictionaryReaderQuotas quotas = ((JsonReaderDelegator)jsonReader).ReaderQuotas;
+            object? xmlValue;
+            XmlDictionaryReaderQuotas? quotas = ((JsonReaderDelegator)jsonReader).ReaderQuotas;
             if (quotas == null)
             {
                 xmlValue = dataContractSerializer.ReadObject(memoryStream);
@@ -40,7 +40,7 @@ namespace System.Runtime.Serialization.Json
             return xmlValue;
         }
 
-        public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, RuntimeTypeHandle declaredTypeHandle)
+        public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             DataContractSerializer dataContractSerializer = new DataContractSerializer(Type.GetTypeFromHandle(declaredTypeHandle),
                 GetKnownTypesFromContext(context, (context == null) ? null : context.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
@@ -52,7 +52,7 @@ namespace System.Runtime.Serialization.Json
             jsonWriter.WriteString(serialized);
         }
 
-        private List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext context, IList<Type> serializerKnownTypeList)
+        private List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext? context, IList<Type>? serializerKnownTypeList)
         {
             List<Type> knownTypesList = new List<Type>();
             if (context != null)

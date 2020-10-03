@@ -21,3 +21,5 @@ PALEXPORT void GlobalizationNative_ChangeCaseTurkish(const UChar* lpSrc,
                                                      UChar* lpDst,
                                                      int32_t cwDstLength,
                                                      int32_t bToUpper);
+
+PALEXPORT void GlobalizationNative_InitOrdinalCasingPage(int32_t pageNumber, UChar* pTarget);

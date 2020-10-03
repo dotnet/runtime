@@ -49,7 +49,6 @@ namespace System.Runtime.ExceptionServices.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/39341", TestPlatforms.Browser)]
         public static void SetCurrentStackTrace_IncludedInExceptionStackTrace()
         {
             Exception e;

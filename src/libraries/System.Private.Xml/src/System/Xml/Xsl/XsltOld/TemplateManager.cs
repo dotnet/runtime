@@ -12,12 +12,12 @@ namespace System.Xml.Xsl.XsltOld
     internal class TemplateManager
     {
         private readonly XmlQualifiedName _mode;
-        internal ArrayList templates;
+        internal ArrayList? templates;
         private readonly Stylesheet _stylesheet;    // Owning stylesheet
 
         private class TemplateComparer : IComparer
         {
-            public int Compare(object x, object y)
+            public int Compare(object? x, object? y)
             {
                 Debug.Assert(x != null && x is TemplateAction);
                 Debug.Assert(y != null && y is TemplateAction);
@@ -57,7 +57,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             Debug.Assert(template != null);
             Debug.Assert(
-                ((object)_mode == (object)template.Mode) ||
+                ((object)_mode == (object?)template.Mode) ||
                 (template.Mode == null && _mode.Equals(XmlQualifiedName.Empty)) ||
                 _mode.Equals(template.Mode)
             );
@@ -78,7 +78,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        internal TemplateAction FindTemplate(Processor processor, XPathNavigator navigator)
+        internal TemplateAction? FindTemplate(Processor processor, XPathNavigator navigator)
         {
             if (this.templates == null)
             {
@@ -88,7 +88,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(this.templates != null);
             for (int templateIndex = this.templates.Count - 1; templateIndex >= 0; templateIndex--)
             {
-                TemplateAction action = (TemplateAction)this.templates[templateIndex];
+                TemplateAction action = (TemplateAction)this.templates[templateIndex]!;
                 int matchKey = action.MatchKey;
 
                 if (matchKey != Compiler.InvalidQueryKey)

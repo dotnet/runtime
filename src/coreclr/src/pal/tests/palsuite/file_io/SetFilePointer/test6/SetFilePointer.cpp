@@ -22,10 +22,10 @@
 
 #include <palsuite.h>
 
-const char* szTextFile = "text.txt";
 
 
-int __cdecl main(int argc, char *argv[])
+
+PALTEST(file_io_SetFilePointer_test6_paltest_setfilepointer_test6, "file_io/SetFilePointer/test6/paltest_setfilepointer_test6")
 {
     HANDLE hFile = NULL;
     DWORD dwOffset = 0;

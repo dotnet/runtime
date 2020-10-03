@@ -740,41 +740,6 @@ CorUnix::InternalCreateThread(
     storedErrno = errno;
 #endif  // PTHREAD_CREATE_MODIFIES_ERRNO
 
-#if HAVE_PTHREAD_ATTR_SETAFFINITY_NP && HAVE_SCHED_GETAFFINITY
-    {
-        // Threads inherit their parent's affinity mask on Linux. This is not desired, so we reset
-        // the current thread's affinity mask to the mask of the current process.
-        cpu_set_t cpuSet;
-        CPU_ZERO(&cpuSet);
-
-        int st = sched_getaffinity(gPID, sizeof(cpu_set_t), &cpuSet);
-        if (st != 0)
-        {
-            ASSERT("sched_getaffinity failed!\n");
-            // the sched_getaffinity should never fail for getting affinity of the current process
-            palError = ERROR_INTERNAL_ERROR;
-            goto EXIT;
-        }
-
-        st = pthread_attr_setaffinity_np(&pthreadAttr, sizeof(cpu_set_t), &cpuSet);
-        if (st != 0)
-        {
-            if (st == ENOMEM)
-            {
-                palError = ERROR_NOT_ENOUGH_MEMORY;
-            }
-            else
-            {
-                ASSERT("pthread_attr_setaffinity_np failed!\n");
-                // The pthread_attr_setaffinity_np should never fail except of OOM when
-                // passed the mask extracted using sched_getaffinity.
-                palError = ERROR_INTERNAL_ERROR;
-            }
-            goto EXIT;
-        }
-    }
-#endif // HAVE_PTHREAD_GETAFFINITY_NP && HAVE_SCHED_GETAFFINITY
-
     iError = pthread_create(&pthread, &pthreadAttr, CPalThread::ThreadEntry, pNewThread);
 
 #if PTHREAD_CREATE_MODIFIES_ERRNO
@@ -1754,6 +1719,10 @@ CPalThread::ThreadEntry(
     PTHREAD_START_ROUTINE pfnStartRoutine;
     LPVOID pvPar;
     DWORD retValue;
+#if HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
+    cpu_set_t cpuSet;
+    int st;
+#endif
 
     pThread = reinterpret_cast<CPalThread*>(pvParam);
 
@@ -1762,6 +1731,42 @@ CPalThread::ThreadEntry(
         ASSERT("THREAD pointer is NULL!\n");
         goto fail;
     }
+
+#if HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
+    // Threads inherit their parent's affinity mask on Linux. This is not desired, so we reset
+    // the current thread's affinity mask to the mask of the current process.
+    //
+    // Typically, we would use pthread_attr_setaffinity_np() and have pthread_create() create the thread with the specified
+    // affinity. At least one implementation of pthread_create() following a pthread_attr_setaffinity_np() calls
+    // sched_setaffinity(<newThreadPid>, ...), which is not allowed under Snap's default strict confinement without manually
+    // connecting the process-control plug. To work around that, have the thread set the affinity after it starts.
+    // sched_setaffinity(<currentThreadPid>, ...) is also currently not allowed, only sched_setaffinity(0, ...).
+    // pthread_setaffinity_np(pthread_self(), ...) seems to call sched_setaffinity(<currentThreadPid>, ...) in at least one
+    // implementation, and does not work. Use sched_setaffinity(0, ...) instead. See the following for more information:
+    // - https://github.com/dotnet/runtime/pull/38795
+    // - https://github.com/dotnet/runtime/issues/1634
+    // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
+
+    CPU_ZERO(&cpuSet);
+
+    st = sched_getaffinity(gPID, sizeof(cpu_set_t), &cpuSet);
+    if (st != 0)
+    {
+        ASSERT("sched_getaffinity failed!\n");
+        // The sched_getaffinity should never fail for getting affinity of the current process
+        palError = ERROR_INTERNAL_ERROR;
+        goto fail;
+    }
+
+    st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
+    if (st != 0)
+    {
+        ASSERT("sched_setaffinity failed!\n");
+        // The sched_setaffinity should never fail when passed the mask extracted using sched_getaffinity
+        palError = ERROR_INTERNAL_ERROR;
+        goto fail;
+    }
+#endif // HAVE_SCHED_GETAFFINITY && HAVE_SCHED_SETAFFINITY
 
 #if !HAVE_MACH_EXCEPTIONS
     if (!pThread->EnsureSignalAlternateStack())
@@ -2946,18 +2951,31 @@ BOOL
 PALAPI
 PAL_SetCurrentThreadAffinity(WORD procNo)
 {
-#if HAVE_PTHREAD_GETAFFINITY_NP
+#if HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
     cpu_set_t cpuSet;
     CPU_ZERO(&cpuSet);
-
     CPU_SET(procNo, &cpuSet);
+
+    // Snap's default strict confinement does not allow sched_setaffinity(<nonzeroPid>, ...) without manually connecting the
+    // process-control plug. sched_setaffinity(<currentThreadPid>, ...) is also currently not allowed, only
+    // sched_setaffinity(0, ...). pthread_setaffinity_np(pthread_self(), ...) seems to call
+    // sched_setaffinity(<currentThreadPid>, ...) in at least one implementation, and does not work. To work around those
+    // issues, use sched_setaffinity(0, ...) if available and only otherwise fall back to pthread_setaffinity_np(). See the
+    // following for more information:
+    // - https://github.com/dotnet/runtime/pull/38795
+    // - https://github.com/dotnet/runtime/issues/1634
+    // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
+#if HAVE_SCHED_SETAFFINITY
+    int st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
+#else
     int st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
+#endif
 
     return st == 0;
-#else  // HAVE_PTHREAD_GETAFFINITY_NP
+#else  // !(HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP)
     // There is no API to manage thread affinity, so let's ignore the request
     return FALSE;
-#endif // HAVE_PTHREAD_GETAFFINITY_NP
+#endif // HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
 }
 
 /*++

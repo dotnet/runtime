@@ -144,7 +144,7 @@ typedef DPTR(class MethodDesc)          PTR_MethodDesc;
 typedef DPTR(class MethodDescChunk)     PTR_MethodDescChunk;
 typedef DPTR(class MethodImpl)          PTR_MethodImpl;
 typedef DPTR(class MethodTable)         PTR_MethodTable;
-typedef DPTR(class MscorlibBinder)      PTR_MscorlibBinder;
+typedef DPTR(class CoreLibBinder)      PTR_CoreLibBinder;
 typedef VPTR(class Module)              PTR_Module;
 typedef DPTR(class NDirectMethodDesc)   PTR_NDirectMethodDesc;
 typedef DPTR(class Thread)              PTR_Thread;

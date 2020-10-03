@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// TODO: Re-implement with MC++ if we ever compile any mscorlib code with that
-
-
 
 #include "common.h"
 #include "mlinfo.h"

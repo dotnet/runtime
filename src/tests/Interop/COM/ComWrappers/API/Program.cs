@@ -136,6 +136,9 @@ namespace ComWrappersTests
             const int E_NOINTERFACE = unchecked((int)0x80004002);
             Assert.AreEqual(hr, E_NOINTERFACE);
             Assert.AreEqual(result, IntPtr.Zero);
+
+            int count = Marshal.Release(comWrapper);
+            Assert.AreEqual(count, 0);
         }
 
         static void ValidateCreateObjectCachingScenario()
@@ -366,6 +369,8 @@ namespace ComWrappersTests
 
                 // Retain the managed object wrapper ptr.
                 testWrapperIds.Add(id);
+
+                Marshal.Release(testWrapper);
             }
 
             Assert.IsTrue(testWrapperIds.Count <= Test.InstanceCount);

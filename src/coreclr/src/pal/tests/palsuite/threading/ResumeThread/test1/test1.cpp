@@ -121,7 +121,7 @@ BOOL ResumeThreadTest()
     return bRet; 
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_ResumeThread_test1_paltest_resumethread_test1, "threading/ResumeThread/test1/paltest_resumethread_test1")
 {
 
     if(0 != (PAL_Initialize(argc, argv)))

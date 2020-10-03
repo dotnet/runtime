@@ -18,6 +18,7 @@
 #define DENSELWM(map, value) LWM(map, this_is_an_error, value)
 #endif
 
+LWM(AllocMethodBlockCounts, DWORD, Agnostic_AllocMethodBlockCounts)
 LWM(AppendClassName, Agnostic_AppendClassName, DWORD)
 LWM(AreTypesEquivalent, DLDL, DWORD)
 LWM(AsCorInfoType, DWORDLONG, DWORD)

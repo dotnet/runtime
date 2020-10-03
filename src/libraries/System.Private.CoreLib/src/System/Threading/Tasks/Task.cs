@@ -5382,9 +5382,9 @@ namespace System.Threading.Tasks
                 if (millisecondsDelay != Timeout.Infinite) // no need to create the timer if it's an infinite timeout
                 {
                     _timer = new TimerQueueTimer(state => ((DelayPromise)state!).CompleteTimedOut(), this, (uint)millisecondsDelay, Timeout.UnsignedInfinite, flowExecutionContext: false);
-                    if (IsCanceled)
+                    if (IsCompleted)
                     {
-                        // Handle rare race condition where cancellation occurs prior to our having created and stored the timer, in which case
+                        // Handle rare race condition where completion occurs prior to our having created and stored the timer, in which case
                         // the timer won't have been cleaned up appropriately.  This call to close might race with the Cleanup call to Close,
                         // but Close is thread-safe and will be a nop if it's already been closed.
                         _timer.Close();

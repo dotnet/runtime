@@ -25,5 +25,11 @@ namespace System.Net.Http.Functional.Tests
 
             return handler;
         }
+
+        protected static HttpRequestMessage CreateRequest(HttpMethod method, Uri uri, Version version, bool exactVersion = false) =>
+            new HttpRequestMessage(method, uri)
+            {
+                Version = version
+            };
     }
 }

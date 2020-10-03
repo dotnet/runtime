@@ -50,6 +50,7 @@ namespace Internal.TypeSystem.Interop
         AsAnyA,
         AsAnyW,
         ComInterface,
+        BlittableValueClassWithCopyCtor,
         Invalid
     }
     public enum MarshalDirection
@@ -271,6 +272,8 @@ namespace Internal.TypeSystem.Interop
         /// <param name="parameterType">type of the parameter to marshal</param>
         /// <returns>The created Marshaller</returns>
         public static Marshaller CreateMarshaller(TypeDesc parameterType,
+            int? parameterIndex,
+            EmbeddedSignatureData[] customModifierData,
             MarshallerType marshallerType,
             MarshalAsDescriptor marshalAs,
             MarshalDirection direction,
@@ -286,6 +289,8 @@ namespace Internal.TypeSystem.Interop
         {
             MarshallerKind elementMarshallerKind;
             MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(parameterType,
+                                                parameterIndex,
+                                                customModifierData,
                                                 marshalAs,
                                                 isReturn,
                                                 flags.CharSet == CharSet.Ansi,
@@ -1079,7 +1084,7 @@ namespace Internal.TypeSystem.Interop
             codeStream.Emit(ILOpcode.brfalse, lNullArray);
 
             // allocate memory
-            // nativeParameter = (byte**)CoTaskMemAllocAndZeroMemory((IntPtr)(checked(managedParameter.Length * sizeof(byte*))));
+            // nativeParameter = AllocCoTaskMem(checked(managedParameter.Length * sizeof(NativeElementType)));
 
             // loads the number of elements
             EmitElementCount(codeStream, MarshalDirection.Forward);

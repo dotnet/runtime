@@ -2,7 +2,7 @@
   <PropertyGroup>
     <!-- SYSLIB0003: CAS is obsolete, but we still have tests referencing it -->
     <NoWarn>$(NoWarn);SYSLIB0003</NoWarn>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;net48</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurityTests.cs" />
@@ -30,5 +30,11 @@
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="System\DirectoryServices\DirectoryServicesTests.Windows.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectoryComInterop.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)'))">
+    <ProjectReference Include="..\src\System.DirectoryServices.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <Reference Include="System.DirectoryServices" />
   </ItemGroup>
 </Project>

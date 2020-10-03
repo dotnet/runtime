@@ -143,7 +143,7 @@ namespace Microsoft.Extensions.Hosting
                     Assert.Equal(Environments.Production, env.EnvironmentName);
 #if NETCOREAPP
                     Assert.NotNull(env.ApplicationName);
-#elif NET472
+#elif NETFRAMEWORK
                     // Note GetEntryAssembly returns null for the net4x console test runner.
                     Assert.Null(env.ApplicationName);
 #else
@@ -159,7 +159,7 @@ namespace Microsoft.Extensions.Hosting
                 Assert.Equal(Environments.Production, env.EnvironmentName);
 #if NETCOREAPP
                 Assert.NotNull(env.ApplicationName);
-#elif NET472
+#elif NETFRAMEWORK
                 // Note GetEntryAssembly returns null for the net4x console test runner.
                 Assert.Null(env.ApplicationName);
 #else

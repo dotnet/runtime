@@ -56,7 +56,7 @@ namespace System.Net
             SafeFreeCertContext? remoteContext = null;
             try
             {
-                int errorCode = QueryContextRemoteCertificate(securityContext, out remoteContext);
+                QueryContextRemoteCertificate(securityContext, out remoteContext);
 
                 if (remoteContext != null && !remoteContext.IsInvalid)
                 {

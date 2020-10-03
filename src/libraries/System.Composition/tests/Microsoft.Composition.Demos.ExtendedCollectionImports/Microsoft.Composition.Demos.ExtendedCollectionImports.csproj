@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>Microsoft.Composition.Demos.ExtendedCollectionImports</AssemblyName>
-    <TargetFrameworks>netstandard2.0;$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0;net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Dictionaries\DictionaryExportDescriptorProvider.cs" />
@@ -9,5 +8,8 @@
     <Compile Include="OrderedImportManyAttribute.cs" />
     <Compile Include="OrderedCollections\OrderedImportManyExportDescriptorProvider.cs" />
     <Compile Include="KeyByMetadataAttribute.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.TypedParts\src\System.Composition.TypedParts.csproj" />
   </ItemGroup>
 </Project>

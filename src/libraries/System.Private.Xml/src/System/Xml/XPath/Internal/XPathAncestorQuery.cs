@@ -23,8 +23,8 @@ namespace MS.Internal.Xml.XPath
         {
             base.Evaluate(context);
 
-            XPathNavigator ancestor = null;
-            XPathNavigator input;
+            XPathNavigator? ancestor = null;
+            XPathNavigator? input;
             while ((input = qyInput.Advance()) != null)
             {
                 if (_matchSelf)

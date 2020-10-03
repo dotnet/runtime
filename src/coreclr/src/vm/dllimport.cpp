@@ -54,6 +54,9 @@ using namespace clr::fs;
 // Specifies whether coreclr is embedded or standalone
 extern bool g_coreclr_embedded;
 
+// Specifies whether hostpolicy is embedded in executable or standalone
+extern bool g_hostpolicy_embedded;
+
 // remove when we get an updated SDK
 #define LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR 0x00000100
 #define LOAD_LIBRARY_SEARCH_DEFAULT_DIRS 0x00001000
@@ -365,7 +368,7 @@ public:
             pcs->EmitCALL(METHOD__CULTURE_INFO__GET_CURRENT_CULTURE, 0, 1);
 
             // save the current culture
-            LocalDesc locDescCulture(MscorlibBinder::GetClass(CLASS__CULTURE_INFO));
+            LocalDesc locDescCulture(CoreLibBinder::GetClass(CLASS__CULTURE_INFO));
             DWORD dwCultureLocalNum = pcs->NewLocal(locDescCulture);
 
             pcs->EmitSTLOC(dwCultureLocalNum);
@@ -653,7 +656,7 @@ public:
             MetaSig nsig(
                 GetStubTargetMethodSig(),
                 GetStubTargetMethodSigLength(),
-                MscorlibBinder::GetModule(),
+                CoreLibBinder::GetModule(),
                 &typeContext);
 
             CorElementType type;
@@ -881,7 +884,7 @@ public:
             PCCOR_SIGNATURE pManagedSig;
             ULONG           cManagedSig;
 
-            IMDInternalImport* pIMDI = MscorlibBinder::GetModule()->GetMDImport();
+            IMDInternalImport* pIMDI = CoreLibBinder::GetModule()->GetMDImport();
 
             pStubMD->GetSig(&pManagedSig, &cManagedSig);
 
@@ -1246,7 +1249,7 @@ public:
         pCleanupStartLabel = pcsSetup->NewCodeLabel();
         pReturnLabel = pcsSetup->NewCodeLabel();
 
-        dwExceptionDispatchInfoLocal = pcsSetup->NewLocal(MscorlibBinder::GetClass(CLASS__EXCEPTION_DISPATCH_INFO));
+        dwExceptionDispatchInfoLocal = pcsSetup->NewLocal(CoreLibBinder::GetClass(CLASS__EXCEPTION_DISPATCH_INFO));
         pcsSetup->EmitLDNULL();
         pcsSetup->EmitSTLOC(dwExceptionDispatchInfoLocal);
 
@@ -1880,7 +1883,7 @@ void NDirectStubLinker::NeedsCleanupList()
         SetCleanupNeeded();
 
         // we setup a new local that will hold the cleanup work list
-        LocalDesc desc(MscorlibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
+        LocalDesc desc(CoreLibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
         m_dwCleanupWorkListLocalNum = NewLocal(desc);
     }
 }
@@ -1936,7 +1939,7 @@ void NDirectStubLinker::Begin(DWORD dwStubFlags)
             m_pcsDispatch->EmitADD();
             m_pcsDispatch->EmitLDIND_I();      // get OBJECTHANDLE
             m_pcsDispatch->EmitLDIND_REF();    // get Delegate object
-            m_pcsDispatch->EmitLDFLD(GetToken(MscorlibBinder::GetField(FIELD__DELEGATE__TARGET)));
+            m_pcsDispatch->EmitLDFLD(GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__TARGET)));
         }
     }
 
@@ -2133,7 +2136,7 @@ void NDirectStubLinker::DoNDirect(ILCodeStream *pcsEmit, DWORD dwStubFlags, Meth
     {
         if (SF_IsDelegateStub(dwStubFlags)) // reverse P/Invoke via delegate
         {
-            int tokDelegate_methodPtr = pcsEmit->GetToken(MscorlibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
+            int tokDelegate_methodPtr = pcsEmit->GetToken(CoreLibBinder::GetField(FIELD__DELEGATE__METHOD_PTR));
 
             EmitLoadStubContext(pcsEmit, dwStubFlags);
             pcsEmit->EmitLDC(offsetof(UMEntryThunk, m_pObjectHandle));
@@ -2955,7 +2958,8 @@ namespace
         _In_ Module *pModule,
         _In_ PCCOR_SIGNATURE pSig,
         _In_ ULONG cSig,
-        _Out_ CorPinvokeMap *pPinvokeMapOut)
+        _Out_ CorPinvokeMap *pPinvokeMapOut,
+        _Out_ UINT *errorResID)
     {
         CONTRACTL
         {
@@ -2966,7 +2970,7 @@ namespace
         CONTRACTL_END
 
         CorUnmanagedCallingConvention callConvMaybe;
-        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, &callConvMaybe);
+        HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pModule, pSig, cSig, &callConvMaybe, errorResID);
         if (hr != S_OK)
             return hr;
         
@@ -2992,10 +2996,12 @@ void PInvokeStaticSigInfo::InitCallConv(CorPinvokeMap callConv, BOOL bIsVarArg)
         callConv = GetDefaultCallConv(bIsVarArg);
 
     CorPinvokeMap sigCallConv = (CorPinvokeMap)0;
-    HRESULT hr = GetUnmanagedPInvokeCallingConvention(m_pModule, m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv);
+    UINT errorResID;
+    HRESULT hr = GetUnmanagedPInvokeCallingConvention(m_pModule, m_sig.GetRawSig(), m_sig.GetRawSigLen(), &sigCallConv, &errorResID);
     if (FAILED(hr))
     {
-        SetError(IDS_EE_NDIRECT_BADNATL); //Bad metadata format
+        // Set an error message specific to P/Invokes or UnmanagedFunction for bad format.
+        SetError(hr == COR_E_BADIMAGEFORMAT ? IDS_EE_NDIRECT_BADNATL : errorResID);
     }
 
     // Do the same WinAPI to StdCall or CDecl for the signature calling convention as well. We need
@@ -4338,7 +4344,7 @@ void NDirect::PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSi
             // so we have to special-case it here.
             // If a type doesn't have a native representation, we won't set this flag.
             // We'll throw an exception later when setting up the marshalling.
-            if (pRetMT != MscorlibBinder::GetClass(CLASS__DATE_TIME) && pRetMT->HasLayout() && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
+            if (pRetMT != CoreLibBinder::GetClass(CLASS__DATE_TIME) && pRetMT->HasLayout() && IsUnmanagedValueTypeReturnedByRef(pRetMT->GetNativeSize()))
             {
                 ndirectflags |= NDirectMethodDesc::kStdCallWithRetBuf;
             }
@@ -5167,7 +5173,7 @@ MethodDesc* NDirect::CreateStructMarshalILStub(MethodTable* pMT)
     LocalDesc i4(ELEMENT_TYPE_I4);
     sigBuilder.NewArg(&i4);
 
-    LocalDesc cleanupWorkList(MscorlibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
+    LocalDesc cleanupWorkList(CoreLibBinder::GetClass(CLASS__CLEANUP_WORK_LIST_ELEMENT));
     cleanupWorkList.MakeByRef();
     sigBuilder.NewArg(&cleanupWorkList);
 
@@ -6328,6 +6334,21 @@ namespace
         }
 #endif
 
+        if (g_hostpolicy_embedded)
+        {
+#ifdef TARGET_WINDOWS
+            if (wcscmp(wszLibName, W("hostpolicy.dll")) == 0)
+            {
+                return WszGetModuleHandle(NULL);
+            }
+#else
+            if (wcscmp(wszLibName, W("libhostpolicy")) == 0)
+            {
+                return PAL_LoadLibraryDirect(NULL);
+            }
+#endif
+        }
+
         AppDomain* pDomain = GetAppDomain();
         DWORD loadWithAlteredPathFlags = GetLoadWithAlteredSearchPathFlag();
         bool libNameIsRelativePath = Path::IsRelative(wszLibName);
@@ -6859,7 +6880,12 @@ PCODE GetILStubForCalli(VASigCookie *pVASigCookie, MethodDesc *pMD)
         if (callConv == IMAGE_CEE_CS_CALLCONV_UNMANAGED)
         {
             CorUnmanagedCallingConvention callConvMaybe;
-            if (S_OK == MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pVASigCookie->pModule, signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe))
+            UINT errorResID;
+            HRESULT hr = MetaSig::TryGetUnmanagedCallingConventionFromModOpt(pVASigCookie->pModule, signature.GetRawSig(), signature.GetRawSigLen(), &callConvMaybe, &errorResID);
+            if (FAILED(hr))
+                COMPlusThrowHR(hr, errorResID);
+
+            if (hr == S_OK)
             {
                 callConv = callConvMaybe;
             }

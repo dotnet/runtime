@@ -96,6 +96,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
         internal bool CorruptRevocationSignature { get; set; }
         internal DateTimeOffset? RevocationExpiration { get; set; }
         internal bool CorruptRevocationIssuerName { get; set; }
+        internal bool OmitNextUpdateInCrl { get; set; }
 
         // All keys created in this method are smaller than recommended,
         // but they only live for a few seconds (at most),
@@ -343,7 +344,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     writer.WriteUtcTime(_cert.NotBefore);
 
                     // nextUpdate
-                    writer.WriteUtcTime(RevocationExpiration.Value);
+                    if (!OmitNextUpdateInCrl)
+                    {
+                        writer.WriteUtcTime(RevocationExpiration.Value);
+                    }
                 }
                 else
                 {
@@ -351,7 +355,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests.Common
                     writer.WriteUtcTime(now);
 
                     // nextUpdate
-                    writer.WriteUtcTime(newExpiry);
+                    if (!OmitNextUpdateInCrl)
+                    {
+                        writer.WriteUtcTime(newExpiry);
+                    }
                 }
 
                 // revokedCertificates (don't write down if empty)
@@ -488,7 +495,7 @@ ResponderID ::= CHOICE {
                     }
                 }
 
-                writer.WriteGeneralizedTime(now);
+                writer.WriteGeneralizedTime(now, omitFractionalSeconds: true);
 
                 using (writer.PushSequence())
                 {

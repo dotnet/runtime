@@ -255,7 +255,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .PublishProject();
                 SelfContainedApplicationFixture = new TestProjectFixture("StandaloneApp", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
-                    .PublishProject(selfContained: "true");
+                    .PublishProject(selfContained: true);
                 ComponentTypeName = $"Component.Component, {ComponentWithNoDependenciesFixture.TestProject.AssemblyName}";
             }
 

@@ -14,6 +14,7 @@
     <Compile Include="CustomTPALoadContext.cs" />
     <Compile Include="ResourceAssemblyLoadContext.cs" />
     <Compile Include="SatelliteAssemblies.cs" />
+    <Compile Include="LoaderLinkTest.cs" />
     <EmbeddedResource Include="MainStrings*.resx" />
   </ItemGroup>
   <ItemGroup>
@@ -29,5 +30,10 @@
     <ProjectReference Include="ContextualReflectionDependency\System.Runtime.Loader.Test.ContextualReflectionDependency.csproj" />
     <ProjectReference Include="ReferencedClassLib\ReferencedClassLib.csproj" />
     <ProjectReference Include="ReferencedClassLibNeutralIsSatellite\ReferencedClassLibNeutralIsSatellite.csproj" />
+    <ProjectReference Include="LoaderLinkTest.Shared\LoaderLinkTest.Shared.csproj" />
+    <ProjectReference Include="LoaderLinkTest.Dynamic\LoaderLinkTest.Dynamic.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
+    <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
   </ItemGroup>
 </Project>

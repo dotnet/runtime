@@ -19,6 +19,23 @@ namespace Internal.Cryptography
 {
     internal static partial class PkcsHelpers
     {
+        private static readonly bool s_oidIsInitOnceOnly = DetectInitOnlyOid();
+
+        private static bool DetectInitOnlyOid()
+        {
+            Oid testOid = new Oid(Oids.Sha256, null);
+
+            try
+            {
+                testOid.Value = Oids.Sha384;
+                return false;
+            }
+            catch (PlatformNotSupportedException)
+            {
+                return true;
+            }
+        }
+
 #if !NETCOREAPP && !NETSTANDARD2_1
         // Compatibility API.
         internal static void AppendData(this IncrementalHash hasher, ReadOnlySpan<byte> data)
@@ -695,11 +712,14 @@ namespace Internal.Cryptography
         [return: NotNullIfNotNull("oid")]
         public static Oid? CopyOid(this Oid? oid)
         {
-#if NETCOREAPP
-            return oid;
-#else
-            return oid is null ? null : new Oid(oid);
-#endif
+            if (s_oidIsInitOnceOnly)
+            {
+                return oid;
+            }
+            else
+            {
+                return oid is null ? null : new Oid(oid);
+            }
         }
     }
 }

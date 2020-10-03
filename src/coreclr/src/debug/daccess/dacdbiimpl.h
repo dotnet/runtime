@@ -363,6 +363,8 @@ public:
 
     HRESULT GetLoaderHeapMemoryRanges(OUT DacDbiArrayList<COR_MEMORY_RANGE> * pRanges);
 
+    HRESULT IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped);
+
     // retrieves the list of COM interfaces implemented by vmObject, as it is known at
     // the time of the call (the list may change as new interface types become available
     // in the runtime)

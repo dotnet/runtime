@@ -23,7 +23,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     The <c>null</c> value is used to indicate success.  Consumers of <see cref="ValidationResult" />s
         ///     should compare the values to <see cref="ValidationResult.Success" /> rather than checking for null.
         /// </remarks>
-        public static readonly ValidationResult Success;
+        public static readonly ValidationResult? Success;
 
         #endregion
 
@@ -37,7 +37,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     The user-visible error message.  If null, <see cref="ValidationAttribute.GetValidationResult" />
         ///     will use <see cref="ValidationAttribute.FormatErrorMessage" /> for its error message.
         /// </param>
-        public ValidationResult(string errorMessage)
+        public ValidationResult(string? errorMessage)
             : this(errorMessage, null)
         {
         }
@@ -54,7 +54,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     The list of member names affected by this result.
         ///     This list of member names is meant to be used by presentation layers to indicate which fields are in error.
         /// </param>
-        public ValidationResult(string errorMessage, IEnumerable<string> memberNames)
+        public ValidationResult(string? errorMessage, IEnumerable<string>? memberNames)
         {
             ErrorMessage = errorMessage;
             MemberNames = memberNames ?? Array.Empty<string>();
@@ -88,7 +88,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the error message for this result.  It may be null.
         /// </summary>
-        public string ErrorMessage { get; set; }
+        public string? ErrorMessage { get; set; }
 
         #endregion
 
@@ -107,7 +107,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     The <see cref="ErrorMessage" /> property value if specified,
         ///     otherwise, the base <see cref="object.ToString" /> result.
         /// </returns>
-        public override string ToString() => ErrorMessage ?? base.ToString();
+        public override string ToString() => ErrorMessage ?? base.ToString()!;
         #endregion Methods
     }
 }

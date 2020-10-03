@@ -188,6 +188,34 @@ namespace System.Security.Cryptography.Encryption.Tests.Asymmetric
         }
 
         [Fact]
+        public static async Task FlushFinalBlockAsync()
+        {
+            ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
+            using (MemoryStream output = new MemoryStream())
+            using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
+            {
+                await encryptStream.WriteAsync(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
+                await encryptStream.FlushFinalBlockAsync();
+                Assert.True(encryptStream.HasFlushedFinalBlock);
+                Assert.Equal(5, output.ToArray().Length);
+            }
+        }
+
+        [Fact]
+        public static async Task FlushFinalBlockAsync_Cancelled()
+        {
+            ICryptoTransform encryptor = new IdentityTransform(1, 1, true);
+            using (MemoryStream output = new MemoryStream())
+            using (CryptoStream encryptStream = new CryptoStream(output, encryptor, CryptoStreamMode.Write))
+            {
+                await encryptStream.WriteAsync(new byte[] { 1, 2, 3, 4, 5 }, 0, 5);
+                ValueTask waitable = encryptStream.FlushFinalBlockAsync(new Threading.CancellationToken(canceled: true));
+                Assert.True(waitable.IsCanceled);
+                Assert.False(encryptStream.HasFlushedFinalBlock);
+            }
+        }
+
+        [Fact]
         public static void FlushCalledOnFlushAsync_DeriveClass()
         {
             ICryptoTransform encryptor = new IdentityTransform(1, 1, true);

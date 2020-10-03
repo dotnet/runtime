@@ -20,7 +20,7 @@ namespace System.Xml.Xsl.Xslt
         public void CheckXsltType(QilNode n)
         {
             // Five possible types are: anyType, node-set, string, boolean, and number
-            XmlQueryType xt = n.XmlType;
+            XmlQueryType xt = n.XmlType!;
             switch (xt.TypeCode)
             {
                 case XmlTypeCode.String:
@@ -43,7 +43,7 @@ namespace System.Xml.Xsl.Xslt
         [Conditional("DEBUG")]
         public void CheckQName(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType.IsSubtypeOf(T.QNameX), "Must be a singleton QName");
+            Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.QNameX), "Must be a singleton QName");
         }
 
         // We use a value of XmlQualifiedName type to denote a missing parameter
@@ -120,7 +120,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode lang, QilNode letterValue, QilNode groupingSeparator, QilNode groupingSize)
         {
             Debug.Assert(value != null && (
-                value.XmlType.IsSubtypeOf(T.IntXS) ||
+                value.XmlType!.IsSubtypeOf(T.IntXS) ||
                 value.XmlType.IsSubtypeOf(T.DoubleX)),
                 "Value must be either a sequence of ints, or a double singleton"
             );

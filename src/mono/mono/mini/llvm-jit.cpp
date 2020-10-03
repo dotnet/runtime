@@ -89,7 +89,7 @@ alloc_code (LLVMValueRef function, int size)
 {
 	auto cfg = (MonoCompile *)mono_native_tls_get_value (current_cfg_tls_id);
 	g_assert (cfg);
-	return (unsigned char *)mono_domain_code_reserve (cfg->domain, size);
+	return (unsigned char *)mono_mem_manager_code_reserve (cfg->mem_manager, size);
 }
 
 class MonoJitMemoryManager : public RTDyldMemoryManager
@@ -247,7 +247,7 @@ struct MonoLLVMJIT {
 			void *sym = nullptr;
 			auto err = mono_dl_symbol (current, name, &sym);
 			if (!sym) {
-				outs () << "R: " << namestr << "\n";
+				outs () << "R: " << namestr << " " << err << "\n";
 			}
 			assert (sym);
 			return JITSymbol{(uint64_t)(gssize)sym, flags};

@@ -16,15 +16,7 @@ namespace System.Net
     {
         Unknown,
         WebRequest,
-        WebResponse,
-        HttpWebRequest,
-        HttpWebResponse,
-        HttpListenerRequest,
-        HttpListenerResponse,
-        FtpWebRequest,
-        FtpWebResponse,
-        FileWebRequest,
-        FileWebResponse,
+        WebResponse
     }
 
     public class WebHeaderCollection : NameValueCollection, ISerializable
@@ -49,9 +41,7 @@ namespace System.Net
                 {
                     _type = WebHeaderCollectionType.WebRequest;
                 }
-                return _type == WebHeaderCollectionType.WebRequest ||
-                      _type == WebHeaderCollectionType.HttpWebRequest ||
-                      _type == WebHeaderCollectionType.HttpListenerRequest;
+                return _type == WebHeaderCollectionType.WebRequest;
             }
         }
 
@@ -85,9 +75,7 @@ namespace System.Net
                 {
                     _type = WebHeaderCollectionType.WebResponse;
                 }
-                return _type == WebHeaderCollectionType.WebResponse ||
-                       _type == WebHeaderCollectionType.HttpWebResponse ||
-                       _type == WebHeaderCollectionType.HttpListenerResponse;
+                return _type == WebHeaderCollectionType.WebResponse;
             }
         }
 
@@ -141,15 +129,7 @@ namespace System.Net
             }
 
             name = HttpValidationHelpers.CheckBadHeaderNameChars(name);
-            ThrowOnRestrictedHeader(name);
             value = HttpValidationHelpers.CheckBadHeaderValueChars(value);
-            if (_type == WebHeaderCollectionType.WebResponse)
-            {
-                if (value != null && value.Length > ushort.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
-                }
-            }
             InvalidateCachedArrays();
             InnerCollection.Set(name, value);
         }
@@ -168,13 +148,6 @@ namespace System.Net
             if (!AllowHttpResponseHeader)
             {
                 throw new InvalidOperationException(SR.net_headers_rsp);
-            }
-            if (_type == WebHeaderCollectionType.WebResponse)
-            {
-                if (value != null && value.Length > ushort.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
-                }
             }
             this.Set(header.GetName(), value);
         }
@@ -344,13 +317,6 @@ namespace System.Net
             {
                 throw new InvalidOperationException(SR.net_headers_rsp);
             }
-            if (_type == WebHeaderCollectionType.WebResponse)
-            {
-                if (value != null && value.Length > ushort.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
-                }
-            }
             this.Add(header.GetName(), value);
         }
 
@@ -369,15 +335,7 @@ namespace System.Net
             string name = header.Substring(0, colpos);
             string value = header.Substring(colpos + 1);
             name = HttpValidationHelpers.CheckBadHeaderNameChars(name);
-            ThrowOnRestrictedHeader(name);
             value = HttpValidationHelpers.CheckBadHeaderValueChars(value);
-            if (_type == WebHeaderCollectionType.WebResponse)
-            {
-                if (value != null && value.Length > ushort.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(header), value, SR.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
-                }
-            }
             InvalidateCachedArrays();
             InnerCollection.Add(name, value);
         }
@@ -396,15 +354,7 @@ namespace System.Net
             }
 
             name = HttpValidationHelpers.CheckBadHeaderNameChars(name);
-            ThrowOnRestrictedHeader(name);
             value = HttpValidationHelpers.CheckBadHeaderValueChars(value);
-            if (_type == WebHeaderCollectionType.WebResponse)
-            {
-                if (value != null && value.Length > ushort.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, SR.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
-                }
-            }
             InvalidateCachedArrays();
             InnerCollection.Add(name, value);
         }
@@ -413,33 +363,8 @@ namespace System.Net
         {
             headerName = HttpValidationHelpers.CheckBadHeaderNameChars(headerName);
             headerValue = HttpValidationHelpers.CheckBadHeaderValueChars(headerValue);
-            if (_type == WebHeaderCollectionType.WebResponse)
-            {
-                if (headerValue != null && headerValue.Length > ushort.MaxValue)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(headerValue), headerValue, SR.Format(CultureInfo.InvariantCulture, SR.net_headers_toolong, ushort.MaxValue));
-                }
-            }
             InvalidateCachedArrays();
             InnerCollection.Add(headerName, headerValue);
-        }
-
-        internal void ThrowOnRestrictedHeader(string headerName)
-        {
-            if (_type == WebHeaderCollectionType.HttpWebRequest)
-            {
-                if (HeaderInfo[headerName].IsRequestRestricted)
-                {
-                    throw new ArgumentException(SR.Format(SR.net_headerrestrict, headerName), nameof(headerName));
-                }
-            }
-            else if (_type == WebHeaderCollectionType.HttpListenerResponse)
-            {
-                if (HeaderInfo[headerName].IsResponseRestricted)
-                {
-                    throw new ArgumentException(SR.Format(SR.net_headerrestrict, headerName), nameof(headerName));
-                }
-            }
         }
 
         // Remove -
@@ -463,7 +388,6 @@ namespace System.Net
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            ThrowOnRestrictedHeader(name);
             name = HttpValidationHelpers.CheckBadHeaderNameChars(name);
             if (_innerCollection != null)
             {

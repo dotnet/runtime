@@ -21,11 +21,11 @@ namespace System.Net.NameResolution.Tests
         [Fact]
         public static void EventSource_ExistsWithCorrectId()
         {
-            Type esType = typeof(Dns).GetTypeInfo().Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
+            Type esType = typeof(Dns).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
             Assert.NotNull(esType);
 
-            Assert.Equal("Microsoft-System-Net-NameResolution", EventSource.GetName(esType));
-            Assert.Equal(Guid.Parse("5f302add-3825-520e-8fa0-627b206e2e7e"), EventSource.GetGuid(esType));
+            Assert.Equal("Private.InternalDiagnostics.System.Net.NameResolution", EventSource.GetName(esType));
+            Assert.Equal(Guid.Parse("460a591a-715b-5647-5264-944bef811147"), EventSource.GetGuid(esType));
 
             Assert.NotEmpty(EventSource.GenerateManifest(esType, "assemblyPathToIncludeInManifest"));
         }
@@ -33,7 +33,7 @@ namespace System.Net.NameResolution.Tests
         [ConditionalFact]
         public void GetHostEntry_InvalidHost_LogsError()
         {
-            using (var listener = new TestEventListener("Microsoft-System-Net-NameResolution", EventLevel.Error))
+            using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
             {
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
 
@@ -68,7 +68,7 @@ namespace System.Net.NameResolution.Tests
         [PlatformSpecific(~TestPlatforms.Windows)]  // Unreliable on Windows.
         public void GetHostEntryAsync_InvalidHost_LogsError()
         {
-            using (var listener = new TestEventListener("Microsoft-System-Net-NameResolution", EventLevel.Error))
+            using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Error))
             {
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
 
@@ -102,7 +102,7 @@ namespace System.Net.NameResolution.Tests
         [ConditionalFact]
         public void GetHostEntry_ValidName_NoErrors()
         {
-            using (var listener = new TestEventListener("Microsoft-System-Net-NameResolution", EventLevel.Verbose))
+            using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.NameResolution", EventLevel.Verbose))
             {
                 var events = new ConcurrentQueue<EventWrittenEventArgs>();
 

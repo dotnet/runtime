@@ -12,21 +12,21 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         /// <summary>
         /// Undo the processing which took place to create string[] args in Main,
         /// so that the next process will receive the same string[] args
-        /// 
+        ///
         /// See here for more info:
         /// https://docs.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
         public static string EscapeAndConcatenateArgArrayForProcessStart(IEnumerable<string> args)
-        { 
+        {
             return string.Join(" ", EscapeArgArray(args));
         }
 
         /// <summary>
         /// Undo the processing which took place to create string[] args in Main,
         /// so that the next process will receive the same string[] args
-        /// 
+        ///
         /// See here for more info:
         /// https://docs.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
         /// </summary>
@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         /// <summary>
         /// Undo the processing which took place to create string[] args in Main,
         /// so that the next process will receive the same string[] args
-        /// 
+        ///
         /// See here for more info:
         /// https://docs.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
         /// </summary>
@@ -60,9 +60,9 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         /// <summary>
         /// This prefixes every character with the '^' character to force cmd to
-        /// interpret the argument string literally. An alternative option would 
+        /// interpret the argument string literally. An alternative option would
         /// be to do this only for cmd metacharacters.
-        /// 
+        ///
         /// See here for more info:
         /// https://docs.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
         /// </summary>
@@ -85,7 +85,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             var sb = new StringBuilder();
 
             var quoted = ShouldSurroundWithQuotes(arg);
-            if (quoted) sb.Append("\"");
+            if (quoted) sb.Append('"');
 
             for (int i = 0; i < arg.Length; ++i)
             {
@@ -120,20 +120,20 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                     sb.Append(arg[i]);
                 }
             }
-            
-            if (quoted) sb.Append("\"");
+
+            if (quoted) sb.Append('"');
 
             return sb.ToString();
         }
 
         /// <summary>
-        /// Prepare as single argument to 
+        /// Prepare as single argument to
         /// roundtrip properly through cmd.
-        /// 
+        ///
         /// This prefixes every character with the '^' character to force cmd to
-        /// interpret the argument string literally. An alternative option would 
+        /// interpret the argument string literally. An alternative option would
         /// be to do this only for cmd metacharacters.
-        /// 
+        ///
         /// See here for more info:
         /// https://docs.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
         /// </summary>
@@ -152,7 +152,6 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
                 if (character == '"')
                 {
-
                     sb.Append('^');
                     sb.Append('"');
                     sb.Append('^');
@@ -160,7 +159,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
                 }
                 else
                 {
-                    sb.Append("^");
+                    sb.Append('^');
                     sb.Append(character);
                 }
             }
@@ -171,13 +170,13 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         }
 
         /// <summary>
-        /// Prepare as single argument to 
+        /// Prepare as single argument to
         /// roundtrip properly through cmd.
-        /// 
+        ///
         /// This prefixes every character with the '^' character to force cmd to
-        /// interpret the argument string literally. An alternative option would 
+        /// interpret the argument string literally. An alternative option would
         /// be to do this only for cmd metacharacters.
-        /// 
+        ///
         /// See here for more info:
         /// https://docs.microsoft.com/en-us/archive/blogs/twistylittlepassagesallalike/everyone-quotes-command-line-arguments-the-wrong-way
         /// </summary>

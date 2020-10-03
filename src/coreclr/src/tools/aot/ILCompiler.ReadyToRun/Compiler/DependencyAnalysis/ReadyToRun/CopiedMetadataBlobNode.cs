@@ -84,7 +84,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 int fieldToken;
                 if (compressedFieldRef)
                 {
-                    fieldToken = reader.ReadInt16();
+                    fieldToken = reader.ReadUInt16();
                 }
                 else
                 {

@@ -177,7 +177,9 @@ private:
 void TestCreateMutex(AutoCloseMutexHandle &m, const char *name, bool initiallyOwned = false)
 {
     m.Close();
-    m = CreateMutexA(nullptr, initiallyOwned, name);
+    LPWSTR nameW = convert(name);
+    m = CreateMutex(nullptr, initiallyOwned, nameW);
+    free(nameW);
 }
 
 HANDLE TestOpenMutex(const char *name)
@@ -195,6 +197,8 @@ bool StartProcess(const char *funcName)
     processCommandLinePathLength += test_strlen(g_processPath);
     g_processCommandLinePath[processCommandLinePathLength++] = '\"';
     g_processCommandLinePath[processCommandLinePathLength++] = ' ';
+    processCommandLinePathLength += test_sprintf(&g_processCommandLinePath[processCommandLinePathLength], "%s ", "threading/NamedMutex/test1/paltest_namedmutex_test1");
+
     processCommandLinePathLength += test_sprintf(&g_processCommandLinePath[processCommandLinePathLength], "%u", g_parentPid);
     g_processCommandLinePath[processCommandLinePathLength++] = ' ';
     test_strcpy(&g_processCommandLinePath[processCommandLinePathLength], funcName);
@@ -211,10 +215,14 @@ bool StartProcess(const char *funcName)
     si.cb = sizeof(si);
     PROCESS_INFORMATION pi;
     memset(&pi, 0, sizeof(pi));
-    if (!CreateProcessA(nullptr, g_processCommandLinePath, nullptr, nullptr, false, 0, nullptr, nullptr, &si, &pi))
+    LPWSTR nameW = convert(g_processCommandLinePath);
+    if (!CreateProcessW(nullptr, nameW, nullptr, nullptr, false, 0, nullptr, nullptr, &si, &pi))
     {
+        free(nameW);
         return false;
     }
+
+    free(nameW);
     CloseHandle(pi.hProcess);
     CloseHandle(pi.hThread);
     return true;
@@ -841,7 +849,7 @@ DWORD AbandonTests_Child_AbruptExit(void *arg = nullptr)
 
 // This child process acquires the mutex lock, creates another child process (to ensure that file locks are not inherited), and
 // abandons the mutex abruptly. The second child process detects the abandonment and abandons the mutex again for the parent to
-// detect. Issue: https://github.com/dotnet/coreclr/issues/21455
+// detect. Issue: https://github.com/dotnet/runtime/issues/11636
 DWORD AbandonTests_Child_FileLocksNotInherited_Parent_AbruptExit(void *arg = nullptr)
 {
     const char *testName = "AbandonTests";
@@ -1182,7 +1190,7 @@ bool StressTests(DWORD durationMinutes)
     return static_cast<bool>(g_stressResult);
 }
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_NamedMutex_test1_paltest_namedmutex_test1, "threading/NamedMutex/test1/paltest_namedmutex_test1")
 {
     if (argc < 1 || argc > 4)
     {

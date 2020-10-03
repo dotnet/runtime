@@ -1226,83 +1226,6 @@ FCIMPL1(FC_BOOL_RET, MarshalNative::IsTypeVisibleFromCom, ReflectClassBaseObject
 }
 FCIMPLEND
 
-
-//====================================================================
-// IUnknown Helpers
-//====================================================================
-// IUnknown::QueryInterface
-FCIMPL3(HRESULT, MarshalNative::QueryInterface, IUnknown* pUnk, REFGUID iid, void** ppv)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-        PRECONDITION(CheckPointer(ppv));
-    }
-    CONTRACTL_END;
-
-    HRESULT hr = S_OK;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    hr = SafeQueryInterface(pUnk,iid,(IUnknown**)ppv);
-    LogInteropQI(pUnk, iid, hr, "PInvoke::QI");
-
-    HELPER_METHOD_FRAME_END();
-    return hr;
-}
-FCIMPLEND
-
-// IUnknown::AddRef
-FCIMPL1(ULONG, MarshalNative::AddRef, IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    ULONG cbRef = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    cbRef = SafeAddRef(pUnk);
-    LogInteropAddRef(pUnk, cbRef, "PInvoke.AddRef");
-
-    HELPER_METHOD_FRAME_END();
-    return cbRef;
-}
-FCIMPLEND
-
-//IUnknown::Release
-FCIMPL1(ULONG, MarshalNative::Release, IUnknown* pUnk)
-{
-    CONTRACTL
-    {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pUnk, NULL_OK));
-    }
-    CONTRACTL_END;
-
-    ULONG cbRef = 0;
-    HELPER_METHOD_FRAME_BEGIN_RET_0();
-
-    if (!pUnk)
-        COMPlusThrowArgumentNull(W("pUnk"));
-
-    cbRef = SafeRelease(pUnk);
-    LogInteropRelease(pUnk, cbRef, "PInvoke.Release");
-
-    HELPER_METHOD_FRAME_END();
-    return cbRef;
-}
-FCIMPLEND
-
 FCIMPL2(void, MarshalNative::GetNativeVariantForObject, Object* ObjUNSAFE, LPVOID pDestNativeVariant)
 {
     CONTRACTL
@@ -1392,171 +1315,6 @@ FCIMPL2(Object*, MarshalNative::GetObjectsForNativeVariants, VARIANT* aSrcNative
 
     HELPER_METHOD_FRAME_END();
     return OBJECTREFToObject(Array);
-}
-FCIMPLEND
-
-FCIMPL2(void, MarshalNative::DoGetTypeLibGuid, GUID * result, Object* refTlbUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refTlb = (OBJECTREF) refTlbUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refTlb);
-    GCPROTECT_BEGININTERIOR (result);
-
-    if (refTlb == NULL)
-        COMPlusThrowArgumentNull(W("pTLB"));
-
-    // Ensure COM is started up.
-    EnsureComStarted();
-
-    SafeComHolder<ITypeLib> pTLB = (ITypeLib*)GetComIPFromObjectRef(&refTlb, IID_ITypeLib);
-    if (!pTLB)
-        COMPlusThrow(kArgumentException, W("Arg_NoITypeLib"));
-
-    GCX_PREEMP();
-
-    // Retrieve the TLIBATTR.
-    TLIBATTR *pAttr;
-    IfFailThrow(pTLB->GetLibAttr(&pAttr));
-
-    // Extract the guid from the TLIBATTR.
-    *result = pAttr->guid;
-
-    // Release the TLIBATTR now that we have the GUID.
-    pTLB->ReleaseTLibAttr(pAttr);
-
-    GCPROTECT_END ();
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL1(LCID, MarshalNative::GetTypeLibLcid, Object* refTlbUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    LCID retVal = 0;
-    OBJECTREF refTlb = (OBJECTREF) refTlbUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_RET_1(refTlb);
-
-    if (refTlb == NULL)
-        COMPlusThrowArgumentNull(W("pTLB"));
-
-    // Ensure COM is started up.
-    EnsureComStarted();
-
-    SafeComHolder<ITypeLib> pTLB = (ITypeLib*)GetComIPFromObjectRef(&refTlb, IID_ITypeLib);
-    if (!pTLB)
-        COMPlusThrow(kArgumentException, W("Arg_NoITypeLib"));
-
-    GCX_PREEMP();
-
-    // Retrieve the TLIBATTR.
-    TLIBATTR *pAttr;
-    IfFailThrow(pTLB->GetLibAttr(&pAttr));
-
-    // Extract the LCID from the TLIBATTR.
-    retVal = pAttr->lcid;
-
-    // Release the TLIBATTR now that we have the LCID.
-    pTLB->ReleaseTLibAttr(pAttr);
-
-    HELPER_METHOD_FRAME_END();
-    return retVal;
-}
-FCIMPLEND
-
-FCIMPL3(void, MarshalNative::GetTypeLibVersion, Object* refTlbUNSAFE, int *pMajor, int *pMinor)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refTlb = (OBJECTREF) refTlbUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refTlb);
-
-    if (refTlb == NULL)
-        COMPlusThrowArgumentNull(W("typeLibrary"));
-
-    // Ensure COM is started up.
-    EnsureComStarted();
-
-    SafeComHolder<ITypeLib> pTLB = (ITypeLib*)GetComIPFromObjectRef(&refTlb, IID_ITypeLib);
-    if (!pTLB)
-        COMPlusThrow(kArgumentException, W("Arg_NoITypeLib"));
-
-    GCX_PREEMP();
-
-    // Retrieve the TLIBATTR.
-    TLIBATTR *pAttr;
-    IfFailThrow(pTLB->GetLibAttr(&pAttr));
-
-    // Extract the LCID from the TLIBATTR.
-    *pMajor = pAttr->wMajorVerNum;
-    *pMinor = pAttr->wMinorVerNum;
-
-    // Release the TLIBATTR now that we have the version numbers.
-    pTLB->ReleaseTLibAttr(pAttr);
-
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2(void, MarshalNative::DoGetTypeInfoGuid, GUID * result, Object* refTypeInfoUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    OBJECTREF refTypeInfo = (OBJECTREF) refTypeInfoUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refTypeInfo);
-    GCPROTECT_BEGININTERIOR (result);
-
-    if (refTypeInfo == NULL)
-        COMPlusThrowArgumentNull(W("typeInfo"));
-
-    // Ensure COM is started up.
-    EnsureComStarted();
-
-    SafeComHolder<ITypeInfo> pTI = (ITypeInfo*)GetComIPFromObjectRef(&refTypeInfo, IID_ITypeInfo);
-    if (!pTI)
-        COMPlusThrow(kArgumentException, W("Arg_NoITypeInfo"));
-
-    GCX_PREEMP();
-
-    // Retrieve the TYPEATTR.
-    TYPEATTR *pAttr;
-    IfFailThrow(pTI->GetTypeAttr(&pAttr));
-
-    // Extract the guid from the TYPEATTR.
-    *result = pAttr->guid;
-
-    // Release the TYPEATTR now that we have the GUID.
-    pTI->ReleaseTypeAttr(pAttr);
-
-    GCPROTECT_END ();
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
-FCIMPL2(void, MarshalNative::DoGetTypeLibGuidForAssembly, GUID * result, AssemblyBaseObject* refAsmUNSAFE)
-{
-    FCALL_CONTRACT;
-
-    // Validate the arguments.
-    _ASSERTE(refAsmUNSAFE != NULL);
-    _ASSERTE(result != NULL);
-
-    ASSEMBLYREF refAsm = (ASSEMBLYREF) refAsmUNSAFE;
-    HELPER_METHOD_FRAME_BEGIN_1(refAsm);
-    GCPROTECT_BEGININTERIOR (result)
-
-    HRESULT hr = S_OK;
-
-    // Retrieve the assembly from the ASSEMBLYREF.
-    Assembly *pAssembly = refAsm->GetAssembly();
-    _ASSERTE(pAssembly);
-
-    // Retrieve the TLBID for the assembly.
-    IfFailThrow(::GetTypeLibGuidForAssembly(pAssembly, result));
-
-    GCPROTECT_END ();
-    HELPER_METHOD_FRAME_END();
 }
 FCIMPLEND
 
@@ -1789,6 +1547,26 @@ BOOL MarshalNative::IsObjectInContext(OBJECTREF *pObj)
 
         return pCtxCookie == pRCW->GetWrapperCtxCookie();
     }
+}
+
+void QCALLTYPE MarshalNative::GetTypeFromCLSID(REFCLSID clsid, PCWSTR wszServer, QCall::ObjectHandleOnStack retType)
+{
+    QCALL_CONTRACT;
+
+    BEGIN_QCALL;
+
+    // Ensure COM is started up.	
+    EnsureComStarted();
+
+    GCX_COOP();
+
+    OBJECTREF orType = NULL;
+    GCPROTECT_BEGIN(orType);
+    GetComClassFromCLSID(clsid, wszServer, &orType);
+    retType.Set(orType);
+    GCPROTECT_END();
+
+    END_QCALL;
 }
 
 #endif // FEATURE_COMINTEROP

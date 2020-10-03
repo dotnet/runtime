@@ -136,7 +136,7 @@ GetTypeFieldValueFlags(TypeHandle typeHandle,
         // Perform extra checks to identify well-known classes.
         //
 
-        if ((&g_Mscorlib)->IsClass(typeHandle.GetMethodTable(), CLASS__STRING))
+        if ((&g_CoreLib)->IsClass(typeHandle.GetMethodTable(), CLASS__STRING))
         {
             otherFlags |= CLRDATA_VALUE_IS_STRING;
         }

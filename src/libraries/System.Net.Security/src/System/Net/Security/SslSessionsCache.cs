@@ -115,7 +115,7 @@ namespace System.Net.Security
         //
         internal static SafeFreeCredentials? TryCachedCredential(byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy)
         {
-            if (s_cachedCreds.Count == 0)
+            if (s_cachedCreds.IsEmpty)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Not found, Current Cache Count = {s_cachedCreds.Count}");
                 return null;

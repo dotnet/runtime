@@ -498,7 +498,7 @@ namespace System.Data.SqlTypes
         {
             byte[]? value = null;
 
-            string isNull = r.GetAttribute("nil", XmlSchema.InstanceNamespace);
+            string? isNull = r.GetAttribute("nil", XmlSchema.InstanceNamespace);
 
             if (isNull != null && XmlConvert.ToBoolean(isNull))
             {

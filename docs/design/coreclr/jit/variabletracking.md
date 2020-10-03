@@ -338,7 +338,7 @@ There are many things we can do to improve optimized debugging:
     Currently we don't have the IL offset of them.
     And this is broadly used to improve code performance.
 
--   [Promoted structs](https://github.com/dotnet/coreclr/issues/23542): There is no debug support for fields of promoted structs, we just report the struct itself.
+-   [Promoted structs](https://github.com/dotnet/runtime/issues/12369): There is no debug support for fields of promoted structs, we just report the struct itself.
 
--   [Reduce space used for VariableLiveDescriptor](https://github.com/dotnet/coreclr/issues/23544): we are currently using a `jitstd::list`, which is a double linked list.
+-   [Reduce space used for VariableLiveDescriptor](https://github.com/dotnet/runtime/issues/12371): we are currently using a `jitstd::list`, which is a double linked list.
     We could use a simple single linked list with push_back(), head(), tail(), size() operations and an iterator and we would be saving memory.

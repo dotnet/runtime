@@ -11,6 +11,7 @@
 #include "ep-event.h"
 #include "ep-file.h"
 #include "ep-session.h"
+#include "ep-event-payload.h"
 #include "ep-rt.h"
 
 /*
@@ -42,9 +43,10 @@ void
 session_disable_ipc_streaming_thread (EventPipeSession *session)
 {
 	EP_ASSERT (session->session_type == EP_SESSION_TYPE_IPCSTREAM);
-	EP_ASSERT (ep_session_get_ipc_streaming_enabled (session));
+	EP_ASSERT (ep_session_get_ipc_streaming_enabled (session) == true);
 
 	EP_ASSERT (!ep_rt_process_detach ());
+	EP_ASSERT (session->buffer_manager != NULL);
 
 	// The IPC streaming thread will watch this value and exit
 	// when profiling is disabled.
@@ -70,13 +72,14 @@ ep_session_alloc (
 	uint32_t circular_buffer_size_in_mb,
 	const EventPipeProviderConfiguration *providers,
 	uint32_t providers_len,
-	bool rundown_enabled)
+	EventPipeSessionSynchronousCallback sync_callback)
 {
 	EP_ASSERT (index < EP_MAX_NUMBER_OF_SESSIONS);
 	EP_ASSERT (format < EP_SERIALIZATION_FORMAT_COUNT);
-	EP_ASSERT (circular_buffer_size_in_mb > 0);
+	EP_ASSERT (session_type == EP_SESSION_TYPE_SYNCHRONOUS || circular_buffer_size_in_mb > 0);
 	EP_ASSERT (providers_len > 0);
 	EP_ASSERT (providers != NULL);
+	EP_ASSERT ((sync_callback != NULL) == (session_type == EP_SESSION_TYPE_SYNCHRONOUS));
 
 	ep_requires_lock_held ();
 
@@ -91,10 +94,11 @@ ep_session_alloc (
 	ep_raise_error_if_nok (instance->providers != NULL);
 
 	instance->index = index;
-	instance->rundown_enabled = rundown_enabled ? 1 : 0;
+	instance->rundown_enabled = 0;
 	instance->session_type = session_type;
 	instance->format = format;
 	instance->rundown_requested = rundown_requested;
+	instance->synchronous_callback = sync_callback;
 
 	// Hard coded 10MB for now, we'll probably want to make
 	// this configurable later.
@@ -102,8 +106,10 @@ ep_session_alloc (
 		sequence_point_alloc_budget = 10 * 1024 * 1024;
 	}
 
-	instance->buffer_manager = ep_buffer_manager_alloc (instance, ((size_t)circular_buffer_size_in_mb) << 20, sequence_point_alloc_budget);
-	ep_raise_error_if_nok (instance->buffer_manager != NULL);
+	if (session_type != EP_SESSION_TYPE_SYNCHRONOUS) {
+		instance->buffer_manager = ep_buffer_manager_alloc (instance, ((size_t)circular_buffer_size_in_mb) << 20, sequence_point_alloc_budget);
+		ep_raise_error_if_nok (instance->buffer_manager != NULL);
+	}
 
 	// Create the event pipe file.
 	// A NULL output path means that we should not write the results to a file.
@@ -243,9 +249,34 @@ ep_session_suspend_write_event (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 
-	// Force all in-progress writes to either finish or cancel
-	// This is required to ensure we can safely flush and delete the buffers
-	ep_buffer_manager_suspend_write_event (session->buffer_manager, session->index);
+	// Need to disable the session before calling this method.
+	EP_ASSERT (ep_is_session_enabled ((EventPipeSessionID)session) == false);
+
+	ep_rt_thread_array_t threads;
+	ep_rt_thread_array_alloc (&threads);
+
+	ep_thread_get_threads (&threads);
+
+	ep_rt_thread_array_iterator_t threads_iterator;
+	ep_rt_thread_array_iterator_begin (&threads, &threads_iterator);
+	while (!ep_rt_thread_array_iterator_end (&threads, &threads_iterator)) {
+		EventPipeThread *thread = ep_rt_thread_array_iterator_value (&threads_iterator);
+		if (thread) {
+			// Wait for the thread to finish any writes to this session
+			EP_YIELD_WHILE (ep_thread_get_session_write_in_progress (thread) == session->index);
+
+			// Since we've already disabled the session, the thread won't call back in to this
+			// session once its done with the current write
+			ep_thread_release (thread);
+		}
+		ep_rt_thread_array_iterator_next (&threads, &threads_iterator);
+	}
+
+	ep_rt_thread_array_free (&threads);
+
+	if (session->buffer_manager)
+		// Convert all buffers to read only to ensure they get flushed
+		ep_buffer_manager_suspend_write_event (session->buffer_manager, session->index);
 }
 
 void
@@ -253,7 +284,7 @@ ep_session_write_sequence_point_unbuffered (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 
-	ep_return_void_if_nok (session->file != NULL);
+	ep_return_void_if_nok (session->file != NULL && session->buffer_manager != NULL);
 
 	EventPipeSequencePoint sequence_point;
 	ep_sequence_point_init (&sequence_point);
@@ -275,6 +306,11 @@ ep_session_start_streaming (EventPipeSession *session)
 	if (session->session_type == EP_SESSION_TYPE_IPCSTREAM)
 		session_create_ipc_streaming_thread (session);
 
+	if (session->session_type == EP_SESSION_TYPE_SYNCHRONOUS) {
+		EP_ASSERT (session->file == NULL);
+		EP_ASSERT (!ep_session_get_ipc_streaming_enabled (session));
+	}
+
 	ep_requires_lock_held ();
 	return;
 }
@@ -290,6 +326,9 @@ void
 ep_session_add_session_provider (EventPipeSession *session, EventPipeSessionProvider *session_provider)
 {
 	EP_ASSERT (session != NULL);
+
+	ep_requires_lock_held ();
+
 	ep_session_provider_list_add_session_provider (session->providers, session_provider);
 }
 
@@ -311,7 +350,7 @@ ep_session_write_all_buffers_to_file (EventPipeSession *session, bool *events_wr
 {
 	EP_ASSERT (session != NULL);
 
-	if (session->file == NULL)
+	if (session->file == NULL || session->buffer_manager == NULL)
 		return true;
 
 	// Get the current time stamp.
@@ -323,7 +362,7 @@ ep_session_write_all_buffers_to_file (EventPipeSession *session, bool *events_wr
 }
 
 bool
-ep_session_write_event_buffered (
+ep_session_write_event (
 	EventPipeSession *session,
 	EventPipeThread *thread,
 	EventPipeEvent *ep_event,
@@ -336,18 +375,41 @@ ep_session_write_event_buffered (
 	EP_ASSERT (session != NULL);
 	EP_ASSERT (ep_event != NULL);
 
-	return ep_event_is_enabled_by_mask (ep_event, ep_session_get_mask (session)) ?
-		ep_buffer_manager_write_event (
-			session->buffer_manager,
-			thread,
-			session,
-			ep_event,
-			payload,
-			activity_id,
-			related_activity_id,
-			event_thread,
-			stack) :
-		false;
+	bool result = false;
+
+	// Filter events specific to "this" session based on precomputed flag on provider/events.
+	if (ep_event_is_enabled_by_mask (ep_event, ep_session_get_mask (session))) {
+		if (session->synchronous_callback) {
+			session->synchronous_callback (
+				ep_event_get_provider (ep_event),
+				ep_event_get_event_id (ep_event),
+				ep_event_get_event_version (ep_event),
+				ep_event_get_metadata_len (ep_event),
+				ep_event_get_metadata (ep_event),
+				ep_event_payload_get_size (payload),
+				ep_event_payload_get_flat_data (payload),
+				activity_id,
+				related_activity_id,
+				event_thread,
+				stack == NULL ? 0 : ep_stack_contents_get_size (stack),
+				stack == NULL ? NULL : (uintptr_t *)ep_stack_contents_get_pointer (stack));
+			result = true;
+		} else {
+			EP_ASSERT (session->buffer_manager != NULL);
+			result = ep_buffer_manager_write_event (
+				session->buffer_manager,
+				thread,
+				session,
+				ep_event,
+				payload,
+				activity_id,
+				related_activity_id,
+				event_thread,
+				stack);
+		}
+	}
+
+	return result;
 }
 
 EventPipeEventInstance *
@@ -355,6 +417,12 @@ ep_session_get_next_event (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
 	ep_requires_lock_not_held ();
+
+	if (!session->buffer_manager) {
+		EP_ASSERT (!"Shouldn't call get_next_event on a synchronous session.");
+		return NULL;
+	}
+
 	return ep_buffer_manager_get_next_event (session->buffer_manager);
 }
 
@@ -362,7 +430,12 @@ EventPipeWaitHandle
 ep_session_get_wait_event (EventPipeSession *session)
 {
 	EP_ASSERT (session != NULL);
-	EP_ASSERT (session->buffer_manager != NULL);
+
+	if (!session->buffer_manager) {
+		EP_ASSERT (!"Shouldn't call get_wait_event on a synchronous session.");
+		return (EventPipeWaitHandle)NULL;
+	}
+
 	return ep_rt_wait_event_get_wait_handle (ep_buffer_manager_get_rt_wait_event_ref (session->buffer_manager));
 }
 

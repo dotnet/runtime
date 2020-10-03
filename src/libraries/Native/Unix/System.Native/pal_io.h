@@ -599,13 +599,6 @@ PALEXPORT int32_t SystemNative_Poll(PollEvent* pollEvents, uint32_t eventCount, 
 PALEXPORT int32_t SystemNative_PosixFAdvise(intptr_t fd, int64_t offset, int64_t length, int32_t advice);
 
 /**
-* Reads a line from the provided stream.
-*
-* Returns the read line, or null if no line could be read.  The caller is responsible for freeing the malloc'd line.
-*/
-PALEXPORT char* SystemNative_GetLine(FILE* stream);
-
-/**
  * Reads the number of bytes specified into the provided buffer from the specified, opened file descriptor.
  *
  * Returns the number of bytes read on success; otherwise, -1 is returned an errno is set.
@@ -650,11 +643,11 @@ PALEXPORT void SystemNative_Sync(void);
 PALEXPORT int32_t SystemNative_Write(intptr_t fd, const void* buffer, int32_t bufferSize);
 
 /**
- * Copies all data from the source file descriptor/path to the destination file path.
+ * Copies all data from the source file descriptor to the destination file descriptor.
  *
  * Returns 0 on success; otherwise, returns -1 and sets errno.
  */
-PALEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, const char* srcPath, const char* destPath, int32_t overwrite);
+PALEXPORT int32_t SystemNative_CopyFile(intptr_t sourceFd, intptr_t destinationFd);
 
 /**
 * Initializes a new inotify instance and returns a file

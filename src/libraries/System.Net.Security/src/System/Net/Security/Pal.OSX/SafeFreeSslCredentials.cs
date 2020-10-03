@@ -10,30 +10,22 @@ namespace System.Net
 {
     internal sealed class SafeFreeSslCredentials : SafeFreeCredentials
     {
-        public SafeFreeSslCredentials(X509Certificate certificate, SslProtocols protocols, EncryptionPolicy policy)
+        public SafeFreeSslCredentials(SslStreamCertificateContext? certificateContext, SslProtocols protocols, EncryptionPolicy policy)
             : base(IntPtr.Zero, true)
         {
-            Debug.Assert(
-                certificate == null || certificate is X509Certificate2,
-                "Only X509Certificate2 certificates are supported at this time");
-
-            X509Certificate2? cert = (X509Certificate2?)certificate;
-
-            if (cert != null)
+            if (certificateContext != null)
             {
-                Debug.Assert(cert.HasPrivateKey, "cert.HasPrivateKey");
-
                 // Make a defensive copy of the certificate. In some async cases the
                 // certificate can have been disposed before being provided to the handshake.
                 //
                 // This meshes with the Unix (OpenSSL) PAL, because it extracts the private key
                 // and cert handle (which get up-reffed) to match the API expectations.
-                cert = new X509Certificate2(cert);
+                certificateContext = certificateContext.Duplicate();
 
-                Debug.Assert(cert.HasPrivateKey, "cert clone.HasPrivateKey");
+                Debug.Assert(certificateContext.Certificate.HasPrivateKey, "cert clone.HasPrivateKey");
             }
 
-            Certificate = cert;
+            CertificateContext = certificateContext;
             Protocols = protocols;
             Policy = policy;
         }
@@ -42,13 +34,13 @@ namespace System.Net
 
         public SslProtocols Protocols { get; }
 
-        public X509Certificate2? Certificate { get; }
+        public SslStreamCertificateContext? CertificateContext { get; }
 
         public override bool IsInvalid => false;
 
         protected override bool ReleaseHandle()
         {
-            Certificate?.Dispose();
+            CertificateContext?.Certificate.Dispose();
             return true;
         }
     }

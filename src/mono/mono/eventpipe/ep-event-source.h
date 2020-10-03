@@ -34,6 +34,24 @@ struct _EventPipeEventSource {
 };
 #endif
 
+static
+inline
+const char *
+ep_event_source_get_os_info (void)
+{
+	extern const char *_ep_os_info;
+	return _ep_os_info;
+}
+
+static
+inline
+const char *
+ep_event_source_get_arch_info (void)
+{
+	extern const char *_ep_arch_info;
+	return _ep_arch_info;
+}
+
 EventPipeEventSource *
 ep_event_source_alloc (void);
 

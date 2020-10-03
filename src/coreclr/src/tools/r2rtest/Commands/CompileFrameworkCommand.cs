@@ -21,7 +21,10 @@ namespace R2RTest
 
             string logsFolder = Path.Combine(options.CoreRootDirectory.FullName, "logs");
             Directory.CreateDirectory(logsFolder);
-            options.OutputDirectory = new DirectoryInfo(logsFolder);
+            if (options.OutputDirectory == null)
+            {
+                options.OutputDirectory = new DirectoryInfo(logsFolder);
+            }
             options.Framework = true;
             options.NoJit = true;
             options.NoEtw = true;

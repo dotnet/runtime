@@ -22,7 +22,7 @@ namespace System.Data.ProviderBase
 
         private sealed class PendingGetConnection
         {
-            public PendingGetConnection(long dueTime, DbConnection owner, TaskCompletionSource<DbConnectionInternal> completion, DbConnectionOptions userOptions)
+            public PendingGetConnection(long dueTime, DbConnection owner, TaskCompletionSource<DbConnectionInternal> completion, DbConnectionOptions? userOptions)
             {
                 DueTime = dueTime;
                 Owner = owner;
@@ -31,7 +31,7 @@ namespace System.Data.ProviderBase
             public long DueTime { get; private set; }
             public DbConnection Owner { get; private set; }
             public TaskCompletionSource<DbConnectionInternal> Completion { get; private set; }
-            public DbConnectionOptions UserOptions { get; private set; }
+            public DbConnectionOptions? UserOptions { get; private set; }
         }
 
 
@@ -97,12 +97,12 @@ namespace System.Data.ProviderBase
         private static readonly Random s_random = new Random(5101977); // Value obtained from Dave Driver
 
         private readonly int _cleanupWait;
-        private readonly DbConnectionPoolIdentity _identity;
+        private readonly DbConnectionPoolIdentity? _identity;
 
         private readonly DbConnectionFactory _connectionFactory;
         private readonly DbConnectionPoolGroup _connectionPoolGroup;
         private readonly DbConnectionPoolGroupOptions _connectionPoolGroupOptions;
-        private readonly DbConnectionPoolProviderInfo _connectionPoolProviderInfo;
+        private readonly DbConnectionPoolProviderInfo? _connectionPoolProviderInfo;
 
         private State _state;
 
@@ -117,13 +117,13 @@ namespace System.Data.ProviderBase
         private int _waitCount;
         private readonly PoolWaitHandles _waitHandles;
 
-        private Exception _resError;
+        private Exception? _resError;
         private volatile bool _errorOccurred;
 
         private int _errorWait;
-        private Timer _errorTimer;
+        private Timer? _errorTimer;
 
-        private Timer _cleanupTimer;
+        private Timer? _cleanupTimer;
 
 
         private readonly List<DbConnectionInternal> _objectList;
@@ -135,7 +135,7 @@ namespace System.Data.ProviderBase
                             DbConnectionFactory connectionFactory,
                             DbConnectionPoolGroup connectionPoolGroup,
                             DbConnectionPoolIdentity identity,
-                            DbConnectionPoolProviderInfo connectionPoolProviderInfo)
+                            DbConnectionPoolProviderInfo? connectionPoolProviderInfo)
         {
             Debug.Assert(null != connectionPoolGroup, "null connectionPoolGroup");
 
@@ -220,7 +220,7 @@ namespace System.Data.ProviderBase
             }
         }
 
-        internal DbConnectionPoolIdentity Identity
+        internal DbConnectionPoolIdentity? Identity
         {
             get { return _identity; }
         }
@@ -251,7 +251,7 @@ namespace System.Data.ProviderBase
             get { return _connectionPoolGroupOptions; }
         }
 
-        internal DbConnectionPoolProviderInfo ProviderInfo
+        internal DbConnectionPoolProviderInfo? ProviderInfo
         {
             get { return _connectionPoolProviderInfo; }
         }
@@ -266,7 +266,7 @@ namespace System.Data.ProviderBase
             get { return (null != _identity && DbConnectionPoolIdentity.NoIdentity != _identity); }
         }
 
-        private void CleanupCallback(object state)
+        private void CleanupCallback(object? state)
         {
             // Called when the cleanup-timer ticks over.
 
@@ -294,7 +294,7 @@ namespace System.Data.ProviderBase
                 if (_waitHandles.PoolSemaphore.WaitOne(0))
                 {
                     // We obtained a objects from the semaphore.
-                    DbConnectionInternal obj;
+                    DbConnectionInternal? obj;
 
                     if (_stackOld.TryPop(out obj))
                     {
@@ -323,7 +323,7 @@ namespace System.Data.ProviderBase
             {
                 while (true)
                 {
-                    DbConnectionInternal obj;
+                    DbConnectionInternal? obj;
 
                     if (!_stackNew.TryPop(out obj))
                         break;
@@ -345,7 +345,7 @@ namespace System.Data.ProviderBase
 
         internal void Clear()
         {
-            DbConnectionInternal obj;
+            DbConnectionInternal? obj;
 
             // First, quickly doom everything.
             lock (_objectList)
@@ -387,9 +387,9 @@ namespace System.Data.ProviderBase
                 _cleanupWait,
                 _cleanupWait);
 
-        private DbConnectionInternal CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+        private DbConnectionInternal CreateObject(DbConnection? owningObject, DbConnectionOptions? userOptions, DbConnectionInternal? oldConnection)
         {
-            DbConnectionInternal newObj = null;
+            DbConnectionInternal? newObj = null;
 
             try
             {
@@ -571,13 +571,13 @@ namespace System.Data.ProviderBase
             obj.Dispose();
         }
 
-        private void ErrorCallback(object state)
+        private void ErrorCallback(object? state)
         {
             _errorOccurred = false;
             _waitHandles.ErrorEvent.Reset();
 
             // the error state is cleaned, destroy the timer to avoid periodic invocation
-            Timer t = _errorTimer;
+            Timer? t = _errorTimer;
             _errorTimer = null;
             if (t != null)
             {
@@ -588,14 +588,14 @@ namespace System.Data.ProviderBase
 
         // TODO: move this to src/Common and integrate with SqlClient
         // Note: Odbc connections are not passing through this code
-        private Exception TryCloneCachedException()
+        private Exception? TryCloneCachedException()
         {
             return _resError;
         }
 
         private void WaitForPendingOpen()
         {
-            PendingGetConnection next;
+            PendingGetConnection? next;
 
             do
             {
@@ -631,9 +631,9 @@ namespace System.Data.ProviderBase
                             delay = (uint)Math.Max(ADP.TimerRemainingMilliseconds(next.DueTime), 0);
                         }
 
-                        DbConnectionInternal connection = null;
+                        DbConnectionInternal? connection = null;
                         bool timeout = false;
-                        Exception caughtException = null;
+                        Exception? caughtException = null;
 
                         try
                         {
@@ -675,7 +675,7 @@ namespace System.Data.ProviderBase
             } while (!_pendingOpens.IsEmpty);
         }
 
-        internal bool TryGetConnection(DbConnection owningObject, TaskCompletionSource<DbConnectionInternal> retry, DbConnectionOptions userOptions, out DbConnectionInternal connection)
+        internal bool TryGetConnection(DbConnection owningObject, TaskCompletionSource<DbConnectionInternal>? retry, DbConnectionOptions? userOptions, out DbConnectionInternal? connection)
         {
             uint waitForMultipleObjectsTimeout = 0;
             bool allowCreate = false;
@@ -728,9 +728,9 @@ namespace System.Data.ProviderBase
             return false;
         }
 
-        private bool TryGetConnection(DbConnection owningObject, uint waitForMultipleObjectsTimeout, bool allowCreate, bool onlyOneCheckConnection, DbConnectionOptions userOptions, out DbConnectionInternal connection)
+        private bool TryGetConnection(DbConnection owningObject, uint waitForMultipleObjectsTimeout, bool allowCreate, bool onlyOneCheckConnection, DbConnectionOptions? userOptions, out DbConnectionInternal? connection)
         {
-            DbConnectionInternal obj = null;
+            DbConnectionInternal? obj = null;
             if (null == obj)
             {
                 Interlocked.Increment(ref _waitCount);
@@ -764,7 +764,7 @@ namespace System.Data.ProviderBase
                             case ERROR_HANDLE:
                                 // Throw the error that PoolCreateRequest stashed.
                                 Interlocked.Decrement(ref _waitCount);
-                                throw TryCloneCachedException();
+                                throw TryCloneCachedException()!;
 
                             case CREATION_HANDLE:
 
@@ -892,9 +892,9 @@ namespace System.Data.ProviderBase
         /// <param name="userOptions">Options used to create the new connection</param>
         /// <param name="oldConnection">Inner connection that will be replaced</param>
         /// <returns>A new inner connection that is attached to the <paramref name="owningObject"/></returns>
-        internal DbConnectionInternal ReplaceConnection(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
+        internal DbConnectionInternal? ReplaceConnection(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)
         {
-            DbConnectionInternal newConnection = UserCreateRequest(owningObject, userOptions, oldConnection);
+            DbConnectionInternal? newConnection = UserCreateRequest(owningObject, userOptions, oldConnection);
 
             if (newConnection != null)
             {
@@ -907,9 +907,9 @@ namespace System.Data.ProviderBase
             return newConnection;
         }
 
-        private DbConnectionInternal GetFromGeneralPool()
+        private DbConnectionInternal? GetFromGeneralPool()
         {
-            DbConnectionInternal obj = null;
+            DbConnectionInternal? obj = null;
 
             if (!_stackNew.TryPop(out obj))
             {
@@ -938,7 +938,7 @@ namespace System.Data.ProviderBase
             return (obj);
         }
 
-        private void PoolCreateRequest(object state)
+        private void PoolCreateRequest(object? state)
         {
             // called by pooler to ensure pool requests are currently being satisfied -
             // creation mutex has not been obtained
@@ -968,7 +968,7 @@ namespace System.Data.ProviderBase
                         // since either Open will fail or we will open a object for this pool that does
                         // not belong in this pool.  The side effect of this is that if using integrated
                         // security min pool size cannot be guaranteed.
-                        if (UsingIntegrateSecurity && !_identity.Equals(DbConnectionPoolIdentity.GetCurrent()))
+                        if (UsingIntegrateSecurity && !_identity!.Equals(DbConnectionPoolIdentity.GetCurrent()))
                         {
                             return;
                         }
@@ -1147,7 +1147,7 @@ namespace System.Data.ProviderBase
             _state = State.ShuttingDown;
 
             // deactivate timer callbacks
-            Timer t = _cleanupTimer;
+            Timer? t = _cleanupTimer;
             _cleanupTimer = null;
             if (null != t)
             {
@@ -1156,15 +1156,15 @@ namespace System.Data.ProviderBase
         }
 
 
-        private DbConnectionInternal UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection = null)
+        private DbConnectionInternal? UserCreateRequest(DbConnection owningObject, DbConnectionOptions? userOptions, DbConnectionInternal? oldConnection = null)
         {
             // called by user when they were not able to obtain a free object but
             // instead obtained creation mutex
 
-            DbConnectionInternal obj = null;
+            DbConnectionInternal? obj = null;
             if (ErrorOccurred)
             {
-                throw TryCloneCachedException();
+                throw TryCloneCachedException()!;
             }
             else
             {

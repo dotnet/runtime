@@ -141,6 +141,7 @@ namespace System.Security.Cryptography.Xml.Tests
             {
                 aes.Mode = CipherMode.CBC;
                 aes.KeySize = 256;
+                // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
                 aes.Key = Convert.FromBase64String("o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
                 aes.Padding = PaddingMode.Zeros;
 
@@ -173,6 +174,7 @@ namespace System.Security.Cryptography.Xml.Tests
                         aes.Mode = CipherMode.CBC;
                         aes.KeySize = 256;
                         aes.IV = Convert.FromBase64String("pBUM5P03rZ6AE4ZK5EyBrw==");
+                        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
                         aes.Key = Convert.FromBase64String("o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
                         aes.Padding = PaddingMode.Zeros;
 
@@ -203,8 +205,8 @@ namespace System.Security.Cryptography.Xml.Tests
                     {
                         aes.Mode = CipherMode.CBC;
                         aes.KeySize = 256;
-                        aes.Key = Convert.FromBase64String(
-                            "o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
+                        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Unit test key.")]
+                        aes.Key = Convert.FromBase64String("o/ilseZu+keLBBWGGPlUHweqxIPc4gzZEFWr2nBt640=");
                         aes.Padding = PaddingMode.Zeros;
 
                         XmlDocument doc = new XmlDocument();

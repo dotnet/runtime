@@ -23,7 +23,7 @@ struct testCase
     int radix;
 };
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime__itow_test1_paltest_itow_test1, "c_runtime/_itow/test1/paltest_itow_test1")
 {
 
     char16_t result[20];

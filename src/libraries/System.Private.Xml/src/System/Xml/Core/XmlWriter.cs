@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#nullable enable
 using System;
 using System.IO;
 using System.Text;
@@ -100,7 +99,7 @@ namespace System.Xml
         public abstract void WriteFullEndElement();
 
         // Writes out the attribute with the specified LocalName, value, and NamespaceURI.
-        public void WriteAttributeString(string localName, string? ns, string value)
+        public void WriteAttributeString(string localName, string? ns, string? value)
         {
             WriteStartAttribute(null, localName, ns);
             WriteString(value);
@@ -108,7 +107,7 @@ namespace System.Xml
         }
 
         // Writes out the attribute with the specified LocalName and value.
-        public void WriteAttributeString(string localName, string value)
+        public void WriteAttributeString(string localName, string? value)
         {
             WriteStartAttribute(null, localName, (string?)null);
             WriteString(value);
@@ -490,7 +489,7 @@ namespace System.Xml
                         {
                             do
                             {
-                                IXmlSchemaInfo schemaInfo = navigator.SchemaInfo;
+                                IXmlSchemaInfo? schemaInfo = navigator.SchemaInfo;
                                 if (defattr || (schemaInfo == null || !schemaInfo.IsDefault))
                                 {
                                     WriteStartAttribute(navigator.Prefix, navigator.LocalName, navigator.NamespaceURI);

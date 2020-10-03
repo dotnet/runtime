@@ -173,7 +173,7 @@ namespace System.Collections.Concurrent
                     int currentTail = Volatile.Read(ref _headAndTail.Tail);
                     if (currentTail - currentHead <= 0 || (frozen && (currentTail - FreezeOffset - currentHead <= 0)))
                     {
-                        item = default!;
+                        item = default;
                         return false;
                     }
 
@@ -234,7 +234,7 @@ namespace System.Collections.Concurrent
                     int currentTail = Volatile.Read(ref _headAndTail.Tail);
                     if (currentTail - currentHead <= 0 || (frozen && (currentTail - FreezeOffset - currentHead <= 0)))
                     {
-                        result = default!;
+                        result = default;
                         return false;
                     }
 
@@ -311,7 +311,7 @@ namespace System.Collections.Concurrent
         internal struct Slot
         {
             /// <summary>The item.</summary>
-            [AllowNull, MaybeNull] public T Item; // SOS's ThreadPool command depends on this being at the beginning of the struct when T is a reference type
+            public T? Item; // SOS's ThreadPool command depends on this being at the beginning of the struct when T is a reference type
             /// <summary>The sequence number for this slot, used to synchronize between enqueuers and dequeuers.</summary>
             public int SequenceNumber;
         }

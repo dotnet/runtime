@@ -120,8 +120,7 @@ namespace System.Collections.Immutable
         /// The first element that matches the conditions defined by the specified predicate,
         /// if found; otherwise, the default value for type <typeparamref name="T"/>.
         /// </returns>
-        [return: MaybeNull]
-        T Find(Predicate<T> match);
+        T? Find(Predicate<T> match);
 
         /// <summary>
         /// Retrieves all the elements that match the conditions defined by the specified
@@ -194,8 +193,7 @@ namespace System.Collections.Immutable
         /// The last element that matches the conditions defined by the specified predicate,
         /// if found; otherwise, the default value for type <typeparamref name="T"/>.
         /// </returns>
-        [return: MaybeNull]
-        T FindLast(Predicate<T> match);
+        T? FindLast(Predicate<T> match);
 
         /// <summary>
         /// Searches for an element that matches the conditions defined by the specified

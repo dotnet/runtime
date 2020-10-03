@@ -32,14 +32,12 @@ set(MDCOMPILER_HEADERS
   ../inc/metamodelrw.h
   ../inc/rwutil.h
   ../inc/stgio.h
-  cacheload.h
   classfactory.h
   custattr.h
   disp.h
   filtermanager.h
   importhelper.h
   mdperf.h
-  mdsighelper.h
   mdutil.h
   regmeta.h
 )
@@ -68,9 +66,11 @@ add_library_clr(mdcompiler_dac ${MDCOMPILER_SOURCES})
 set_target_properties(mdcompiler_dac PROPERTIES DAC_COMPONENT TRUE)
 target_precompile_header(TARGET mdcompiler_dac HEADER stdafx.h)
 
-add_library_clr(mdcompiler_wks OBJECT ${MDCOMPILER_WKS_SOURCES})
-target_compile_definitions(mdcompiler_wks PRIVATE FEATURE_METADATA_EMIT_ALL)
-target_precompile_header(TARGET mdcompiler_wks HEADER stdafx.h)
+add_library_clr(mdcompiler_wks_obj OBJECT ${MDCOMPILER_WKS_SOURCES})
+target_compile_definitions(mdcompiler_wks_obj PRIVATE FEATURE_METADATA_EMIT_ALL)
+target_precompile_header(TARGET mdcompiler_wks_obj HEADER stdafx.h)
+add_library(mdcompiler_wks INTERFACE)
+target_sources(mdcompiler_wks INTERFACE $<TARGET_OBJECTS:mdcompiler_wks_obj>)
 
 add_library_clr(mdcompiler-dbi ${MDCOMPILER_SOURCES})
 set_target_properties(mdcompiler-dbi PROPERTIES DBI_COMPONENT TRUE)

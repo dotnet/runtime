@@ -19,7 +19,6 @@
 #endif
 
 LWM(AddressMap, DWORDLONG, CompileResult::Agnostic_AddressMap)
-LWM(AllocMethodBlockCounts, DWORD, CompileResult::Agnostic_AllocMethodBlockCounts)
 LWM(AllocGCInfo, DWORD, CompileResult::Agnostic_AllocGCInfo)
 LWM(AllocMem, DWORD, CompileResult::Agnostic_AllocMemDetails)
 DENSELWM(AllocUnwindInfo, CompileResult::Agnostic_AllocUnwindInfo)
@@ -30,7 +29,8 @@ LWM(CompileMethod, DWORD, CompileResult::Agnostic_CompileMethodResults)
 DENSELWM(MessageLog, DWORD)
 DENSELWM(MethodMustBeLoadedBeforeCodeIsRun, DWORDLONG)
 DENSELWM(ProcessName, DWORD)
-LWM(RecordCallSite, DWORD, CompileResult::Agnostic_RecordCallSite)
+LWM(RecordCallSiteWithSignature, DWORD, CompileResult::Agnostic_RecordCallSite)
+LWM(RecordCallSiteWithoutSignature, DWORD, DWORDLONG)
 DENSELWM(RecordRelocation, CompileResult::Agnostic_RecordRelocation)
 DENSELWM(ReportFatalError, DWORD)
 DENSELWM(ReportInliningDecision, CompileResult::Agnostic_ReportInliningDecision)

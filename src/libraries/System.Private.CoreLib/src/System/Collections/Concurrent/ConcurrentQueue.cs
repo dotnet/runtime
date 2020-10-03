@@ -540,7 +540,7 @@ namespace System.Collections.Concurrent
             return segment._slots[i].Item!;
         }
 
-        private IEnumerator<T> Enumerate(ConcurrentQueueSegment<T> head, int headHead, ConcurrentQueueSegment<T> tail, int tailTail)
+        private static IEnumerator<T> Enumerate(ConcurrentQueueSegment<T> head, int headHead, ConcurrentQueueSegment<T> tail, int tailTail)
         {
             Debug.Assert(head._preservedForObservation);
             Debug.Assert(head._frozenForEnqueues);
@@ -689,7 +689,7 @@ namespace System.Collections.Concurrent
                 // check and this check, another item could have arrived).
                 if (head._nextSegment == null)
                 {
-                    item = default!;
+                    item = default;
                     return false;
                 }
 
@@ -783,7 +783,7 @@ namespace System.Collections.Concurrent
                 // and we'll traverse to that segment.
             }
 
-            result = default!;
+            result = default;
             return false;
         }
 

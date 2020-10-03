@@ -117,21 +117,48 @@ namespace System
             return GetFolderPathCore(folder, option);
         }
 
-        private static int s_processId;
-        private static volatile bool s_haveProcessId;
+        private static volatile int s_processId;
 
         /// <summary>Gets the unique identifier for the current process.</summary>
         public static int ProcessId
         {
             get
             {
-                if (!s_haveProcessId)
+                int processId = s_processId;
+                if (processId == 0)
                 {
-                    s_processId = GetCurrentProcessId();
-                    s_haveProcessId = true;
+                    Interlocked.CompareExchange(ref s_processId, GetProcessId(), 0);
+                    processId = s_processId;
+                    // Assume that process Id zero is invalid for user processes. It holds for all mainstream operating systems.
+                    Debug.Assert(processId != 0);
                 }
+                return processId;
+            }
+        }
 
-                return s_processId;
+        private static volatile string? s_processPath;
+
+        /// <summary>
+        /// Returns the path of the executable that started the currently executing process. Returns null when the path is not available.
+        /// </summary>
+        /// <returns>Path of the executable that started the currently executing process</returns>
+        /// <remarks>
+        /// If the executable is renamed or deleted before this property is first accessed, the return value is undefined and depends on the operating system.
+        /// </remarks>
+        public static string? ProcessPath
+        {
+            get
+            {
+                string? processPath = s_processPath;
+                if (processPath == null)
+                {
+                    // The value is cached both as a performance optimization and to ensure that the API always returns
+                    // the same path in a given process.
+                    Interlocked.CompareExchange(ref s_processPath, GetProcessPath() ?? "", null);
+                    processPath = s_processPath;
+                    Debug.Assert(processPath != null);
+                }
+                return (processPath.Length != 0) ? processPath : null;
             }
         }
 
@@ -141,17 +168,20 @@ namespace System
 
         public static string NewLine => NewLineConst;
 
-        private static OperatingSystem? s_osVersion;
+        private static volatile OperatingSystem? s_osVersion;
 
         public static OperatingSystem OSVersion
         {
             get
             {
-                if (s_osVersion == null)
+                OperatingSystem? osVersion = s_osVersion;
+                if (osVersion == null)
                 {
                     Interlocked.CompareExchange(ref s_osVersion, GetOSVersion(), null);
+                    osVersion = s_osVersion;
+                    Debug.Assert(osVersion != null);
                 }
-                return s_osVersion;
+                return osVersion;
             }
         }
 

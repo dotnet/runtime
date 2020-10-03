@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
 using System.Security.Authentication.ExtendedProtection;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,10 +22,10 @@ namespace System.Net
         private readonly ServiceNameStore _defaultServiceNames;
         private readonly HttpListenerTimeoutManager _timeoutManager;
         private ExtendedProtectionPolicy _extendedProtectionPolicy;
-        private AuthenticationSchemeSelector _authenticationDelegate;
+        private AuthenticationSchemeSelector? _authenticationDelegate;
         private AuthenticationSchemes _authenticationScheme = AuthenticationSchemes.Anonymous;
-        private ExtendedProtectionSelector _extendedProtectionSelectorDelegate;
-        private string _realm;
+        private ExtendedProtectionSelector? _extendedProtectionSelectorDelegate;
+        private string? _realm;
 
         internal ICollection PrefixCollection => _uriPrefixes.Keys;
 
@@ -41,7 +43,7 @@ namespace System.Net
             _extendedProtectionPolicy = new ExtendedProtectionPolicy(PolicyEnforcement.Never);
         }
 
-        public AuthenticationSchemeSelector AuthenticationSchemeSelectorDelegate
+        public AuthenticationSchemeSelector? AuthenticationSchemeSelectorDelegate
         {
             get => _authenticationDelegate;
             set
@@ -51,7 +53,8 @@ namespace System.Net
             }
         }
 
-        public ExtendedProtectionSelector ExtendedProtectionSelectorDelegate
+        [DisallowNull]
+        public ExtendedProtectionSelector? ExtendedProtectionSelectorDelegate
         {
             get => _extendedProtectionSelectorDelegate;
             set
@@ -79,6 +82,7 @@ namespace System.Net
         public ExtendedProtectionPolicy ExtendedProtectionPolicy
         {
             get => _extendedProtectionPolicy;
+            [UnsupportedOSPlatform("browser")]
             set
             {
                 CheckDisposed();
@@ -108,7 +112,7 @@ namespace System.Net
 
         internal void AddPrefix(string uriPrefix)
         {
-            string registeredPrefix = null;
+            string? registeredPrefix = null;
             try
             {
                 if (uriPrefix == null)
@@ -207,7 +211,7 @@ namespace System.Net
 
                 if (_state == State.Started)
                 {
-                    RemovePrefixCore((string)_uriPrefixes[uriPrefix]);
+                    RemovePrefixCore((string)_uriPrefixes[uriPrefix]!);
                 }
 
                 _uriPrefixes.Remove(uriPrefix);
@@ -243,7 +247,7 @@ namespace System.Net
             }
         }
 
-        public string Realm
+        public string? Realm
         {
             get => _realm;
             set
@@ -268,8 +272,8 @@ namespace System.Net
         public Task<HttpListenerContext> GetContextAsync()
         {
             return Task.Factory.FromAsync(
-                (callback, state) => ((HttpListener)state).BeginGetContext(callback, state),
-                iar => ((HttpListener)iar.AsyncState).EndGetContext(iar),
+                (callback, state) => ((HttpListener)state!).BeginGetContext(callback, state),
+                iar => ((HttpListener)iar!.AsyncState!).EndGetContext(iar),
                 this);
         }
 

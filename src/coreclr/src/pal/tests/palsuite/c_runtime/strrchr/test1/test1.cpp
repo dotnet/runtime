@@ -18,7 +18,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_strrchr_test1_paltest_strrchr_test1, "c_runtime/strrchr/test1/paltest_strrchr_test1")
 {
     char *str = "foo bar baz";
     char *ptr;

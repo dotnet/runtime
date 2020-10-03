@@ -8,7 +8,7 @@
  /* File created by MIDL compiler version 8.01.0622 */
 /* at Mon Jan 18 19:14:07 2038
  */
-/* Compiler settings for E:/repos/runtime2/src/coreclr/src/inc/cordebug.idl:
+/* Compiler settings for runtime/src/coreclr/src/inc/cordebug.idl:
     Oicf, W1, Zp8, env=Win32 (32b run), target_arch=X86 8.01.0622
     protocol : dce , ms_ext, c_ext, robust
     error checks: allocation ref bounds_check enum stub_data
@@ -287,6 +287,9 @@ MIDL_DEFINE_GUID(IID, IID_ICorDebugNativeFrame2,0x35389FF1,0x3684,0x4c55,0xA2,0x
 
 
 MIDL_DEFINE_GUID(IID, IID_ICorDebugModule3,0x86F012BF,0xFF15,0x4372,0xBD,0x30,0xB6,0xF1,0x1C,0xAA,0xE1,0xDD);
+
+
+MIDL_DEFINE_GUID(IID, IID_ICorDebugModule4,0xFF8B8EAF,0x25CD,0x4316,0x88,0x59,0x84,0x41,0x6D,0xE4,0x40,0x2E);
 
 
 MIDL_DEFINE_GUID(IID, IID_ICorDebugRuntimeUnwindableFrame,0x879CAC0A,0x4A53,0x4668,0xB8,0xE3,0xCB,0x84,0x73,0xCB,0x18,0x7F);

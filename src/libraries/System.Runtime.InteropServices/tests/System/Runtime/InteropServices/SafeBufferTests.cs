@@ -77,6 +77,16 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        public void ReadWriteSpan_EmptySpan_Passes()
+        {
+            var buffer = new SubBuffer(true);
+            buffer.Initialize(0);
+
+            buffer.ReadSpan<int>(0, Span<int>.Empty);
+            buffer.WriteSpan<int>(0, ReadOnlySpan<int>.Empty);
+        }
+
+        [Fact]
         public void ReadArray_NegativeIndex_ThrowsArgumentOutOfRangeException()
         {
             var wrapper = new SubBuffer(true);
@@ -121,6 +131,68 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Throws<InvalidOperationException>(() => wrapper.ByteLength);
         }
 
+        [Fact]
+        public void ReadWrite_RoundTrip()
+        {
+            using var buffer = new HGlobalBuffer(100);
+
+            int intValue = 1234;
+            buffer.Write<int>(0, intValue);
+            Assert.Equal(intValue, buffer.Read<int>(0));
+
+            double doubleValue = 123.45;
+            buffer.Write<double>(10, doubleValue);
+            Assert.Equal(doubleValue, buffer.Read<double>(10));
+
+            TestStruct structValue = new TestStruct
+            {
+                I = 1234,
+                L = 987654321,
+                D = double.MaxValue
+            };
+            buffer.Write<TestStruct>(0, structValue);
+            Assert.Equal(structValue, buffer.Read<TestStruct>(0));
+        }
+
+        [Fact]
+        public void ReadWriteSpanArray_RoundTrip()
+        {
+            using var buffer = new HGlobalBuffer(200);
+
+            int[] intArray = new int[] { 11, 22, 33, 44 };
+            TestArray(intArray);
+            TestSpan<int>(intArray);
+
+            TestStruct[] structArray = new TestStruct[]
+            {
+                new TestStruct { I = 11, L = 22, D = 33 },
+                new TestStruct { I = 44, L = 55, D = 66 },
+                new TestStruct { I = 77, L = 88, D = 99 },
+                new TestStruct { I = 100, L = 200, D = 300 },
+            };
+            TestArray(structArray);
+            TestSpan<TestStruct>(structArray);
+
+            void TestArray<T>(T[] data)
+                where T : struct
+            {
+                T[] destination = new T[data.Length];
+                buffer.WriteArray(0, data, 0, data.Length);
+                buffer.ReadArray(0, destination, 0, data.Length);
+                Assert.Equal(data, destination);
+            }
+
+            void TestSpan<T>(ReadOnlySpan<T> data)
+                where T : unmanaged
+            {
+                Span<T> destination = stackalloc T[data.Length];
+                buffer.WriteSpan(0, data);
+                buffer.ReadSpan(0, destination);
+                for (int i = 0; i < data.Length; i++)
+                    Assert.Equal(data[i], destination[i]);
+            }
+        }
+
         public class SubBuffer : SafeBuffer
         {
             public SubBuffer(bool ownsHandle) : base(ownsHandle) { }
@@ -129,6 +201,28 @@ namespace System.Runtime.InteropServices.Tests
             {
                 throw new NotImplementedException();
             }
+        }
+
+        public class HGlobalBuffer : SafeBuffer
+        {
+            public HGlobalBuffer(int length) : base(true)
+            {
+                SetHandle(Marshal.AllocHGlobal(length));
+                Initialize((ulong)length);
+            }
+
+            protected override bool ReleaseHandle()
+            {
+                Marshal.FreeHGlobal(handle);
+                return true;
+            }
+        }
+
+        public struct TestStruct
+        {
+            public int I;
+            public long L;
+            public double D;
         }
     }
 }

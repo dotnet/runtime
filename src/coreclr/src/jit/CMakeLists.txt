@@ -10,9 +10,55 @@ endif()
 
 add_compile_options($<$<CXX_COMPILER_ID:MSVC>:-W4>)
 
+function(create_standalone_jit)
+
+  set(oneValueArgs TARGET OS ARCH)
+  set(multiValueArgs ADDITIONAL_DESTINATIONS)
+  set(options NOALTJIT)
+  cmake_parse_arguments(TARGETDETAILS "${options}" "${oneValueArgs}" "${multiValueArgs}" ${ARGN})
+
+  set(JIT_ARCH_LINK_LIBRARIES gcinfo_${TARGETDETAILS_OS}_${TARGETDETAILS_ARCH})
+
+  if(TARGETDETAILS_ARCH STREQUAL "x64")
+    set(JIT_ARCH_SOURCES ${JIT_AMD64_SOURCES})
+  elseif(TARGETDETAILS_ARCH STREQUAL "arm")
+    set(JIT_ARCH_SOURCES ${JIT_ARM_SOURCES})
+  elseif(TARGETDETAILS_ARCH STREQUAL "x86")
+    set(JIT_ARCH_SOURCES ${JIT_I386_SOURCES})
+  elseif(TARGETDETAILS_ARCH STREQUAL "arm64")
+    set(JIT_ARCH_SOURCES ${JIT_ARM64_SOURCES})
+  else()
+    clr_unknown_arch()
+  endif()
+
+  if (TARGETDETAILS_ADDITIONAL_DESTINATIONS STREQUAL "")
+    add_jit(${TARGETDETAILS_TARGET})
+  else()
+    add_jit(${TARGETDETAILS_TARGET} ADDITIONAL_DESTINATIONS "${TARGETDETAILS_ADDITIONAL_DESTINATIONS}")
+  endif()
+
+  set_target_definitions_to_custom_os_and_arch(${ARGN})
+  set_target_properties(${TARGETDETAILS_TARGET} PROPERTIES IGNORE_FEATURE_MERGE_JIT_AND_ENGINE TRUE)
+
+  if (NOT TARGETDETAILS_NOALTJIT)
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE ALT_JIT)
+  endif (NOT TARGETDETAILS_NOALTJIT)
+
+  target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_NO_HOST)
+  target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE SELF_NO_HOST)
+  if(FEATURE_READYTORUN)
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_READYTORUN_COMPILER)
+  endif(FEATURE_READYTORUN)
+
+  if ((TARGETDETAILS_ARCH STREQUAL "x64") OR (TARGETDETAILS_ARCH STREQUAL "arm64") OR ((TARGETDETAILS_ARCH STREQUAL "x86") AND NOT (TARGETDETAILS_OS STREQUAL "unix")))
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_SIMD)
+    target_compile_definitions(${TARGETDETAILS_TARGET} PRIVATE FEATURE_HW_INTRINSICS)
+  endif ()
+endfunction()
+
 if (CLR_CMAKE_TARGET_ARCH_AMD64 OR CLR_CMAKE_TARGET_ARCH_ARM64 OR (CLR_CMAKE_TARGET_ARCH_I386 AND NOT CLR_CMAKE_HOST_UNIX))
-  add_definitions(-DFEATURE_SIMD)
-  add_definitions(-DFEATURE_HW_INTRINSICS)
+  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_SIMD>)
+  add_compile_definitions($<$<NOT:$<BOOL:$<TARGET_PROPERTY:IGNORE_DEFAULT_TARGET_ARCH>>>:FEATURE_HW_INTRINSICS>)
 endif ()
 
 # JIT_BUILD disables certain PAL_TRY debugging features
@@ -54,6 +100,7 @@ set( JIT_SOURCES
   instr.cpp
   jitconfig.cpp
   jiteh.cpp
+  jithashtable.cpp
   jittelemetry.cpp
   lclmorph.cpp
   lclvars.cpp
@@ -365,11 +412,8 @@ else()
 endif(CLR_CMAKE_HOST_UNIX)
 
 # Shared function for generating JIT
-# optional arguments: ADDITIONAL_DESTINATION path
+# optional arguments: ADDITIONAL_DESTINATIONS path
 function(add_jit jitName)
-    if(CLR_CMAKE_TARGET_WIN32)
-        add_definitions(-DFX_VER_INTERNALNAME_STR=${jitName}.dll)
-    endif(CLR_CMAKE_TARGET_WIN32)
 
     set_source_files_properties(${JIT_EXPORTS_FILE} PROPERTIES GENERATED TRUE)
 
@@ -380,6 +424,10 @@ function(add_jit jitName)
         ${JIT_DEF_FILE}
         ${JIT_DLL_MAIN_FILE}
     )
+
+    if(CLR_CMAKE_TARGET_WIN32)
+        target_compile_definitions(${jitName} PRIVATE FX_VER_INTERNALNAME_STR=${jitName}.dll)
+    endif(CLR_CMAKE_TARGET_WIN32)
 
     target_precompile_header(TARGET ${jitName} HEADER jitpch.h ADDITIONAL_INCLUDE_DIRECTORIES ${JIT_SOURCE_DIR})
 
@@ -406,22 +454,37 @@ endif (FEATURE_MERGE_JIT_AND_ENGINE)
 # Creates a static library "clrjit_static" to link into the VM.
 add_subdirectory(static)
 
-add_subdirectory(standalone)
+if (CLR_CMAKE_TARGET_UNIX)
+set(TARGET_OS_NAME unix)
+else()
+set(TARGET_OS_NAME win)
+endif()
 
-if (CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64)
-    # On x86, build RyuJIT/ARM32 cross-compiling altjit.
-    # On amd64, build RyuJIT/ARM64 cross-compiling altjit.
-    add_subdirectory(protononjit)
-endif ()
+create_standalone_jit(TARGET clrjit OS ${TARGET_OS_NAME} ARCH ${ARCH_TARGET_NAME} NOALTJIT ADDITIONAL_DESTINATIONS sharedFramework)
+
+# Enable profile guided optimization
+add_pgo(clrjit)
+
 
 if (CLR_CMAKE_HOST_ARCH_I386)
      # On x86, build RyuJIT/ARM32 cross-compiling altjit for ARM_SOFTFP (armel).
-    add_subdirectory(armelnonjit)
+  create_standalone_jit(TARGET clrjit_unix_armel_${ARCH_HOST_NAME} OS unix ARCH arm)
+  target_compile_definitions(clrjit_unix_armel_${ARCH_HOST_NAME} PRIVATE ARM_SOFTFP)
 endif ()
 
-if ((CLR_CMAKE_HOST_ARCH_I386 OR CLR_CMAKE_HOST_ARCH_AMD64) AND CLR_CMAKE_TARGET_WIN32)
-    # On Windows, build altjit that targets the Linux ABI:
-    #   On x86, build Linux/x86 altjit. This enables UNIX_X86_ABI.
-    #   On amd64, build Linux/AMD64 altjit. This enables UNIX_AMD64_ABI.
-    add_subdirectory(linuxnonjit)
-endif ()
+if (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)
+  if (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+    create_standalone_jit(TARGET clrjit_unix_arm64_${ARCH_HOST_NAME} OS unix ARCH arm64)
+    create_standalone_jit(TARGET clrjit_unix_x64_${ARCH_HOST_NAME} OS unix ARCH x64)
+    create_standalone_jit(TARGET clrjit_win_arm64_${ARCH_HOST_NAME} OS win ARCH arm64)
+    create_standalone_jit(TARGET clrjit_win_x64_${ARCH_HOST_NAME} OS win ARCH x64)
+  endif (CLR_CMAKE_TARGET_ARCH_ARM64 OR CLR_CMAKE_TARGET_ARCH_AMD64)
+
+  create_standalone_jit(TARGET clrjit_unix_arm_${ARCH_HOST_NAME} OS unix ARCH arm)
+  create_standalone_jit(TARGET clrjit_win_arm_${ARCH_HOST_NAME} OS win ARCH arm)
+  create_standalone_jit(TARGET clrjit_win_x86_${ARCH_HOST_NAME} OS win ARCH x86)
+else()
+  if (CLR_CMAKE_TARGET_UNIX)
+    create_standalone_jit(TARGET clrjit_unix_${ARCH_TARGET_NAME}_${ARCH_HOST_NAME} OS unix ARCH ${ARCH_TARGET_NAME})
+  endif(CLR_CMAKE_TARGET_UNIX)
+endif (CLR_CMAKE_BUILD_SUBSET_ALLJITS AND NOT CLR_CROSS_COMPONENTS_BUILD)

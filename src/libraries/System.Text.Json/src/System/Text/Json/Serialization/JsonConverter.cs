@@ -45,6 +45,16 @@ namespace System.Text.Json.Serialization
         internal bool IsValueType { get; set; }
 
         /// <summary>
+        /// Whether the converter is built-in.
+        /// </summary>
+        internal bool IsInternalConverter { get; set; }
+
+        /// <summary>
+        /// Whether the converter is built-in and handles a number type.
+        /// </summary>
+        internal bool IsInternalConverterForNumberType;
+
+        /// <summary>
         /// Loosely-typed ReadCore() that forwards to strongly-typed ReadCore().
         /// </summary>
         internal abstract object? ReadCoreAsObject(ref Utf8JsonReader reader, JsonSerializerOptions options, ref ReadStack state);
@@ -76,7 +86,7 @@ namespace System.Text.Json.Serialization
         internal abstract void WriteWithQuotesAsObject(Utf8JsonWriter writer, object value, JsonSerializerOptions options, ref WriteStack state);
 
         // Whether a type (ClassType.Object) is deserialized using a parameterized constructor.
-        internal virtual bool ConstructorIsParameterized => false;
+        internal virtual bool ConstructorIsParameterized { get; }
 
         internal ConstructorInfo? ConstructorInfo { get; set; }
 

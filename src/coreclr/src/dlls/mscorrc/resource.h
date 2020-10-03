@@ -43,6 +43,7 @@
 #define IDS_EE_COM_UNSUPPORTED_SIG              0x170d
 #define IDS_EE_NOSYNCHRONIZED                   0x170f
 #define IDS_EE_NDIRECT_BADNATL_THISCALL         0x1710
+#define IDS_EE_MULTIPLE_CALLCONV_UNSUPPORTED    0x1711
 
 #define IDS_EE_LOAD_BAD_MAIN_SIG                0x1712
 #define IDS_EE_COM_UNSUPPORTED_TYPE             0x1713

@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -15,6 +16,7 @@ namespace System.Security.Cryptography
             return new RandomNumberGeneratorImplementation();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public static RandomNumberGenerator? Create(string rngName)
         {
             return (RandomNumberGenerator?)CryptoConfig.CreateFromName(rngName);

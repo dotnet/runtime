@@ -55,6 +55,12 @@
 /* Host Platform is Darwin */
 #cmakedefine HOST_DARWIN 1
 
+/* Host Platform is iOS */
+#cmakedefine HOST_IOS 1
+
+/* Host Platform is tvOS */
+#cmakedefine HOST_TVOS 1
+
 /* Use classic Windows API support */
 #cmakedefine HAVE_CLASSIC_WINAPI_SUPPORT 1
 
@@ -444,6 +450,9 @@
 /* Disable Threads */
 #cmakedefine DISABLE_THREADS 1
 
+/* Disable config directories */
+#cmakedefine DISABLE_CFGDIR_CONFIG 1
+
 /* Extension module enabled */
 #cmakedefine ENABLE_EXTENSION_MODULE 1
 
@@ -476,6 +485,9 @@
 
 /* CLOCK_REALTIME */
 #cmakedefine HAVE_CLOCK_REALTIME 1
+
+/* clockid_t */
+#cmakedefine HAVE_CLOCKID_T 1
 
 /* mach_absolute_time */
 #cmakedefine HAVE_MACH_ABSOLUTE_TIME 1
@@ -1366,7 +1378,7 @@
 #cmakedefine HAVE_EXECVP 1
 
 /* Name of /dev/random */
-#cmakedefine NAME_DEV_RANDOM 1
+#cmakedefine NAME_DEV_RANDOM "@NAME_DEV_RANDOM@"
 
 /* Have /dev/random */
 #cmakedefine HAVE_CRYPT_RNG 1
@@ -1381,7 +1393,7 @@
 #cmakedefine HAVE_SYS_SDT_H 1
 
 /* AOT cross offsets file */
-#cmakedefine MONO_OFFSETS_FILE 1
+#cmakedefine MONO_OFFSETS_FILE "@MONO_OFFSETS_FILE@"
 
 /* Enable the LLVM back end */
 #cmakedefine ENABLE_LLVM 1
@@ -1671,3 +1683,8 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #cmakedefine HAVE_DLFCN_H 1
 
+/* Disable crash reporting subsystem */
+#cmakedefine DISABLE_CRASH_REPORTING 1
+
+/* Enable lazy gc thread creation by the embedding host */
+#cmakedefine LAZY_GC_THREAD_CREATION 1

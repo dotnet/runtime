@@ -98,10 +98,12 @@ bool parse_arguments(
         init.additional_deps_serialized,
         init.deps_file,
         init.probe_paths,
+        /* init_from_file_system */ false,
         args);
 }
 
 bool set_root_from_app(const pal::string_t& managed_application_path,
+                       bool file_system_lookup_only,
                        arguments_t& args)
 {
     args.managed_application = managed_application_path;
@@ -113,23 +115,29 @@ bool set_root_from_app(const pal::string_t& managed_application_path,
         return true;
     }
 
-    if (bundle::info_t::is_single_file_bundle())
+    if (!file_system_lookup_only && bundle::info_t::is_single_file_bundle())
     {
         const bundle::runner_t* app = bundle::runner_t::app();
         args.app_root = app->base_path();
 
         // Check for the main app within the bundle.
         // locate() sets args.managed_application to the full path of the app extracted to disk.
-        pal::string_t managed_application_name = get_filename(managed_application_path);		
+        pal::string_t managed_application_name = get_filename(managed_application_path);
         if (app->locate(managed_application_name, args.managed_application))
         {
             return true;
         }
 
         trace::info(_X("Managed application [%s] not found in single-file bundle"), managed_application_name.c_str());
-		
+
+        // The locate call above will clear the string when it returns false so reinitialize to the specified
+        // path before continuing.
+        args.managed_application = managed_application_path;
+
         // If the main assembly is not found in the bundle, continue checking on disk
         // for very unlikely case where the main app.dll was itself excluded from the app bundle.
+        // Note that unlike non-single-file we don't want to set the app_root to the location of the app.dll
+        // it needs to stay the location of the single-file bundle.
         return pal::realpath(&args.managed_application);
     }
 
@@ -150,13 +158,15 @@ bool init_arguments(
     const pal::string_t& additional_deps_serialized,
     const pal::string_t& deps_file,
     const std::vector<pal::string_t>& probe_paths,
+    bool init_from_file_system,
     arguments_t& args)
 {
     args.host_mode = host_mode;
     args.host_path = host_info.host_path;
     args.additional_deps_serialized = additional_deps_serialized;
 
-    if (!set_root_from_app(managed_application_path, args))
+    // Components are never loaded from the bundle, the managed_application_path always means a file system path for a component case.
+    if (!set_root_from_app(managed_application_path, /* file_system_lookup_only */ init_from_file_system, args))
     {
         trace::error(_X("Failed to locate managed application [%s]"), args.managed_application.c_str());
         return false;

@@ -302,7 +302,7 @@ namespace System.Net.Tests
         {
             using (HttpClient client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
 
                 HttpListenerContext serverContext = await _listener.GetContextAsync();
                 using (HttpListenerResponse response = serverContext.Response)
@@ -330,7 +330,7 @@ namespace System.Net.Tests
         {
             using (HttpClient client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
 
                 HttpListenerContext serverContext = await _listener.GetContextAsync();
                 using (HttpListenerResponse response = serverContext.Response)
@@ -356,7 +356,7 @@ namespace System.Net.Tests
         {
             using (HttpClient client = new HttpClient())
             {
-                Task<string> clientTask = client.GetStringAsync(_factory.ListeningUrl);
+                _ = client.GetStringAsync(_factory.ListeningUrl);
 
                 HttpListenerContext serverContext = await _listener.GetContextAsync();
                 using (HttpListenerResponse response = serverContext.Response)

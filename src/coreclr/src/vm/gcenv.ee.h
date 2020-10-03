@@ -77,7 +77,7 @@ public:
     uint32_t GetTotalNumSizedRefHandles();
 
     bool AnalyzeSurvivorsRequested(int condemnedGeneration);
-    void AnalyzeSurvivorsFinished(int condemnedGeneration);
+    void AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)());
 
     void VerifySyncTableEntry();
 

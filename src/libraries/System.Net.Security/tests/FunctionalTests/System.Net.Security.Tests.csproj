@@ -88,6 +88,7 @@
     <Compile Include="SslStreamSystemDefaultsTest.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+    <Compile Include="TelemetryTest.cs" />
     <Compile Include="LoggingTest.cs" />
     <Compile Include="$(CommonTestPath)System\Diagnostics\Tracing\TestEventListener.cs"
              Link="Common\System\Diagnostics\Tracing\TestEventListener.cs" />
@@ -108,5 +109,6 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
 </Project>

@@ -536,7 +536,7 @@ internal static partial class Interop
         [DllImport(Libraries.HttpApi, SetLastError = true)]
         internal static extern unsafe uint HttpReceiveClientCertificate(SafeHandle requestQueueHandle, ulong connectionId, uint flags, byte* pSslClientCertInfo, uint sslClientCertInfoSize, uint* pBytesReceived, NativeOverlapped* pOverlapped);
 
-        internal static readonly string[] HttpVerbs = new string[]
+        internal static readonly string?[] HttpVerbs = new string?[]
         {
             null,
             "Unknown",
@@ -661,9 +661,9 @@ internal static partial class Interop
             }
         }
 
-        private static unsafe string GetKnownHeader(HTTP_REQUEST* request, long fixup, int headerIndex)
+        private static unsafe string? GetKnownHeader(HTTP_REQUEST* request, long fixup, int headerIndex)
         {
-            string header = null;
+            string? header = null;
 
             HTTP_KNOWN_HEADER* pKnownHeader = (&request->Headers.KnownHeaders) + headerIndex;
 
@@ -683,14 +683,14 @@ internal static partial class Interop
             return header;
         }
 
-        internal static unsafe string GetKnownHeader(HTTP_REQUEST* request, int headerIndex)
+        internal static unsafe string? GetKnownHeader(HTTP_REQUEST* request, int headerIndex)
         {
             return GetKnownHeader(request, 0, headerIndex);
         }
 
-        private static unsafe string GetVerb(HTTP_REQUEST* request, long fixup)
+        private static unsafe string? GetVerb(HTTP_REQUEST* request, long fixup)
         {
-            string verb = null;
+            string? verb = null;
 
             if ((int)request->Verb > (int)HTTP_VERB.HttpVerbUnknown && (int)request->Verb < (int)HTTP_VERB.HttpVerbMaximum)
             {
@@ -704,12 +704,12 @@ internal static partial class Interop
             return verb;
         }
 
-        internal static unsafe string GetVerb(HTTP_REQUEST* request)
+        internal static unsafe string? GetVerb(HTTP_REQUEST* request)
         {
             return GetVerb(request, 0);
         }
 
-        internal static unsafe string GetVerb(IntPtr memoryBlob, IntPtr originalAddress)
+        internal static unsafe string? GetVerb(IntPtr memoryBlob, IntPtr originalAddress)
         {
             return GetVerb((HTTP_REQUEST*)memoryBlob.ToPointer(), (byte*)memoryBlob - (byte*)originalAddress);
         }
@@ -834,17 +834,17 @@ internal static partial class Interop
             return verb;
         }
 
-        internal static unsafe IPEndPoint GetRemoteEndPoint(IntPtr memoryBlob, IntPtr originalAddress)
+        internal static unsafe IPEndPoint? GetRemoteEndPoint(IntPtr memoryBlob, IntPtr originalAddress)
         {
-            SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
-            SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
+            SocketAddress? v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
+            SocketAddress? v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
 
             byte* pMemoryBlob = (byte*)memoryBlob;
             HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
             IntPtr address = request->Address.pRemoteAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pRemoteAddress) : IntPtr.Zero;
             CopyOutAddress(address, ref v4address, ref v6address);
 
-            IPEndPoint endpoint = null;
+            IPEndPoint? endpoint = null;
             if (v4address != null)
             {
                 endpoint = new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort).Create(v4address) as IPEndPoint;
@@ -857,17 +857,17 @@ internal static partial class Interop
             return endpoint;
         }
 
-        internal static unsafe IPEndPoint GetLocalEndPoint(IntPtr memoryBlob, IntPtr originalAddress)
+        internal static unsafe IPEndPoint? GetLocalEndPoint(IntPtr memoryBlob, IntPtr originalAddress)
         {
-            SocketAddress v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
-            SocketAddress v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
+            SocketAddress? v4address = new SocketAddress(AddressFamily.InterNetwork, IPv4AddressSize);
+            SocketAddress? v6address = new SocketAddress(AddressFamily.InterNetworkV6, IPv6AddressSize);
 
             byte* pMemoryBlob = (byte*)memoryBlob;
             HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
             IntPtr address = request->Address.pLocalAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pLocalAddress) : IntPtr.Zero;
             CopyOutAddress(address, ref v4address, ref v6address);
 
-            IPEndPoint endpoint = null;
+            IPEndPoint? endpoint = null;
             if (v4address != null)
             {
                 endpoint = s_any.Create(v4address) as IPEndPoint;
@@ -880,7 +880,7 @@ internal static partial class Interop
             return endpoint;
         }
 
-        private static unsafe void CopyOutAddress(IntPtr address, ref SocketAddress v4address, ref SocketAddress v6address)
+        private static unsafe void CopyOutAddress(IntPtr address, ref SocketAddress? v4address, ref SocketAddress? v6address)
         {
             if (address != IntPtr.Zero)
             {
@@ -890,7 +890,7 @@ internal static partial class Interop
                     v6address = null;
                     for (int index = 2; index < IPv4AddressSize; index++)
                     {
-                        v4address[index] = ((byte*)address)[index];
+                        v4address![index] = ((byte*)address)[index];
                     }
                     return;
                 }
@@ -899,7 +899,7 @@ internal static partial class Interop
                     v4address = null;
                     for (int index = 2; index < IPv6AddressSize; index++)
                     {
-                        v6address[index] = ((byte*)address)[index];
+                        v6address![index] = ((byte*)address)[index];
                     }
                     return;
                 }

@@ -11,19 +11,20 @@ namespace System.Net
     {
         public HttpListener() { }
         public System.Net.AuthenticationSchemes AuthenticationSchemes { get { throw null; } set { } }
-        public System.Net.AuthenticationSchemeSelector AuthenticationSchemeSelectorDelegate { get { throw null; } set { } }
+        public System.Net.AuthenticationSchemeSelector? AuthenticationSchemeSelectorDelegate { get { throw null; } set { } }
         public System.Security.Authentication.ExtendedProtection.ServiceNameCollection DefaultServiceNames { get { throw null; } }
-        public System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy ExtendedProtectionPolicy { get { throw null; } set { } }
-        public System.Net.HttpListener.ExtendedProtectionSelector ExtendedProtectionSelectorDelegate { get { throw null; } set { } }
+        public System.Security.Authentication.ExtendedProtection.ExtendedProtectionPolicy ExtendedProtectionPolicy { get { throw null; } [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")] set { } }
+        [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
+        public System.Net.HttpListener.ExtendedProtectionSelector? ExtendedProtectionSelectorDelegate { get { throw null; } set { } }
         public bool IgnoreWriteExceptions { get { throw null; } set { } }
         public bool IsListening { get { throw null; } }
         public static bool IsSupported { get { throw null; } }
         public System.Net.HttpListenerPrefixCollection Prefixes { get { throw null; } }
-        public string Realm { get { throw null; } set { } }
+        public string? Realm { get { throw null; } set { } }
         public System.Net.HttpListenerTimeoutManager TimeoutManager { get { throw null; } }
         public bool UnsafeConnectionNtlmAuthentication { get { throw null; } set { } }
         public void Abort() { }
-        public System.IAsyncResult BeginGetContext(System.AsyncCallback callback, object state) { throw null; }
+        public System.IAsyncResult BeginGetContext(System.AsyncCallback? callback, object? state) { throw null; }
         public void Close() { }
         public System.Net.HttpListenerContext EndGetContext(System.IAsyncResult asyncResult) { throw null; }
         public System.Net.HttpListenerContext GetContext() { throw null; }
@@ -43,7 +44,7 @@ namespace System.Net
         internal HttpListenerContext() { }
         public System.Net.HttpListenerRequest Request { get { throw null; } }
         public System.Net.HttpListenerResponse Response { get { throw null; } }
-        public System.Security.Principal.IPrincipal User { get { throw null; } }
+        public System.Security.Principal.IPrincipal? User { get { throw null; } }
         public System.Threading.Tasks.Task<System.Net.WebSockets.HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol) { throw null; }
         public System.Threading.Tasks.Task<System.Net.WebSockets.HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, int receiveBufferSize, System.TimeSpan keepAliveInterval) { throw null; }
         public System.Threading.Tasks.Task<System.Net.WebSockets.HttpListenerWebSocketContext> AcceptWebSocketAsync(string subProtocol, int receiveBufferSize, System.TimeSpan keepAliveInterval, System.ArraySegment<byte> internalBuffer) { throw null; }
@@ -75,60 +76,67 @@ namespace System.Net
     public sealed partial class HttpListenerRequest
     {
         internal HttpListenerRequest() { }
-        public string[] AcceptTypes { get { throw null; } }
+        public string[]? AcceptTypes { get { throw null; } }
         public int ClientCertificateError { get { throw null; } }
         public System.Text.Encoding ContentEncoding { get { throw null; } }
         public long ContentLength64 { get { throw null; } }
-        public string ContentType { get { throw null; } }
+        public string? ContentType { get { throw null; } }
         public System.Net.CookieCollection Cookies { get { throw null; } }
         public bool HasEntityBody { get { throw null; } }
         public System.Collections.Specialized.NameValueCollection Headers { get { throw null; } }
         public string HttpMethod { get { throw null; } }
         public System.IO.Stream InputStream { get { throw null; } }
         public bool IsAuthenticated { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool IsLocal { get { throw null; } }
         public bool IsSecureConnection { get { throw null; } }
         public bool IsWebSocketRequest { get { throw null; } }
         public bool KeepAlive { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.IPEndPoint LocalEndPoint { get { throw null; } }
         public System.Version ProtocolVersion { get { throw null; } }
         public System.Collections.Specialized.NameValueCollection QueryString { get { throw null; } }
-        public string RawUrl { get { throw null; } }
+        public string? RawUrl { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.IPEndPoint RemoteEndPoint { get { throw null; } }
         public System.Guid RequestTraceIdentifier { get { throw null; } }
-        public string ServiceName { get { throw null; } }
+        public string? ServiceName { get { throw null; } }
         public System.Net.TransportContext TransportContext { get { throw null; } }
-        public System.Uri Url { get { throw null; } }
-        public System.Uri UrlReferrer { get { throw null; } }
+        public System.Uri? Url { get { throw null; } }
+        public System.Uri? UrlReferrer { get { throw null; } }
         public string UserAgent { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public string UserHostAddress { get { throw null; } }
         public string UserHostName { get { throw null; } }
-        public string[] UserLanguages { get { throw null; } }
-        public System.IAsyncResult BeginGetClientCertificate(System.AsyncCallback requestCallback, object state) { throw null; }
-        public System.Security.Cryptography.X509Certificates.X509Certificate2 EndGetClientCertificate(System.IAsyncResult asyncResult) { throw null; }
-        public System.Security.Cryptography.X509Certificates.X509Certificate2 GetClientCertificate() { throw null; }
-        public System.Threading.Tasks.Task<System.Security.Cryptography.X509Certificates.X509Certificate2> GetClientCertificateAsync() { throw null; }
+        public string[]? UserLanguages { get { throw null; } }
+        public System.IAsyncResult BeginGetClientCertificate(System.AsyncCallback? requestCallback, object? state) { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2? EndGetClientCertificate(System.IAsyncResult asyncResult) { throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2? GetClientCertificate() { throw null; }
+        public System.Threading.Tasks.Task<System.Security.Cryptography.X509Certificates.X509Certificate2?> GetClientCertificateAsync() { throw null; }
     }
     public sealed partial class HttpListenerResponse : System.IDisposable
     {
         internal HttpListenerResponse() { }
-        public System.Text.Encoding ContentEncoding { get { throw null; } set { } }
+        public System.Text.Encoding? ContentEncoding { get { throw null; } set { } }
         public long ContentLength64 { get { throw null; } set { } }
-        public string ContentType { get { throw null; } set { } }
+        public string? ContentType { get { throw null; } set { } }
         public System.Net.CookieCollection Cookies { get { throw null; } set { } }
         public System.Net.WebHeaderCollection Headers { get { throw null; } set { } }
         public bool KeepAlive { get { throw null; } set { } }
         public System.IO.Stream OutputStream { get { throw null; } }
         public System.Version ProtocolVersion { get { throw null; } set { } }
-        public string RedirectLocation { get { throw null; } set { } }
+        public string? RedirectLocation { get { throw null; } set { } }
         public bool SendChunked { get { throw null; } set { } }
         public int StatusCode { get { throw null; } set { } }
         public string StatusDescription { get { throw null; } set { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Abort() { }
         public void AddHeader(string name, string value) { }
         public void AppendCookie(System.Net.Cookie cookie) { }
         public void AppendHeader(string name, string value) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Close() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Close(byte[] responseEntity, bool willBlock) { }
         public void CopyFrom(System.Net.HttpListenerResponse templateResponse) { }
         public void Redirect(string url) { }
@@ -139,11 +147,11 @@ namespace System.Net
     {
         internal HttpListenerTimeoutManager() { }
         public System.TimeSpan DrainEntityBody { get { throw null; } set { } }
-        public System.TimeSpan EntityBody { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
-        public System.TimeSpan HeaderWait { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public System.TimeSpan EntityBody { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public System.TimeSpan HeaderWait { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public System.TimeSpan IdleConnection { get { throw null; } set { } }
-        public long MinSendBytesPerSecond { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
-        public System.TimeSpan RequestQueue { get { throw null; } [System.Runtime.Versioning.MinimumOSPlatformAttribute("windows7.0")] set { } }
+        public long MinSendBytesPerSecond { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public System.TimeSpan RequestQueue { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
     }
 }
 namespace System.Net.WebSockets

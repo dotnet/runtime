@@ -14,7 +14,7 @@
 
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(debug_api_OutputDebugStringA_test1_paltest_outputdebugstringa_test1_helper, "debug_api/OutputDebugStringA/test1/paltest_outputdebugstringa_test1_helper")
 {
     if(0 != (PAL_Initialize(argc, argv)))
     {

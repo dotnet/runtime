@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
+using System.Runtime.Versioning;
 
 namespace System.Threading
 {
@@ -182,6 +183,7 @@ namespace System.Threading
         /// method on the IThreadable interface passed in the constructor. Once the
         /// thread is dead, it cannot be restarted with another call to Start.
         /// </summary>
+        [UnsupportedOSPlatform("browser")]
         public void Start(object? parameter)
         {
             // In the case of a null delegate (second call to start on same thread)
@@ -196,6 +198,7 @@ namespace System.Threading
             Start();
         }
 
+        [UnsupportedOSPlatform("browser")]
         public void Start()
         {
 #if FEATURE_COMINTEROP_APARTMENT_SUPPORT

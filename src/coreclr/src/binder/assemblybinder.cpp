@@ -22,6 +22,7 @@
 #include "utils.hpp"
 #include "variables.hpp"
 #include "stringarraylist.h"
+#include "configuration.h"
 
 #define APP_DOMAIN_LOCKED_UNLOCKED        0x02
 #define APP_DOMAIN_LOCKED_CONTEXT         0x04
@@ -401,13 +402,58 @@ namespace BINDER_SPACE
         sCoreLib.Set(systemDirectory);
         CombinePath(sCoreLib, sCoreLibName, sCoreLib);
 
-        IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLib,
-                                               TRUE /* fIsInGAC */,
-                                               fBindToNativeImage,
-                                               &pSystemAssembly,
-                                               NULL /* szMDAssemblyPath */,
-                                               bundleFileLocation));
+        hr = AssemblyBinder::GetAssembly(sCoreLib,
+                                         TRUE /* fIsInGAC */,
+                                         fBindToNativeImage,
+                                         &pSystemAssembly,
+                                         NULL /* szMDAssemblyPath */,
+                                         bundleFileLocation);
         BinderTracing::PathProbed(sCoreLib, pathSource, hr);
+
+        if (hr == HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND))
+        {
+            // Try to find corelib in the TPA
+            StackSString sCoreLibSimpleName(CoreLibName_W);
+            StackSString sTrustedPlatformAssemblies = Configuration::GetKnobStringValue(W("TRUSTED_PLATFORM_ASSEMBLIES"));
+            sTrustedPlatformAssemblies.Normalize();
+
+            bool found = false;
+            for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
+            {
+                SString fileName;
+                SString simpleName;
+                bool isNativeImage = false;
+                HRESULT pathResult = S_OK;
+                IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ true, fileName, simpleName, isNativeImage));
+                if (pathResult == S_FALSE)
+                {
+                    break;
+                }
+
+                if (simpleName.EqualsCaseInsensitive(sCoreLibSimpleName))
+                {
+                    sCoreLib = fileName;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found)
+            {
+                GO_WITH_HRESULT(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
+            }
+
+            hr = AssemblyBinder::GetAssembly(sCoreLib,
+                TRUE /* fIsInGAC */,
+                fBindToNativeImage,
+                &pSystemAssembly,
+                NULL /* szMDAssemblyPath */,
+                bundleFileLocation);
+
+            BinderTracing::PathProbed(sCoreLib, BinderTracing::PathSource::ApplicationAssemblies, hr);
+        }
+
+        IF_FAIL_GO(hr);
 
         *ppSystemAssembly = pSystemAssembly.Extract();
 
@@ -447,25 +493,25 @@ namespace BINDER_SPACE
         // Satellite assembly's path:
         //   * Absolute path when looking for a file on disk
         //   * Bundle-relative path when looking within the single-file bundle.
-        StackSString sMscorlibSatellite;
+        StackSString sCoreLibSatellite;
 
         BinderTracing::PathSource pathSource = BinderTracing::PathSource::Bundle;
         BundleFileLocation bundleFileLocation = Bundle::ProbeAppBundle(relativePath, /*pathIsBundleRelative */ true);
         if (!bundleFileLocation.IsValid())
         {
-            sMscorlibSatellite.Set(systemDirectory);
+            sCoreLibSatellite.Set(systemDirectory);
             pathSource = BinderTracing::PathSource::ApplicationAssemblies;
         }
-        CombinePath(sMscorlibSatellite, relativePath, sMscorlibSatellite);
+        CombinePath(sCoreLibSatellite, relativePath, sCoreLibSatellite);
 
         ReleaseHolder<Assembly> pSystemAssembly;
-        IF_FAIL_GO(AssemblyBinder::GetAssembly(sMscorlibSatellite,
+        IF_FAIL_GO(AssemblyBinder::GetAssembly(sCoreLibSatellite,
                                                TRUE /* fIsInGAC */,
                                                FALSE /* fExplicitBindToNativeImage */,
                                                &pSystemAssembly,
                                                NULL /* szMDAssemblyPath */,
                                                bundleFileLocation));
-        BinderTracing::PathProbed(sMscorlibSatellite, pathSource, hr);
+        BinderTracing::PathProbed(sCoreLibSatellite, pathSource, hr);
 
         *ppSystemAssembly = pSystemAssembly.Extract();
 

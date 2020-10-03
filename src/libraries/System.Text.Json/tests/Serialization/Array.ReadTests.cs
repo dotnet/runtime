@@ -616,8 +616,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(0, obj.MyImmutableList.Count);
             TestRoundTrip(obj);
 
-            // TODO: Skip ImmutableArray due to https://github.com/dotnet/runtime/issues/1037.
-            const string inputJsonWithNullCollections =
+            string inputJsonWithNullCollections =
                 @"{
                     ""Array"":null,
                     ""List"":null,
@@ -627,6 +626,10 @@ namespace System.Text.Json.Serialization.Tests
 
             obj = JsonSerializer.Deserialize<ClassWithNonNullEnumerableGetters>(inputJsonWithNullCollections);
             TestRoundTrip(obj);
+
+            // ImmutableArray<T> is a struct and cannot be null.
+            inputJsonWithNullCollections = @"{""MyImmutableArray"":null}";
+            Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<ClassWithNonNullEnumerableGetters>(inputJsonWithNullCollections));
         }
 
         [Fact]

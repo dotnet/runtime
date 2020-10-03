@@ -26,7 +26,6 @@ set(UTILCODE_COMMON_SOURCES
   arraylist.cpp
   bitvector.cpp
   comex.cpp
-  delayloadhelpers.cpp
   guidfromname.cpp
   memorypool.cpp
   iallocator.cpp
@@ -97,7 +96,9 @@ convert_to_absolute_path(UTILCODE_CROSSGEN_SOURCES ${UTILCODE_CROSSGEN_SOURCES})
 convert_to_absolute_path(UTILCODE_STATICNOHOST_SOURCES ${UTILCODE_STATICNOHOST_SOURCES})
 
 add_library_clr(utilcode_dac STATIC ${UTILCODE_DAC_SOURCES})
-add_library_clr(utilcode OBJECT ${UTILCODE_SOURCES})
+add_library_clr(utilcode_obj OBJECT ${UTILCODE_SOURCES})
+add_library(utilcode INTERFACE)
+target_sources(utilcode INTERFACE $<TARGET_OBJECTS:utilcode_obj>)
 add_library_clr(utilcodestaticnohost STATIC ${UTILCODE_STATICNOHOST_SOURCES})
 add_library_clr(utilcode_crossgen STATIC ${UTILCODE_CROSSGEN_SOURCES})
 
@@ -105,9 +106,9 @@ if(CLR_CMAKE_HOST_UNIX)
   target_link_libraries(utilcodestaticnohost  nativeresourcestring)
   target_link_libraries(utilcode_crossgen  nativeresourcestring)
   target_link_libraries(utilcode_dac nativeresourcestring)
-  target_link_libraries(utilcode nativeresourcestring)
+  target_link_libraries(utilcode INTERFACE nativeresourcestring)
   add_dependencies(utilcode_dac coreclrpal)
-  add_dependencies(utilcode coreclrpal)
+  add_dependencies(utilcode_obj coreclrpal)
 endif(CLR_CMAKE_HOST_UNIX)
 
 
@@ -120,10 +121,10 @@ set_target_properties(utilcode_crossgen PROPERTIES CROSSGEN_COMPONENT TRUE)
 target_compile_definitions(utilcode_dac PRIVATE SELF_NO_HOST)
 target_compile_definitions(utilcodestaticnohost PRIVATE SELF_NO_HOST)
 add_dependencies(utilcode_dac ${UTILCODE_DEPENDENCIES})
-add_dependencies(utilcode ${UTILCODE_DEPENDENCIES})
+add_dependencies(utilcode_obj ${UTILCODE_DEPENDENCIES})
 add_dependencies(utilcode_crossgen ${UTILCODE_DEPENDENCIES})
 add_dependencies(utilcodestaticnohost ${UTILCODE_DEPENDENCIES})
 target_precompile_header(TARGET utilcode_dac HEADER stdafx.h)
-target_precompile_header(TARGET utilcode HEADER stdafx.h)
+target_precompile_header(TARGET utilcode_obj HEADER stdafx.h)
 target_precompile_header(TARGET utilcode_crossgen HEADER stdafx.h)
 target_precompile_header(TARGET utilcodestaticnohost HEADER stdafx.h)

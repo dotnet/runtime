@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -257,7 +256,7 @@ namespace System.IO.Tests
         {
             foreach (bool useAsync in new[] { true, false })
             {
-                if (useAsync && !RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                if (useAsync && !OperatingSystem.IsWindows())
                 {
                     // We don't have a special async I/O implementation in FileStream on Unix.
                     continue;
@@ -277,12 +276,12 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))] // Browser PNSE: Cannot wait on monitors
         public Task ManyConcurrentWriteAsyncs()
         {
             // For inner loop, just test one case
             return ManyConcurrentWriteAsyncs_OuterLoop(
-                useAsync: RuntimeInformation.IsOSPlatform(OSPlatform.Windows),
+                useAsync: OperatingSystem.IsWindows(),
                 presize: false,
                 exposeHandle: false,
                 cancelable: true,

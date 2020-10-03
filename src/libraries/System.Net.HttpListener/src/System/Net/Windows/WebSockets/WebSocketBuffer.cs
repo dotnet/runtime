@@ -38,7 +38,7 @@ namespace System.Net.WebSockets
         private readonly ArraySegment<byte> _propertyBuffer;
         private readonly int _sendBufferSize;
         private volatile int _payloadOffset;
-        private volatile PayloadReceiveResult _bufferedPayloadReceiveResult;
+        private volatile PayloadReceiveResult? _bufferedPayloadReceiveResult;
         private long _pinnedSendBufferStartAddress;
         private long _pinnedSendBufferEndAddress;
         private ArraySegment<byte> _pinnedSendBuffer;
@@ -173,7 +173,7 @@ namespace System.Net.WebSockets
         internal void PinSendBuffer(ArraySegment<byte> payload, out bool bufferHasBeenPinned)
         {
             bufferHasBeenPinned = false;
-            WebSocketValidate.ValidateBuffer(payload.Array, payload.Offset, payload.Count);
+            WebSocketValidate.ValidateBuffer(payload.Array!, payload.Offset, payload.Count);
             int previousState = Interlocked.Exchange(ref _sendBufferState, SendBufferState.SendPayloadSpecified);
 
             if (previousState != SendBufferState.None)
@@ -187,14 +187,14 @@ namespace System.Net.WebSockets
             _pinnedSendBufferHandle = GCHandle.Alloc(_pinnedSendBuffer.Array, GCHandleType.Pinned);
             bufferHasBeenPinned = true;
             _pinnedSendBufferStartAddress =
-                Marshal.UnsafeAddrOfPinnedArrayElement(_pinnedSendBuffer.Array, _pinnedSendBuffer.Offset).ToInt64();
+                Marshal.UnsafeAddrOfPinnedArrayElement(_pinnedSendBuffer.Array!, _pinnedSendBuffer.Offset).ToInt64();
             _pinnedSendBufferEndAddress = _pinnedSendBufferStartAddress + _pinnedSendBuffer.Count;
         }
 
         // This method is not thread safe. It must only be called after enforcing at most 1 outstanding send operation
         internal IntPtr ConvertPinnedSendPayloadToNative(ArraySegment<byte> payload)
         {
-            return ConvertPinnedSendPayloadToNative(payload.Array, payload.Offset, payload.Count);
+            return ConvertPinnedSendPayloadToNative(payload.Array!, payload.Offset, payload.Count);
         }
 
         // This method is not thread safe. It must only be called after enforcing at most 1 outstanding send operation
@@ -207,7 +207,7 @@ namespace System.Net.WebSockets
                 throw new AccessViolationException();
             }
 
-            Debug.Assert(Marshal.UnsafeAddrOfPinnedArrayElement(_pinnedSendBuffer.Array,
+            Debug.Assert(Marshal.UnsafeAddrOfPinnedArrayElement(_pinnedSendBuffer.Array!,
                 _pinnedSendBuffer.Offset).ToInt64() == _pinnedSendBufferStartAddress,
                 "'m_PinnedSendBuffer.Array' MUST be pinned during the entire send operation.");
 
@@ -225,7 +225,7 @@ namespace System.Net.WebSockets
                 throw new AccessViolationException();
             }
 
-            Debug.Assert(Marshal.UnsafeAddrOfPinnedArrayElement(_pinnedSendBuffer.Array,
+            Debug.Assert(Marshal.UnsafeAddrOfPinnedArrayElement(_pinnedSendBuffer.Array!,
                 _pinnedSendBuffer.Offset).ToInt64() == _pinnedSendBufferStartAddress,
                 "'m_PinnedSendBuffer.Array' MUST be pinned during the entire send operation.");
 
@@ -236,7 +236,7 @@ namespace System.Net.WebSockets
 
             int internalOffset = (int)(bufferData.ToInt64() - _pinnedSendBufferStartAddress);
 
-            return new ArraySegment<byte>(_pinnedSendBuffer.Array, _pinnedSendBuffer.Offset + internalOffset, (int)bufferSize);
+            return new ArraySegment<byte>(_pinnedSendBuffer.Array!, _pinnedSendBuffer.Offset + internalOffset, (int)bufferSize);
         }
 
         // This method is not thread safe. It must only be called after enforcing at most 1 outstanding send operation
@@ -306,9 +306,9 @@ namespace System.Net.WebSockets
             Debug.Assert(_bufferedPayloadReceiveResult == null || _bufferedPayloadReceiveResult.Count == 0,
                 "'_bufferedPayloadReceiveResult.Count' MUST be '0' at this point.");
 
-            Buffer.BlockCopy(payload.Array,
+            Buffer.BlockCopy(payload.Array!,
                 payload.Offset + unconsumedDataOffset,
-                _payloadBuffer.Array,
+                _payloadBuffer.Array!,
                 _payloadBuffer.Offset,
                 bytesBuffered);
 
@@ -323,7 +323,7 @@ namespace System.Net.WebSockets
             ThrowIfDisposed();
             ValidateBufferedPayload();
 
-            int bytesTransferred = Math.Min(buffer.Count, _bufferedPayloadReceiveResult.Count);
+            int bytesTransferred = Math.Min(buffer.Count, _bufferedPayloadReceiveResult!.Count);
 
             _bufferedPayloadReceiveResult.Count -= bytesTransferred;
 
@@ -332,9 +332,9 @@ namespace System.Net.WebSockets
                 _bufferedPayloadReceiveResult.MessageType,
                 _bufferedPayloadReceiveResult.Count == 0 && _bufferedPayloadReceiveResult.EndOfMessage);
 
-            Buffer.BlockCopy(_payloadBuffer.Array,
+            Buffer.BlockCopy(_payloadBuffer.Array!,
                 _payloadBuffer.Offset + _payloadOffset,
-                buffer.Array,
+                buffer.Array!,
                 buffer.Offset,
                 bytesTransferred);
 
@@ -373,7 +373,7 @@ namespace System.Net.WebSockets
 
             if (this.IsNativeBuffer(bufferData, bufferLength))
             {
-                return new ArraySegment<byte>(_internalBuffer.Array,
+                return new ArraySegment<byte>(_internalBuffer.Array!,
                     this.GetOffset(bufferData),
                     (int)bufferLength);
             }
@@ -387,7 +387,7 @@ namespace System.Net.WebSockets
         internal void ConvertCloseBuffer(WebSocketProtocolComponent.Action action,
             Interop.WebSocket.Buffer buffer,
             out WebSocketCloseStatus closeStatus,
-            out string reason)
+            out string? reason)
         {
             ThrowIfDisposed();
             IntPtr bufferData;
@@ -405,7 +405,7 @@ namespace System.Net.WebSockets
                 ArraySegment<byte> reasonBlob;
                 if (this.IsNativeBuffer(bufferData, bufferLength))
                 {
-                    reasonBlob = new ArraySegment<byte>(_internalBuffer.Array,
+                    reasonBlob = new ArraySegment<byte>(_internalBuffer.Array!,
                         this.GetOffset(bufferData),
                         (int)bufferLength);
                 }
@@ -419,7 +419,7 @@ namespace System.Net.WebSockets
 
                 // No need to wrap DecoderFallbackException for invalid UTF8 chacters, because
                 // Encoding.UTF8 will not throw but replace invalid characters instead.
-                reason = Encoding.UTF8.GetString(reasonBlob.Array, reasonBlob.Offset, reasonBlob.Count);
+                reason = Encoding.UTF8.GetString(reasonBlob.Array!, reasonBlob.Offset, reasonBlob.Count);
             }
         }
 
@@ -608,7 +608,7 @@ namespace System.Net.WebSockets
             long nativeBufferStartAddress = pBuffer.ToInt64();
             long nativeBufferEndAddress = bufferSize + nativeBufferStartAddress;
 
-            Debug.Assert(Marshal.UnsafeAddrOfPinnedArrayElement(_internalBuffer.Array, _internalBuffer.Offset).ToInt64() == _startAddress,
+            Debug.Assert(Marshal.UnsafeAddrOfPinnedArrayElement(_internalBuffer.Array!, _internalBuffer.Offset).ToInt64() == _startAddress,
                 "'m_InternalBuffer.Array' MUST be pinned for the whole lifetime of a WebSocket.");
 
             if (nativeBufferStartAddress >= _startAddress &&

@@ -3,8 +3,6 @@
 
 Imports System
 Imports System.Collections.Generic
-Imports System.Collections.ObjectModel
-Imports System.Diagnostics
 Imports System.Dynamic
 Imports System.Linq.Expressions
 Imports System.Reflection
@@ -1189,7 +1187,7 @@ Namespace Microsoft.VisualBasic.CompilerServices
             'There is some inconsistency in the handling of argNames, sometimes it
             'has been normalized to non-null by this point, sometimes not.
             If argNames Is Nothing Then
-                argNames = New String(-1) {}
+                argNames = Array.Empty(Of String)()
             End If
 
             callInfo = New CallInfo(args.Length - valueArgs, argNames)

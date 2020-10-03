@@ -646,7 +646,7 @@ bool GCToOSInterface::VirtualRelease(void* address, size_t size)
 //  size      - size of the virtual memory range
 // Return:
 //  Starting virtual address of the committed range
-void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
+void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size, uint16_t node)
 {
 #if HAVE_MAP_HUGETLB
     uint32_t largePagesFlag = MAP_HUGETLB;
@@ -657,7 +657,7 @@ void* GCToOSInterface::VirtualReserveAndCommitLargePages(size_t size)
 #endif
 
     void* pRetVal = VirtualReserveInner(size, OS_PAGE_SIZE, 0, largePagesFlag);
-    if (VirtualCommit(pRetVal, size, NUMA_NODE_UNDEFINED))
+    if (VirtualCommit(pRetVal, size, node))
     {
         return pRetVal;
     }
@@ -834,9 +834,14 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
     cacheSize = std::max(cacheSize, ( size_t) sysconf(_SC_LEVEL4_CACHE_SIZE));
 #endif
 
-#if defined(HOST_ARM64)
+#if defined(TARGET_LINUX) && !defined(HOST_ARM)
     if (cacheSize == 0)
     {
+        //
+        // Fallback to retrieve cachesize via /sys/.. if sysconf was not available 
+        // for the platform. Currently musl and arm64 should be only cases to use  
+        // this method to determine cache size.
+        // 
         size_t size;
 
         if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index0/size", &size))
@@ -850,7 +855,9 @@ static size_t GetLogicalProcessorCacheSizeFromOS()
         if (ReadMemoryValueFromFile("/sys/devices/system/cpu/cpu0/cache/index4/size", &size))
             cacheSize = std::max(cacheSize, size);
     }
+#endif
 
+#if defined(HOST_ARM64)
     if (cacheSize == 0)
     {
         // It is currently expected to be missing cache size info
@@ -985,19 +992,32 @@ size_t GCToOSInterface::GetCacheSizePerLogicalCpu(bool trueSize)
 //  true if setting the affinity was successful, false otherwise.
 bool GCToOSInterface::SetThreadAffinity(uint16_t procNo)
 {
-#if HAVE_PTHREAD_GETAFFINITY_NP
+#if HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
     cpu_set_t cpuSet;
     CPU_ZERO(&cpuSet);
     CPU_SET((int)procNo, &cpuSet);
 
+    // Snap's default strict confinement does not allow sched_setaffinity(<nonzeroPid>, ...) without manually connecting the
+    // process-control plug. sched_setaffinity(<currentThreadPid>, ...) is also currently not allowed, only
+    // sched_setaffinity(0, ...). pthread_setaffinity_np(pthread_self(), ...) seems to call
+    // sched_setaffinity(<currentThreadPid>, ...) in at least one implementation, and does not work. To work around those
+    // issues, use sched_setaffinity(0, ...) if available and only otherwise fall back to pthread_setaffinity_np(). See the
+    // following for more information:
+    // - https://github.com/dotnet/runtime/pull/38795
+    // - https://github.com/dotnet/runtime/issues/1634
+    // - https://forum.snapcraft.io/t/requesting-autoconnect-for-interfaces-in-pigmeat-process-control-home/17987/13
+#if HAVE_SCHED_SETAFFINITY
+    int st = sched_setaffinity(0, sizeof(cpu_set_t), &cpuSet);
+#else
     int st = pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuSet);
+#endif
 
     return (st == 0);
 
-#else  // HAVE_PTHREAD_GETAFFINITY_NP
+#else  // !(HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP)
     // There is no API to manage thread affinity, so let's ignore the request
     return false;
-#endif // HAVE_PTHREAD_GETAFFINITY_NP
+#endif // HAVE_SCHED_SETAFFINITY || HAVE_PTHREAD_SETAFFINITY_NP
 }
 
 // Boosts the calling thread's thread priority to a level higher than the default

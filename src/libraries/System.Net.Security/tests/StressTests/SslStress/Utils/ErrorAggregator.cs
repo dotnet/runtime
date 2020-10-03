@@ -7,6 +7,7 @@ using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SslStress.Utils
 {
@@ -112,8 +113,8 @@ namespace SslStress.Utils
 
         private class StructuralEqualityComparer<T> : IEqualityComparer<T> where T : IStructuralEquatable
         {
-            public bool Equals(T left, T right) => left.Equals(right, StructuralComparisons.StructuralEqualityComparer);
-            public int GetHashCode(T value) => value.GetHashCode(StructuralComparisons.StructuralEqualityComparer);
+            public bool Equals(T? left, T? right) => left != null && left.Equals(right, StructuralComparisons.StructuralEqualityComparer);
+            public int GetHashCode([DisallowNull] T value) => value.GetHashCode(StructuralComparisons.StructuralEqualityComparer);
         }
     }
 }

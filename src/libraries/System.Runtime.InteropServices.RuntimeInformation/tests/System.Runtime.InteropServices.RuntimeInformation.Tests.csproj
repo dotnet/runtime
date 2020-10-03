@@ -8,7 +8,6 @@
     <Compile Include="CheckPlatformTests.cs" />
     <Compile Include="RuntimeIdentifierTests.cs" />
     <Compile Include="DescriptionNameTests.cs" />
-    <Compile Include="PlatformVersionTests.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\cgroups\Interop.cgroups.cs"
              Link="Common\Interop\Linux\Interop.cgroups.cs" />
   </ItemGroup>

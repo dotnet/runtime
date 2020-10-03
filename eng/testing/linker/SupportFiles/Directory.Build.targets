@@ -20,11 +20,14 @@
   </Target>
 
   <Target Name="EnsureAllAssembliesAreLinked"
-          AfterTargets="PrepareForILLink"> 
+          BeforeTargets="PrepareForILLink"> 
     <ItemGroup>
       <ManagedAssemblyToLink>
         <TrimMode>link</TrimMode>
       </ManagedAssemblyToLink>
+
+      <!-- Pass the app assembly as a root -->
+      <TrimmerRootAssembly Include="@(IntermediateAssembly)" />
     </ItemGroup>
   </Target>
 

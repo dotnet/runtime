@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -385,6 +386,122 @@ namespace System.Net.Http.Functional.Tests
             var mc = new MultipartContent();
             mc.Add(new MockContent());
             Assert.Throws<NotImplementedException>(() => mc.ReadAsStream());
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_CustomEncodingSelector_SelectorIsCalledWithCustomState(bool async)
+        {
+            var mc = new MultipartContent();
+
+            var stringContent = new StringContent("foo");
+            stringContent.Headers.Add("StringContent", "foo");
+            mc.Add(stringContent);
+
+            var byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("foo"));
+            byteArrayContent.Headers.Add("ByteArrayContent", "foo");
+            mc.Add(byteArrayContent);
+
+            bool seenStringContent = false, seenByteArrayContent = false;
+
+            mc.HeaderEncodingSelector = (name, content) =>
+            {
+                if (ReferenceEquals(content, stringContent) && name == "StringContent")
+                {
+                    seenStringContent = true;
+                }
+
+                if (ReferenceEquals(content, byteArrayContent) && name == "ByteArrayContent")
+                {
+                    seenByteArrayContent = true;
+                }
+
+                return null;
+            };
+
+            var dummy = new MemoryStream();
+            if (async)
+            {
+                await (await mc.ReadAsStreamAsync()).CopyToAsync(dummy);
+            }
+            else
+            {
+                mc.ReadAsStream().CopyTo(dummy);
+            }
+
+            Assert.True(seenStringContent);
+            Assert.True(seenByteArrayContent);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadAsStreamAsync_CustomEncodingSelector_CustomEncodingIsUsed(bool async)
+        {
+            var mc = new MultipartContent("subtype", "fooBoundary");
+
+            var stringContent = new StringContent("bar1");
+            stringContent.Headers.Add("latin1", "\uD83D\uDE00");
+            mc.Add(stringContent);
+
+            var byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("bar2"));
+            byteArrayContent.Headers.Add("utf8", "\uD83D\uDE00");
+            mc.Add(byteArrayContent);
+
+            byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("bar3"));
+            byteArrayContent.Headers.Add("ascii", "\uD83D\uDE00");
+            mc.Add(byteArrayContent);
+
+            byteArrayContent = new ByteArrayContent(Encoding.ASCII.GetBytes("bar4"));
+            byteArrayContent.Headers.Add("default", "\uD83D\uDE00");
+            mc.Add(byteArrayContent);
+
+            mc.HeaderEncodingSelector = (name, _) => name switch
+            {
+                "latin1" => Encoding.Latin1,
+                "utf8" => Encoding.UTF8,
+                "ascii" => Encoding.ASCII,
+                _ => null
+            };
+
+            var ms = new MemoryStream();
+            if (async)
+            {
+                await (await mc.ReadAsStreamAsync()).CopyToAsync(ms);
+            }
+            else
+            {
+                mc.ReadAsStream().CopyTo(ms);
+            }
+
+            byte[] expected = Concat(
+                Encoding.Latin1.GetBytes("--fooBoundary\r\n"),
+                Encoding.Latin1.GetBytes("Content-Type: text/plain; charset=utf-8\r\n"),
+                Encoding.Latin1.GetBytes("latin1: "),
+                Encoding.Latin1.GetBytes("\uD83D\uDE00"),
+                Encoding.Latin1.GetBytes("\r\n\r\n"),
+                Encoding.Latin1.GetBytes("bar1"),
+                Encoding.Latin1.GetBytes("\r\n--fooBoundary\r\n"),
+                Encoding.Latin1.GetBytes("utf8: "),
+                Encoding.UTF8.GetBytes("\uD83D\uDE00"),
+                Encoding.Latin1.GetBytes("\r\n\r\n"),
+                Encoding.Latin1.GetBytes("bar2"),
+                Encoding.Latin1.GetBytes("\r\n--fooBoundary\r\n"),
+                Encoding.Latin1.GetBytes("ascii: "),
+                Encoding.ASCII.GetBytes("\uD83D\uDE00"),
+                Encoding.Latin1.GetBytes("\r\n\r\n"),
+                Encoding.Latin1.GetBytes("bar3"),
+                Encoding.Latin1.GetBytes("\r\n--fooBoundary\r\n"),
+                Encoding.Latin1.GetBytes("default: "),
+                Encoding.Latin1.GetBytes("\uD83D\uDE00"),
+                Encoding.Latin1.GetBytes("\r\n\r\n"),
+                Encoding.Latin1.GetBytes("bar4"),
+                Encoding.Latin1.GetBytes("\r\n--fooBoundary--\r\n"));
+
+            Assert.Equal(expected, ms.ToArray());
+
+            static byte[] Concat(params byte[][] arrays) => arrays.SelectMany(b => b).ToArray();
         }
 
         #region Helpers

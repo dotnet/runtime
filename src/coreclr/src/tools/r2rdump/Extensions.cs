@@ -8,6 +8,7 @@ using System.Linq;
 using System.Reflection.Metadata.Ecma335;
 
 using ILCompiler.Reflection.ReadyToRun;
+using ILCompiler.Reflection.ReadyToRun.Amd64;
 using Internal.Runtime;
 
 namespace R2RDump
@@ -138,8 +139,8 @@ namespace R2RDump
         {
             writer.WriteLine(theThis.SignatureString);
 
-            writer.WriteLine($"Handle: 0x{MetadataTokens.GetToken(theThis.MetadataReader, theThis.MethodHandle):X8}");
-            writer.WriteLine($"Rid: {MetadataTokens.GetRowNumber(theThis.MetadataReader, theThis.MethodHandle)}");
+            writer.WriteLine($"Handle: 0x{MetadataTokens.GetToken(theThis.ComponentReader.MetadataReader, theThis.MethodHandle):X8}");
+            writer.WriteLine($"Rid: {MetadataTokens.GetRowNumber(theThis.ComponentReader.MetadataReader, theThis.MethodHandle)}");
             if (!options.Naked)
             {
                 writer.WriteLine($"EntryPointRuntimeFunctionId: {theThis.EntryPointRuntimeFunctionId}");
@@ -215,23 +216,27 @@ namespace R2RDump
                     writer.WriteLine($"PersonalityRVA:     0x{amd64UnwindInfo.PersonalityRoutineRVA:X4}");
                 }
 
-                for (int unwindCodeIndex = 0; unwindCodeIndex < amd64UnwindInfo.CountOfUnwindCodes; unwindCodeIndex++)
+                for (int uwcIndex = 0; uwcIndex < amd64UnwindInfo.UnwindCodes.Count; uwcIndex++)
                 {
-                    ILCompiler.Reflection.ReadyToRun.Amd64.UnwindCode unwindCode = amd64UnwindInfo.UnwindCodeArray[unwindCodeIndex];
-                    writer.Write($"UnwindCode[{unwindCode.Index}]: ");
+                    UnwindCode unwindCode = amd64UnwindInfo.UnwindCodes[uwcIndex];
+                    writer.Write($"UnwindCode[{uwcIndex}]: ");
                     writer.Write($"CodeOffset 0x{unwindCode.CodeOffset:X4} ");
                     writer.Write($"FrameOffset 0x{unwindCode.FrameOffset:X4} ");
                     writer.Write($"NextOffset 0x{unwindCode.NextFrameOffset} ");
                     writer.Write($"Op {unwindCode.OpInfoStr}");
                     writer.WriteLine();
+                    uwcIndex++;
                 }
             }
             writer.WriteLine();
 
             if (theThis.EHInfo != null)
             {
-                writer.WriteLine($@"EH info @ {theThis.EHInfo.RelativeVirtualAddress:X4}, #clauses = {theThis.EHInfo.EHClauses.Count}");
-                theThis.EHInfo.WriteTo(writer);
+                if (options.Naked)
+                    writer.WriteLine($@"EH info, #clauses = {theThis.EHInfo.EHClauses.Count}");
+                else
+                    writer.WriteLine($@"EH info @ {theThis.EHInfo.RelativeVirtualAddress:X4}, #clauses = {theThis.EHInfo.EHClauses.Count}");
+                theThis.EHInfo.WriteTo(writer, !options.Naked);
                 writer.WriteLine();
             }
 

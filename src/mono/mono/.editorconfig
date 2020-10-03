@@ -1,0 +1,21 @@
+[*]
+# We don't like trailing whitespace, but there are a lot of existing files that have it.  Don't automatically reformat them.
+trim_trailing_whitespace = false
+
+# See https://www.mono-project.com/community/contributing/coding-guidelines/
+# Tabs, not spaces. 8 columns.  Braces don't go on a new line (except
+# at the beginning of a function).  Space before opening parenthesis
+# for function calls.
+[*.{c,cpp,h,def}]
+indent_style = tab
+indent_size = 8
+indent_brace_style = K&R
+curly_bracket_next_line = false
+spaces_around_operators = true
+spaces_around_brackets = outside
+
+[Makefile*]
+indent_style = tab
+
+[*.mk]
+indent_style = tab

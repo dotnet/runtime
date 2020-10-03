@@ -1,0 +1,93 @@
+﻿<Project Sdk="Microsoft.Build.NoTargets">
+  <PropertyGroup>
+    <!-- Set the RuntimeIdentifier so that the DotNetHost and DotNetHostPolicy packages resolve for the corresponding runtime. -->
+    <RuntimeIdentifier>$(PackageRID)</RuntimeIdentifier>
+    <SwapNativeForIL Condition="'$(SwapNativeForIL)' == '' and ('$(Configuration)' == 'Debug' or '$(Coverage)' == 'true') and '$(RuntimeFlavor)' != 'Mono'">true</SwapNativeForIL>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <!-- Binplace properties -->
+    <BinPlaceForTargetVertical>false</BinPlaceForTargetVertical>
+    <BinPlaceNative>true</BinPlaceNative>
+    <BinPlaceRuntime>false</BinPlaceRuntime>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(DotNetBuildFromSource)' != 'true'">
+    <PackageReference Include="Microsoft.DiaSymReader.Native"
+                      Version="$(MicrosoftDiaSymReaderNativeVersion)" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetsMobile)' != 'true'">
+    <PackageReference Include="Microsoft.NETCore.DotNetHost"
+                      Version="$(MicrosoftNETCoreDotNetHostVersion)" />
+    <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy"
+                      Version="$(MicrosoftNETCoreDotNetHostPolicyVersion)" />
+  </ItemGroup>
+
+  <!-- Setup the testing shared framework host -->
+  <Target Name="SetupTestingHost"
+          AfterTargets="AfterResolveReferences">
+    <PropertyGroup>
+      <UseHardlink>true</UseHardlink>
+      <!-- workaround core-setup problem for hardlinking dotnet executable to testhost: core-setup #4742 -->
+      <UseHardlink Condition="'$(_runtimeOSFamily)' == 'FreeBSD'">false</UseHardlink>
+    </PropertyGroup>
+
+    <!-- We do not need apphost.exe.
+         Exclude here so that when building with the 2.x SDK we don't place it in the test shared framework. -->
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'%(Filename)' == 'apphost'" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <HostFxFile Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'hostfxr' or
+                                                                  '%(ReferenceCopyLocalPaths.Filename)' == 'libhostfxr'" />
+      <DotnetExe Include="@(ReferenceCopyLocalPaths)" Condition="'%(ReferenceCopyLocalPaths.Filename)' == 'dotnet'" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(HostFxFile)"
+          DestinationFolder="$(TestHostRootPath)host\fxr\$(ProductVersion)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
+
+    <Copy SourceFiles="@(DotnetExe)"
+          DestinationFolder="$(TestHostRootPath)"
+          SkipUnchangedFiles="true"
+          UseHardlinksIfPossible="$(UseHardlink)" />
+
+    <Exec Command="chmod +x $(TestHostRootPath)%(DotnetExe.Filename)%(DotnetExe.Extension)" Condition="'$(TargetOS)' != 'Windows_NT' and '$(OS)' != 'Windows_NT'"/>
+  </Target>
+
+  <Target Name="OverrideRuntimeCoreCLR"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+          AfterTargets="AfterResolveReferences"
+          Condition="'$(RuntimeFlavor)' != 'Mono'">
+    <ItemGroup>
+      <!-- CoreRun is not used for testing anymore, but we still use it for benchmarking and profiling -->
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\corerun*" />
+      <RuntimeFiles Include="$(CoreCLRArtifactsPath)\PDB\corerun*" />
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
+    </ItemGroup>
+    <ItemGroup Condition="'$(SwapNativeForIL)' == 'true'">
+      <CoreCLRILFiles Include="$(CoreCLRArtifactsPath)\IL\*.*" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRILFiles->'%(FileName)%(Extension)')' == '%(FileName)%(Extension)'" />
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'@(CoreCLRILFiles->'%(FileName).ni%(Extension)')' == '%(FileName)%(Extension)'" />
+      <ReferenceCopyLocalPaths Include="@(CoreCLRILFiles)" />
+    </ItemGroup>
+    <Error Condition="'$(SwapNativeForIL)' == 'true' and '@(CoreCLRILFiles)' == ''" Text="Could not locate CoreCLR IL files." />
+  </Target>
+
+  <Target Name="OverrideRuntimeMono"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+          AfterTargets="AfterResolveReferences"
+          Condition="'$(RuntimeFlavor)' == 'Mono'">
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Include="@(RuntimeFiles)" />
+      <!-- Setup runtime pack native. -->
+      <ReferenceCopyLocalPaths Include="@(MonoCrossFiles)"
+                               DestinationSubDirectory="cross/" />
+      <ReferenceCopyLocalPaths Include="@(MonoIncludeFiles)"
+                               DestinationSubDirectory="include/%(RecursiveDir)" />
+    </ItemGroup>
+  </Target>
+</Project>

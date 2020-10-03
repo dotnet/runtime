@@ -26,17 +26,17 @@ namespace System.Data.Common
         private readonly string _encryptedUsersConnectionString;
 
         // hash of unique keys to values
-        private readonly Dictionary<string, string> _parsetable;
+        private readonly Dictionary<string, string?> _parsetable;
 
         // a linked list of key/value and their length in _encryptedUsersConnectionString
-        private readonly NameValuePair _keychain;
+        private readonly NameValuePair? _keychain;
 
         // track the existance of "password" or "pwd" in the connection string
         // not used for anything anymore but must keep it set correct for V1.1 serialization
         private readonly bool _hasPassword;
 
-        private readonly string[] _restrictionValues;
-        private readonly string _restrictions;
+        private readonly string[]? _restrictionValues;
+        private readonly string? _restrictions;
 
         private readonly KeyRestrictionBehavior _behavior;
 
@@ -44,7 +44,7 @@ namespace System.Data.Common
 #pragma warning disable CA1823
         // this field is no longer used, hence the warning was disabled
         // however, it can not be removed or it will break serialization with V1.1
-        private readonly string _encryptedActualConnectionString;
+        private readonly string? _encryptedActualConnectionString;
 #pragma warning restore CA1823
 #pragma warning restore CS0169
 
@@ -56,13 +56,13 @@ namespace System.Data.Common
         }
 
         internal DBConnectionString(DbConnectionOptions connectionOptions)
-            : this(connectionOptions, (string)null, KeyRestrictionBehavior.AllowOnly, null, true)
+            : this(connectionOptions, null, KeyRestrictionBehavior.AllowOnly, null, true)
         {
             // used by DBDataPermission to convert from DbConnectionOptions to DBConnectionString
             // since backward compatability requires Everett level classes
         }
 
-        private DBConnectionString(DbConnectionOptions connectionOptions, string restrictions, KeyRestrictionBehavior behavior, Dictionary<string, string> synonyms, bool mustCloneDictionary)
+        private DBConnectionString(DbConnectionOptions connectionOptions, string? restrictions, KeyRestrictionBehavior behavior, Dictionary<string, string>? synonyms, bool mustCloneDictionary)
         { // used by DBDataPermission
             Debug.Assert(null != connectionOptions, "null connectionOptions");
             switch (behavior)
@@ -89,7 +89,7 @@ namespace System.Data.Common
                 {
                     // clone the hashtable to replace user's password/pwd value with "*"
                     // we only need to clone if coming from DbConnectionOptions and password exists
-                    _parsetable = new Dictionary<string, string>(_parsetable);
+                    _parsetable = new Dictionary<string, string?>(_parsetable);
                 }
 
                 // different than Everett in that instead of removing password/pwd from
@@ -117,7 +117,7 @@ namespace System.Data.Common
             }
         }
 
-        private DBConnectionString(DBConnectionString connectionString, string[] restrictionValues, KeyRestrictionBehavior behavior)
+        private DBConnectionString(DBConnectionString connectionString, string[]? restrictionValues, KeyRestrictionBehavior behavior)
         {
             // used by intersect for two equal connection strings with different restrictions
             _encryptedUsersConnectionString = connectionString._encryptedUsersConnectionString;
@@ -147,7 +147,7 @@ namespace System.Data.Common
             get { return (null == _keychain); }
         }
 
-        internal NameValuePair KeyChain
+        internal NameValuePair? KeyChain
         {
             get { return _keychain; }
         }
@@ -156,10 +156,10 @@ namespace System.Data.Common
         {
             get
             {
-                string restrictions = _restrictions;
+                string? restrictions = _restrictions;
                 if (null == restrictions)
                 {
-                    string[] restrictionValues = _restrictionValues;
+                    string[]? restrictionValues = _restrictionValues;
                     if ((null != restrictionValues) && (0 < restrictionValues.Length))
                     {
                         StringBuilder builder = new StringBuilder();
@@ -184,9 +184,9 @@ namespace System.Data.Common
             }
         }
 
-        internal string this[string keyword]
+        internal string? this[string keyword]
         {
-            get { return (string)_parsetable[keyword]; }
+            get { return _parsetable[keyword]; }
         }
 
         internal bool ContainsKey(string keyword)
@@ -194,10 +194,10 @@ namespace System.Data.Common
             return _parsetable.ContainsKey(keyword);
         }
 
-        internal DBConnectionString Intersect(DBConnectionString entry)
+        internal DBConnectionString Intersect(DBConnectionString? entry)
         {
             KeyRestrictionBehavior behavior = _behavior;
-            string[] restrictionValues = null;
+            string[]? restrictionValues = null;
 
             if (null == entry)
             {
@@ -294,7 +294,7 @@ namespace System.Data.Common
         }
 
         [Conditional("DEBUG")]
-        private void ValidateCombinedSet(DBConnectionString componentSet, DBConnectionString combinedSet)
+        private void ValidateCombinedSet(DBConnectionString? componentSet, DBConnectionString combinedSet)
         {
             Debug.Assert(combinedSet != null, "The combined connection string should not be null");
             if ((componentSet != null) && (combinedSet._restrictionValues != null) && (componentSet._restrictionValues != null))
@@ -362,7 +362,7 @@ namespace System.Data.Common
                 case KeyRestrictionBehavior.AllowOnly:
                     // every key must either be in the resticted connection string or in the allowed keywords
                     // keychain may contain duplicates, but it is better than GetEnumerator on _parsetable.Keys
-                    for (NameValuePair current = entry.KeyChain; null != current; current = current.Next)
+                    for (NameValuePair? current = entry.KeyChain; null != current; current = current.Next)
                     {
                         if (!ContainsKey(current.Name) && IsRestrictedKeyword(current.Name))
                         {
@@ -390,9 +390,9 @@ namespace System.Data.Common
             return true;
         }
 
-        private static string[] NewRestrictionAllowOnly(string[] allowonly, string[] preventusage)
+        private static string[]? NewRestrictionAllowOnly(string[] allowonly, string[] preventusage)
         {
-            List<string> newlist = null;
+            List<string>? newlist = null;
             for (int i = 0; i < allowonly.Length; ++i)
             {
                 if (0 > Array.BinarySearch(preventusage, allowonly[i], StringComparer.Ordinal))
@@ -404,7 +404,7 @@ namespace System.Data.Common
                     newlist.Add(allowonly[i]);
                 }
             }
-            string[] restrictionValues = null;
+            string[]? restrictionValues = null;
             if (null != newlist)
             {
                 restrictionValues = newlist.ToArray();
@@ -413,9 +413,9 @@ namespace System.Data.Common
             return restrictionValues;
         }
 
-        private static string[] NewRestrictionIntersect(string[] a, string[] b)
+        private static string[]? NewRestrictionIntersect(string[] a, string[] b)
         {
-            List<string> newlist = null;
+            List<string>? newlist = null;
             for (int i = 0; i < a.Length; ++i)
             {
                 if (0 <= Array.BinarySearch(b, a[i], StringComparer.Ordinal))
@@ -427,7 +427,7 @@ namespace System.Data.Common
                     newlist.Add(a[i]);
                 }
             }
-            string[] restrictionValues = null;
+            string[]? restrictionValues = null;
             if (newlist != null)
             {
                 restrictionValues = newlist.ToArray();
@@ -462,7 +462,7 @@ namespace System.Data.Common
             return restrictionValues;
         }
 
-        private static string[] ParseRestrictions(string restrictions, Dictionary<string, string> synonyms)
+        private static string[]? ParseRestrictions(string restrictions, Dictionary<string, string>? synonyms)
         {
             List<string> restrictionValues = new List<string>();
             StringBuilder buffer = new StringBuilder(restrictions.Length);
@@ -473,7 +473,7 @@ namespace System.Data.Common
             {
                 int startPosition = nextStartPosition;
 
-                string keyname, keyvalue; // since parsing restrictions ignores values, it doesn't matter if we use ODBC rules or OLEDB rules
+                string? keyname, keyvalue; // since parsing restrictions ignores values, it doesn't matter if we use ODBC rules or OLEDB rules
                 nextStartPosition = DbConnectionOptions.GetKeyValuePair(restrictions, startPosition, buffer, false, out keyname, out keyvalue);
                 if (!string.IsNullOrEmpty(keyname))
                 {
@@ -488,7 +488,7 @@ namespace System.Data.Common
             return RemoveDuplicates(restrictionValues.ToArray());
         }
 
-        internal static string[] RemoveDuplicates(string[] restrictions)
+        internal static string[] RemoveDuplicates(string?[] restrictions)
         {
             int count = restrictions.Length;
             if (0 < count)
@@ -497,14 +497,14 @@ namespace System.Data.Common
 
                 for (int i = 1; i < restrictions.Length; ++i)
                 {
-                    string prev = restrictions[i - 1];
+                    string prev = restrictions[i - 1]!;
                     if ((0 == prev.Length) || (prev == restrictions[i]))
                     {
                         restrictions[i - 1] = null;
                         count--;
                     }
                 }
-                if (0 == restrictions[restrictions.Length - 1].Length)
+                if (0 == restrictions[restrictions.Length - 1]!.Length)
                 {
                     restrictions[restrictions.Length - 1] = null;
                     count--;
@@ -515,20 +515,20 @@ namespace System.Data.Common
                     count = 0;
                     for (int i = 0; i < restrictions.Length; ++i)
                     {
-                        if (null != restrictions[i])
+                        if (restrictions[i] is string restriction)
                         {
-                            tmp[count++] = restrictions[i];
+                            tmp[count++] = restriction;
                         }
                     }
                     restrictions = tmp;
                 }
             }
             Verify(restrictions);
-            return restrictions;
+            return restrictions!;
         }
 
         [ConditionalAttribute("DEBUG")]
-        private static void Verify(string[] restrictionValues)
+        private static void Verify(string?[]? restrictionValues)
         {
             if (null != restrictionValues)
             {

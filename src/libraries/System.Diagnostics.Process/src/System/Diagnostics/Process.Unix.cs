@@ -42,14 +42,14 @@ namespace System.Diagnostics
         }
 
         [CLSCompliant(false)]
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static Process Start(string fileName, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
         }
 
         [CLSCompliant(false)]
-        [MinimumOSPlatform("windows7.0")]
+        [SupportedOSPlatform("windows")]
         public static Process Start(string fileName, string arguments, string userName, SecureString password, string domain)
         {
             throw new PlatformNotSupportedException(SR.ProcessStartWithPasswordAndDomainNotSupported);
@@ -207,11 +207,11 @@ namespace System.Diagnostics
             {
                 if (_output != null)
                 {
-                    _output.WaitUtilEOF();
+                    _output.WaitUntilEOF();
                 }
                 if (_error != null)
                 {
-                    _error.WaitUtilEOF();
+                    _error.WaitUntilEOF();
                 }
             }
 
@@ -680,7 +680,7 @@ namespace System.Diagnostics
             }
 
             // Then check the executable's directory
-            string? path = GetExePath();
+            string? path = Environment.ProcessPath;
             if (path != null)
             {
                 try
@@ -761,7 +761,23 @@ namespace System.Diagnostics
         private static Stream OpenStream(int fd, FileAccess access)
         {
             Debug.Assert(fd >= 0);
-            var socket = new Socket(new SafeSocketHandle((IntPtr)fd, ownsHandle: true));
+            var socketHandle = new SafeSocketHandle((IntPtr)fd, ownsHandle: true);
+            var socket = new Socket(socketHandle);
+
+            if (!socket.Connected)
+            {
+                // WSL1 workaround -- due to issues with sockets syscalls
+                // socket pairs fd's are erroneously inferred as not connected.
+                // Fall back to using FileStream instead.
+
+                GC.SuppressFinalize(socket);
+                GC.SuppressFinalize(socketHandle);
+
+                return new FileStream(
+                    new SafeFileHandle((IntPtr)fd, ownsHandle: true),
+                    access, StreamBufferSize, isAsync: false);
+            }
+
             return new NetworkStream(socket, access, ownsSocket: true);
         }
 

@@ -21,7 +21,7 @@ struct testCase
     int character;
 };
 
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_isalnum_test1_paltest_isalnum_test1, "c_runtime/isalnum/test1/paltest_isalnum_test1")
 {
   
     int result;  

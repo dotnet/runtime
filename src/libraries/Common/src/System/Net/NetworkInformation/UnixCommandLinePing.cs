@@ -4,7 +4,6 @@
 #nullable enable
 using System.Globalization;
 using System.IO;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace System.Net.NetworkInformation
@@ -18,8 +17,6 @@ namespace System.Net.NetworkInformation
 
         private static readonly string? s_discoveredPing4UtilityPath = GetPingUtilityPath(ipv4: true);
         private static readonly string? s_discoveredPing6UtilityPath = GetPingUtilityPath(ipv4: false);
-        private static readonly bool s_isOSX = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
-        private static readonly bool s_isBSD = RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD);
         private static readonly Lazy<bool> s_isBusybox = new Lazy<bool>(() => IsBusyboxPing(s_discoveredPing4UtilityPath));
 
         // We don't want to pick up an arbitrary or malicious ping
@@ -92,7 +89,7 @@ namespace System.Net.NetworkInformation
             // FreeBSD: ping requires -W flag which accepts timeout in MILLISECONDS;
             // ping6 requires -x which accepts timeout in MILLISECONDS
             // OSX: ping requires -W flag which accepts timeout in MILLISECONDS; ping6 doesn't support timeout
-            if (s_isBSD)
+            if (OperatingSystem.IsFreeBSD())
             {
                 if (ipv4)
                 {
@@ -103,7 +100,7 @@ namespace System.Net.NetworkInformation
                     sb.Append(" -x ");
                 }
             }
-            else if (s_isOSX)
+            else if (OperatingSystem.IsMacOS())
             {
                 if (ipv4)
                 {
@@ -136,7 +133,7 @@ namespace System.Net.NetworkInformation
 
             if (ttl > 0)
             {
-                if (s_isBSD | s_isOSX)
+                if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsMacOS())
                 {
                     // OSX and FreeBSD use -h to set hop limit for IPv6 and -m ttl for IPv4
                     if (ipv4)
@@ -159,7 +156,7 @@ namespace System.Net.NetworkInformation
 
             if (fragmentOption != PingFragmentOptions.Default)
             {
-                if (s_isBSD | s_isOSX)
+                if (OperatingSystem.IsFreeBSD() || OperatingSystem.IsMacOS())
                 {
                     // The bit is off by default on OSX & FreeBSD
                     if (fragmentOption == PingFragmentOptions.Dont) {

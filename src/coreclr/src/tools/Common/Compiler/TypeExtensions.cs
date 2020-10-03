@@ -97,6 +97,19 @@ namespace ILCompiler
             return arrayMethod != null && arrayMethod.Kind == ArrayMethodKind.Address;
         }
 
+
+        /// <summary>
+        /// Returns true if '<paramref name="method"/>' is one of the special methods on multidimensional array types (set, get, address).
+        /// </summary>
+        public static bool IsArrayMethod(this MethodDesc method)
+        {
+            var arrayMethod = method as ArrayMethod;
+            return arrayMethod != null && (arrayMethod.Kind == ArrayMethodKind.Address || 
+                                           arrayMethod.Kind == ArrayMethodKind.Get || 
+                                           arrayMethod.Kind == ArrayMethodKind.Set || 
+                                           arrayMethod.Kind == ArrayMethodKind.Ctor);
+        }
+
         /// <summary>
         /// Gets a value indicating whether this type has any generic virtual methods.
         /// </summary>
@@ -202,11 +215,11 @@ namespace ILCompiler
 
         /// <summary>
         /// Determines whether an object of type '<paramref name="type"/>' requires 8-byte alignment on 
-        /// 32bit ARM architectures.
+        /// 32bit ARM or 32bit Wasm architectures.
         /// </summary>
         public static bool RequiresAlign8(this TypeDesc type)
         {
-            if (type.Context.Target.Architecture != TargetArchitecture.ARM)
+            if (type.Context.Target.Architecture != TargetArchitecture.ARM && type.Context.Target.Architecture != TargetArchitecture.Wasm32)
             {
                 return false;
             }

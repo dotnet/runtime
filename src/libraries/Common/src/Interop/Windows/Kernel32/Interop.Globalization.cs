@@ -27,6 +27,7 @@ internal static partial class Interop
         internal const uint LOCALE_SNAME                = 0x0000005C;
         internal const uint LOCALE_INEUTRAL             = 0x00000071;
         internal const uint LOCALE_SSHORTTIME           = 0x00000079;
+        internal const uint LOCALE_ICONSTRUCTEDLOCALE   = 0x0000007d;
         internal const uint LOCALE_STIMEFORMAT          = 0x00001003;
         internal const uint LOCALE_IFIRSTDAYOFWEEK      = 0x0000100C;
         internal const uint LOCALE_RETURN_NUMBER        = 0x20000000;
@@ -121,14 +122,10 @@ internal static partial class Interop
         internal static extern int GetLocaleInfoEx(string lpLocaleName, uint LCType, void* lpLCData, int cchData);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal static extern bool EnumSystemLocalesEx(EnumLocalesProcEx lpLocaleEnumProcEx, uint dwFlags, void* lParam, IntPtr reserved);
-
-        internal delegate BOOL EnumLocalesProcEx(char* lpLocaleString, uint dwFlags, void* lParam);
+        internal static extern bool EnumSystemLocalesEx(delegate* <char*, uint, void*, BOOL> lpLocaleEnumProcEx, uint dwFlags, void* lParam, IntPtr reserved);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal static extern bool EnumTimeFormatsEx(EnumTimeFormatsProcEx lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, void* lParam);
-
-        internal delegate BOOL EnumTimeFormatsProcEx(char* lpTimeFormatString, void* lParam);
+        internal static extern bool EnumTimeFormatsEx(delegate* <char*, void*, BOOL> lpTimeFmtEnumProcEx, string lpLocaleName, uint dwFlags, void* lParam);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
         internal static extern int GetCalendarInfoEx(string? lpLocaleName, uint Calendar, IntPtr lpReserved, uint CalType, IntPtr lpCalData, int cchData, out int lpValue);
@@ -143,9 +140,7 @@ internal static partial class Interop
         internal static extern int GetGeoInfo(int location, int geoType, char* lpGeoData, int cchData, int LangId);
 
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode)]
-        internal static extern bool EnumCalendarInfoExEx(EnumCalendarInfoProcExEx pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string? lpReserved, uint CalType, void* lParam);
-
-        internal delegate BOOL EnumCalendarInfoProcExEx(char* lpCalendarInfoString, uint Calendar, IntPtr lpReserved, void* lParam);
+        internal static extern bool EnumCalendarInfoExEx(delegate* <char*, uint, IntPtr, void*, BOOL> pCalInfoEnumProcExEx, string lpLocaleName, uint Calendar, string? lpReserved, uint CalType, void* lParam);
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct NlsVersionInfoEx

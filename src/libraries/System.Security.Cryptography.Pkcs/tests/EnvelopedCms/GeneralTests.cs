@@ -217,7 +217,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
         [Theory]
         [InlineData(false)]
-#if !NET472
+#if !NETFRAMEWORK
         [InlineData(true)]
 #endif
         public static void TestContent(bool fromSpan)
@@ -238,7 +238,7 @@ KoZIhvcNAwcECJ01qtX2EKx6oIAEEM7op+R2U3GQbYwlEj5X+h0AAAAAAAAAAAAA
 
             if (fromSpan)
             {
-#if !NET472
+#if !NETFRAMEWORK
                 cms.Decode(encodedMessage.AsSpan());
 #else
                 throw new Xunit.Sdk.XunitException(

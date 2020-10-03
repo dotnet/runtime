@@ -43,7 +43,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     <c>false</c>
         /// </returns>
         /// <exception cref="InvalidOperationException">Length is less than zero.</exception>
-        public override bool IsValid(object value)
+        public override bool IsValid(object? value)
         {
             // Check the lengths for legality
             EnsureLegalLengths();

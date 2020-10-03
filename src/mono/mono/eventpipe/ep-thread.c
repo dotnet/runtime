@@ -11,6 +11,9 @@
 #include "ep-session.h"
 #include "ep-rt.h"
 
+static ep_rt_spin_lock_handle_t _ep_threads_lock = {0};
+static ep_rt_thread_array_t _ep_threads = {0};
+
 /*
  * Forward declares of all static functions.
  */
@@ -35,6 +38,10 @@ ep_thread_alloc (void)
 	instance->os_thread_id = ep_rt_current_thread_get_id ();
 	memset (instance->session_state, 0, sizeof (instance->session_state));
 
+	ep_rt_spin_lock_aquire (&_ep_threads_lock);
+		ep_rt_thread_array_append (&_ep_threads, instance);
+	ep_rt_spin_lock_release (&_ep_threads_lock);
+
 ep_on_exit:
 	return instance;
 
@@ -57,6 +64,12 @@ ep_thread_free (EventPipeThread *thread)
 	}
 #endif
 
+	ep_rt_spin_lock_aquire (&_ep_threads_lock);
+		// Remove ourselves from the global list
+		if (EP_UNLIKELY (!ep_rt_thread_array_remove (&_ep_threads, thread)))
+			EP_ASSERT (!"We couldn't find ourselves in the global thread list");
+	ep_rt_spin_lock_release (&_ep_threads_lock);
+
 	ep_rt_spin_lock_free (&thread->rt_lock);
 	ep_rt_object_free (thread);
 }
@@ -76,6 +89,21 @@ ep_thread_release (EventPipeThread *thread)
 		ep_thread_free (thread);
 }
 
+void
+ep_thread_init (void)
+{
+	ep_rt_spin_lock_alloc (&_ep_threads_lock);
+	ep_rt_thread_array_alloc (&_ep_threads);
+}
+
+void
+ep_thread_fini (void)
+{
+	EP_ASSERT (ep_rt_thread_array_size (&_ep_threads) == 0);
+	ep_rt_thread_array_free (&_ep_threads);
+	ep_rt_spin_lock_free (&_ep_threads_lock);
+}
+
 EventPipeThread *
 ep_thread_get (void)
 {
@@ -86,6 +114,26 @@ EventPipeThread *
 ep_thread_get_or_create (void)
 {
 	return ep_rt_thread_get_or_create ();
+}
+
+void
+ep_thread_get_threads (ep_rt_thread_array_t *threads)
+{
+	EP_ASSERT (threads != NULL);
+
+	ep_rt_spin_lock_aquire (&_ep_threads_lock);
+		ep_rt_thread_array_iterator_t threads_iterator;
+		ep_rt_thread_array_iterator_begin (&_ep_threads, &threads_iterator);
+		while (!ep_rt_thread_array_iterator_end (&_ep_threads, &threads_iterator)) {
+			EventPipeThread *thread = ep_rt_thread_array_iterator_value (&threads_iterator);
+			if (thread) {
+				// Add ref so the thread doesn't disappear when we release the lock
+				ep_thread_addref (thread);
+				ep_rt_thread_array_append (threads, thread);
+			}
+			ep_rt_thread_array_iterator_next (&_ep_threads, &threads_iterator);
+		}
+	ep_rt_spin_lock_release (&_ep_threads_lock);
 }
 
 void

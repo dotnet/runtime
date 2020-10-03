@@ -5,9 +5,9 @@ namespace System.Data.ProviderBase
 {
     internal class DbConnectionPoolGroupProviderInfo
     {
-        private DbConnectionPoolGroup _poolGroup;
+        private DbConnectionPoolGroup? _poolGroup;
 
-        internal DbConnectionPoolGroup PoolGroup
+        internal DbConnectionPoolGroup? PoolGroup
         {
             get
             {

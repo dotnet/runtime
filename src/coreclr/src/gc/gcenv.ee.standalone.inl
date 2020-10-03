@@ -274,10 +274,10 @@ inline bool GCToEEInterface::AnalyzeSurvivorsRequested(int condemnedGeneration)
     return g_theGCToCLR->AnalyzeSurvivorsRequested(condemnedGeneration);
 }
 
-inline void GCToEEInterface::AnalyzeSurvivorsFinished(int condemnedGeneration)
+inline void GCToEEInterface::AnalyzeSurvivorsFinished(size_t gcIndex, int condemnedGeneration, uint64_t promoted_bytes, void (*reportGenerationBounds)())
 {
     assert(g_theGCToCLR != nullptr);
-    g_theGCToCLR->AnalyzeSurvivorsFinished(condemnedGeneration);
+    g_theGCToCLR->AnalyzeSurvivorsFinished(gcIndex, condemnedGeneration, promoted_bytes, reportGenerationBounds);
 }
 
 inline void GCToEEInterface::VerifySyncTableEntry()

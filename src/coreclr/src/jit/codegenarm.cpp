@@ -45,7 +45,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //                          if caller knows for certain the constant will fit.
 //
 // Return Value:
-//    returns true if the immediate was too large and tmpReg was used and modified.
+//    returns true if the immediate was small enough to be encoded inside instruction. If not,
+//    returns false meaning the immediate was too large and tmpReg was used and modified.
 //
 bool CodeGen::genInstrWithConstant(
     instruction ins, emitAttr attr, regNumber reg1, regNumber reg2, ssize_t imm, insFlags flags, regNumber tmpReg)
@@ -60,7 +61,7 @@ bool CodeGen::genInstrWithConstant(
     {
         case INS_add:
         case INS_sub:
-            immFitsInIns = validImmForInstr(ins, imm, flags);
+            immFitsInIns = validImmForInstr(ins, (target_ssize_t)imm, flags);
             break;
 
         default:
@@ -71,7 +72,7 @@ bool CodeGen::genInstrWithConstant(
     if (immFitsInIns)
     {
         // generate a single instruction that encodes the immediate directly
-        GetEmitter()->emitIns_R_R_I(ins, attr, reg1, reg2, imm);
+        GetEmitter()->emitIns_R_R_I(ins, attr, reg1, reg2, (target_ssize_t)imm);
     }
     else
     {
@@ -100,7 +101,8 @@ bool CodeGen::genInstrWithConstant(
 //    tmpReg                  - an available temporary register
 //
 // Return Value:
-//    true if `tmpReg` was used.
+//    returns true if the immediate was small enough to be encoded inside instruction. If not,
+//    returns false meaning the immediate was too large and tmpReg was used and modified.
 //
 bool CodeGen::genStackPointerAdjustment(ssize_t spDelta, regNumber tmpReg)
 {
@@ -1650,14 +1652,14 @@ void CodeGen::genCodeForMulLong(GenTreeMultiRegOp* node)
 // genProfilingEnterCallback: Generate the profiling function enter callback.
 //
 // Arguments:
-//     initReg          - register to use as scratch register
-//     pInitRegModified - OUT parameter. *pInitRegModified set to 'true' if and only if
-//                        this call sets 'initReg' to a non-zero value.
+//     initReg        - register to use as scratch register
+//     pInitRegZeroed - OUT parameter. *pInitRegZeroed set to 'false' if 'initReg' is
+//                      not zero after this call.
 //
 // Return Value:
 //     None
 //
-void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegModified)
+void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -1690,7 +1692,7 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegModifie
 
     if (initReg == argReg)
     {
-        *pInitRegModified = true;
+        *pInitRegZeroed = false;
     }
 }
 
@@ -1820,17 +1822,14 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper)
 // Arguments:
 //      frameSize         - the size of the stack frame being allocated.
 //      initReg           - register to use as a scratch register.
-//      pInitRegModified  - OUT parameter. *pInitRegModified is set to 'true' if and only if
+//      pInitRegZeroed    - OUT parameter. *pInitRegZeroed is set to 'false' if and only if
 //                          this call sets 'initReg' to a non-zero value.
 //      maskArgRegsLiveIn - incoming argument registers that are currently live.
 //
 // Return value:
 //      None
 //
-void CodeGen::genAllocLclFrame(unsigned  frameSize,
-                               regNumber initReg,
-                               bool*     pInitRegModified,
-                               regMaskTP maskArgRegsLiveIn)
+void CodeGen::genAllocLclFrame(unsigned frameSize, regNumber initReg, bool* pInitRegZeroed, regMaskTP maskArgRegsLiveIn)
 {
     assert(compiler->compGeneratingProlog);
 
@@ -1860,7 +1859,7 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
         }
 
         regSet.verifyRegUsed(initReg);
-        *pInitRegModified = true;
+        *pInitRegZeroed = false; // The initReg does not contain zero
 
         instGen_Set_Reg_To_Imm(EA_PTRSIZE, initReg, frameSize);
         compiler->unwindPadding();
@@ -1880,7 +1879,7 @@ void CodeGen::genAllocLclFrame(unsigned  frameSize,
         if ((genRegMask(initReg) & (RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET |
                                     RBM_STACK_PROBE_HELPER_TRASH)) != RBM_NONE)
         {
-            *pInitRegModified = true;
+            *pInitRegZeroed = false;
         }
     }
 

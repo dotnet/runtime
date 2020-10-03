@@ -374,10 +374,7 @@ ep_file_stream_writer_alloc (const ep_char8_t *output_file_path)
 	instance->file_stream = ep_file_stream_alloc ();
 	ep_raise_error_if_nok (instance->file_stream != NULL);
 
-	if (!ep_file_stream_open_write (instance->file_stream, output_file_path)) {
-		EP_ASSERT (!"Unable to open file for write.");
-		ep_raise_error ();
-	}
+	ep_raise_error_if_nok (ep_file_stream_open_write (instance->file_stream, output_file_path) == true);
 
 ep_on_exit:
 	return instance;

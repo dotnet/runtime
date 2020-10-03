@@ -220,6 +220,7 @@ namespace System.Net
         private LazyAsyncResult? _readAsyncResult;
         private LazyAsyncResult? _requestCompleteAsyncResult;
 
+        // [SuppressMessage("Microsoft.Security", "CS002:SecretInNextLine", Justification="Anonymous FTP credential in production code.")]
         private static readonly NetworkCredential s_defaultFtpNetworkCredential = new NetworkCredential("anonymous", "anonymous@", string.Empty);
         private const int s_DefaultTimeout = 100000;  // 100 seconds
         private static readonly TimerThread.Queue s_DefaultTimerQueue = TimerThread.GetOrCreateQueue(s_DefaultTimeout);
@@ -478,7 +479,9 @@ namespace System.Net
             }
         }
 
+#pragma warning disable SYSLIB0014
         public ServicePoint ServicePoint => _servicePoint ??= ServicePointManager.FindServicePoint(_uri);
+#pragma warning restore SYSLIB0014
 
         internal bool Aborted
         {
@@ -488,7 +491,9 @@ namespace System.Net
             }
         }
 
+#pragma warning disable SYSLIB0014
         internal FtpWebRequest(Uri uri)
+#pragma warning restore SYSLIB0014
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, uri);
 

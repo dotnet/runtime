@@ -450,7 +450,7 @@ namespace System.Data
                 for (int i = 0; i < value.Length; ++i)
                 {
                     // Empty means don't change the row.
-                    if (value[i] is { } item)
+                    if (value[i] is object item)
                     {
                         // may throw exception if user removes column from table during event
                         DataColumn column = _columns[i];

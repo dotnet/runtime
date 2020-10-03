@@ -2,9 +2,19 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netcoreapp2.0-Windows_NT;netstandard2.0-Windows_NT;net461-Windows_NT;$(NetFrameworkCurrent)-Windows_NT</TargetFrameworks>
-    <ExcludeCurrentFullFrameworkFromPackage>true</ExcludeCurrentFullFrameworkFromPackage>
+    <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-Windows_NT;netstandard2.0;netcoreapp2.0-Windows_NT;netstandard2.0-Windows_NT;net461-Windows_NT</TargetFrameworks>
     <ExcludeCurrentNetCoreAppFromPackage>true</ExcludeCurrentNetCoreAppFromPackage>
+  </PropertyGroup>
+  <!-- Generator for code mapping table, target to invoke is GenerateEncodingSource -->
+  <PropertyGroup>
+    <!-- This Task can be re-run with /t:GenerateEncodingSource
+         An IANA Mapping file contains rows of two elements: a valid IANA encoding identifier, and the equivalent code page.
+         There may be many IANA ids (aliases) mapped to a single code page. -->
+    <IANAMappingPath>Data\CodePageNameMappings.csv</IANAMappingPath>
+    <!-- The preferred name file contains rows of three elements: a code page, the 'canonical' IANA identifier,
+         and an "English" or descriptive name.  There is one row per code page. -->
+    <PreferredIANANamesPath>Data\PreferredCodePageNames.csv</PreferredIANANamesPath>
+    <OutputDataTablePath>System\Text\EncodingTable.Data.cs</OutputDataTablePath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Microsoft\Win32\SafeHandles\SafeAllocHHandle.cs" />
@@ -55,10 +65,14 @@
     <EmbeddedResource Include="Data\codepages.nlp">
       <LogicalName>codepages.nlp</LogicalName>
     </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="Data\CodePageNameMappings.csv" />
     <None Include="Data\PreferredCodePageNames.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj" />
+  </ItemGroup>
+  <ItemGroup Condition="$(TargetFramework.StartsWith('$(NetCoreAppCurrent)')) or
+                        $(TargetFramework.StartsWith('netcoreapp2.0'))">
     <Reference Include="System.Collections" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
@@ -67,22 +81,5 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetFramework.StartsWith('net4'))">
-    <Reference Include="mscorlib" />
-    <Reference Include="System.Core" />
-    <Reference Include="System" />
-  </ItemGroup>
-  <!-- Generator for code mapping table, target to invoke is GenerateEncodingSource -->
-  <PropertyGroup>
-    <!-- This Task can be re-run with /t:GenerateEncodingSource
-         An IANA Mapping file contains rows of two elements: a valid IANA encoding identifier, and the equivalent code page.
-         There may be many IANA ids (aliases) mapped to a single code page. -->
-    <IANAMappingPath>Data\CodePageNameMappings.csv</IANAMappingPath>
-    <!-- The preferred name file contains rows of three elements: a code page, the 'canonical' IANA identifier,
-         and an "English" or descriptive name.  There is one row per code page. -->
-    <PreferredIANANamesPath>Data\PreferredCodePageNames.csv</PreferredIANANamesPath>
-    <OutputDataTablePath>System\Text\EncodingTable.Data.cs</OutputDataTablePath>
-  </PropertyGroup>
 </Project>

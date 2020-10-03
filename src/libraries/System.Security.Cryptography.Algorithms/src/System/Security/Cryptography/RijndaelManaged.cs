@@ -3,10 +3,12 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
     [EditorBrowsable(EditorBrowsableState.Never)]
+    [UnsupportedOSPlatform("browser")]
     public sealed class RijndaelManaged : Rijndael
     {
         private readonly Aes _impl;

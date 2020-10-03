@@ -658,6 +658,8 @@ HRESULT EEToProfInterfaceImpl::CreateProfiler(
     m_hmodProfilerDLL = hmodProfilerDLL.Extract();
     hmodProfilerDLL = NULL;
 
+    // ATTENTION: Please update EEToProfInterfaceImpl::~EEToProfInterfaceImpl() after adding the next ICorProfilerCallback interface here !!!
+
     // The profiler may optionally support ICorProfilerCallback3,4,5,6,7,8,9,10.  Let's check.
     ReleaseHolder<ICorProfilerCallback10> pCallback10;
     hr = m_pCallback2->QueryInterface(
@@ -902,6 +904,12 @@ EEToProfInterfaceImpl::~EEToProfInterfaceImpl()
         {
             m_pCallback9->Release();
             m_pCallback9 = NULL;
+        }
+
+        if (m_pCallback10 != NULL)
+        {
+            m_pCallback10->Release();
+            m_pCallback10 = NULL;
         }
 
         // Only unload the V4 profiler if this is not part of shutdown.  This protects

@@ -395,8 +395,7 @@ namespace System.Collections.Immutable
             /// The first element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type T.
             /// </returns>
-            [return: MaybeNull]
-            public T Find(Predicate<T> match) => _root.Find(match);
+            public T? Find(Predicate<T> match) => _root.Find(match);
 
             /// <summary>
             /// Retrieves all the elements that match the conditions defined by the specified
@@ -469,8 +468,7 @@ namespace System.Collections.Immutable
             /// The last element that matches the conditions defined by the specified predicate,
             /// if found; otherwise, the default value for type T.
             /// </returns>
-            [return: MaybeNull]
-            public T FindLast(Predicate<T> match) => _root.FindLast(match);
+            public T? FindLast(Predicate<T> match) => _root.FindLast(match);
 
             /// <summary>
             /// Searches for an element that matches the conditions defined by the specified

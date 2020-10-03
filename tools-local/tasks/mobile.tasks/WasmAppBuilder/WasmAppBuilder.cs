@@ -1,4 +1,3 @@
-// -*- indent-tabs-mode: nil -*-
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
@@ -9,6 +8,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
@@ -25,14 +26,78 @@ public class WasmAppBuilder : Task
     public string? MainAssembly { get; set; }
     [Required]
     public string? MainJS { get; set; }
+
+    // If true, continue when a referenced assembly cannot be found.
+    // If false, throw an exception.
+    public bool SkipMissingAssemblies { get; set; }
+
+    // full list of ICU data files we produce can be found here:
+    // https://github.com/dotnet/icu/tree/maint/maint-67/icu-filters
+    public string? IcuDataFileName { get; set; } = "icudt.dat";
+
     [Required]
     public ITaskItem[]? AssemblySearchPaths { get; set; }
+    public int DebugLevel { get; set; }
     public ITaskItem[]? ExtraAssemblies { get; set; }
+    public ITaskItem[]? SatelliteAssemblies { get; set; }
     public ITaskItem[]? FilesToIncludeInFileSystem { get; set; }
     public ITaskItem[]? RemoteSources { get; set; }
+    public bool InvariantGlobalization { get; set; }
 
-    SortedDictionary<string, Assembly>? _assemblies;
-    Resolver? _resolver;
+    private SortedDictionary<string, Assembly>? _assemblies;
+    private Resolver? _resolver;
+
+    private class WasmAppConfig
+    {
+        [JsonPropertyName("assembly_root")]
+        public string AssemblyRoot { get; set; } = "managed";
+        [JsonPropertyName("debug_level")]
+        public int DebugLevel { get; set; } = 0;
+        [JsonPropertyName("assets")]
+        public List<object> Assets { get; } = new List<object>();
+        [JsonPropertyName("remote_sources")]
+        public List<string> RemoteSources { get; set; } = new List<string>();
+    }
+
+    private class AssetEntry {
+        protected AssetEntry (string name, string behavior)
+        {
+            Name = name;
+            Behavior = behavior;
+        }
+        [JsonPropertyName("behavior")]
+        public string Behavior { get; init; }
+        [JsonPropertyName("name")]
+        public string Name { get; init; }
+    }
+
+    private class AssemblyEntry : AssetEntry
+    {
+        public AssemblyEntry(string name) : base(name, "assembly") {}
+    }
+
+    private class SatelliteAssemblyEntry : AssetEntry
+    {
+        public SatelliteAssemblyEntry(string name, string culture) : base(name, "resource")
+        {
+            CultureName = culture;
+        }
+
+        [JsonPropertyName("culture")]
+        public string CultureName { get; set; }
+    }
+
+    private class VfsEntry : AssetEntry {
+        public VfsEntry(string name) : base(name, "vfs") {}
+        [JsonPropertyName("virtual_path")]
+        public string? VirtualPath { get; set; }
+    }
+
+    private class IcuData : AssetEntry {
+        public IcuData(string name) : base(name, "icu") {}
+        [JsonPropertyName("load_remote")]
+        public bool LoadRemote { get; set; }
+    }
 
     public override bool Execute ()
     {
@@ -40,6 +105,8 @@ public class WasmAppBuilder : Task
             throw new ArgumentException($"File MainAssembly='{MainAssembly}' doesn't exist.");
         if (!File.Exists(MainJS))
             throw new ArgumentException($"File MainJS='{MainJS}' doesn't exist.");
+        if (!InvariantGlobalization && string.IsNullOrEmpty(IcuDataFileName))
+            throw new ArgumentException("IcuDataFileName property shouldn't be empty if InvariantGlobalization=false");
 
         var paths = new List<string>();
         _assemblies = new SortedDictionary<string, Assembly>();
@@ -55,83 +122,124 @@ public class WasmAppBuilder : Task
         _resolver = new Resolver(paths);
         var mlc = new MetadataLoadContext(_resolver, "System.Private.CoreLib");
 
-        var mainAssembly = mlc.LoadFromAssemblyPath (MainAssembly);
+        var mainAssembly = mlc.LoadFromAssemblyPath(MainAssembly);
         Add(mlc, mainAssembly);
 
         if (ExtraAssemblies != null)
         {
             foreach (var item in ExtraAssemblies)
             {
-                var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
-                Add(mlc, refAssembly);
+                try
+                {
+                    var refAssembly = mlc.LoadFromAssemblyPath(item.ItemSpec);
+                    Add(mlc, refAssembly);
+                }
+                catch (System.IO.FileLoadException)
+                {
+                    if (!SkipMissingAssemblies)
+                    {
+                        throw;
+                    }
+                }
             }
         }
 
+        var config = new WasmAppConfig ();
+
         // Create app
         Directory.CreateDirectory(AppDir!);
-        Directory.CreateDirectory(Path.Join(AppDir, "managed"));
-        foreach (var assembly in _assemblies!.Values)
-            File.Copy(assembly.Location, Path.Join(AppDir, "managed", Path.GetFileName(assembly.Location)), true);
-        foreach (var f in new string[] { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat", "icudt.dat" })
+        Directory.CreateDirectory(Path.Join(AppDir, config.AssemblyRoot));
+        foreach (var assembly in _assemblies!.Values) {
+            File.Copy(assembly.Location, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(assembly.Location)), true);
+            if (DebugLevel > 0) {
+                var pdb = assembly.Location;
+                pdb = Path.ChangeExtension(pdb, ".pdb");
+                if (File.Exists(pdb))
+                    File.Copy(pdb, Path.Join(AppDir, config.AssemblyRoot, Path.GetFileName(pdb)), true);
+            }
+        }
+
+        List<string> nativeAssets = new List<string>() { "dotnet.wasm", "dotnet.js", "dotnet.timezones.blat" };
+
+        if (!InvariantGlobalization)
+            nativeAssets.Add(IcuDataFileName!);
+
+        foreach (var f in nativeAssets)
             File.Copy(Path.Join (MicrosoftNetCoreAppRuntimePackDir, "native", f), Path.Join(AppDir, f), true);
         File.Copy(MainJS!, Path.Join(AppDir, "runtime.js"),  true);
 
+        var html = @"<html><body><script type=""text/javascript"" src=""runtime.js""></script></body></html>";
+        File.WriteAllText(Path.Join(AppDir, "index.html"), html);
+
+        foreach (var assembly in _assemblies.Values) {
+            config.Assets.Add(new AssemblyEntry(Path.GetFileName(assembly.Location)));
+            if (DebugLevel > 0) {
+                var pdb = assembly.Location;
+                pdb = Path.ChangeExtension(pdb, ".pdb");
+                if (File.Exists(pdb))
+                    config.Assets.Add(new AssemblyEntry(Path.GetFileName(pdb)));
+            }
+        }
+
+        config.DebugLevel = DebugLevel;
+
+        if (SatelliteAssemblies != null)
+        {
+            foreach (var assembly in SatelliteAssemblies)
+            {
+                string culture = assembly.GetMetadata("CultureName") ?? string.Empty;
+                string fullPath = assembly.GetMetadata("Identity");
+                string name = Path.GetFileName(fullPath);
+                string directory = Path.Join(AppDir, config.AssemblyRoot, culture);
+                Directory.CreateDirectory(directory);
+                File.Copy(fullPath, Path.Join(directory, name), true);
+                config.Assets.Add(new SatelliteAssemblyEntry(name, culture));
+            }
+        }
+
+        if (FilesToIncludeInFileSystem != null)
+        {
+            string supportFilesDir = Path.Join(AppDir, "supportFiles");
+            Directory.CreateDirectory(supportFilesDir);
+
+            var i = 0;
+            foreach (var item in FilesToIncludeInFileSystem)
+            {
+                string? targetPath = item.GetMetadata("TargetPath");
+                if (string.IsNullOrEmpty(targetPath))
+                {
+                    targetPath = Path.GetFileName(item.ItemSpec);
+                }
+
+                // We normalize paths from `\` to `/` as MSBuild items could use `\`.
+                targetPath = targetPath.Replace('\\', '/');
+
+                var generatedFileName = $"{i++}_{Path.GetFileName(item.ItemSpec)}";
+
+                File.Copy(item.ItemSpec, Path.Join(supportFilesDir, generatedFileName), true);
+
+                var asset = new VfsEntry ($"supportFiles/{generatedFileName}") {
+                    VirtualPath = targetPath
+                };
+                config.Assets.Add(asset);
+            }
+        }
+
+        if (!InvariantGlobalization)
+            config.Assets.Add(new IcuData(IcuDataFileName!) { LoadRemote = RemoteSources?.Length > 0 });
+
+        config.Assets.Add(new VfsEntry ("dotnet.timezones.blat") { VirtualPath = "/usr/share/zoneinfo/"});
+
+        if (RemoteSources?.Length > 0) {
+            foreach (var source in RemoteSources)
+                if (source != null && source.ItemSpec != null)
+                    config.RemoteSources.Add(source.ItemSpec);
+        }
+
         using (var sw = File.CreateText(Path.Join(AppDir, "mono-config.js")))
         {
-            sw.WriteLine("config = {");
-            sw.WriteLine("\tassembly_root: \"managed\",");
-            sw.WriteLine("\tenable_debugging: 0,");
-            sw.WriteLine("\tassets: [");
-
-            foreach (var assembly in _assemblies.Values)
-                sw.WriteLine($"\t\t{{ behavior: \"assembly\", name: \"{Path.GetFileName(assembly.Location)}\" }},");
-
-            if (FilesToIncludeInFileSystem != null)
-            {
-                string supportFilesDir = Path.Join(AppDir, "supportFiles");
-                Directory.CreateDirectory(supportFilesDir);
-
-                var i = 0;
-                foreach (var item in FilesToIncludeInFileSystem)
-                {
-                    string? targetPath = item.GetMetadata("TargetPath");
-                    if (string.IsNullOrEmpty(targetPath))
-                    {
-                        targetPath = Path.GetFileName(item.ItemSpec);
-                    }
-
-                    // We normalize paths from `\` to `/` as MSBuild items could use `\`.
-                    targetPath = targetPath.Replace('\\', '/');
-
-                    var generatedFileName = $"{i++}_{Path.GetFileName(item.ItemSpec)}";
-
-                    File.Copy(item.ItemSpec, Path.Join(supportFilesDir, generatedFileName), true);
-
-                    var actualItemName = "supportFiles/" + generatedFileName;
-
-                    sw.WriteLine("\t\t{");
-                    sw.WriteLine("\t\t\tbehavior: \"vfs\",");
-                    sw.WriteLine($"\t\t\tname: \"{actualItemName}\",");
-                    sw.WriteLine($"\t\t\tvirtual_path: \"{targetPath}\",");
-                    sw.WriteLine("\t\t},");
-                }
-            }
-
-            var enableRemote = (RemoteSources != null) && (RemoteSources!.Length > 0);
-            var sEnableRemote = enableRemote ? "true" : "false";
-
-            sw.WriteLine($"\t\t{{ behavior: \"icu\", name: \"icudt.dat\", load_remote: {sEnableRemote} }},");
-            sw.WriteLine($"\t\t{{ behavior: \"vfs\", name: \"dotnet.timezones.blat\", virtual_path: \"/usr/share/zoneinfo/\" }}");
-            sw.WriteLine ("\t],");
-
-            if (enableRemote) {
-                sw.WriteLine("\tremote_sources: [");
-                foreach (var source in RemoteSources!)
-                    sw.WriteLine("\t\t\"" + source.ItemSpec + "\", ");
-                sw.WriteLine ("\t],");
-            }
-
-            sw.WriteLine ("};");
+            var json = JsonSerializer.Serialize (config, new JsonSerializerOptions { WriteIndented = true });
+            sw.Write($"config = {json};");
         }
 
         using (var sw = File.CreateText(Path.Join(AppDir, "run-v8.sh")))
@@ -161,9 +269,9 @@ public class WasmAppBuilder : Task
     }
 }
 
-class Resolver : MetadataAssemblyResolver
+internal class Resolver : MetadataAssemblyResolver
 {
-    List<String> _searchPaths;
+    private List<string> _searchPaths;
 
     public Resolver(List<string> searchPaths)
     {

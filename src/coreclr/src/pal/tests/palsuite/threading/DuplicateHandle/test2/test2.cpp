@@ -16,7 +16,7 @@
 **===================================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_DuplicateHandle_test2_paltest_duplicatehandle_test2, "threading/DuplicateHandle/test2/paltest_duplicatehandle_test2")
 {
     HANDLE hEvent;
     HANDLE hDupEvent;

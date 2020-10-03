@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Xunit;
@@ -32,16 +31,23 @@ namespace System.Net.Http.Json.Functional.Tests
         {
             return JsonSerializer.Serialize(this, options);
         }
+
+        public string SerializeWithNumbersAsStrings(JsonSerializerOptions options = null)
+        {
+            options ??= new JsonSerializerOptions();
+            options.NumberHandling = options.NumberHandling | JsonNumberHandling.WriteAsString;
+            return JsonSerializer.Serialize(this, options);
+        }
     }
 
     internal static class JsonOptions
     {
-        public static readonly JsonSerializerOptions DefaultSerializerOptions
-            = new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-            };
+        public static readonly JsonSerializerOptions DefaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+
+        public static readonly JsonSerializerOptions DefaultSerializerOptions_StrictNumberHandling = new JsonSerializerOptions(DefaultSerializerOptions)
+        {
+            NumberHandling = JsonNumberHandling.Strict
+        };
     }
 
     internal class EnsureDefaultOptionsConverter : JsonConverter<EnsureDefaultOptions>
@@ -68,7 +74,8 @@ namespace System.Net.Http.Json.Functional.Tests
         private static void AssertDefaultOptions(JsonSerializerOptions options)
         {
             Assert.True(options.PropertyNameCaseInsensitive);
-            Assert.Equal(JsonNamingPolicy.CamelCase, options.PropertyNamingPolicy);
+            Assert.Same(JsonNamingPolicy.CamelCase, options.PropertyNamingPolicy);
+            Assert.Equal(JsonNumberHandling.AllowReadingFromString, options.NumberHandling);
         }
     }
 

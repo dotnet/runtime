@@ -51,6 +51,20 @@ namespace System.Text.Json
 
         [DoesNotReturn]
         [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidCastException_DeserializeUnableToAssignValue(Type typeOfValue, Type declaredType)
+        {
+            throw new InvalidCastException(SR.Format(SR.DeserializeUnableToAssignValue, typeOfValue, declaredType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_DeserializeUnableToAssignNull(Type declaredType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.DeserializeUnableToAssignNull, declaredType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
         public static void ThrowJsonException_SerializationConverterRead(JsonConverter? converter)
         {
             var ex = new JsonException(SR.Format(SR.SerializationConverterRead, converter));
@@ -223,6 +237,35 @@ namespace System.Text.Json
         {
             MemberInfo memberInfo = jsonPropertyInfo.MemberInfo!;
             throw new InvalidOperationException(SR.Format(SR.IgnoreConditionOnValueTypeInvalid, memberInfo.Name, memberInfo.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(JsonPropertyInfo jsonPropertyInfo)
+        {
+            MemberInfo? memberInfo = jsonPropertyInfo.MemberInfo;
+
+            if (!jsonPropertyInfo.ConverterBase.IsInternalConverter)
+            {
+                throw new InvalidOperationException(SR.Format(
+                    SR.NumberHandlingConverterMustBeBuiltIn,
+                    jsonPropertyInfo.ConverterBase.GetType(),
+                    jsonPropertyInfo.IsForClassInfo ? jsonPropertyInfo.DeclaredPropertyType : memberInfo!.DeclaringType));
+            }
+
+            // This exception is only thrown for object properties.
+            Debug.Assert(!jsonPropertyInfo.IsForClassInfo && memberInfo != null);
+            throw new InvalidOperationException(SR.Format(
+                SR.NumberHandlingOnPropertyTypeMustBeNumberOrCollection,
+                memberInfo.Name,
+                memberInfo.DeclaringType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_ConverterCanConvertNullableRedundant(Type runtimePropertyType, JsonConverter jsonConverter)
+        {
+            throw new InvalidOperationException(SR.Format(SR.ConverterCanConvertNullableRedundant, jsonConverter.GetType(), jsonConverter.TypeToConvert, runtimePropertyType));
         }
 
         [DoesNotReturn]
@@ -573,6 +616,13 @@ namespace System.Text.Json
         public static void ThrowJsonException_MetadataCannotParsePreservedObjectIntoImmutable(Type propertyType)
         {
             ThrowJsonException(SR.Format(SR.MetadataCannotParsePreservedObjectToImmutable, propertyType));
+        }
+
+        [DoesNotReturn]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static void ThrowInvalidOperationException_MetadataReferenceOfTypeCannotBeAssignedToType(string referenceId, Type currentType, Type typeToConvert)
+        {
+            throw new InvalidOperationException(SR.Format(SR.MetadataReferenceOfTypeCannotBeAssignedToType, referenceId, currentType, typeToConvert));
         }
 
         [DoesNotReturn]

@@ -44,6 +44,8 @@ namespace Internal.TypeSystem.Interop
 
                 MarshallerKind marshallerKind = MarshalHelpers.GetMarshallerKind(
                     field.FieldType,
+                    parameterIndex : null,
+                    customModifierData: null,
                     field.GetMarshalAsDescriptor(),
                     isReturn: false,
                     isAnsi: mdType.PInvokeStringFormat == PInvokeStringFormat.AnsiClass,

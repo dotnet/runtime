@@ -13,8 +13,8 @@ namespace System.Xml.Xsl.Xslt
         public struct ScopeReord
         {
             public int scopeCount;
-            public string prefix;
-            public string nsUri;
+            public string? prefix;
+            public string? nsUri;
         }
         private ScopeReord[] _records = new ScopeReord[32];
         private int _lastRecord;
@@ -63,7 +63,7 @@ namespace System.Xml.Xsl.Xslt
             AddRecord(prefix, uri);
         }
 
-        private void AddRecord(string prefix, string uri)
+        private void AddRecord(string? prefix, string? uri)
         {
             _records[_lastRecord].scopeCount = _lastScopes;
             _lastRecord++;
@@ -117,7 +117,7 @@ namespace System.Xml.Xsl.Xslt
 
         public void InvalidateNonDefaultPrefixes()
         {
-            string defaultNs = LookupNamespace(string.Empty);
+            string? defaultNs = LookupNamespace(string.Empty);
             if (defaultNs == null)
             {             // We don't know default NS anyway.
                 InvalidateAllPrefixes();
@@ -125,18 +125,19 @@ namespace System.Xml.Xsl.Xslt
             else
             {
                 if (
-                    _records[_lastRecord].prefix.Length == 0 &&
+                    _records[_lastRecord].prefix!.Length == 0 &&
                     _records[_lastRecord - 1].prefix == null
                 )
                 {
                     return;                       // Averything was already done
                 }
+
                 AddRecord(null, null);
                 AddRecord(string.Empty, defaultNs);
             }
         }
 
-        public string LookupNamespace(string prefix)
+        public string? LookupNamespace(string prefix)
         {
             Debug.Assert(prefix != null);
             for (
@@ -151,6 +152,7 @@ namespace System.Xml.Xsl.Xslt
                     return _records[record].nsUri;
                 }
             }
+
             return null;
         }
     }

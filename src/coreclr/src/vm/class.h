@@ -1158,6 +1158,30 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
+    inline void SetHasVTableMethodImpl()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= VMFLAG_VTABLEMETHODIMPL;
+    }
+
+    inline BOOL HasVTableMethodImpl()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_VMFlags & VMFLAG_VTABLEMETHODIMPL);
+    }
+
+    inline void SetHasCovariantOverride()
+    {
+        LIMITED_METHOD_CONTRACT;
+        m_VMFlags |= VMFLAG_COVARIANTOVERRIDE;
+    }
+
+    inline BOOL HasCovariantOverride()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (m_VMFlags & VMFLAG_COVARIANTOVERRIDE);
+    }
+
 #ifdef _DEBUG
     inline DWORD IsDestroyed()
     {
@@ -1691,8 +1715,8 @@ public:
         VMFLAG_HASCOCLASSATTRIB                = 0x01000000,
         VMFLAG_COMEVENTITFMASK                 = 0x02000000, // class is a special COM event interface
 #endif // FEATURE_COMINTEROP
-        // unused                              = 0x04000000,
-        // unused                              = 0x08000000,
+        VMFLAG_VTABLEMETHODIMPL                = 0x04000000, // class uses MethodImpl to override virtual function defined on class
+        VMFLAG_COVARIANTOVERRIDE               = 0x08000000, // class has a covariant override
 
         // This one indicates that the fields of the valuetype are
         // not tightly packed and is used to check whether we can

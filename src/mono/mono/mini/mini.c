@@ -2106,7 +2106,7 @@ mono_postprocess_patches (MonoCompile *cfg)
 			if (cfg->method->dynamic) {
 				table = (void **)mono_code_manager_reserve (cfg->dynamic_info->code_mp, sizeof (gpointer) * patch_info->data.table->table_size);
 			} else {
-				table = (void **)mono_domain_code_reserve (cfg->domain, sizeof (gpointer) * patch_info->data.table->table_size);
+				table = (void **)mono_mem_manager_code_reserve (cfg->mem_manager, sizeof (gpointer) * patch_info->data.table->table_size);
 			}
 
 			for (i = 0; i < patch_info->data.table->table_size; i++) {
@@ -2155,7 +2155,7 @@ mono_codegen (MonoCompile *cfg)
 	MonoBasicBlock *bb;
 	int max_epilog_size;
 	guint8 *code;
-	MonoDomain *code_domain;
+	MonoMemoryManager *code_mem_manager;
 	guint unwindlen = 0;
 
 	if (mono_using_xdebug)
@@ -2164,9 +2164,9 @@ mono_codegen (MonoCompile *cfg)
 		 * overlapping address ranges, so allocate all code from the code manager
 		 * of the root domain. (#666152).
 		 */
-		code_domain = mono_get_root_domain ();
+		code_mem_manager = mono_domain_memory_manager (mono_get_root_domain ());
 	else
-		code_domain = cfg->domain;
+		code_mem_manager = cfg->mem_manager;
 
 	for (bb = cfg->bb_entry; bb; bb = bb->next_bb) {
 		cfg->spill_count = 0;
@@ -2241,12 +2241,14 @@ mono_codegen (MonoCompile *cfg)
 
 		if (mono_using_xdebug)
 			/* See the comment for cfg->code_domain */
-			code = (guint8 *)mono_domain_code_reserve (code_domain, cfg->code_size + cfg->thunk_area + unwindlen);
+			code = (guint8 *)mono_mem_manager_code_reserve (code_mem_manager, cfg->code_size + cfg->thunk_area + unwindlen);
 		else
 			code = (guint8 *)mono_code_manager_reserve (cfg->dynamic_info->code_mp, cfg->code_size + cfg->thunk_area + unwindlen);
 	} else {
-		code = (guint8 *)mono_domain_code_reserve (code_domain, cfg->code_size + cfg->thunk_area + unwindlen);
+		code = (guint8 *)mono_mem_manager_code_reserve (code_mem_manager, cfg->code_size + cfg->thunk_area + unwindlen);
 	}
+
+	mono_codeman_enable_write ();
 
 	if (cfg->thunk_area) {
 		cfg->thunks_offset = cfg->code_size + unwindlen;
@@ -2333,12 +2335,15 @@ mono_codegen (MonoCompile *cfg)
 
 	if (cfg->method->dynamic) {
 		if (mono_using_xdebug)
-			mono_domain_code_commit (code_domain, cfg->native_code, cfg->code_size, cfg->code_len);
+			mono_mem_manager_code_commit (code_mem_manager, cfg->native_code, cfg->code_size, cfg->code_len);
 		else
 			mono_code_manager_commit (cfg->dynamic_info->code_mp, cfg->native_code, cfg->code_size, cfg->code_len);
 	} else {
-		mono_domain_code_commit (code_domain, cfg->native_code, cfg->code_size, cfg->code_len);
+		mono_mem_manager_code_commit (code_mem_manager, cfg->native_code, cfg->code_size, cfg->code_len);
 	}
+
+	mono_codeman_disable_write ();
+
 	MONO_PROFILER_RAISE (jit_code_buffer, (cfg->native_code, cfg->code_len, MONO_PROFILER_CODE_BUFFER_METHOD, cfg->method));
 	
 	mono_arch_flush_icache (cfg->native_code, cfg->code_len);
@@ -2484,7 +2489,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 	if (cfg->method->dynamic)
 		jinfo = (MonoJitInfo *)g_malloc0 (mono_jit_info_size (flags, num_clauses, num_holes));
 	else
-		jinfo = (MonoJitInfo *)mono_domain_alloc0 (cfg->domain, mono_jit_info_size (flags, num_clauses, num_holes));
+		jinfo = (MonoJitInfo *)mono_mem_manager_alloc0 (cfg->mem_manager, mono_jit_info_size (flags, num_clauses, num_holes));
 	jinfo_try_holes_size += num_holes * sizeof (MonoTryBlockHoleJitInfo);
 
 	mono_jit_info_init (jinfo, cfg->method_to_register, cfg->native_code, cfg->code_len, flags, num_clauses, num_holes);
@@ -2504,7 +2509,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 		if (cfg->method->dynamic)
 			gi->generic_sharing_context = g_new0 (MonoGenericSharingContext, 1);
 		else
-			gi->generic_sharing_context = (MonoGenericSharingContext *)mono_domain_alloc0 (cfg->domain, sizeof (MonoGenericSharingContext));
+			gi->generic_sharing_context = (MonoGenericSharingContext *)mono_mem_manager_alloc0 (cfg->mem_manager, sizeof (MonoGenericSharingContext));
 		mini_init_gsctx (cfg->method->dynamic ? NULL : cfg->domain, NULL, cfg->gsctx_context, gi->generic_sharing_context);
 
 		if ((method_to_compile->flags & METHOD_ATTRIBUTE_STATIC) ||
@@ -2536,7 +2541,7 @@ create_jit_info (MonoCompile *cfg, MonoMethod *method_to_compile)
 			if (cfg->method->dynamic)
 				gi->locations = (MonoDwarfLocListEntry *)g_malloc0 (gi->nlocs * sizeof (MonoDwarfLocListEntry));
 			else
-				gi->locations = (MonoDwarfLocListEntry *)mono_domain_alloc0 (cfg->domain, gi->nlocs * sizeof (MonoDwarfLocListEntry));
+				gi->locations = (MonoDwarfLocListEntry *)mono_mem_manager_alloc0 (cfg->mem_manager, gi->nlocs * sizeof (MonoDwarfLocListEntry));
 			i = 0;
 			for (l = loclist; l; l = l->next) {
 				memcpy (&(gi->locations [i]), l->data, sizeof (MonoDwarfLocListEntry));
@@ -3044,6 +3049,9 @@ init_backend (MonoBackend *backend)
 #ifdef MONO_ARCH_HAVE_OPTIMIZED_DIV
 	backend->optimized_div = 1;
 #endif
+#ifdef MONO_ARCH_FORCE_FLOAT32
+	backend->force_float32 = 1;
+#endif
 }
 
 static gboolean
@@ -3146,6 +3154,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 #ifndef MONO_ARCH_FLOAT32_SUPPORTED
 	opts &= ~MONO_OPT_FLOAT32;
 #endif
+	if (current_backend->force_float32)
+		/* Force float32 mode on newer platforms */
+		opts |= MONO_OPT_FLOAT32;
 
  restart_compile:
 	if (method_is_gshared) {
@@ -3180,6 +3191,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->self_init = (flags & JIT_FLAG_SELF_INIT) != 0;
 	cfg->code_exec_only = (flags & JIT_FLAG_CODE_EXEC_ONLY) != 0;
 	cfg->backend = current_backend;
+	cfg->mem_manager = m_method_get_mem_manager (domain, cfg->method);
 
 	if (cfg->method->wrapper_type == MONO_WRAPPER_ALLOC) {
 		/* We can't have seq points inside gc critical regions */

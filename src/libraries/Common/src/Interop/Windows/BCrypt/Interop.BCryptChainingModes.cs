@@ -11,5 +11,6 @@ internal partial class Interop
     {
         internal const string BCRYPT_CHAIN_MODE_CBC = "ChainingModeCBC";
         internal const string BCRYPT_CHAIN_MODE_ECB = "ChainingModeECB";
+        internal const string BCRYPT_CHAIN_MODE_CFB = "ChainingModeCFB";
     }
 }

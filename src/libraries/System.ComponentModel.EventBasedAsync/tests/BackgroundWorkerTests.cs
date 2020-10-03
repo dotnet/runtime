@@ -327,7 +327,6 @@ namespace System.ComponentModel.EventBasedAsync.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsPreciseGcSupported))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/38283", TestPlatforms.Browser)]
         public void TestFinalization()
         {
             // BackgroundWorker has a finalizer that exists purely for backwards compatibility

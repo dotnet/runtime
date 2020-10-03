@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 
 using ILCompiler.DependencyAnalysis.ReadyToRun;
@@ -102,8 +103,9 @@ namespace ILCompiler.DependencyAnalysis
                 stopwatch.Start();
 
                 PEHeaderBuilder headerBuilder;
-                int timeDateStamp;
+                int? timeDateStamp;
                 ISymbolNode r2rHeaderExportSymbol;
+                Func<IEnumerable<Blob>, BlobContentId> peIdProvider = null;
 
                 if (_nodeFactory.CompilationModuleGroup.IsCompositeBuildMode && _componentModule == null)
                 {
@@ -112,8 +114,8 @@ namespace ILCompiler.DependencyAnalysis
                         dllCharacteristics: default(DllCharacteristics),
                         Subsystem.Unknown,
                         _nodeFactory.Target);
-                    // TODO: generate a non-zero timestamp: https://github.com/dotnet/runtime/issues/32507
-                    timeDateStamp = 0;
+                    peIdProvider = new Func<IEnumerable<Blob>, BlobContentId>(content => BlobContentId.FromHash(CryptographicHashProvider.ComputeSourceHash(content)));
+                    timeDateStamp = null;
                     r2rHeaderExportSymbol = _nodeFactory.Header;
                 }
                 else
@@ -135,7 +137,8 @@ namespace ILCompiler.DependencyAnalysis
                     r2rHeaderExportSymbol,
                     Path.GetFileName(_objectFilePath),
                     getRuntimeFunctionsTable,
-                    _customPESectionAlignment);
+                    _customPESectionAlignment,
+                    peIdProvider);
 
                 NativeDebugDirectoryEntryNode nativeDebugDirectoryEntryNode = null;
                 ISymbolDefinitionNode firstImportThunk = null;

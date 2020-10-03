@@ -9,7 +9,7 @@ namespace System.DirectoryServices.Protocols
     {
         internal SafeBerHandle() : base(true)
         {
-            SetHandle(Interop.ber_alloc(1));
+            SetHandle(Interop.Ldap.ber_alloc(1));
             if (handle == IntPtr.Zero)
             {
                 throw new OutOfMemoryException();
@@ -18,7 +18,7 @@ namespace System.DirectoryServices.Protocols
 
         internal SafeBerHandle(berval value) : base(true)
         {
-            SetHandle(Interop.ber_init(value));
+            SetHandle(Interop.Ldap.ber_init(value));
             if (handle == IntPtr.Zero)
             {
                 throw new BerConversionException();
@@ -27,7 +27,7 @@ namespace System.DirectoryServices.Protocols
 
         protected override bool ReleaseHandle()
         {
-            Interop.ber_free(handle, 1);
+            Interop.Ldap.ber_free(handle, 1);
             return true;
         }
     }
@@ -38,11 +38,11 @@ namespace System.DirectoryServices.Protocols
 
         internal ConnectionHandle() : base(true)
         {
-            SetHandle(Interop.ldap_init(null, 389));
+            SetHandle(Interop.Ldap.ldap_init(null, 389));
 
             if (handle == IntPtr.Zero)
             {
-                int error = Interop.LdapGetLastError();
+                int error = Interop.Ldap.LdapGetLastError();
                 if (Utility.IsLdapError((LdapError)error))
                 {
                     string errorMessage = LdapErrorMappings.MapResultCode(error);
@@ -60,7 +60,7 @@ namespace System.DirectoryServices.Protocols
             _needDispose = disposeHandle;
             if (value == IntPtr.Zero)
             {
-                int error = Interop.LdapGetLastError();
+                int error = Interop.Ldap.LdapGetLastError();
                 if (Utility.IsLdapError((LdapError)error))
                 {
                     string errorMessage = LdapErrorMappings.MapResultCode(error);
@@ -82,7 +82,7 @@ namespace System.DirectoryServices.Protocols
             {
                 if (_needDispose)
                 {
-                    Interop.ldap_unbind(handle);
+                    Interop.Ldap.ldap_unbind(handle);
                 }
 
                 handle = IntPtr.Zero;

@@ -160,7 +160,7 @@ namespace System.Net.Mail
                         }
                         catch (ObjectDisposedException)
                         {
-                            // See https://github.com/dotnet/corefx/issues/40711, and potentially
+                            // See https://github.com/dotnet/runtime/issues/30732, and potentially
                             // catch additional exception types here if need demonstrates.
                         }
                     }

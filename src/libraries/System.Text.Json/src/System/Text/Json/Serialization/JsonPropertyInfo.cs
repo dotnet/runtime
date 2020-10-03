@@ -50,6 +50,14 @@ namespace System.Text.Json
 
         public Type DeclaredPropertyType { get; private set; } = null!;
 
+        public virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition, JsonNumberHandling? parentTypeNumberHandling, bool defaultValueIsNull)
+        {
+            DetermineSerializationCapabilities(ignoreCondition);
+            DeterminePropertyName();
+            DetermineIgnoreCondition(ignoreCondition, defaultValueIsNull);
+            DetermineNumberHandling(parentTypeNumberHandling);
+        }
+
         private void DeterminePropertyName()
         {
             if (MemberInfo == null)
@@ -174,6 +182,93 @@ namespace System.Text.Json
 #pragma warning restore CS0618 // IgnoreNullValues is obsolete
         }
 
+        private void DetermineNumberHandling(JsonNumberHandling? parentTypeNumberHandling)
+        {
+            bool numberHandlingIsApplicable = ConverterBase.IsInternalConverterForNumberType || TypeIsCollectionOfNumbersWithInternalConverter();
+
+            if (IsForClassInfo)
+            {
+                if (parentTypeNumberHandling != null && !ConverterBase.IsInternalConverter)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
+                }
+
+                if (numberHandlingIsApplicable)
+                {
+                    // This logic is to honor JsonNumberHandlingAttribute placed on
+                    // custom collections e.g. public class MyNumberList : List<int>.
+
+                    // Priority 1: Get handling from the type (parent type in this case is the type itself).
+                    NumberHandling = parentTypeNumberHandling;
+
+                    // Priority 2: Get handling from JsonSerializerOptions instance.
+                    if (!NumberHandling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
+                    {
+                        NumberHandling = Options.NumberHandling;
+                    }
+                }
+            }
+            else
+            {
+                Debug.Assert(MemberInfo != null);
+
+                JsonNumberHandlingAttribute? attribute = GetAttribute<JsonNumberHandlingAttribute>(MemberInfo);
+                if (attribute != null && !numberHandlingIsApplicable)
+                {
+                    ThrowHelper.ThrowInvalidOperationException_NumberHandlingOnPropertyInvalid(this);
+                }
+
+                if (numberHandlingIsApplicable)
+                {
+                    // Priority 1: Get handling from attribute on property or field.
+                    JsonNumberHandling? handling = attribute?.Handling;
+
+                    // Priority 2: Get handling from attribute on parent class type.
+                    handling ??= parentTypeNumberHandling;
+
+                    // Priority 3: Get handling from JsonSerializerOptions instance.
+                    if (!handling.HasValue && Options.NumberHandling != JsonNumberHandling.Strict)
+                    {
+                        handling = Options.NumberHandling;
+                    }
+
+                    NumberHandling = handling;
+                }
+            }
+        }
+
+        private bool TypeIsCollectionOfNumbersWithInternalConverter()
+        {
+            if (!ConverterBase.IsInternalConverter ||
+                ((ClassType.Enumerable | ClassType.Dictionary) & ClassType) == 0)
+            {
+                return false;
+            }
+
+            Type? elementType = ConverterBase.ElementType;
+            Debug.Assert(elementType != null);
+
+            elementType = Nullable.GetUnderlyingType(elementType) ?? elementType;
+
+            if (elementType == typeof(byte) ||
+                elementType == typeof(decimal) ||
+                elementType == typeof(double) ||
+                elementType == typeof(short) ||
+                elementType == typeof(int) ||
+                elementType == typeof(long) ||
+                elementType == typeof(sbyte) ||
+                elementType == typeof(float) ||
+                elementType == typeof(ushort) ||
+                elementType == typeof(uint) ||
+                elementType == typeof(ulong) ||
+                elementType == JsonClassInfo.ObjectType)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         public static TAttribute? GetAttribute<TAttribute>(MemberInfo memberInfo) where TAttribute : Attribute
         {
             return (TAttribute?)memberInfo.GetCustomAttribute(typeof(TAttribute), inherit: false);
@@ -181,13 +276,6 @@ namespace System.Text.Json
 
         public abstract bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer);
         public abstract bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer);
-
-        public virtual void GetPolicies(JsonIgnoreCondition? ignoreCondition, bool defaultValueIsNull)
-        {
-            DetermineSerializationCapabilities(ignoreCondition);
-            DeterminePropertyName();
-            DetermineIgnoreCondition(ignoreCondition, defaultValueIsNull);
-        }
 
         public abstract object? GetValueAsObject(object obj);
 
@@ -202,6 +290,7 @@ namespace System.Text.Json
             MemberInfo? memberInfo,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
+            JsonNumberHandling? parentTypeNumberHandling,
             JsonSerializerOptions options)
         {
             Debug.Assert(converter != null);
@@ -344,5 +433,7 @@ namespace System.Text.Json
         public bool ShouldSerialize { get; private set; }
         public bool ShouldDeserialize { get; private set; }
         public bool IsIgnored { get; private set; }
+
+        public JsonNumberHandling? NumberHandling { get; private set; }
     }
 }

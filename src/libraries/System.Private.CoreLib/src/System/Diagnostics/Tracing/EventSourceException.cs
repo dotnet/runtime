@@ -1,10 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#if ES_BUILD_STANDALONE
 using System;
-using Environment = Microsoft.Diagnostics.Tracing.Internal.Environment;
-#endif
 using System.Runtime.Serialization;
 
 #if ES_BUILD_STANDALONE
@@ -16,9 +13,7 @@ namespace System.Diagnostics.Tracing
     /// <summary>
     /// Exception that is thrown when an error occurs during EventSource operation.
     /// </summary>
-#if !ES_BUILD_PCL
     [Serializable]
-#endif
     public class EventSourceException : Exception
     {
         /// <summary>
@@ -38,12 +33,10 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public EventSourceException(string? message, Exception? innerException) : base(message, innerException) { }
 
-#if !ES_BUILD_PCL
         /// <summary>
         /// Initializes a new instance of the EventSourceException class with serialized data.
         /// </summary>
         protected EventSourceException(SerializationInfo info, StreamingContext context) : base(info, context) { }
-#endif
 
         internal EventSourceException(Exception? innerException) :
             base(SR.EventSource_ListenerWriteFailure, innerException) { }

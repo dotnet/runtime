@@ -25,8 +25,11 @@ if (CLR_CMAKE_TARGET_WIN32)
     list(APPEND CEEFILEGEN_SOURCES ${CEEFILEGEN_HEADERS})
 endif (CLR_CMAKE_TARGET_WIN32)
 
-add_library_clr(ceefgen
+add_library_clr(ceefgen_obj
     OBJECT
     ${CEEFILEGEN_SOURCES}
 )
-target_precompile_header(TARGET ceefgen HEADER stdafx.h)
+target_precompile_header(TARGET ceefgen_obj HEADER stdafx.h)
+
+add_library(ceefgen INTERFACE)
+target_sources(ceefgen INTERFACE $<TARGET_OBJECTS:ceefgen_obj>)

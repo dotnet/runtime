@@ -14,7 +14,7 @@
 **============================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(miscellaneous_InterlockedExchangePointer_test1_paltest_interlockedexchangepointer_test1, "miscellaneous/InterlockedExchangePointer/test1/paltest_interlockedexchangepointer_test1")
 {
     int err;
     int i1 = 10;

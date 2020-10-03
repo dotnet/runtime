@@ -46,11 +46,11 @@ struct test
 };
 
 /**
- * validate
+ * modff_test1_validate
  *
  * test validation function
  */
-void __cdecl validate(float value, float expected, float variance, float expected_intpart, float variance_intpart)
+void __cdecl modff_test1_validate(float value, float expected, float variance, float expected_intpart, float variance_intpart)
 {
     float result_intpart;
     float result = modff(value, &result_intpart);
@@ -70,11 +70,11 @@ void __cdecl validate(float value, float expected, float variance, float expecte
 }
 
 /**
- * validate
+ * modff_test1_validate
  *
  * test validation function for values returning NaN
  */
-void __cdecl validate_isnan(float value)
+void __cdecl modff_test1_validate_isnan(float value)
 {
     float result_intpart;
     float result = modff(value, &result_intpart);
@@ -91,7 +91,7 @@ void __cdecl validate_isnan(float value)
  * 
  * executable entry point
  */
-int __cdecl main(int argc, char **argv)
+PALTEST(c_runtime_modff_test1_paltest_modff_test1, "c_runtime/modff/test1/paltest_modff_test1")
 {
     struct test tests[] = 
     {
@@ -123,11 +123,11 @@ int __cdecl main(int argc, char **argv)
 
     for (int i = 0; i < (sizeof(tests) / sizeof(struct test)); i++)
     {
-        validate( tests[i].value,  tests[i].expected, tests[i].variance,  tests[i].expected_intpart, tests[i].variance_intpart);
-        validate(-tests[i].value, -tests[i].expected, tests[i].variance, -tests[i].expected_intpart, tests[i].variance_intpart);
+        modff_test1_validate( tests[i].value,  tests[i].expected, tests[i].variance,  tests[i].expected_intpart, tests[i].variance_intpart);
+        modff_test1_validate(-tests[i].value, -tests[i].expected, tests[i].variance, -tests[i].expected_intpart, tests[i].variance_intpart);
     }
 
-    validate_isnan(PAL_NAN);
+    modff_test1_validate_isnan(PAL_NAN);
 
     PAL_Terminate();
     return PASS;

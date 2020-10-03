@@ -18,13 +18,6 @@
     <AssemblyVersion />
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(MSBuildProjectExtension)' == '.csproj'">
-    <!-- SDK-based projects' Platform should default to AnyCPU, not $(TargetArchitecture) like Directory.Build.props sets. -->
-    <Platform>AnyCPU</Platform>
-    <UsingNETSdkCompiler>true</UsingNETSdkCompiler>
-    <DisableBuildToolsRoslynVersion>true</DisableBuildToolsRoslynVersion>
-  </PropertyGroup>
-
   <PropertyGroup>
     <SigningToolsDir>$(InstallerProjectRoot)signing\</SigningToolsDir>
   </PropertyGroup>
@@ -32,8 +25,6 @@
   <!-- Platform detection -->
   <PropertyGroup>
     <RunningOnUnix Condition="'$(OS)'!='Windows_NT'">true</RunningOnUnix>
-
-    <RunningOnCore Condition="'$(MSBuildRuntimeType)' == 'core'">true</RunningOnCore>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -149,12 +140,6 @@
     <HostFxrInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(HostFxrInstallerStart)$(InstallerStartSuffix)-</HostFxrInstallerStart>
     <SharedFrameworkInstallerStart Condition="'$(TargetOS)' == 'OSX'">$(SharedFrameworkInstallerStart)$(InstallerStartSuffix)-</SharedFrameworkInstallerStart>
 
-  </PropertyGroup>
-
-  <!-- Set up handling of build warnings -->
-  <PropertyGroup>
-    <WarningLevel>4</WarningLevel>
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -335,24 +320,6 @@
     <PackageTargetRid>$(OutputRid)</PackageTargetRid>
     <PackageTargetRid Condition="'$(OutputRid)' == 'osx.10.11-x64'">osx.10.10-x64</PackageTargetRid>
     <PackageTargetRid Condition="$(OutputRid.StartsWith('rhel.7.')) and $(OutputRid.EndsWith('-x64'))">rhel.7-x64</PackageTargetRid>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(UsingNETSdkCompiler)' != 'true'">
-    <!-- Disable some standard properties for building our projects -->
-    <NoStdLib>true</NoStdLib>
-    <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
-    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
-    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-
-    <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
-         the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
-    <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)documentation</_TargetFrameworkDirectories>
-    <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)documentation</_FullFrameworkReferenceAssemblyPaths>
-    <!-- We do not want to target a portable profile.
-         TODO: Make this the default in buildtools so this is not necessary. -->
-    <TargetFrameworkProfile></TargetFrameworkProfile>
-    <!-- We set this property to avoid MSBuild errors regarding not setting TargetFrameworkProfile (see above line) -->
-    <PortableNuGetMode>true</PortableNuGetMode>
   </PropertyGroup>
 
   <PropertyGroup>

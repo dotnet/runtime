@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Security.Cryptography.Tests
 {
+    [SkipOnMono("Not supported on Browser", TestPlatforms.Browser)]
     public static class PaddingModeTests
     {
         [Theory]

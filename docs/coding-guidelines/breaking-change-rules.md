@@ -19,14 +19,14 @@ Breaking Change Rules
 ### Property, Field, Parameter and Return Values
 &#10003; **Allowed**
 * Increasing the range of accepted values for a property or parameter if the member _is not_ `virtual`
- 
+
     Note that the range can only increase to the extent that it does not impact the static type. e.g. it is OK to remove `if (x > 10) throw new ArgumentOutOfRangeException("x")`, but it is not OK to change the type of `x` from `int` to `long` or `int?`.
 
 * Returning a value of a more derived type for a property, field, return or `out` value
 
     Note, again, that the static type cannot change. e.g. it is OK to return a `string` instance where an `object` was returned previously, but it is not OK to change the return type from `object` to `string`.
 
-&#10007; **Disallowed**  
+&#10007; **Disallowed**
 * Increasing the range of accepted values for a property or parameter if the member _is_ `virtual`
 
     This is breaking because any existing overridden members will now not function correctly for the extended range of values.
@@ -135,7 +135,7 @@ Breaking Change Rules
     So long as it does not introduce any new abstract members or change the semantics or behavior of existing members, a type can be introduced into a hierarchy between two existing types. For example, between .NET Framework 1.1 and .NET Framework 2.0, we introduced `DbConnection` as a new base class for `SqlConnection` which previously derived from `Component`.
 
 * Adding an interface implementation to a type
-    
+
     This is acceptable because it will not adversely affect existing clients. Any changes which could be made to the type being changed in this situation, will have to work within the boundaries of acceptable changes defined here, in order for the new implementation to remain acceptable.
     Extreme caution is urged when adding interfaces that directly affect the ability of the designer or serializer to generate code or data, that cannot be consumed down-level. An example is the `ISerializable` interface.
     Care should be taken when the interface (or one of the interfaces that this interface requires) has default interface implementations for other interface methods. The default implementation could conflict with other default implementations in a derived class.
@@ -205,7 +205,7 @@ Breaking Change Rules
 
 * Adding an overload that precludes an existing overload, and defines different behavior
 
-    This will break existing clients that were bound to the previous overload. For example, if you have a class that has a single version of a method that accepts a `uint`, an existing consumer will 
+    This will break existing clients that were bound to the previous overload. For example, if you have a class that has a single version of a method that accepts a `uint`, an existing consumer will
 successfully bind to that overload, if simply passing an `int` value. However, if you add an overload that accepts an `int`, recompiling or via late-binding the application will now bind to the new overload. If different behavior results, then this is a breaking change.
 
 * Moving an exposed field onto a class higher in the hierarchy tree of the type from which it was removed

@@ -24,6 +24,7 @@
 #cmakedefine01 HAVE_PTHREAD_NP_H
 #cmakedefine01 HAVE_AUXV_HWCAP_H
 #cmakedefine01 HAVE_SYS_PTRACE_H
+#cmakedefine01 HAVE_GETAUXVAL
 
 #cmakedefine01 HAVE_KQUEUE
 #cmakedefine01 HAVE_PTHREAD_SUSPEND
@@ -36,7 +37,6 @@
 #cmakedefine01 HAVE_PTHREAD_GETCPUCLOCKID
 #cmakedefine01 HAVE_PTHREAD_SIGQUEUE
 #cmakedefine01 HAVE_PTHREAD_GETAFFINITY_NP
-#cmakedefine01 HAVE_PTHREAD_ATTR_SETAFFINITY_NP
 #cmakedefine01 HAVE_CPUSET_T
 #cmakedefine01 HAVE_SIGRETURN
 #cmakedefine01 HAVE__THREAD_SYS_SIGRETURN
@@ -66,6 +66,7 @@
 #cmakedefine01 HAVE_TTRACE
 #cmakedefine01 HAVE_PIPE2
 #cmakedefine01 HAVE_SCHED_GETAFFINITY
+#cmakedefine01 HAVE_SCHED_SETAFFINITY
 #cmakedefine HAVE_UNW_GET_SAVE_LOC
 #cmakedefine HAVE_UNW_GET_ACCESSORS
 #cmakedefine01 HAVE_XSWDEV

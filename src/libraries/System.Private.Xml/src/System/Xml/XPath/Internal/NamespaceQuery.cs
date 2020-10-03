@@ -22,7 +22,7 @@ namespace MS.Internal.Xml.XPath
             base.Reset();
         }
 
-        public override XPathNavigator Advance()
+        public override XPathNavigator? Advance()
         {
             while (true)
             {
@@ -39,7 +39,7 @@ namespace MS.Internal.Xml.XPath
                 }
                 else
                 {
-                    _onNamespace = currentNode.MoveToNextNamespace();
+                    _onNamespace = currentNode!.MoveToNextNamespace();
                 }
 
                 if (_onNamespace)

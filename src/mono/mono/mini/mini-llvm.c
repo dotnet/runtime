@@ -316,6 +316,12 @@ const_int32 (int v)
 	return LLVMConstInt (LLVMInt32Type (), v, FALSE);
 }
 
+static LLVMValueRef
+const_int64 (int64_t v)
+{
+	return LLVMConstInt (LLVMInt64Type (), v, FALSE);
+}
+
 /*
  * IntPtrType:
  *
@@ -5712,6 +5718,28 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			values [ins->dreg] = LLVMBuildAdd (builder, v2, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), dname);
 			break;
 		}
+		case OP_X86_BSF32:
+		case OP_X86_BSF64: {
+			LLVMValueRef args [] = {
+				lhs,
+				LLVMConstInt (LLVMInt1Type (), 1, TRUE),
+			};
+			int op = ins->opcode == OP_X86_BSF32 ? INTRINS_CTTZ_I32 : INTRINS_CTTZ_I64;
+			values [ins->dreg] = call_intrins (ctx, op, args, dname);
+			break;
+		}
+		case OP_X86_BSR32:
+		case OP_X86_BSR64: {
+			LLVMValueRef args [] = {
+				lhs,
+				LLVMConstInt (LLVMInt1Type (), 1, TRUE),
+			};
+			int op = ins->opcode == OP_X86_BSR32 ? INTRINS_CTLZ_I32 : INTRINS_CTLZ_I64;
+			LLVMValueRef width = ins->opcode == OP_X86_BSR32 ? const_int32 (31) : const_int64 (63);
+			LLVMValueRef tz = call_intrins (ctx, op, args, "");
+			values [ins->dreg] = LLVMBuildXor (builder, tz, width, dname);
+			break;
+		}
 #endif
 
 		case OP_ICONV_TO_I1:
@@ -8429,7 +8457,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_SSSE3_ALIGNR: {
 			LLVMValueRef mask_values [16];
 			for (int i = 0; i < 16; i++)
-				mask_values [i] = LLVMConstInt (LLVMInt8Type (), i + ins->inst_c0, FALSE);
+				mask_values [i] = LLVMConstInt (LLVMInt32Type (), i + ins->inst_c0, FALSE);
 			LLVMValueRef shuffled = LLVMBuildShuffleVector (builder, 
 				convert (ctx, rhs, sse_i1_t),
 				convert (ctx, lhs, sse_i1_t),
@@ -8808,9 +8836,21 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 		case OP_XEXTRACT_I32:
 		case OP_XEXTRACT_I64:
 		case OP_XEXTRACT_R8:
-		case OP_XEXTRACT_R4:
-			values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, rhs, "");
+		case OP_XEXTRACT_R4: {
+			LLVMTypeRef rhst = LLVMTypeOf (rhs);
+			LLVMValueRef mask = NULL;
+			switch (ins->opcode) {
+			case OP_XEXTRACT_I32: case OP_XEXTRACT_R4:
+				mask = LLVMConstInt (rhst, 0x3, FALSE); break;
+			case OP_XEXTRACT_I64: case OP_XEXTRACT_R8:
+				mask = LLVMConstInt (rhst, 0x1, FALSE); break;
+			default:
+				g_assert_not_reached ();
+			}
+			LLVMValueRef selector = LLVMBuildAnd (builder, rhs, mask, "");
+			values [ins->dreg] = LLVMBuildExtractElement (builder, lhs, selector, "");
 			break;
+		}
 		case OP_POPCNT32:
 			values [ins->dreg] = call_intrins (ctx, INTRINS_CTPOP_I32, &lhs, "");
 			break;
@@ -11675,8 +11715,10 @@ llvm_jit_finalize_method (EmitContext *ctx)
 	while (g_hash_table_iter_next (&iter, NULL, (void**)&var))
 		callee_vars [i ++] = var;
 
+	mono_codeman_enable_write ();
 	cfg->native_code = (guint8*)mono_llvm_compile_method (ctx->module->mono_ee, cfg, ctx->lmethod, nvars, callee_vars, callee_addrs, &eh_frame);
 	mono_llvm_remove_gc_safepoint_poll (ctx->lmodule);
+	mono_codeman_disable_write ();
 	if (cfg->verbose_level > 1) {
 		g_print ("\n*** Optimized LLVM IR for %s ***\n", mono_method_full_name (cfg->method, TRUE));
 		if (cfg->compile_aot) {

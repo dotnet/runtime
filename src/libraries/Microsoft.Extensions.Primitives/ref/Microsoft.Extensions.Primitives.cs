@@ -36,19 +36,6 @@ namespace Microsoft.Extensions.Primitives
         bool HasChanged { get; }
         System.IDisposable RegisterChangeCallback(System.Action<object> callback, object state);
     }
-    [System.ObsoleteAttribute("This type is obsolete and will be removed in a future version.")]
-    public partial struct InplaceStringBuilder
-    {
-        private object _dummy;
-        private int _dummyPrimitive;
-        public InplaceStringBuilder(int capacity) { throw null; }
-        public int Capacity { get { throw null; } set { } }
-        public void Append(Microsoft.Extensions.Primitives.StringSegment segment) { }
-        public void Append(char c) { }
-        public void Append(string value) { }
-        public void Append(string value, int offset, int count) { }
-        public override string ToString() { throw null; }
-    }
     public readonly partial struct StringSegment : System.IEquatable<Microsoft.Extensions.Primitives.StringSegment>, System.IEquatable<string>
     {
         private readonly object _dummy;

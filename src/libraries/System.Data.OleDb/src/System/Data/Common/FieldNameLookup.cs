@@ -12,14 +12,14 @@ namespace System.Data.ProviderBase
     { // V1.2.3300
 
         // hashtable stores the index into the _fieldNames, match via case-sensitive
-        private Hashtable _fieldNameLookup;
+        private Hashtable? _fieldNameLookup;
 
         // original names for linear searches when exact matches fail
         private readonly string[] _fieldNames;
 
         // if _defaultLocaleID is -1 then _compareInfo is initialized with InvariantCulture CompareInfo
         // otherwise it is specified by the server? for the correct compare info
-        private CompareInfo _compareInfo;
+        private CompareInfo? _compareInfo;
         private readonly int _defaultLocaleID;
 
         public FieldNameLookup(IDataRecord reader, int defaultLocaleID)
@@ -57,7 +57,7 @@ namespace System.Data.ProviderBase
                 GenerateLookup();
             }
             // via case sensitive search, first match with lowest ordinal matches
-            object value = _fieldNameLookup[fieldName];
+            object? value = _fieldNameLookup![fieldName];
             return ((null != value) ? (int)value : -1);
         }
 
@@ -68,7 +68,7 @@ namespace System.Data.ProviderBase
                 GenerateLookup();
             }
             int index;
-            object value = _fieldNameLookup[fieldName];
+            object? value = _fieldNameLookup![fieldName];
             if (null != value)
             {
                 // via case sensitive search, first match with lowest ordinal matches
@@ -89,7 +89,7 @@ namespace System.Data.ProviderBase
 
         private int LinearIndexOf(string fieldName, CompareOptions compareOptions)
         {
-            CompareInfo compareInfo = _compareInfo;
+            CompareInfo? compareInfo = _compareInfo;
             if (null == compareInfo)
             {
                 if (-1 != _defaultLocaleID)
@@ -107,7 +107,7 @@ namespace System.Data.ProviderBase
             {
                 if (0 == compareInfo.Compare(fieldName, _fieldNames[i], compareOptions))
                 {
-                    _fieldNameLookup[fieldName] = i; // add an exact match for the future
+                    _fieldNameLookup![fieldName] = i; // add an exact match for the future
                     return i;
                 }
             }

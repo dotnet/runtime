@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Converters
                 ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
 
-            state.Current.ReturnValue = new Dictionary<string, TValue>();
+            state.Current.ReturnValue = new Dictionary<TKey, TValue>();
         }
 
         protected internal override bool OnWriteResume(Utf8JsonWriter writer, TCollection value, JsonSerializerOptions options, ref WriteStack state)
@@ -42,7 +42,7 @@ namespace System.Text.Json.Serialization.Converters
             }
 
             JsonConverter<TKey> keyConverter = _keyConverter ??= GetKeyConverter(KeyType, options);
-            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo);
+            JsonConverter<TValue> valueConverter = _valueConverter ??= GetValueConverter(state.Current.JsonClassInfo.ElementClassInfo!);
             do
             {
                 if (ShouldFlush(writer, ref state))

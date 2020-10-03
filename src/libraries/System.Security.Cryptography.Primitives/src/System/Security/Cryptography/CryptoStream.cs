@@ -100,9 +100,23 @@ namespace System.Security.Cryptography
         // byte[] ciphertext = ms.ToArray();
         // cs.Close();
         public void FlushFinalBlock() =>
-            FlushFinalBlockAsync(useAsync: false).AsTask().GetAwaiter().GetResult();
+            FlushFinalBlockAsync(useAsync: false, default).AsTask().GetAwaiter().GetResult();
 
-        private async ValueTask FlushFinalBlockAsync(bool useAsync)
+        /// <summary>
+        /// Asynchronously updates the underlying data source or repository with the
+        /// current state of the buffer, then clears the buffer.
+        /// </summary>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>A task that represents the asynchronous flush operation.</returns>
+        public ValueTask FlushFinalBlockAsync(CancellationToken cancellationToken = default)
+        {
+            if (cancellationToken.IsCancellationRequested)
+                return ValueTask.FromCanceled(cancellationToken);
+
+            return FlushFinalBlockAsync(useAsync: true, cancellationToken);
+        }
+
+        private async ValueTask FlushFinalBlockAsync(bool useAsync, CancellationToken cancellationToken)
         {
             if (_finalBlockTransformed)
                 throw new NotSupportedException(SR.Cryptography_CryptoStream_FlushFinalBlockTwice);
@@ -116,7 +130,7 @@ namespace System.Security.Cryptography
                 byte[] finalBytes = _transform.TransformFinalBlock(_inputBuffer!, 0, _inputBufferIndex);
                 if (useAsync)
                 {
-                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(finalBytes)).ConfigureAwait(false);
+                    await _stream.WriteAsync(new ReadOnlyMemory<byte>(finalBytes), cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -129,14 +143,14 @@ namespace System.Security.Cryptography
             {
                 if (!innerCryptoStream.HasFlushedFinalBlock)
                 {
-                    await innerCryptoStream.FlushFinalBlockAsync(useAsync).ConfigureAwait(false);
+                    await innerCryptoStream.FlushFinalBlockAsync(useAsync, cancellationToken).ConfigureAwait(false);
                 }
             }
             else
             {
                 if (useAsync)
                 {
-                    await _stream.FlushAsync().ConfigureAwait(false);
+                    await _stream.FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
@@ -691,7 +705,7 @@ namespace System.Security.Cryptography
             {
                 if (!_finalBlockTransformed)
                 {
-                    await FlushFinalBlockAsync(useAsync: true).ConfigureAwait(false);
+                    await FlushFinalBlockAsync(useAsync: true, default).ConfigureAwait(false);
                 }
 
                 if (!_leaveOpen)

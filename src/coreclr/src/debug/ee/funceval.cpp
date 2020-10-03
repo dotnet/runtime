@@ -3886,7 +3886,7 @@ void * STDCALL FuncEvalHijackWorker(DebuggerEval *pDE)
         FrameWithCookie<FuncEvalFrame> FEFrame(pDE, GetIP(&pDE->m_context), false);
         FEFrame.Push();
 
-        pDE->m_thread->UserAbort(pDE->m_requester, EEPolicy::TA_Safe, INFINITE, Thread::UAC_Normal);
+        pDE->m_thread->UserAbort(pDE->m_requester, EEPolicy::TA_Safe, INFINITE);
         _ASSERTE(!"Should not return from UserAbort here!");
         return NULL;
     }

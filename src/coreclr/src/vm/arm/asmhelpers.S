@@ -366,134 +366,87 @@ LEAF_ENTRY JIT_ProfilerEnterLeaveTailcallStub, _TEXT
     bx lr
 LEAF_END JIT_ProfilerEnterLeaveTailcallStub, _TEXT
 
-//
-// EXTERN_C void ProfileEnterNaked(FunctionIDOrClientID functionIDOrClientID);
-//
-NESTED_ENTRY ProfileEnterNaked, _TEXT, NoHandler
-    PROLOG_PUSH "{r4, r5, r7, r11, lr}"
-    PROLOG_STACK_SAVE_OFFSET r7, #8
+#define PROFILE_ENTER    1
+#define PROFILE_LEAVE    2
+#define PROFILE_TAILCALL 4
+// size of profiler data structure plus alignment padding
+#define SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA 104+4
 
-    // fields of PROFILE_PLATFORM_SPECIFIC_DATA, in reverse order
+// typedef struct _PROFILE_PLATFORM_SPECIFIC_DATA
+// {
+//     UINT32      r0;         // Keep r0 & r1 contiguous to make returning 64-bit results easier
+//     UINT32      r1;
+//     void       *R11;
+//     void       *Pc;
+//     union                   // Float arg registers as 32-bit (s0-s15) and 64-bit (d0-d7)
+//     {
+//         UINT32  s[16];
+//         UINT64  d[8];
+//     };
+//     FunctionID  functionId;
+//     void       *probeSp;    // stack pointer of managed function
+//     void       *profiledSp; // location of arguments on stack
+//     LPVOID      hiddenArg;
+//     UINT32      flags;
+// } PROFILE_PLATFORM_SPECIFIC_DATA, *PPROFILE_PLATFORM_SPECIFIC_DATA;
 
-    // UINT32      r0;         // Keep r0 & r1 contiguous to make returning 64-bit results easier
-    // UINT32      r1;
-    // void       *r11;
-    // void       *Pc;
-    // union                   // Float arg registers as 32-bit (s0-s15) and 64-bit (d0-d7)
-    // {
-    //     UINT32  s[16];
-    //     UINT64  d[8];
-    // };
-    // FunctionID  functionId;
-    // void       *probeSp;    // stack pointer of managed function
-    // void       *profiledSp; // location of arguments on stack
-    // LPVOID      hiddenArg;
-    // UINT32      flags;
-    movw        r4, #1
-    push        { /* flags      */ r4 }
-    movw        r4, #0
-    push        { /* hiddenArg  */ r4 }
-    add         r5, r11, #8
-    push        { /* profiledSp */ r5 }
-    add         r5, sp, #32
-    push        { /* probeSp    */ r5 }
-    push        { /* functionId */ r0 }
+.macro GenerateProfileHelper helper, flags
+NESTED_ENTRY \helper\()Naked, _TEXT, NoHandler
+    PROLOG_PUSH "{r0,r3,r9,r12}"
+
+    // for the 5 arguments that do not need popped plus 4 bytes of alignment 
+    alloc_stack 6*4
+
+    // push fp regs
     vpush.64    { d0 - d7 }
-    push        { lr }
-    push        { r11 }
-    push        { /* return value, r4 is NULL */ r4 }
-    push        { /* return value, r4 is NULL */ r4 }
+
+    // next three fields pc, r11, r1
+    push        { r1, r11, lr}
+
+    // return value is in r2 instead of r0 because functionID is passed in r0
+    push        { r2 }
+
+    CHECK_STACK_ALIGNMENT
+
+    // set the other args, starting with functionID
+    str         r0, [sp, #80]
+
+    // probeSp is the original sp when this stub was called
+    add         r2, sp, SIZEOF__PROFILE_PLATFORM_SPECIFIC_DATA+20
+    str         r2, [sp, #84] 
+
+    // get the address of the arguments from the frame pointer, store in profiledSp
+    add         r2, r11, #8
+    str         r2, [sp, #88]
+
+    // clear hiddenArg
+    movw        r2, #0
+    str         r2, [sp, #92]
+    
+    // set the flag to indicate what hook this is
+    movw        r2, \flags
+    str         r2, [sp, #96]
+
+    // sp is the address of PROFILE_PLATFORM_SPECIFIC_DATA, then call to C++
     mov         r1, sp
-    bl          C_FUNC(ProfileEnter)
-    EPILOG_STACK_RESTORE_OFFSET r7, #8
-    EPILOG_POP "{r4, r5, r7, r11, pc}"
-NESTED_END ProfileEnterNaked, _TEXT
+    bl          C_FUNC(\helper)
 
-//
-// EXTERN_C void ProfileLeaveNaked(FunctionIDOrClientID functionIDOrClientID);
-//
-NESTED_ENTRY ProfileLeaveNaked, _TEXT, NoHandler
-    PROLOG_PUSH "{r1, r2, r4, r5, r7, r11, lr}"
-    PROLOG_STACK_SAVE_OFFSET r7, #16
+    // restore all our regs
+    pop         { r2 }
+    pop         { r1, r11, lr}
+    vpop.64     { d0 - d7 }
 
-    // fields of PROFILE_PLATFORM_SPECIFIC_DATA, in reverse order
+    free_stack 6*4
 
-    // UINT32      r0;         // Keep r0 & r1 contiguous to make returning 64-bit results easier
-    // UINT32      r1;
-    // void       *r11;
-    // void       *Pc;
-    // union                   // Float arg registers as 32-bit (s0-s15) and 64-bit (d0-d7)
-    // {
-    //     UINT32  s[16];
-    //     UINT64  d[8];
-    // };
-    // FunctionID  functionId;
-    // void       *probeSp;    // stack pointer of managed function
-    // void       *profiledSp; // location of arguments on stack
-    // LPVOID      hiddenArg;
-    // UINT32      flags;
-    movw        r4, #2
-    push        { /* flags      */ r4 }
-    movw        r4, #0
-    push        { /* hiddenArg  */ r4 }
-    add         r5, r11, #8
-    push        { /* profiledSp */ r5 }
-    add         r5, sp, #40
-    push        { /* probeSp    */ r5 }
-    push        { /* functionId */ r0 }
-    vpush.64    { d0 - d7 }
-    push        { lr }
-    push        { r11 }
-    push        { r1 }
-    push        { r0 }
-    mov         r1, sp
-    bl          C_FUNC(ProfileLeave)
-    EPILOG_STACK_RESTORE_OFFSET r7, #16
-    EPILOG_POP "{r1, r2, r4, r5, r7, r11, pc}"
-NESTED_END ProfileLeaveNaked, _TEXT
+    EPILOG_POP "{r0,r3,r9,r12}"
 
-//
-// EXTERN_C void ProfileTailcallNaked(FunctionIDOrClientID functionIDOrClientID);
-//
-NESTED_ENTRY ProfileTailcallNaked, _TEXT, NoHandler
-    PROLOG_PUSH "{r1, r2, r4, r5, r7, r11, lr}"
-    PROLOG_STACK_SAVE_OFFSET r7, #16
+    bx          lr
+NESTED_END \helper\()Naked, _TEXT
+.endm
 
-    // fields of PROFILE_PLATFORM_SPECIFIC_DATA, in reverse order
-
-    // UINT32      r0;         // Keep r0 & r1 contiguous to make returning 64-bit results easier
-    // UINT32      r1;
-    // void       *r11;
-    // void       *Pc;
-    // union                   // Float arg registers as 32-bit (s0-s15) and 64-bit (d0-d7)
-    // {
-    //     UINT32  s[16];
-    //     UINT64  d[8];
-    // };
-    // FunctionID  functionId;
-    // void       *probeSp;    // stack pointer of managed function
-    // void       *profiledSp; // location of arguments on stack
-    // LPVOID      hiddenArg;
-    // UINT32      flags;
-    movw        r4, #2
-    push        { /* flags      */ r4 }
-    movw        r4, #0
-    push        { /* hiddenArg  */ r4 }
-    add         r5, r11, #8
-    push        { /* profiledSp */ r5 }
-    add         r5, sp, #40
-    push        { /* probeSp    */ r5 }
-    push        { /* functionId */ r0 }
-    vpush.64    { d0 - d7 }
-    push        { lr }
-    push        { r11 }
-    push        { r1 }
-    push        { r0 }
-    mov         r1, sp
-    bl          C_FUNC(ProfileTailcall)
-    EPILOG_STACK_RESTORE_OFFSET r7, #16
-    EPILOG_POP "{r1, r2, r4, r5, r7, r11, pc}"
-NESTED_END ProfileTailcallNaked, _TEXT
+GenerateProfileHelper ProfileEnter, PROFILE_ENTER
+GenerateProfileHelper ProfileLeave, PROFILE_LEAVE
+GenerateProfileHelper ProfileTailcall, PROFILE_TAILCALL
 
 #endif
 

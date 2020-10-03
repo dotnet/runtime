@@ -1,13 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Security;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
+using System.Security;
 using System.Text;
 
 using Internal.Runtime.CompilerServices;
-using System.Diagnostics.CodeAnalysis;
 
 namespace System.Runtime.InteropServices
 {
@@ -28,7 +29,7 @@ namespace System.Runtime.InteropServices
         /// </summary>
         public static readonly int SystemMaxDBCSCharSize = GetSystemMaxDBCSCharSize();
 
-        public static IntPtr AllocHGlobal(int cb) => AllocHGlobal((IntPtr)cb);
+        public static IntPtr AllocHGlobal(int cb) => AllocHGlobal((nint)cb);
 
         public static unsafe string? PtrToStringAnsi(IntPtr ptr)
         {
@@ -508,7 +509,7 @@ namespace System.Runtime.InteropServices
             PrelinkCore(m);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2006:UnrecognizedReflectionPattern",
+        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "This only needs to prelink methods that are actually used")]
         public static void PrelinkAll(Type c)
         {
@@ -572,8 +573,7 @@ namespace System.Runtime.InteropServices
             PtrToStructure(ptr, (object)structure!);
         }
 
-        [return: MaybeNull]
-        public static T PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
+        public static T? PtrToStructure<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]T>(IntPtr ptr) => (T)PtrToStructure(ptr, typeof(T))!;
 
         public static void DestroyStructure<T>(IntPtr ptr) => DestroyStructure(ptr, typeof(T));
 
@@ -599,7 +599,7 @@ namespace System.Runtime.InteropServices
         {
             if (errorCode < 0)
             {
-                throw GetExceptionForHR(errorCode, IntPtr.Zero)!;
+                throw GetExceptionForHR(errorCode)!;
             }
         }
 
@@ -967,9 +967,38 @@ namespace System.Runtime.InteropServices
             FreeHGlobal(s);
         }
 
+        public static unsafe IntPtr StringToBSTR(string? s)
+        {
+            if (s is null)
+            {
+                return IntPtr.Zero;
+            }
+
+            IntPtr bstr = AllocBSTR(s.Length);
+
+            fixed (char* firstChar = s)
+            {
+                string.wstrcpy((char*)bstr, firstChar, s.Length + 1);
+            }
+            return bstr;
+        }
+
+        public static string PtrToStringBSTR(IntPtr ptr)
+        {
+            if (ptr == IntPtr.Zero)
+            {
+                throw new ArgumentNullException(nameof(ptr));
+            }
+
+            return PtrToStringUni(ptr, (int)(SysStringByteLen(ptr) / sizeof(char)));
+        }
+
         internal static unsafe uint SysStringByteLen(IntPtr s)
         {
             return *(((uint*)s) - 1);
         }
+
+        [SupportedOSPlatform("windows")]
+        public static Type? GetTypeFromCLSID(Guid clsid) => GetTypeFromCLSID(clsid, null, throwOnError: false);
     }
 }

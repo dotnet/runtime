@@ -173,8 +173,9 @@ namespace ILCompiler.PEWriter
             ISymbolNode r2rHeaderExportSymbol,
             string outputFileSimpleName,
             Func<RuntimeFunctionsTableNode> getRuntimeFunctionsTable,
-            int? customPESectionAlignment)
-            : base(peHeaderBuilder, deterministicIdProvider: null)
+            int? customPESectionAlignment,
+            Func<IEnumerable<Blob>, BlobContentId> deterministicIdProvider)
+            : base(peHeaderBuilder, deterministicIdProvider: deterministicIdProvider)
         {
             _target = target;
             _getRuntimeFunctionsTable = getRuntimeFunctionsTable;
@@ -288,7 +289,7 @@ namespace ILCompiler.PEWriter
         /// </summary>
         /// <param name="outputStream">Output stream for the final R2R PE file</param>
         /// <param name="timeDateStamp">Timestamp to set in the PE header of the output R2R executable</param>
-        public void Write(Stream outputStream, int timeDateStamp)
+        public void Write(Stream outputStream, int? timeDateStamp)
         {
             BlobBuilder outputPeFile = new BlobBuilder();
             Serialize(outputPeFile);
@@ -302,7 +303,8 @@ namespace ILCompiler.PEWriter
 
             ApplyMachineOSOverride(outputStream);
 
-            SetPEHeaderTimeStamp(outputStream, timeDateStamp);
+            if (timeDateStamp.HasValue)
+                SetPEHeaderTimeStamp(outputStream, timeDateStamp.Value);
 
             _written = true;
         }

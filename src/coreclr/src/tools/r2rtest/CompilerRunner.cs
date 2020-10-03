@@ -82,9 +82,12 @@ namespace R2RTest
 
         protected readonly BuildOptions _options;
         protected readonly List<string> _referenceFolders = new List<string>();
-        public CompilerRunner(BuildOptions options, IEnumerable<string> references)
+        protected readonly string _overrideOutputPath;
+
+        public CompilerRunner(BuildOptions options, IEnumerable<string> references, string overrideOutputPath = null)
         {
             _options = options;
+            _overrideOutputPath = overrideOutputPath;
 
             foreach (var reference in references)
             {
@@ -298,7 +301,7 @@ namespace R2RTest
             }
         }
 
-        public string GetOutputPath(string outputRoot) => Path.Combine(outputRoot, CompilerName + _options.ConfigurationSuffix);
+        public string GetOutputPath(string outputRoot) => _overrideOutputPath ?? Path.Combine(outputRoot, CompilerName + _options.ConfigurationSuffix);
 
         // <input>\a.dll -> <output>\a.dll
         public string GetOutputFileName(string outputRoot, string fileName) =>

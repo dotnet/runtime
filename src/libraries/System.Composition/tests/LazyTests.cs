@@ -35,7 +35,6 @@ namespace System.Composition.UnitTests
         public class Named { public string Name { get; set; } }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ComposesLazily()
         {
             var cc = CreateContainer(typeof(A), typeof(BLazy));
@@ -44,7 +43,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void SupportsExportMetadata()
         {
             var cc = CreateContainer(typeof(NamedFred));
@@ -53,7 +51,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void ReturnsExportMetadataAsADictionary()
         {
             var cc = CreateContainer(typeof(NamedFred));
@@ -75,7 +72,6 @@ namespace System.Composition.UnitTests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/23972", TargetFrameworkMonikers.NetFramework)]
         public void LazyCanBeComposedWithImportManyAndNames()
         {
             var cc = CreateContainer(typeof(AConsumer), typeof(A1), typeof(A2));

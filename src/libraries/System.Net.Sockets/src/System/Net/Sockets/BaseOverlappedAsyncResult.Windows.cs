@@ -50,6 +50,7 @@ namespace System.Net.Sockets
 
             unsafe
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 NativeOverlapped* overlapped = boundHandle.AllocateNativeOverlapped(s_ioCallback, this, objectsToPin);
                 _nativeOverlapped = new SafeNativeOverlapped(s.SafeHandle, overlapped);
             }
@@ -59,6 +60,7 @@ namespace System.Net.Sockets
 
         private static unsafe void CompletionPortCallback(uint errorCode, uint numBytes, NativeOverlapped* nativeOverlapped)
         {
+            Debug.Assert(OperatingSystem.IsWindows());
             BaseOverlappedAsyncResult asyncResult = (BaseOverlappedAsyncResult)ThreadPoolBoundHandle.GetNativeOverlappedState(nativeOverlapped)!;
 
             if (asyncResult.InternalPeekCompleted)

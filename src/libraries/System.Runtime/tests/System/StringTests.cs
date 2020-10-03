@@ -218,7 +218,7 @@ namespace System.Tests
 
             if (PlatformDetection.IsNotInvariantGlobalization)
                 yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.CurrentCulture, true };
-            
+
             // CurrentCultureIgnoreCase
             yield return new object[] { "Hello", "ello", StringComparison.CurrentCultureIgnoreCase, true };
             yield return new object[] { "Hello", "ELL", StringComparison.CurrentCultureIgnoreCase, true };
@@ -234,7 +234,7 @@ namespace System.Tests
                 yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true };
                 yield return new object[] { "Hello", "Ell" + SoftHyphen, StringComparison.CurrentCultureIgnoreCase, true };
             }
-            
+
             // InvariantCulture
             yield return new object[] { "Hello", "ello", StringComparison.InvariantCulture, true };
             yield return new object[] { "Hello", "ELL", StringComparison.InvariantCulture, false };
@@ -248,7 +248,7 @@ namespace System.Tests
 
             if (PlatformDetection.IsNotInvariantGlobalization)
                 yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.InvariantCulture, true };
-            
+
             // InvariantCultureIgnoreCase
             yield return new object[] { "Hello", "ello", StringComparison.InvariantCultureIgnoreCase, true };
             yield return new object[] { "Hello", "ELL", StringComparison.InvariantCultureIgnoreCase, true };
@@ -276,7 +276,7 @@ namespace System.Tests
             yield return new object[] { "Hello", "", StringComparison.Ordinal, true };
             yield return new object[] { "Hello", "ell" + SoftHyphen, StringComparison.Ordinal, false };
             yield return new object[] { "Hello", "Ell" + SoftHyphen, StringComparison.Ordinal, false };
-            
+
             // OrdinalIgnoreCase
             yield return new object[] { "Hello", "ello", StringComparison.OrdinalIgnoreCase, true };
             yield return new object[] { "Hello", "ELL", StringComparison.OrdinalIgnoreCase, true };
@@ -624,7 +624,7 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "LONG", StringComparison.CurrentCultureIgnoreCase, "aLONGc" };
             yield return new object[] { "abc", "b", "d", StringComparison.CurrentCultureIgnoreCase, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.CurrentCultureIgnoreCase, "ac" };
-            
+
             if (PlatformDetection.IsNotInvariantGlobalization)
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.CurrentCultureIgnoreCase, "def" };
 
@@ -634,7 +634,7 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "LONG", StringComparison.Ordinal, "aLONGc" };
             yield return new object[] { "abc", "b", "d", StringComparison.Ordinal, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.Ordinal, "ac" };
-            
+
             if (PlatformDetection.IsNotInvariantGlobalization)
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.Ordinal, "abc" };
 
@@ -645,7 +645,7 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "d", StringComparison.OrdinalIgnoreCase, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.OrdinalIgnoreCase, "ac" };
 
-            
+
             if (PlatformDetection.IsNotInvariantGlobalization)
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.OrdinalIgnoreCase, "abc" };
 
@@ -656,7 +656,7 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "d", StringComparison.InvariantCulture, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.InvariantCulture, "ac" };
 
-            
+
             if (PlatformDetection.IsNotInvariantGlobalization)
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.InvariantCulture, "def" };
 
@@ -667,7 +667,7 @@ namespace System.Tests
             yield return new object[] { "abc", "b", "d", StringComparison.InvariantCultureIgnoreCase, "adc" };
             yield return new object[] { "abc", "b", null, StringComparison.InvariantCultureIgnoreCase, "ac" };
 
-            
+
             if (PlatformDetection.IsNotInvariantGlobalization)
             {
                 yield return new object[] { "abc", "abc" + SoftHyphen, "def", StringComparison.InvariantCultureIgnoreCase, "def" };
@@ -684,6 +684,11 @@ namespace System.Tests
                 yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCulture, "\u0069a" };
                 yield return new object[] { turkishSource, "\u0130", "a", StringComparison.InvariantCultureIgnoreCase, "\u0069a" };
             }
+
+            // To catch regressions when dealing with zero-length "this" inputs
+            yield return new object[] { "", "x", "y", StringComparison.InvariantCulture, "" };
+            yield return new object[] { "", "\u200d", "y", StringComparison.InvariantCulture, "" };
+            yield return new object[] { "", "\0", "y", StringComparison.InvariantCulture, "" };
         }
 
         [Theory]
@@ -1146,6 +1151,114 @@ namespace System.Tests
             // Invalid comparison type
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "foo".IndexOf('o', StringComparison.CurrentCulture - 1));
             AssertExtensions.Throws<ArgumentException>("comparisonType", () => "foo".IndexOf('o', StringComparison.OrdinalIgnoreCase + 1));
+        }
+
+        public static IEnumerable<object[]> IndexOf_String_StringComparison_TestData()
+        {
+            yield return new object[] { "Hello\uD801\uDC28", "\uD801\uDC4f", StringComparison.Ordinal, -1};
+            yield return new object[] { "Hello\uD801\uDC28", "\uD801\uDC00", StringComparison.OrdinalIgnoreCase, 5};
+            yield return new object[] { "Hello\u0200\u0202", "\u0201\u0203", StringComparison.OrdinalIgnoreCase, 5};
+            yield return new object[] { "Hello\u0200\u0202", "\u0201\u0203", StringComparison.Ordinal, -1};
+            yield return new object[] { "Hello\uD801\uDC00", "\uDC00", StringComparison.Ordinal, 6};
+            yield return new object[] { "Hello\uD801\uDC00", "\uDC00", StringComparison.OrdinalIgnoreCase, 6};
+            yield return new object[] { "Hello\uD801\uDC00", "\uD801", StringComparison.OrdinalIgnoreCase, 5};
+            yield return new object[] { "Hello\uD801\uDC00", "\uD801\uDC00", StringComparison.Ordinal, 5};
+        }
+
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(IndexOf_String_StringComparison_TestData))]
+        public static void IndexOf_Ordinal_Misc(string source, string target, StringComparison stringComparison, int expected)
+        {
+            Assert.Equal(expected, source.IndexOf(target, stringComparison));
+        }
+
+        public static IEnumerable<object[]> LastIndexOf_String_StringComparison_TestData()
+        {
+            yield return new object[] { "\uD801\uDC28Hello", "\uD801\uDC4f", 6, StringComparison.Ordinal, -1};
+            yield return new object[] { "\uD801\uDC28Hello", "\uD801\uDC00", 6, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\uD801\uDC28Hello\uD801\uDC28", "\uD801\uDC00", 1, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\u0200\u0202Hello", "\u0201\u0203", 6, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\u0200\u0202Hello\u0200\u0202", "\u0201\u0203", 1, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\u0200\u0202Hello", "\u0201\u0203", 6, StringComparison.Ordinal, -1};
+            yield return new object[] { "\uD801\uDC00Hello", "\uDC00", 6, StringComparison.Ordinal, 1};
+            yield return new object[] { "\uD801\uDC00Hello\uDC00", "\uDC00", 3, StringComparison.Ordinal, 1};
+            yield return new object[] { "\uD801\uDC00Hello", "\uDC00", 6, StringComparison.OrdinalIgnoreCase, 1};
+            yield return new object[] { "\uD801\uDC00Hello\uDC00", "\uDC00", 4, StringComparison.OrdinalIgnoreCase, 1};
+            yield return new object[] { "\uD801\uDC00Hello", "\uD801", 6, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\uD801\uD801Hello", "\uD801", 0, StringComparison.OrdinalIgnoreCase, 0};
+            yield return new object[] { "\uD801\uDC00Hello", "\uD801\uDC00", 6, StringComparison.Ordinal, 0};
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(LastIndexOf_String_StringComparison_TestData))]
+        public static void LastIndexOf_Ordinal_Misc(string source, string target, int startIndex, StringComparison stringComparison, int expected)
+        {
+            Assert.Equal(expected, source.LastIndexOf(target, startIndex, stringComparison));
+        }
+
+        public static IEnumerable<object[]>Ordinal_String_StringComparison_TestData()
+        {
+            yield return new object[] { "\u0200\u0202", "\u0201\u0203", StringComparison.OrdinalIgnoreCase, true};
+            yield return new object[] { "\uD801\uDC28", "\uD801\uDC00", StringComparison.OrdinalIgnoreCase, true};
+            yield return new object[] { "\u0200\u0202", "\u0201\u0203", StringComparison.Ordinal, false};
+            yield return new object[] { "\uD801\uDC28", "\uD801\uDC00", StringComparison.Ordinal, false};
+            yield return new object[] { "\uD801\uD801\uDC28", "\uD801\uD801\uDC00", StringComparison.OrdinalIgnoreCase, true};
+            yield return new object[] { "\uD801\uD801\uDC28", "\uD801\uD801\uDC00", StringComparison.Ordinal, false};
+            yield return new object[] { "\u0200\u0202", "\u0200\u0202", StringComparison.Ordinal, true};
+            yield return new object[] { "\u0200\u0202", "\u0200\u0202", StringComparison.OrdinalIgnoreCase, true};
+            yield return new object[] { "\u0200\u0202", "\u0200\u0202A", StringComparison.Ordinal, false};
+            yield return new object[] { "\u0200\u0202", "\u0200\u0202A", StringComparison.OrdinalIgnoreCase, false};
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(Ordinal_String_StringComparison_TestData))]
+        public static void Compare_Ordinal_Misc(string source, string target, StringComparison stringComparison, bool expected)
+        {
+            Assert.Equal(expected, string.Compare(source, target, stringComparison) == 0);
+            Assert.Equal(expected, string.GetHashCode(source, stringComparison) == string.GetHashCode(target, stringComparison));
+        }
+
+        public static IEnumerable<object[]>StartsWith_String_StringComparison_TestData()
+        {
+            yield return new object[] { "\u0200\u0202ABC", "\u0201\u0203", StringComparison.OrdinalIgnoreCase, true};
+            yield return new object[] { "\uD801\uDC28ABC", "\uD801\uDC00", StringComparison.OrdinalIgnoreCase, true};
+            yield return new object[] { "\u0200\u0202AB", "\u0201\u0203", StringComparison.Ordinal, false};
+            yield return new object[] { "\uD801\uDC28AB", "\uD801\uDC00", StringComparison.Ordinal, false};
+            yield return new object[] { "\uD801\uD801\uDC28AAA", "\uD801\uD801\uDC00", StringComparison.OrdinalIgnoreCase, true};
+            yield return new object[] { "\uD801\uD801\uDC28AAA", "\uD801\uD801\uDC00", StringComparison.Ordinal, false};
+            yield return new object[] { "\u0200\u0202AAA", "\u0200\u0202", StringComparison.Ordinal, true};
+            yield return new object[] { "\u0200\u0202AAA", "\u0200\u0202", StringComparison.OrdinalIgnoreCase, true};
+            yield return new object[] { "\u0200\u0202AAA", "\u0200\u0202A", StringComparison.Ordinal, true};
+            yield return new object[] { "\u0200\u0202AAA", "\u0200\u0202A", StringComparison.OrdinalIgnoreCase, true};
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(StartsWith_String_StringComparison_TestData))]
+        public static void StartsWith_Ordinal_Misc(string source, string target, StringComparison stringComparison, bool expected)
+        {
+            Assert.Equal(expected, source.StartsWith(target, stringComparison));
+        }
+
+        public static IEnumerable<object[]>EndsWith_String_StringComparison_TestData()
+        {
+            yield return new object[] { "ABC\u0200\u0202", "\u0201\u0203", StringComparison.OrdinalIgnoreCase, true};
+            yield return new object[] { "ABC\uD801\uDC28", "\uD801\uDC00", StringComparison.OrdinalIgnoreCase, true};
+            yield return new object[] { "AB\u0200\u0202", "\u0201\u0203", StringComparison.Ordinal, false};
+            yield return new object[] { "AB\uD801\uDC28", "\uD801\uDC00", StringComparison.Ordinal, false};
+            yield return new object[] { "AAA\uD801\uD801\uDC28", "\uD801\uD801\uDC00", StringComparison.OrdinalIgnoreCase, true};
+            yield return new object[] { "AAA\uD801\uD801\uDC28", "\uD801\uD801\uDC00", StringComparison.Ordinal, false};
+            yield return new object[] { "AAA\u0200\u0202", "\u0200\u0202", StringComparison.Ordinal, true};
+            yield return new object[] { "AAA\u0200\u0202", "\u0200\u0202", StringComparison.OrdinalIgnoreCase, true};
+            yield return new object[] { "AAA\u0200\u0202A", "\u0200\u0202A", StringComparison.Ordinal, true};
+            yield return new object[] { "AAA\u0200\u0202A", "\u0200\u0202A", StringComparison.OrdinalIgnoreCase, true};
+        }
+
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsIcuGlobalization))]
+        [MemberData(nameof(EndsWith_String_StringComparison_TestData))]
+        public static void EndsWith_Ordinal_Misc(string source, string target, StringComparison stringComparison, bool expected)
+        {
+            Assert.Equal(expected, source.EndsWith(target, stringComparison));
         }
 
         [Theory]

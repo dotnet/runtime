@@ -127,7 +127,7 @@ namespace System.StubHelpers
 
         internal static void ClearNative(IntPtr pNative)
         {
-            Interop.Ole32.CoTaskMemFree(pNative);
+            Marshal.FreeCoTaskMem(pNative);
         }
 
         internal static unsafe void ConvertFixedToNative(int flags, string strManaged, IntPtr pNativeBuffer, int length)
@@ -257,10 +257,7 @@ namespace System.StubHelpers
 
         internal static void ClearNative(IntPtr pNative)
         {
-            if (pNative != IntPtr.Zero)
-            {
-                Interop.Ole32.CoTaskMemFree(pNative);
-            }
+            Marshal.FreeCoTaskMem(pNative);
         }
     }
 
@@ -336,14 +333,9 @@ namespace System.StubHelpers
                 }
                 else
                 {
-                    // If not provided, allocate the buffer using SysAllocStringByteLen so
+                    // If not provided, allocate the buffer using Marshal.AllocBSTRByteLen so
                     // that odd-sized strings will be handled as well.
-                    ptrToFirstChar = (byte*)Interop.OleAut32.SysAllocStringByteLen(null, lengthInBytes);
-
-                    if (ptrToFirstChar == null)
-                    {
-                        throw new OutOfMemoryException();
-                    }
+                    ptrToFirstChar = (byte*)Marshal.AllocBSTRByteLen(lengthInBytes);
                 }
 
                 // copy characters from the managed string
@@ -412,10 +404,7 @@ namespace System.StubHelpers
 
         internal static void ClearNative(IntPtr pNative)
         {
-            if (IntPtr.Zero != pNative)
-            {
-                Interop.OleAut32.SysFreeString(pNative);
-            }
+            Marshal.FreeBSTR(pNative);
         }
     }  // class BSTRMarshaler
 
@@ -476,14 +465,14 @@ namespace System.StubHelpers
         {
             if (IntPtr.Zero != pNative)
             {
-                Interop.Ole32.CoTaskMemFree((IntPtr)(((long)pNative) - sizeof(uint)));
+                Marshal.FreeCoTaskMem((IntPtr)(((long)pNative) - sizeof(uint)));
             }
         }
     }  // class VBByValStrMarshaler
 
     internal static class AnsiBSTRMarshaler
     {
-        internal static IntPtr ConvertToNative(int flags, string strManaged)
+        internal static unsafe IntPtr ConvertToNative(int flags, string strManaged)
         {
             if (null == strManaged)
             {
@@ -498,7 +487,13 @@ namespace System.StubHelpers
                 bytes = AnsiCharMarshaler.DoAnsiConversion(strManaged, 0 != (flags & 0xFF), 0 != (flags >> 8), out nb);
             }
 
-            return Interop.OleAut32.SysAllocStringByteLen(bytes, (uint)nb);
+            uint length = (uint)nb;
+            IntPtr bstr = Marshal.AllocBSTRByteLen(length);
+            fixed (byte* firstByte = bytes)
+            {
+                Buffer.Memmove((byte*)bstr, firstByte, length);
+            }
+            return bstr;
         }
 
         internal static unsafe string? ConvertToManaged(IntPtr bstr)
@@ -518,10 +513,7 @@ namespace System.StubHelpers
 
         internal static void ClearNative(IntPtr pNative)
         {
-            if (IntPtr.Zero != pNative)
-            {
-                Interop.OleAut32.SysFreeString(pNative);
-            }
+            Marshal.FreeBSTR(pNative);
         }
     }  // class AnsiBSTRMarshaler
 
@@ -1067,7 +1059,7 @@ namespace System.StubHelpers
                     // this must happen regardless of BackPropAction
                     Marshal.DestroyStructure(pNativeHome, layoutType);
                 }
-                Interop.Ole32.CoTaskMemFree(pNativeHome);
+                Marshal.FreeCoTaskMem(pNativeHome);
             }
             StubHelpers.DestroyCleanupList(ref cleanupWorkList);
         }

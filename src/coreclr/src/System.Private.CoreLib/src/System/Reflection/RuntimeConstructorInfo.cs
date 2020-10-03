@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Text;
 using RuntimeTypeCache = System.RuntimeType.RuntimeTypeCache;
 
@@ -47,7 +48,12 @@ namespace System.Reflection
                         // We don't need other flags if this method cannot be invoked
                         invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
                     }
-                    else if (IsStatic || declaringType != null && declaringType.IsAbstract)
+                    else if (IsStatic)
+                    {
+                        invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_RUN_CLASS_CONSTRUCTOR |
+                                           INVOCATION_FLAGS.INVOCATION_FLAGS_NO_CTOR_INVOKE;
+                    }
+                    else if (declaringType != null && declaringType.IsAbstract)
                     {
                         invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NO_CTOR_INVOKE;
                     }
@@ -279,6 +285,21 @@ namespace System.Reflection
 
             // check basic method consistency. This call will throw if there are problems in the target/method relationship
             CheckConsistency(obj);
+
+            if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_RUN_CLASS_CONSTRUCTOR) != 0)
+            {
+                // Run the class constructor through the class constructor mechanism instead of the Invoke path.
+                // This avoids allowing mutation of readonly static fields, and initializes the type correctly.
+
+                var declaringType = DeclaringType;
+
+                if (declaringType != null)
+                    RuntimeHelpers.RunClassConstructor(declaringType.TypeHandle);
+                else
+                    RuntimeHelpers.RunModuleConstructor(Module.ModuleHandle);
+
+                return null;
+            }
 
             Signature sig = Signature;
 

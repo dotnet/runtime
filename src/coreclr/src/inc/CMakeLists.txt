@@ -29,7 +29,7 @@ if(CLR_CMAKE_HOST_WIN32)
         set(OUT_NAME ${CMAKE_CURRENT_BINARY_DIR}/idls_out/${IDLNAME}_i.c)
         list(APPEND CORGUIDS_SOURCES ${OUT_NAME})
         add_custom_command(OUTPUT ${OUT_NAME}
-                      COMMAND ${MIDL} ${MIDL_INCLUDE_DIRECTORIES} /h ${CMAKE_CURRENT_BINARY_DIR}/idls_out/${IDLNAME}.h ${MIDL_DEFINITIONS} /out ${CMAKE_CURRENT_BINARY_DIR}/idls_out ${CMAKE_CURRENT_SOURCE_DIR}/${GENERATE_IDL}
+                      COMMAND ${MIDL} ${MIDL_INCLUDE_DIRECTORIES} /no_stamp /h ${CMAKE_CURRENT_BINARY_DIR}/idls_out/${IDLNAME}.h ${MIDL_DEFINITIONS} /out ${CMAKE_CURRENT_BINARY_DIR}/idls_out ${CMAKE_CURRENT_SOURCE_DIR}/${GENERATE_IDL}
                       DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/${GENERATE_IDL}
                       COMMENT "Compiling ${GENERATE_IDL}")
     endforeach(GENERATE_IDL)
@@ -58,7 +58,9 @@ if(FEATURE_JIT_PITCHING)
 endif(FEATURE_JIT_PITCHING)
 
 # Compile *_i.cpp to lib
-_add_library(corguids OBJECT ${CORGUIDS_SOURCES})
+_add_library(corguids_obj OBJECT ${CORGUIDS_SOURCES})
+add_library(corguids INTERFACE)
+target_sources(corguids INTERFACE $<TARGET_OBJECTS:corguids_obj>)
 
 # Binplace the inc files for packaging later.
 
@@ -75,4 +77,3 @@ _install (FILES cfi.h
                gcinfoencoder.h
                gcinfotypes.h
                DESTINATION inc)
-_install (TARGETS corguids DESTINATION lib)

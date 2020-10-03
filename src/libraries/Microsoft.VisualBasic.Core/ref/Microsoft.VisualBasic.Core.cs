@@ -250,12 +250,12 @@ namespace Microsoft.VisualBasic
     public sealed partial class DateAndTime
     {
         internal DateAndTime() { }
-        public static string DateString { get { throw null; } set { } }
+        public static string DateString { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public static System.DateTime Now { get { throw null; } }
-        public static System.DateTime TimeOfDay { get { throw null; } set { } }
+        public static System.DateTime TimeOfDay { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public static double Timer { get { throw null; } }
-        public static string TimeString { get { throw null; } set { } }
-        public static System.DateTime Today { get { throw null; } set { } }
+        public static string TimeString { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
+        public static System.DateTime Today { get { throw null; } [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")] set { } }
         public static System.DateTime DateAdd(Microsoft.VisualBasic.DateInterval Interval, double Number, System.DateTime DateValue) { throw null; }
         public static System.DateTime DateAdd(string Interval, double Number, object? DateValue) { throw null; }
         public static long DateDiff(Microsoft.VisualBasic.DateInterval Interval, System.DateTime Date1, System.DateTime Date2, Microsoft.VisualBasic.FirstDayOfWeek DayOfWeek = Microsoft.VisualBasic.FirstDayOfWeek.Sunday, Microsoft.VisualBasic.FirstWeekOfYear WeekOfYear = Microsoft.VisualBasic.FirstWeekOfYear.Jan1) { throw null; }
@@ -332,11 +332,15 @@ namespace Microsoft.VisualBasic
     {
         internal FileSystem() { }
         public static void ChDir(string Path) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void ChDrive(char Drive) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void ChDrive(string? Drive) { }
         public static string CurDir() { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static string CurDir(char Drive) { throw null; }
         public static string Dir() { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static string Dir(string PathName, Microsoft.VisualBasic.FileAttribute Attributes = Microsoft.VisualBasic.FileAttribute.Normal) { throw null; }
         public static bool EOF(int FileNumber) { throw null; }
         public static Microsoft.VisualBasic.OpenMode FileAttr(int FileNumber) { throw null; }
@@ -401,6 +405,7 @@ namespace Microsoft.VisualBasic
         public static void MkDir(string Path) { }
         public static void Print(int FileNumber, params object[] Output) { }
         public static void PrintLine(int FileNumber, params object[] Output) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void Rename(string OldPath, string NewPath) { }
         public static void Reset() { }
         public static void RmDir(string Path) { }
@@ -486,21 +491,27 @@ namespace Microsoft.VisualBasic
         internal Interaction() { }
         public static void AppActivate(int ProcessId) { }
         public static void AppActivate(string Title) { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void Beep() { }
         public static object? CallByName(object? ObjectRef, string ProcName, Microsoft.VisualBasic.CallType UseCallType, params object?[] Args) { throw null; }
         public static object? Choose(double Index, params object?[] Choice) { throw null; }
         public static string Command() { throw null; }
         public static object CreateObject(string ProgId, string? ServerName = "") { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void DeleteSetting(string AppName, string? Section = null, string? Key = null) { }
         public static string Environ(string? Expression) { throw null; }
         public static string Environ(int Expression) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static string[,]? GetAllSettings(string AppName, string Section) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static object? GetObject(string? PathName = null, string? Class = null) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static string? GetSetting(string AppName, string Section, string Key, string? Default = "") { throw null; }
         public static object? IIf(bool Expression, object? TruePart, object? FalsePart) { throw null; }
         public static string InputBox(string Prompt, string Title = "", string DefaultResponse = "", int XPos = -1, int YPos = -1) { throw null; }
         public static MsgBoxResult MsgBox(object Prompt, MsgBoxStyle Buttons = MsgBoxStyle.ApplicationModal, object? Title = null) { throw null; }
         public static string Partition(long Number, long Start, long Stop, long Interval) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static void SaveSetting(string AppName, string Section, string Key, string Setting) { }
         public static int Shell(string PathName, AppWinStyle Style = AppWinStyle.MinimizedFocus, bool Wait = false, int Timeout = -1) { throw null; }
         public static object? Switch(params object?[]? VarExpr) { throw null; }
@@ -634,6 +645,7 @@ namespace Microsoft.VisualBasic
         public static string Space(int Number) { throw null; }
         public static string[] Split(string? Expression, string? Delimiter = " ", int Limit = -1, [Microsoft.VisualBasic.CompilerServices.OptionCompareAttribute] Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
         public static int StrComp(string? String1, string? String2, Microsoft.VisualBasic.CompareMethod Compare = Microsoft.VisualBasic.CompareMethod.Binary) { throw null; }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static string? StrConv(string? str, Microsoft.VisualBasic.VbStrConv Conversion, int LocaleID = 0) { throw null; }
         public static string StrDup(int Number, char Character) { throw null; }
         public static object StrDup(int Number, object Character) { throw null; }
@@ -771,9 +783,8 @@ namespace Microsoft.VisualBasic.CompilerServices
         public static decimal ToDecimal(string? Value) { throw null; }
         public static double ToDouble(object? Value) { throw null; }
         public static double ToDouble(string? Value) { throw null; }
-        [return: System.Diagnostics.CodeAnalysis.MaybeNullAttribute]
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("Value")]
-        public static T ToGenericParameter<T>(object? Value) { throw null; }
+        public static T? ToGenericParameter<T>(object? Value) { throw null; }
         public static int ToInteger(object? Value) { throw null; }
         public static int ToInteger(string? Value) { throw null; }
         public static long ToLong(object? Value) { throw null; }

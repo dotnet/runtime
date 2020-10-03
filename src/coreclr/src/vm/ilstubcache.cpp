@@ -421,7 +421,7 @@ MethodTable* ILStubCache::GetOrCreateStubMethodTable(Module* pModule)
 //
 // We're relying on the fact that a VASigCookie may only mention types within the
 // corresponding module used to qualify the signature and the fact that interop
-// stubs may only reference mscorlib code or code related to a type mentioned in
+// stubs may only reference CoreLib code or code related to a type mentioned in
 // the signature.  Both of these are true unless the sig is allowed to contain
 // ELEMENT_TYPE_INTERNAL, which may refer to any type.
 //

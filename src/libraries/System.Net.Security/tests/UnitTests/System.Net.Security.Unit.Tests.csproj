@@ -76,11 +76,4 @@
     <Compile Include="$(CommonPath)System\Net\InternalException.cs"
              Link="ProductionCode\Common\System\Net\InternalException.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Threading" />
-  </ItemGroup>
 </Project>

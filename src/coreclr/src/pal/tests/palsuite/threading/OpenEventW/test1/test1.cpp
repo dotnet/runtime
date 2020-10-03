@@ -14,7 +14,7 @@
 **==========================================================================*/
 #include <palsuite.h>
 
-int __cdecl main(int argc, char **argv)
+PALTEST(threading_OpenEventW_test1_paltest_openeventw_test1, "threading/OpenEventW/test1/paltest_openeventw_test1")
 {
     BOOL bRet = FAIL;
     DWORD dwRet;
