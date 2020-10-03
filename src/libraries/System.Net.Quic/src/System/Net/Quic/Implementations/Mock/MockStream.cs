@@ -4,6 +4,7 @@
 #nullable enable
 using System.Buffers;
 using System.Diagnostics;
+using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,40 +15,39 @@ namespace System.Net.Quic.Implementations.Mock
     {
         private bool _disposed;
         private readonly long _streamId;
-        private bool _canRead;
-        private bool _canWrite;
+        private bool _isOutbound;
+        private bool _isBidirectional;
 
         private MockConnection? _connection;
 
-        private Socket? _socket;
+        private StreamState? _streamState;
 
         // Constructor for outbound streams
         internal MockStream(MockConnection connection, long streamId, bool bidirectional)
         {
             _connection = connection;
             _streamId = streamId;
-            _canRead = bidirectional;
-            _canWrite = true;
+            _isOutbound = true;
+            _isBidirectional = bidirectional;
         }
 
         // Constructor for inbound streams
-        internal MockStream(Socket socket, long streamId, bool bidirectional)
+        internal MockStream(StreamState streamState, long streamId, bool bidirectional)
         {
-            _socket = socket;
+            _streamState = streamState;
             _streamId = streamId;
-            _canRead = true;
-            _canWrite = bidirectional;
+            _isOutbound = false;
+            _isBidirectional = bidirectional;
         }
 
         private ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             Debug.Assert(_connection != null, "Stream not connected but no connection???");
 
-            throw new NotImplementedException();
-            //_socket = await _connection.CreateOutboundMockStreamAsync(_streamId).ConfigureAwait(false);
+            _streamState = _connection.CreateOutboundStream();
 
             // Don't need to hold on to the connection any longer.
-            //_connection = null;
+            _connection = null;
         }
 
         internal override long StreamId
@@ -59,7 +59,7 @@ namespace System.Net.Quic.Implementations.Mock
             }
         }
 
-        internal override bool CanRead => _canRead;
+        internal override bool CanRead => !_isOutbound || _isBidirectional;
 
         internal override int Read(Span<byte> buffer)
         {
@@ -90,7 +90,7 @@ namespace System.Net.Quic.Implementations.Mock
             return await _socket!.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
         }
 
-        internal override bool CanWrite => _canWrite;
+        internal override bool CanWrite => _isOutbound || _isBidirectional;
 
         internal override void Write(ReadOnlySpan<byte> buffer)
         {
@@ -255,6 +255,18 @@ namespace System.Net.Quic.Implementations.Mock
             }
 
             return default;
+        }
+
+        internal sealed class StreamState
+        {
+            public StreamBuffer _outboundStreamBuffer;
+            public StreamBuffer? _inboundStreamBuffer;
+
+            public StreamState(bool bidirectional)
+            {
+                _outboundStreamBuffer = new StreamBuffer();
+                _inboundStreamBuffer = (bidirectional ? new StreamBuffer() : null);
+            }
         }
     }
 }

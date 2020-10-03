@@ -13,7 +13,7 @@ namespace System.Net.Quic.Tests
     public abstract class QuicConnectionTests<T> : QuicTestBase<T>
         where T : IQuicImplProviderFactory, new()
     {
-#if false   // Think we are not handling CloseAsync properly in the mock provider
+#if true   // Think we are not handling CloseAsync properly in the mock provider
         [Fact]
         public async Task AcceptStream_ConnectionAborted_ByClient_Throws()
         {
