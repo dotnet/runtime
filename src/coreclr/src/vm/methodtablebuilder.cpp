@@ -9726,6 +9726,10 @@ void MethodTableBuilder::CheckForSystemTypes()
         {
             pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
         }
+        else if (strcmp(name, g_RuntimeFieldHandleInternalName) == 0)
+        {
+            pMT->SetInternalCorElementType (ELEMENT_TYPE_I);
+        }
     }
     else
     {
