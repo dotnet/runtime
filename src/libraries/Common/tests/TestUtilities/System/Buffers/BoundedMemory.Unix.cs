@@ -52,6 +52,7 @@ namespace System.Buffers
                 handle.DangerousAddRef(ref refAdded);
                 IntPtr ptr = handle.DangerousGetHandle();
                 // mprotect requires the addresses to be page-size aligned.
+                // mmap (which is used by MemoryMappedView) also should return page-size aligned addresses - but making sure that it actually is.
                 Debug.Assert((nuint)(nint)ptr % (nuint)SystemPageSize == 0);
                 if (UnsafeNativeMethods.mprotect((void*)ptr, checked((nuint)totalBytesToAllocate), MemoryProtections.PROT_NONE) != 0)
                 {
@@ -114,6 +115,7 @@ namespace System.Buffers
                         try
                         {
                             _handle.DangerousAddRef(ref refAdded);
+                            // mprotect requires the address to be page size aligned (unlike VirtualProtect).
                             if (UnsafeNativeMethods.mprotect(
                                 addr: (void*)((nint)(_handle.DangerousGetHandle() + _byteOffsetIntoHandle) & ~(SystemPageSize - 1)),
                                 len: (nuint)(&((T*)null)[_elementCount]),
