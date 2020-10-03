@@ -63,6 +63,157 @@ namespace System.Net.Quic.Tests
             }
         }
 
+        [Fact]
+        public async Task MultipleReadsAndWrites()
+        {
+            using QuicListener listener = CreateQuicListener();
+
+            for (int j = 0; j < 100; j++)
+            {
+                Task listenTask = Task.Run(async () =>
+                {
+                    // Connection isn't being accepted, interesting.
+                    using QuicConnection connection = await listener.AcceptConnectionAsync();
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    byte[] buffer = new byte[s_data.Length];
+
+                    while (true)
+                    {
+                        int bytesRead = await stream.ReadAsync(buffer);
+                        if (bytesRead == 0)
+                        {
+                            break;
+                        }
+                        Assert.Equal(s_data.Length, bytesRead);
+                        Assert.True(s_data.Span.SequenceEqual(buffer));
+                    }
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        await stream.WriteAsync(s_data);
+                    }
+                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+                    await stream.ShutdownWriteCompleted();
+                    await connection.CloseAsync(errorCode: 0);
+                });
+
+                Task clientTask = Task.Run(async () =>
+                {
+                    using QuicConnection connection = CreateQuicConnection(listener.ListenEndPoint);
+                    await connection.ConnectAsync();
+                    await using QuicStream stream = connection.OpenBidirectionalStream();
+
+                    for (int i = 0; i < 5; i++)
+                    {
+                        await stream.WriteAsync(s_data);
+                    }
+
+                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+
+                    byte[] memory = new byte[12];
+                    while (true)
+                    {
+                        int res = await stream.ReadAsync(memory);
+                        if (res == 0)
+                        {
+                            break;
+                        }
+                        Assert.True(s_data.Span.SequenceEqual(memory));
+                    }
+
+                    await stream.ShutdownWriteCompleted();
+                    await connection.CloseAsync(errorCode: 0);
+                });
+
+                await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
+
+            }
+        }
+
+        [Fact]
+        public async Task MultipleStreamsOnSingleConnection()
+        {
+            using QuicListener listener = CreateQuicListener();
+
+            Task listenTask = Task.Run(async () =>
+            {
+                {
+                    using QuicConnection connection = await listener.AcceptConnectionAsync();
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    await using QuicStream stream2 = await connection.AcceptStreamAsync();
+
+                    byte[] buffer = new byte[s_data.Length];
+
+                    while (true)
+                    {
+                        int bytesRead = await stream.ReadAsync(buffer);
+                        if (bytesRead == 0)
+                        {
+                            break;
+                        }
+                        Assert.Equal(s_data.Length, bytesRead);
+                        Assert.True(s_data.Span.SequenceEqual(buffer));
+                    }
+
+                    while (true)
+                    {
+                        int bytesRead = await stream2.ReadAsync(buffer);
+                        if (bytesRead == 0)
+                        {
+                            break;
+                        }
+                        Assert.True(s_data.Span.SequenceEqual(buffer));
+                    }
+
+                    await stream.WriteAsync(s_data, endStream: true);
+                    await stream.ShutdownWriteCompleted();
+
+                    await stream2.WriteAsync(s_data, endStream: true);
+                    await stream2.ShutdownWriteCompleted();
+
+                    await connection.CloseAsync(errorCode: 0);
+                }
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                using QuicConnection connection = CreateQuicConnection(listener.ListenEndPoint);
+                await connection.ConnectAsync();
+                await using QuicStream stream = connection.OpenBidirectionalStream();
+                await using QuicStream stream2 = connection.OpenBidirectionalStream();
+
+                await stream.WriteAsync(s_data, endStream: true);
+                await stream.ShutdownWriteCompleted();
+                await stream2.WriteAsync(s_data, endStream: true);
+                await stream2.ShutdownWriteCompleted();
+
+                byte[] memory = new byte[12];
+                while (true)
+                {
+                    int res = await stream.ReadAsync(memory);
+                    if (res == 0)
+                    {
+                        break;
+                    }
+                    Assert.True(s_data.Span.SequenceEqual(memory));
+                }
+
+                while (true)
+                {
+                    int res = await stream2.ReadAsync(memory);
+                    if (res == 0)
+                    {
+                        break;
+                    }
+                    Assert.True(s_data.Span.SequenceEqual(memory));
+                }
+
+                await connection.CloseAsync(errorCode: 0);
+            });
+
+            await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 60000);
+        }
+
         [Theory]
         [MemberData(nameof(ReadWrite_Random_Success_Data))]
         public async Task ReadWrite_Random_Success(int readSize, int writeSize)
