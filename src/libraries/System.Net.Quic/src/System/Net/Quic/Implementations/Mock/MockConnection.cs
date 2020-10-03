@@ -155,14 +155,36 @@ namespace System.Net.Quic.Implementations.Mock
             }
 
             Channel<MockStream.StreamState> streamChannel = _isClient ? state._serverInitiatedStreamChannel : state._clientInitiatedStreamChannel;
-            MockStream.StreamState streamState = await streamChannel.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
-            return new MockStream(streamState, false);
+            try
+            {
+                MockStream.StreamState streamState = await streamChannel.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
+                return new MockStream(streamState, false);
+            }
+            catch (ChannelClosedException)
+            {
+                long errorCode = _isClient ? state._serverErrorCode : state._clientErrorCode;
+                throw new QuicConnectionAbortedException(errorCode);
+            }
         }
 
         internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
         {
+            ConnectionState? state = _state;
+            if (state is not null)
+            {
+                if (_isClient)
+                {
+                    state._clientErrorCode = errorCode;
+                }
+                else
+                {
+                    state._serverErrorCode = errorCode;
+                }
+            }
+
             Dispose();
+
             return default;
         }
 
@@ -180,6 +202,12 @@ namespace System.Net.Quic.Implementations.Mock
             {
                 if (disposing)
                 {
+                    ConnectionState? state = _state;
+                    if (state is not null)
+                    {
+                        Channel<MockStream.StreamState> streamChannel = _isClient ? state._clientInitiatedStreamChannel : state._serverInitiatedStreamChannel;
+                        streamChannel.Writer.Complete();
+                    }
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
@@ -204,6 +232,8 @@ namespace System.Net.Quic.Implementations.Mock
         {
             public Channel<MockStream.StreamState> _clientInitiatedStreamChannel;
             public Channel<MockStream.StreamState> _serverInitiatedStreamChannel;
+            public long _clientErrorCode;
+            public long _serverErrorCode;
 
             public ConnectionState()
             {
