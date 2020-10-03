@@ -43,7 +43,8 @@ namespace System.Buffers
             MemoryMappedFile map = MemoryMappedFile.CreateNew(null, totalBytesToAllocate,
                 MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, IO.HandleInheritability.None);
 
-            SafeMemoryMappedFileHandle handle = map.SafeMemoryMappedFileHandle;
+            MemoryMappedViewAccessor accessor = map.CreateViewAccessor();
+            SafeMemoryMappedViewHandle handle = accessor.SafeMemoryMappedViewHandle;
 
             bool refAdded = false;
             try
@@ -83,13 +84,13 @@ namespace System.Buffers
 
         private unsafe sealed class UnixImplementation<T> : BoundedMemory<T> where T : unmanaged
         {
-            private readonly SafeMemoryMappedFileHandle _handle;
+            private readonly SafeMemoryMappedViewHandle _handle;
             private readonly int _byteOffsetIntoHandle;
             private readonly int _elementCount;
             private readonly BoundedMemoryManager _memoryManager;
             private MemoryProtections _protection;
 
-            internal UnixImplementation(SafeMemoryMappedFileHandle handle, int byteOffsetIntoHandle, int elementCount)
+            internal UnixImplementation(SafeMemoryMappedViewHandle handle, int byteOffsetIntoHandle, int elementCount)
             {
                 _handle = handle;
                 _byteOffsetIntoHandle = byteOffsetIntoHandle;
