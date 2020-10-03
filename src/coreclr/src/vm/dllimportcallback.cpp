@@ -475,7 +475,7 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
             if (pInfo->m_wFlags & umtmlEnregRetValToBuf)
             {
                 pcpusl->X86EmitPushReg(kEDI); // Save EDI register
-                // Move the return value from the enregisterd return from the JIT
+                // Move the return value from the enregistered return from the JIT
                 // to the return buffer that the native calling convention expects.
                 // NOTE: Since the managed calling convention does not enregister 8-byte
                 // struct returns on x86, we only need to handle the single-register 4-byte case.

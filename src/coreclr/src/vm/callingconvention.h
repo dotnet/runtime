@@ -1839,6 +1839,8 @@ public:
 
         TypeHandle thValueType;
         CorElementType type = m_pSig->GetReturnTypeNormalized(&thValueType);
+        // Enums are normalized to their underlying type when passing to and from functions.
+        // This occurs in both managed and native calling conventions.
         return type == ELEMENT_TYPE_VALUETYPE && !thValueType.IsEnum();
     }
 };
