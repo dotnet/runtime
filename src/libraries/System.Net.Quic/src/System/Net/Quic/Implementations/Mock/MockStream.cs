@@ -55,7 +55,7 @@ namespace System.Net.Quic.Implementations.Mock
             return streamBuffer.Read(buffer);
         }
 
-        internal override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        internal override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
@@ -65,7 +65,17 @@ namespace System.Net.Quic.Implementations.Mock
                 throw new NotSupportedException();
             }
 
-            return streamBuffer.ReadAsync(buffer, cancellationToken);
+            int bytesRead = await streamBuffer.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            if (bytesRead == 0)
+            {
+                long errorCode = _isInitiator ? _streamState._inboundErrorCode : _streamState._outboundErrorCode;
+                if (errorCode != 0)
+                {
+                    throw new QuicStreamAbortedException(errorCode);
+                }
+            }
+
+            return bytesRead;
         }
 
         private StreamBuffer? WriteStreamBuffer => _isInitiator ? _streamState._outboundStreamBuffer : _streamState._inboundStreamBuffer;
@@ -146,7 +156,16 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal override void AbortWrite(long errorCode)
         {
-            throw new NotImplementedException();
+            if (_isInitiator)
+            {
+                _streamState._outboundErrorCode = errorCode;
+            }
+            else
+            {
+                _streamState._inboundErrorCode = errorCode;
+            }
+
+            WriteStreamBuffer?.EndWrite();
         }
 
 
@@ -196,6 +215,8 @@ namespace System.Net.Quic.Implementations.Mock
             public readonly long _streamId;
             public StreamBuffer _outboundStreamBuffer;
             public StreamBuffer? _inboundStreamBuffer;
+            public long _outboundErrorCode;
+            public long _inboundErrorCode;
 
             public StreamState(long streamId, bool bidirectional)
             {
