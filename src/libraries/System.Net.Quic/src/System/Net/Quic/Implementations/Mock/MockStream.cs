@@ -14,40 +14,19 @@ namespace System.Net.Quic.Implementations.Mock
     internal sealed class MockStream : QuicStreamProvider
     {
         private bool _disposed;
-        private readonly long _streamId;
-        private bool _isOutbound;
-        private bool _isBidirectional;
+        private readonly bool _isInitiator;
 
-        private MockConnection? _connection;
+        private readonly StreamState _streamState;
 
-        private StreamState? _streamState;
-
-        // Constructor for outbound streams
-        internal MockStream(MockConnection connection, long streamId, bool bidirectional)
-        {
-            _connection = connection;
-            _streamId = streamId;
-            _isOutbound = true;
-            _isBidirectional = bidirectional;
-        }
-
-        // Constructor for inbound streams
-        internal MockStream(StreamState streamState, long streamId, bool bidirectional)
+        internal MockStream(StreamState streamState, bool isInitiator)
         {
             _streamState = streamState;
-            _streamId = streamId;
-            _isOutbound = false;
-            _isBidirectional = bidirectional;
+            _isInitiator = isInitiator;
         }
 
         private ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
-            Debug.Assert(_connection != null, "Stream not connected but no connection???");
-
-            _streamState = _connection.CreateOutboundStream();
-
-            // Don't need to hold on to the connection any longer.
-            _connection = null;
+            return ValueTask.CompletedTask;
         }
 
         internal override long StreamId
@@ -55,53 +34,55 @@ namespace System.Net.Quic.Implementations.Mock
             get
             {
                 CheckDisposed();
-                return _streamId;
+                return _streamState._streamId;
             }
         }
 
-        internal override bool CanRead => !_isOutbound || _isBidirectional;
+        private StreamBuffer? ReadStreamBuffer => _isInitiator ? _streamState._inboundStreamBuffer : _streamState._outboundStreamBuffer;
+
+        internal override bool CanRead => ReadStreamBuffer is not null;
 
         internal override int Read(Span<byte> buffer)
         {
             CheckDisposed();
 
-            if (!_canRead)
+            StreamBuffer? streamBuffer = ReadStreamBuffer;
+            if (streamBuffer is null)
             {
                 throw new NotSupportedException();
             }
 
-            return _socket!.Receive(buffer);
+            return streamBuffer.Read(buffer);
         }
 
-        internal override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        internal override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
-            if (!_canRead)
+            StreamBuffer? streamBuffer = ReadStreamBuffer;
+            if (streamBuffer is null)
             {
                 throw new NotSupportedException();
             }
 
-            if (_socket == null)
-            {
-                await ConnectAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            return await _socket!.ReceiveAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+            return streamBuffer.ReadAsync(buffer, cancellationToken);
         }
 
-        internal override bool CanWrite => _isOutbound || _isBidirectional;
+        private StreamBuffer? WriteStreamBuffer => _isInitiator ? _streamState._outboundStreamBuffer : _streamState._inboundStreamBuffer;
+
+        internal override bool CanWrite => WriteStreamBuffer is not null;
 
         internal override void Write(ReadOnlySpan<byte> buffer)
         {
             CheckDisposed();
 
-            if (!_canWrite)
+            StreamBuffer? streamBuffer = WriteStreamBuffer;
+            if (streamBuffer is null)
             {
                 throw new NotSupportedException();
             }
 
-            _socket!.Send(buffer);
+            streamBuffer.Write(buffer);
         }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
@@ -113,79 +94,37 @@ namespace System.Net.Quic.Implementations.Mock
         {
             CheckDisposed();
 
-            if (!_canWrite)
+            StreamBuffer? streamBuffer = WriteStreamBuffer;
+            if (streamBuffer is null)
             {
                 throw new NotSupportedException();
             }
 
-            if (_socket == null)
-            {
-                await ConnectAsync(cancellationToken).ConfigureAwait(false);
-            }
-            await _socket!.SendAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
+            await streamBuffer.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
 
             if (endStream)
             {
-                _socket!.Shutdown(SocketShutdown.Send);
+                streamBuffer.EndWrite();
             }
         }
 
         internal override ValueTask WriteAsync(ReadOnlySequence<byte> buffers, CancellationToken cancellationToken = default)
         {
-            return WriteAsync(buffers, endStream: false, cancellationToken);
+            throw new NotImplementedException();
         }
-        internal override async ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
+        internal override ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
-            CheckDisposed();
-
-            if (!_canWrite)
-            {
-                throw new NotSupportedException();
-            }
-
-            if (_socket == null)
-            {
-                await ConnectAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            foreach (ReadOnlyMemory<byte> buffer in buffers)
-            {
-                await _socket!.SendAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
-            }
-
-            if (endStream)
-            {
-                _socket!.Shutdown(SocketShutdown.Send);
-            }
+            throw new NotImplementedException();
         }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
         {
-            return WriteAsync(buffers, endStream: false, cancellationToken);
+            throw new NotImplementedException();
         }
-        internal override async ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
+
+        internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
-            CheckDisposed();
-
-            if (!_canWrite)
-            {
-                throw new NotSupportedException();
-            }
-
-            if (_socket == null)
-            {
-                await ConnectAsync(cancellationToken).ConfigureAwait(false);
-            }
-
-            foreach (ReadOnlyMemory<byte> buffer in buffers.ToArray())
-            {
-                await _socket!.SendAsync(buffer, SocketFlags.None, cancellationToken).ConfigureAwait(false);
-            }
-
-            if (endStream)
-            {
-                _socket!.Shutdown(SocketShutdown.Send);
-            }
+            throw new NotImplementedException();
         }
 
         internal override void Flush()
@@ -222,7 +161,7 @@ namespace System.Net.Quic.Implementations.Mock
         {
             CheckDisposed();
 
-            _socket!.Shutdown(SocketShutdown.Send);
+            //_socket!.Shutdown(SocketShutdown.Send);
         }
 
         private void CheckDisposed()
@@ -239,8 +178,6 @@ namespace System.Net.Quic.Implementations.Mock
             {
                 _disposed = true;
 
-                _socket?.Dispose();
-                _socket = null;
             }
         }
 
@@ -249,9 +186,6 @@ namespace System.Net.Quic.Implementations.Mock
             if (!_disposed)
             {
                 _disposed = true;
-
-                _socket?.Dispose();
-                _socket = null;
             }
 
             return default;
@@ -259,11 +193,13 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal sealed class StreamState
         {
+            public readonly long _streamId;
             public StreamBuffer _outboundStreamBuffer;
             public StreamBuffer? _inboundStreamBuffer;
 
-            public StreamState(bool bidirectional)
+            public StreamState(long streamId, bool bidirectional)
             {
+                _streamId = streamId;
                 _outboundStreamBuffer = new StreamBuffer();
                 _inboundStreamBuffer = (bidirectional ? new StreamBuffer() : null);
             }

@@ -104,7 +104,7 @@ namespace System.Net.Quic.Implementations.Mock
                 _nextOutboundUnidirectionalStream += 4;
             }
 
-            return new MockStream(this, streamId, bidirectional: false);
+            return OpenStream(streamId, false);
         }
 
         internal override QuicStreamProvider OpenBidirectionalStream()
@@ -116,7 +116,22 @@ namespace System.Net.Quic.Implementations.Mock
                 _nextOutboundBidirectionalStream += 4;
             }
 
-            return new MockStream(this, streamId, bidirectional: true);
+            return OpenStream(streamId, true);
+        }
+
+        internal MockStream OpenStream(long streamId, bool bidirectional)
+        {
+            ConnectionState? state = _state;
+            if (state is null)
+            {
+                throw new InvalidOperationException("Not connected");
+            }
+
+            MockStream.StreamState streamState = new MockStream.StreamState(streamId, bidirectional);
+            Channel<MockStream.StreamState> streamChannel = _isClient ? state._clientInitiatedStreamChannel : state._serverInitiatedStreamChannel;
+            streamChannel.Writer.TryWrite(streamState);
+
+            return new MockStream(new MockStream.StreamState(streamId, bidirectional), true);
         }
 
         internal override long GetRemoteAvailableUnidirectionalStreamCount()
@@ -129,38 +144,20 @@ namespace System.Net.Quic.Implementations.Mock
             throw new NotImplementedException();
         }
 
-        internal MockStream.StreamState CreateOutboundStream(bool bidirectional)
-        {
-            CheckDisposed();
-
-            ConnectionState state = _state;
-            if (state is null)
-            {
-                throw new InvalidOperationException("Not connected");
-            }
-
-            Channel<MockStream.StreamState> streamChannel = _isClient ? state._clientInitiatedStreamChannel : state._serverInitiatedStreamChannel;
-            MockStream.StreamState streamState = new MockStream.StreamState(bidirectional);
-            streamChannel.TryWrite(streamState);
-
-            return streamState;
-        }
-
         internal override async ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
-            ConnectionState state = _state;
+            ConnectionState? state = _state;
             if (state is null)
             {
                 throw new InvalidOperationException("Not connected");
             }
 
             Channel<MockStream.StreamState> streamChannel = _isClient ? state._serverInitiatedStreamChannel : state._clientInitiatedStreamChannel;
-            MockStream.StreamState streamState = await streamChannel.ReadAsync().ConfigureAwait(false);
+            MockStream.StreamState streamState = await streamChannel.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
-            // TODO: Need to set stream ID and bidi here
-            return new MockStream(streamState, 0, false);
+            return new MockStream(streamState, false);
         }
 
         internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
@@ -210,8 +207,8 @@ namespace System.Net.Quic.Implementations.Mock
 
             public ConnectionState()
             {
-                _clientInitiatedStreamChannel = new Channel<MockStream.StreamState>.CreateUnbounded();
-                _serverInitiatedStreamChannel = new Channel<MockStream.StreamState>.CreateUnbounded();
+                _clientInitiatedStreamChannel = Channel.CreateUnbounded<MockStream.StreamState>();
+                _serverInitiatedStreamChannel = Channel.CreateUnbounded<MockStream.StreamState>();
             }
         }
     }
