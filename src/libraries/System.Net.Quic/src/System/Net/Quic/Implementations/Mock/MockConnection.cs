@@ -131,7 +131,7 @@ namespace System.Net.Quic.Implementations.Mock
             Channel<MockStream.StreamState> streamChannel = _isClient ? state._clientInitiatedStreamChannel : state._serverInitiatedStreamChannel;
             streamChannel.Writer.TryWrite(streamState);
 
-            return new MockStream(new MockStream.StreamState(streamId, bidirectional), true);
+            return new MockStream(streamState, true);
         }
 
         internal override long GetRemoteAvailableUnidirectionalStreamCount()

@@ -11,8 +11,8 @@ using Xunit;
 
 namespace System.Net.Quic.Tests
 {
-    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
-    public class QuicStreamTests : MsQuicTestBase
+    public abstract class QuicStreamTests<T> : QuicTestBase<T>
+         where T : IQuicImplProviderFactory, new()
     {
         [Theory]
         [MemberData(nameof(ReadWrite_Random_Success_Data))]
@@ -47,7 +47,6 @@ namespace System.Net.Quic.Tests
                     while (totalBytesRead != receiveBuffer.Length)
                     {
                         int bytesRead = await serverStream.ReadAsync(receiveBuffer.AsMemory(totalBytesRead, Math.Min(receiveBuffer.Length - totalBytesRead, readSize)));
-
                         if (bytesRead == 0)
                         {
                             break;
@@ -129,4 +128,9 @@ namespace System.Net.Quic.Tests
             }).TimeoutAfter(millisecondsTimeout: 5_000);
         }
     }
+
+    public sealed class QuicStreamTests_MockProvider : QuicStreamTests<MockProviderFactory> { }
+
+    [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
+    public sealed class QuicStreamTests_MsQuicProvider : QuicStreamTests<MsQuicProviderFactory> { }
 }
