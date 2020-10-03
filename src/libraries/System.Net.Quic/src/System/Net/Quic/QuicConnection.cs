@@ -14,6 +14,7 @@ namespace System.Net.Quic
     {
         private readonly QuicConnectionProvider _provider;
 
+        // TODO: Remove this
         public static bool IsQuicSupported => MsQuicApi.IsQuicSupported;
 
         /// <summary>

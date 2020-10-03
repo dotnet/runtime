@@ -122,5 +122,6 @@ namespace System.Net.Quic.Implementations
     public abstract class QuicImplementationProvider
     {
         internal QuicImplementationProvider() { }
+        public abstract bool IsSupported { get; }
     }
 }

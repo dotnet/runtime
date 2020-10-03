@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Quic.Implementations.MsQuic.Internal;
-using System.Net.Security;
 
 namespace System.Net.Quic.Implementations.MsQuic
 {
     internal sealed class MsQuicImplementationProvider : QuicImplementationProvider
     {
+        public override bool IsSupported => MsQuicApi.IsQuicSupported;
+
         internal override QuicListenerProvider CreateListener(QuicListenerOptions options)
         {
             return new MsQuicListener(options);

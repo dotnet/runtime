@@ -4,11 +4,17 @@
 using System.Collections.Generic;
 using System.Net.Security;
 using System.Threading.Tasks;
+using System.Net.Quic.Implementations;
 
 namespace System.Net.Quic.Tests
 {
-    public class QuicTestBase
+    public abstract class QuicTestBase<T>
+        where T : IQuicImplProviderFactory, new()
     {
+        private static readonly IQuicImplProviderFactory s_factory = new T();
+
+        public static QuicImplementationProvider ImplementationProvider { get; }  = s_factory.GetProvider();
+
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {
             return new SslServerAuthenticationOptions()
@@ -27,7 +33,7 @@ namespace System.Net.Quic.Tests
 
         internal QuicConnection CreateQuicConnection(IPEndPoint endpoint)
         {
-            return new QuicConnection(QuicImplementationProviders.MsQuic, endpoint, GetSslClientAuthenticationOptions());
+            return new QuicConnection(ImplementationProvider, endpoint, GetSslClientAuthenticationOptions());
         }
 
         internal QuicListener CreateQuicListener()
@@ -37,7 +43,7 @@ namespace System.Net.Quic.Tests
 
         internal QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
-            QuicListener listener = new QuicListener(QuicImplementationProviders.MsQuic, endpoint, GetSslServerAuthenticationOptions());
+            QuicListener listener = new QuicListener(ImplementationProvider, endpoint, GetSslServerAuthenticationOptions());
             listener.Start();
             return listener;
         }
@@ -61,5 +67,20 @@ namespace System.Net.Quic.Tests
                 })
             }.WhenAllOrAnyFailed(millisecondsTimeout);
         }
+    }
+
+    public interface IQuicImplProviderFactory
+    {
+        QuicImplementationProvider GetProvider();
+    }
+
+    public sealed class MsQuicProviderFactory : IQuicImplProviderFactory
+    {
+        public QuicImplementationProvider GetProvider() => QuicImplementationProviders.MsQuic;
+    }
+
+    public sealed class MockProviderFactory : IQuicImplProviderFactory
+    {
+        public QuicImplementationProvider GetProvider() => QuicImplementationProviders.Mock;
     }
 }

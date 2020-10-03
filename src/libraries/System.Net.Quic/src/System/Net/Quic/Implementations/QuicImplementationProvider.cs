@@ -9,6 +9,8 @@ namespace System.Net.Quic.Implementations
     {
         internal QuicImplementationProvider() { }
 
+        public abstract bool IsSupported { get; }
+
         internal abstract QuicListenerProvider CreateListener(QuicListenerOptions options);
 
         internal abstract QuicConnectionProvider CreateConnection(QuicClientConnectionOptions options);

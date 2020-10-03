@@ -7,6 +7,8 @@ namespace System.Net.Quic.Implementations.Mock
 {
     internal sealed class MockImplementationProvider : QuicImplementationProvider
     {
+        public override bool IsSupported => true;
+
         internal override QuicListenerProvider CreateListener(QuicListenerOptions options)
         {
             return new MockListener(options.ListenEndPoint!, options.ServerAuthenticationOptions);
