@@ -959,15 +959,15 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     if (callConv != CORINFO_UNMANAGED_CALLCONV_UNKNOWN)
     {
         canReturnInRegister = false;
-        howToReturnStruct = SPK_ByReference;
-        useType           = TYP_UNKNOWN;
+        howToReturnStruct   = SPK_ByReference;
+        useType             = TYP_UNKNOWN;
     }
 #elif defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
     if (callConv == CORINFO_UNMANAGED_CALLCONV_THISCALL)
     {
         canReturnInRegister = false;
-        howToReturnStruct = SPK_ByReference;
-        useType           = TYP_UNKNOWN;
+        howToReturnStruct   = SPK_ByReference;
+        useType             = TYP_UNKNOWN;
     }
 #endif
 
@@ -1095,8 +1095,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 // on x86 to match the native calling convention.
                 // So only do it for native calling conventions that aren't
                 // instance methods
-                if (structSize == MAX_RET_MULTIREG_BYTES &&
-                    callConv != CORINFO_UNMANAGED_CALLCONV_UNKNOWN &&
+                if (structSize == MAX_RET_MULTIREG_BYTES && callConv != CORINFO_UNMANAGED_CALLCONV_UNKNOWN &&
                     canReturnInRegister)
                 {
                     // setup wbPassType and useType indicate that this is return by value in multiple registers

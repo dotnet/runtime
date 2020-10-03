@@ -696,13 +696,12 @@ inline bool isRegParamType(var_types type)
 //              - or CORINFO_UNMANAGED_CALLCONV_UNKNOWN for the
 //              - managed calling convention.
 //
-inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(
-    var_types type,
-    CORINFO_CLASS_HANDLE typeClass,
-    unsigned* typeSize,
-    bool forReturn,
-    bool isVarArg,
-    CorInfoUnmanagedCallConv callConv)
+inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                type,
+                                                    CORINFO_CLASS_HANDLE     typeClass,
+                                                    unsigned*                typeSize,
+                                                    bool                     forReturn,
+                                                    bool                     isVarArg,
+                                                    CorInfoUnmanagedCallConv callConv)
 {
     bool     result = false;
     unsigned size   = 0;

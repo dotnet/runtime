@@ -2147,7 +2147,8 @@ public:
 #endif
 
 #if FEATURE_MULTIREG_RET
-    GenTree* impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoUnmanagedCallConv callConv));
+    GenTree* impAssignMultiRegTypeToVar(GenTree*             op,
+                                        CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoUnmanagedCallConv callConv));
 #endif // FEATURE_MULTIREG_RET
 
     GenTree* impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass);
@@ -3731,7 +3732,9 @@ protected:
 
     GenTree* impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HANDLE retClsHnd);
 
-    GenTree* impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE retClsHnd, CorInfoUnmanagedCallConv unmgdCallConv);
+    GenTree* impFixupStructReturnType(GenTree*                 op,
+                                      CORINFO_CLASS_HANDLE     retClsHnd,
+                                      CorInfoUnmanagedCallConv unmgdCallConv);
 
 #ifdef DEBUG
     var_types impImportJitTestLabelMark(int numArgs);
@@ -3963,13 +3966,12 @@ public:
 
     GenTree* impOptimizeCastClassOrIsInst(GenTree* op1, CORINFO_RESOLVED_TOKEN* pResolvedToken, bool isCastClass);
 
-    bool VarTypeIsMultiByteAndCanEnreg(
-        var_types type,
-        CORINFO_CLASS_HANDLE typeClass,
-        unsigned* typeSize,
-        bool forReturn,
-        bool isVarArg,
-        CorInfoUnmanagedCallConv callConv);
+    bool VarTypeIsMultiByteAndCanEnreg(var_types                type,
+                                       CORINFO_CLASS_HANDLE     typeClass,
+                                       unsigned*                typeSize,
+                                       bool                     forReturn,
+                                       bool                     isVarArg,
+                                       CorInfoUnmanagedCallConv callConv);
 
     bool IsIntrinsicImplementedByUserCall(NamedIntrinsic intrinsicName);
     bool IsTargetIntrinsic(NamedIntrinsic intrinsicName);

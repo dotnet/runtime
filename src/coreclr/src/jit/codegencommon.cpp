@@ -11475,7 +11475,9 @@ void CodeGen::genReturn(GenTree* treeNode)
             }
             else // we must have a struct return type
             {
-                retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass, compiler->compMethodInfoGetUnmanagedCallConv(compiler->info.compMethodInfo));
+                retTypeDesc.InitializeStructReturnType(compiler, compiler->info.compMethodInfo->args.retTypeClass,
+                                                       compiler->compMethodInfoGetUnmanagedCallConv(
+                                                           compiler->info.compMethodInfo));
             }
             regCount = retTypeDesc.GetReturnRegCount();
         }
@@ -11600,7 +11602,9 @@ void CodeGen::genStructReturn(GenTree* treeNode)
     if (actualOp1->OperIs(GT_LCL_VAR))
     {
         varDsc = compiler->lvaGetDesc(actualOp1->AsLclVar()->GetLclNum());
-        retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(), compiler->compMethodInfoGetUnmanagedCallConv(compiler->info.compMethodInfo));
+        retTypeDesc.InitializeStructReturnType(compiler, varDsc->GetStructHnd(),
+                                               compiler->compMethodInfoGetUnmanagedCallConv(
+                                                   compiler->info.compMethodInfo));
         assert(varDsc->lvIsMultiRegRet);
     }
     else

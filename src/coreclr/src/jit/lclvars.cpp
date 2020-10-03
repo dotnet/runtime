@@ -145,7 +145,9 @@ void Compiler::lvaInitTypeRef()
         CORINFO_CLASS_HANDLE retClsHnd = info.compMethodInfo->args.retTypeClass;
 
         Compiler::structPassingKind howToReturnStruct;
-        var_types                   returnType = getReturnTypeForStruct(retClsHnd, compMethodInfoGetUnmanagedCallConv(info.compMethodInfo), &howToReturnStruct);
+        var_types                   returnType =
+            getReturnTypeForStruct(retClsHnd, compMethodInfoGetUnmanagedCallConv(info.compMethodInfo),
+                                   &howToReturnStruct);
 
         // We can safely widen the return type for enclosed structs.
         if ((howToReturnStruct == SPK_PrimitiveType) || (howToReturnStruct == SPK_EnclosingType))

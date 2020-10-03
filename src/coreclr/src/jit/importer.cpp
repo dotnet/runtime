@@ -4737,7 +4737,7 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
 #if defined(TARGET_XARCH)
         platformNamespaceName = ".X86";
 #elif defined(TARGET_ARM64)
-        platformNamespaceName           = ".Arm";
+        platformNamespaceName = ".Arm";
 #else
 #error Unsupported platform
 #endif
@@ -7538,10 +7538,10 @@ bool Compiler::impTailCallRetTypeCompatible(var_types                callerRetTy
     // trust code can make those tail calls.
     unsigned callerRetTypeSize = 0;
     unsigned calleeRetTypeSize = 0;
-    bool     isCallerRetTypMBEnreg =
-        VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, &callerRetTypeSize, true, info.compIsVarArgs, callerCallConv);
-    bool isCalleeRetTypMBEnreg =
-        VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, &calleeRetTypeSize, true, info.compIsVarArgs, calleeCallConv);
+    bool isCallerRetTypMBEnreg = VarTypeIsMultiByteAndCanEnreg(callerRetType, callerRetTypeClass, &callerRetTypeSize,
+                                                               true, info.compIsVarArgs, callerCallConv);
+    bool isCalleeRetTypMBEnreg = VarTypeIsMultiByteAndCanEnreg(calleeRetType, calleeRetTypeClass, &calleeRetTypeSize,
+                                                               true, info.compIsVarArgs, calleeCallConv);
 
     if (varTypeIsIntegral(callerRetType) || isCallerRetTypMBEnreg)
     {
@@ -8737,12 +8737,9 @@ DONE:
         // a small-typed return value is responsible for normalizing the return val
 
         if (canTailCall &&
-            !impTailCallRetTypeCompatible(info.compRetType,
-                                          info.compMethodInfo->args.retTypeClass,
-                                          compMethodInfoGetUnmanagedCallConv(info.compMethodInfo),
-                                          callRetTyp,
-                                          sig->retTypeClass,
-                                          call->AsCall()->unmgdCallConv))
+            !impTailCallRetTypeCompatible(info.compRetType, info.compMethodInfo->args.retTypeClass,
+                                          compMethodInfoGetUnmanagedCallConv(info.compMethodInfo), callRetTyp,
+                                          sig->retTypeClass, call->AsCall()->unmgdCallConv))
         {
             canTailCall             = false;
             szCanTailCallFailReason = "Return types are not tail call compatible";
@@ -9094,7 +9091,8 @@ bool Compiler::impMethodInfo_hasRetBuffArg(CORINFO_METHOD_INFO* methInfo)
         // We have some kind of STRUCT being returned
         structPassingKind howToReturnStruct = SPK_Unknown;
 
-        var_types returnType = getReturnTypeForStruct(methInfo->args.retTypeClass, compMethodInfoGetUnmanagedCallConv(methInfo), &howToReturnStruct);
+        var_types returnType = getReturnTypeForStruct(methInfo->args.retTypeClass,
+                                                      compMethodInfoGetUnmanagedCallConv(methInfo), &howToReturnStruct);
 
         if (howToReturnStruct == SPK_ByReference)
         {
@@ -9338,7 +9336,9 @@ GenTree* Compiler::impFixupCallStructReturn(GenTreeCall* call, CORINFO_CLASS_HAN
    Note that this method is only call for !TARGET_X86
  */
 
-GenTree* Compiler::impFixupStructReturnType(GenTree* op, CORINFO_CLASS_HANDLE retClsHnd, CorInfoUnmanagedCallConv unmgdCallConv)
+GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
+                                            CORINFO_CLASS_HANDLE     retClsHnd,
+                                            CorInfoUnmanagedCallConv unmgdCallConv)
 {
     assert(varTypeIsStruct(info.compRetType));
     assert(info.compRetBuffArg == BAD_VAR_NUM);
@@ -15773,7 +15773,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
 #if FEATURE_MULTIREG_RET
 
-                    if (varTypeIsStruct(op1) && IsMultiRegReturnedType(resolvedToken.hClass, CORINFO_UNMANAGED_CALLCONV_UNKNOWN))
+                    if (varTypeIsStruct(op1) &&
+                        IsMultiRegReturnedType(resolvedToken.hClass, CORINFO_UNMANAGED_CALLCONV_UNKNOWN))
                     {
                         // Unbox nullable helper returns a TYP_STRUCT.
                         // For the multi-reg case we need to spill it to a temp so that
@@ -16648,7 +16649,8 @@ GenTree* Compiler::impAssignSmallStructTypeToVar(GenTree* op, CORINFO_CLASS_HAND
 // Returns:
 //     Tree with reference to struct local to use as call return value.
 
-GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree* op, CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoUnmanagedCallConv callConv))
+GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
+                                              CORINFO_CLASS_HANDLE hClass DEBUGARG(CorInfoUnmanagedCallConv callConv))
 {
     unsigned tmpNum = lvaGrabTemp(true DEBUGARG("Return value temp for multireg return"));
     impAssignTempGen(tmpNum, op, hClass, (unsigned)CHECK_SPILL_ALL);
@@ -16811,7 +16813,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                     noway_assert(info.compRetBuffArg == BAD_VAR_NUM);
                     // adjust the type away from struct to integral
                     // and no normalizing
-                    op2 = impFixupStructReturnType(op2, retClsHnd, compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
+                    op2 = impFixupStructReturnType(op2, retClsHnd,
+                                                   compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
                 }
                 else
                 {
@@ -17011,7 +17014,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 // Same as !IsHfa but just don't bother with impAssignStructPtr.
 #else  // defined(UNIX_AMD64_ABI)
                 ReturnTypeDesc retTypeDesc;
-                retTypeDesc.InitializeStructReturnType(this, retClsHnd, compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
+                retTypeDesc.InitializeStructReturnType(this, retClsHnd,
+                                                       compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
 
                 if (retRegCount != 0)
@@ -17045,7 +17049,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 else
 #elif defined(TARGET_ARM64)
                 ReturnTypeDesc retTypeDesc;
-                retTypeDesc.InitializeStructReturnType(this, retClsHnd, compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
+                retTypeDesc.InitializeStructReturnType(this, retClsHnd,
+                                                       compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
 
                 if (retRegCount != 0)
@@ -17069,7 +17074,8 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
                 else
 #elif defined(TARGET_X86)
                 ReturnTypeDesc retTypeDesc;
-                retTypeDesc.InitializeStructReturnType(this, retClsHnd, compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
+                retTypeDesc.InitializeStructReturnType(this, retClsHnd,
+                                                       compMethodInfoGetUnmanagedCallConv(info.compMethodInfo));
                 unsigned retRegCount = retTypeDesc.GetReturnRegCount();
 
                 if (retRegCount != 0)
