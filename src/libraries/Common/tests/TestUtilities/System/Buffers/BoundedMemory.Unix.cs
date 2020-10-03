@@ -118,7 +118,7 @@ namespace System.Buffers
                             // mmap guarantees that the addresses are page-size aligned - but we'll just make sure.
                             Debug.Assert((nuint)(nint)(_handle.DangerousGetHandle() + _byteOffsetIntoHandle) % (nuint)SystemPageSize == 0);
                             if (UnsafeNativeMethods.mprotect(
-                                addr: (void*)(_handle.DangerousGetHandle() + _byteOffsetIntoHandle),
+                                addr: (void*)((nint)(_handle.DangerousGetHandle() + _byteOffsetIntoHandle) % SystemPageSize),
                                 len: (nuint)(&((T*)null)[_elementCount]),
                                 prot: value) != 0)
                             {
