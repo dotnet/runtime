@@ -3,9 +3,12 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO.MemoryMappedFiles;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security;
+
+using Microsoft.Win32.SafeHandles;
 
 using Xunit;
 
@@ -37,17 +40,29 @@ namespace System.Buffers
 
             // Reserve and commit the entire range as NOACCESS.
 
-            void* ptr = UnsafeNativeMethods.mmap64(
-                addr: null,
-                length: (nuint)totalBytesToAllocate /* cast throws OverflowException if out of range */,
-                prot: MemoryMappedProtections.PROT_NONE,
-                flags: MemoryMappedFlags.MAP_PRIVATE | MemoryMappedFlags.MAP_ANONYMOUS,
-                fd: -1,
-                offset: 0);
+            MemoryMappedFile map = MemoryMappedFile.CreateNew(null, totalBytesToAllocate,
+                MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None, IO.HandleInheritability.None);
 
-            if (ptr == null || ptr == (void*)UIntPtr.MaxValue)
+            SafeMemoryMappedFileHandle handle = map.SafeMemoryMappedFileHandle;
+
+            bool refAdded = false;
+            try
             {
-                throw new Win32Exception();
+                handle.DangerousAddRef(ref refAdded);
+                IntPtr ptr = handle.DangerousGetHandle();
+                // mprotect requires the addresses to be page-size aligned.
+                Debug.Assert((nuint)(nint)ptr % (nuint)SystemPageSize == 0);
+                if (UnsafeNativeMethods.mprotect((void*)ptr, checked((nuint)totalBytesToAllocate), MemoryProtections.PROT_NONE) != 0)
+                {
+                    throw new Win32Exception();
+                }
+            }
+            finally
+            {
+                if (refAdded)
+                {
+                    handle.DangerousRelease();
+                }
             }
 
             // Done allocating! Now carve out a READWRITE section bookended by the NOACCESS
@@ -55,7 +70,6 @@ namespace System.Buffers
             // flags only apply at page-level granularity, we need to "left-align" or "right-
             // align" the section we carve out so that it's guaranteed adjacent to one of
             // the NOACCESS bookend pages.
-            MemoryMappedHandle handle = new((IntPtr)ptr, (nuint)totalBytesToAllocate);
             return new UnixImplementation<T>(
                 handle,
                 byteOffsetIntoHandle: (placement == PoisonPagePlacement.Before)
@@ -63,19 +77,19 @@ namespace System.Buffers
                     : checked((int)(totalBytesToAllocate - SystemPageSize - cb)) /* just before trailing poison page */,
                 elementCount: elementCount)
             {
-                Protection = MemoryMappedProtections.PROT_READ | MemoryMappedProtections.PROT_WRITE
+                Protection = MemoryProtections.PROT_READ | MemoryProtections.PROT_WRITE
             };
         }
 
         private unsafe sealed class UnixImplementation<T> : BoundedMemory<T> where T : unmanaged
         {
-            private readonly MemoryMappedHandle _handle;
+            private readonly SafeMemoryMappedFileHandle _handle;
             private readonly int _byteOffsetIntoHandle;
             private readonly int _elementCount;
             private readonly BoundedMemoryManager _memoryManager;
-            private MemoryMappedProtections _protection;
+            private MemoryProtections _protection;
 
-            internal UnixImplementation(MemoryMappedHandle handle, int byteOffsetIntoHandle, int elementCount)
+            internal UnixImplementation(SafeMemoryMappedFileHandle handle, int byteOffsetIntoHandle, int elementCount)
             {
                 _handle = handle;
                 _byteOffsetIntoHandle = byteOffsetIntoHandle;
@@ -83,9 +97,9 @@ namespace System.Buffers
                 _memoryManager = new BoundedMemoryManager(this);
             }
 
-            public override bool IsReadonly => (Protection == MemoryMappedProtections.PROT_READ);
+            public override bool IsReadonly => (Protection == MemoryProtections.PROT_READ);
 
-            internal MemoryMappedProtections Protection
+            internal MemoryProtections Protection
             {
                 // Not sure if there's a easy way to retrieve the protection status for a given page.
                 // Instead we'll save whatever was set in the setter and return that.
@@ -151,12 +165,12 @@ namespace System.Buffers
 
             public override void MakeReadonly()
             {
-                Protection = MemoryMappedProtections.PROT_READ;
+                Protection = MemoryProtections.PROT_READ;
             }
 
             public override void MakeWriteable()
             {
-                Protection = MemoryMappedProtections.PROT_READ | MemoryMappedProtections.PROT_WRITE;
+                Protection = MemoryProtections.PROT_READ | MemoryProtections.PROT_WRITE;
             }
 
             private sealed class BoundedMemoryManager : MemoryManager<T>
@@ -209,30 +223,8 @@ namespace System.Buffers
             }
         }
 
-        private unsafe sealed class MemoryMappedHandle : SafeHandle
-        {
-            private nuint _length;
-
-            private MemoryMappedHandle()
-                : base(IntPtr.Zero, ownsHandle: true)
-            {
-            }
-
-            public MemoryMappedHandle(IntPtr handle, nuint length) : base(handle, ownsHandle: true)
-            {
-                _length = length;
-            }
-
-            // Do not provide a finalizer - SafeHandle's critical finalizer will
-            // call ReleaseHandle for you.
-
-            public override bool IsInvalid => (handle == IntPtr.Zero);
-
-            protected override bool ReleaseHandle() => UnsafeNativeMethods.munmap((void*)handle, _length) == 0;
-        }
-
         [Flags]
-        internal enum MemoryMappedProtections
+        internal enum MemoryProtections
         {
             PROT_NONE = 0x0,
             PROT_READ = 0x1,
@@ -240,31 +232,12 @@ namespace System.Buffers
             PROT_EXEC = 0x4
         }
 
-        [Flags]
-        internal enum MemoryMappedFlags
-        {
-            MAP_SHARED = 0x01,
-            MAP_PRIVATE = 0x02,
-            MAP_ANONYMOUS = 0x10,
-        }
-
         private unsafe static partial class UnsafeNativeMethods
         {
             private const string Libc = "libc";
 
-            // Not exactly sure if we can use mmap instead? the type of the last offset param is off_t
-            // which doesn't seem particularly rigidly defined. (depends on some compile time variables)
-            // We need to use mmap instead of other allocation functions because...
-            // "POSIX says that the behavior of mprotect() is unspecified if it is applied to a region of memory...
-            // ...that was not obtained via mmap(2)." (man-pages, Release 5.05, mprotect(2))
             [DllImport(Libc, CallingConvention = CallingConvention.Cdecl, SetLastError = true)]
-            public static extern void* mmap64(void* addr, nuint length, MemoryMappedProtections prot, MemoryMappedFlags flags, int fd, long offset);
-
-            [DllImport(Libc, CallingConvention = CallingConvention.Cdecl, SetLastError = true)]
-            public static extern int munmap(void* addr, nuint length);
-
-            [DllImport(Libc, CallingConvention = CallingConvention.Cdecl, SetLastError = true)]
-            public static extern int mprotect(void* addr, nuint len, MemoryMappedProtections prot);
+            public static extern int mprotect(void* addr, nuint len, MemoryProtections prot);
         }
     }
 }
