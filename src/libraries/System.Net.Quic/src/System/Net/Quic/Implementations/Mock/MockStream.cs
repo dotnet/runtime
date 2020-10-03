@@ -39,14 +39,15 @@ namespace System.Net.Quic.Implementations.Mock
             _canWrite = bidirectional;
         }
 
-        private async ValueTask ConnectAsync(CancellationToken cancellationToken = default)
+        private ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             Debug.Assert(_connection != null, "Stream not connected but no connection???");
 
-            _socket = await _connection.CreateOutboundMockStreamAsync(_streamId).ConfigureAwait(false);
+            throw new NotImplementedException();
+            //_socket = await _connection.CreateOutboundMockStreamAsync(_streamId).ConfigureAwait(false);
 
             // Don't need to hold on to the connection any longer.
-            _connection = null;
+            //_connection = null;
         }
 
         internal override long StreamId

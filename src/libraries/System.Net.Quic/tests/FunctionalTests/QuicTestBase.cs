@@ -14,6 +14,7 @@ namespace System.Net.Quic.Tests
         private static readonly IQuicImplProviderFactory s_factory = new T();
 
         public static QuicImplementationProvider ImplementationProvider { get; }  = s_factory.GetProvider();
+        public static bool IsSupported => ImplementationProvider.IsSupported;
 
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {

@@ -2,78 +2,52 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
-using System.Net.Sockets;
-using System.Net.Security;
-using System.Threading.Tasks;
 using System.Threading;
-using System.Buffers.Binary;
+using System.Threading.Channels;
+using System.Threading.Tasks;
 
 namespace System.Net.Quic.Implementations.Mock
 {
     internal sealed class MockListener : QuicListenerProvider
     {
         private bool _disposed;
-        private SslServerAuthenticationOptions? _sslOptions;
-        private IPEndPoint _listenEndPoint;
-        private TcpListener _tcpListener;
+        private readonly MockQuicEndPoint _listenEndPoint;
+        private Channel<MockConnection.ConnectionState> _listenQueue;
 
-        internal MockListener(IPEndPoint listenEndPoint, SslServerAuthenticationOptions? sslServerAuthenticationOptions)
+        internal MockListener(QuicListenerOptions options)
         {
-            if (listenEndPoint == null)
+            if (options.ListenEndPoint is null || options.ListenEndPoint.Address != IPAddress.Loopback || options.ListenEndPoint.Port != 0)
             {
-                throw new ArgumentNullException(nameof(listenEndPoint));
+                throw new ArgumentException("Must pass loopback address and port 0");
             }
 
-            _sslOptions = sslServerAuthenticationOptions;
-            _listenEndPoint = listenEndPoint;
-
-            _tcpListener = new TcpListener(listenEndPoint);
+            _listenEndPoint = new MockQuicEndPoint(this);
+            _listenQueue = Channel.CreateBounded<MockConnection.ConnectionState>(new BoundedChannelOptions(options.ListenBacklog));
         }
 
         // IPEndPoint is mutable, so we must create a new instance every time this is retrieved.
-        internal override IPEndPoint ListenEndPoint => new IPEndPoint(_listenEndPoint.Address, _listenEndPoint.Port);
+        internal override IPEndPoint ListenEndPoint => _listenEndPoint.Clone();
 
         internal override async ValueTask<QuicConnectionProvider> AcceptConnectionAsync(CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
-            Socket socket = await _tcpListener.AcceptSocketAsync().ConfigureAwait(false);
-            socket.NoDelay = true;
+            MockConnection.ConnectionState state = await _listenQueue.Reader.ReadAsync(cancellationToken).ConfigureAwait(false);
 
-            // Read first 4 bytes to get client listen port
-            byte[] buffer = new byte[4];
-            int bytesRead = 0;
-            do
-            {
-                bytesRead += await socket.ReceiveAsync(buffer.AsMemory().Slice(bytesRead), SocketFlags.None, cancellationToken).ConfigureAwait(false);
-            } while (bytesRead != buffer.Length);
+            return new MockConnection(_listenEndPoint, state);
+        }
 
-            int peerListenPort = BinaryPrimitives.ReadInt32LittleEndian(buffer);
-            IPEndPoint peerListenEndPoint = new IPEndPoint(((IPEndPoint)socket.RemoteEndPoint!).Address, peerListenPort);
-
-            // Listen on a new local endpoint for inbound streams
-            TcpListener inboundListener = new TcpListener(_listenEndPoint.Address, 0);
-            inboundListener.Start();
-            int inboundListenPort = ((IPEndPoint)inboundListener.LocalEndpoint).Port;
-
-            // Write inbound listen port to socket so client can read it
-            BinaryPrimitives.WriteInt32LittleEndian(buffer, inboundListenPort);
-            await socket.SendAsync(buffer, SocketFlags.None).ConfigureAwait(false);
-
-            return new MockConnection(socket, peerListenEndPoint, inboundListener);
+        // Returns false if backlog queue is full.
+        internal bool TryConnect(MockConnection.ConnectionState state)
+        {
+            return _listenQueue.Writer.TryWrite(state);
         }
 
         internal override void Start()
         {
             CheckDisposed();
 
-            _tcpListener.Start();
-
-            if (_listenEndPoint.Port == 0)
-            {
-                // Get auto-assigned port
-                _listenEndPoint = (IPEndPoint)_tcpListener.LocalEndpoint;
-            }
+            // TODO: Track start
         }
 
         internal override void Close()
@@ -95,8 +69,6 @@ namespace System.Net.Quic.Implementations.Mock
             {
                 if (disposing)
                 {
-                    _tcpListener?.Stop();
-                    _tcpListener = null!;
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
@@ -115,6 +87,27 @@ namespace System.Net.Quic.Implementations.Mock
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        internal sealed class MockQuicEndPoint : IPEndPoint
+        {
+            private readonly MockListener _listener;
+
+            public MockQuicEndPoint(MockListener listener) : base(IPAddress.Loopback, 0)
+            {
+                _listener = listener;
+            }
+
+            public MockListener Listener => _listener;
+
+            public MockQuicEndPoint Clone() => new MockQuicEndPoint(_listener);
+
+            public override bool Equals(object? comparand)
+            {
+                return (comparand is MockQuicEndPoint mockQuicEndPoint && mockQuicEndPoint.Listener == this.Listener);
+            }
+
+            public override int GetHashCode() => _listener.GetHashCode();
         }
     }
 }

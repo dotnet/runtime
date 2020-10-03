@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
-using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Net.Security;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,37 +13,45 @@ namespace System.Net.Quic.Implementations.Mock
     {
         private readonly bool _isClient;
         private bool _disposed;
-        private EndPoint? _remoteEndPoint;
-        private IPEndPoint? _localEndPoint;
+        private readonly MockListener _listener;        // null if server
+        private IPEndPoint _remoteEndPoint;
+        private IPEndPoint _localEndPoint;
         private object _syncObject = new object();
-        private Socket? _socket;
-        private IPEndPoint? _peerListenEndPoint;
-        private TcpListener? _inboundListener;
         private long _nextOutboundBidirectionalStream;
         private long _nextOutboundUnidirectionalStream;
+        private ConnectionState? _state;
 
         // Constructor for outbound connections
         internal MockConnection(EndPoint? remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
         {
-            _remoteEndPoint = remoteEndPoint;
-            _localEndPoint = localEndPoint;
+            if (!(remoteEndPoint is MockListener.MockQuicEndPoint mockQuicEndPoint))
+            {
+                throw new ArgumentException("Expected endpoint from MockListener", nameof(remoteEndPoint));
+            }
 
             _isClient = true;
+            _remoteEndPoint = mockQuicEndPoint;
+            _localEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
+            _listener = mockQuicEndPoint.Listener;
+
             _nextOutboundBidirectionalStream = 0;
             _nextOutboundUnidirectionalStream = 2;
+
+            // _state is not initialized until ConnectAsync
         }
 
         // Constructor for accepted inbound connections
-        internal MockConnection(Socket socket, IPEndPoint peerListenEndPoint, TcpListener inboundListener)
+        internal MockConnection(MockListener.MockQuicEndPoint localEndPoint, ConnectionState state)
         {
             _isClient = false;
+            _remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
+            _localEndPoint = localEndPoint;
+            _listener = localEndPoint.Listener;
+
             _nextOutboundBidirectionalStream = 1;
             _nextOutboundUnidirectionalStream = 3;
-            _socket = socket;
-            _peerListenEndPoint = peerListenEndPoint;
-            _inboundListener = inboundListener;
-            _localEndPoint = (IPEndPoint?)socket.LocalEndPoint;
-            _remoteEndPoint = (IPEndPoint?)socket.RemoteEndPoint;
+
+            _state = state;
         }
 
         internal override bool Connected
@@ -53,17 +60,19 @@ namespace System.Net.Quic.Implementations.Mock
             {
                 CheckDisposed();
 
-                return _socket != null;
+                return _state != null;
             }
         }
 
-        internal override IPEndPoint LocalEndPoint => new IPEndPoint(_localEndPoint!.Address, _localEndPoint.Port);
+        // TODO: Should clone the endpoint since it is mutable
+        internal override IPEndPoint LocalEndPoint => _localEndPoint;
 
+        // TODO: Should clone the endpoint since it is mutable
         internal override EndPoint RemoteEndPoint => _remoteEndPoint!;
 
         internal override SslApplicationProtocol NegotiatedApplicationProtocol => throw new NotImplementedException();
 
-        internal override async ValueTask ConnectAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             CheckDisposed();
 
@@ -73,35 +82,16 @@ namespace System.Net.Quic.Implementations.Mock
                 throw new InvalidOperationException("Already connected");
             }
 
-            Socket socket = new Socket(_remoteEndPoint!.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-            await socket.ConnectAsync(_remoteEndPoint, cancellationToken).ConfigureAwait(false);
-            socket.NoDelay = true;
+            Debug.Assert(_isClient, "not connected but also not _isClient??");
 
-            _localEndPoint = (IPEndPoint?)socket.LocalEndPoint;
-
-            // Listen on a new local endpoint for inbound streams
-            TcpListener inboundListener = new TcpListener(_localEndPoint!.Address, 0);
-            inboundListener.Start();
-            int inboundListenPort = ((IPEndPoint)inboundListener.LocalEndpoint).Port;
-
-            // Write inbound listen port to socket so server can read it
-            byte[] buffer = new byte[4];
-            BinaryPrimitives.WriteInt32LittleEndian(buffer, inboundListenPort);
-            await socket.SendAsync(buffer, SocketFlags.None).ConfigureAwait(false);
-
-            // Read first 4 bytes to get server listen port
-            int bytesRead = 0;
-            do
+            MockListener listener = ((MockListener.MockQuicEndPoint)_remoteEndPoint).Listener;
+            _state = new ConnectionState();
+            if (!listener.TryConnect(_state))
             {
-                bytesRead += await socket.ReceiveAsync(buffer.AsMemory().Slice(bytesRead), SocketFlags.None, cancellationToken).ConfigureAwait(false);
-            } while (bytesRead != buffer.Length);
+                throw new QuicException("Connection refused");
+            }
 
-            int peerListenPort = BinaryPrimitives.ReadInt32LittleEndian(buffer);
-            IPEndPoint peerListenEndPoint = new IPEndPoint(((IPEndPoint)socket.RemoteEndPoint!).Address, peerListenPort);
-
-            _socket = socket;
-            _peerListenEndPoint = peerListenEndPoint;
-            _inboundListener = inboundListener;
+            return ValueTask.CompletedTask;
         }
 
         internal override QuicStreamProvider OpenUnidirectionalStream()
@@ -138,44 +128,10 @@ namespace System.Net.Quic.Implementations.Mock
             throw new NotImplementedException();
         }
 
-        internal async Task<Socket> CreateOutboundMockStreamAsync(long streamId)
-        {
-            Socket socket = new Socket(SocketType.Stream, ProtocolType.Tcp);
-            await socket.ConnectAsync(_peerListenEndPoint!).ConfigureAwait(false);
-            socket.NoDelay = true;
-
-            // Write stream ID to socket so server can read it
-            byte[] buffer = new byte[8];
-            BinaryPrimitives.WriteInt64LittleEndian(buffer, streamId);
-            await socket.SendAsync(buffer, SocketFlags.None).ConfigureAwait(false);
-
-            return socket;
-        }
-
-        internal override async ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default)
+        internal override ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default)
         {
             CheckDisposed();
-
-            Socket socket = await _inboundListener!.AcceptSocketAsync().ConfigureAwait(false);
-
-            // Read first bytes to get stream ID
-            byte[] buffer = new byte[8];
-            int bytesRead = 0;
-            do
-            {
-                bytesRead += await socket.ReceiveAsync(buffer.AsMemory().Slice(bytesRead), SocketFlags.None, cancellationToken).ConfigureAwait(false);
-            } while (bytesRead != buffer.Length);
-
-            long streamId = BinaryPrimitives.ReadInt64LittleEndian(buffer);
-
-            bool clientInitiated = ((streamId & 0b01) == 0);
-            if (clientInitiated == _isClient)
-            {
-                throw new Exception($"Wrong initiator on accepted stream??? streamId={streamId}, _isClient={_isClient}");
-            }
-
-            bool bidirectional = ((streamId & 0b10) == 0);
-            return new MockStream(socket, streamId, bidirectional: bidirectional);
+            throw new NotImplementedException();
         }
 
         internal override ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default)
@@ -198,11 +154,6 @@ namespace System.Net.Quic.Implementations.Mock
             {
                 if (disposing)
                 {
-                    _socket?.Dispose();
-                    _socket = null;
-
-                    _inboundListener?.Stop();
-                    _inboundListener = null;
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
@@ -221,6 +172,11 @@ namespace System.Net.Quic.Implementations.Mock
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        internal sealed class ConnectionState
+        {
+
         }
     }
 }
