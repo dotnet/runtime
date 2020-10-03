@@ -13,14 +13,16 @@ namespace System.Net.Quic.Tests
     {
         private static readonly IQuicImplProviderFactory s_factory = new T();
 
-        public static QuicImplementationProvider ImplementationProvider { get; }  = s_factory.GetProvider();
+        public static QuicImplementationProvider ImplementationProvider { get; } = s_factory.GetProvider();
         public static bool IsSupported => ImplementationProvider.IsSupported;
+
+        public static SslApplicationProtocol ApplicationProtocol { get; } = new SslApplicationProtocol("quictest");
 
         public SslServerAuthenticationOptions GetSslServerAuthenticationOptions()
         {
             return new SslServerAuthenticationOptions()
             {
-                ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") }
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol }
             };
         }
 
@@ -28,7 +30,7 @@ namespace System.Net.Quic.Tests
         {
             return new SslClientAuthenticationOptions()
             {
-                ApplicationProtocols = new List<SslApplicationProtocol>() { new SslApplicationProtocol("quictest") }
+                ApplicationProtocols = new List<SslApplicationProtocol>() { ApplicationProtocol }
             };
         }
 

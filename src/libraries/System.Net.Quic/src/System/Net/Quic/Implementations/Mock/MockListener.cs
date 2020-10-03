@@ -11,6 +11,7 @@ namespace System.Net.Quic.Implementations.Mock
     internal sealed class MockListener : QuicListenerProvider
     {
         private bool _disposed;
+        private readonly QuicListenerOptions _options;
         private readonly MockQuicEndPoint _listenEndPoint;
         private Channel<MockConnection.ConnectionState> _listenQueue;
 
@@ -21,6 +22,7 @@ namespace System.Net.Quic.Implementations.Mock
                 throw new ArgumentException("Must pass loopback address and port 0");
             }
 
+            _options = options;
             _listenEndPoint = new MockQuicEndPoint(this);
             _listenQueue = Channel.CreateBounded<MockConnection.ConnectionState>(new BoundedChannelOptions(options.ListenBacklog));
         }

@@ -18,41 +18,6 @@ namespace System.Net.Quic.Tests
         private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
 
         [Fact]
-        public async Task TestConnect()
-        {
-            SslServerAuthenticationOptions serverOpts = GetSslServerAuthenticationOptions();
-
-            using QuicListener listener = new QuicListener(
-                QuicImplementationProviders.MsQuic,
-                new IPEndPoint(IPAddress.Loopback, 0),
-                serverOpts);
-
-            listener.Start();
-            IPEndPoint listenEndPoint = listener.ListenEndPoint;
-            Assert.NotEqual(0, listenEndPoint.Port);
-
-            using QuicConnection clientConnection = new QuicConnection(
-                QuicImplementationProviders.MsQuic,
-                listenEndPoint,
-                GetSslClientAuthenticationOptions());
-
-            Assert.False(clientConnection.Connected);
-            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
-
-            ValueTask connectTask = clientConnection.ConnectAsync();
-            QuicConnection serverConnection = await listener.AcceptConnectionAsync();
-            await connectTask;
-
-            Assert.True(clientConnection.Connected);
-            Assert.True(serverConnection.Connected);
-            Assert.Equal(listenEndPoint, serverConnection.LocalEndPoint);
-            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
-            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
-            Assert.Equal(serverOpts.ApplicationProtocols[0].ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
-            Assert.Equal(serverOpts.ApplicationProtocols[0].ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
-        }
-
-        [Fact]
         public async Task TestStreams()
         {
             using QuicListener listener = new QuicListener(

@@ -14,6 +14,32 @@ namespace System.Net.Quic.Tests
         where T : IQuicImplProviderFactory, new()
     {
         [Fact]
+        public async Task TestConnect()
+        {
+            using QuicListener listener = CreateQuicListener();
+
+            listener.Start();
+            IPEndPoint listenEndPoint = listener.ListenEndPoint;
+
+            using QuicConnection clientConnection = CreateQuicConnection(listenEndPoint);
+
+            Assert.False(clientConnection.Connected);
+            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
+
+            ValueTask connectTask = clientConnection.ConnectAsync();
+            QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await connectTask;
+
+            Assert.True(clientConnection.Connected);
+            Assert.True(serverConnection.Connected);
+            Assert.Equal(listenEndPoint, serverConnection.LocalEndPoint);
+            Assert.Equal(listenEndPoint, clientConnection.RemoteEndPoint);
+            Assert.Equal(clientConnection.LocalEndPoint, serverConnection.RemoteEndPoint);
+            Assert.Equal(ApplicationProtocol.ToString(), clientConnection.NegotiatedApplicationProtocol.ToString());
+            Assert.Equal(ApplicationProtocol.ToString(), serverConnection.NegotiatedApplicationProtocol.ToString());
+        }
+
+        [Fact]
         public async Task AcceptStream_ConnectionAborted_ByClient_Throws()
         {
             const int ExpectedErrorCode = 1234;

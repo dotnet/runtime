@@ -14,6 +14,7 @@ namespace System.Net.Quic.Implementations.Mock
     {
         private readonly bool _isClient;
         private bool _disposed;
+        private SslClientAuthenticationOptions? _sslClientAuthenticationOptions;
         private readonly MockListener _listener;        // null if server
         private IPEndPoint _remoteEndPoint;
         private IPEndPoint _localEndPoint;
@@ -34,6 +35,7 @@ namespace System.Net.Quic.Implementations.Mock
             _isClient = true;
             _remoteEndPoint = mockQuicEndPoint;
             _localEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
+            _sslClientAuthenticationOptions = sslClientAuthenticationOptions;
             _listener = mockQuicEndPoint.Listener;
 
             _nextOutboundBidirectionalStream = 0;
@@ -72,7 +74,18 @@ namespace System.Net.Quic.Implementations.Mock
         // TODO: Should clone the endpoint since it is mutable
         internal override EndPoint RemoteEndPoint => _remoteEndPoint!;
 
-        internal override SslApplicationProtocol NegotiatedApplicationProtocol => throw new NotImplementedException();
+        internal override SslApplicationProtocol NegotiatedApplicationProtocol
+        {
+            get
+            {
+                if (_state is null)
+                {
+                    throw new InvalidOperationException("not connected");
+                }
+
+                return _state._applicationProtocol;
+            }
+        }
 
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
@@ -86,7 +99,9 @@ namespace System.Net.Quic.Implementations.Mock
             Debug.Assert(_isClient, "not connected but also not _isClient??");
 
             MockListener listener = ((MockListener.MockQuicEndPoint)_remoteEndPoint).Listener;
-            _state = new ConnectionState();
+
+            // TODO: deal with protocol negotiation
+            _state = new ConnectionState(_sslClientAuthenticationOptions!.ApplicationProtocols![0]);
             if (!listener.TryConnect(_state))
             {
                 throw new QuicException("Connection refused");
@@ -230,13 +245,15 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal sealed class ConnectionState
         {
+            public readonly SslApplicationProtocol _applicationProtocol;
             public Channel<MockStream.StreamState> _clientInitiatedStreamChannel;
             public Channel<MockStream.StreamState> _serverInitiatedStreamChannel;
             public long _clientErrorCode;
             public long _serverErrorCode;
 
-            public ConnectionState()
+            public ConnectionState(SslApplicationProtocol applicationProtocol)
             {
+                _applicationProtocol = applicationProtocol;
                 _clientInitiatedStreamChannel = Channel.CreateUnbounded<MockStream.StreamState>();
                 _serverInitiatedStreamChannel = Channel.CreateUnbounded<MockStream.StreamState>();
             }
