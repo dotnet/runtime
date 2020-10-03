@@ -18,53 +18,6 @@ namespace System.Net.Quic.Tests
         private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
 
         [Fact]
-        public async Task BasicTest()
-        {
-            using QuicListener listener = CreateQuicListener();
-
-            for (int i = 0; i < 100; i++)
-            {
-                Task listenTask = Task.Run(async () =>
-                {
-                    using QuicConnection connection = await listener.AcceptConnectionAsync();
-                    await using QuicStream stream = await connection.AcceptStreamAsync();
-
-                    byte[] buffer = new byte[s_data.Length];
-                    int bytesRead = await stream.ReadAsync(buffer);
-
-                    Assert.Equal(s_data.Length, bytesRead);
-                    Assert.True(s_data.Span.SequenceEqual(buffer));
-
-                    await stream.WriteAsync(s_data, endStream: true);
-                    await stream.ShutdownWriteCompleted();
-
-                    await connection.CloseAsync(errorCode: 0);
-                });
-
-                Task clientTask = Task.Run(async () =>
-                {
-                    using QuicConnection connection = CreateQuicConnection(listener.ListenEndPoint);
-                    await connection.ConnectAsync();
-                    await using QuicStream stream = connection.OpenBidirectionalStream();
-
-                    await stream.WriteAsync(s_data, endStream: true);
-
-                    byte[] memory = new byte[12];
-                    int bytesRead = await stream.ReadAsync(memory);
-
-                    Assert.Equal(s_data.Length, bytesRead);
-                    // TODO this failed once...
-                    Assert.True(s_data.Span.SequenceEqual(memory));
-                    await stream.ShutdownWriteCompleted();
-
-                    await connection.CloseAsync(errorCode: 0);
-                });
-
-                await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 10000);
-            }
-        }
-
-        [Fact]
         public async Task MultipleReadsAndWrites()
         {
             using QuicListener listener = CreateQuicListener();
