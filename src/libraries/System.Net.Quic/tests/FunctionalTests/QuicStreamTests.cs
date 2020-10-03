@@ -214,6 +214,20 @@ namespace System.Net.Quic.Tests
             await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 60000);
         }
 
+        [Fact]
+        public async Task GetStreamIdWithoutStartWorks()
+        {
+            using QuicListener listener = CreateQuicListener();
+            using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+
+            ValueTask clientTask = clientConnection.ConnectAsync();
+            using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+            await clientTask;
+
+            using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+            Assert.Equal(0, clientStream.StreamId);
+        }
+
         [Theory]
         [MemberData(nameof(ReadWrite_Random_Success_Data))]
         public async Task ReadWrite_Random_Success(int readSize, int writeSize)
