@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Quic;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -27,6 +28,8 @@ namespace System.Net.Http.Functional.Tests
         protected virtual Version UseVersion => HttpVersion.Version11;
 
         protected virtual bool TestAsync => true;
+
+        public static bool IsMsQuicSupported => QuicImplementationProviders.MsQuic.IsSupported;
 
         public HttpClientHandlerTestBase(ITestOutputHelper output)
         {
