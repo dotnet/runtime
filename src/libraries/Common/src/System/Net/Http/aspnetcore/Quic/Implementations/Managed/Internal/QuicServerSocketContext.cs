@@ -145,13 +145,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
         }
 
-        protected override int ReceiveFrom(byte[] buffer, ref EndPoint sender) => Socket.ReceiveFrom(buffer, ref sender);
-
-        protected override bool ReceiveFromAsync(ReceiveOperationAsyncSocketArgs args) => Socket.ReceiveFromAsync(SocketReceiveEventArgs);
-
-        protected override void SendTo(byte[] buffer, int size, EndPoint receiver)
-            => Socket.SendTo(buffer, 0, size, SocketFlags.None, receiver);
-
         protected override void OnException(Exception e)
         {
             foreach (var connection in _connectionsByEndpoint.Values)

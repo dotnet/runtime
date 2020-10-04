@@ -10,6 +10,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal const TlsCipherSuite InitialCipherSuite = TlsCipherSuite.TLS_AES_128_GCM_SHA256;
 
         internal const int MinimumPacketSize = 21;
+
+        internal const int MaximumAllowedDatagramSize = 1452 /*1252*/;
     }
 
     internal static class HeaderHelpers

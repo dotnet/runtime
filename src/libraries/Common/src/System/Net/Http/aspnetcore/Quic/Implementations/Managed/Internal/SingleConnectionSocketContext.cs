@@ -88,27 +88,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return false;
         }
 
-        protected override int ReceiveFrom(byte[] buffer, ref EndPoint sender)
-        {
-            sender = _remoteEndPoint;
-            // use method without explicit address because we use connected socket
-            return Socket.Receive(buffer, SocketFlags.None, out _);
-        }
-
-        protected override bool ReceiveFromAsync(ReceiveOperationAsyncSocketArgs args)
-        {
-            // we are using connected sockets -> use Receive(...). We also have to set the expected
-            // receiver address
-
-            args.RemoteEndPoint = _remoteEndPoint;
-
-            return Socket.ReceiveAsync(args);
-        }
-
-        protected override void SendTo(byte[] buffer, int size, EndPoint receiver)
-            // use method without explicit address because we use connected socket
-            => Socket.Send(buffer.AsSpan(0, size), SocketFlags.None, out _);
-
         protected override void OnException(Exception e)
         {
             _connection.OnSocketContextException(e);
