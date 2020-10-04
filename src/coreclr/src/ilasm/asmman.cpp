@@ -964,8 +964,7 @@ HRESULT AsmMan::EmitManifest()
                 for(j=0; (hFile == INVALID_HANDLE_VALUE)&&(pwzInputFiles[j] != NULL); j++)
                 {
                     wcscpy_s(wzFileName,2048,pwzInputFiles[j]);
-                    pwz = wcsrchr(wzFileName,'\\');
-                    if(pwz == NULL) pwz = wcsrchr(wzFileName,'/');
+                    pwz = wcsrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_A);
                     if(pwz == NULL) pwz = wcsrchr(wzFileName,':');
                     if(pwz == NULL) pwz = &wzFileName[0];
                     else pwz++;
