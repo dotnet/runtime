@@ -307,15 +307,17 @@ namespace System.Net.Quic.Implementations.Managed
                     QuicError.StreamNotWritable,
                     FrameType.StopSending);
 
+            var stream = _streams.TryGetStream(frame.StreamId);
             // RFC: Receiving a STOP_SENDING frame for a locally-initiated stream that has not yet been created MUST be
             // treated as a connection error of type STREAM_STATE_ERROR.
             if (StreamHelpers.IsLocallyInitiated(IsServer, frame.StreamId) &&
-                StreamHelpers.GetStreamIndex(frame.StreamId) >= _streams.GetStreamCount(StreamHelpers.GetStreamType(frame.StreamId)))
+                // Streams are Created by sending a STREAM frame, if we didn't send anything, report error
+                !(stream?.OutboundBuffer?.SentBytes > 0))
                 return CloseConnection(TransportErrorCode.StreamStateError,
                     QuicError.StreamNotCreated,
                     FrameType.StopSending);
 
-            if (!TryGetOrCreateStream(frame.StreamId, out var stream))
+            if (stream == null && !TryGetOrCreateStream(frame.StreamId, out stream))
                 return CloseConnection(TransportErrorCode.StreamLimitError,
                     QuicError.StreamsLimitViolated,
                     FrameType.StopSending);

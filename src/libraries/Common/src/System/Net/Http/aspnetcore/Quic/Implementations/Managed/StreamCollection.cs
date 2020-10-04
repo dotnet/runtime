@@ -48,6 +48,12 @@ namespace System.Net.Quic.Implementations.Managed
         internal ManagedQuicStream this[long streamId] => _streams[streamId];
 
         /// <summary>
+        ///     Returns the stream with given ID or null if the stream hasn't been created yet.
+        /// </summary>
+        /// <param name="streamId">The Id of the stream</param>
+        internal ManagedQuicStream? TryGetStream(long streamId) => _streams.GetValueOrDefault(streamId);
+
+        /// <summary>
         ///     Returns true if the stream collection has streams to be flushed.
         /// </summary>
         internal bool HasFlushableStreams => _flushable.First != null;
@@ -103,21 +109,27 @@ namespace System.Net.Quic.Implementations.Managed
             bool unidirectional = !StreamHelpers.IsBidirectional(streamId);
 
             // create also all lower-numbered streams
-            while (_streamCounts[(int)type] <= index)
+            if (_streamCounts[(int)type] <= index)
             {
-                long nextId = StreamHelpers.ComposeStreamId(type, _streamCounts[(int)type]);
-
-                var stream = CreateStream(nextId, isLocal, unidirectional, localParams, remoteParams, connection);
-                if (ImmutableInterlocked.TryAdd(ref _streams, nextId, stream))
+                lock (_streamCounts)
                 {
-                    Interlocked.Increment(ref _streamCounts[(int)type]);
-                }
+                    while (_streamCounts[(int)type] <= index)
+                    {
+                        long nextId = StreamHelpers.ComposeStreamId(type, _streamCounts[(int)type]);
 
-                if (!isLocal)
-                {
-                    bool success = IncomingStreams.Writer.TryWrite(stream);
-                    // reserving space should be assured by connection stream limits
-                    Debug.Assert(success, "Failed to write into IncomingStreams");
+                        var stream = CreateStream(nextId, isLocal, unidirectional, localParams, remoteParams, connection);
+                        if (ImmutableInterlocked.TryAdd(ref _streams, nextId, stream))
+                        {
+                            _streamCounts[(int)type]++;
+                        }
+
+                        if (!isLocal)
+                        {
+                            bool success = IncomingStreams.Writer.TryWrite(stream);
+                            // reserving space should be assured by connection stream limits
+                            Debug.Assert(success, "Failed to write into IncomingStreams");
+                        }
+                    }
                 }
             }
 
@@ -175,11 +187,6 @@ namespace System.Net.Quic.Implementations.Managed
                         list.AddLast(node);
                 }
             }
-        }
-
-        internal long GetStreamCount(StreamType type)
-        {
-            return _streamCounts[(int)type];
         }
 
         internal IEnumerable<ManagedQuicStream> AllStreams => _streams.Values;

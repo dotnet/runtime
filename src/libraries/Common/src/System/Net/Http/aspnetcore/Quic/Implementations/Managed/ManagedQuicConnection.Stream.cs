@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
 using System.Threading;
