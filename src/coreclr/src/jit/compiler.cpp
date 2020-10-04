@@ -3319,7 +3319,7 @@ const LPCWSTR Compiler::s_compStressModeNames[STRESS_COUNT + 1] = {
 //------------------------------------------------------------------------
 // compStressCompile: determine if a stress mode should be enabled
 //
-// Argumemnts:
+// Arguments:
 //   stressArea - stress mode to possibly enable
 //   weight - percent of time this mode should be turned on
 //     (range 0 to 100); weight 0 effectively disables
