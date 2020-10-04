@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Net.Security;
 using System.IO;
+using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -58,6 +60,9 @@ namespace System.Net.Http
 
         internal Func<SocketsHttpConnectionContext, CancellationToken, ValueTask<Stream>>? _connectCallback;
         internal Func<SocketsHttpPlaintextStreamFilterContext, CancellationToken, ValueTask<Stream>>? _plaintextStreamFilter;
+
+        // !!! NOTE !!! This is temporary and will not ship.
+        internal QuicImplementationProvider? _quicImplementationProvider;
 
         internal IDictionary<string, object?>? _properties;
 
@@ -114,6 +119,7 @@ namespace System.Net.Http
                 _enableMultipleHttp2Connections = _enableMultipleHttp2Connections,
                 _connectCallback = _connectCallback,
                 _plaintextStreamFilter = _plaintextStreamFilter,
+                _quicImplementationProvider = _quicImplementationProvider
             };
         }
 
