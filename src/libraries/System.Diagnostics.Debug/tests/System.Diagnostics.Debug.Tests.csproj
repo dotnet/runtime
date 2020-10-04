@@ -23,8 +23,9 @@
     <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\src\System.Runtime.csproj;
                                $(LibrariesProjectRoot)System.Threading\src\System.Threading.csproj"
                       SkipUseReferenceAssembly="true" />
+    <ProjectReference Include="..\src\System.Diagnostics.Debug.csproj" />
     <!-- Do not reference since we build part of the source code for tests. -->
-    <ProjectRefence Include="..\src\System.Diagnostics.Debug.csproj" ReferenceOutputAssembly="false" />
+    <DefaultReferenceExclusion Include="System.Diagnostics.Debug" />
     <DefaultReferenceExclusion Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>

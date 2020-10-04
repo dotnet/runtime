@@ -29,11 +29,6 @@
     </Reference>
   </ItemGroup>
 
-  <ItemGroup Condition="'@(ProjectReference)' != '' and '$(IsTestProject)' == 'true'">
-    <ProjectReference Update="@(ProjectReference->WithMetadataValue('ReferenceOutputAssembly', 'false')->WithMetadataValue('OutputItemType', ''))"
-                      OutputItemType="_UnresolvedTargetingPackExclusion" />
-  </ItemGroup>
-
   <!-- .NETCoreApp > 2.x DisableImplicitAssemblyReferences support. -->
   <Target Name="RemoveFrameworkReferences"
           BeforeTargets="_HandlePackageFileConflicts"
@@ -100,7 +95,6 @@
       <_targetingPackReferenceExclusion Include="$(TargetName)" />
       <_targetingPackReferenceExclusion Include="@(_ResolvedProjectReferencePaths->'%(Filename)')" />
       <_targetingPackReferenceExclusion Include="@(DefaultReferenceExclusion)" />
-      <_targetingPackReferenceExclusion Include="@(_UnresolvedTargetingPackExclusion->'%(Filename)')" />
     </ItemGroup>
 
     <ItemGroup>

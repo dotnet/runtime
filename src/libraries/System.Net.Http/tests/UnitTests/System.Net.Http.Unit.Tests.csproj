@@ -403,9 +403,10 @@
     <Compile Include="..\..\..\System.Net.Http.WinHttpHandler\tests\UnitTests\TestServer.cs"
              Link="WinHttpHandler\UnitTests\TestServer.cs" />
   </ItemGroup>
-  <!-- Do not reference since we build part of the source code for tests. -->
   <ItemGroup>
-    <ProjectReference Include="..\..\src\System.Net.Http.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="..\..\src\System.Net.Http.csproj" />
+    <!-- Do not reference since we build part of the source code for tests. -->
+    <DefaultReferenceExclusion Include="System.Net.Http" />	
     <DefaultReferenceExclusion Include="System.Net.Mail" />
   </ItemGroup>
 </Project>

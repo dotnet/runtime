@@ -42,7 +42,7 @@
     </ItemGroup>
   </Target>
 
-  <!-- Make shared framework assemblies not app-local (non private). -->
+  <!-- Make shared framework assemblies not app-local (non private) and don't reference them. -->
   <Target Name="UpdateProjectReferencesWithPrivateAttribute"
           AfterTargets="AssignProjectConfiguration"
           BeforeTargets="PrepareProjectReferences"
@@ -50,9 +50,12 @@
                      ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true') and
                      '@(ProjectReferenceWithConfiguration)' != ''">
     <ItemGroup>
-      <ProjectReferenceWithConfiguration PrivateAssets="all"
-                                         Private="false"
-                                         Condition="$(NetCoreAppLibrary.Contains('%(Filename);'))" />
+      <ProjectReferenceWithConfiguration Condition="$(NetCoreAppLibrary.Contains('%(Filename);'))">
+        <PrivateAssets>all</PrivateAssets>
+        <Private>false</Private>
+        <ReferenceOutputAssembly Condition="!$(NetCoreAppLibraryNoReference.Contains('%(Filename);')) and
+                                            '%(ProjectReferenceWithConfiguration.SkipUseReferenceAssembly)' != 'true'">false</ReferenceOutputAssembly>
+      </ProjectReferenceWithConfiguration>
     </ItemGroup>
   </Target>
 

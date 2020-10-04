@@ -107,7 +107,8 @@
              Link="ProductionCode\Common\Interop\Unix\System.Native\Interop.InterfaceNameToIndex.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Net.Primitives.csproj" />
     <!-- Do not reference since we build part of the source code for tests. -->
-    <ProjectReference Include="..\..\src\System.Net.Primitives.csproj" ReferenceOutputAssembly="false" />
+    <DefaultReferenceExclusion Include="System.Net.Primitives" />
   </ItemGroup>
 </Project>

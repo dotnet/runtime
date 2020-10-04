@@ -112,7 +112,8 @@
     <Compile Include="XunitTestAssemblyAtrributes.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Net.Http.WinHttpHandler.csproj" />
     <!-- Do not reference since we build part of the source code for tests. -->
-    <ProjectReference Include="..\..\src\System.Net.Http.WinHttpHandler.csproj" ReferenceOutputAssembly="false"/>
+    <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />
   </ItemGroup>
 </Project>

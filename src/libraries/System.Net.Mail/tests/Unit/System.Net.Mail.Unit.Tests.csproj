@@ -274,7 +274,8 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
+    <ProjectReference Include="..\..\src\System.Net.Mail.csproj" />
     <!-- Do not reference since we build part of the source code for tests. -->
-    <ProjectReference Include="..\..\src\System.Net.Mail.csproj" ReferenceOutputAssembly="false"/>
+    <DefaultReferenceExclusion Include="System.Net.Mail" />
   </ItemGroup>
 </Project>

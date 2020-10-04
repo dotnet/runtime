@@ -41,7 +41,8 @@
              Link="Common\Extensions\ValueStopwatch\ValueStopwatch.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\System.Net.NameResolution.csproj" />
     <!-- Do not reference since we build part of the source code for tests. -->
-    <ProjectReference Include="..\..\src\System.Net.NameResolution.csproj" ReferenceOutputAssembly="false" />
+    <DefaultReferenceExclusion Include="System.Net.NameResolution" />
   </ItemGroup>
 </Project>
