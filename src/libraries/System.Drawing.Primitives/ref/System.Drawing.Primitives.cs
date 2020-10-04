@@ -367,6 +367,7 @@ namespace System.Drawing
         GradientInactiveCaption = 172,
         MenuBar = 173,
         MenuHighlight = 174,
+        RebeccaPurple = 175,
     }
     [System.ComponentModel.TypeConverterAttribute("System.Drawing.PointConverter, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial struct Point : System.IEquatable<System.Drawing.Point>
