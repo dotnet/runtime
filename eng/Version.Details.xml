@@ -90,6 +90,10 @@
       <Uri>https://github.com/microsoft/vstest</Uri>
       <Sha>2418d9ec492e93245e1ce8699d6ae9cd7b86649b</Sha>
     </Dependency>
+    <Dependency Name="System.CommandLine" Version="2.0.0-beta1.20253.1" Pinned="true">
+      <Uri>https://github.com/dotnet/command-line-api</Uri>
+      <Sha>afd010ba8cb3cbd714c734465d1a5de1ee133e2d</Sha>
+    </Dependency>
     <Dependency Name="System.ComponentModel.TypeConverter.TestData" Version="5.0.0-beta.20476.1">
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>429d8a77e5cde49ee94c0a7b16751ce4f40c913c</Sha>
