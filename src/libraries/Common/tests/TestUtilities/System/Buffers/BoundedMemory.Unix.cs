@@ -45,25 +45,27 @@ namespace System.Buffers
 
             MemoryMappedViewAccessor accessor = map.CreateViewAccessor();
             SafeMemoryMappedViewHandle handle = accessor.SafeMemoryMappedViewHandle;
-
-            bool refAdded = false;
-            try
+            if (PlatformDetection.IsNotBrowser)
             {
-                handle.DangerousAddRef(ref refAdded);
-                IntPtr ptr = handle.DangerousGetHandle();
-                // mprotect requires the addresses to be page-size aligned.
-                // mmap (which is used by MemoryMappedView) also should return page-size aligned addresses - but making sure that it actually is.
-                Debug.Assert((nuint)(nint)ptr % (nuint)SystemPageSize == 0);
-                if (UnsafeNativeMethods.mprotect((void*)ptr, checked((nuint)totalBytesToAllocate), MemoryProtections.PROT_NONE) != 0)
+                bool refAdded = false;
+                try
                 {
-                    throw new Win32Exception();
+                    handle.DangerousAddRef(ref refAdded);
+                    IntPtr ptr = handle.DangerousGetHandle();
+                    // mprotect requires the addresses to be page-size aligned.
+                    // mmap (which is used by MemoryMappedView) also should return page-size aligned addresses - but making sure that it actually is.
+                    Debug.Assert((nuint)(nint)ptr % (nuint)SystemPageSize == 0);
+                    if (UnsafeNativeMethods.mprotect((void*)ptr, checked((nuint)totalBytesToAllocate), MemoryProtections.PROT_NONE) != 0)
+                    {
+                        throw new Win32Exception();
+                    }
                 }
-            }
-            finally
-            {
-                if (refAdded)
+                finally
                 {
-                    handle.DangerousRelease();
+                    if (refAdded)
+                    {
+                        handle.DangerousRelease();
+                    }
                 }
             }
 
@@ -109,6 +111,13 @@ namespace System.Buffers
 
                 set
                 {
+                    if (PlatformDetection.IsBrowser)
+                    {
+                        // Browser does not support mprotect. Pretend it's rw.
+                        _protection = MemoryProtections.PROT_READ | MemoryProtections.PROT_WRITE;
+                        return;
+                    }
+
                     if (_elementCount > 0)
                     {
                         bool refAdded = false;
