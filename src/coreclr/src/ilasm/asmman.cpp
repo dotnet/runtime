@@ -965,7 +965,9 @@ HRESULT AsmMan::EmitManifest()
                 {
                     wcscpy_s(wzFileName,2048,pwzInputFiles[j]);
                     pwz = wcsrchr(wzFileName,DIRECTORY_SEPARATOR_CHAR_A);
+#ifdef TARGET_WINDOWS
                     if(pwz == NULL) pwz = wcsrchr(wzFileName,':');
+#endif
                     if(pwz == NULL) pwz = &wzFileName[0];
                     else pwz++;
                     wcscpy_s(pwz,2048-(pwz-wzFileName),wzUniBuf);
