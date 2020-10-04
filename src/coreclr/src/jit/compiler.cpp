@@ -2274,7 +2274,7 @@ void Compiler::compSetProcessor()
         instructionSetFlags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
     }
 
-    // We need to additionaly check that COMPlus_EnableSSE3_4 is set, as that
+    // We need to additionally check that COMPlus_EnableSSE3_4 is set, as that
     // is a prexisting config flag that controls the SSE3+ ISAs
     if (!JitConfig.EnableSSE3() || !JitConfig.EnableSSE3_4())
     {
