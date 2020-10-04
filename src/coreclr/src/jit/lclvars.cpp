@@ -6783,7 +6783,7 @@ void Compiler::lvaAlignFrame()
 #if DOUBLE_ALIGN
     if (genDoubleAlign())
     {
-        // Double Frame Alignement for x86 is handled in Compiler::lvaAssignVirtualFrameOffsetsToLocals()
+        // Double Frame Alignment for x86 is handled in Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
         if (compLclFrameSize == 0)
         {
