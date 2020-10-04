@@ -5,4 +5,10 @@
     <SignAssembly>false</SignAssembly>
     <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
+  
+  <!-- MSBuild doesn't understand the Checked configuration -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Checked'">
+    <Optimize Condition="'$(Optimize)' == ''">true</Optimize>
+    <DefineConstants>DEBUG;$(DefineConstants)</DefineConstants>
+  </PropertyGroup>
 </Project>
