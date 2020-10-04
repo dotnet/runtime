@@ -140,16 +140,11 @@
              Link="Common\System\Net\Http\HttpProtocolTests.cs" />
     <Compile Include="HttpRequestMessageTest.cs" />
     <Compile Include="HttpResponseMessageTest.cs" />
-    <Compile Include="MsQuicTestBase.cs" />
-    <Compile Include="MsQuicTests.cs" />
     <Compile Include="MessageProcessingHandlerTest.cs" />
     <Compile Include="MultipartContentTest.cs" />
     <Compile Include="MultipartFormDataContentTest.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\PostScenarioTest.cs"
              Link="Common\System\Net\Http\PostScenarioTest.cs" />
-    <Compile Include="QuicConnectionTests.cs" />
-    <Compile Include="QuicListenerTests.cs" />
-    <Compile Include="QuicStreamTests.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\RepeatedFlushContent.cs"
              Link="Common\System\Net\Http\RepeatedFlushContent.cs" />
     <Compile Include="$(CommonTestPath)System\Net\Http\ResponseStreamTest.cs"
