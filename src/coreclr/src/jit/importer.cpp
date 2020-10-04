@@ -7287,7 +7287,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         default:
         {
-            // Do we need the addrees of a static field?
+            // Do we need the address of a static field?
             //
             if (access & CORINFO_ACCESS_ADDRESS)
             {
