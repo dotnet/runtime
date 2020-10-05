@@ -95,7 +95,8 @@ namespace System.Net.Quic.Implementations.Mock
         {
             private readonly MockListener _listener;
 
-            public MockQuicEndPoint(MockListener listener) : base(IPAddress.Loopback, 0)
+            // Set the port to 1 just so that code (e.g. SocketsHttpHandler) won't choke on it. This is meaningless.
+            public MockQuicEndPoint(MockListener listener) : base(IPAddress.Loopback, 1)
             {
                 _listener = listener;
             }
