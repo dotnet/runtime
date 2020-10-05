@@ -515,7 +515,7 @@ static inline const int32_t GetSearchIteratorFromSortHandle(
                         pSearchIterator);
 }
 
-static inline void  ReleaseSeachHandle(SortHandle* pSortHandle, UStringSearch* pSearchIterator, int32_t searchCacheSlot)
+static inline void  ReleaseSearchHandle(SortHandle* pSortHandle, UStringSearch* pSearchIterator, int32_t searchCacheSlot)
 {
     if (searchCacheSlot < 0)
     {
@@ -630,7 +630,7 @@ int32_t GlobalizationNative_IndexOf(
         *pMatchedLength = usearch_getMatchedLength(pSearch);
     }
 
-    ReleaseSeachHandle(pSortHandle, pSearch, searchCacheSlot);
+    ReleaseSearchHandle(pSortHandle, pSearch, searchCacheSlot);
 
     return result;
 }
@@ -688,7 +688,7 @@ int32_t GlobalizationNative_LastIndexOf(
         *pMatchedLength = usearch_getMatchedLength(pSearch);
     }
 
-    ReleaseSeachHandle(pSortHandle, pSearch, searchCacheSlot);
+    ReleaseSearchHandle(pSortHandle, pSearch, searchCacheSlot);
 
     return result;
 }
@@ -858,7 +858,7 @@ static int32_t ComplexStartsWith(SortHandle* pSortHandle, const UChar* pPattern,
         }
     }
 
-    ReleaseSeachHandle(pSortHandle, pSearch, searchCacheSlot);
+    ReleaseSearchHandle(pSortHandle, pSearch, searchCacheSlot);
 
     return result;
 }
@@ -932,7 +932,7 @@ static int32_t ComplexEndsWith(SortHandle* pSortHandle, const UChar* pPattern, i
         }
     }
 
-    ReleaseSeachHandle(pSortHandle, pSearch, searchCacheSlot);
+    ReleaseSearchHandle(pSortHandle, pSearch, searchCacheSlot);
 
     return result;
 }
