@@ -332,9 +332,7 @@ $AdbTool start-server
 $AdbTool logcat -c" ContinueOnError="WarnAndContinue
 $AdbTool uninstall net.dot.$(MsBuildProjectName)" ContinueOnError="WarnAndContinue
 $AdbTool install apk/bin/$(MsBuildProjectName).apk
-$AdbTool shell am instrument -w net.dot.$(MsBuildProjectName)/net.dot.MonoRunner
-$AdbTool logcat -d -s DOTNET
-CLRTestExitCode=$?
+CLRTestExitCode=$AdbTool shell am instrument -w net.dot.$(MsBuildProjectName)/net.dot.MonoRunner | grep "return-code" | cut -d "=" -f2
       ]]>
       </BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
