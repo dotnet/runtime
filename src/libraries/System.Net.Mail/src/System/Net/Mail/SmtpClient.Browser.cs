@@ -3,6 +3,7 @@
 
 using System;
 using System.ComponentModel;
+using System.Runtime.Versioning;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,6 +26,7 @@ namespace System.Net.Mail
         International = 1, // SMTPUTF8 - Email Address Internationalization (EAI)
     }
 
+    [UnsupportedOSPlatform("browser")]
     public class SmtpClient : IDisposable
     {
 #pragma warning disable CS0067      // Field is not used
