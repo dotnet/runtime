@@ -93,7 +93,7 @@ namespace ILCompiler.Reflection.ReadyToRun.Amd64
                     }
                     else
                     {
-                        OpInfoStr += "Unknown";
+                        throw new BadImageFormatException();
                     }
                     break;
                 case UnwindOpCodes.UWOP_ALLOC_SMALL:

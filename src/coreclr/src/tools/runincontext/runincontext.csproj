@@ -5,6 +5,6 @@
     <RuntimeFrameworkVersion>$(MicrosoftNETCoreAppVersion)</RuntimeFrameworkVersion>
     <UseAppHost>false</UseAppHost>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <OutputPath>$(BinDir)</OutputPath>
+    <OutputPath>$(RuntimeBinDir)</OutputPath>
   </PropertyGroup>
 </Project>

@@ -455,7 +455,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			one->inst_c0 = 1;
 			break;
 		}
-		one->dreg = alloc_dreg (cfg, one->type);
+		one->dreg = alloc_dreg (cfg, (MonoStackType)one->type);
 		MONO_ADD_INS (cfg->cbb, one);
 		return emit_simd_ins (cfg, klass, expand_opcode, one->dreg, -1);
 	}

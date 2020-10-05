@@ -34,12 +34,6 @@ typedef struct _EventPipeProviderConfigurationNative {
 	gunichar2 *filter_data;
 } EventPipeProviderConfigurationNative;
 
-typedef struct _EventProviderEventData {
-	uint64_t ptr;
-	uint32_t size;
-	uint32_t reserved;
-} EventProviderEventData;
-
 typedef struct _EventPipeSessionInfo {
 	int64_t starttime_as_utc_filetime;
 	int64_t start_timestamp;
@@ -63,9 +57,6 @@ gpointer ep_rt_mono_rand_provider;
 
 static ep_rt_thread_holder_alloc_func thread_holder_alloc_callback_func;
 static ep_rt_thread_holder_free_func thread_holder_free_callback_func;
-
-void
-mono_eventpipe_raise_thread_exited (uint64_t);
 
 static
 gboolean
@@ -114,6 +105,33 @@ profiler_eventpipe_thread_exited (MonoProfiler *prof, uintptr_t tid)
 	eventpipe_thread_exited ();
 }
 
+static
+gpointer
+eventpipe_thread_attach (gboolean background_thread)
+{
+	MonoThread *thread = NULL;
+
+	// NOTE, under netcore, only root domain exists.
+	if (!mono_thread_current ()) {
+		thread = mono_thread_attach (mono_get_root_domain ());
+		if (background_thread) {
+			mono_thread_set_state (thread, ThreadState_Background);
+			mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+		}
+	}
+
+	return thread;
+}
+
+static
+void
+eventpipe_thread_detach (void)
+{
+	MonoThread *current_thread = mono_thread_current ();
+	if (current_thread)
+		mono_thread_detach (current_thread);
+}
+
 void
 mono_eventpipe_init (
 	EventPipeMonoFuncTable *table,
@@ -121,8 +139,6 @@ mono_eventpipe_init (
 	ep_rt_thread_holder_free_func thread_holder_free_func)
 {
 	if (table != NULL) {
-		table->ep_rt_mono_100ns_datetime = mono_100ns_datetime;
-		table->ep_rt_mono_100ns_ticks = mono_100ns_ticks;
 		table->ep_rt_mono_cpu_count = mono_cpu_count;
 		table->ep_rt_mono_process_current_pid = mono_process_current_pid;
 		table->ep_rt_mono_native_thread_id_get = mono_native_thread_id_get;
@@ -144,6 +160,11 @@ mono_eventpipe_init (
 		table->ep_rt_mono_valloc = mono_valloc;
 		table->ep_rt_mono_vfree = mono_vfree;
 		table->ep_rt_mono_valloc_granule = mono_valloc_granule;
+		table->ep_rt_mono_thread_platform_create_thread = mono_thread_platform_create_thread;
+		table->ep_rt_mono_thread_attach = eventpipe_thread_attach;
+		table->ep_rt_mono_thread_detach = eventpipe_thread_detach;
+		table->ep_rt_mono_get_os_cmd_line = mono_get_os_cmd_line;
+		table->ep_rt_mono_get_managed_cmd_line = mono_runtime_get_managed_cmd_line;
 	}
 
 	thread_holder_alloc_callback_func = thread_holder_alloc_func;
@@ -447,12 +468,14 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t s
 void
 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData (
 	intptr_t event_handle,
-	/* EventProviderEventData[] */const void *event_data,
-	uint32_t data_len,
+	/* EventData[] */void *event_data,
+	uint32_t event_data_len,
 	/* GUID * */const uint8_t *activity_id,
 	/* GUID * */const uint8_t *related_activity_id)
 {
-	;
+	g_assert (event_handle);
+	EventPipeEvent *ep_event = (EventPipeEvent *)event_handle;
+	ep_write_event (ep_event, (EventData *)event_data, event_data_len, activity_id, related_activity_id);
 }
 
 #else /* ENABLE_PERFTRACING */
@@ -567,8 +590,8 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t s
 void
 ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData (
 	intptr_t event_handle,
-	/* EventProviderEventData[] */const void *event_data,
-	uint32_t data_len,
+	/* EventData[] */void *event_data,
+	uint32_t event_data_len,
 	/* GUID * */const uint8_t *activity_id,
 	/* GUID * */const uint8_t *related_activity_id)
 {
@@ -580,4 +603,4 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData (
 #endif /* ENABLE_PERFTRACING */
 #endif /* ENABLE_NETCORE */
 
-MONO_EMPTY_SOURCE_FILE (eventpipe_rt_mono);
+MONO_EMPTY_SOURCE_FILE (icall_eventpipe);

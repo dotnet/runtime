@@ -126,6 +126,11 @@ namespace R2RTest
                 yield return $"--parallelism={_options.Crossgen2Parallelism}";
             }
 
+            if (_options.Crossgen2JitPath != null)
+            {
+                yield return $"--jitpath={_options.Crossgen2JitPath}";
+            }
+
             string frameworkFolder = "";
             if (_options.Framework || _options.UseFramework)
             {

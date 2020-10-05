@@ -280,6 +280,7 @@ common_sources = \
 	domain-internals.h	\
 	environment.c		\
 	environment.h		\
+	environment-internals.h		\
 	icall-eventpipe.c	\
 	exception.c		\
 	exception.h		\

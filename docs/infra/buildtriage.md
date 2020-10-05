@@ -14,17 +14,23 @@ We have different dashboards for public(Rolling & PR Builds) and internal builds
 
 Tests are not run during the internal builds. Publishing and signing steps are run only during  internal builds. Rolling builds run tests for the full matrix. 
 
+For new issues, try to provide a runfo search which will make it easy to isolate repeated instances of that failure.
+
 Contact @chcosta if you are having any trouble accessing the dashboards.
 Contact @Chrisboh if you don't have the calendar invite for the CI Council meeting.
+Contact @jaredpar if you are having any trouble with runfo, site or utility.
 
 ## Ongoing Issues
 
 All the issues causing the builds to fail should be marked with [`blocking-clean-ci`](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Ablocking-clean-ci) label. 
 Any issues causing build breaks in the official build should be marked with [`blocking-clean-official`](https://github.com/dotnet/runtime/issues?q=is%3Aissue+is%3Aopen+label%3Ablocking-clean-official).
-It helps in tracking issues effectively. 
+It helps in tracking issues effectively.
+
+The main meta-bug linking to currently tracked issues is [here](https://github.com/dotnet/runtime/issues/702).
 
 ## Some helpful resources
 - [runfo Website](https://runfo.azurewebsites.net/)
+- [runfo command-line util](https://github.com/jaredpar/devops-util)
 - [runfo Documentation](https://github.com/jaredpar/devops-util/tree/master/runfo)
 - [Internal Build Definition](https://dev.azure.com/dnceng/internal/_build?definitionId=679)
 - [Public Build Definition](https://dev.azure.com/dnceng/public/_build?definitionId=686)
