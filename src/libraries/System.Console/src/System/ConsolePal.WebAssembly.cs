@@ -76,7 +76,8 @@ namespace System
 
     internal static class ConsolePal
     {
-        private static readonly JSObject? s_console = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("console");
+        private static bool s_consoleInitialized;
+        private static JSObject? s_console;
 
         private static Encoding? s_outputEncoding;
 
@@ -167,7 +168,15 @@ namespace System
             char sourceChar, ConsoleColor sourceForeColor,
             ConsoleColor sourceBackColor) => throw new PlatformNotSupportedException();
 
-        public static void Clear() => s_console?.Invoke("clear");
+        public static void Clear()
+        {
+            if (!s_consoleInitialized)
+            {
+                s_console = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("console");
+                s_consoleInitialized = true;
+            }
+            s_console?.Invoke("clear");
+        }
 
         public static void SetCursorPosition(int left, int top) => throw new PlatformNotSupportedException();
 
