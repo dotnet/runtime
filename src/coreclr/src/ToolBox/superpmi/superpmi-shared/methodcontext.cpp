@@ -2453,7 +2453,7 @@ bool MethodContext::repConvertPInvokeCalliToCall(CORINFO_RESOLVED_TOKEN* pResolv
     key.B = (DWORD)pResolvedToken->token;
 
     DWORDLONG value = ConvertPInvokeCalliToCall->Get(key);
-    DEBUG_REP(dmpGetArgType(key, value));
+    DEBUG_REP(dmpConvertPInvokeCalliToCall(key, value));
 
     pResolvedToken->hMethod = (CORINFO_METHOD_HANDLE)value;
     return value != 0;
@@ -3060,7 +3060,7 @@ void MethodContext::recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
     key.implementingClass = (DWORDLONG)implClass;
     key.ownerType         = (DWORDLONG)ownerType;
     ResolveVirtualMethod->Add(key, (DWORDLONG)result);
-    DEBUG_REC(dmpResolveVirtualMethod(key, result));
+    DEBUG_REC(dmpResolveVirtualMethod(key, (DWORDLONG)result));
 }
 
 void MethodContext::dmpResolveVirtualMethod(const Agnostic_ResolveVirtualMethod& key, DWORDLONG value)
@@ -3458,7 +3458,7 @@ void MethodContext::recGetStaticFieldCurrentClass(CORINFO_FIELD_HANDLE field,
     value.isSpeculative = isSpeculative;
 
     GetStaticFieldCurrentClass->Add((DWORDLONG)field, value);
-    DEBUG_REC(dmpGetFieldAddress((DWORDLONG)field, value));
+    DEBUG_REC(dmpGetStaticFieldCurrentClass((DWORDLONG)field, value));
 }
 void MethodContext::dmpGetStaticFieldCurrentClass(DWORDLONG key, const Agnostic_GetStaticFieldCurrentClass& value)
 {
@@ -3475,7 +3475,7 @@ CORINFO_CLASS_HANDLE MethodContext::repGetStaticFieldCurrentClass(CORINFO_FIELD_
     }
 
     CORINFO_CLASS_HANDLE result = (CORINFO_CLASS_HANDLE)value.classHandle;
-    DEBUG_REP(dmpGetStaticFieldCurrentValue((DWORDLONG)field, value));
+    DEBUG_REP(dmpGetStaticFieldCurrentClass((DWORDLONG)field, value));
     return result;
 }
 
@@ -5270,6 +5270,7 @@ void MethodContext::recIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
     key.B = (DWORDLONG)cls2;
 
     IsMoreSpecificType->Add(key, (DWORD)result);
+    DEBUG_REC(dmpIsMoreSpecificType(key, (DWORD)result));
 }
 void MethodContext::dmpIsMoreSpecificType(DLDL key, DWORD value)
 {
@@ -5277,6 +5278,9 @@ void MethodContext::dmpIsMoreSpecificType(DLDL key, DWORD value)
 }
 BOOL MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLASS_HANDLE cls2)
 {
+    AssertCodeMsg(IsMoreSpecificType != nullptr, EXCEPTIONCODE_MC, "Didn't find %016llX %016llX", (DWORDLONG)cls1,
+        (DWORDLONG)cls2);
+
     DLDL key;
     ZeroMemory(&key, sizeof(DLDL)); // We use the input structs as a key and use memcmp to compare.. so we need to zero
                                     // out padding too
@@ -5290,6 +5294,7 @@ BOOL MethodContext::repIsMoreSpecificType(CORINFO_CLASS_HANDLE cls1, CORINFO_CLA
 
     value = IsMoreSpecificType->Get(key);
 
+    DEBUG_REP(dmpIsMoreSpecificType(key, value));
     return (BOOL)value;
 }
 
