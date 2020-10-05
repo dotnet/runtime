@@ -7326,7 +7326,7 @@ GenTree* Compiler::impImportStaticFieldAccess(CORINFO_RESOLVED_TOKEN* pResolvedT
 
         default:
         {
-            // Do we need the addrees of a static field?
+            // Do we need the address of a static field?
             //
             if (access & CORINFO_ACCESS_ADDRESS)
             {
@@ -19248,7 +19248,7 @@ void Compiler::impInlineRecordArgInfo(
 //      expression from some set of inlines.
 //    - when argument type casting is needed the necessary casts are added
 //      around the argument node.
-//    - if an argment can be simplified by folding then the node here is the
+//    - if an argument can be simplified by folding then the node here is the
 //      folded value.
 //
 //   The method may make observations that lead to marking this candidate as

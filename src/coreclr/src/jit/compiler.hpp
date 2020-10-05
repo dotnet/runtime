@@ -2124,7 +2124,7 @@ inline
         }
 #endif // DEBUG
 
-        varOffset = varDsc->lvStkOffs;
+        varOffset = varDsc->GetStackOffset();
     }
     else // Its a spill-temp
     {

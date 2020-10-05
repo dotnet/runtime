@@ -241,4 +241,4 @@ ep_buffer_manager_ensure_consistency (EventPipeBufferManager *buffer_manager);
 #endif
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_BUFFERMANAGER_H__ **/
+#endif /* __EVENTPIPE_BUFFERMANAGER_H__ */

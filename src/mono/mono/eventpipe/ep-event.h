@@ -94,4 +94,4 @@ void
 ep_event_free (EventPipeEvent * ep_event);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_EVENT_H__ **/
+#endif /* __EVENTPIPE_EVENT_H__ */

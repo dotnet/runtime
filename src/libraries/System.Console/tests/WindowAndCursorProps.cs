@@ -226,7 +226,7 @@ public class WindowAndCursorProps
         Assert.NotNull(Console.Title);
     }
 
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
     [PlatformSpecific(TestPlatforms.Windows)]
     public static void Title_Get_Windows_NoNulls()
     {
@@ -235,9 +235,9 @@ public class WindowAndCursorProps
         Assert.Equal(trimmedTitle, title);
     }
 
-    private static bool IsNotWindowsNanoServerAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsNanoServer && RemoteExecutor.IsSupported;
+    private static bool IsNotWindowsNanoServerAndNotServerCoreAndRemoteExecutorSupported => PlatformDetection.IsNotWindowsNanoNorServerCore && RemoteExecutor.IsSupported;
 
-    [ConditionalTheory(nameof(IsNotWindowsNanoServerAndRemoteExecutorSupported))] // Nano currently ignores set title
+    [ConditionalTheory(nameof(IsNotWindowsNanoServerAndNotServerCoreAndRemoteExecutorSupported))] // Nano and Server Core currently ignore set title
     [ActiveIssue("https://github.com/dotnet/runtime/issues/34454", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     [InlineData(0)]
     [InlineData(1)]
@@ -560,7 +560,7 @@ public class WindowAndCursorProps
     }
 
     [PlatformSpecific(TestPlatforms.Windows)]
-    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoNorServerCore))]
     public void SetWindowSize_GetWindowSize_ReturnsExpected()
     {
         if (!Console.IsInputRedirected && !Console.IsOutputRedirected)
