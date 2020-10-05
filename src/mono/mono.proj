@@ -807,11 +807,11 @@
   <!-- Copy Mono runtime bits to $(Destination) -->
   <Target Name="CopyMonoRuntimeFilesFromArtifactsToDestination">
     <ItemGroup>
-      <_MonoRuntimeArtifacts Include="$(BinDir)\*.*" />
+      <_MonoRuntimeArtifacts Include="$(RuntimeBinDir)\*.*" />
     </ItemGroup>
     <Error Condition="'$(Destination)' == ''" Text="Destination should not be empty" />
-    <Error Condition="@(_MonoRuntimeArtifacts->Count()) &lt; 2" Text="Mono artifacts were not found at $(BinDir)" />
-    <Message Text="Copying Mono Runtime artifacts from '$(BinDir)' to '$(Destination)'.'" Importance="High" />
+    <Error Condition="@(_MonoRuntimeArtifacts->Count()) &lt; 2" Text="Mono artifacts were not found at $(RuntimeBinDir)" />
+    <Message Text="Copying Mono Runtime artifacts from '$(RuntimeBinDir)' to '$(Destination)'.'" Importance="High" />
     <Copy SourceFiles="@(_MonoRuntimeArtifacts)" 
           DestinationFolder="$(Destination)"
           OverwriteReadOnlyFiles="true"
@@ -906,38 +906,38 @@
     <!-- Copy Mono runtime files to artifacts directory -->
     <ItemGroup>
       <_MonoRuntimeArtifacts Include="$(_MonoRuntimeFilePath)">
-        <Destination>$(BinDir)$(MonoFileName)</Destination>
+        <Destination>$(RuntimeBinDir)$(MonoFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoRuntimeStaticFilePath)">
-        <Destination>$(BinDir)$(MonoStaticFileName)</Destination>
+        <Destination>$(RuntimeBinDir)$(MonoStaticFileName)</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Include="$(_MonoAotCrossFilePath)">
-        <Destination>$(BinDir)cross\mono-aot-cross</Destination>
+        <Destination>$(RuntimeBinDir)cross\mono-aot-cross</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\bin\llc">
-        <Destination>$(BinDir)\llc</Destination>
+        <Destination>$(RuntimeBinDir)\llc</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(MonoBundleLLVMOptimizer)' == 'true'" Include="$(MonoLLVMDir)\bin\opt">
-        <Destination>$(BinDir)\opt</Destination>
+        <Destination>$(RuntimeBinDir)\opt</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="$(MonoLLVMDir)\bin\llc">
-        <Destination>$(BinDir)cross\llc</Destination>
+        <Destination>$(RuntimeBinDir)cross\llc</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'tvOS'" Include="$(MonoLLVMDir)\bin\opt">
-        <Destination>$(BinDir)cross\opt</Destination>
+        <Destination>$(RuntimeBinDir)cross\opt</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoIncludeArtifacts Include="$(MonoObjDir)out\include\**" />
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ee-interp.a">
-        <Destination>$(BinDir)libmono-ee-interp.a</Destination>
+        <Destination>$(RuntimeBinDir)libmono-ee-interp.a</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-icall-table.a">
-        <Destination>$(BinDir)libmono-icall-table.a</Destination>
+        <Destination>$(RuntimeBinDir)libmono-icall-table.a</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-ilgen.a">
-        <Destination>$(BinDir)libmono-ilgen.a</Destination>
+        <Destination>$(RuntimeBinDir)libmono-ilgen.a</Destination>
       </_MonoRuntimeArtifacts>
       <_MonoRuntimeArtifacts Condition="'$(TargetsBrowser)' == 'true'" Include="$(MonoObjDir)out\lib\libmono-profiler-aot.a">
-        <Destination>$(BinDir)libmono-profiler-aot.a</Destination>
+        <Destination>$(RuntimeBinDir)libmono-profiler-aot.a</Destination>
       </_MonoRuntimeArtifacts>
     </ItemGroup>
 
@@ -946,11 +946,11 @@
           SkipUnchangedFiles="true" />
 
     <Copy SourceFiles="@(_MonoIncludeArtifacts)"
-          DestinationFiles="@(_MonoIncludeArtifacts->'$(BinDir)include\%(RecursiveDir)%(Filename)%(Extension)')"
+          DestinationFiles="@(_MonoIncludeArtifacts->'$(RuntimeBinDir)include\%(RecursiveDir)%(Filename)%(Extension)')"
           SkipUnchangedFiles="true"
           Condition="'$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true' or '$(TargetsAndroid)' == 'true' or '$(TargetsBrowser)' == 'true'"/>
 
-    <Exec Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Command="install_name_tool -id @rpath/$(MonoFileName) $(BinDir)$(MonoFileName)" />
+    <Exec Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'" Command="install_name_tool -id @rpath/$(MonoFileName) $(RuntimeBinDir)$(MonoFileName)" />
   </Target>
 
   <Target Name="CleanMono">
