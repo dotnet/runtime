@@ -98,6 +98,8 @@
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <HelixPreCommand Condition="'$(Scenario)' != 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test" />
     <HelixPreCommand Condition="'$(Scenario)' == 'WasmTestOnBrowser'" Include="export XHARNESS_COMMAND=test-browser" />
+    <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
+    <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Scenario)' == 'WasmTestOnBrowser'">
@@ -153,6 +155,7 @@
 
   <ItemGroup>
     <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
+    <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
   </ItemGroup>
 
   <!--

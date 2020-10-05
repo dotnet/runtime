@@ -3,7 +3,9 @@
  */
 
 #include <config.h>
+#include <glib.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-math.h>
 #include <math.h>
 
 #ifndef DISABLE_JIT
@@ -1763,7 +1765,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 					result = cosh (source);
 					break;
 				case OP_ROUND:
-					result = round (source);
+					result = mono_round_to_even (source);
 					break;
 				case OP_SIN:
 					result = sin (source);
