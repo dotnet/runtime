@@ -1,5 +1,4 @@
-﻿#nullable enable
-
+﻿
 namespace System.Runtime.InteropServices
 {
     // [TODO] Remove once the attribute has been added to the BCL

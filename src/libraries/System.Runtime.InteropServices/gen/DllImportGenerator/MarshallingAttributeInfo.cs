@@ -12,7 +12,7 @@ namespace Microsoft.Interop
     // for C# 10 discriminated unions. Once discriminated unions are released,
     // these should be updated to be implemented as a discriminated union.
 
-    internal abstract record MarshallingAttributeInfo {}
+    internal abstract record MarshallingInfo {}
 
     /// <summary>
     /// User-applied System.Runtime.InteropServices.MarshalAsAttribute
@@ -23,14 +23,14 @@ namespace Microsoft.Interop
         string? CustomMarshallerCookie,
         UnmanagedType UnmanagedArraySubType,
         int ArraySizeConst,
-        short ArraySizeParamIndex) : MarshallingAttributeInfo;
+        short ArraySizeParamIndex) : MarshallingInfo;
 
     /// <summary>
     /// User-applied System.Runtime.InteropServices.BlittableTypeAttribute
     /// or System.Runtime.InteropServices.GeneratedMarshallingAttribute on a blittable type
     /// in source in this compilation.
     /// </summary>
-    internal sealed record BlittableTypeAttributeInfo : MarshallingAttributeInfo;
+    internal sealed record BlittableTypeAttributeInfo : MarshallingInfo;
 
     [Flags]
     internal enum SupportedMarshallingMethods
@@ -47,12 +47,18 @@ namespace Microsoft.Interop
     internal sealed record NativeMarshallingAttributeInfo(
         ITypeSymbol NativeMarshallingType,
         ITypeSymbol? ValuePropertyType,
-        SupportedMarshallingMethods MarshallingMethods) : MarshallingAttributeInfo;
+        SupportedMarshallingMethods MarshallingMethods) : MarshallingInfo;
 
     /// <summary>
     /// User-applied System.Runtime.InteropServices.GeneratedMarshallingAttribute
     /// on a non-blittable type in source in this compilation.
     /// </summary>
     internal sealed record GeneratedNativeMarshallingAttributeInfo(
-        string NativeMarshallingFullyQualifiedTypeName) : MarshallingAttributeInfo;
+        string NativeMarshallingFullyQualifiedTypeName) : MarshallingInfo;
+
+    /// <summary>
+    /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
+    /// </summary>
+    internal sealed record SafeHandleMarshallingInfo : MarshallingInfo;
+        
 }

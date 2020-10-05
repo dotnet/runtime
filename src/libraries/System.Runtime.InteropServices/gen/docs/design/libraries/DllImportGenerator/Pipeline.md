@@ -38,9 +38,13 @@ Generation of the stub code happens in stages. The marshalling generator for eac
 1. `Invoke`: call to the generated P/Invoke
     - Call `AsArgument` on the marshalling generator for every parameter
     - Create invocation statement that calls the generated P/Invoke
+1. `KeepAlive`: keep alive any objects who's native representation won't keep them alive across the call.
+    - Call `Generate` on the marshalling generator for every parameter.
 1. `Unmarshal`: conversion of native to managed data
     - If the method has a non-void return, call `Generate` on the marshalling generator for the return
     - Call `Generate` on the marshalling generator for every parameter
+1. `GuaranteedUnmarshal`: conversion of native to managed data even when an exception is thrown
+    - Call `Generate` on the marshalling generator for every parameter.
 1. `Cleanup`: free any allocated resources
     - Call `Generate` on the marshalling generator for every parameter
 

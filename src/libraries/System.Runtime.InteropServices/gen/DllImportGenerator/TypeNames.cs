@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace DllImportGenerator
+namespace Microsoft.Interop
 {
     static class TypeNames
     {
@@ -19,5 +19,9 @@ namespace DllImportGenerator
         public const string System_Runtime_InteropServices_StructLayoutAttribute = "System.Runtime.InteropServices.StructLayoutAttribute";
 
         public const string System_Runtime_InteropServices_MarshalAsAttribute = "System.Runtime.InteropServices.MarshalAsAttribute";
+
+        public const string System_Runtime_InteropServices_MarshalEx = "System.Runtime.InteropServices.MarshalEx";
+        
+        public const string System_Runtime_InteropServices_SafeHandle = "System.Runtime.InteropServices.SafeHandle";
     }
 }

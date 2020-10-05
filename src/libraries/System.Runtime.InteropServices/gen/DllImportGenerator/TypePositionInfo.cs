@@ -39,11 +39,11 @@ namespace Microsoft.Interop
         public int NativeIndex { get; set; }
         public int UnmanagedLCIDConversionArgIndex { get; private set; }
 
-        public MarshallingAttributeInfo MarshallingAttributeInfo { get; private set; }
+        public MarshallingInfo MarshallingAttributeInfo { get; private set; }
 
         public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, Compilation compilation)
         {
-            var marshallingInfo = GetMarshallingAttributeInfo(paramSymbol.Type, paramSymbol.GetAttributes(), compilation);
+            var marshallingInfo = GetMarshallingInfo(paramSymbol.Type, paramSymbol.GetAttributes(), compilation);
             var typeInfo = new TypePositionInfo()
             {
                 ManagedType = paramSymbol.Type,
@@ -58,7 +58,7 @@ namespace Microsoft.Interop
 
         public static TypePositionInfo CreateForType(ITypeSymbol type, IEnumerable<AttributeData> attributes, Compilation compilation)
         {
-            var marshallingInfo = GetMarshallingAttributeInfo(type, attributes, compilation);
+            var marshallingInfo = GetMarshallingInfo(type, attributes, compilation);
             var typeInfo = new TypePositionInfo()
             {
                 ManagedType = type,
@@ -72,9 +72,9 @@ namespace Microsoft.Interop
         }
 
 #nullable enable
-        private static MarshallingAttributeInfo? GetMarshallingAttributeInfo(ITypeSymbol type, IEnumerable<AttributeData> attributes, Compilation compilation)
+        private static MarshallingInfo? GetMarshallingInfo(ITypeSymbol type, IEnumerable<AttributeData> attributes, Compilation compilation)
         {
-            MarshallingAttributeInfo? marshallingInfo = null;
+            MarshallingInfo? marshallingInfo = null;
             // Look at attributes on the type.
             foreach (var attrData in attributes)
             {
@@ -132,6 +132,11 @@ namespace Microsoft.Interop
                         marshallingInfo = type.IsConsideredBlittable() ? new BlittableTypeAttributeInfo() : new GeneratedNativeMarshallingAttributeInfo(null! /* TODO: determine naming convention */);
                     }
                 }
+            }
+
+            if (marshallingInfo is null)
+            {
+                marshallingInfo = CreateTypeBasedMarshallingInfo(type, compilation);
             }
 
             return marshallingInfo;
@@ -233,6 +238,19 @@ namespace Microsoft.Interop
                     nativeType,
                     valueProperty?.Type,
                     methods);
+            }
+        
+            static MarshallingInfo? CreateTypeBasedMarshallingInfo(ITypeSymbol type, Compilation compilation)
+            {
+                var conversion = compilation.ClassifyCommonConversion(type, compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_SafeHandle)!);
+                if (conversion.Exists && 
+                    conversion.IsImplicit &&
+                    conversion.IsReference &&
+                    !type.IsAbstract)
+                {
+                    return new SafeHandleMarshallingInfo();
+                }
+                return null;
             }
         }
 #nullable restore

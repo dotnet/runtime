@@ -90,6 +90,7 @@ namespace DllImportGenerator.Test
             yield return new[] { CodeSnippets.DelegateMarshalAsParametersAndModifiers };
             yield return new[] { CodeSnippets.BlittableStructParametersAndModifiers };
             yield return new[] { CodeSnippets.GenericBlittableStructParametersAndModifiers };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle") };
         }
 
         [Theory]
