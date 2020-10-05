@@ -241,7 +241,7 @@ void CodeGen::genPrologSaveRegPair(regNumber reg1,
     {
         // stp REG, REG + 1, [SP, #offset]
         // 64-bit STP offset range: -512 to 504, multiple of 8.
-        assert(spOffset <= 504);
+        assert((spOffset <= 504) && ((spOffset % 8) == 0));
         GetEmitter()->emitIns_R_R_R_I(INS_stp, EA_PTRSIZE, reg1, reg2, REG_SPBASE, spOffset);
 
 #if defined(TARGET_UNIX)

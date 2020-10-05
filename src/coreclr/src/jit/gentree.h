@@ -5991,7 +5991,16 @@ struct GenTreePhiArg : public GenTreeLclVarCommon
 
 struct GenTreePutArgStk : public GenTreeUnOp
 {
+private:
+    unsigned m_byteOffset;
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
+    unsigned m_byteSize; // The number of bytes that this argument is occupying on the stack with padding.
+#endif
+
+public:
+#if defined(DEBUG_ARG_SLOTS)
     unsigned gtSlotNum; // Slot number of the argument to be passed on stack
+#endif
 #if defined(UNIX_X86_ABI)
     unsigned gtPadAlign; // Number of padding slots for stack alignment
 #endif
@@ -5999,15 +6008,18 @@ struct GenTreePutArgStk : public GenTreeUnOp
     // Don't let clang-format mess with the GenTreePutArgStk constructor.
     // clang-format off
 
-    GenTreePutArgStk(genTreeOps   oper,
-                     var_types    type,
-                     GenTree*   op1,
-                     unsigned     slotNum
-                     PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots),
-                     bool         putInIncomingArgArea = false,
-                     GenTreeCall* callNode = nullptr)
+    GenTreePutArgStk(genTreeOps   oper, var_types type, GenTree* op1, unsigned stackByteOffset
+                     PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned stackByteSize)
+#if defined(DEBUG_ARG_SLOTS)
+        , unsigned slotNum
+        PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots)
+#endif
+                     ,bool         putInIncomingArgArea = false
+                     ,GenTreeCall* callNode = nullptr)
         : GenTreeUnOp(oper, type, op1 DEBUGARG(/*largeNode*/ false))
-        , gtSlotNum(slotNum)
+        , m_byteOffset(stackByteOffset)
+        PUT_STRUCT_ARG_STK_ONLY_ARG(m_byteSize(stackByteSize))
+        DEBUG_ARG_SLOTS_ARG(gtSlotNum(slotNum))
 #if defined(UNIX_X86_ABI)
         , gtPadAlign(0)
 #endif
@@ -6016,12 +6028,16 @@ struct GenTreePutArgStk : public GenTreeUnOp
 #endif // FEATURE_FASTTAILCALL
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
         , gtPutArgStkKind(Kind::Invalid)
-        , gtNumSlots(numSlots)
+        DEBUG_ARG_SLOTS_ARG(gtNumSlots(numSlots))
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 #if defined(DEBUG) || defined(UNIX_X86_ABI)
         , gtCall(callNode)
 #endif
     {
+        DEBUG_ARG_SLOTS_ASSERT(m_byteOffset == slotNum * TARGET_POINTER_SIZE);
+#if defined(FEATURE_PUT_STRUCT_ARG_STK)
+        DEBUG_ARG_SLOTS_ASSERT(m_byteSize  == gtNumSlots * TARGET_POINTER_SIZE);
+#endif
     }
 
 // clang-format on
@@ -6049,7 +6065,9 @@ struct GenTreePutArgStk : public GenTreeUnOp
 
     unsigned getArgOffset() const
     {
-        return gtSlotNum * TARGET_POINTER_SIZE;
+        DEBUG_ARG_SLOTS_ASSERT(m_byteOffset / TARGET_POINTER_SIZE == gtSlotNum);
+        DEBUG_ARG_SLOTS_ASSERT(m_byteOffset % TARGET_POINTER_SIZE == 0);
+        return m_byteOffset;
     }
 
 #if defined(UNIX_X86_ABI)
@@ -6065,16 +6083,16 @@ struct GenTreePutArgStk : public GenTreeUnOp
 #endif
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
-    unsigned getArgSize() const
+    unsigned GetStackByteSize() const
     {
-        return gtNumSlots * TARGET_POINTER_SIZE;
+        return m_byteSize;
     }
 
     // Return true if this is a PutArgStk of a SIMD12 struct.
     // This is needed because such values are re-typed to SIMD16, and the type of PutArgStk is VOID.
     unsigned isSIMD12() const
     {
-        return (varTypeIsSIMD(gtOp1) && (gtNumSlots == 3));
+        return (varTypeIsSIMD(gtOp1) && (GetStackByteSize() == 12));
     }
 
     // Instruction selection: during codegen time, what code sequence we will be using
@@ -6092,10 +6110,12 @@ struct GenTreePutArgStk : public GenTreeUnOp
         return (gtPutArgStkKind == Kind::Push) || (gtPutArgStkKind == Kind::PushAllSlots);
     }
 
+#if defined(DEBUG_ARG_SLOTS)
     unsigned gtNumSlots; // Number of slots for the argument to be passed on stack
+#endif                   // DEBUG
 
 #else  // !FEATURE_PUT_STRUCT_ARG_STK
-    unsigned getArgSize();
+    unsigned GetStackByteSize() const;
 #endif // !FEATURE_PUT_STRUCT_ARG_STK
 
 #if defined(DEBUG) || defined(UNIX_X86_ABI)
@@ -6115,18 +6135,30 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
 {
     unsigned gtNumRegs;
 
-    GenTreePutArgSplit(GenTree* op1,
-                       unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots),
-                       unsigned     numRegs,
-                       bool         putIncomingArgArea = false,
-                       GenTreeCall* callNode           = nullptr)
-        : GenTreePutArgStk(GT_PUTARG_SPLIT,
-                           TYP_STRUCT,
-                           op1,
-                           slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(numSlots),
-                           putIncomingArgArea,
-                           callNode)
-        , gtNumRegs(numRegs)
+    // clang-format off
+    GenTreePutArgSplit(GenTree* op1
+                      , unsigned stackByteOffset
+                      PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned byteSize)
+#if defined(DEBUG_ARG_SLOTS)
+                      , unsigned slotNum
+                      PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots)
+#endif
+                      , unsigned     numRegs
+                      , bool         putIncomingArgArea = false
+                      , GenTreeCall* callNode = nullptr)
+        : GenTreePutArgStk(GT_PUTARG_SPLIT
+                      , TYP_STRUCT
+                      , op1
+                      , stackByteOffset
+                      PUT_STRUCT_ARG_STK_ONLY_ARG(byteSize)
+#if defined(DEBUG_ARG_SLOTS)
+                      , slotNum
+                      PUT_STRUCT_ARG_STK_ONLY_ARG(numSlots)
+#endif
+                      , putIncomingArgArea
+                      , callNode)
+                      , gtNumRegs(numRegs)
+    // clang-format on
     {
         ClearOtherRegs();
         ClearOtherRegFlags();
@@ -6245,13 +6277,6 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
     {
         gtSpillFlags = 0;
     }
-
-#ifdef FEATURE_PUT_STRUCT_ARG_STK
-    unsigned getArgSize() const
-    {
-        return (gtNumSlots + gtNumRegs) * TARGET_POINTER_SIZE;
-    }
-#endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #if DEBUGGABLE_GENTREE
     GenTreePutArgSplit() : GenTreePutArgStk()

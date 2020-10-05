@@ -2355,7 +2355,7 @@ void CodeGen::genEmitMachineCode()
     }
 #endif
 
-#if EMIT_TRACK_STACK_DEPTH && defined(DEBUG) && !defined(OSX_ARM64_ABI)
+#if EMIT_TRACK_STACK_DEPTH && defined(DEBUG_ARG_SLOTS)
     // Check our max stack level. Needed for fgAddCodeRef().
     // We need to relax the assert as our estimation won't include code-gen
     // stack changes (which we know don't affect fgAddCodeRef()).

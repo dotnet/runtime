@@ -1630,7 +1630,9 @@ public:
         return 0;
     }
 
-    // Get the number of bytes that this argument is occupying on the stack.
+    // Get the number of bytes that this argument is occupying on the stack,
+    // including padding up to the target pointer size for platforms
+    // where a stack argument can't take less.
     unsigned GetStackByteSize() const
     {
         if (!IsSplit() && numRegs > 0)
@@ -1642,7 +1644,10 @@ public:
 
         assert(GetByteSize() > TARGET_POINTER_SIZE * numRegs);
         unsigned stackByteSize = GetByteSize() - TARGET_POINTER_SIZE * numRegs;
-        return GetByteSize() - TARGET_POINTER_SIZE * numRegs;
+#if !defined(OSX_ARM64_ABI)
+        stackByteSize = roundUp(stackByteSize, TARGET_POINTER_SIZE);
+#endif
+        return stackByteSize;
     }
 
     var_types GetHfaType() const
@@ -1800,7 +1805,7 @@ public:
         return size;
     }
 
-#endif // DEBUG && !OSX_ARM64_ABI
+#endif // DEBUG_ARG_SLOTS
 
 private:
     unsigned m_byteOffset;

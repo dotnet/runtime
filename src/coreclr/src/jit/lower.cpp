@@ -1042,15 +1042,14 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
         }
 
         unsigned slotNumber = info->GetByteOffset() / TARGET_POINTER_SIZE;
-#if defined(FEATURE_PUT_STRUCT_ARG_STK)
-        unsigned numberOfStackSlots = info->GetStackSlotsNumber();
-        DEBUG_ARG_SLOTS_ASSERT(numberOfStackSlots == info->numSlots);
-#endif
         DEBUG_ARG_SLOTS_ASSERT(slotNumber == info->slotNum);
 
         putArg = new (comp, GT_PUTARG_SPLIT)
-            GenTreePutArgSplit(arg, slotNumber PUT_STRUCT_ARG_STK_ONLY_ARG(numberOfStackSlots), info->numRegs,
-                               call->IsFastTailCall(), call);
+            GenTreePutArgSplit(arg,
+                               info->GetByteOffset() PUT_STRUCT_ARG_STK_ONLY_ARG(info->GetStackByteSize())
+                                   DEBUG_ARG_SLOTS_ARG(slotNumber)
+                                       DEBUG_ARG_SLOTS_ONLY(PUT_STRUCT_ARG_STK_ONLY_ARG(info->GetStackSlotsNumber())),
+                               info->numRegs, call->IsFastTailCall(), call);
 
         // If struct argument is morphed to GT_FIELD_LIST node(s),
         // we can know GC info by type of each GT_FIELD_LIST node.
@@ -1148,7 +1147,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
 #if defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
                 if (type == TYP_SIMD12)
                 {
-                    assert(info->numSlots == 3);
+                    assert(info->GetByteSize() == 12);
                 }
                 else
 #endif // defined(FEATURE_SIMD) && defined(FEATURE_PUT_STRUCT_ARG_STK)
@@ -1157,16 +1156,13 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                 }
             }
             unsigned slotNumber = info->GetByteOffset() / TARGET_POINTER_SIZE;
-#if defined(FEATURE_PUT_STRUCT_ARG_STK)
-            unsigned numberOfStackSlots = info->GetStackSlotsNumber();
-            DEBUG_ARG_SLOTS_ASSERT(numberOfStackSlots == info->numSlots);
-#endif
-            DEBUG_ARG_SLOTS_ASSERT(slotNumber == info->slotNum);
 
-            putArg =
-                new (comp, GT_PUTARG_STK) GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg,
-                                                           slotNumber PUT_STRUCT_ARG_STK_ONLY_ARG(numberOfStackSlots),
-                                                           call->IsFastTailCall(), call);
+            putArg = new (comp, GT_PUTARG_STK)
+                GenTreePutArgStk(GT_PUTARG_STK, TYP_VOID, arg,
+                                 info->GetByteOffset() PUT_STRUCT_ARG_STK_ONLY_ARG(info->GetStackByteSize())
+                                     DEBUG_ARG_SLOTS_ARG(slotNumber)
+                                         DEBUG_ARG_SLOTS_ONLY(PUT_STRUCT_ARG_STK_ONLY_ARG(info->GetStackSlotsNumber())),
+                                 call->IsFastTailCall(), call);
 
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             // If the ArgTabEntry indicates that this arg is a struct
@@ -1227,7 +1223,7 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, fgArgTabEntry* inf
                 }
                 else if (!arg->OperIs(GT_FIELD_LIST))
                 {
-                    assert(varTypeIsSIMD(arg) || (info->numSlots == 1));
+                    assert(varTypeIsSIMD(arg) || (info->GetStackSlotsNumber() == 1));
                 }
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
@@ -1892,7 +1888,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
             GenTreePutArgStk* put = putargs.Bottom(i)->AsPutArgStk();
 
             unsigned int overwrittenStart = put->getArgOffset();
-            unsigned int overwrittenEnd   = overwrittenStart + put->getArgSize();
+            unsigned int overwrittenEnd   = overwrittenStart + put->GetStackByteSize();
 #if !(defined(TARGET_WINDOWS) && defined(TARGET_AMD64))
             int baseOff = -1; // Stack offset of first arg on stack
 #endif
@@ -4222,8 +4218,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
 #if !defined(TARGET_64BIT)
         // On 32-bit targets, indirect calls need the size of the stack args in InlinedCallFrame.m_Datum.
         const unsigned stackByteOffset = call->fgArgInfo->GetNextSlotByteOffset();
-
-        src = comp->gtNewIconNode(stackByteOffset, TYP_INT);
+        src                            = comp->gtNewIconNode(stackByteOffset, TYP_INT);
 #else
         // On 64-bit targets, indirect calls may need the stub parameter value in InlinedCallFrame.m_Datum.
         // If the stub parameter value is not needed, m_Datum will be initialized by the VM.

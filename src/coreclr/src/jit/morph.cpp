@@ -1187,17 +1187,10 @@ void fgArgInfo::UpdateStkArg(fgArgTabEntry* curArgTabEntry, GenTree* node, bool 
     assert(curArgTabEntry->slotNum == nextSlotNum);
     nextSlotNum += curArgTabEntry->numSlots;
 #endif
+
     nextStackByteOffset = roundUp(nextStackByteOffset, curArgTabEntry->byteAlignment);
     assert(curArgTabEntry->GetByteOffset() == nextStackByteOffset);
-
-    if (!curArgTabEntry->IsSplit())
-    {
-        nextStackByteOffset += curArgTabEntry->GetByteSize();
-    }
-    else
-    {
-        nextStackByteOffset += curArgTabEntry->GetStackByteSize();
-    }
+    nextStackByteOffset += curArgTabEntry->GetStackByteSize();
 }
 
 void fgArgInfo::SplitArg(unsigned argNum, unsigned numRegs, unsigned numSlots)
