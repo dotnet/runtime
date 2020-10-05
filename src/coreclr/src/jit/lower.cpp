@@ -6513,7 +6513,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
 {
     // A nullcheck is essentially the same as an indirection with no use.
     // The difference lies in whether a target register must be allocated.
-    // On XARCH we can generate a compare with no target register as long as the addresss
+    // On XARCH we can generate a compare with no target register as long as the address
     // is not contained.
     // On ARM64 we can generate a load to REG_ZR in all cases.
     // However, on ARM we must always generate a load to a register.

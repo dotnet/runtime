@@ -5826,7 +5826,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     }
 
     // If we are an OSR method, we "inherit" the frame of the original method,
-    // and the stack is already double aligned on entry (since the return adddress push
+    // and the stack is already double aligned on entry (since the return address push
     // and any special alignment push happened "before").
     if (opts.IsOSR())
     {
@@ -6783,7 +6783,7 @@ void Compiler::lvaAlignFrame()
 #if DOUBLE_ALIGN
     if (genDoubleAlign())
     {
-        // Double Frame Alignement for x86 is handled in Compiler::lvaAssignVirtualFrameOffsetsToLocals()
+        // Double Frame Alignment for x86 is handled in Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
         if (compLclFrameSize == 0)
         {
