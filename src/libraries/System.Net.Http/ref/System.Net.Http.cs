@@ -143,6 +143,7 @@ namespace System.Net.Http
         [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool UseProxy { get { throw null; } set { } }
         protected override void Dispose(bool disposing) { }
+        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         protected internal override System.Net.Http.HttpResponseMessage Send(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
         protected internal override System.Threading.Tasks.Task<System.Net.Http.HttpResponseMessage> SendAsync(System.Net.Http.HttpRequestMessage request, System.Threading.CancellationToken cancellationToken) { throw null; }
     }

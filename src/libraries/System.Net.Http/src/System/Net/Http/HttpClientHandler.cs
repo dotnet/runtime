@@ -287,6 +287,7 @@ namespace System.Net.Http
 
         public IDictionary<string, object?> Properties => _underlyingHandler.Properties;
 
+        [UnsupportedOSPlatform("browser")]
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {

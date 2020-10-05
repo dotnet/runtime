@@ -39,6 +39,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/environment-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-debug.h>
@@ -2644,6 +2645,8 @@ mono_main (int argc, char* argv[])
 	}
 
 	mono_set_defaults (mini_verbose_level, opt);
+	mono_set_os_args (argc, argv);
+
 	domain = mini_init (argv [i], forced_version);
 
 	mono_gc_set_stack_end (&domain);
