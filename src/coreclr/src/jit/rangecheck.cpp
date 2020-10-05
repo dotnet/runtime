@@ -103,7 +103,7 @@ bool RangeCheck::BetweenBounds(Range& range, GenTree* upper, int arrSize)
 
     if ((arrSize <= 0) && !vnStore->IsVNCheckedBound(uLimitVN))
     {
-        // If the upper limit is not length, then bail.
+        // If we don't know the array size and the upper limit is not known, then bail.
         return false;
     }
 
@@ -687,10 +687,15 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
                 limit   = Limit(Limit::keConstant, 1);
                 cmpOper = GT_GE;
             }
-            else
+            else if (curAssertion->assertionKind == Compiler::OAK_EQUAL)
             {
                 limit   = Limit(Limit::keConstant, cnstLimit);
                 cmpOper = GT_EQ;
+            }
+            else
+            {
+                // We have a != assertion, but it doesn't tell us much about the interval. So just skip it.
+                continue;
             }
 
             isConstantAssertion = true;
@@ -703,8 +708,8 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
 
         assert(limit.IsBinOpArray() || limit.IsConstant());
 
-        // Make sure the assertion is of the form != 0 or == 0.
-        if ((curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT)) && !isConstantAssertion)
+        // Make sure the assertion is of the form != 0 or == 0 if it isn't a constant assertion.
+        if (!isConstantAssertion && (curAssertion->op2.vn != m_pCompiler->vnStore->VNZeroForType(TYP_INT)))
         {
             continue;
         }
@@ -744,19 +749,21 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
         //      (i < 100) != 0
         //      i == 100
         //
-        // At this point, we have detected that op1.vn is (i < length) or (i < length + cns) or
-        // (i < 100) and the op2.vn is 0.
+        // At this point, we have detected that either op1.vn is (i < length) or (i < length + cns) or
+        // (i < 100) and the op2.vn is 0 or that op1.vn is i and op2.vn is a known constant.
         //
         // Now, let us check if we are == 0 (i.e., op1 assertion is false) or != 0 (op1 assertion
-        // is true.),
+        // is true.).
         //
-        // If we have an assertion of the form == 0 (i.e., equals false), then reverse relop.
+        // If we have a non-constant assertion of the form == 0 (i.e., equals false), then reverse relop.
         // The relop has to be reversed because we have: (i < length) is false which is the same
         // as (i >= length).
         if ((curAssertion->assertionKind == Compiler::OAK_EQUAL) && !isConstantAssertion)
         {
             cmpOper = GenTree::ReverseRelop(cmpOper);
         }
+
+        assert(cmpOper != GT_NONE);
 
         // Bounds are inclusive, so add -1 for upper bound when "<". But make sure we won't underflow.
         if (cmpOper == GT_LT && !limit.AddConstant(-1))
