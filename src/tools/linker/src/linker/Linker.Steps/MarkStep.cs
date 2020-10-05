@@ -581,7 +581,13 @@ namespace Mono.Linker.Steps
 					if (UnconditionalSuppressMessageAttributeState.TypeRefHasUnconditionalSuppressions (ca.Constructor.DeclaringType))
 						_context.Suppressions.AddSuppression (ca, provider);
 
-					if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (ca.AttributeType.Resolve ()) && providerInLinkedAssembly)
+					var resolvedAttributeType = ca.AttributeType.Resolve ();
+					if (resolvedAttributeType == null) {
+						HandleUnresolvedType (ca.AttributeType);
+						continue;
+					}
+
+					if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (resolvedAttributeType) && providerInLinkedAssembly)
 						continue;
 
 					MarkCustomAttribute (ca, reason, sourceLocationMember);
@@ -845,19 +851,7 @@ namespace Mono.Linker.Steps
 			if (!provider.HasCustomAttributes)
 				return;
 
-			bool providerInLinkedAssembly = Annotations.GetAction (GetAssemblyFromCustomAttributeProvider (provider)) == AssemblyAction.Link;
-
 			foreach (CustomAttribute ca in provider.CustomAttributes) {
-				TypeDefinition type = ca.AttributeType.Resolve ();
-
-				if (type == null) {
-					HandleUnresolvedType (ca.AttributeType);
-					continue;
-				}
-
-				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type) && providerInLinkedAssembly)
-					continue;
-
 				_assemblyLevelAttributes.Enqueue (new AttributeProviderPair (ca, provider));
 			}
 		}
@@ -1193,6 +1187,9 @@ namespace Mono.Linker.Steps
 					HandleUnresolvedMethod (customAttribute.Constructor);
 					continue;
 				}
+
+				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (resolved.DeclaringType) && Annotations.GetAction (GetAssemblyFromCustomAttributeProvider (assemblyLevelAttribute.Provider)) == AssemblyAction.Link)
+					continue;
 
 				if (!ShouldMarkTopLevelCustomAttribute (assemblyLevelAttribute, resolved)) {
 					skippedItems.Add (assemblyLevelAttribute);
@@ -1582,8 +1579,13 @@ namespace Mono.Linker.Steps
 
 			foreach (CustomAttribute attribute in type.CustomAttributes) {
 				var attrType = attribute.Constructor.DeclaringType;
+				var resolvedAttributeType = attrType.Resolve ();
+				if (resolvedAttributeType == null) {
+					HandleUnresolvedType (attrType);
+					continue;
+				}
 
-				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (attrType.Resolve ()) && Annotations.GetAction (type.Module.Assembly) == AssemblyAction.Link)
+				if (_context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (resolvedAttributeType) && Annotations.GetAction (type.Module.Assembly) == AssemblyAction.Link)
 					continue;
 
 				switch (attrType.Name) {
