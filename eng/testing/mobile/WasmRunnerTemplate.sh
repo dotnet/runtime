@@ -31,7 +31,7 @@ if [ -z "$XHARNESS_COMMAND" ]; then
 	XHARNESS_COMMAND="test"
 fi
 
-$HARNESS_RUNNER wasm ${XHARNESS_COMMAND} --app=. --engine=${JS_ENGINE} ${JS_ENGINE_ARGS} --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- ${RUN_TESTS_JS_ARGUMENTS} --run WasmTestRunner.dll ${TEST_NAME}.dll
+$HARNESS_RUNNER wasm ${XHARNESS_COMMAND} --app=. --engine=${JS_ENGINE} ${JS_ENGINE_ARGS} --js-file=runtime.js -v --output-directory=$XHARNESS_OUT -- ${RUN_TESTS_JS_ARGUMENTS} --run WasmTestRunner.dll ${TEST_NAME}.dll -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing
 
 _exitCode=$?
 

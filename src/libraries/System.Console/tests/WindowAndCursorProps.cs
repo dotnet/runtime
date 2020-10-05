@@ -51,7 +51,7 @@ public class WindowAndCursorProps
     [InlineData(-1)]
     public static void WindowWidth_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
-        if (Console.IsOutputRedirected)
+        if (Console.IsOutputRedirected && value >= 0)
         {
             Assert.Throws<IOException>(() => Console.WindowWidth = value);
         }
@@ -83,7 +83,7 @@ public class WindowAndCursorProps
     [InlineData(-1)]
     public static void WindowHeight_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
-        if (Console.IsOutputRedirected)
+        if (Console.IsOutputRedirected && value >= 0)
         {
             Assert.Throws<IOException>(() => Console.WindowHeight = value);
         }
@@ -171,16 +171,8 @@ public class WindowAndCursorProps
     [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior specific to Windows
     public static void WindowLeftTop_Windows()
     {
-        if (Console.IsOutputRedirected)
-        {
-            Assert.Throws<IOException>(() => Console.WindowLeft);
-            Assert.Throws<IOException>(() => Console.WindowTop);
-        }
-        else
-        {
-            Console.WriteLine(Console.WindowLeft);
-            Console.WriteLine(Console.WindowTop);
-        }
+        Console.WriteLine(Console.WindowLeft);
+        Console.WriteLine(Console.WindowTop);
     }
 
     [Fact]
@@ -416,14 +408,7 @@ public class WindowAndCursorProps
     [PlatformSpecific(~TestPlatforms.Browser)]
     public void CursorLeft_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
-        if (PlatformDetection.IsWindows && Console.IsOutputRedirected)
-        {
-            Assert.Throws<IOException>(() => Console.CursorLeft = value);
-        }
-        else
-        {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("left", () => Console.CursorLeft = value);
-        }
+        AssertExtensions.Throws<ArgumentOutOfRangeException>("left", () => Console.CursorLeft = value);
     }
 
     [Fact]
@@ -459,14 +444,7 @@ public class WindowAndCursorProps
     [PlatformSpecific(~TestPlatforms.Browser)]
     public void CursorTop_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
-        if (PlatformDetection.IsWindows & Console.IsOutputRedirected)
-        {
-            Assert.Throws<IOException>(() => Console.CursorTop = value);
-        }
-        else
-        {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("top", () => Console.CursorTop = value);
-        }
+        AssertExtensions.Throws<ArgumentOutOfRangeException>("top", () => Console.CursorTop = value);
     }
 
     [Fact]

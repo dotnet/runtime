@@ -13,6 +13,7 @@ namespace System.Diagnostics.Tests
         private const int s_ConsoleEncoding = 437;
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsServerCore), nameof(PlatformDetection.IsNotWindowsIoTCore))]
         public void TestChangesInConsoleEncoding()
         {
             Action<int> run = expectedCodePage =>

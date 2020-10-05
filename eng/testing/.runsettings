@@ -24,7 +24,7 @@
       <Logger friendlyName="html" />
       <Logger friendlyName="console">
         <Configuration>
-          <Verbosity>Detailed</Verbosity>
+          <Verbosity>Minimal</Verbosity>
         </Configuration>
       </Logger>
     </Loggers>

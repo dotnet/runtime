@@ -281,7 +281,7 @@ public class ReadAndWrite
         }
     }
 
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsServerCore), nameof(PlatformDetection.IsNotWindowsIoTCore))]
     [PlatformSpecific(~TestPlatforms.Browser)]
     public unsafe void OutputEncoding()
     {

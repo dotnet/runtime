@@ -6,9 +6,9 @@ using System.Diagnostics;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
-public partial class ReadKey
+public class ReadKey
 {
-    [Fact]
+    [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))] // https://github.com/dotnet/runtime/issues/43015
     public void KeyAvailable()
     {
         if (Console.IsInputRedirected)

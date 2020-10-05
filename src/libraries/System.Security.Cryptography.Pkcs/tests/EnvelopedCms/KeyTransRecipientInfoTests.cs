@@ -198,6 +198,8 @@ namespace System.Security.Cryptography.Pkcs.EnvelopedCmsTests.Tests
         {
             ContentInfo contentInfo = new ContentInfo(new byte[] { 1, 2, 3 });
             EnvelopedCms ecms = new EnvelopedCms(contentInfo);
+            // force useCms=true on netframework
+            ecms.UnprotectedAttributes.Add(new Pkcs9DocumentName("a"));
             using (X509Certificate2 cert = Certificates.RSAKeyTransfer1.GetCertificate())
             {
                 CmsRecipient cmsRecipient = new CmsRecipient(type, cert);
