@@ -15,6 +15,34 @@
  */
 
 static
+int32_t
+block_get_file_version (EventPipeSerializationFormat format);
+
+static
+int32_t
+block_get_file_minimum_version (EventPipeSerializationFormat format);
+
+static
+void
+block_fast_serialize_func (
+	void *object,
+	FastSerializer *fast_serializer);
+
+static
+void
+block_clear_func (void *object);
+
+static
+void
+block_serialize_header_func (
+	void *object,
+	FastSerializer *fast_serializer);
+
+static
+uint32_t
+block_get_header_size_func (void *object);
+
+static
 void
 block_base_fast_serialize_func (
 	void *object,
@@ -102,6 +130,74 @@ stack_block_serialize_header_func (void *object, FastSerializer *fast_serializer
  * EventPipeBlock
  */
 
+static
+int32_t
+block_get_block_version (EventPipeSerializationFormat format)
+{
+	switch (format) {
+	case EP_SERIALIZATION_FORMAT_NETPERF_V3 :
+		return 1;
+	case EP_SERIALIZATION_FORMAT_NETTRACE_V4 :
+		return 2;
+	default :
+		EP_ASSERT (!"Unrecognized EventPipeSerializationFormat");
+		return 0;
+	}
+}
+
+static
+int32_t
+block_get_block_minimum_version (EventPipeSerializationFormat format)
+{
+	switch (format) {
+	case EP_SERIALIZATION_FORMAT_NETPERF_V3 :
+		return 0;
+	case EP_SERIALIZATION_FORMAT_NETTRACE_V4 :
+		return 2;
+	default :
+		EP_ASSERT (!"Unrecognized EventPipeSerializationFormat");
+		return 0;
+	}
+}
+
+static
+void
+block_fast_serialize_func (
+	void *object,
+	FastSerializer *fast_serializer)
+{
+	EP_ASSERT (object != NULL);
+	EP_ASSERT (fast_serializer != NULL);
+
+	ep_block_fast_serialize ((EventPipeBlock *)object, fast_serializer);
+}
+
+static
+void
+block_clear_func (void *object)
+{
+	EP_ASSERT (object != NULL);
+	ep_block_clear ((EventPipeBlock *)object);
+}
+
+static
+void
+block_serialize_header_func (
+	void *object,
+	FastSerializer *fast_serializer)
+{
+	EP_ASSERT (object != NULL);
+	EP_ASSERT (fast_serializer != NULL);
+}
+
+static
+uint32_t
+block_get_header_size_func (void *object)
+{
+	EP_ASSERT (object != NULL);
+	return 0;
+}
+
 EventPipeBlock *
 ep_block_init (
 	EventPipeBlock *block,
@@ -115,8 +211,8 @@ ep_block_init (
 	ep_raise_error_if_nok (ep_fast_serializable_object_init (
 		&block->fast_serializer_object,
 		(FastSerializableObjectVtable *)vtable,
-		ep_file_get_file_version (format),
-		ep_file_get_file_minimum_version (format),
+		block_get_block_version (format),
+		block_get_block_minimum_version (format),
 		format >= EP_SERIALIZATION_FORMAT_NETTRACE_V4) != NULL);
 
 	block->block = ep_rt_byte_array_alloc (max_block_size);
@@ -241,7 +337,7 @@ ep_block_fast_serialize (
 		EP_ASSERT (required_padding <= FAST_SERIALIZER_ALIGNMENT_SIZE - 1);
 		ep_fast_serializer_write_buffer (fast_serializer, max_padding, required_padding); // we write zeros here, the reader is going to always read from the first aligned address of the serialized content
 
-		EP_ASSERT (ep_fast_serializer_get_write_error_encountered (fast_serializer) || ep_fast_serializer_get_required_padding (fast_serializer));
+		EP_ASSERT (ep_fast_serializer_get_write_error_encountered (fast_serializer) || (ep_fast_serializer_get_required_padding (fast_serializer) == 0));
 	}
 
 	ep_block_serialize_header_vcall (block, fast_serializer);
@@ -545,7 +641,7 @@ ep_event_block_base_write_event (
 		uint32_t total_size = 1 + bytes_written + data_len;
 
 		if (write_pointer + total_size >= block->end_of_the_buffer) {
-			//TODO: Orignal EP updates blocks write pointer continiously, doing the same here before
+			// TODO: Orignal EP updates blocks write pointer continiously, doing the same here before
 			//bailing out. Question is if that is intentional or just a side effect of directly updating
 			//the member.
 			block->write_pointer = write_pointer;
@@ -746,9 +842,9 @@ sequence_point_get_block_size (EventPipeSequencePoint *sequence_point)
 
 	const uint32_t thread_count = ep_rt_thread_sequence_number_map_count (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point));
 
-	return sizeof (ep_sequence_point_sizeof_timestamp (sequence_point)) +
+	return (int32_t)(ep_sequence_point_sizeof_timestamp (sequence_point) +
 		sizeof (uint32_t) + //thread count
-		thread_count * size_of_sequence_number;
+		thread_count * size_of_sequence_number);
 }
 
 static
@@ -771,17 +867,17 @@ void
 sequence_point_block_fini (EventPipeSequencePointBlock *sequence_point_block)
 {
 	EP_ASSERT (sequence_point_block != NULL);
-	ep_event_block_base_fini (&sequence_point_block->event_block_base);
+	ep_block_fini (&sequence_point_block->block);
 }
 
 static EventPipeBlockVtable sequence_point_block_vtable = {
 	{
 		sequence_point_block_free_func,
-		block_base_fast_serialize_func,
+		block_fast_serialize_func,
 		sequence_point_block_get_type_name_func },
-	block_base_clear_func,
-	block_base_get_header_size_func,
-	block_base_serialize_header_func };
+	block_clear_func,
+	block_get_header_size_func,
+	block_serialize_header_func };
 
 EventPipeSequencePointBlock *
 ep_sequence_point_block_alloc (EventPipeSequencePoint *sequence_point)
@@ -807,20 +903,19 @@ ep_sequence_point_block_init (
 	EP_ASSERT (sequence_point_block != NULL);
 	EP_ASSERT (sequence_point != NULL);
 
-	ep_return_null_if_nok (ep_event_block_base_init (
-		&sequence_point_block->event_block_base,
+	ep_return_null_if_nok (ep_block_init (
+		&sequence_point_block->block,
 		&sequence_point_block_vtable,
 		sequence_point_get_block_size (sequence_point),
-		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
-		true) != NULL);
+		EP_SERIALIZATION_FORMAT_NETTRACE_V4) != NULL);
 
 	const ep_timestamp_t timestamp = ep_sequence_point_get_timestamp (sequence_point);
-	memcpy (sequence_point_block->event_block_base.block.write_pointer, &timestamp, sizeof (timestamp));
-	sequence_point_block->event_block_base.block.write_pointer += sizeof (timestamp);
+	memcpy (sequence_point_block->block.write_pointer, &timestamp, sizeof (timestamp));
+	sequence_point_block->block.write_pointer += sizeof (timestamp);
 
 	const uint32_t thread_count = ep_rt_thread_sequence_number_map_count (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point));
-	memcpy (sequence_point_block->event_block_base.block.write_pointer, &thread_count, sizeof (thread_count));
-	sequence_point_block->event_block_base.block.write_pointer += sizeof (thread_count);
+	memcpy (sequence_point_block->block.write_pointer, &thread_count, sizeof (thread_count));
+	sequence_point_block->block.write_pointer += sizeof (thread_count);
 
 	ep_rt_thread_sequence_number_hash_map_iterator_t iterator;
 	for (ep_rt_thread_sequence_number_map_iterator_begin (ep_sequence_point_get_thread_sequence_numbers_cref (sequence_point), &iterator);
@@ -830,12 +925,12 @@ ep_sequence_point_block_init (
 		const EventPipeThreadSessionState *key = ep_rt_thread_sequence_number_map_iterator_key (&iterator);
 
 		const uint64_t thread_id = ep_thread_get_os_thread_id (ep_thread_session_state_get_thread (key));
-		memcpy (sequence_point_block->event_block_base.block.write_pointer, &thread_id, sizeof (thread_id));
-		sequence_point_block->event_block_base.block.write_pointer += sizeof (thread_id);
+		memcpy (sequence_point_block->block.write_pointer, &thread_id, sizeof (thread_id));
+		sequence_point_block->block.write_pointer += sizeof (thread_id);
 
 		const uint32_t sequence_number = ep_rt_thread_sequence_number_map_iterator_value (&iterator);
-		memcpy (sequence_point_block->event_block_base.block.write_pointer, &sequence_number, sizeof (sequence_number));
-		sequence_point_block->event_block_base.block.write_pointer += sizeof (sequence_number);
+		memcpy (sequence_point_block->block.write_pointer, &sequence_number, sizeof (sequence_number));
+		sequence_point_block->block.write_pointer += sizeof (sequence_number);
 	}
 
 	return sequence_point_block;
@@ -888,7 +983,7 @@ stack_block_clear_func (void *object)
 	stack_block->has_initial_index = 0;
 	stack_block->count = 0;
 
-	ep_block_clear (&stack_block->event_block_base.block);
+	ep_block_clear (&stack_block->block);
 }
 
 static
@@ -917,7 +1012,7 @@ stack_block_serialize_header_func (
 static EventPipeBlockVtable stack_block_vtable = {
 	{
 		stack_block_free_func,
-		block_base_fast_serialize_func,
+		block_fast_serialize_func,
 		stack_block_get_type_name_func },
 	stack_block_clear_func,
 	stack_block_get_header_size_func,
@@ -929,12 +1024,11 @@ ep_stack_block_alloc (uint32_t max_block_size)
 	EventPipeStackBlock *instance = ep_rt_object_alloc (EventPipeStackBlock);
 	ep_raise_error_if_nok (instance != NULL);
 
-	ep_raise_error_if_nok (ep_event_block_base_init (
-		&instance->event_block_base,
+	ep_raise_error_if_nok (ep_block_init (
+		&instance->block,
 		&stack_block_vtable,
 		max_block_size,
-		EP_SERIALIZATION_FORMAT_NETTRACE_V4,
-		true) != NULL);
+		EP_SERIALIZATION_FORMAT_NETTRACE_V4) != NULL);
 
 	stack_block_clear_func (instance);
 
@@ -952,7 +1046,7 @@ ep_stack_block_free (EventPipeStackBlock *stack_block)
 {
 	ep_return_void_if_nok (stack_block != NULL);
 
-	ep_event_block_base_fini (&stack_block->event_block_base);
+	ep_block_fini (&stack_block->block);
 	ep_rt_object_free (stack_block);
 }
 
@@ -968,7 +1062,7 @@ ep_stack_block_write_stack (
 
 	uint32_t stack_size = ep_stack_contents_get_size (stack);
 	uint32_t total_size = sizeof (stack_size) + stack_size;
-	EventPipeBlock *block = &stack_block->event_block_base.block;
+	EventPipeBlock *block = &stack_block->block;
 	uint8_t *write_pointer = block->write_pointer;
 
 	ep_raise_error_if_nok (write_pointer + total_size < block->end_of_the_buffer);

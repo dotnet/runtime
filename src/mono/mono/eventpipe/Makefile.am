@@ -8,8 +8,32 @@ AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono $(GLIB_CFLAGS) $(SHARED_CFLAG
 noinst_LTLIBRARIES = libeventpipe.la
 
 eventpipe_sources = \
-	ep.c		\
-	ep.h		\
+	ds-dump-protocol.c	\
+	ds-dump-protocol.h	\
+	ds-eventpipe-protocol.c	\
+	ds-eventpipe-protocol.h	\
+	ds-getter-setter.h	\
+	ds-ipc.c	\
+	ds-ipc.h	\
+	ds-ipc-posix.c	\
+	ds-ipc-posix.h	\
+	ds-process-protocol.c	\
+	ds-process-protocol.h	\
+	ds-profiler-protocol.c	\
+	ds-profiler-protocol.h	\
+	ds-protocol.c	\
+	ds-protocol.h	\
+	ds-rt.h	\
+	ds-rt-config.h	\
+	ds-rt-mono.c	\
+	ds-rt-mono.h	\
+	ds-rt-types.h	\
+	ds-rt-types-mono.h	\
+	ds-server.c	\
+	ds-server.h	\
+	ds-types.h	\
+	ep.c	\
+	ep.h	\
 	ep-block.c	\
 	ep-block.h	\
 	ep-buffer.c	\
