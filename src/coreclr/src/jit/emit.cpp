@@ -4966,7 +4966,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
 #endif // FEATURE_FIXED_OUT_ARGS
 
-            int offs = dsc->lvStkOffs;
+            int offs = dsc->GetStackOffset();
 
             /* Is it within the interesting range of offsets */
 
@@ -5525,7 +5525,7 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET align
     /* Get hold of the current offset */
     secOffs = emitConsDsc.dsdOffs;
 
-    if (alignment > 4)
+    if (((secOffs % alignment) != 0) && (alignment > 4))
     {
         // As per the above comment, the minimum alignment is actually 4
         // bytes so we don't need to make any adjustments if the requested

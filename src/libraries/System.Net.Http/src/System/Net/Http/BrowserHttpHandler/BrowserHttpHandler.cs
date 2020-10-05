@@ -130,12 +130,17 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public bool SupportsAutomaticDecompression => false;
-        public bool SupportsProxy => false;
-        public bool SupportsRedirectConfiguration => true;
+        public const bool SupportsAutomaticDecompression = false;
+        public const bool SupportsProxy = false;
+        public const bool SupportsRedirectConfiguration = true;
 
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
+
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            throw new PlatformNotSupportedException ();
+        }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
@@ -248,6 +253,7 @@ namespace System.Net.Http
 
                 var status = new WasmFetchResponse(t, abortController, abortCts, abortRegistration);
                 HttpResponseMessage httpResponse = new HttpResponseMessage((HttpStatusCode)status.Status);
+                httpResponse.RequestMessage = request;
 
                 // Here we will set the ReasonPhrase so that it can be evaluated later.
                 // We do not have a status code but this will signal some type of what happened

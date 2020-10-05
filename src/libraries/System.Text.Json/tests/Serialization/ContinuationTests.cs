@@ -30,6 +30,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
         public static async Task ContinuationShouldWorkAtAnyPosition_Class_Class(int paddingLength, bool ignoreNullValues)
         {
             var stream = new MemoryStream();
@@ -86,6 +87,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
         public static async Task ContinuationShouldWorkAtAnyPosition_Class_ValueType(int paddingLength, bool ignoreNullValues)
         {
             var stream = new MemoryStream();
@@ -141,6 +143,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
         public static async Task ContinuationShouldWorkAtAnyPosition_ValueType_Class(int paddingLength, bool ignoreNullValues)
         {
             var stream = new MemoryStream();
@@ -197,6 +200,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
         public static async Task ContinuationShouldWorkAtAnyPosition_ValueType_ValueType(int paddingLength, bool ignoreNullValues)
         {
             var stream = new MemoryStream();
@@ -252,6 +256,7 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [MemberData(nameof(TestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
         public static async Task ContinuationShouldWorkAtAnyPosition_ClassWithParamCtor_Class(int paddingLength, bool ignoreNullValues)
         {
             var stream = new MemoryStream();
@@ -385,6 +390,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [InlineData("CustomerSearchApi108KB")]
         [InlineData("CustomerSearchApi107KB")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
         public static async Task ContinuationAtNullToken(string resourceName)
         {
             using (Stream stream = new MemoryStream(Encoding.UTF8.GetBytes(SR.GetResourceString(resourceName))))

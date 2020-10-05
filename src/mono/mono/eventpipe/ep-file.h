@@ -24,6 +24,8 @@ struct _EventPipeFile {
 struct _EventPipeFile_Internal {
 #endif
 	FastSerializableObject fast_serializable_object;
+	// The system time when the file was opened.
+	EventPipeSystemTime file_open_system_time;
 	// The frequency of the timestamps used for this file.
 	int64_t timestamp_frequency;
 	StreamWriter *stream_writer;
@@ -35,8 +37,6 @@ struct _EventPipeFile_Internal {
 	// Hashtable of metadata labels.
 	ep_rt_metadata_labels_hash_map_t metadata_ids;
 	ep_rt_stack_hash_map_t stack_hash;
-	// The system time when the file was opened.
-	ep_systemtime_t file_open_system_time;
 	// The timestamp when the file was opened.  Used for calculating file-relative timestamps.
 	ep_timestamp_t file_open_timestamp;
 #ifdef EP_CHECKED_BUILD
@@ -98,12 +98,6 @@ void
 ep_file_flush (
 	EventPipeFile *file,
 	EventPipeFileFlushFlags flags);
-
-int32_t
-ep_file_get_file_version (EventPipeSerializationFormat format);
-
-int32_t
-ep_file_get_file_minimum_version (EventPipeSerializationFormat format);
 
 /*
  * StackHashKey.
@@ -169,4 +163,4 @@ void
 ep_stack_hash_entry_free (StackHashEntry *stack_hash_entry);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_FILE_H__ **/
+#endif /* __EVENTPIPE_FILE_H__ */

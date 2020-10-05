@@ -184,7 +184,8 @@ Only the final component can contain a `*` wildcard; the directory path cannot.
 
 parser = argparse.ArgumentParser(description=description)
 
-subparsers = parser.add_subparsers(dest='mode', required=True, help="Command to invoke")
+subparsers = parser.add_subparsers(dest='mode', help="Command to invoke")
+subparsers.required = True
 
 # Create a parser for core_root. It can be specified directly,
 # or computed from the script location and host OS, architecture, and build type:
@@ -534,7 +535,7 @@ class AsyncSubprocessHelper:
 
         if 'win32' in sys.platform:
             # Windows specific event-loop policy & cmd
-            asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
+            asyncio.set_event_loop(asyncio.ProactorEventLoop())
 
     async def __get_item__(self, item, index, size, async_callback, *extra_args):
         """ Wrapper to the async callback which will schedule based on the queue
@@ -593,7 +594,8 @@ class AsyncSubprocessHelper:
         """
 
         reset_env = os.environ.copy()
-        asyncio.run(self.__run_to_completion__(async_callback, *extra_args))
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.__run_to_completion__(async_callback, *extra_args))
         os.environ.update(reset_env)
 
 ################################################################################

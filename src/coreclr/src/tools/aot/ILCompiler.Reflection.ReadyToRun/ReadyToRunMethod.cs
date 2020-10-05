@@ -22,25 +22,25 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public struct FixupCell
     {
-        public int Index { get; set; }
+        public int Index { get; }
 
         /// <summary>
         /// Zero-based index of the import table within the import tables section.
         /// </summary>
-        public uint TableIndex;
+        public uint TableIndex { get; }
 
         /// <summary>
         /// Zero-based offset of the entry in the import table; it must be a multiple
         /// of the target architecture pointer size.
         /// </summary>
-        public uint CellOffset;
+        public uint CellOffset { get; }
 
         /// <summary>
-        /// Fixup cell signature (textual representation of the typesystem object).
+        /// Fixup cell signature
         /// </summary>
-        public string Signature;
+        public ReadyToRunSignature Signature { get; }
 
-        public FixupCell(int index, uint tableIndex, uint cellOffset, string signature)
+        public FixupCell(int index, uint tableIndex, uint cellOffset, ReadyToRunSignature signature)
         {
             Index = index;
             TableIndex = tableIndex;
