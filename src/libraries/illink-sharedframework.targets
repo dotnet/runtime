@@ -4,6 +4,8 @@
           AfterTargets="Build"
           DependsOnTargets="SetCommonILLinkArgs">
 
+    <Message Text="Trimming shared framework assemblies with ILLinker..." Importance="high" />
+
     <PropertyGroup>
       <LibrariesTrimmedArtifactsPath>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'ILLinkTrimAssembly', '$(BuildSettings)', 'trimmed-runtimepack'))</LibrariesTrimmedArtifactsPath>
     </PropertyGroup>

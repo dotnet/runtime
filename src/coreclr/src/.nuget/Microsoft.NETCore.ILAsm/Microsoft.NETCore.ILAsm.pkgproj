@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <NativeBinary Include="$(BinDir)ilasm$(ApplicationFileExtension)" />
+    <NativeBinary Include="$(RuntimeBinDir)ilasm$(ApplicationFileExtension)" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetPathOfFileAbove(Directory.Build.targets))" />

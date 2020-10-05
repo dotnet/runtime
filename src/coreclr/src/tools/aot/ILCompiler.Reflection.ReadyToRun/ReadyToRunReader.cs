@@ -91,7 +91,6 @@ namespace ILCompiler.Reflection.ReadyToRun
 
         // ImportSections
         private List<ReadyToRunImportSection> _importSections;
-        private Dictionary<int, string> _importCellNames;
         private Dictionary<int, ReadyToRunSignature> _importSignatures;
 
         // AvailableType
@@ -289,19 +288,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 EnsureImportSections();
                 return _importSections;
             }
-        }
-
-        /// <summary>
-        /// Map from import cell addresses to their symbolic names.
-        /// </summary>
-        public IReadOnlyDictionary<int, string> ImportCellNames
-        {
-            get
-            {
-                EnsureImportSections();
-                return _importCellNames;
-            }
-
         }
 
         /// <summary>
@@ -664,20 +650,6 @@ namespace ILCompiler.Reflection.ReadyToRun
             }
         }
 
-        public bool InputArchitectureSupported()
-        {
-            return Machine != Machine.ArmThumb2; // CoreDisTools often fails to decode when disassembling ARM images (see https://github.com/dotnet/runtime/issues/10959)
-        }
-
-        // TODO: Fix R2RDump issue where an R2R image cannot be dissassembled with the x86 CoreDisTools
-        // For the short term, we want to error out with a decent message explaining the unexpected error
-        // Issue https://github.com/dotnet/runtime/issues/10928
-        public bool DisassemblerArchitectureSupported()
-        {
-            System.Runtime.InteropServices.Architecture val = System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture;
-            return val != System.Runtime.InteropServices.Architecture.X86;
-        }
-
         /// <summary>
         /// Each runtime function entry has 3 fields for Amd64 machines (StartAddress, EndAddress, UnwindRVA), otherwise 2 fields (StartAddress, UnwindRVA)
         /// </summary>
@@ -750,7 +722,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 }
             }
         }
-
         /// <summary>
         /// Parse a single method def entrypoint section. For composite R2R images, this method is called multiple times
         /// are method entrypoints are stored separately for each component assembly of the composite R2R executable.
@@ -831,7 +802,8 @@ namespace ILCompiler.Reflection.ReadyToRun
             while (!curParser.IsNull())
             {
                 IAssemblyMetadata mdReader = GetGlobalMetadata();
-                SignatureDecoder decoder = new SignatureDecoder(_assemblyResolver, mdReader?.MetadataReader, this, (int)curParser.Offset);
+                SignatureFormattingOptions dummyOptions = new SignatureFormattingOptions();
+                SignatureDecoder decoder = new SignatureDecoder(_assemblyResolver, dummyOptions, mdReader?.MetadataReader, this, (int)curParser.Offset);
 
                 string owningType = null;
 
@@ -1053,7 +1025,6 @@ namespace ILCompiler.Reflection.ReadyToRun
                 return;
             }
             _importSections = new List<ReadyToRunImportSection>();
-            _importCellNames = new Dictionary<int, string>();
             _importSignatures = new Dictionary<int, ReadyToRunSignature>();
             if (!ReadyToRunHeader.Sections.TryGetValue(ReadyToRunSectionType.ImportSections, out ReadyToRunSection importSectionsSection))
             {
@@ -1107,10 +1078,8 @@ namespace ILCompiler.Reflection.ReadyToRun
                     long section = NativeReader.ReadInt64(Image, ref sectionOffset);
                     uint sigRva = NativeReader.ReadUInt32(Image, ref signatureOffset);
                     int sigOffset = GetOffset((int)sigRva);
-                    ReadyToRunSignature signature;
-                    string cellName = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset, out signature);
-                    entries.Add(new ReadyToRunImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, cellName));
-                    _importCellNames.Add(rva + entrySize * i, cellName);
+                    ReadyToRunSignature signature = MetadataNameFormatter.FormatSignature(_assemblyResolver, this, sigOffset);
+                    entries.Add(new ReadyToRunImportSection.ImportSectionEntry(entries.Count, entryOffset, entryOffset + rva, section, sigRva, signature));
                     _importSignatures.Add(rva + entrySize * i, signature);
                 }
 
