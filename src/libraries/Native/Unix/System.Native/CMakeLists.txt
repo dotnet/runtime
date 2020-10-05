@@ -1,5 +1,9 @@
 project(System.Native C)
 
+if (NOT CLR_CMAKE_TARGET_IOS AND NOT CLR_CMAKE_TARGET_TVOS)
+    add_definitions(-DHAS_CONSOLE_SIGNALS)
+endif ()
+
 set(NATIVE_SOURCES
     pal_errno.c
     pal_interfaceaddresses.c

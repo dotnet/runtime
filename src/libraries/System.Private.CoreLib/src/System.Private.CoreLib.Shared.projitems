@@ -38,8 +38,6 @@
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Internal\AssemblyAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Unix.cs" Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Padding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Runtime\CompilerServices\Unsafe.cs" />
@@ -1392,6 +1390,9 @@
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetProcessTimes_IntPtr.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetProcessTimes_IntPtr.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.GetStdHandle.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GetSystemDirectoryW.cs</Link>
     </Compile>
@@ -1418,6 +1419,9 @@
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.GlobalMemoryStatusEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
+      <Link>Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.IsWow64Process_IntPtr.cs">
       <Link>Common\Interop\Windows\Kernel32\Interop.IsWow64Process_IntPtr.cs</Link>
@@ -1587,6 +1591,7 @@
     <Compile Include="$(CommonPath)Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs">
       <Link>Common\Interop\Windows\User32\Interop.USEROBJECTFLAGS.cs</Link>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\Win32\RegistryKey.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
@@ -1796,6 +1801,7 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.Write.cs">
       <Link>Common\Interop\Unix\System.Native\Interop.Write.cs</Link>
     </Compile>
+    <Compile Include="$(MSBuildThisFileDirectory)Internal\Console.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Internal\IO\File.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Unix.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\AppDomain.Unix.cs" />
