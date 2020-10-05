@@ -7,7 +7,7 @@
     <TestPackageVersion>{PackageVersion}</TestPackageVersion>
     <!-- Turn off end of life target framework checks as we intentionally build older .NETCoreApp configurations. -->
     <CheckEolTargetFramework>false</CheckEolTargetFramework>
-    <NETCoreAppMaximumVersion>6.0</NETCoreAppMaximumVersion>
+    <NETCoreAppMaximumVersion>99.0</NETCoreAppMaximumVersion>
 
     <SupportFilesDir Condition="'$(SupportFilesDir)' == ''">$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), Directory.Build.props))\support</SupportFilesDir>
   </PropertyGroup>

@@ -13,8 +13,6 @@
     -->
     <OutputPath>$(TargetingPackPath)</OutputPath>
     <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
-    <NuGetTargetMoniker>$(NetCoreAppCurrentToolTargetFrameworkMoniker)</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>$(NetCoreAppToolCurrent)</NuGetTargetMonikerShort>
     <RuntimeIdentifiers>win7-x86;win7-x64</RuntimeIdentifiers>
     <XUnitRunnerTargetFramework>netcoreapp2.1</XUnitRunnerTargetFramework>
     <CLRTestKind>SharedLibrary</CLRTestKind>
