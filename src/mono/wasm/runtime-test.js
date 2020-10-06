@@ -395,7 +395,6 @@ var App = {
 				var res = runtime_invoke (main_method, 0, invoke_args, eh_exc);
 				var eh_res = Module.getValue (eh_exc, "i32");
 				if (eh_res != 0) {
-					print ("Exception:" + string_get_utf8 (res));
 					test_exit (1);
 					return;
 				}
