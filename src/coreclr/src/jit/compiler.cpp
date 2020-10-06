@@ -1877,7 +1877,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
 
 #ifdef DEBUG
     compCodeGenDone        = false;
-    compRegSetCheckLevel   = 0;
     opts.compMinOptsIsUsed = false;
 #endif
     opts.compMinOptsIsSet = false;
