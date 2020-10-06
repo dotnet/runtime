@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #nullable enable
+using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
@@ -12,8 +14,12 @@ namespace System.Net.Quic.Implementations.Mock
     {
         private bool _disposed;
         private readonly QuicListenerOptions _options;
-        private readonly MockQuicEndPoint _listenEndPoint;
+        private readonly IPEndPoint _listenEndPoint;
         private Channel<MockConnection.ConnectionState> _listenQueue;
+
+        // We synthesize port numbers for the listener, starting with 1, and track these in a dictionary.
+        private static int s_mockPort;
+        private static ConcurrentDictionary<int, MockListener> s_listenerMap = new ConcurrentDictionary<int, MockListener>();
 
         internal MockListener(QuicListenerOptions options)
         {
@@ -23,12 +29,34 @@ namespace System.Net.Quic.Implementations.Mock
             }
 
             _options = options;
-            _listenEndPoint = new MockQuicEndPoint(this);
+
+            int port = Interlocked.Increment(ref s_mockPort);
+
+            _listenEndPoint = new IPEndPoint(IPAddress.Loopback, port);
+            bool success = s_listenerMap.TryAdd(port, this);
+            Debug.Assert(success);
+
             _listenQueue = Channel.CreateBounded<MockConnection.ConnectionState>(new BoundedChannelOptions(options.ListenBacklog));
         }
 
-        // IPEndPoint is mutable, so we must create a new instance every time this is retrieved.
-        internal override IPEndPoint ListenEndPoint => _listenEndPoint.Clone();
+        // TODO: IPEndPoint is mutable, so we should create a copy here.
+        internal override IPEndPoint ListenEndPoint => _listenEndPoint;
+
+        internal static MockListener? TryGetListener(IPEndPoint endpoint)
+        {
+            if (endpoint.Address != IPAddress.Loopback || endpoint.Port == 0)
+            {
+                return null;
+            }
+
+            MockListener? listener;
+            if (!s_listenerMap.TryGetValue(endpoint.Port, out listener))
+            {
+                return null;
+            }
+
+            return listener;
+        }
 
         internal override async ValueTask<QuicConnectionProvider> AcceptConnectionAsync(CancellationToken cancellationToken = default)
         {
@@ -71,6 +99,10 @@ namespace System.Net.Quic.Implementations.Mock
             {
                 if (disposing)
                 {
+                    MockListener? listener;
+                    bool success = s_listenerMap.TryRemove(_listenEndPoint.Port, out listener);
+                    Debug.Assert(success);
+                    Debug.Assert(listener == this);
                 }
 
                 // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
@@ -89,28 +121,6 @@ namespace System.Net.Quic.Implementations.Mock
         {
             Dispose(true);
             GC.SuppressFinalize(this);
-        }
-
-        internal sealed class MockQuicEndPoint : IPEndPoint
-        {
-            private readonly MockListener _listener;
-
-            // Set the port to 1 just so that code (e.g. SocketsHttpHandler) won't choke on it. This is meaningless.
-            public MockQuicEndPoint(MockListener listener) : base(IPAddress.Loopback, 1)
-            {
-                _listener = listener;
-            }
-
-            public MockListener Listener => _listener;
-
-            public MockQuicEndPoint Clone() => new MockQuicEndPoint(_listener);
-
-            public override bool Equals(object? comparand)
-            {
-                return (comparand is MockQuicEndPoint mockQuicEndPoint && mockQuicEndPoint.Listener == this.Listener);
-            }
-
-            public override int GetHashCode() => _listener.GetHashCode();
         }
     }
 }

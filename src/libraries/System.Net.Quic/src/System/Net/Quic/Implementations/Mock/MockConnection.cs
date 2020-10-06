@@ -15,7 +15,6 @@ namespace System.Net.Quic.Implementations.Mock
         private readonly bool _isClient;
         private bool _disposed;
         private SslClientAuthenticationOptions? _sslClientAuthenticationOptions;
-        private readonly MockListener _listener;        // null if server
         private IPEndPoint _remoteEndPoint;
         private IPEndPoint _localEndPoint;
         private object _syncObject = new object();
@@ -27,17 +26,15 @@ namespace System.Net.Quic.Implementations.Mock
         // Constructor for outbound connections
         internal MockConnection(EndPoint? remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
         {
-            if (!(remoteEndPoint is MockListener.MockQuicEndPoint mockQuicEndPoint))
+            if (!(remoteEndPoint is IPEndPoint ipEndPoint))
             {
-                throw new ArgumentException("Expected endpoint from MockListener", nameof(remoteEndPoint));
+                throw new ArgumentException("Expected IPEndPoint", nameof(remoteEndPoint));
             }
 
             _isClient = true;
-            _remoteEndPoint = mockQuicEndPoint;
+            _remoteEndPoint = ipEndPoint;
             _localEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
             _sslClientAuthenticationOptions = sslClientAuthenticationOptions;
-            _listener = mockQuicEndPoint.Listener;
-
             _nextOutboundBidirectionalStream = 0;
             _nextOutboundUnidirectionalStream = 2;
 
@@ -45,12 +42,11 @@ namespace System.Net.Quic.Implementations.Mock
         }
 
         // Constructor for accepted inbound connections
-        internal MockConnection(MockListener.MockQuicEndPoint localEndPoint, ConnectionState state)
+        internal MockConnection(IPEndPoint localEndPoint, ConnectionState state)
         {
             _isClient = false;
             _remoteEndPoint = new IPEndPoint(IPAddress.Loopback, 0);
             _localEndPoint = localEndPoint;
-            _listener = localEndPoint.Listener;
 
             _nextOutboundBidirectionalStream = 1;
             _nextOutboundUnidirectionalStream = 3;
@@ -98,7 +94,11 @@ namespace System.Net.Quic.Implementations.Mock
 
             Debug.Assert(_isClient, "not connected but also not _isClient??");
 
-            MockListener listener = ((MockListener.MockQuicEndPoint)_remoteEndPoint).Listener;
+            MockListener? listener = MockListener.TryGetListener(_remoteEndPoint);
+            if (listener is null)
+            {
+                throw new InvalidOperationException("Could not find listener");
+            }
 
             // TODO: deal with protocol negotiation
             _state = new ConnectionState(_sslClientAuthenticationOptions!.ApplicationProtocols![0]);
