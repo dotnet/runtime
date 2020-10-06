@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: zapsig.cpp
 //
@@ -648,17 +647,17 @@ Module *ZapSig::DecodeModuleFromIndex(Module *fromModule,
 
         if(pAssembly == NULL)
         {
+            DomainAssembly *pParentAssembly = fromModule->GetDomainAssembly();
             if (nativeImage != NULL)
             {
-                pAssembly = nativeImage->LoadManifestAssembly(index);
+                pAssembly = nativeImage->LoadManifestAssembly(index, pParentAssembly);
             }
             else
             {
                 AssemblySpec spec;
                 spec.InitializeSpec(TokenFromRid(index, mdtAssemblyRef),
                                 fromModule->GetNativeAssemblyImport(),
-                                NULL);
-                spec.SetParentAssembly(fromModule->GetDomainAssembly());
+                                pParentAssembly);
                 pAssembly = spec.LoadAssembly(FILE_LOADED);
             }
             fromModule->SetNativeMetadataAssemblyRefInCache(index, pAssembly);

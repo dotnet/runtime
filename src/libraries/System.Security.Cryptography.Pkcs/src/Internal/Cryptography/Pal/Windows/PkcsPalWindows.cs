@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Text;
@@ -24,19 +23,19 @@ namespace Internal.Cryptography.Pal.Windows
         {
         }
 
-        public sealed override DecryptorPal Decode(byte[] encodedMessage, out int version, out ContentInfo contentInfo, out AlgorithmIdentifier contentEncryptionAlgorithm, out X509Certificate2Collection originatorCerts, out CryptographicAttributeObjectCollection unprotectedAttributes)
+        public sealed override DecryptorPal Decode(ReadOnlySpan<byte> encodedMessage, out int version, out ContentInfo contentInfo, out AlgorithmIdentifier contentEncryptionAlgorithm, out X509Certificate2Collection originatorCerts, out CryptographicAttributeObjectCollection unprotectedAttributes)
         {
             return DecryptorPalWindows.Decode(encodedMessage, out version, out contentInfo, out contentEncryptionAlgorithm, out originatorCerts, out unprotectedAttributes);
         }
 
-        public sealed override Oid GetEncodedMessageType(byte[] encodedMessage)
+        public sealed override Oid GetEncodedMessageType(ReadOnlySpan<byte> encodedMessage)
         {
             using (SafeCryptMsgHandle hCryptMsg = Interop.Crypt32.CryptMsgOpenToDecode(MsgEncodingType.All, 0, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero))
             {
                 if (hCryptMsg == null || hCryptMsg.IsInvalid)
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
-                if (!Interop.Crypt32.CryptMsgUpdate(hCryptMsg, encodedMessage, encodedMessage.Length, fFinal: true))
+                if (!Interop.Crypt32.CryptMsgUpdate(hCryptMsg, ref MemoryMarshal.GetReference(encodedMessage), encodedMessage.Length, fFinal: true))
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
                 int msgTypeAsInt;
@@ -92,14 +91,12 @@ namespace Internal.Cryptography.Pal.Windows
             }
         }
 
-        [return: MaybeNull]
-        public override T GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent)
+        public override T? GetPrivateKeyForSigning<T>(X509Certificate2 certificate, bool silent) where T : class
         {
             return GetPrivateKey<T>(certificate, silent, preferNCrypt: true);
         }
 
-        [return: MaybeNull]
-        public override T GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent)
+        public override T? GetPrivateKeyForDecryption<T>(X509Certificate2 certificate, bool silent) where T : class
         {
             return GetPrivateKey<T>(certificate, silent, preferNCrypt: false);
         }
@@ -132,6 +129,10 @@ namespace Internal.Cryptography.Pal.Windows
 
                 if (keySpec == CryptKeySpec.CERT_NCRYPT_KEY_SPEC)
                 {
+#if NETSTANDARD || NETCOREAPP
+                    Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
+#endif
+
                     using (SafeNCryptKeyHandle keyHandle = new SafeNCryptKeyHandle(handle.DangerousGetHandle(), handle))
                     {
                         CngKeyHandleOpenOptions options = CngKeyHandleOpenOptions.None;
@@ -165,6 +166,7 @@ namespace Internal.Cryptography.Pal.Windows
                 // 3) PNSE.
                 // 4) Defer to cert.Get{R|D}SAPrivateKey if not silent, throw otherwise.
                 CspParameters cspParams = handle.GetProvParameters();
+                Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Windows));
                 Debug.Assert((cspParams.Flags & CspProviderFlags.UseExistingKey) != 0);
                 cspParams.KeyNumber = (int)keySpec;
 

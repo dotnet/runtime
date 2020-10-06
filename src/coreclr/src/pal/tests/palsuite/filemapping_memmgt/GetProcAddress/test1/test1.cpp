@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================================
 **
@@ -24,7 +23,7 @@ typedef int (PALAPI_NOEXPORT *SIMPLEFUNCTION)(int);
 #define lpModuleName    "testlib.dll"
 #endif
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(filemapping_memmgt_GetProcAddress_test1_paltest_getprocaddress_test1, "filemapping_memmgt/GetProcAddress/test1/paltest_getprocaddress_test1")
 {
     int err;
     HMODULE hModule;

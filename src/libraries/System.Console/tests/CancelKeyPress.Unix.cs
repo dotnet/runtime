@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -13,26 +13,40 @@ using Xunit;
 public partial class CancelKeyPressTests
 {
     [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/30130")]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]  // Uses P/Invokes
     public void HandlerInvokedForSigInt()
     {
+        // .NET Core respects ignored disposition for SIGINT/SIGQUIT.
+        if (IsSignalIgnored(SIGINT))
+        {
+            return;
+        }
+
         HandlerInvokedForSignal(SIGINT);
     }
 
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/38998", TestPlatforms.OSX)]
     [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/30130")]
-    [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)] // Jenkins blocks SIGQUIT on OS X, causing the test to fail in CI
+    [SkipOnMono("Mono doesn't call CancelKeyPress for SIGQUIT.")]
     public void HandlerInvokedForSigQuit()
     {
+        // .NET Core respects ignored disposition for SIGINT/SIGQUIT.
+        if (IsSignalIgnored(SIGQUIT))
+        {
+            return;
+        }
+
         HandlerInvokedForSignal(SIGQUIT);
     }
 
     [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/30130")]
-    [PlatformSpecific(TestPlatforms.AnyUnix)]  // events are triggered by Unix signals (SIGINT, SIGQUIT, SIGCHLD).
     public void ExitDetectionNotBlockedByHandler()
     {
+        // .NET Core respects ignored disposition for SIGINT/SIGQUIT.
+        if (IsSignalIgnored(SIGINT))
+        {
+            return;
+        }
+
         RemoteExecutor.Invoke(() =>
         {
             var mre = new ManualResetEventSlim();
@@ -47,7 +61,7 @@ public partial class CancelKeyPressTests
             };
 
             // Generate CancelKeyPress
-            Assert.Equal(0, kill(Process.GetCurrentProcess().Id, SIGINT));
+            Assert.Equal(0, kill(Environment.ProcessId, SIGINT));
             // Wait till we block CancelKeyPress
             Assert.True(tcs.Task.Wait(WaitFailTestTimeoutSeconds * 1000));
 
@@ -87,7 +101,7 @@ public partial class CancelKeyPressTests
             try
             {
                 int signalInner = int.Parse(signalStr);
-                Assert.Equal(0, kill(Process.GetCurrentProcess().Id, signalInner));
+                Assert.Equal(0, kill(Environment.ProcessId, signalInner));
                 Assert.True(tcs.Task.Wait(WaitFailTestTimeoutSeconds * 1000));
                 Assert.Equal(
                     signalInner == SIGINT ? ConsoleSpecialKey.ControlC : ConsoleSpecialKey.ControlBreak,
@@ -100,9 +114,32 @@ public partial class CancelKeyPressTests
         }, signalOuter.ToString()).Dispose();
     }
 
+    private unsafe static bool IsSignalIgnored(int signal)
+    {
+        struct_sigaction current;
+        if (sigaction(signal, null, &current) == 0)
+        {
+            return current.handler == SIG_IGN;
+        }
+        else
+        {
+            throw new Win32Exception();
+        }
+    }
+
     [DllImport("libc", SetLastError = true)]
     private static extern int kill(int pid, int sig);
 
+    [DllImport("libc", SetLastError = true)]
+    private static unsafe extern int sigaction(int signum, struct_sigaction* act, struct_sigaction* oldact);
+
     private const int SIGINT = 2;
     private const int SIGQUIT = 3;
+    private unsafe static void* SIG_IGN => (void*)1;
+
+    private unsafe struct struct_sigaction
+    {
+        public void* handler;
+        private fixed long __pad[128]; // ensure this struct is larger than native 'struct sigaction'
+    }
 }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.ComponentModel
 {
@@ -27,7 +26,7 @@ namespace System.ComponentModel
         /// When implemented by a class, gets the container associated with
         /// the <see cref='System.ComponentModel.ISite'/>.
         /// </summary>
-        IContainer Container { get; }
+        IContainer? Container { get; }
 
         /// <summary>
         /// When implemented by a class, determines whether the component is in design mode.

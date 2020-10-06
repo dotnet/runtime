@@ -630,17 +630,22 @@ static gboolean
 mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *assembly, MonoError *error)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
+	/* We need to clear handles for rmb fields created in mono_reflection_methodbuilder_from_method_builder */
+	HANDLE_FUNCTION_ENTER ();
 
 	MonoDynamicTable *table;
 	guint32 *values;
 	ReflectionMethodBuilder rmb;
 	int i;
+	gboolean ret = TRUE;
 
 	error_init (error);
 
 	if (!mono_reflection_methodbuilder_from_method_builder (&rmb, mb, error) ||
-	    !mono_image_basic_method (&rmb, assembly, error))
-		return FALSE;
+	    !mono_image_basic_method (&rmb, assembly, error)) {
+		ret = FALSE;
+		goto exit;
+	}
 
 	mb->table_idx = *rmb.table_idx;
 
@@ -685,26 +690,33 @@ mono_image_get_method_info (MonoReflectionMethodBuilder *mb, MonoDynamicImage *a
 				(MonoReflectionGenericParam *)mono_array_get_internal (mb->generic_params, gpointer, i), owner, assembly);
 		}
 	}
-
-	return TRUE;
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (ret);
 }
 
 static gboolean
 mono_image_get_ctor_info (MonoDomain *domain, MonoReflectionCtorBuilder *mb, MonoDynamicImage *assembly, MonoError *error)
 {
+	/* We need to clear handles for rmb fields created in mono_reflection_methodbuilder_from_ctor_builder */
+	HANDLE_FUNCTION_ENTER ();
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	gboolean ret = TRUE;
 	ReflectionMethodBuilder rmb;
 
-	if (!mono_reflection_methodbuilder_from_ctor_builder (&rmb, mb, error))
-		return FALSE;
+	if (!mono_reflection_methodbuilder_from_ctor_builder (&rmb, mb, error)) {
+		ret = FALSE;
+		goto exit;
+	}
 
-	if (!mono_image_basic_method (&rmb, assembly, error))
-		return FALSE;
+	if (!mono_image_basic_method (&rmb, assembly, error)) {
+		ret = FALSE;
+		goto exit;
+	}
 
 	mb->table_idx = *rmb.table_idx;
-
-	return TRUE;
+exit:
+	HANDLE_FUNCTION_RETURN_VAL (ret);
 }
 #endif
 

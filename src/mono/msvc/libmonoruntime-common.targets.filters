@@ -52,9 +52,15 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-init.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-init-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\class-private-definition.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClInclude>
+    <ClCompile Include="$(MonoSourceLocation)\mono\metadata\class-setup-vtable.c">
+      <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\cominterop.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
@@ -97,6 +103,9 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\environment.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
+    <ClInclude Include="$(MonoSourceLocation)\mono\metadata\environment-internals.h">
+      <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
+    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\metadata\icall-eventpipe.c">
       <Filter>Source Files$(MonoRuntimeFilterSubFolder)\common</Filter>
     </ClCompile>
@@ -552,7 +561,10 @@
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\native-library.h">
       <Filter>Header Files$(MonoRuntimeFilterSubFolder)\common</Filter>
-    </ClInclude>    
+    </ClInclude>
+    <ClCompile Include="$MonoSourceLocation)\mono\metadata\memory-manager.c">
+      <Filter>Source Files$MonoRuntimeFilterSubfolder\common</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup Label="config_sources">
     <ClInclude Include="$(MonoSourceLocation)\mono\metadata\mono-config-dirs.h">

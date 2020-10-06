@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Threading;
 using System.Reflection;
@@ -43,7 +42,7 @@ namespace System.Diagnostics
             int loadedPeSize, IntPtr inMemoryPdbAddress, int inMemoryPdbSize, int methodToken, int ilOffset,
             out string? sourceFile, out int sourceLine, out int sourceColumn);
 
-        private static GetSourceLineInfoDelegate? s_getSourceLineInfo = null;
+        private static GetSourceLineInfoDelegate? s_getSourceLineInfo;
 
         [ThreadStatic]
         private static int t_reentrancy;

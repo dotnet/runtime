@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.Cli.Build;
 using System;
@@ -255,10 +254,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
             DotNetCli dotnet = null,
             string runtime = null,
             string framework = null,
-            string selfContained = null,
+            bool? selfContained = null,
             string outputDirectory = null,
             bool singleFile = false,
-            bool restore = false)
+            bool restore = false,
+            params string[] extraArgs)
         {
             dotnet = dotnet ?? SdkDotnet;
             outputDirectory = outputDirectory ?? TestProject.OutputDirectory;
@@ -292,7 +292,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             if (selfContained != null)
             {
                 publishArgs.Add("--self-contained");
-                publishArgs.Add(selfContained);
+                publishArgs.Add(selfContained.Value ? "true" : "false");
             }
 
             if (outputDirectory != null)
@@ -308,6 +308,11 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             publishArgs.Add($"/p:TestTargetRid={RepoDirProvider.TargetRID}");
             publishArgs.Add($"/p:MNAVersion={RepoDirProvider.MicrosoftNETCoreAppVersion}");
+
+            foreach (var arg in extraArgs)
+            {
+                publishArgs.Add(arg);
+            }
 
             dotnet.Publish(publishArgs.ToArray())
                 .WorkingDirectory(TestProject.ProjectDirectory)

@@ -1,9 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-using System.IO;
-using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -12,6 +9,19 @@ namespace System.Security.Cryptography.Encoding.Tests
     public class AsnEncodedDataTests
     {
         [Fact]
+        public static void RawDataCopiesInNotOut()
+        {
+            byte[] input = { 0x41, 0x42, 0x43 };
+            AsnEncodedData a = new AsnEncodedData(input);
+            Assert.Null(a.Oid);
+            byte[] firstCall = a.RawData;
+            byte[] secondCall = a.RawData;
+            Assert.Same(firstCall, secondCall);
+            Assert.NotSame(input, firstCall);
+            Assert.Equal(input, firstCall);
+        }
+
+        [Fact]
         public static void FormatUnknownData()
         {
             byte[] rawData = { 0x41, 0x42, 0x43 };
@@ -19,7 +29,6 @@ namespace System.Security.Cryptography.Encoding.Tests
             a.Oid = null;
             string s = a.Format(true);
             Assert.Equal("41 42 43", s);
-            return;
         }
 
         [Fact]
@@ -31,7 +40,6 @@ namespace System.Security.Cryptography.Encoding.Tests
             a.Oid = new Oid("1.3.6.1.4.1.311.2.1.27");  //SPC_FINANCIAL_CRITERIA_OBJID
             string s = a.Format(true);
             Assert.Equal("414243", s);
-            return;
         }
 
         [Fact]

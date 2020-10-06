@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Linq;
@@ -104,7 +103,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
-                return MemberType.GetHashCode() ^ _accessors[0]!.GetHashCode(); // TODO-NULLABLE https://github.com/dotnet/roslyn/issues/34644
+                return MemberType.GetHashCode() ^ _accessors[0]!.GetHashCode(); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
         }
 

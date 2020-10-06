@@ -1,11 +1,11 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 
 namespace System.Text.Json
 {
@@ -135,5 +135,13 @@ namespace System.Text.Json
             return !(float.IsNaN(value) || float.IsInfinity(value));
 #endif
         }
+
+        public static bool IsValidNumberHandlingValue(JsonNumberHandling handling) =>
+            IsInRangeInclusive((int)handling, 0,
+                (int)(
+                JsonNumberHandling.Strict |
+                JsonNumberHandling.AllowReadingFromString |
+                JsonNumberHandling.WriteAsString |
+                JsonNumberHandling.AllowNamedFloatingPointLiterals));
     }
 }

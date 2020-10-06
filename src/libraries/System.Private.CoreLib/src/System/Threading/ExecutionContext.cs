@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -66,6 +65,21 @@ namespace System.Threading
             }
 
             return executionContext;
+        }
+
+        // Allows capturing asynclocals for a FlowSuppressed ExecutionContext rather than returning null.
+        internal static ExecutionContext? CaptureForRestore()
+        {
+            // This is a short cut for:
+            //
+            // ExecutionContext.RestoreFlow()
+            // var ec = ExecutionContext.Capture()
+            // ExecutionContext.SuppressFlow();
+            // ...
+            // ExecutionContext.Restore(ec)
+            // ExecutionContext.SuppressFlow();
+
+            return Thread.CurrentThread._executionContext;
         }
 
         private ExecutionContext? ShallowClone(bool isFlowSuppressed)
@@ -200,30 +214,34 @@ namespace System.Threading
             edi?.Throw();
         }
 
-        // Direct copy of the above RunInternal overload, except that it passes the state into the callback strongly-typed and by ref.
-        internal static void RunInternal<TState>(ExecutionContext? executionContext, ContextCallback<TState> callback, ref TState state)
+        /// <summary>
+        /// Restores a captured execution context to on the current thread.
+        /// </summary>
+        /// <remarks>
+        /// To revert to the current execution context; capture it before Restore, and Restore it again.
+        /// It will not automatically be reverted unlike <seealso cref="ExecutionContext.Run"/>.
+        /// </remarks>
+        /// <param name="executionContext">The ExecutionContext to set.</param>
+        public static void Restore(ExecutionContext executionContext)
         {
-            // Note: ExecutionContext.RunInternal is an extremely hot function and used by every await, ThreadPool execution, etc.
-            // Note: Manual enregistering may be addressed by "Exception Handling Write Through Optimization"
-            //       https://github.com/dotnet/runtime/blob/master/docs/design/features/eh-writethru.md
-
-            // Enregister variables with 0 post-fix so they can be used in registers without EH forcing them to stack
-            // Capture references to Thread Contexts
-            Thread currentThread0 = Thread.CurrentThread;
-            Thread currentThread = currentThread0;
-            ExecutionContext? previousExecutionCtx0 = currentThread0._executionContext;
-            if (previousExecutionCtx0 != null && previousExecutionCtx0.m_isDefault)
+            if (executionContext == null)
             {
-                // Default is a null ExecutionContext internally
-                previousExecutionCtx0 = null;
+                ThrowNullContext();
             }
 
-            // Store current ExecutionContext and SynchronizationContext as "previousXxx".
-            // This allows us to restore them and undo any Context changes made in callback.Invoke
-            // so that they won't "leak" back into caller.
-            // These variables will cross EH so be forced to stack
-            ExecutionContext? previousExecutionCtx = previousExecutionCtx0;
-            SynchronizationContext? previousSyncCtx = currentThread0._synchronizationContext;
+            RestoreInternal(executionContext);
+        }
+
+        internal static void RestoreInternal(ExecutionContext? executionContext)
+        {
+            Thread currentThread = Thread.CurrentThread;
+
+            ExecutionContext? currentExecutionCtx = currentThread._executionContext;
+            if (currentExecutionCtx != null && currentExecutionCtx.m_isDefault)
+            {
+                // Default is a null ExecutionContext internally
+                currentExecutionCtx = null;
+            }
 
             if (executionContext != null && executionContext.m_isDefault)
             {
@@ -231,43 +249,10 @@ namespace System.Threading
                 executionContext = null;
             }
 
-            if (previousExecutionCtx0 != executionContext)
+            if (currentExecutionCtx != executionContext)
             {
-                RestoreChangedContextToThread(currentThread0, executionContext, previousExecutionCtx0);
+                RestoreChangedContextToThread(currentThread, executionContext, currentExecutionCtx);
             }
-
-            ExceptionDispatchInfo? edi = null;
-            try
-            {
-                callback.Invoke(ref state);
-            }
-            catch (Exception ex)
-            {
-                // Note: we have a "catch" rather than a "finally" because we want
-                // to stop the first pass of EH here.  That way we can restore the previous
-                // context before any of our callers' EH filters run.
-                edi = ExceptionDispatchInfo.Capture(ex);
-            }
-
-            // Re-enregistrer variables post EH with 1 post-fix so they can be used in registers rather than from stack
-            SynchronizationContext? previousSyncCtx1 = previousSyncCtx;
-            Thread currentThread1 = currentThread;
-            // The common case is that these have not changed, so avoid the cost of a write barrier if not needed.
-            if (currentThread1._synchronizationContext != previousSyncCtx1)
-            {
-                // Restore changed SynchronizationContext back to previous
-                currentThread1._synchronizationContext = previousSyncCtx1;
-            }
-
-            ExecutionContext? previousExecutionCtx1 = previousExecutionCtx;
-            ExecutionContext? currentExecutionCtx1 = currentThread1._executionContext;
-            if (currentExecutionCtx1 != previousExecutionCtx1)
-            {
-                RestoreChangedContextToThread(currentThread1, previousExecutionCtx1, currentExecutionCtx1);
-            }
-
-            // If exception was thrown by callback, rethrow it now original contexts are restored
-            edi?.Throw();
         }
 
         internal static void RunFromThreadPoolDispatchLoop(Thread threadPoolThread, ExecutionContext executionContext, ContextCallback callback, object state)
@@ -372,7 +357,7 @@ namespace System.Threading
         [System.Diagnostics.Conditional("DEBUG")]
         internal static void CheckThreadPoolAndContextsAreDefault()
         {
-            Debug.Assert(Thread.CurrentThread.IsThreadPoolThread);
+            Debug.Assert(!Thread.IsThreadStartSupported || Thread.CurrentThread.IsThreadPoolThread); // there are no dedicated threadpool threads on runtimes where we can't start threads
             Debug.Assert(Thread.CurrentThread._executionContext == null, "ThreadPool thread not on Default ExecutionContext.");
             Debug.Assert(Thread.CurrentThread._synchronizationContext == null, "ThreadPool thread not on Default SynchronizationContext.");
         }

@@ -1,8 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
-
-#pragma warning disable BCL0015 // We know these APIs are only on Windows
 
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;

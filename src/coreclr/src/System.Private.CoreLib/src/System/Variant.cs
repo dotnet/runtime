@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -104,7 +103,7 @@ namespace System
             typeof(System.DBNull),
         };
 
-        internal static readonly Variant Empty = default;
+        internal static readonly Variant Empty;
         internal static readonly Variant Missing = new Variant(Variant.CV_MISSING, Type.Missing, 0);
         internal static readonly Variant DBNull = new Variant(Variant.CV_NULL, System.DBNull.Value, 0);
 

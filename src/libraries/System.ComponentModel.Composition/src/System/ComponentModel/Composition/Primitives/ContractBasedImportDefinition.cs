@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.ComponentModel.Composition.Hosting;
@@ -25,8 +24,8 @@ namespace System.ComponentModel.Composition.Primitives
         private readonly IEnumerable<KeyValuePair<string, Type>> _requiredMetadata = Enumerable.Empty<KeyValuePair<string, Type>>();
         private Expression<Func<ExportDefinition, bool>>? _constraint;
         private readonly CreationPolicy _requiredCreationPolicy = CreationPolicy.Any;
-        private readonly string? _requiredTypeIdentity = null;
-        private bool _isRequiredMetadataValidated = false;
+        private readonly string? _requiredTypeIdentity;
+        private bool _isRequiredMetadataValidated;
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="ContractBasedImportDefinition"/> class.

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 
 // Enable calling OpenSSL functions through shims to enable support for
@@ -36,6 +35,7 @@
 #include <openssl/x509v3.h>
 
 #include "pal_crypto_config.h"
+#include "pal_compiler.h"
 #define OPENSSL_VERSION_1_1_1_RTM 0x10101000L
 #define OPENSSL_VERSION_1_1_0_RTM 0x10100000L
 #define OPENSSL_VERSION_1_0_2_RTM 0x10002000L
@@ -118,6 +118,7 @@ typedef struct stack_st OPENSSL_STACK;
 #define OPENSSL_INIT_LOAD_CONFIG 0x00000040L
 #define OPENSSL_INIT_LOAD_SSL_STRINGS 0x00200000L
 
+int BIO_up_ref(BIO *a);
 const BIGNUM* DSA_get0_key(const DSA* dsa, const BIGNUM** pubKey, const BIGNUM** privKey);
 void DSA_get0_pqg(const DSA* dsa, const BIGNUM** p, const BIGNUM** q, const BIGNUM** g);
 const DSA_METHOD* DSA_get_method(const DSA* dsa);
@@ -149,6 +150,7 @@ int32_t RSA_set0_crt_params(RSA* rsa, BIGNUM* dmp1, BIGNUM* dmq1, BIGNUM* iqmp);
 int32_t RSA_set0_factors(RSA* rsa, BIGNUM* p, BIGNUM* q);
 int32_t RSA_set0_key(RSA* rsa, BIGNUM* n, BIGNUM* e, BIGNUM* d);
 int32_t SSL_is_init_finished(SSL* ssl);
+int SSL_CTX_config(SSL_CTX* ctx, const char* name);
 #undef SSL_CTX_set_options
 unsigned long SSL_CTX_set_options(SSL_CTX* ctx, unsigned long options);
 void SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level);
@@ -165,6 +167,8 @@ STACK_OF(X509)* X509_STORE_CTX_get0_untrusted(X509_STORE_CTX* ctx);
 X509_VERIFY_PARAM* X509_STORE_get0_param(X509_STORE* ctx);
 const ASN1_TIME* X509_get0_notAfter(const X509* x509);
 const ASN1_TIME* X509_get0_notBefore(const X509* x509);
+int X509_set1_notAfter(X509* x509, const ASN1_TIME*);
+int X509_set1_notBefore(X509* x509, const ASN1_TIME*);
 ASN1_BIT_STRING* X509_get0_pubkey_bitstr(const X509* x509);
 const X509_ALGOR* X509_get0_tbs_sigalg(const X509* x509);
 X509_PUBKEY* X509_get_X509_PUBKEY(const X509* x509);
@@ -213,6 +217,9 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(ASN1_STRING_dup) \
     REQUIRED_FUNCTION(ASN1_STRING_free) \
     REQUIRED_FUNCTION(ASN1_STRING_print_ex) \
+    REQUIRED_FUNCTION(ASN1_TIME_new) \
+    REQUIRED_FUNCTION(ASN1_TIME_set) \
+    REQUIRED_FUNCTION(ASN1_TIME_free) \
     REQUIRED_FUNCTION(BASIC_CONSTRAINTS_free) \
     REQUIRED_FUNCTION(BIO_ctrl) \
     REQUIRED_FUNCTION(BIO_ctrl_pending) \
@@ -221,6 +228,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(BIO_new) \
     REQUIRED_FUNCTION(BIO_new_file) \
     REQUIRED_FUNCTION(BIO_read) \
+    FALLBACK_FUNCTION(BIO_up_ref) \
     REQUIRED_FUNCTION(BIO_s_mem) \
     REQUIRED_FUNCTION(BIO_write) \
     REQUIRED_FUNCTION(BN_bin2bn) \
@@ -230,6 +238,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(BN_free) \
     REQUIRED_FUNCTION(BN_new) \
     REQUIRED_FUNCTION(BN_num_bits) \
+    REQUIRED_FUNCTION(BN_set_word) \
     LEGACY_FUNCTION(CRYPTO_add_lock) \
     LEGACY_FUNCTION(CRYPTO_num_locks) \
     LEGACY_FUNCTION(CRYPTO_set_locking_callback) \
@@ -310,14 +319,20 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(ERR_reason_error_string) \
     REQUIRED_FUNCTION(EVP_aes_128_cbc) \
     REQUIRED_FUNCTION(EVP_aes_128_ccm) \
+    REQUIRED_FUNCTION(EVP_aes_128_cfb128) \
+    REQUIRED_FUNCTION(EVP_aes_128_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_128_ecb) \
     REQUIRED_FUNCTION(EVP_aes_128_gcm) \
     REQUIRED_FUNCTION(EVP_aes_192_cbc) \
     REQUIRED_FUNCTION(EVP_aes_192_ccm) \
+    REQUIRED_FUNCTION(EVP_aes_192_cfb128) \
+    REQUIRED_FUNCTION(EVP_aes_192_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_192_ecb) \
     REQUIRED_FUNCTION(EVP_aes_192_gcm) \
     REQUIRED_FUNCTION(EVP_aes_256_cbc) \
     REQUIRED_FUNCTION(EVP_aes_256_ccm) \
+    REQUIRED_FUNCTION(EVP_aes_256_cfb128) \
+    REQUIRED_FUNCTION(EVP_aes_256_cfb8) \
     REQUIRED_FUNCTION(EVP_aes_256_ecb) \
     REQUIRED_FUNCTION(EVP_aes_256_gcm) \
     LEGACY_FUNCTION(EVP_CIPHER_CTX_cleanup) \
@@ -332,14 +347,18 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EVP_CipherInit_ex) \
     REQUIRED_FUNCTION(EVP_CipherUpdate) \
     REQUIRED_FUNCTION(EVP_des_cbc) \
+    REQUIRED_FUNCTION(EVP_des_cfb8) \
     REQUIRED_FUNCTION(EVP_des_ecb) \
     REQUIRED_FUNCTION(EVP_des_ede3) \
     REQUIRED_FUNCTION(EVP_des_ede3_cbc) \
+    REQUIRED_FUNCTION(EVP_des_ede3_cfb8) \
+    REQUIRED_FUNCTION(EVP_des_ede3_cfb64) \
     REQUIRED_FUNCTION(EVP_DigestFinal_ex) \
     REQUIRED_FUNCTION(EVP_DigestInit_ex) \
     REQUIRED_FUNCTION(EVP_DigestUpdate) \
     REQUIRED_FUNCTION(EVP_get_digestbyname) \
     REQUIRED_FUNCTION(EVP_md5) \
+    REQUIRED_FUNCTION(EVP_MD_CTX_copy_ex) \
     RENAMED_FUNCTION(EVP_MD_CTX_free, EVP_MD_CTX_destroy) \
     RENAMED_FUNCTION(EVP_MD_CTX_new, EVP_MD_CTX_create) \
     REQUIRED_FUNCTION(EVP_MD_size) \
@@ -366,6 +385,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(EXTENDED_KEY_USAGE_free) \
     REQUIRED_FUNCTION(GENERAL_NAMES_free) \
     LEGACY_FUNCTION(HMAC_CTX_cleanup) \
+    REQUIRED_FUNCTION(HMAC_CTX_copy) \
     FALLBACK_FUNCTION(HMAC_CTX_free) \
     LEGACY_FUNCTION(HMAC_CTX_init) \
     FALLBACK_FUNCTION(HMAC_CTX_new) \
@@ -455,6 +475,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(SSL_ctrl) \
     REQUIRED_FUNCTION(SSL_set_quiet_shutdown) \
     REQUIRED_FUNCTION(SSL_CTX_check_private_key) \
+    FALLBACK_FUNCTION(SSL_CTX_config) \
     REQUIRED_FUNCTION(SSL_CTX_ctrl) \
     REQUIRED_FUNCTION(SSL_CTX_free) \
     FALLBACK_FUNCTION(SSL_is_init_finished) \
@@ -473,6 +494,7 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(SSL_CTX_use_PrivateKey) \
     REQUIRED_FUNCTION(SSL_do_handshake) \
     REQUIRED_FUNCTION(SSL_free) \
+    REQUIRED_FUNCTION(SSL_get_ciphers) \
     REQUIRED_FUNCTION(SSL_get_client_CA_list) \
     REQUIRED_FUNCTION(SSL_get_current_cipher) \
     REQUIRED_FUNCTION(SSL_get_error) \
@@ -526,9 +548,12 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     FALLBACK_FUNCTION(X509_get_X509_PUBKEY) \
     FALLBACK_FUNCTION(X509_get0_notBefore) \
     FALLBACK_FUNCTION(X509_get0_notAfter) \
+    FALLBACK_FUNCTION(X509_set1_notBefore) \
+    FALLBACK_FUNCTION(X509_set1_notAfter) \
     FALLBACK_FUNCTION(X509_get0_pubkey_bitstr) \
     FALLBACK_FUNCTION(X509_get0_tbs_sigalg) \
     REQUIRED_FUNCTION(X509_issuer_name_hash) \
+    REQUIRED_FUNCTION(X509_NAME_add_entry_by_txt) \
     REQUIRED_FUNCTION(X509_NAME_entry_count) \
     REQUIRED_FUNCTION(X509_NAME_ENTRY_get_data) \
     REQUIRED_FUNCTION(X509_NAME_ENTRY_get_object) \
@@ -536,8 +561,11 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     REQUIRED_FUNCTION(X509_NAME_get_entry) \
     REQUIRED_FUNCTION(X509_NAME_get_index_by_NID) \
     FALLBACK_FUNCTION(X509_NAME_get0_der) \
+    REQUIRED_FUNCTION(X509_new) \
     REQUIRED_FUNCTION(X509_PUBKEY_get) \
     FALLBACK_FUNCTION(X509_PUBKEY_get0_param) \
+    REQUIRED_FUNCTION(X509_set_pubkey) \
+    REQUIRED_FUNCTION(X509_sign) \
     REQUIRED_FUNCTION(X509_subject_name_hash) \
     REQUIRED_FUNCTION(X509_STORE_add_cert) \
     REQUIRED_FUNCTION(X509_STORE_add_crl) \
@@ -575,12 +603,12 @@ void SSL_get0_alpn_selected(const SSL* ssl, const unsigned char** protocol, unsi
     LIGHTUP_FUNCTION(EC_POINT_set_affine_coordinates_GF2m) \
 
 // Declare pointers to all the used OpenSSL functions
-#define REQUIRED_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define NEW_REQUIRED_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define LIGHTUP_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define FALLBACK_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
-#define RENAMED_FUNCTION(fn,oldfn) extern __typeof(fn)* fn##_ptr;
-#define LEGACY_FUNCTION(fn) extern __typeof(fn)* fn##_ptr;
+#define REQUIRED_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define NEW_REQUIRED_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define LIGHTUP_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define FALLBACK_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
+#define RENAMED_FUNCTION(fn,oldfn) extern TYPEOF(fn)* fn##_ptr;
+#define LEGACY_FUNCTION(fn) extern TYPEOF(fn)* fn##_ptr;
 FOR_ALL_OPENSSL_FUNCTIONS
 #undef LEGACY_FUNCTION
 #undef RENAMED_FUNCTION
@@ -603,6 +631,9 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define ASN1_STRING_dup ASN1_STRING_dup_ptr
 #define ASN1_STRING_free ASN1_STRING_free_ptr
 #define ASN1_STRING_print_ex ASN1_STRING_print_ex_ptr
+#define ASN1_TIME_free ASN1_TIME_free_ptr
+#define ASN1_TIME_new ASN1_TIME_new_ptr
+#define ASN1_TIME_set ASN1_TIME_set_ptr
 #define BASIC_CONSTRAINTS_free BASIC_CONSTRAINTS_free_ptr
 #define BIO_ctrl BIO_ctrl_ptr
 #define BIO_ctrl_pending BIO_ctrl_pending_ptr
@@ -611,6 +642,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define BIO_new BIO_new_ptr
 #define BIO_new_file BIO_new_file_ptr
 #define BIO_read BIO_read_ptr
+#define BIO_up_ref BIO_up_ref_ptr
 #define BIO_s_mem BIO_s_mem_ptr
 #define BIO_write BIO_write_ptr
 #define BN_bin2bn BN_bin2bn_ptr
@@ -620,6 +652,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define BN_free BN_free_ptr
 #define BN_new BN_new_ptr
 #define BN_num_bits BN_num_bits_ptr
+#define BN_set_word BN_set_word_ptr
 #define CRYPTO_add_lock CRYPTO_add_lock_ptr
 #define CRYPTO_num_locks CRYPTO_num_locks_ptr
 #define CRYPTO_set_locking_callback CRYPTO_set_locking_callback_ptr
@@ -699,14 +732,20 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define ERR_put_error ERR_put_error_ptr
 #define ERR_reason_error_string ERR_reason_error_string_ptr
 #define EVP_aes_128_cbc EVP_aes_128_cbc_ptr
+#define EVP_aes_128_cfb8 EVP_aes_128_cfb8_ptr
+#define EVP_aes_128_cfb128 EVP_aes_128_cfb128_ptr
 #define EVP_aes_128_ecb EVP_aes_128_ecb_ptr
 #define EVP_aes_128_gcm EVP_aes_128_gcm_ptr
 #define EVP_aes_128_ccm EVP_aes_128_ccm_ptr
 #define EVP_aes_192_cbc EVP_aes_192_cbc_ptr
+#define EVP_aes_192_cfb8 EVP_aes_192_cfb8_ptr
+#define EVP_aes_192_cfb128 EVP_aes_192_cfb128_ptr
 #define EVP_aes_192_ecb EVP_aes_192_ecb_ptr
 #define EVP_aes_192_gcm EVP_aes_192_gcm_ptr
 #define EVP_aes_192_ccm EVP_aes_192_ccm_ptr
 #define EVP_aes_256_cbc EVP_aes_256_cbc_ptr
+#define EVP_aes_256_cfb8 EVP_aes_256_cfb8_ptr
+#define EVP_aes_256_cfb128 EVP_aes_256_cfb128_ptr
 #define EVP_aes_256_ecb EVP_aes_256_ecb_ptr
 #define EVP_aes_256_gcm EVP_aes_256_gcm_ptr
 #define EVP_aes_256_ccm EVP_aes_256_ccm_ptr
@@ -722,14 +761,18 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EVP_CipherInit_ex EVP_CipherInit_ex_ptr
 #define EVP_CipherUpdate EVP_CipherUpdate_ptr
 #define EVP_des_cbc EVP_des_cbc_ptr
+#define EVP_des_cfb8 EVP_des_cfb8_ptr
 #define EVP_des_ecb EVP_des_ecb_ptr
 #define EVP_des_ede3 EVP_des_ede3_ptr
+#define EVP_des_ede3_cfb8 EVP_des_ede3_cfb8_ptr
+#define EVP_des_ede3_cfb64 EVP_des_ede3_cfb64_ptr
 #define EVP_des_ede3_cbc EVP_des_ede3_cbc_ptr
 #define EVP_DigestFinal_ex EVP_DigestFinal_ex_ptr
 #define EVP_DigestInit_ex EVP_DigestInit_ex_ptr
 #define EVP_DigestUpdate EVP_DigestUpdate_ptr
 #define EVP_get_digestbyname EVP_get_digestbyname_ptr
 #define EVP_md5 EVP_md5_ptr
+#define EVP_MD_CTX_copy_ex EVP_MD_CTX_copy_ex_ptr
 #define EVP_MD_CTX_free EVP_MD_CTX_free_ptr
 #define EVP_MD_CTX_new EVP_MD_CTX_new_ptr
 #define EVP_MD_size EVP_MD_size_ptr
@@ -756,6 +799,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define EXTENDED_KEY_USAGE_free EXTENDED_KEY_USAGE_free_ptr
 #define GENERAL_NAMES_free GENERAL_NAMES_free_ptr
 #define HMAC_CTX_cleanup HMAC_CTX_cleanup_ptr
+#define HMAC_CTX_copy HMAC_CTX_copy_ptr
 #define HMAC_CTX_free HMAC_CTX_free_ptr
 #define HMAC_CTX_init HMAC_CTX_init_ptr
 #define HMAC_CTX_new HMAC_CTX_new_ptr
@@ -852,6 +896,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_ctrl SSL_ctrl_ptr
 #define SSL_set_quiet_shutdown SSL_set_quiet_shutdown_ptr
 #define SSL_CTX_check_private_key SSL_CTX_check_private_key_ptr
+#define SSL_CTX_config SSL_CTX_config_ptr
 #define SSL_CTX_ctrl SSL_CTX_ctrl_ptr
 #define SSL_CTX_free SSL_CTX_free_ptr
 #define SSL_CTX_new SSL_CTX_new_ptr
@@ -869,6 +914,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_CTX_use_PrivateKey SSL_CTX_use_PrivateKey_ptr
 #define SSL_do_handshake SSL_do_handshake_ptr
 #define SSL_free SSL_free_ptr
+#define SSL_get_ciphers SSL_get_ciphers_ptr
 #define SSL_get_client_CA_list SSL_get_client_CA_list_ptr
 #define SSL_get_current_cipher SSL_get_current_cipher_ptr
 #define SSL_get_error SSL_get_error_ptr
@@ -910,6 +956,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_free X509_free_ptr
 #define X509_get0_notAfter X509_get0_notAfter_ptr
 #define X509_get0_notBefore X509_get0_notBefore_ptr
+#define X509_set1_notAfter X509_set1_notAfter_ptr
+#define X509_set1_notBefore X509_set1_notBefore_ptr
 #define X509_get0_pubkey_bitstr X509_get0_pubkey_bitstr_ptr
 #define X509_get0_tbs_sigalg X509_get0_tbs_sigalg_ptr
 #define X509_get_default_cert_dir X509_get_default_cert_dir_ptr
@@ -926,6 +974,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_get_X509_PUBKEY X509_get_X509_PUBKEY_ptr
 #define X509_get_version X509_get_version_ptr
 #define X509_issuer_name_hash X509_issuer_name_hash_ptr
+#define X509_NAME_add_entry_by_txt X509_NAME_add_entry_by_txt_ptr
 #define X509_NAME_entry_count X509_NAME_entry_count_ptr
 #define X509_NAME_ENTRY_get_data X509_NAME_ENTRY_get_data_ptr
 #define X509_NAME_ENTRY_get_object X509_NAME_ENTRY_get_object_ptr
@@ -933,9 +982,12 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_NAME_get0_der X509_NAME_get0_der_ptr
 #define X509_NAME_get_entry X509_NAME_get_entry_ptr
 #define X509_NAME_get_index_by_NID X509_NAME_get_index_by_NID_ptr
+#define X509_new X509_new_ptr
 #define X509_PUBKEY_get0_param X509_PUBKEY_get0_param_ptr
 #define X509_PUBKEY_get X509_PUBKEY_get_ptr
+#define X509_set_pubkey X509_set_pubkey_ptr
 #define X509_subject_name_hash X509_subject_name_hash_ptr
+#define X509_sign X509_sign_ptr
 #define X509_STORE_add_cert X509_STORE_add_cert_ptr
 #define X509_STORE_add_crl X509_STORE_add_crl_ptr
 #define X509_STORE_CTX_cleanup X509_STORE_CTX_cleanup_ptr
@@ -983,6 +1035,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 // type-safe OPENSSL_sk_num
 #define sk_ASN1_OBJECT_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(ASN1_OBJECT)*)0))
 #define sk_GENERAL_NAME_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(GENERAL_NAME)*)0))
+#define sk_SSL_CIPHER_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(SSL_CIPHER)*)0))
 #define sk_X509_NAME_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509_NAME)*)0))
 #define sk_X509_num(stack) OPENSSL_sk_num((const OPENSSL_STACK*)(1 ? stack : (const STACK_OF(X509)*)0))
 
@@ -1015,6 +1068,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define NEED_OPENSSL_1_0 true
 
 // Alias "future" API to the local_ version.
+#define BIO_up_ref local_BIO_up_ref
 #define DSA_get0_key local_DSA_get0_key
 #define DSA_get0_pqg local_DSA_get0_pqg
 #define DSA_get_method local_DSA_get_method
@@ -1038,6 +1092,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_is_init_finished local_SSL_is_init_finished
 #define X509_CRL_get0_nextUpdate local_X509_CRL_get0_nextUpdate
 #define X509_NAME_get0_der local_X509_NAME_get0_der
+#define X509_new local_X509_new
 #define X509_PUBKEY_get0_param local_X509_PUBKEY_get0_param
 #define X509_STORE_CTX_get0_cert local_X509_STORE_CTX_get0_cert
 #define X509_STORE_CTX_get0_chain local_X509_STORE_CTX_get0_chain
@@ -1045,6 +1100,8 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define X509_STORE_get0_param local_X509_STORE_get0_param
 #define X509_get0_notAfter local_X509_get0_notAfter
 #define X509_get0_notBefore local_X509_get0_notBefore
+#define X509_set1_notAfter local_X509_set1_notAfter
+#define X509_set1_notBefore local_X509_set1_notBefore
 #define X509_get0_pubkey_bitstr local_X509_get0_pubkey_bitstr
 #define X509_get0_tbs_sigalg local_X509_get0_tbs_sigalg
 #define X509_get_X509_PUBKEY local_X509_get_X509_PUBKEY

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================================
 **
@@ -29,7 +28,7 @@ struct testCase
 
 };
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(c_runtime_strstr_test1_paltest_strstr_test1, "c_runtime/strstr/test1/paltest_strstr_test1")
 {
     int i=0;
     char *ptr=NULL;

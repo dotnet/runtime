@@ -1,7 +1,7 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
@@ -14,29 +14,5 @@
     <Compile Include="PemEncodingTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\ByteUtils.cs" Link="CommonTest\System\Security\Cryptography\ByteUtils.cs" />
     <Compile Include="$(CommonPath)System\Memory\PointerMemoryManager.cs" Link="Common\System\Memory\PointerMemoryManager.cs" />
-  </ItemGroup>
-  <Import Project="Cbor\System.Formats.Cbor.Shared.projitems" />
-  <ItemGroup>
-    <Compile Include="Cbor.Tests\CborReaderTests.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.ByteString.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.TextString.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.Integer.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.Helpers.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.Map.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.SkipValue.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.Simple.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.Tag.cs" />
-    <Compile Include="Cbor.Tests\CborReaderTests.Array.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.Helpers.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.Array.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.Map.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.Simple.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.Tag.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.Integer.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.ByteString.cs" />
-    <Compile Include="Cbor.Tests\CborWriterTests.TextString.cs" />
-    <Compile Include="Cbor.Tests\CborRoundtripTests.cs" />
-    <Compile Include="Cbor.Tests\CoseKeyHelpers.cs" />
   </ItemGroup>
 </Project>

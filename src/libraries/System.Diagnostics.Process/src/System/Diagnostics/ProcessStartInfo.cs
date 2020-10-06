@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 using System.Collections.Generic;
@@ -16,6 +15,7 @@ namespace System.Diagnostics
     ///     used in conjunction with the <see cref='System.Diagnostics.Process'/>
     ///     component.
     /// </devdoc>
+    [DebuggerDisplay("FileName={FileName}, Arguments={BuildArguments()}, WorkingDirectory={WorkingDirectory}")]
     public sealed partial class ProcessStartInfo
     {
         private string? _fileName;
@@ -77,6 +77,8 @@ namespace System.Diagnostics
 
         public bool CreateNoWindow { get; set; }
 
+        [Editor("System.Diagnostics.Design.StringDictionaryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public StringDictionary EnvironmentVariables => new StringDictionaryWrapper((Environment as DictionaryWrapper)!);
 
         public IDictionary<string, string?> Environment
@@ -121,6 +123,8 @@ namespace System.Diagnostics
         ///       Returns or sets the application, document, or URL that is to be launched.
         ///    </para>
         /// </devdoc>
+        [Editor("System.Diagnostics.Design.StartFileNameEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string FileName
         {
             get => _fileName ?? string.Empty;
@@ -131,6 +135,8 @@ namespace System.Diagnostics
         ///     Returns or sets the initial directory for the process that is started.
         ///     Specify "" to if the default is desired.
         /// </devdoc>
+        [Editor("System.Diagnostics.Design.WorkingDirectoryEditor, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a",
+                "System.Drawing.Design.UITypeEditor, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
         public string WorkingDirectory
         {
             get => _directory ?? string.Empty;
@@ -165,6 +171,40 @@ namespace System.Diagnostics
                 }
 
                 _windowStyle = value;
+            }
+        }
+
+        internal string BuildArguments()
+        {
+            if (_argumentList == null || _argumentList.Count == 0)
+            {
+                return Arguments;
+            }
+            else
+            {
+                var stringBuilder = new StringBuilder();
+                AppendArgumentsTo(stringBuilder);
+                return stringBuilder.ToString();
+            }
+        }
+
+        internal void AppendArgumentsTo(StringBuilder stringBuilder)
+        {
+            if (_argumentList != null && _argumentList.Count > 0)
+            {
+                foreach (string argument in _argumentList)
+                {
+                    PasteArguments.AppendArgument(stringBuilder, argument);
+                }
+            }
+            else if (!string.IsNullOrEmpty(Arguments))
+            {
+                if (stringBuilder.Length > 0)
+                {
+                    stringBuilder.Append(' ');
+                }
+
+                stringBuilder.Append(Arguments);
             }
         }
     }

@@ -15,6 +15,7 @@ Param(
   [Parameter(Position=0)][string][Alias('s')]$subset,
   [ValidateSet("Debug","Release","Checked")][string][Alias('rc')]$runtimeConfiguration,
   [ValidateSet("Debug","Release")][string][Alias('lc')]$librariesConfiguration,
+  [ValidateSet("CoreCLR","Mono")][string][Alias('rf')]$runtimeFlavor,
   [Parameter(ValueFromRemainingArguments=$true)][String[]]$properties
 )
 
@@ -38,6 +39,8 @@ function Get-Help() {
   Write-Host "                                 Checked is exclusive to the CLR runtime. It is the same as Debug, except code is"
   Write-Host "                                 compiled with optimizations enabled."
   Write-Host "                                 [Default: Debug]"
+  Write-Host "  -runtimeFlavor (-rf)           Runtime flavor: CoreCLR or Mono."
+  Write-Host "                                 [Default: CoreCLR]"
   Write-Host "  -subset (-s)                   Build a subset, print available subsets with -subset help."
   Write-Host "                                 '-subset' can be omitted if the subset is given as the first argument."
   Write-Host "                                 [Default: Builds the entire repo.]"
@@ -65,7 +68,7 @@ function Get-Help() {
   Write-Host "Libraries settings:"
   Write-Host "  -allconfigurations      Build packages for all build configurations."
   Write-Host "  -coverage               Collect code coverage when testing."
-  Write-Host "  -framework (-f)         Build framework: net5.0 or net472."
+  Write-Host "  -framework (-f)         Build framework: net5.0 or net48."
   Write-Host "                          [Default: net5.0]"
   Write-Host "  -testnobuild            Skip building tests when invoking -test."
   Write-Host "  -testscope              Scope tests, allowed values: innerloop, outerloop, all."
@@ -93,14 +96,17 @@ function Get-Help() {
   Write-Host "* Build Mono runtime for Windows x64 on Release configuration."
   Write-Host ".\build.cmd mono -c release"
   Write-Host ""
-  Write-Host "It's important to mention that to build Mono for the first time,"
-  Write-Host "you need to build the CLR and Libs subsets beforehand."
-  Write-Host "This is done automatically if a full build is performed at first."
+  Write-Host "* Build Release coreclr corelib, crossgen corelib and update Debug libraries testhost to run test on an updated corelib."
+  Write-Host ".\build.cmd clr.corelib+clr.nativecorelib+libs.pretest -rc release"
+  Write-Host ""
+  Write-Host "* Build Debug mono corelib and update Release libraries testhost to run test on an updated corelib."
+  Write-Host ".\build.cmd mono.corelib+libs.pretest -rc debug -c release"
+  Write-Host ""
   Write-Host ""
   Write-Host "For more information, check out https://github.com/dotnet/runtime/blob/master/docs/workflow/README.md"
 }
 
-if ($help -or (($null -ne $properties) -and ($properties.Contains('/help') -or $properties.Contains('/?')))) {
+if ($help) {
   Get-Help
   exit 0
 }
@@ -115,18 +121,35 @@ if ($vs) {
 
   if (-Not (Test-Path $vs)) {
     $solution = $vs
-    # Search for the solution in libraries
-    $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\libraries" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+
+    if ($runtimeFlavor -eq "Mono") {
+      # Search for the solution in mono
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\mono\netcore" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+    } else {
+      # Search for the solution in coreclr
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\coreclr\src" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+    }
+
     if (-Not (Test-Path $vs)) {
       $vs = $solution
-      # Search for the solution in installer
-      if (-Not ($vs.endswith(".sln"))) {
-        $vs = "$vs.sln"
-      }
-      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\installer" | Join-Path -ChildPath $vs
+
+      # Search for the solution in libraries
+      $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\libraries" | Join-Path -ChildPath $vs | Join-Path -ChildPath "$vs.sln"
+
       if (-Not (Test-Path $vs)) {
-        Write-Error "Passed in solution cannot be resolved."
-        exit 1
+        $vs = $solution
+
+        # Search for the solution in installer
+        if (-Not ($vs.endswith(".sln"))) {
+          $vs = "$vs.sln"
+        }
+
+        $vs = Split-Path $PSScriptRoot -Parent | Join-Path -ChildPath "src\installer" | Join-Path -ChildPath $vs
+
+        if (-Not (Test-Path $vs)) {
+          Write-Error "Passed in solution cannot be resolved."
+          exit 1
+        }
       }
     }
   }
@@ -148,7 +171,7 @@ if ($vs) {
     # Respect the RuntimeConfiguration variable for building inside VS with different runtime configurations
     $env:RUNTIMECONFIGURATION=$runtimeConfiguration
   }
-  
+
   # Restore the solution to workaround https://github.com/dotnet/runtime/issues/32205
   Invoke-Expression "& dotnet restore $vs"
 
@@ -174,6 +197,7 @@ foreach ($argument in $PSBoundParameters.Keys)
   switch($argument)
   {
     "runtimeConfiguration"   { $arguments += " /p:RuntimeConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
+    "runtimeFlavor"          { $arguments += " /p:RuntimeFlavor=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "librariesConfiguration" { $arguments += " /p:LibrariesConfiguration=$((Get-Culture).TextInfo.ToTitleCase($($PSBoundParameters[$argument])))" }
     "framework"              { $arguments += " /p:BuildTargetFramework=$($PSBoundParameters[$argument].ToLowerInvariant())" }
     "os"                     { $arguments += " /p:TargetOS=$($PSBoundParameters[$argument])" }

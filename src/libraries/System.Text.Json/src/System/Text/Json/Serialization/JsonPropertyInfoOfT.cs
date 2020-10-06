@@ -1,10 +1,9 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
 
 namespace System.Text.Json
@@ -16,7 +15,18 @@ namespace System.Text.Json
     /// or a type's converter, if the current instance is a <see cref="JsonClassInfo.PropertyInfoForClassInfo"/>.
     internal sealed class JsonPropertyInfo<T> : JsonPropertyInfo
     {
-        private static readonly T s_defaultValue = default!;
+        /// <summary>
+        /// Returns true if the property's converter is external (a user's custom converter)
+        /// and the type to convert is not the same as the declared property type (polymorphic).
+        /// Used to determine whether to perform additional validation on the value returned by the
+        /// converter on deserialization.
+        /// </summary>
+        private bool _converterIsExternalAndPolymorphic;
+
+        // Since a converter's TypeToConvert (which is the T value in this type) can be different than
+        // the property's type, we track that and whether the property type can be null.
+        private bool _propertyTypeEqualsTypeToConvert;
+        private bool _propertyTypeCanBeNull;
 
         public Func<object, T>? Get { get; private set; }
         public Action<object, T>? Set { get; private set; }
@@ -28,9 +38,10 @@ namespace System.Text.Json
             Type declaredPropertyType,
             Type? runtimePropertyType,
             ClassType runtimeClassType,
-            PropertyInfo? propertyInfo,
+            MemberInfo? memberInfo,
             JsonConverter converter,
             JsonIgnoreCondition? ignoreCondition,
+            JsonNumberHandling? parentTypeNumberHandling,
             JsonSerializerOptions options)
         {
             base.Initialize(
@@ -38,37 +49,66 @@ namespace System.Text.Json
                 declaredPropertyType,
                 runtimePropertyType,
                 runtimeClassType,
-                propertyInfo,
+                memberInfo,
                 converter,
                 ignoreCondition,
+                parentTypeNumberHandling,
                 options);
 
-            if (propertyInfo != null)
+            switch (memberInfo)
             {
-                bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
+                case PropertyInfo propertyInfo:
+                    {
+                        bool useNonPublicAccessors = GetAttribute<JsonIncludeAttribute>(propertyInfo) != null;
 
-                MethodInfo? getMethod = propertyInfo.GetMethod;
-                if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
-                {
-                    HasGetter = true;
-                    Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
-                }
+                        MethodInfo? getMethod = propertyInfo.GetMethod;
+                        if (getMethod != null && (getMethod.IsPublic || useNonPublicAccessors))
+                        {
+                            HasGetter = true;
+                            Get = options.MemberAccessorStrategy.CreatePropertyGetter<T>(propertyInfo);
+                        }
 
-                MethodInfo? setMethod = propertyInfo.SetMethod;
-                if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
-                {
-                    HasSetter = true;
-                    Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
-                }
+                        MethodInfo? setMethod = propertyInfo.SetMethod;
+                        if (setMethod != null && (setMethod.IsPublic || useNonPublicAccessors))
+                        {
+                            HasSetter = true;
+                            Set = options.MemberAccessorStrategy.CreatePropertySetter<T>(propertyInfo);
+                        }
+
+                        break;
+                    }
+
+                case FieldInfo fieldInfo:
+                    {
+                        Debug.Assert(fieldInfo.IsPublic);
+
+                        HasGetter = true;
+                        Get = options.MemberAccessorStrategy.CreateFieldGetter<T>(fieldInfo);
+
+                        if (!fieldInfo.IsInitOnly)
+                        {
+                            HasSetter = true;
+                            Set = options.MemberAccessorStrategy.CreateFieldSetter<T>(fieldInfo);
+                        }
+
+                        break;
+                    }
+
+                default:
+                    {
+                        IsForClassInfo = true;
+                        HasGetter = true;
+                        HasSetter = true;
+
+                        break;
+                    }
             }
-            else
-            {
-                IsForClassInfo = true;
-                HasGetter = true;
-                HasSetter = true;
-            }
 
-            GetPolicies(ignoreCondition);
+            _converterIsExternalAndPolymorphic = !converter.IsInternalConverter && DeclaredPropertyType != converter.TypeToConvert;
+            _propertyTypeCanBeNull = DeclaredPropertyType.CanBeNull();
+            _propertyTypeEqualsTypeToConvert = typeof(T) == DeclaredPropertyType;
+
+            GetPolicies(ignoreCondition, parentTypeNumberHandling, defaultValueIsNull: _propertyTypeCanBeNull);
         }
 
         public override JsonConverter ConverterBase
@@ -97,44 +137,67 @@ namespace System.Text.Json
 
         public override bool GetMemberAndWriteJson(object obj, ref WriteStack state, Utf8JsonWriter writer)
         {
-            bool success;
             T value = Get!(obj);
 
-            if (value == null)
+            if (IgnoreDefaultValuesOnWrite)
             {
-                Debug.Assert(s_defaultValue == null && Converter.CanBeNull);
-
-                success = true;
-                if (!IgnoreDefaultValuesOnWrite)
+                // If value is null, it is a reference type or nullable<T>.
+                if (value == null)
                 {
-                    if (!Converter.HandleNull)
+                    return true;
+                }
+
+                if (!_propertyTypeCanBeNull)
+                {
+                    if (_propertyTypeEqualsTypeToConvert)
                     {
-                        writer.WriteNullSection(EscapedNameSection);
+                        // The converter and property types are the same, so we can use T for EqualityComparer<>.
+                        if (EqualityComparer<T>.Default.Equals(default, value))
+                        {
+                            return true;
+                        }
                     }
                     else
                     {
-                        // No object, collection, or re-entrancy converter handles null.
-                        Debug.Assert(Converter.ClassType == ClassType.Value);
+                        Debug.Assert(RuntimeClassInfo.Type == DeclaredPropertyType);
 
-                        if (state.Current.PropertyState < StackFramePropertyState.Name)
+                        // Use a late-bound call to EqualityComparer<DeclaredPropertyType>.
+                        if (RuntimeClassInfo.GenericMethods.IsDefaultValue(value))
                         {
-                            state.Current.PropertyState = StackFramePropertyState.Name;
-                            writer.WritePropertyNameSection(EscapedNameSection);
-                        }
-
-                        int originalDepth = writer.CurrentDepth;
-                        Converter.Write(writer, value, Options);
-                        if (originalDepth != writer.CurrentDepth)
-                        {
-                            ThrowHelper.ThrowJsonException_SerializationConverterWrite(Converter);
+                            return true;
                         }
                     }
                 }
             }
-            else if (IgnoreDefaultValuesOnWrite && Converter._defaultComparer.Equals(s_defaultValue, value))
+
+            if (value == null)
             {
-                Debug.Assert(s_defaultValue != null && !Converter.CanBeNull);
-                success = true;
+                Debug.Assert(_propertyTypeCanBeNull);
+
+                if (Converter.HandleNullOnWrite)
+                {
+                    // No object, collection, or re-entrancy converter handles null.
+                    Debug.Assert(Converter.ClassType == ClassType.Value);
+
+                    if (state.Current.PropertyState < StackFramePropertyState.Name)
+                    {
+                        state.Current.PropertyState = StackFramePropertyState.Name;
+                        writer.WritePropertyNameSection(EscapedNameSection);
+                    }
+
+                    int originalDepth = writer.CurrentDepth;
+                    Converter.Write(writer, value, Options);
+                    if (originalDepth != writer.CurrentDepth)
+                    {
+                        ThrowHelper.ThrowJsonException_SerializationConverterWrite(Converter);
+                    }
+                }
+                else
+                {
+                    writer.WriteNullSection(EscapedNameSection);
+                }
+
+                return true;
             }
             else
             {
@@ -144,10 +207,8 @@ namespace System.Text.Json
                     writer.WritePropertyNameSection(EscapedNameSection);
                 }
 
-                success = Converter.TryWrite(writer, value, Options, ref state);
+                return Converter.TryWrite(writer, value, Options, ref state);
             }
-
-            return success;
         }
 
         public override bool GetMemberAndWriteJsonExtensionData(object obj, ref WriteStack state, Utf8JsonWriter writer)
@@ -172,14 +233,14 @@ namespace System.Text.Json
             bool success;
 
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
-            if (isNullToken && !Converter.HandleNull && !state.IsContinuation)
+            if (isNullToken && !Converter.HandleNullOnRead && !state.IsContinuation)
             {
-                if (!Converter.CanBeNull)
+                if (!_propertyTypeCanBeNull)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
                 }
 
-                Debug.Assert(s_defaultValue == null);
+                Debug.Assert(default(T) == null);
 
                 if (!IgnoreDefaultValuesOnRead)
                 {
@@ -189,13 +250,16 @@ namespace System.Text.Json
 
                 success = true;
             }
-            else if (Converter.CanUseDirectReadOrWrite)
+            else if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
             {
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
+                // CanUseDirectReadOrWrite == false when using streams
+                Debug.Assert(!state.IsContinuation);
+
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !_propertyTypeCanBeNull)
                 {
                     // Optimize for internal converters by avoiding the extra call to TryRead.
-                    T fastvalue = Converter.Read(ref reader, RuntimePropertyType!, Options);
-                    Set!(obj, fastvalue!);
+                    T fastValue = Converter.Read(ref reader, RuntimePropertyType!, Options);
+                    Set!(obj, fastValue!);
                 }
 
                 success = true;
@@ -203,11 +267,29 @@ namespace System.Text.Json
             else
             {
                 success = true;
-                if (!isNullToken || !IgnoreDefaultValuesOnRead || !Converter.CanBeNull)
+                if (!isNullToken || !IgnoreDefaultValuesOnRead || !_propertyTypeCanBeNull || state.IsContinuation)
                 {
                     success = Converter.TryRead(ref reader, RuntimePropertyType!, Options, ref state, out T value);
                     if (success)
                     {
+#if !DEBUG
+                        if (_converterIsExternalAndPolymorphic)
+#endif
+                        {
+                            if (value != null)
+                            {
+                                Type typeOfValue = value.GetType();
+                                if (!DeclaredPropertyType.IsAssignableFrom(typeOfValue))
+                                {
+                                    ThrowHelper.ThrowInvalidCastException_DeserializeUnableToAssignValue(typeOfValue, DeclaredPropertyType);
+                                }
+                            }
+                            else if (!_propertyTypeCanBeNull)
+                            {
+                                ThrowHelper.ThrowInvalidOperationException_DeserializeUnableToAssignNull(DeclaredPropertyType);
+                            }
+                        }
+
                         Set!(obj, value!);
                     }
                 }
@@ -220,21 +302,24 @@ namespace System.Text.Json
         {
             bool success;
             bool isNullToken = reader.TokenType == JsonTokenType.Null;
-            if (isNullToken && !Converter.HandleNull && !state.IsContinuation)
+            if (isNullToken && !Converter.HandleNullOnRead && !state.IsContinuation)
             {
-                if (!Converter.CanBeNull)
+                if (!_propertyTypeCanBeNull)
                 {
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(Converter.TypeToConvert);
                 }
 
-                value = default(T)!;
+                value = default(T);
                 success = true;
             }
             else
             {
                 // Optimize for internal converters by avoiding the extra call to TryRead.
-                if (Converter.CanUseDirectReadOrWrite)
+                if (Converter.CanUseDirectReadOrWrite && state.Current.NumberHandling == null)
                 {
+                    // CanUseDirectReadOrWrite == false when using streams
+                    Debug.Assert(!state.IsContinuation);
+
                     value = Converter.Read(ref reader, RuntimePropertyType!, Options);
                     success = true;
                 }

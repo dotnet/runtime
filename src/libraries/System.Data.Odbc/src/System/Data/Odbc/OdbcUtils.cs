@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Diagnostics;                   // Debug services
@@ -353,8 +352,8 @@ namespace System.Data.Odbc
         private readonly string _sqlstatement;
         private readonly char _quote;         // typically the semicolon '"'
         private readonly char _escape;        // typically the same char as the quote
-        private readonly int _len = 0;
-        private int _idx = 0;
+        private readonly int _len;
+        private int _idx;
 
         internal CStringTokenizer(string text, char quote, char escape)
         {

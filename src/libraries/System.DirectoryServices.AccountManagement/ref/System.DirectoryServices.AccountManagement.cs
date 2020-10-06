@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ------------------------------------------------------------------------------
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
@@ -174,8 +173,8 @@ namespace System.DirectoryServices.AccountManagement
     {
         protected Principal() { }
         public System.DirectoryServices.AccountManagement.PrincipalContext Context { get { throw null; } }
-        [System.ComponentModel.Browsable(false)]
-        [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Never)]
+        [System.ComponentModel.BrowsableAttribute(false)]
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         protected internal System.DirectoryServices.AccountManagement.PrincipalContext ContextRaw { get { throw null; } set { } }
         public System.DirectoryServices.AccountManagement.ContextType ContextType { get { throw null; } }
         public string Description { get { throw null; } set { } }

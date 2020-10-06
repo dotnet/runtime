@@ -1330,6 +1330,10 @@ MINI_OP(OP_X86_FP_LOAD_I4,         "x86_fp_load_i4", FREG, IREG, NONE)
 MINI_OP(OP_X86_SETEQ_MEMBASE,      "x86_seteq_membase", NONE, IREG, NONE)
 MINI_OP(OP_X86_SETNE_MEMBASE,      "x86_setne_membase", NONE, IREG, NONE)
 MINI_OP(OP_X86_FXCH,               "x86_fxch", NONE, NONE, NONE)
+MINI_OP(OP_X86_BSF32,              "x86_bsf32", IREG, IREG, NONE)
+MINI_OP(OP_X86_BSR32,              "x86_bsr32", IREG, IREG, NONE)
+MINI_OP(OP_X86_BSF64,              "x86_bsf64", LREG, LREG, NONE)
+MINI_OP(OP_X86_BSR64,              "x86_bsr64", LREG, LREG, NONE)
 #endif
 
 #if defined(TARGET_AMD64)

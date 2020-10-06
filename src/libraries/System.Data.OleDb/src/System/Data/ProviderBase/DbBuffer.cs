@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Data.Common;
 using System.Diagnostics;
@@ -72,7 +71,7 @@ namespace System.Data.ProviderBase
             Validate(offset, 2 * length);
             Debug.Assert(0 == offset % ADP.PtrSize, "invalid alignment");
 
-            string value = null;
+            string? value = null;
             bool mustRelease = false;
             RuntimeHelpers.PrepareConstrainedRegions();
             try

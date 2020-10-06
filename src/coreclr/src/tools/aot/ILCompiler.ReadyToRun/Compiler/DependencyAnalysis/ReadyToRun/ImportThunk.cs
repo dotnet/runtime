@@ -1,9 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Internal.Text;
 using Internal.ReadyToRunConstants;
+using System.Diagnostics;
 
 namespace ILCompiler.DependencyAnalysis.ReadyToRun
 {
@@ -83,6 +83,14 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                 return result;
 
             return comparer.Compare(_instanceCell, otherNode._instanceCell);
+        }
+
+        protected override DependencyList ComputeNonRelocationBasedDependencies(NodeFactory factory)
+        {
+            Debug.Assert(base.ComputeNonRelocationBasedDependencies(factory) == null);
+            DependencyList dependencies = new DependencyList();
+            dependencies.Add(factory.DelayLoadMethodCallThunks, "MethodCallThunksList");
+            return dependencies;
         }
     }
 }

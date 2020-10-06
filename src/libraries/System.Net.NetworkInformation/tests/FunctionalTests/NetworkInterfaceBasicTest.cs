@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -48,6 +47,11 @@ namespace System.Net.NetworkInformation.Tests
 
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
+                }
             }
         }
 
@@ -82,6 +86,11 @@ namespace System.Net.NetworkInformation.Tests
 
                 _log.WriteLine("SupportsMulticast: " + nic.SupportsMulticast);
                 _log.WriteLine("GetPhysicalAddress(): " + nic.GetPhysicalAddress());
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
+                }
             }
         }
 
@@ -112,6 +121,11 @@ namespace System.Net.NetworkInformation.Tests
                 {
                     // Ethernet, WIFI and loopback should have known status.
                     Assert.True((nic.OperationalStatus == OperationalStatus.Up) || (nic.OperationalStatus == OperationalStatus.Down));
+                }
+
+                if (nic.NetworkInterfaceType == NetworkInterfaceType.Ethernet)
+                {
+                    Assert.Equal(6, nic.GetPhysicalAddress().GetAddressBytes().Length);
                 }
             }
         }

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: AMD64/VirtualCallStubCpu.hpp
 //
@@ -597,7 +596,7 @@ void DispatchHolder::InitializeStatic()
     static_assert_no_msg(((sizeof(DispatchStub) + sizeof(DispatchStubShort)) % sizeof(void*)) == 0);
     static_assert_no_msg(((sizeof(DispatchStub) + sizeof(DispatchStubLong)) % sizeof(void*)) == 0);
     // TODO: This should be a static_assert_no_msg(), but there were reports of build failure with VS 2019 due to the expression
-    // not being a compile-time constant, see https://github.com/dotnet/coreclr/issues/22103
+    // not being a compile-time constant, see https://github.com/dotnet/runtime/issues/11858
     _ASSERTE((DispatchStubLong_offsetof_failLabel - DispatchStubLong_offsetof_failDisplBase) < INT8_MAX);
 
     // Common dispatch stub initialization

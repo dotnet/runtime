@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Xml;
@@ -12,10 +11,10 @@ namespace System.Security.Cryptography.Xml
         private readonly Type[] _inputTypes = { typeof(Stream), typeof(XmlNodeList), typeof(XmlDocument) };
         private readonly Type[] _outputTypes = { typeof(XmlNodeList), typeof(XmlDocument) };
         private XmlNodeList _inputNodeList;
-        private readonly bool _includeComments = false;
-        private XmlNamespaceManager _nsm = null;
-        private XmlDocument _containingDocument = null;
-        private int _signaturePosition = 0;
+        private readonly bool _includeComments;
+        private XmlNamespaceManager _nsm;
+        private XmlDocument _containingDocument;
+        private int _signaturePosition;
 
         internal int SignaturePosition
         {

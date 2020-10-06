@@ -8,6 +8,12 @@
 #include <stdbool.h>
 #include "ep-rt-types.h"
 
+#undef EP_IMPL_GETTER_SETTER
+#ifdef EP_IMPL_EP_GETTER_SETTER
+#define EP_IMPL_GETTER_SETTER
+#endif
+#include "ep-getter-setter.h"
+
 /*
  * EventPipe Structs.
  */
@@ -26,6 +32,7 @@ typedef struct _EventPipeEventBlock EventPipeEventBlock;
 typedef struct _EventPipeEventHeader EventPipeEventHeader;
 typedef struct _EventPipeEventInstance EventPipeEventInstance;
 typedef struct _EventPipeEventMetadataEvent EventPipeEventMetadataEvent;
+typedef struct _EventPipeEventPayload EventPipeEventPayload;
 typedef struct _EventPipeEventSource EventPipeEventSource;
 typedef struct _EventPipeFile EventPipeFile;
 typedef struct _EventPipeMetadataBlock EventPipeMetadataBlock;
@@ -41,6 +48,7 @@ typedef struct _EventPipeSequencePoint EventPipeSequencePoint;
 typedef struct _EventPipeSequencePointBlock EventPipeSequencePointBlock;
 typedef struct _EventPipeStackBlock EventPipeStackBlock;
 typedef struct _EventPipeStackContents EventPipeStackContents;
+typedef struct _EventPipeSystemTime EventPipeSystemTime;
 typedef struct _EventPipeThread EventPipeThread;
 typedef struct _EventPipeThreadHolder EventPipeThreadHolder;
 typedef struct _EventPipeThreadSessionState EventPipeThreadSessionState;
@@ -50,58 +58,12 @@ typedef struct _FastSerializer FastSerializer;
 typedef struct _FileStream FileStream;
 typedef struct _FileStreamWriter FileStreamWriter;
 typedef struct _IpcStream IpcStream;
+typedef struct _IpcStreamVtable IpcStreamVtable;
 typedef struct _IpcStreamWriter IpcStreamWriter;
 typedef struct _StackHashEntry StackHashEntry;
 typedef struct _StackHashKey StackHashKey;
 typedef struct _StreamWriter StreamWriter;
 typedef struct _StreamWriterVtable StreamWriterVtable;
-
-#ifdef EP_INLINE_GETTER_SETTER
-#ifndef EP_DEFINE_GETTER
-#define EP_DEFINE_GETTER(instance_type, instance_type_name, return_type, instance_field_name) \
-	static inline return_type ep_ ## instance_type_name ## _get_ ## instance_field_name (const instance_type instance) { return instance-> instance_field_name; } \
-	static inline size_t ep_ ## instance_type_name ## _sizeof_ ## instance_field_name (const instance_type instance) { return sizeof (instance-> instance_field_name); }
-#endif
-
-#ifndef EP_DEFINE_GETTER_REF
-#define EP_DEFINE_GETTER_REF(instance_type, instance_type_name, return_type, instance_field_name) \
-	static inline return_type ep_ ## instance_type_name ## _get_ ## instance_field_name ## _ref (instance_type instance) { return &(instance-> instance_field_name); } \
-	static inline const return_type ep_ ## instance_type_name ## _get_ ## instance_field_name ## _cref (const instance_type instance) { return &(instance-> instance_field_name); }
-#endif
-
-#ifndef EP_DEFINE_GETTER_ARRAY_REF
-#define EP_DEFINE_GETTER_ARRAY_REF(instance_type, instance_type_name, return_type, const_return_type, instance_field_name, instance_field) \
-	static inline return_type ep_ ## instance_type_name ## _get_ ## instance_field_name ## _ref (instance_type instance) { return &(instance-> instance_field); } \
-	static inline const_return_type ep_ ## instance_type_name ## _get_ ## instance_field_name ## _cref (const instance_type instance) { return &(instance-> instance_field); }
-#endif
-
-#ifndef EP_DEFINE_SETTER
-#define EP_DEFINE_SETTER(instance_type, instance_type_name, instance_field_type, instance_field_name) static inline void ep_ ## instance_type_name ## _set_ ## instance_field_name (instance_type instance, instance_field_type instance_field_name) { instance-> instance_field_name = instance_field_name; }
-#endif
-#else
-#ifndef EP_DEFINE_GETTER
-#define EP_DEFINE_GETTER(instance_type, instance_type_name, return_type, instance_field_name) \
-	return_type ep_ ## instance_type_name ## _get_ ## instance_field_name (const instance_type instance); \
-	size_t ep_ ## instance_type_name ## _sizeof_ ## instance_field_name (const instance_type instance);
-#endif
-
-#ifndef EP_DEFINE_GETTER_REF
-#define EP_DEFINE_GETTER_REF(instance_type, instance_type_name, return_type, instance_field_name) \
-	return_type ep_ ## instance_type_name ## _get_ ## instance_field_name ## _ref (instance_type instance); \
-	const return_type ep_ ## instance_type_name ## _get_ ## instance_field_name ## _cref (const instance_type instance);
-#endif
-
-#ifndef EP_DEFINE_GETTER_ARRAY_REF
-#define EP_DEFINE_GETTER_ARRAY_REF(instance_type, instance_type_name, return_type, const_return_type, instance_field_name, instance_field) \
-	return_type ep_ ## instance_type_name ## _get_ ## instance_field_name ## _ref (instance_type instance); \
-	const_return_type ep_ ## instance_type_name ## _get_ ## instance_field_name ## _cref (const instance_type instance);
-#endif
-
-#ifndef EP_DEFINE_SETTER
-#define EP_DEFINE_SETTER(instance_type, instance_type_name, instance_field_type, instance_field_name) \
-	void ep_ ## instance_type_name ## _set_ ## instance_field_name (instance_type instance, instance_field_type instance_field_name);
-#endif
-#endif
 
 #define EP_MAX_NUMBER_OF_SESSIONS 64
 
@@ -159,11 +121,25 @@ typedef enum {
 	EP_PARAMETER_TYPE_DECIMAL = 15,		// Decimal
 	EP_PARAMETER_TYPE_DATE_TIME = 16,	// DateTime
 	EP_PARAMETER_TYPE_GUID = 17,		// Guid
-	EP_PARAMETER_TYPE_STRING = 18		// Unicode character string
+	EP_PARAMETER_TYPE_STRING = 18,		// Unicode character string
+	EP_PARAMETER_TYPE_ARRAY = 19		// Indicates the type is an arbitrary sized array
 } EventPipeParameterType;
 
 typedef enum {
+	EP_METADATA_TAG_OPCODE = 1,
+	EP_METADATA_TAG_PARAMETER_PAYLOAD = 2
+} EventPipeMetadataTag;
+
+typedef enum {
+	// Default format used in .Net Core 2.0-3.0 Preview 6
+	// TBD - it may remain the default format .Net Core 3.0 when
+	// used with private EventPipe managed API via reflection.
+	// This format had limited official exposure in documented
+	// end-user RTM scenarios, but it is supported by PerfView,
+	// TraceEvent, and was used by AI profiler.
 	EP_SERIALIZATION_FORMAT_NETPERF_V3,
+	// Default format we plan to use in .Net Core 3 Preview7+
+	// for most if not all scenarios.
 	EP_SERIALIZATION_FORMAT_NETTRACE_V4,
 	EP_SERIALIZATION_FORMAT_COUNT
 } EventPipeSerializationFormat;
@@ -171,7 +147,8 @@ typedef enum {
 typedef enum {
 	EP_SESSION_TYPE_FILE,
 	EP_SESSION_TYPE_LISTENER,
-	EP_SESSION_TYPE_IPCSTREAM
+	EP_SESSION_TYPE_IPCSTREAM,
+	EP_SESSION_TYPE_SYNCHRONOUS
 } EventPipeSessionType ;
 
 typedef enum {
@@ -188,6 +165,8 @@ typedef intptr_t EventPipeWaitHandle;
 typedef uint64_t EventPipeSessionID;
 typedef char ep_char8_t;
 typedef unsigned short ep_char16_t;
+typedef int64_t ep_timestamp_t;
+typedef int64_t ep_system_timestamp_t;
 
 /*
  * EventPipe Callbacks.
@@ -201,13 +180,31 @@ typedef void (*EventPipeCallback)(
 	uint64_t match_any_keywords,
 	uint64_t match_all_keywords,
 	EventFilterDescriptor *filter_data,
-	void *callback_context);
+	void *callback_data);
+
+typedef void (*EventPipeCallbackDataFree)(
+	EventPipeCallback callback,
+	void *callback_data);
+
+typedef void (*EventPipeSessionSynchronousCallback)(
+	EventPipeProvider *provider,
+	int32_t event_id,
+	int32_t event_version,
+	uint32_t metadata_blob_len,
+	const uint8_t *metadata_blob,
+	uint32_t event_data_len,
+	const uint8_t *event_data,
+	const uint8_t *activity_id,
+	const uint8_t *related_activity_id,
+	EventPipeThread *event_thread,
+	uint32_t stack_frames_len,
+	uintptr_t *stack_frames);
 
 /*
  * EventFilterDescriptor.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
 struct _EventFilterDescriptor {
 #else
 struct _EventFilterDescriptor_Internal {
@@ -217,15 +214,11 @@ struct _EventFilterDescriptor_Internal {
 	uint32_t type;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
 struct _EventFilterDescriptor {
 	uint8_t _internal [sizeof (struct _EventFilterDescriptor_Internal)];
 };
 #endif
-
-EP_DEFINE_GETTER(EventFilterDescriptor *, event_filter_desc, uint64_t, ptr)
-EP_DEFINE_GETTER(EventFilterDescriptor *, event_filter_desc, uint32_t, size)
-EP_DEFINE_GETTER(EventFilterDescriptor *, event_filter_desc, uint32_t, type)
 
 EventFilterDescriptor *
 ep_event_filter_desc_alloc (
@@ -251,7 +244,7 @@ ep_event_filter_desc_free (EventFilterDescriptor * filter_desc);
  * EventPipeProviderCallbackData.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
 struct _EventPipeProviderCallbackData {
 #else
 struct _EventPipeProviderCallbackData_Internal {
@@ -264,7 +257,7 @@ struct _EventPipeProviderCallbackData_Internal {
 	bool enabled;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
 struct _EventPipeProviderCallbackData {
 	uint8_t _internal [sizeof (struct _EventPipeProviderCallbackData_Internal)];
 };
@@ -314,7 +307,7 @@ ep_provider_callback_data_free (EventPipeProviderCallbackData *provider_callback
  * EventPipeProviderCallbackDataQueue.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
 struct _EventPipeProviderCallbackDataQueue {
 #else
 struct _EventPipeProviderCallbackDataQueue_Internal {
@@ -322,7 +315,7 @@ struct _EventPipeProviderCallbackDataQueue_Internal {
 	ep_rt_provider_callback_data_queue_t queue;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
 struct _EventPipeProviderCallbackDataQueue {
 	uint8_t _internal [sizeof (struct _EventPipeProviderCallbackDataQueue_Internal)];
 };
@@ -350,28 +343,28 @@ ep_provider_callback_data_queue_try_dequeue (
  * EventPipeProviderConfiguration.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
 struct _EventPipeProviderConfiguration {
 #else
 struct _EventPipeProviderConfiguration_Internal {
 #endif
 	const ep_char8_t *provider_name;
+	const ep_char8_t *filter_data;
 	uint64_t keywords;
 	EventPipeEventLevel logging_level;
-	const ep_char8_t *filter_data;
 };
 
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
 struct _EventPipeProviderConfiguration {
 	uint8_t _internal [sizeof (struct _EventPipeProviderConfiguration_Internal)];
 };
 #endif
 
 EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, const ep_char8_t *, provider_name)
+EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, const ep_char8_t *, filter_data)
 EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, uint64_t, keywords)
 EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, EventPipeEventLevel, logging_level)
-EP_DEFINE_GETTER(EventPipeProviderConfiguration *, provider_config, const ep_char8_t *, filter_data)
 
 EventPipeProviderConfiguration *
 ep_provider_config_init (
@@ -383,6 +376,52 @@ ep_provider_config_init (
 
 void
 ep_provider_config_fini (EventPipeProviderConfiguration *provider_config);
+
+/*
+ * EventPipeSystemTime.
+ */
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeSystemTime {
+#else
+struct _EventPipeSystemTime_Internal {
+#endif
+	uint16_t year;
+	uint16_t month;
+	uint16_t day_of_week;
+	uint16_t day;
+	uint16_t hour;
+	uint16_t minute;
+	uint16_t second;
+	uint16_t milliseconds;
+};
+
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EP_GETTER_SETTER)
+struct _EventPipeSystemTime {
+	uint8_t _internal [sizeof (struct _EventPipeSystemTime_Internal)];
+};
+#endif
+
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, year);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, month);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, day_of_week);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, day);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, hour);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, minute);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, second);
+EP_DEFINE_GETTER(EventPipeSystemTime *, system_time, uint16_t, milliseconds);
+
+void
+ep_system_time_set (
+	EventPipeSystemTime *system_time,
+	uint16_t year,
+	uint16_t month,
+	uint16_t day_of_week,
+	uint16_t day,
+	uint16_t hour,
+	uint16_t minute,
+	uint16_t second,
+	uint16_t milliseconds);
 
 #endif /* ENABLE_PERFTRACING */
 #endif /* __EVENTPIPE_TYPES_H__ */

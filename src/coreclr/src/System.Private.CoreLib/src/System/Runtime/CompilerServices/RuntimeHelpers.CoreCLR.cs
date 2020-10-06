@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -288,10 +287,47 @@ namespace System.Runtime.CompilerServices
         private static extern IntPtr AllocTailCallArgBuffer(int size, IntPtr gcDesc);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern void FreeTailCallArgBuffer();
-
-        [MethodImpl(MethodImplOptions.InternalCall)]
         private static unsafe extern TailCallTls* GetTailCallInfo(IntPtr retAddrSlot, IntPtr* retAddr);
+
+        private static unsafe void DispatchTailCalls(
+            IntPtr callersRetAddrSlot,
+            delegate*<IntPtr, IntPtr, IntPtr*, void> callTarget,
+            IntPtr retVal)
+        {
+            IntPtr callersRetAddr;
+            TailCallTls* tls = GetTailCallInfo(callersRetAddrSlot, &callersRetAddr);
+            PortableTailCallFrame* prevFrame = tls->Frame;
+            if (callersRetAddr == prevFrame->TailCallAwareReturnAddress)
+            {
+                prevFrame->NextCall = callTarget;
+                return;
+            }
+
+            PortableTailCallFrame newFrame;
+            newFrame.Prev = prevFrame;
+
+            try
+            {
+                tls->Frame = &newFrame;
+
+                do
+                {
+                    newFrame.NextCall = null;
+                    callTarget(tls->ArgBuffer, retVal, &newFrame.TailCallAwareReturnAddress);
+                    callTarget = newFrame.NextCall;
+                } while (callTarget != null);
+            }
+            finally
+            {
+                tls->Frame = prevFrame;
+
+                // If the arg buffer is reporting inst argument, it is safe to abandon it now
+                if (tls->ArgBuffer != IntPtr.Zero && *(int*)tls->ArgBuffer == 1 /* TAILCALLARGBUFFER_INSTARG_ONLY */)
+                {
+                    *(int*)tls->ArgBuffer = 2 /* TAILCALLARGBUFFER_ABANDONED */;
+                }
+            }
+        }
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern long GetILBytesJitted();
@@ -440,7 +476,7 @@ namespace System.Runtime.CompilerServices
     {
         public PortableTailCallFrame* Prev;
         public IntPtr TailCallAwareReturnAddress;
-        public IntPtr NextCall;
+        public delegate*<IntPtr, IntPtr, IntPtr*, void> NextCall;
     }
 
     [StructLayout(LayoutKind.Sequential)]
@@ -448,9 +484,6 @@ namespace System.Runtime.CompilerServices
     {
         public PortableTailCallFrame* Frame;
         public IntPtr ArgBuffer;
-        private IntPtr _argBufferSize;
-        private IntPtr _argBufferGCDesc;
-        private fixed byte _argBufferInline[64];
     }
 
 }

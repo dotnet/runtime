@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // CoreBindResult.h
@@ -41,7 +40,7 @@ public:
 
     BOOL Found();
     PEImage* GetPEImage();
-    BOOL IsMscorlib();
+    BOOL IsCoreLib();
     void GetBindAssembly(ICLRPrivAssembly** ppAssembly);
 #ifdef FEATURE_PREJIT
     BOOL HasNativeImage();

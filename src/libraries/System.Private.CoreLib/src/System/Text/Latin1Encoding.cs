@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -543,7 +542,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.bytes);
             }
 
-            return string.Create(bytes.Length, (encoding: this, bytes), (chars, args) =>
+            return string.Create(bytes.Length, (encoding: this, bytes), static (chars, args) =>
             {
                 Debug.Assert(chars.Length == args.bytes.Length);
 
@@ -578,7 +577,7 @@ namespace System.Text
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.bytes, ExceptionResource.ArgumentOutOfRange_IndexCountBuffer);
             }
 
-            return string.Create(count, (encoding: this, bytes, index), (chars, args) =>
+            return string.Create(count, (encoding: this, bytes, index), static (chars, args) =>
             {
                 fixed (byte* pBytes = args.bytes)
                 fixed (char* pChars = chars)

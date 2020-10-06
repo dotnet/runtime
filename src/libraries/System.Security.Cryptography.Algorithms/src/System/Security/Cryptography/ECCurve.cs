@@ -1,8 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
@@ -14,6 +14,7 @@ namespace System.Security.Cryptography
     /// which is either a prime curve or a characteristic-2 curve.
     /// </remarks>
     [DebuggerDisplay("ECCurve: {Oid}")]
+    [UnsupportedOSPlatform("browser")]
     public partial struct ECCurve
     {
         /// <summary>
@@ -70,14 +71,9 @@ namespace System.Security.Cryptography
         /// <summary>
         /// The Oid representing the named curve. Applies only to Named curves.
         /// </summary>
-        /// <remarks>A clone is returned, not the current instance.</remarks>
         public Oid Oid
         {
-            get
-            {
-                // Ensure _oid remains immutable
-                return new Oid(_oid.Value, _oid.FriendlyName);
-            }
+            get => _oid;
             private set
             {
                 if (value == null)
@@ -91,25 +87,16 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>
-        /// Create a curve without having to make a copy of the Oid
-        /// </summary>
-        private static ECCurve Create(Oid oid)
-        {
-            ECCurve curve = default;
-            curve.CurveType = ECCurveType.Named;
-            curve.Oid = oid;
-            return curve;
-        }
-
-        /// <summary>
         /// Create a curve from the given cref="Oid".
         /// </summary>
         /// <param name="curveOid">The Oid to use.</param>
         /// <returns>An ECCurve representing a named curve.</returns>
         public static ECCurve CreateFromOid(Oid curveOid)
         {
-            // Make a copy since Oid is mutable
-            return Create(new Oid(curveOid.Value, curveOid.FriendlyName));
+            ECCurve curve = default;
+            curve.CurveType = ECCurveType.Named;
+            curve.Oid = curveOid;
+            return curve;
         }
 
         /// <summary>
@@ -156,7 +143,7 @@ namespace System.Security.Cryptography
             }
 
             oid ??= new Oid(oidValue, oidFriendlyName);
-            return ECCurve.Create(oid);
+            return ECCurve.CreateFromOid(oid);
         }
 
         public bool IsPrime

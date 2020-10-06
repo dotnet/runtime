@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 
@@ -4602,17 +4601,8 @@ HCIMPLEND;
 //========================================================================
 
 /*********************************************************************/
-// JIT_UserBreakpoint
 // Called by the JIT whenever a cee_break instruction should be executed.
-// This ensures that enough info will be pushed onto the stack so that
-// we can continue from the exception w/o having special code elsewhere.
-// Body of function is written by debugger team
-// Args: None
 //
-// <TODO> make sure this actually gets called by all JITters</TODO>
-// Note: this code is duplicated in the ecall in VM\DebugDebugger:Break,
-// so propogate changes to there
-
 HCIMPL0(void, JIT_UserBreakpoint)
 {
     FCALL_CONTRACT;
@@ -4622,12 +4612,9 @@ HCIMPL0(void, JIT_UserBreakpoint)
 #ifdef DEBUGGING_SUPPORTED
     FrameWithCookie<DebuggerExitFrame> __def;
 
-    MethodDescCallSite breakCanThrow(METHOD__DEBUGGER__BREAK_CAN_THROW);
+    MethodDescCallSite debuggerBreak(METHOD__DEBUGGER__BREAK);
 
-    // Call Diagnostic.Debugger.BreakCanThrow instead. This will make us demand
-    // UnmanagedCode permission if debugger is not attached.
-    //
-    breakCanThrow.Call((ARG_SLOT*)NULL);
+    debuggerBreak.Call((ARG_SLOT*)NULL);
 
     __def.Pop();
 #else // !DEBUGGING_SUPPORTED
@@ -4649,7 +4636,6 @@ extern "C" void * _ReturnAddress(void);
 //  if (*pFlag != 0) call JIT_DbgIsJustMyCode
 // So this is only called if the flag (obtained by GetJMCFlagAddr) is
 // non-zero.
-// Body of this function is maintained by the debugger people.
 HCIMPL0(void, JIT_DbgIsJustMyCode)
 {
     FCALL_CONTRACT;
@@ -4946,7 +4932,7 @@ HCIMPLEND
 
 
 
-HCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
+FCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
 {
     FCALL_CONTRACT;
 
@@ -4955,7 +4941,7 @@ HCIMPL0(INT32, JIT_GetCurrentManagedThreadId)
     Thread * pThread = GetThread();
     return pThread->GetThreadId();
 }
-HCIMPLEND
+FCIMPLEND
 
 
 /*********************************************************************/
@@ -5206,7 +5192,7 @@ void JIT_Patchpoint(int* counter, int ilOffset)
             return;
         }
         
-        LONG newFlags = ppInfo->m_flags | PerPatchpointInfo::patchpoint_triggered;
+        LONG newFlags = oldFlags | PerPatchpointInfo::patchpoint_triggered;
         BOOL triggerTransition = InterlockedCompareExchange(&ppInfo->m_flags, newFlags, oldFlags) == oldFlags;
         
         if (!triggerTransition)
@@ -5238,8 +5224,8 @@ void JIT_Patchpoint(int* counter, int ilOffset)
         if (osrMethodCode == NULL)
         {
             // Unexpected, but not fatal
-            STRESS_LOG4(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint (0x%p) OSR method creation failed,"
-                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, hitCount, pMD, ilOffset);
+            STRESS_LOG3(LF_TIEREDCOMPILATION, LL_WARNING, "Jit_Patchpoint: patchpoint (0x%p) OSR method creation failed,"
+                " marking patchpoint invalid for Method=0x%pM il offset %d\n", ip, pMD, ilOffset);
             
             InterlockedOr(&ppInfo->m_flags, (LONG)PerPatchpointInfo::patchpoint_invalid);
             return;
@@ -5279,8 +5265,9 @@ void JIT_Patchpoint(int* counter, int ilOffset)
     if ((UINT_PTR)ip != GetIP(&frameContext))
     {
         // Should be fatal
-        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_INFO10, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
+        STRESS_LOG2(LF_TIEREDCOMPILATION, LL_FATALERROR, "Jit_Patchpoint: patchpoint (0x%p) TRANSITION"
             " unexpected context IP 0x%p\n", ip, GetIP(&frameContext));
+        EEPOLICY_HANDLE_FATAL_ERROR(COR_E_EXECUTIONENGINE);
     }
     
     // Now unwind back to the original method caller frame.

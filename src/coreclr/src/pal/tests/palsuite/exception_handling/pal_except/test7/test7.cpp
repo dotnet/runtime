@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -18,7 +17,7 @@
 #include <palsuite.h>
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_pal_except_test7_paltest_pal_except_test7, "exception_handling/pal_except/test7/paltest_pal_except_test7")
 {
     BOOL bTry = FALSE;
     BOOL bExcept = FALSE;

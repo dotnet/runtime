@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: OleVariant.h
 //
@@ -76,7 +75,7 @@ inline TypeHandle GetTypeHandleForCVType(CVTypes elemType)
     }
     CONTRACT_END;
 
-    RETURN TypeHandle(MscorlibBinder::GetClass(CVTypeToBinderClassID[elemType]));
+    RETURN TypeHandle(CoreLibBinder::GetClass(CVTypeToBinderClassID[elemType]));
 }
 
 // Use this very carefully.  There is not a direct mapping between
@@ -117,7 +116,7 @@ extern CVTypes CorElementTypeToCVTypes(CorElementType type);
 
 struct VariantData
 {
-    friend class MscorlibBinder;
+    friend class CoreLibBinder;
 
 public:
     static void NewVariant(VariantData * const& dest, const CVTypes type, INT64 data

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -43,6 +42,59 @@ namespace System.Net.Http.Functional.Tests
         }
 
         public HttpClientHandler_Authentication_Test(ITestOutputHelper output) : base(output) { }
+
+        [Theory]
+        [MemberData(nameof(Authentication_SocketsHttpHandler_TestData))]
+        public async Task SocketsHttpHandler_Authentication_Succeeds(string authenticateHeader, bool result)
+        {
+            await HttpClientHandler_Authentication_Succeeds(authenticateHeader, result);
+        }
+
+        public static IEnumerable<object[]> Authentication_SocketsHttpHandler_TestData()
+        {
+            // These test cases successfully authenticate on SocketsHttpHandler but fail on the other handlers.
+            // These are legal as per the RFC, so authenticating is the expected behavior.
+            // See https://github.com/dotnet/runtime/issues/25643 for details.
+            if (!IsWinHttpHandler)
+            {
+                // Unauthorized on WinHttpHandler
+                yield return new object[] {"Basic realm=\"testrealm1\" basic realm=\"testrealm1\"", true};
+                yield return new object[] {"Basic something digest something", true};
+            }
+            yield return new object[] { "Digest realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
+                                        "opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", true };
+            yield return new object[] { "dIgEsT realm=\"api@example.org\", qop=\"auth\", algorithm=MD5-sess, nonce=\"5TsQWLVdgBdmrQ0XsxbDODV+57QdFR34I9HAbC/RVvkK\", " +
+                                        "opaque=\"HRPCssKJSGjCrkzDg8OhwpzCiGPChXYjwrI2QmXDnsOS\", charset=UTF-8, userhash=true", true };
+
+            // These cases fail on WinHttpHandler because of a behavior in WinHttp that causes requests to be duplicated
+            // when the digest header has certain parameters. See https://github.com/dotnet/runtime/issues/25644 for details.
+            if (!IsWinHttpHandler)
+            {
+                // Timeouts on WinHttpHandler
+                yield return new object[] { "Digest ", false };
+                yield return new object[] { "Digest realm=\"testrealm\", nonce=\"testnonce\", algorithm=\"myown\"", false };
+            }
+
+            // These cases fail to authenticate on SocketsHttpHandler, but succeed on the other handlers.
+            // they are all invalid as per the RFC, so failing is the expected behavior. See https://github.com/dotnet/runtime/issues/25645 for details.
+            if (!IsWinHttpHandler)
+            {
+                // Timeouts on WinHttpHandler
+                yield return new object[] {"Digest realm=withoutquotes, nonce=withoutquotes", false};
+            }
+            yield return new object[] { "Digest realm=\"testrealm\" nonce=\"testnonce\"", false };
+            yield return new object[] { "Digest realm=\"testrealm1\", nonce=\"testnonce1\" Digest realm=\"testrealm2\", nonce=\"testnonce2\"", false };
+
+            // These tests check that the algorithm parameter is treated in case insensitive way.
+            // WinHTTP only supports plain MD5, so other algorithms are included here.
+            yield return new object[] { $"Digest realm=\"testrealm\", algorithm=md5-Sess, nonce=\"testnonce\", qop=\"auth\"", true };
+            if (!IsWinHttpHandler)
+            {
+                // Unauthorized on WinHttpHandler
+                yield return new object[] { $"Digest realm=\"testrealm\", algorithm=sha-256, nonce=\"testnonce\"", true };
+                yield return new object[] { $"Digest realm=\"testrealm\", algorithm=sha-256-SESS, nonce=\"testnonce\", qop=\"auth\"", true };
+            }
+        }
 
         [Theory]
         [MemberData(nameof(Authentication_TestData))]
@@ -568,7 +620,7 @@ namespace System.Net.Http.Functional.Tests
                 _output.WriteLine(request.RequestUri.AbsoluteUri.ToString());
                 _output.WriteLine($"Host: {request.Headers.Host}");
 
-                using (HttpResponseMessage response = await client.SendAsync(request))
+                using (HttpResponseMessage response = await client.SendAsync(TestAsync, request))
                 {
                     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                     string body = await response.Content.ReadAsStringAsync();
@@ -602,12 +654,11 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Negotiate")]
         public async Task Credentials_ServerChallengesWithWindowsAuth_ClientSendsWindowsAuthHeader(string authScheme)
         {
-#if WINHTTPHANDLER_TEST
-            if (UseVersion > HttpVersion.Version11)
+            if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
-                throw new SkipTestException($"Test doesn't support {UseVersion} protocol.");
+                return;
             }
-#endif
+
             await LoopbackServerFactory.CreateClientAndServerAsync(
                 async uri =>
                 {

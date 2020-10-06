@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Linq;
@@ -787,7 +786,7 @@ namespace System.Dynamic.Utils
 
         public static Type? FindGenericType(Type definition, Type? type)
         {
-            while ((object?)type != null && type != typeof(object))
+            while (type is not null && type != typeof(object))
             {
                 if (type.IsConstructedGenericType && AreEquivalent(type.GetGenericTypeDefinition(), definition))
                 {

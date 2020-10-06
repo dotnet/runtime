@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -30,6 +29,7 @@ namespace ILCompiler
         private ReadyToRunMethodLayoutAlgorithm _r2rMethodLayoutAlgorithm;
         private ReadyToRunFileLayoutAlgorithm _r2rFileLayoutAlgorithm;
         private int? _customPESectionAlignment;
+        private bool _verifyTypeAndFieldLayout;
 
         private string _jitPath;
         private string _outputFile;
@@ -72,6 +72,9 @@ namespace ILCompiler
 
                 builder.Add(new KeyValuePair<string, string>(name, value));
             }
+
+            // As we always use an AltJit to compile, tell the jit to always generate code
+            builder.Add(new KeyValuePair<string, string>("AltJitNgen", "*"));
 
             _ryujitOptions = builder.ToArray();
 
@@ -147,6 +150,12 @@ namespace ILCompiler
         public ReadyToRunCodegenCompilationBuilder UseCustomPESectionAlignment(int? customPESectionAlignment)
         {
             _customPESectionAlignment = customPESectionAlignment;
+            return this;
+        }
+
+        public ReadyToRunCodegenCompilationBuilder UseVerifyTypeAndFieldLayout(bool verifyTypeAndFieldLayout)
+        {
+            _verifyTypeAndFieldLayout = verifyTypeAndFieldLayout;
             return this;
         }
 
@@ -238,7 +247,8 @@ namespace ILCompiler
                 _profileData,
                 _r2rMethodLayoutAlgorithm,
                 _r2rFileLayoutAlgorithm,
-                _customPESectionAlignment);
+                _customPESectionAlignment,
+                _verifyTypeAndFieldLayout);
         }
     }
 }

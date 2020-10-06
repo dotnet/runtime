@@ -1,7 +1,6 @@
 /*
  * Licensed to the .NET Foundation under one or more agreements.
  * The .NET Foundation licenses this file to you under the MIT license.
- * See the LICENSE file in the project root for more information.
  */
 
 #include "mini-runtime.h"
@@ -78,9 +77,9 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 gpointer
 mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type,
-                                      MonoDomain *domain, guint32 *code_len)
+                                      MonoMemoryManager *mem_manager, guint32 *code_len)
 {
-	guint8 *buf = mono_domain_code_reserve (domain, 64), *code = buf;
+	guint8 *buf = mono_mem_manager_code_reserve (mem_manager, 64), *code = buf;
 	guint8 *tramp = mono_get_trampoline_code (tramp_type);
 
 	// Pass the argument in scratch t0.
@@ -99,7 +98,9 @@ mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_ty
 gpointer
 mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
-	guint8 *buf = mono_domain_code_reserve (mono_domain_get (), 64), *code = buf;
+	MonoDomain *domain = mono_domain_get ();
+	MonoMemoryManager *mem_manager = m_method_get_mem_manager (domain, m);
+	guint8 *buf = mono_mem_manager_code_reserve (mem_manager, 64), *code = buf;
 
 	// Pass the argument in a0.
 	code = mono_riscv_emit_imm (code, RISCV_A0, sizeof (MonoObject));
@@ -121,9 +122,10 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain,
 }
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer arg, gpointer addr)
 {
-	guint8 *buf = mono_domain_code_reserve (mono_domain_get (), 64), *code = buf;
+	MonoDomain *domain = mono_domain_get ();
+	guint8 *buf = mono_mem_manager_code_reserve (mem_manager, 64), *code = buf;
 
 	// Pass the argument in the RGCTX register.
 	code = mono_riscv_emit_imm (code, MONO_ARCH_RGCTX_REG, (gsize) arg);
@@ -234,7 +236,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 
 gpointer
 mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type,
-                                      MonoDomain *domain, guint32 *code_len)
+                                      MonoMemoryManager *mem_manager, guint32 *code_len)
 {
 	g_assert_not_reached ();
 	return NULL;
@@ -257,7 +259,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain,
 }
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer arg, gpointer addr)
 {
 	g_assert_not_reached ();
 	return NULL;

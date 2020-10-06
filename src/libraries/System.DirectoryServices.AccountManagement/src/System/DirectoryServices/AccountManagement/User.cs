@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -42,7 +41,7 @@ namespace System.DirectoryServices.AccountManagement
         //
 
         // GivenName
-        private string _givenName = null;        // the actual property value
+        private string _givenName;        // the actual property value
         private LoadState _givenNameChanged = LoadState.NotSet;   // change-tracking
 
         public string GivenName
@@ -63,7 +62,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // MiddleName
-        private string _middleName = null;        // the actual property value
+        private string _middleName;        // the actual property value
         private LoadState _middleNameChanged = LoadState.NotSet;   // change-tracking
 
         public string MiddleName
@@ -84,7 +83,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Surname
-        private string _surname = null;        // the actual property value
+        private string _surname;        // the actual property value
         private LoadState _surnameChanged = LoadState.NotSet;   // change-tracking
 
         public string Surname
@@ -105,7 +104,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // EmailAddress
-        private string _emailAddress = null;        // the actual property value
+        private string _emailAddress;        // the actual property value
         private LoadState _emailAddressChanged = LoadState.NotSet;   // change-tracking
 
         public string EmailAddress
@@ -126,7 +125,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // VoiceTelephoneNumber
-        private string _voiceTelephoneNumber = null;        // the actual property value
+        private string _voiceTelephoneNumber;        // the actual property value
         private LoadState _voiceTelephoneNumberChanged = LoadState.NotSet;   // change-tracking
 
         public string VoiceTelephoneNumber
@@ -147,7 +146,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // EmployeeId
-        private string _employeeID = null;        // the actual property value
+        private string _employeeID;        // the actual property value
         private LoadState _employeeIDChanged = LoadState.NotSet;   // change-tracking
 
         public string EmployeeId

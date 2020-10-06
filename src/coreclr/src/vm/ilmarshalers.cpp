@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: ILMarshalers.cpp
 //
@@ -20,7 +19,7 @@ LocalDesc ILReflectionObjectMarshaler::GetManagedType()
 {
     STANDARD_VM_CONTRACT;
 
-    return LocalDesc(MscorlibBinder::GetClass(GetManagedTypeBinderID()));
+    return LocalDesc(CoreLibBinder::GetClass(GetManagedTypeBinderID()));
 }
 
 LocalDesc ILReflectionObjectMarshaler::GetNativeType()
@@ -34,7 +33,7 @@ void ILReflectionObjectMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* p
 {
     STANDARD_VM_CONTRACT;
 
-    int tokObject__m_handle = pslILEmit->GetToken(MscorlibBinder::GetField(GetObjectFieldID()));
+    int tokObject__m_handle = pslILEmit->GetToken(CoreLibBinder::GetField(GetObjectFieldID()));
     int tokStruct__m_object = 0;
     BinderFieldID structField = GetStructureFieldID();
 
@@ -42,7 +41,7 @@ void ILReflectionObjectMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* p
     // marshaling a struct referring to an object containing a handle.
     if (structField != 0)
     {
-        tokStruct__m_object = pslILEmit->GetToken(MscorlibBinder::GetField(structField));
+        tokStruct__m_object = pslILEmit->GetToken(CoreLibBinder::GetField(structField));
     }
 
     ILCodeLabel* pNullLabel = pslILEmit->NewCodeLabel();
@@ -380,7 +379,7 @@ void ILWSTRMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
     LocalDesc locDesc = GetManagedType();
     locDesc.MakePinned();
     DWORD dwPinnedLocal = pslILEmit->NewLocal(locDesc);
-    int fieldDef = pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__STRING__M_FIRST_CHAR));
+    int fieldDef = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__STRING__M_FIRST_CHAR));
     ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
 
     pslILEmit->EmitLoadNullPtr();
@@ -510,7 +509,7 @@ void ILOptimizedAllocMarshaler::EmitClearNative(ILCodeStream* pslILEmit)
 LocalDesc ILUTF8BufferMarshaler::GetManagedType()
 {
     STANDARD_VM_CONTRACT;
-    return LocalDesc(MscorlibBinder::GetClass(CLASS__STRING_BUILDER));
+    return LocalDesc(CoreLibBinder::GetClass(CLASS__STRING_BUILDER));
 }
 
 void ILUTF8BufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
@@ -660,7 +659,7 @@ LocalDesc ILWSTRBufferMarshaler::GetManagedType()
 {
     STANDARD_VM_CONTRACT;
 
-    return LocalDesc(MscorlibBinder::GetClass(CLASS__STRING_BUILDER));
+    return LocalDesc(CoreLibBinder::GetClass(CLASS__STRING_BUILDER));
 }
 
 void ILWSTRBufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
@@ -861,7 +860,7 @@ LocalDesc ILCSTRBufferMarshaler::GetManagedType()
 {
     STANDARD_VM_CONTRACT;
 
-    return LocalDesc(MscorlibBinder::GetClass(CLASS__STRING_BUILDER));
+    return LocalDesc(CoreLibBinder::GetClass(CLASS__STRING_BUILDER));
 }
 
 void ILCSTRBufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
@@ -886,7 +885,7 @@ void ILCSTRBufferMarshaler::EmitConvertSpaceCLRToNative(ILCodeStream* pslILEmit)
 
     // stack: capacity
 
-    pslILEmit->EmitLDSFLD(pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__MARSHAL__SYSTEM_MAX_DBCS_CHAR_SIZE)));
+    pslILEmit->EmitLDSFLD(pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__MARSHAL__SYSTEM_MAX_DBCS_CHAR_SIZE)));
     pslILEmit->EmitMUL_OVF();
 
     // stack: capacity_in_bytes
@@ -1142,7 +1141,7 @@ LocalDesc ILObjectMarshaler::GetNativeType()
 {
     STANDARD_VM_CONTRACT;
 
-    return LocalDesc(TypeHandle(MscorlibBinder::GetClass(CLASS__NATIVEVARIANT)));
+    return LocalDesc(TypeHandle(CoreLibBinder::GetClass(CLASS__NATIVEVARIANT)));
 }
 
 LocalDesc ILObjectMarshaler::GetManagedType()
@@ -1239,7 +1238,7 @@ LocalDesc ILDateMarshaler::GetManagedType()
 {
     STANDARD_VM_CONTRACT;
 
-    return LocalDesc(MscorlibBinder::GetClass(CLASS__DATE_TIME));
+    return LocalDesc(CoreLibBinder::GetClass(CLASS__DATE_TIME));
 }
 
 void ILDateMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
@@ -1280,14 +1279,14 @@ LocalDesc ILCurrencyMarshaler::GetNativeType()
 {
     STANDARD_VM_CONTRACT;
 
-    return LocalDesc(TypeHandle(MscorlibBinder::GetClass(CLASS__CURRENCY)));
+    return LocalDesc(TypeHandle(CoreLibBinder::GetClass(CLASS__CURRENCY)));
 }
 
 LocalDesc ILCurrencyMarshaler::GetManagedType()
 {
     STANDARD_VM_CONTRACT;
 
-    return LocalDesc(TypeHandle(MscorlibBinder::GetClass(CLASS__DECIMAL)));
+    return LocalDesc(TypeHandle(CoreLibBinder::GetClass(CLASS__DECIMAL)));
 }
 
 
@@ -1296,7 +1295,7 @@ void ILCurrencyMarshaler::EmitReInitNative(ILCodeStream* pslILEmit)
     STANDARD_VM_CONTRACT;
 
     EmitLoadNativeHomeAddr(pslILEmit);
-    pslILEmit->EmitINITOBJ(pslILEmit->GetToken(TypeHandle(MscorlibBinder::GetClass(CLASS__CURRENCY))));
+    pslILEmit->EmitINITOBJ(pslILEmit->GetToken(TypeHandle(CoreLibBinder::GetClass(CLASS__CURRENCY))));
 }
 
 void ILCurrencyMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
@@ -2076,7 +2075,7 @@ void ILCSTRMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslILEmit)
         pslILEmit->EmitADD();
 
         // (String.Length + 2) * GetMaxDBCSCharByteSize()
-        pslILEmit->EmitLDSFLD(pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__MARSHAL__SYSTEM_MAX_DBCS_CHAR_SIZE)));
+        pslILEmit->EmitLDSFLD(pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__MARSHAL__SYSTEM_MAX_DBCS_CHAR_SIZE)));
         pslILEmit->EmitMUL_OVF();
 
         // BufSize = (String.Length + 2) * GetMaxDBCSCharByteSize()
@@ -2337,7 +2336,7 @@ void ILBlittablePtrMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* pslIL
 
     ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
     UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
-    int fieldDef = pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
+    int fieldDef = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
@@ -2359,7 +2358,7 @@ void ILBlittablePtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslIL
 
     ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
     UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
-    int fieldDef = pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
+    int fieldDef = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(pNullRefLabel);
@@ -2375,20 +2374,14 @@ void ILBlittablePtrMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslIL
     pslILEmit->EmitLabel(pNullRefLabel);
 }
 
-bool ILBlittablePtrMarshaler::CanUsePinnedLayoutClass()
+bool ILBlittablePtrMarshaler::CanMarshalViaPinning()
 {
     return IsCLRToNative(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags) && !IsFieldMarshal(m_dwMarshalFlags);
 }
 
-void ILBlittablePtrMarshaler::EmitConvertSpaceAndContentsCLRToNativeTemp(ILCodeStream* pslILEmit)
+void ILBlittablePtrMarshaler::EmitMarshalViaPinning(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
-
-    if (!CanUsePinnedLayoutClass())
-    {
-        ILLayoutClassPtrMarshalerBase::EmitConvertSpaceAndContentsCLRToNativeTemp(pslILEmit);
-        return;
-    }
 
     ILCodeLabel* pSkipAddLabel = pslILEmit->NewCodeLabel();
     LocalDesc managedTypePinned = GetManagedType();
@@ -2485,7 +2478,7 @@ void ILBlittableLayoutClassMarshaler::EmitConvertContentsCLRToNative(ILCodeStrea
 
     ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
     UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
-    int fieldDef = pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
+    int fieldDef = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     EmitLoadNativeHomeAddr(pslILEmit);
     pslILEmit->EmitLDC(0);
@@ -2511,7 +2504,7 @@ void ILBlittableLayoutClassMarshaler::EmitConvertContentsNativeToCLR(ILCodeStrea
     STANDARD_VM_CONTRACT;
 
     UINT uNativeSize = m_pargs->m_pMT->GetNativeSize();
-    int fieldDef = pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__RAW_DATA__DATA));
+    int fieldDef = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__RAW_DATA__DATA));
 
     pslILEmit->EmitLDTOKEN(pslILEmit->GetToken(m_pargs->m_pMT));
     pslILEmit->EmitCALL(METHOD__TYPE__GET_TYPE_FROM_HANDLE, 1, 1);
@@ -2557,11 +2550,11 @@ MarshalerOverrideStatus ILHandleRefMarshaler::ArgumentOverride(NDirectStubLinker
 
         // HandleRefs are valuetypes, so pinning is not needed.
         // The argument address is on the stack and will not move.
-        mdFieldDef handleField = pcsDispatch->GetToken(MscorlibBinder::GetField(FIELD__HANDLE_REF__HANDLE));
+        mdFieldDef handleField = pcsDispatch->GetToken(CoreLibBinder::GetField(FIELD__HANDLE_REF__HANDLE));
         pcsDispatch->EmitLDARG(argidx);
         pcsDispatch->EmitLDFLD(handleField);
 
-        mdFieldDef wrapperField = pcsUnmarshal->GetToken(MscorlibBinder::GetField(FIELD__HANDLE_REF__WRAPPER));
+        mdFieldDef wrapperField = pcsUnmarshal->GetToken(CoreLibBinder::GetField(FIELD__HANDLE_REF__WRAPPER));
         pcsUnmarshal->EmitLDARG(argidx);
         pcsUnmarshal->EmitLDFLD(wrapperField);
         pcsUnmarshal->EmitCALL(METHOD__GC__KEEP_ALIVE, 1, 0);
@@ -2613,7 +2606,7 @@ void ILSafeHandleMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* pslILEm
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(failureLabel);
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitLDFLD(pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__SAFE_HANDLE__HANDLE)));
+    pslILEmit->EmitLDFLD(pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__SAFE_HANDLE__HANDLE)));
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitBEQ(successLabel);
     pslILEmit->EmitLabel(failureLabel);
@@ -2666,7 +2659,7 @@ MarshalerOverrideStatus ILSafeHandleMarshaler::ArgumentOverride(NDirectStubLinke
 
             // Grab the token for the native handle field embedded inside the SafeHandle. We'll be using it to direct access the
             // native handle later.
-            mdToken tkNativeHandleField = pslIL->GetToken(MscorlibBinder::GetField(FIELD__SAFE_HANDLE__HANDLE));
+            mdToken tkNativeHandleField = pslIL->GetToken(CoreLibBinder::GetField(FIELD__SAFE_HANDLE__HANDLE));
 
             // The high level logic (note that the parameter may be in, out or both):
             // 1) If this is an input parameter we need to AddRef the SafeHandle and schedule a Release cleanup item.
@@ -2890,7 +2883,7 @@ ILSafeHandleMarshaler::ReturnOverride(
     pslIL->EmitNEWOBJ(pslIL->GetToken(pMDCtor), 0);
     pslIL->EmitSTLOC(dwReturnHandleLocal);
 
-    mdToken tkNativeHandleField = pslPostIL->GetToken(MscorlibBinder::GetField(FIELD__SAFE_HANDLE__HANDLE));
+    mdToken tkNativeHandleField = pslPostIL->GetToken(CoreLibBinder::GetField(FIELD__SAFE_HANDLE__HANDLE));
 
     // 3) create local to hold returned handle
     DWORD dwReturnNativeHandleLocal = pslIL->NewLocal(ELEMENT_TYPE_I);
@@ -2955,7 +2948,7 @@ void ILCriticalHandleMarshaler::EmitConvertContentsCLRToNative(ILCodeStream* psl
     _ASSERTE(IsFieldMarshal(m_dwMarshalFlags));
 
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitLDFLD(pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__CRITICAL_HANDLE__HANDLE)));
+    pslILEmit->EmitLDFLD(pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__CRITICAL_HANDLE__HANDLE)));
     EmitStoreNativeValue(pslILEmit);
 }
 
@@ -2969,7 +2962,7 @@ void ILCriticalHandleMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* psl
     EmitLoadManagedValue(pslILEmit);
     pslILEmit->EmitBRFALSE(failureLabel);
     EmitLoadManagedValue(pslILEmit);
-    pslILEmit->EmitLDFLD(pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__CRITICAL_HANDLE__HANDLE)));
+    pslILEmit->EmitLDFLD(pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__CRITICAL_HANDLE__HANDLE)));
     EmitLoadNativeValue(pslILEmit);
     pslILEmit->EmitBEQ(successLabel);
     pslILEmit->EmitLabel(failureLabel);
@@ -3007,7 +3000,7 @@ MarshalerOverrideStatus ILCriticalHandleMarshaler::ArgumentOverride(NDirectStubL
 
         // Grab the token for the native handle field embedded inside the CriticalHandle. We'll be using it to direct access
         // the native handle later.
-        mdToken tkNativeHandleField = pslIL->GetToken(MscorlibBinder::GetField(FIELD__CRITICAL_HANDLE__HANDLE));
+        mdToken tkNativeHandleField = pslIL->GetToken(CoreLibBinder::GetField(FIELD__CRITICAL_HANDLE__HANDLE));
 
         if (byref)
         {
@@ -3225,7 +3218,7 @@ ILCriticalHandleMarshaler::ReturnOverride(
     pslIL->EmitNEWOBJ(pslIL->GetToken(pMDCtor), 0);
     pslIL->EmitSTLOC(dwReturnHandleLocal);
 
-    mdToken tkNativeHandleField = pslPostIL->GetToken(MscorlibBinder::GetField(FIELD__CRITICAL_HANDLE__HANDLE));
+    mdToken tkNativeHandleField = pslPostIL->GetToken(CoreLibBinder::GetField(FIELD__CRITICAL_HANDLE__HANDLE));
 
     // 3) create local to hold returned handle
     DWORD dwReturnNativeHandleLocal = pslIL->NewLocal(ELEMENT_TYPE_I);
@@ -3383,7 +3376,7 @@ LocalDesc ILArgIteratorMarshaler::GetManagedType()
 {
     STANDARD_VM_CONTRACT;
 
-    return LocalDesc(MscorlibBinder::GetClass(CLASS__ARG_ITERATOR));
+    return LocalDesc(CoreLibBinder::GetClass(CLASS__ARG_ITERATOR));
 }
 
 bool ILArgIteratorMarshaler::SupportsArgumentMarshal(DWORD dwMarshalFlags, UINT* pErrorResID)
@@ -3439,7 +3432,7 @@ LocalDesc ILArrayWithOffsetMarshaler::GetManagedType()
 {
     STANDARD_VM_CONTRACT;
 
-    return LocalDesc(MscorlibBinder::GetClass(CLASS__ARRAY_WITH_OFFSET));
+    return LocalDesc(CoreLibBinder::GetClass(CLASS__ARRAY_WITH_OFFSET));
 }
 
 bool ILArrayWithOffsetMarshaler::SupportsArgumentMarshal(DWORD dwMarshalFlags, UINT* pErrorResID)
@@ -3468,8 +3461,8 @@ void ILArrayWithOffsetMarshaler::EmitConvertSpaceAndContentsCLRToNativeTemp(ILCo
     }
     CONTRACTL_END;
 
-    int tokArrayWithOffset_m_array = pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__ARRAY_WITH_OFFSET__M_ARRAY));
-    int tokArrayWithOffset_m_count = pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__ARRAY_WITH_OFFSET__M_COUNT));
+    int tokArrayWithOffset_m_array = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__ARRAY_WITH_OFFSET__M_ARRAY));
+    int tokArrayWithOffset_m_count = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__ARRAY_WITH_OFFSET__M_COUNT));
 
     ILCodeLabel* pNonNullLabel = pslILEmit->NewCodeLabel();
     ILCodeLabel* pSlowAllocPathLabel = pslILEmit->NewCodeLabel();
@@ -3514,7 +3507,7 @@ void ILArrayWithOffsetMarshaler::EmitConvertSpaceAndContentsCLRToNativeTemp(ILCo
     // Convert the contents
     //
 
-    int tokArrayWithOffset_m_offset = pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__ARRAY_WITH_OFFSET__M_OFFSET));
+    int tokArrayWithOffset_m_offset = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__ARRAY_WITH_OFFSET__M_OFFSET));
 
     ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
 
@@ -3567,7 +3560,7 @@ void ILArrayWithOffsetMarshaler::EmitConvertContentsNativeToCLR(ILCodeStream* ps
     }
     CONTRACTL_END;
 
-    int tokArrayWithOffset_m_array = pslILEmit->GetToken(MscorlibBinder::GetField(FIELD__ARRAY_WITH_OFFSET__M_ARRAY));
+    int tokArrayWithOffset_m_array = pslILEmit->GetToken(CoreLibBinder::GetField(FIELD__ARRAY_WITH_OFFSET__M_ARRAY));
 
     ILCodeLabel* pNullRefLabel = pslILEmit->NewCodeLabel();
 
@@ -3662,11 +3655,12 @@ void ILAsAnyMarshalerBase::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
     }
     CONTRACTL_END;
 
-    LocalDesc marshalerType(MscorlibBinder::GetClass(CLASS__ASANY_MARSHALER));
+    LocalDesc marshalerType(CoreLibBinder::GetClass(CLASS__ASANY_MARSHALER));
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(marshalerType);
     DWORD dwTmpLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    pslILEmit->EmitLDC(sizeof(MngdNativeArrayMarshaler));
+    _ASSERTE(sizeof(MngdNativeArrayMarshaler) == sizeof(void*) * 3 + 16);
+    pslILEmit->EmitLDC(TARGET_POINTER_SIZE * 3 + 16); // sizeof(MngdNativeArrayMarshaler)
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(dwTmpLocalNum);
 
@@ -3763,7 +3757,8 @@ void ILNativeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    pslILEmit->EmitLDC(sizeof(MngdNativeArrayMarshaler));
+    _ASSERTE(sizeof(MngdNativeArrayMarshaler) == sizeof(void*) * 3 + 16);
+    pslILEmit->EmitLDC(TARGET_POINTER_SIZE * 3 + 16); // sizeof(MngdNativeArrayMarshaler)
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
 
@@ -4379,7 +4374,8 @@ void ILFixedArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    pslILEmit->EmitLDC(sizeof(MngdFixedArrayMarshaler));
+    _ASSERTE(sizeof(MngdFixedArrayMarshaler) == sizeof(void*) * 4 + 16);
+    pslILEmit->EmitLDC(TARGET_POINTER_SIZE * 4 + 16); // sizeof(MngdFixedArrayMarshaler)
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
 
@@ -4606,7 +4602,8 @@ void ILSafeArrayMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit)
 
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    pslILEmit->EmitLDC(sizeof(MngdSafeArrayMarshaler));
+    _ASSERTE(sizeof(MngdSafeArrayMarshaler) == sizeof(void*) * 2 + 8);
+    pslILEmit->EmitLDC(TARGET_POINTER_SIZE * 2 + 8); // sizeof(MngdSafeArrayMarshaler)
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
 
@@ -4902,7 +4899,8 @@ void ILReferenceCustomMarshaler::EmitCreateMngdMarshaler(ILCodeStream* pslILEmit
 
     m_dwMngdMarshalerLocalNum = pslILEmit->NewLocal(ELEMENT_TYPE_I);
 
-    pslILEmit->EmitLDC(sizeof(MngdRefCustomMarshaler));
+    _ASSERTE(sizeof(MngdRefCustomMarshaler) == sizeof(void*));
+    pslILEmit->EmitLDC(TARGET_POINTER_SIZE); // sizeof(MngdRefCustomMarshaler)
     pslILEmit->EmitLOCALLOC();
     pslILEmit->EmitSTLOC(m_dwMngdMarshalerLocalNum);
 

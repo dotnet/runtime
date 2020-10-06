@@ -299,15 +299,26 @@ if(CLR_CMAKE_HOST_UNIX)
         list(APPEND libunwind_setjmp_la_SOURCES     x86_64/longjmp.S x86_64/siglongjmp.SA)
     endif()
 
-    add_library(libunwind
-      OBJECT
-      ${libunwind_la_SOURCES}
-      ${libunwind_remote_la_SOURCES}
-      ${libunwind_dwarf_local_la_SOURCES}
-      ${libunwind_dwarf_common_la_SOURCES}
-      ${libunwind_dwarf_generic_la_SOURCES}
-      ${libunwind_elf_la_SOURCES}
-    )
+    if(CLR_CMAKE_HOST_OSX)
+        add_library(libunwind_dac
+          OBJECT
+          ../../libunwind_mac/src/missing-functions.c
+          ${libunwind_remote_la_SOURCES}
+          ${libunwind_dwarf_common_la_SOURCES}
+          ${libunwind_dwarf_generic_la_SOURCES}
+        )
+    else()
+        add_library(libunwind
+          OBJECT
+          ${libunwind_la_SOURCES}
+          ${libunwind_remote_la_SOURCES}
+          ${libunwind_dwarf_local_la_SOURCES}
+          ${libunwind_dwarf_common_la_SOURCES}
+          ${libunwind_dwarf_generic_la_SOURCES}
+          ${libunwind_elf_la_SOURCES}
+        )
+    endif(CLR_CMAKE_HOST_OSX)
+
 else(CLR_CMAKE_HOST_UNIX)
     if(CLR_CMAKE_TARGET_ARCH_ARM64)
         SET(libunwind_la_SOURCES                    ${libunwind_la_SOURCES_aarch64})
@@ -332,11 +343,10 @@ else(CLR_CMAKE_HOST_UNIX)
     endif()
 
     set_source_files_properties(${CLR_DIR}/src/pal/src/exception/remote-unwind.cpp PROPERTIES COMPILE_FLAGS /TP INCLUDE_DIRECTORIES ${CLR_DIR}/src/inc)
-    set_source_files_properties(${CLR_DIR}/src/pal/src/exception/seh-unwind.cpp PROPERTIES COMPILE_FLAGS /TP INCLUDE_DIRECTORIES ${CLR_DIR}/src/inc)
+
     add_library(libunwind_xdac
       OBJECT
       ../../exception/remote-unwind.cpp
-      ../../exception/seh-unwind.cpp
       win/pal-single-threaded.c
       # ${libunwind_la_SOURCES}  Local...
       ${libunwind_remote_la_SOURCES}
@@ -348,4 +358,3 @@ else(CLR_CMAKE_HOST_UNIX)
       ${libunwind_elf_la_SOURCES}
     )
 endif(CLR_CMAKE_HOST_UNIX)
-

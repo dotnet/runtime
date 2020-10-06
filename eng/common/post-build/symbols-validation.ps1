@@ -24,7 +24,7 @@ $CountMissingSymbols = {
   # Ensure input file exist
   if (!(Test-Path $PackagePath)) {
     Write-PipelineTaskError "Input file does not exist: $PackagePath"
-    return 1
+    return -2
   }
   
   # Extensions for which we'll look for symbols
@@ -44,7 +44,10 @@ $CountMissingSymbols = {
   catch {
     Write-Host "Something went wrong extracting $PackagePath"
     Write-Host $_
-    return -1
+    return [pscustomobject]@{
+      result = -1
+      packagePath = $PackagePath
+    }
   }
 
   Get-ChildItem -Recurse $ExtractPath |
@@ -138,15 +141,28 @@ $CountMissingSymbols = {
   if ($using:Clean) {
     Remove-Item $ExtractPath -Recurse -Force
   }
-
-  if ($MissingSymbols -ne 0)
-  {
-    Write-PipelineTelemetryError -Category 'CheckSymbols' -Message "Missing symbols for $MissingSymbols modules in the package $FileName"
-  }
   
   Pop-Location
 
-  return $MissingSymbols
+  return [pscustomobject]@{
+      result = $MissingSymbols
+      packagePath = $PackagePath
+    }
+}
+
+function CheckJobResult(
+    $result, 
+    $packagePath,
+    [ref]$DupedSymbols,
+    [ref]$TotalFailures) {
+  if ($result -eq '-1') {
+    Write-PipelineTelemetryError -Category 'CheckSymbols' -Message "$packagePath has duplicated symbol files"
+    $DupedSymbols.Value++
+  } 
+  elseif ($jobResult.result -ne '0') {
+    Write-PipelineTelemetryError -Category 'CheckSymbols' -Message "Missing symbols for $result modules in the package $packagePath"
+    $TotalFailures.Value++
+  }
 }
 
 function CheckSymbolsAvailable {
@@ -155,6 +171,7 @@ function CheckSymbolsAvailable {
   }
 
   $TotalFailures = 0
+  $DupedSymbols = 0
 
   Get-ChildItem "$InputPath\*.nupkg" |
     ForEach-Object {
@@ -180,7 +197,6 @@ function CheckSymbolsAvailable {
       Start-Job -ScriptBlock $CountMissingSymbols -ArgumentList $FullName | Out-Null
 
       $NumJobs = @(Get-Job -State 'Running').Count
-      Write-Host $NumJobs
 
       while ($NumJobs -ge $MaxParallelJobs) {
         Write-Host "There are $NumJobs validation jobs running right now. Waiting $SecondsBetweenLoadChecks seconds to check again."
@@ -190,9 +206,7 @@ function CheckSymbolsAvailable {
 
       foreach ($Job in @(Get-Job -State 'Completed')) {
         $jobResult = Wait-Job -Id $Job.Id | Receive-Job
-        if ($jobResult -ne '0') {
-          $TotalFailures++
-        }
+        CheckJobResult $jobResult.result $jobResult.packagePath ([ref]$DupedSymbols) ([ref]$TotalFailures)
         Remove-Job -Id $Job.Id
       }
       Write-Host
@@ -200,14 +214,18 @@ function CheckSymbolsAvailable {
 
   foreach ($Job in @(Get-Job)) {
     $jobResult = Wait-Job -Id $Job.Id | Receive-Job
-
-    if ($jobResult -ne '0') {
-      $TotalFailures++
-    }
+    CheckJobResult $jobResult.result $jobResult.packagePath ([ref]$DupedSymbols) ([ref]$TotalFailures)
   }
 
-  if ($TotalFailures -gt 0) {
-    Write-PipelineTelemetryError -Category 'CheckSymbols' -Message "Symbols missing for $TotalFailures packages"
+  if ($TotalFailures -gt 0 -or $DupedSymbols -gt 0) {
+    if ($TotalFailures -gt 0) {
+      Write-PipelineTelemetryError -Category 'CheckSymbols' -Message "Symbols missing for $TotalFailures packages"
+    }
+
+    if ($DupedSymbols -gt 0) {
+      Write-PipelineTelemetryError -Category 'CheckSymbols' -Message "$DupedSymbols packages had duplicated symbol files"
+    }
+    
     ExitWithExitCode 1
   }
   else {

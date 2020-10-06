@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -517,6 +516,20 @@ namespace ILCompiler.PEWriter
             {
                 section.PlacedObjectDataToRelocate.Add(new PlacedObjectData(alignedOffset, objectData));
             }
+        }
+
+        public void AddSymbolForRange(ISymbolNode symbol, ISymbolNode firstNode, ISymbolNode secondNode)
+        {
+            SymbolTarget firstSymbolTarget = _symbolMap[firstNode];
+            SymbolTarget secondSymbolTarget = _symbolMap[secondNode];
+            Debug.Assert(firstSymbolTarget.SectionIndex == secondSymbolTarget.SectionIndex);
+            Debug.Assert(firstSymbolTarget.Offset <= secondSymbolTarget.Offset);
+
+            _symbolMap.Add(symbol, new SymbolTarget(
+                sectionIndex: firstSymbolTarget.SectionIndex,
+                offset: firstSymbolTarget.Offset,
+                size: secondSymbolTarget.Offset - firstSymbolTarget.Offset + secondSymbolTarget.Size
+                ));
         }
 
         /// <summary>

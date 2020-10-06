@@ -197,7 +197,11 @@ typedef enum {
 static volatile int sweep_state = SWEEP_STATE_SWEPT;
 
 static gboolean concurrent_mark;
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 static gboolean concurrent_sweep = DEFAULT_SWEEP_MODE;
+#else
+static const gboolean concurrent_sweep = SGEN_SWEEP_SERIAL;
+#endif
 
 static int sweep_pool_context = -1;
 
@@ -908,6 +912,9 @@ static SgenThreadPoolJob * volatile sweep_blocks_job;
 static void
 major_finish_sweep_checking (void)
 {
+	if (!concurrent_sweep)
+		return;
+
 	guint32 block_index;
 	SgenThreadPoolJob *job;
 
@@ -2399,10 +2406,16 @@ major_handle_gc_param (const char *opt)
 		lazy_sweep = FALSE;
 		return TRUE;
 	} else if (!strcmp (opt, "concurrent-sweep")) {
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 		concurrent_sweep = TRUE;
+#else
+		g_error ("Sgen was built with concurrent collector disabled");
+#endif
 		return TRUE;
 	} else if (!strcmp (opt, "no-concurrent-sweep")) {
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 		concurrent_sweep = FALSE;
+#endif
 		return TRUE;
 	}
 
@@ -2884,7 +2897,9 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->alloc_degraded = major_alloc_degraded;
 
 	collector->alloc_object = major_alloc_object;
+#ifndef DISABLE_SGEN_MAJOR_MARKSWEEP_CONC
 	collector->alloc_object_par = major_alloc_object_par;
+#endif
 	collector->free_pinned_object = free_pinned_object;
 	collector->iterate_objects = major_iterate_objects;
 	collector->free_non_pinned_object = major_free_non_pinned_object;
@@ -2921,7 +2936,9 @@ sgen_marksweep_init_internal (SgenMajorCollector *collector, gboolean is_concurr
 	collector->post_param_init = post_param_init;
 	collector->is_valid_object = major_is_valid_object;
 	collector->describe_pointer = major_describe_pointer;
+#ifndef DISABLE_SGEN_BINARY_PROTOCOL
 	collector->count_cards = major_count_cards;
+#endif
 	collector->init_block_free_lists = sgen_init_block_free_lists;
 
 	collector->major_ops_serial.copy_or_mark_object = major_copy_or_mark_object_canonical;

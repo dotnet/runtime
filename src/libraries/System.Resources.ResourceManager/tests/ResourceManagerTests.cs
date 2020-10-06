@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Drawing;
@@ -229,7 +228,7 @@ namespace System.Resources.Tests
             yield return new object[] { "Size", new Size(20, 30), true };
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(EnglishNonStringResourceData))]
         public static void GetObject(string key, object expectedValue, bool requiresBinaryFormatter)
         {
@@ -300,7 +299,7 @@ namespace System.Resources.Tests
             Assert.Equal(expectedValue, set.GetString(key));
         }
 
-        [Theory]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsBinaryFormatterSupported))]
         [MemberData(nameof(EnglishNonStringResourceData))]
         public static void GetResourceSet_NonStrings(string key, object expectedValue, bool requiresBinaryFormatter)
         {

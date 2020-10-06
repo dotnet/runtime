@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.Cli.Build.Framework;
 using System.Collections.Generic;
@@ -233,13 +232,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
 
                 ApplicationFixture = new TestProjectFixture("AppWithCustomEntryPoints", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
-                    .PublishProject(selfContained: "false");
+                    .PublishProject(selfContained: false);
                 ComponentWithNoDependenciesFixture = new TestProjectFixture("ComponentWithNoDependencies", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
                     .PublishProject();
                 SelfContainedApplicationFixture = new TestProjectFixture("AppWithCustomEntryPoints", RepoDirectories)
                     .EnsureRestored(RepoDirectories.CorehostPackages)
-                    .PublishProject(selfContained: "true");
+                    .PublishProject(selfContained: true);
                 ComponentTypeName = $"Component.Component, {ComponentWithNoDependenciesFixture.TestProject.AssemblyName}";
                 FunctionPointerTypeName = $"AppWithCustomEntryPoints.Program, {ApplicationFixture.TestProject.AssemblyName}";
             }

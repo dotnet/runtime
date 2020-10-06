@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: dacimpl.h
 //
@@ -841,7 +840,9 @@ class ClrDataAccess
       public ISOSDacInterface5,
       public ISOSDacInterface6,
       public ISOSDacInterface7,
-      public ISOSDacInterface8
+      public ISOSDacInterface8,
+      public ISOSDacInterface9,
+      public ISOSDacInterface10
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1206,6 +1207,15 @@ public:
 
     virtual HRESULT STDMETHODCALLTYPE GetAssemblyLoadContext(CLRDATA_ADDRESS methodTable, CLRDATA_ADDRESS* assemblyLoadContext);
 
+    // ISOSDacInterface9
+    virtual HRESULT STDMETHODCALLTYPE GetBreakingChangeVersion(int* pVersion);
+
+    // ISOSDacInterface10
+    virtual HRESULT STDMETHODCALLTYPE GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA_ADDRESS *rcw, unsigned int count, CLRDATA_ADDRESS *mowList, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE IsComWrappersCCW(CLRDATA_ADDRESS ccw, BOOL *isComWrappersCCW);
+    virtual HRESULT STDMETHODCALLTYPE GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRESS *managedObject, int *refCount);
+    virtual HRESULT STDMETHODCALLTYPE IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappersRCW);
+    virtual HRESULT STDMETHODCALLTYPE GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRESS *identity);
     //
     // ClrDataAccess.
     //
@@ -1456,8 +1466,12 @@ protected:
 private:
 #endif
 
-#ifdef FEATURE_COMINTEROP
 protected:
+    // Populates a DacpJitCodeHeapInfo with proper information about the
+    // code heap type and the information needed to locate it.
+    DacpJitCodeHeapInfo DACGetHeapInfoForCodeHeap(CodeHeap *heapAddr);
+
+#ifdef FEATURE_COMINTEROP
     // Returns CCW pointer based on a target address.
     PTR_ComCallWrapper DACGetCCWFromAddress(CLRDATA_ADDRESS addr);
 
@@ -1468,6 +1482,8 @@ private:
 #endif
 
 #ifdef FEATURE_COMWRAPPERS
+    BOOL DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr);
+    TADDR DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr);
     HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
 #endif
 

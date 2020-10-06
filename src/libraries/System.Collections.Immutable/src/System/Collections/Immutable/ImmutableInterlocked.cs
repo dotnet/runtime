@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -31,7 +30,7 @@ namespace System.Collections.Immutable
         /// <c>false</c> if the location's value remained the same because the last
         /// invocation of <paramref name="transformer"/> returned the existing value.
         /// </returns>
-        public static bool Update<T>(ref T location, Func<T, T> transformer) where T : class
+        public static bool Update<T>(ref T location, Func<T, T> transformer) where T : class?
         {
             Requires.NotNull(transformer, nameof(transformer));
 
@@ -75,7 +74,7 @@ namespace System.Collections.Immutable
         /// <c>false</c> if the location's value remained the same because the last
         /// invocation of <paramref name="transformer"/> returned the existing value.
         /// </returns>
-        public static bool Update<T, TArg>(ref T location, Func<T, TArg, T> transformer, TArg transformerArgument) where T : class
+        public static bool Update<T, TArg>(ref T location, Func<T, TArg, T> transformer, TArg transformerArgument) where T : class?
         {
             Requires.NotNull(transformer, nameof(transformer));
 
@@ -526,7 +525,7 @@ namespace System.Collections.Immutable
 
                 if (priorCollection.IsEmpty)
                 {
-                    value = default(T)!;
+                    value = default;
                     return false;
                 }
 
@@ -581,7 +580,7 @@ namespace System.Collections.Immutable
 
                 if (priorCollection.IsEmpty)
                 {
-                    value = default(T)!;
+                    value = default;
                     return false;
                 }
 

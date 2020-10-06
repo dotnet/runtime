@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ============================================================
 //
 // AssemblyName.cpp
@@ -316,10 +315,10 @@ Exit:
         return ulRef;
     }
 
-    BOOL AssemblyName::IsMscorlib()
+    BOOL AssemblyName::IsCoreLib()
     {
         // TODO: Is this simple comparison enough?
-        return EqualsCaseInsensitive(GetSimpleName(), g_BinderVariables->mscorlib);
+        return EqualsCaseInsensitive(GetSimpleName(), g_BinderVariables->corelib);
     }
 
     ULONG AssemblyName::Hash(DWORD dwIncludeFlags)

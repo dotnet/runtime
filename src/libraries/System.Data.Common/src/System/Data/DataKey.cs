@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 
@@ -67,10 +66,10 @@ namespace System.Data
 
         internal DataColumn[] ColumnsReference => _columns;
         internal bool HasValue => null != _columns;
-        internal DataTable Table => _columns[0].Table;
+        internal DataTable Table => _columns[0].Table!;
         internal void CheckState()
         {
-            DataTable table = _columns[0].Table;
+            DataTable? table = _columns[0].Table;
 
             if (table == null)
             {
@@ -149,7 +148,7 @@ namespace System.Data
             return base.GetHashCode();
         }
 
-        public override bool Equals(object value)
+        public override bool Equals(object? value)
         {
             Debug.Fail("need to directly call Equals(DataKey)");
             return Equals((DataKey)value);
@@ -221,7 +220,7 @@ namespace System.Data
         internal Index GetSortIndex(DataViewRowState recordStates)
         {
             IndexField[] indexDesc = GetIndexDesc();
-            return _columns[0].Table.GetIndex(indexDesc, recordStates, null);
+            return _columns[0].Table!.GetIndex(indexDesc, recordStates, null);
         }
 
         internal bool RecordsEqual(int record1, int record2)

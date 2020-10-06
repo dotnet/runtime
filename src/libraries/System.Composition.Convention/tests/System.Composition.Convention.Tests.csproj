@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AssemblyName>System.Composition.Convention.Tests</AssemblyName>
-    <TargetFrameworks>$(NetCoreAppCurrent);$(NetFrameworkCurrent)</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent);net461</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AttributedModelConventionExtensions.cs" />
@@ -15,5 +14,9 @@
     <Compile Include="PartBuilderOfTInheritanceTests.cs" />
     <Compile Include="PartBuilderOfTTests.cs" />
     <Compile Include="PartBuilderTests.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../src/System.Composition.Convention.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.TypedParts\src\System.Composition.TypedParts.csproj" />
   </ItemGroup>
 </Project>

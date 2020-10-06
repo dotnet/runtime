@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using Xunit;
@@ -76,7 +75,7 @@ namespace System.Text.Json.Serialization.Tests
             {
                 DictionaryWrapper = new UnsupportedDictionaryWrapper()
             };
-            wrapper.DictionaryWrapper[1] = 1;
+            wrapper.DictionaryWrapper[new int[,] { }] = 1;
 
             // Without converter, we throw.
             Assert.Throws<NotSupportedException>(() => JsonSerializer.Deserialize<UnsupportedDerivedTypesWrapper_Dictionary>(json));
@@ -128,7 +127,7 @@ namespace System.Text.Json.Serialization.Tests
 
     public class DictionaryWrapper : Dictionary<string, int> { }
 
-    public class UnsupportedDictionaryWrapper : Dictionary<int, int> { }
+    public class UnsupportedDictionaryWrapper : Dictionary<int[,], int> { }
 
     public class DerivedTypesWrapper
     {

@@ -1,0 +1,163 @@
+parameters:
+  steps: []                       # optional -- any additional steps that need to happen before pulling down the performance repo and sending the performance benchmarks to helix (ie building your repo)
+  variables: []                   # optional -- list of additional variables to send to the template
+  jobName: ''                     # required -- job name
+  displayName: ''                 # optional -- display name for the job. Will use jobName if not passed
+  pool: ''                        # required -- name of the Build pool
+  container: ''                   # required -- name of the container
+  buildConfig: ''                 # required -- build configuration
+  archType: ''                    # required -- targeting CPU architecture
+  osGroup: ''                     # required -- operating system for the job
+  osSubgroup: ''                  # optional -- operating system subgroup
+  extraSetupParameters: ''        # optional -- extra arguments to pass to the setup script
+  frameworks: ['netcoreapp3.0']   # optional -- list of frameworks to run against
+  continueOnError: 'false'        # optional -- determines whether to continue the build if the step errors
+  dependsOn: ''                   # optional -- dependencies of the job
+  timeoutInMinutes: 320           # optional -- timeout for the job
+  enableTelemetry: false          # optional -- enable for telemetry
+  liveLibrariesBuildConfig: ''    # optional -- live-live libraries configuration to use for the run
+  runtimeType: 'coreclr'          # optional -- Sets the runtime as coreclr or mono
+  codeGenType: 'JIT'              # optional -- Decides on the codegen technology if running on mono
+  projectFile: ''                 # required -- project file to build helix workitems
+  runKind: ''                     # required -- test category
+  additionalSetupParameters: ''   # optional -- additional setup parameters that are job-specific
+
+jobs:
+- template: xplat-pipeline-job.yml
+  parameters:
+    dependsOn: ${{ parameters.dependsOn }}
+    buildConfig: ${{ parameters.buildConfig }}
+    archType: ${{ parameters.archType }}
+    osGroup: ${{ parameters.osGroup }}
+    osSubgroup: ${{ parameters.osSubgroup }}
+    liveLibrariesBuildConfig: ${{ parameters.liveLibrariesBuildConfig }}
+    enableTelemetry: ${{ parameters.enableTelemetry }}
+    enablePublishBuildArtifacts: true
+    continueOnError: ${{ parameters.continueOnError }}
+    
+    ${{ if ne(parameters.displayName, '') }}:
+      displayName: '${{ parameters.displayName }}'
+    ${{ if eq(parameters.displayName, '') }}:
+      displayName: '${{ parameters.jobName }}'
+
+    timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
+
+    variables:
+    - ${{ each variable in parameters.variables }}:
+      - ${{ if ne(variable.name, '') }}:
+        - name: ${{ variable.name }}
+          value: ${{ variable.value }}
+      - ${{ if ne(variable.group, '') }}:
+        - group: ${{ variable.group }}
+
+    - IsInternal: ''
+    - HelixApiAccessToken: ''
+    - SharedHelixPreCommands: ''
+    - AdditionalHelixPreCommands: ''
+    # run machine-setup and set PYTHONPATH for both public and private jobs
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - SharedHelixPreCommands: 'call %HELIX_WORKITEM_PAYLOAD%\machine-setup.cmd;set PYTHONPATH=%HELIX_WORKITEM_PAYLOAD%\scripts%3B%HELIX_WORKITEM_PAYLOAD%'
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - SharedHelixPreCommands: 'chmod +x $HELIX_WORKITEM_PAYLOAD/machine-setup.sh;. $HELIX_WORKITEM_PAYLOAD/machine-setup.sh;export PYTHONPATH=$HELIX_WORKITEM_PAYLOAD/scripts:$HELIX_WORKITEM_PAYLOAD'
+    
+    # extra private job settings
+    - ${{ if and(ne(variables['System.TeamProject'], 'public'), notin(variables['Build.Reason'], 'PullRequest')) }}:
+      - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+        - AdditionalHelixPreCommands: 'py -3 -m venv %HELIX_WORKITEM_PAYLOAD%\.venv;call %HELIX_WORKITEM_PAYLOAD%\.venv\Scripts\activate.bat;set PYTHONPATH=;py -3 -m pip install --user azure.storage.blob==12.0.0 --force-reinstall;py -3 -m pip install --user azure.storage.queue==12.0.0 --force-reinstall;set "PERFLAB_UPLOAD_TOKEN=$(PerfCommandUploadToken)"'
+        - IsInternal: -Internal      
+      - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+        - AdditionalHelixPreCommands: 'sudo apt-get -y install python3-venv;python3 -m venv $HELIX_WORKITEM_PAYLOAD/.venv;source $HELIX_WORKITEM_PAYLOAD/.venv/Scripts/activate;export PYTHONPATH=;pip3 install --user azure.storage.blob==12.0.0 --force-reinstall;pip3 install --user azure.storage.queue==12.0.0 --force-reinstall;export PERFLAB_UPLOAD_TOKEN="$(PerfCommandUploadTokenLinux)"'
+        - IsInternal: --internal
+      - group: DotNet-HelixApi-Access
+      - group: dotnet-benchview
+
+    workspace:
+      clean: all
+    pool:
+      ${{ parameters.pool }}
+    container: ${{ parameters.container }}
+    strategy:
+      matrix:
+        ${{ each framework in parameters.frameworks }}:
+          ${{ framework }}:
+            _Framework: ${{ framework }}
+    steps:
+    - ${{ parameters.steps }}
+    # run performance-setup
+    - powershell: $(Build.SourcesDirectory)\eng\common\performance\performance-setup.ps1 $(IsInternal) -Framework $(_Framework) -Kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+      displayName: Performance Setup (Windows)
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
+      continueOnError: ${{ parameters.continueOnError }}
+    - script: $(Build.SourcesDirectory)/eng/common/performance/performance-setup.sh $(IsInternal) --framework $(_Framework) --kind ${{ parameters.runKind }} ${{ parameters.extraSetupParameters }} ${{ parameters.additionalSetupParameters }}
+      displayName: Performance Setup (Linux)
+      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
+      continueOnError: ${{ parameters.continueOnError }}
+    # parse Version.props to get the latest stable sdk version on master
+    - script: $(Python) scripts/parse_props.py --branch-name master # defaults to master branch of sdk so we can get the latest
+      displayName: Parse Version.props 
+      workingDirectory: $(PerformanceDirectory)
+      continueOnError: ${{ parameters.continueOnError }}
+    # run ci-setup
+    - script: $(Python) $(PerformanceDirectory)\scripts\ci_setup.py $(DotnetVersion) $(SetupArguments) --install-dir $(PayloadDirectory)\dotnet --output-file $(WorkItemDirectory)\machine-setup.cmd 
+      displayName: Run ci setup script (Windows)
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
+    - script: $(Python) $(PerformanceDirectory)/scripts/ci_setup.py $(DotnetVersion) $(SetupArguments) --install-dir $(PayloadDirectory)/dotnet --output-file $(WorkItemDirectory)/machine-setup.sh
+      displayName: Run ci setup script (Linux)
+      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
+    # copy wasm packs if running on wasm
+    - script: cp -r $(librariesDownloadDir)/BrowserWasm/artifacts/bin/microsoft.netcore.app.runtime.browser-wasm $(PayloadDirectory);cp -r $(librariesDownloadDir)/BrowserWasm/artifacts/bin/microsoft.netcore.app.ref $(PayloadDirectory)
+      displayName: Copy browserwasm and runtime ref packs
+      condition: and(succeeded(), eq('${{ parameters.runtimeType }}', 'wasm'))
+    # copy scenario support files
+    - script: xcopy $(PerformanceDirectory)\scripts $(WorkItemDirectory)\scripts\/e && xcopy $(PerformanceDirectory)\src\scenarios\shared $(WorkItemDirectory)\shared\/e && xcopy $(PerformanceDirectory)\src\scenarios\staticdeps $(WorkItemDirectory)\staticdeps\/e
+      displayName: Copy scenario support files (Windows)
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
+    - script: cp -r $(PerformanceDirectory)/scripts $(WorkItemDirectory)/scripts/ && cp -r $(PerformanceDirectory)/src/scenarios/shared $(WorkItemDirectory)/shared/ && cp -r $(PerformanceDirectory)/src/scenarios/staticdeps/ $(WorkItemDirectory)/staticdeps/
+      displayName: Copy scenario support files (Linux)
+      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
+    # build Startup
+    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)\Startup -f netcoreapp3.1 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\Startup\Startup.csproj
+      displayName: Build Startup tool (Windows)
+      env:
+        PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
+    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/startup -f netcoreapp3.1 -r linux-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/Startup/Startup.csproj
+      displayName: Build Startup tool (Linux)
+      env:
+        PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
+      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
+    # build SizeOnDisk
+    - script: $(PayloadDirectory)\dotnet\dotnet.exe publish -c Release -o $(WorkItemDirectory)SOD -f netcoreapp3.1 -r win-$(Architecture) $(PerformanceDirectory)\src\tools\ScenarioMeasurement\SizeOnDisk\SizeOnDisk.csproj
+      displayName: Build SizeOnDisk tool (Windows)
+      env:
+        PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
+      condition: and(succeeded(), eq(variables['Agent.Os'], 'Windows_NT'))
+    - script: $(PayloadDirectory)/dotnet/dotnet publish -c Release -o $(WorkItemDirectory)/SOD -f netcoreapp3.1 -r linux-$(Architecture) $(PerformanceDirectory)/src/tools/ScenarioMeasurement/SizeOnDisk/SizeOnDisk.csproj
+      displayName: Build SizeOnDisk tool (Linux)
+      env:
+        PERFLAB_TARGET_FRAMEWORKS: netcoreapp3.1
+      condition: and(succeeded(), ne(variables['Agent.Os'], 'Windows_NT'))
+      
+    # run perf testing in helix
+    - template: /eng/common/templates/steps/perf-send-to-helix.yml
+      parameters:
+        HelixSource: '$(HelixSourcePrefix)/$(Build.Repository.Name)/$(Build.SourceBranch)' # sources must start with pr/, official/, prodcon/, or agent/
+        HelixType: 'test/performance/$(Kind)/$(_Framework)/$(Architecture)'
+        HelixAccessToken: $(HelixApiAccessToken)
+        HelixTargetQueues: $(Queue)
+        HelixPreCommands: '$(AdditionalHelixPreCommands);$(SharedHelixPreCommands)' # $(HelixPreCommands) should follow $(AdditionalHelixPreCommands) because PYTHONPATH is cleared by the former
+        Creator: $(Creator)
+        WorkItemTimeout: 4:00 # 4 hours
+        WorkItemDirectory: '$(WorkItemDirectory)' # contains scenario tools, shared python scripts, dotnet tool
+        CorrelationPayloadDirectory: '$(PayloadDirectory)' # contains performance repo and built product
+        ProjectFile: ${{ parameters.projectFile }}
+        osGroup: ${{ parameters.osGroup }}
+
+    # publish logs
+    - task: PublishPipelineArtifact@1
+      displayName: Publish Logs
+      inputs:
+        targetPath: $(Build.SourcesDirectory)/artifacts/log
+        artifactName: 'Performance_Run_$(osGroup)$(osSubgroup)_$(archType)_$(buildConfig)_${{ parameters.runtimeType }}_${{ parameters.codeGenType }}_${{ parameters.runKind }}'
+      continueOnError: true
+      condition: always()

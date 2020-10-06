@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "class.h"
@@ -904,16 +903,16 @@ EEClassNativeLayoutInfo* EEClassNativeLayoutInfo::CollectNativeLayoutFieldMetada
         // from the managed size and alignment.
         // Crossgen scenarios block Vector<T> from even being loaded, so only do this check when not in crossgen.
 #ifndef CROSSGEN_COMPILE
-        if (pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTORT)))
+        if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTORT)))
         {
             pNativeLayoutInfo->m_size = pEEClassLayoutInfo->GetManagedSize();
             pNativeLayoutInfo->m_alignmentRequirement = pEEClassLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
         }
         else
 #endif
-        if (pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR64T)) ||
-            pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR128T)) ||
-            pMT->HasSameTypeDefAs(MscorlibBinder::GetClass(CLASS__VECTOR256T)))
+        if (pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR64T)) ||
+            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR128T)) ||
+            pMT->HasSameTypeDefAs(CoreLibBinder::GetClass(CLASS__VECTOR256T)))
         {
             pNativeLayoutInfo->m_alignmentRequirement = pEEClassLayoutInfo->m_ManagedLargestAlignmentRequirementOfAllMembers;
         }

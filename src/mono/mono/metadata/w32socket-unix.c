@@ -191,7 +191,7 @@ mono_w32socket_accept (SOCKET sock, struct sockaddr *addr, socklen_t *addrlen, g
 }
 
 int
-mono_w32socket_connect (SOCKET sock, const struct sockaddr *addr, int addrlen, gboolean blocking)
+mono_w32socket_connect (SOCKET sock, const struct sockaddr *addr, socklen_t addrlen, gboolean blocking)
 {
 	SocketHandle *sockethandle;
 	gint ret;

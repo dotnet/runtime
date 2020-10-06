@@ -224,12 +224,12 @@ The top-level function of interest is `Compiler::compCompile`. It invokes the fo
 | [Register allocation](#reg-alloc) | Registers are assigned (`gtRegNum` and/or `gtRsvdRegs`), and the number of spill temps calculated. |
 | [Code Generation](#code-generation) | Determines frame layout. Generates code for each `BasicBlock`. Generates prolog & epilog code for the method. Emit EH, GC and Debug info. |
 
-## <a name="pre-import"/>Pre-import
+## <a name="pre-import"></a>Pre-import
 
 Prior to reading in the IL for the method, the JIT initializes the local variable table, and scans the IL to find
 branch targets and form BasicBlocks.
 
-## <a name="importation">Importation
+## <a name="importation"></a>Importation
 
 Importation is the phase that creates the IR for the method, reading in one IL instruction at a time, and building up
 the statements. During this process, it may need to generate IR with multiple, nested expressions. This is the
@@ -245,7 +245,7 @@ and flagged. They are further validated, and possibly unmarked, during morphing.
 
 The `fgMorph` phase includes a number of transformations:
 
-### <a name="inlining"/>Inlining
+### <a name="inlining"></a>Inlining
 
 The `fgInline` phase determines whether each call site is a candidate for inlining. The initial determination is made
 via a state machine that runs over the candidate method's IL. It estimates the native code size corresponding to the
@@ -256,7 +256,7 @@ encountered that indicate that it may be unprofitable (or otherwise incorrect). 
 inlinee compiler's trees are incorporated into the inliner compiler (the "parent"), with arguments and return values
 appropriately transformed.
 
-### <a name="struct-promotion"/>Struct Promotion
+### <a name="struct-promotion"></a>Struct Promotion
 
 Struct promotion (`fgPromoteStructs()`) analyzes the local variables and temps, and determines if their fields are
 candidates for tracking (and possibly enregistering) separately. It first determines whether it is possible to
@@ -269,14 +269,14 @@ individually referenced.
 When a lclVar is promoted, there are now N+1 lclVars for the struct, where N is the number of fields. The original
 struct lclVar is not considered to be tracked, but its fields may be.
 
-### <a name="mark-addr-exposed"/>Mark Address-Exposed Locals
+### <a name="mark-addr-exposed"></a>Mark Address-Exposed Locals
 
 This phase traverses the expression trees, propagating the context (e.g. taking the address, indirecting) to
 determine which lclVars have their address taken, and which therefore will not be register candidates. If a struct
 lclVar has been promoted, and is then found to be address-taken, it will be considered "dependently promoted", which
 is an odd way of saying that the fields will still be separately tracked, but they will not be register candidates.
 
-### <a name="morph-blocks"/>Morph Blocks
+### <a name="morph-blocks"></a>Morph Blocks
 
 What is often thought of as "morph" involves localized transformations to the trees. In addition to performing simple
 optimizing transformations, it performs some normalization that is required, such as converting field and array
@@ -284,11 +284,11 @@ accesses into pointer arithmetic. It can (and must) be called by subsequent phas
 During the main Morph phase, the boolean `fgGlobalMorph` is set on the `Compiler` argument, which governs which
 transformations are permissible.
 
-### <a name="eliminate-qmarks"/>Eliminate Qmarks
+### <a name="eliminate-qmarks"></a>Eliminate Qmarks
 
 This expands most `GT_QMARK`/`GT_COLON` trees into blocks, except for the case that is instantiating a condition.
 
-## <a name="flowgraph-analysis"/>Flowgraph Analysis
+## <a name="flowgraph-analysis"></a>Flowgraph Analysis
 
 At this point, a number of analyses and transformations are done on the flowgraph:
 
@@ -298,7 +298,7 @@ At this point, a number of analyses and transformations are done on the flowgrap
 * Identifying and normalizing loops (transforming while loops to "do while")
 * Cloning and unrolling of loops
 
-## <a name="normalize-ir"/>Normalize IR for Optimization
+## <a name="normalize-ir"></a>Normalize IR for Optimization
 
 At this point, a number of properties are computed on the IR, and must remain valid for the remaining phases. We will
 call this "normalization"
@@ -310,12 +310,12 @@ counts are needed.
 * `optOptimizeBools` – this optimizes Boolean expressions, and may change the flowgraph (why is it not done prior to reachability and dominators?)
 * Link the trees in evaluation order (setting `gtNext` and `gtPrev` fields): and `fgFindOperOrder()` and `fgSetBlockOrder()`.
 
-## <a name="ssa-vn"/>SSA and Value Numbering Optimizations
+## <a name="ssa-vn"></a>SSA and Value Numbering Optimizations
 
 The next set of optimizations are built on top of SSA and value numbering. First, the SSA representation is built
 (during which dataflow analysis, aka liveness, is computed on the lclVars), then value numbering is done using SSA.
 
-### <a name="licm"/>Loop Invariant Code Hoisting
+### <a name="licm"></a>Loop Invariant Code Hoisting
 
 This phase traverses all the loop nests, in outer-to-inner order (thus hoisting expressions outside the largest loop
 in which they are invariant). It traverses all of the statements in the blocks in the loop that are always executed.
@@ -326,7 +326,7 @@ If the statement is:
 * Does not raise an exception OR occurs in the loop prior to any side-effects
 * Has a valid value number, and it is a lclVar defined outside the loop, or its children (the value numbers from which it was computed) are invariant.
 
-### <a name="copy-propagation"/>Copy Propagation
+### <a name="copy-propagation"></a>Copy Propagation
 
 This phase walks each block in the graph (in dominator-first order, maintaining context between dominator and child)
 keeping track of every live definition. When it encounters a variable that shares the VN with a live definition, it
@@ -335,20 +335,20 @@ is replaced with the variable in the live definition.
 The JIT currently requires that the IR be maintained in conventional SSA form, as there is no "out of SSA"
 translation (see the comments on `optVnCopyProp()` for more information).
 
-### <a name="cse"/>Common Subexpression Elimination (CSE)
+### <a name="cse"></a>Common Subexpression Elimination (CSE)
 
 Utilizes value numbers to identify redundant computations, which are then evaluated to a new temp lclVar, and then
 reused.
 
-### <a name="assertion-propagation"/>Assertion Propagation
+### <a name="assertion-propagation"></a>Assertion Propagation
 
 Utilizes value numbers to propagate and transform based on properties such as non-nullness.
 
-### <a name="range-analysis"/>Range analysis
+### <a name="range-analysis"></a>Range analysis
 
 Optimize array index range checks based on value numbers and assertions.
 
-## <a name="rationalization"/>Rationalization
+## <a name="rationalization"></a>Rationalization
 
 As the JIT has evolved, changes have been made to improve the ability to reason over the tree in both "tree order"
 and "linear order". These changes have been termed the "rationalization" of the IR. In the spirit of reuse and
@@ -473,7 +473,7 @@ t0 =    LCL_VAR   byref  V03 arg3         u:1 (last use) $c0
         RETURN    void   $200
 ```
 
-## <a name="lowering"/>Lowering
+## <a name="lowering"></a>Lowering
 
 Lowering is responsible for transforming the IR in such a way that the control flow, and any register requirements,
 are fully exposed.
@@ -529,7 +529,7 @@ In such cases, it must ensure that they themselves are properly lowered. This in
 
 After all nodes are lowered, liveness is run in preparation for register allocation.
 
-## <a name="reg-alloc"/>Register allocation
+## <a name="reg-alloc"></a>Register allocation
 
 The RyuJIT register allocator uses a Linear Scan algorithm, with an approach similar to [[2]](#[2]). In discussion it
 is referred to as either `LinearScan` (the name of the implementing class), or LSRA (Linear Scan Register
@@ -622,7 +622,7 @@ Post-conditions:
   * `lvSpilled` flag is set if it is ever spilled
 * The maximum number of simultaneously-live spill locations of each type (used for spilling expression trees) has been communicated via calls to `compiler->tmpPreAllocateTemps(type)`.
 
-## <a name="code-generation"/>Code Generation
+## <a name="code-generation"></a>Code Generation
 
 The process of code generation is relatively straightforward, as Lowering has done some of the work already. Code
 generation proceeds roughly as follows:
@@ -858,8 +858,8 @@ a 'T'.
 
 ## References
 
-<a name="[1]"/>
+<a name="[1]"></a>
 [1] P. Briggs, K. D. Cooper, T. J. Harvey, and L. T. Simpson, "Practical improvements to the construction and destruction of static single assignment form," Software --- Practice and Experience, vol. 28, no. 8, pp. 859---881, Jul. 1998.
 
-<a name="[2]"/>
+<a name="[2]"></a>
 [2] Wimmer, C. and Mössenböck, D. "Optimized Interval Splitting in a Linear Scan Register Allocator," ACM VEE 2005, pp. 132-141. [http://portal.acm.org/citation.cfm?id=1064998&dl=ACM&coll=ACM&CFID=105967773&CFTOKEN=80545349](http://portal.acm.org/citation.cfm?id=1064998&dl=ACM&coll=ACM&CFID=105967773&CFTOKEN=80545349)

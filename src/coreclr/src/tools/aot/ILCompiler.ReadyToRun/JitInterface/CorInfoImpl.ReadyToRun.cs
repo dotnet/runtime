@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -25,17 +24,30 @@ using ILCompiler.DependencyAnalysis.ReadyToRun;
 
 namespace Internal.JitInterface
 {
+    internal class RequiresRuntimeJitIfUsedSymbol
+    {
+        public RequiresRuntimeJitIfUsedSymbol(string message)
+        {
+            Message = message;
+        }
+
+        public string Message { get; }
+    }
+
     public class MethodWithToken
     {
         public readonly MethodDesc Method;
         public readonly ModuleToken Token;
         public readonly TypeDesc ConstrainedType;
+        public readonly bool Unboxing;
 
-        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType)
+        public MethodWithToken(MethodDesc method, ModuleToken token, TypeDesc constrainedType, bool unboxing)
         {
+            Debug.Assert(!method.IsUnboxingThunk());
             Method = method;
             Token = token;
             ConstrainedType = constrainedType;
+            Unboxing = unboxing;
         }
 
         public override bool Equals(object obj)
@@ -51,7 +63,7 @@ namespace Internal.JitInterface
 
         public bool Equals(MethodWithToken methodWithToken)
         {
-            return Method == methodWithToken.Method && Token.Equals(methodWithToken.Token) && ConstrainedType == methodWithToken.ConstrainedType;
+            return Method == methodWithToken.Method && Token.Equals(methodWithToken.Token) && ConstrainedType == methodWithToken.ConstrainedType && Unboxing == methodWithToken.Unboxing;
         }
 
         public void AppendMangledName(NameMangler nameMangler, Utf8StringBuilder sb)
@@ -64,6 +76,8 @@ namespace Internal.JitInterface
             }
             sb.Append("; ");
             sb.Append(Token.ToString());
+            if (Unboxing)
+                sb.Append("; UNBOXING");
         }
 
         public int CompareTo(MethodWithToken other, TypeSystemComparer comparer)
@@ -85,7 +99,11 @@ namespace Internal.JitInterface
             if (result != 0)
                 return result;
 
-            return Token.CompareTo(other.Token);
+            result = Token.CompareTo(other.Token);
+            if (result != 0)
+                return result;
+
+            return Unboxing.CompareTo(other.Unboxing);
         }
     }
 
@@ -140,8 +158,7 @@ namespace Internal.JitInterface
         private OffsetMapping[] _debugLocInfos;
         private NativeVarInfo[] _debugVarInfos;
         private ArrayBuilder<MethodDesc> _inlinedMethods;
-
-        private static readonly UnboxingMethodDescFactory s_unboxingThunkFactory = new UnboxingMethodDescFactory();
+        private UnboxingMethodDescFactory _unboxingThunkFactory = new UnboxingMethodDescFactory();
 
         public CorInfoImpl(ReadyToRunCodegenCompilation compilation)
             : this()
@@ -188,6 +205,10 @@ namespace Internal.JitInterface
             {
                 return true;
             }
+            if (methodNeedingCode.IsInternalCall)
+            {
+                return true;
+            }
             if (methodNeedingCode.OwningType.IsDelegate && (
                 methodNeedingCode.IsConstructor ||
                 methodNeedingCode.Name == "BeginInvoke" ||
@@ -213,10 +234,14 @@ namespace Internal.JitInterface
 
             try
             {
-                if (!ShouldSkipCompilation(MethodBeingCompiled))
+                if (!ShouldSkipCompilation(MethodBeingCompiled) && !MethodSignatureIsUnstable(MethodBeingCompiled.Signature, out var _))
                 {
-                    CompileMethodInternal(methodCodeNodeNeedingCode);
-                    codeGotPublished = true;
+                    MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
+                    if (methodIL != null)
+                    {
+                        CompileMethodInternal(methodCodeNodeNeedingCode, methodIL);
+                        codeGotPublished = true;
+                    }
                 }
             }
             finally
@@ -301,7 +326,7 @@ namespace Internal.JitInterface
                         object helperArg = GetRuntimeDeterminedObjectForToken(ref pResolvedToken);
                         if (helperArg is MethodDesc methodDesc)
                         {
-                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType);
+                            helperArg = new MethodWithToken(methodDesc, HandleToModuleToken(ref pResolvedToken), constrainedType, unboxing: false);
                         }
 
                         GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
@@ -329,7 +354,9 @@ namespace Internal.JitInterface
 #endif
 
             TypeDesc delegateTypeDesc = HandleToObject(delegateType);
-            MethodWithToken targetMethod = new MethodWithToken(HandleToObject(pTargetMethod.hMethod), HandleToModuleToken(ref pTargetMethod), constrainedType: null);
+            MethodDesc targetMethodDesc = HandleToObject(pTargetMethod.hMethod);
+            Debug.Assert(!targetMethodDesc.IsUnboxingThunk());
+            MethodWithToken targetMethod = new MethodWithToken(targetMethodDesc, HandleToModuleToken(ref pTargetMethod), constrainedType: null, unboxing: false);
 
             pLookup.lookupKind.needsRuntimeLookup = false;
             pLookup.constLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.DelegateCtor(delegateTypeDesc, targetMethod));
@@ -994,6 +1021,12 @@ namespace Internal.JitInterface
                             CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_GCSTATIC_BASE :
                             CorInfoHelpFunc.CORINFO_HELP_GETGENERICS_NONGCSTATIC_BASE);
                     }
+
+                    if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && (fieldOffset <= FieldFixupSignature.MaxCheckableOffset))
+                    {
+                        // ENCODE_CHECK_FIELD_OFFSET
+                        _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                    }
                 }
                 else
                 {
@@ -1021,28 +1054,9 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0)
-                        {
-                            throw new RequiresRuntimeJitException("https://github.com/dotnet/runtime/issues/32663: CORINFO_FIELD_STATIC_ADDRESS");
-                        }
-
                         helperId = field.HasGCStaticBase ?
                             ReadyToRunHelperId.GetGCStaticBase :
                             ReadyToRunHelperId.GetNonGCStaticBase;
-
-                        //
-                        // Currently, we only do this optimization for regular statics, but it
-                        // looks like it may be permissible to do this optimization for
-                        // thread statics as well. Currently there's no reason to do this
-                        // as this code is not reachable until we implement CORINFO_FIELD_STATIC_ADDRESS
-                        // which is something Crossgen1 doesn't do (cf. the above GitHub issue 32663).
-                        /*
-                        if ((flags & CORINFO_ACCESS_FLAGS.CORINFO_ACCESS_ADDRESS) != 0 &&
-                            (fieldAccessor != CORINFO_FIELD_ACCESSOR.CORINFO_FIELD_STATIC_TLS))
-                        {
-                            fieldFlags |= CORINFO_FIELD_FLAGS.CORINFO_FLG_FIELD_SAFESTATIC_BYREF_RETURN;
-                        }
-                        */
                     }
 
                     if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithType(field.OwningType) &&
@@ -1062,6 +1076,12 @@ namespace Internal.JitInterface
                     else
                     if (helperId != ReadyToRunHelperId.Invalid)
                     {
+                        if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && (fieldOffset <= FieldFixupSignature.MaxCheckableOffset))
+                        {
+                            // ENCODE_CHECK_FIELD_OFFSET
+                            _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                        }
+
                         pResult->fieldLookup = CreateConstLookupToSymbol(
                             _compilation.SymbolNodeFactory.CreateReadyToRunHelper(helperId, field.OwningType)
                             );
@@ -1086,6 +1106,18 @@ namespace Internal.JitInterface
 
             // TODO: We need to implement access checks for fields and methods.  See JitInterface.cpp in mrtjit
             //       and STS::AccessCheck::CanAccess.
+        }
+
+        private static bool IsTypeSpecForTypicalInstantiation(TypeDesc t)
+        {
+            Instantiation inst = t.Instantiation;
+            for (int i = 0; i < inst.Length; i++)
+            {
+                var arg = inst[i] as SignatureTypeVariable;
+                if (arg == null || arg.Index != i)
+                    return false;
+            }
+            return true;
         }
 
         private void ceeInfoGetCallInfo(
@@ -1171,24 +1203,6 @@ namespace Internal.JitInterface
             {
                 pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_NO_THIS_TRANSFORM;
             }
-            else if (constrainedType.IsRuntimeDeterminedSubtype || exactType.IsRuntimeDeterminedSubtype)
-            {
-                // <NICE> It shouldn't really matter what we do here - but the x86 JIT is annoyingly sensitive
-                // about what we do, since it pretend generic variables are reference types and generates
-                // an internal JIT tree even when just verifying generic code. </NICE>
-                if (constrainedType.IsRuntimeDeterminedType)
-                {
-                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_DEREF_THIS; // convert 'this' of type &T --> T
-                }
-                else if (constrainedType.IsValueType)
-                {
-                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_BOX_THIS; // convert 'this' of type &VC<T> --> boxed(VC<T>)
-                }
-                else
-                {
-                    pResult->thisTransform = CORINFO_THIS_TRANSFORM.CORINFO_DEREF_THIS; // convert 'this' of type &C<T> --> C<T>
-                }
-            }
             else
             {
                 // We have a "constrained." call.  Try a partial resolve of the constraint call.  Note that this
@@ -1254,6 +1268,20 @@ namespace Internal.JitInterface
             {
                 pResult->contextHandle = contextFromType(exactType);
                 pResult->exactContextNeedsRuntimeLookup = exactType.IsCanonicalSubtype(CanonicalFormKind.Any);
+
+                // Use main method as the context as long as the methods are called on the same type
+                if (pResult->exactContextNeedsRuntimeLookup &&
+                    pResolvedToken.tokenContext == contextFromMethodBeingCompiled() &&
+                    constrainedType == null &&
+                    exactType == MethodBeingCompiled.OwningType)
+                {
+                    var methodIL = (MethodIL)HandleToObject((IntPtr)pResolvedToken.tokenScope);
+                    var rawMethod = (MethodDesc)methodIL.GetMethodILDefinition().GetObject((int)pResolvedToken.token);
+                    if (IsTypeSpecForTypicalInstantiation(rawMethod.OwningType))
+                    {
+                        pResult->contextHandle = contextFromMethodBeingCompiled();
+                    }
+                }
             }
 
             //
@@ -1278,23 +1306,29 @@ namespace Internal.JitInterface
             {
                 directCall = true;
             }
-            else if (targetMethod.OwningType.IsInterface && targetMethod.IsAbstract)
-            {
-                // Backwards compat: calls to abstract interface methods are treated as callvirt
-                directCall = false;
-            }
             else
             {
                 bool devirt;
 
+                // Check For interfaces before the bubble check
+                // since interface methods shouldnt change from non-virtual to virtual between versions 
+                if (targetMethod.OwningType.IsInterface)
+                {
+                    // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
+                    devirt = !targetMethod.IsVirtual;
+                }
                 // if we are generating version resilient code
                 // AND
                 //    caller/callee are in different version bubbles
                 // we have to apply more restrictive rules
                 // These rules are related to the "inlining rules" as far as the
                 // boundaries of a version bubble are concerned.
-                if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) ||
-                    !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(targetMethod))
+                // This check is different between CG1 and CG2. CG1 considers two types in the same version bubble
+                // if their assemblies are in the same bubble, or if the NonVersionableTypeAttribute is present on the type.
+                // CG2 checks a method cache that it builds with a bunch of new code.
+                else if (!_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(callerMethod) ||
+                    // check the Typical TargetMethod, not the Instantiation
+                    !_compilation.NodeFactory.CompilationModuleGroup.VersionsWithMethodBody(targetMethod.GetTypicalMethodDefinition()))
                 {
                     // For version resiliency we won't de-virtualize all final/sealed method calls.  Because during a 
                     // servicing event it is legal to unseal a method or type.
@@ -1308,11 +1342,6 @@ namespace Internal.JitInterface
                         (targetMethod.IsIntrinsic && getIntrinsicID(targetMethod, null) != CorInfoIntrinsics.CORINFO_INTRINSIC_Illegal);
 
                     callVirtCrossingVersionBubble = true;
-                }
-                else if (targetMethod.OwningType.IsInterface)
-                {
-                    // Handle interface methods specially because the Sealed bit has no meaning on interfaces.
-                    devirt = !targetMethod.IsVirtual;
                 }
                 else
                 {
@@ -1365,8 +1394,7 @@ namespace Internal.JitInterface
                 const CORINFO_CALLINFO_FLAGS LdVirtFtnMask = CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN | CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_CALLVIRT;
                 bool unresolvedLdVirtFtn = ((flags & LdVirtFtnMask) == LdVirtFtnMask) && !resolvedCallVirt;
 
-                if (((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
-                    && entityFromContext(pResolvedToken.tokenContext) is MethodDesc methodDesc && methodDesc.IsSharedByGenericInstantiations)
+                if ((pResult->exactContextNeedsRuntimeLookup && useInstantiatingStub && (!allowInstParam || resolvedConstraint)) || forceUseRuntimeLookup)
                 {
                     if (unresolvedLdVirtFtn)
                     {
@@ -1376,7 +1404,6 @@ namespace Internal.JitInterface
                     }
                     else
                     {
-                        // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
                         pResult->kind = CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER;
 
                         // For reference types, the constrained type does not affect method resolution
@@ -1445,10 +1472,7 @@ namespace Internal.JitInterface
                 // We can't make stub calls when we need exact information
                 // for interface calls from shared code.
 
-                if (// If the token is not shared then we don't need a runtime lookup
-                    pResult->exactContextNeedsRuntimeLookup
-                    // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
-                    && entityFromContext(pResolvedToken.tokenContext) is MethodDesc methodDesc && methodDesc.IsSharedByGenericInstantiations)
+                if (pResult->exactContextNeedsRuntimeLookup)
                 {
                     ComputeRuntimeLookupForSharedGenericToken(DictionaryEntryKind.DispatchStubAddrSlot, ref pResolvedToken, null, originalMethod, ref pResult->codePointerOrStubLookup);
                 }
@@ -1493,6 +1517,42 @@ namespace Internal.JitInterface
         {
             ISymbolNode node = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(ReadyToRunHelperId.TypeHandle, type);
             _methodCodeNode.Fixups.Add(node);
+        }
+
+        private static bool MethodSignatureIsUnstable(MethodSignature methodSig, out string unstableMessage)
+        {
+            foreach (TypeDesc t in methodSig)
+            {
+                DefType defType = t as DefType;
+
+                if (defType != null)
+                {
+                    if (!defType.LayoutAbiStable)
+                    {
+                        unstableMessage = $"Abi unstable type {defType}";
+                        return true;
+                    }
+                }
+            }
+            unstableMessage = null;
+            return false;
+        }
+
+        private void UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref CORINFO_CONST_LOOKUP constLookup, MethodDesc method)
+        {
+            if (MethodSignatureIsUnstable(method.Signature, out string unstableMessage))
+            {
+                constLookup.addr = (void*)ObjectToHandle(new RequiresRuntimeJitIfUsedSymbol(unstableMessage + " calling " + method));
+                constLookup.accessType = InfoAccessType.IAT_PVALUE;
+            }
+        }
+
+        private void VerifyMethodSignatureIsStable(MethodSignature methodSig)
+        {
+            if (MethodSignatureIsUnstable(methodSig, out var unstableMessage))
+            {
+                throw new RequiresRuntimeJitException(unstableMessage);
+            }
         }
 
         private void getCallInfo(ref CORINFO_RESOLVED_TOKEN pResolvedToken, CORINFO_RESOLVED_TOKEN* pConstrainedResolvedToken, CORINFO_METHOD_STRUCT_* callerHandle, CORINFO_CALLINFO_FLAGS flags, CORINFO_CALL_INFO* pResult)
@@ -1553,15 +1613,19 @@ namespace Internal.JitInterface
 
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.SymbolNodeFactory.InterfaceDispatchCell(
-                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null),
-                                isUnboxingStub: false,
+                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false),
                                 MethodBeingCompiled));
+
+                        // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
+                        UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref pResult->codePointerOrStubLookup.constLookup, targetMethod);
                         }
                     break;
 
 
                 case CORINFO_CALL_KIND.CORINFO_CALL_CODE_POINTER:
                     Debug.Assert(pResult->codePointerOrStubLookup.lookupKind.needsRuntimeLookup);
+                    // Eagerly check abi stability here as no symbol usage can be used to delay the check
+                    VerifyMethodSignatureIsStable(targetMethod.Signature);
 
                     // There is no easy way to detect method referenced via generic lookups in generated code.
                     // Report this method reference unconditionally.
@@ -1588,16 +1652,21 @@ namespace Internal.JitInterface
                         // READYTORUN: FUTURE: Direct calls if possible
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.MethodEntrypoint(
-                                new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken, nonUnboxingMethod), constrainedType),
-                                isUnboxingStub,
+                                new MethodWithToken(nonUnboxingMethod, HandleToModuleToken(ref pResolvedToken, nonUnboxingMethod), constrainedType, unboxing: isUnboxingStub),
                                 isInstantiatingStub: useInstantiatingStub,
                                 isPrecodeImportRequired: (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_LDFTN) != 0));
+
+                        // If the abi of the method isn't stable, this will cause a usage of the RequiresRuntimeJitSymbol, which will trigger a RequiresRuntimeJitException
+                        UpdateConstLookupWithRequiresRuntimeJitSymbolIfNeeded(ref pResult->codePointerOrStubLookup.constLookup, targetMethod);
                     }
                     break;
 
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_VTABLE:
                     // Only calls within the CoreLib version bubble support fragile NI codegen with vtable based calls, for better performance (because 
                     // CoreLib and the runtime will always be updated together anyways - this is a special case)
+
+                    // Eagerly check abi stability here as no symbol usage can be used to delay the check
+                    VerifyMethodSignatureIsStable(targetMethod.Signature);
                     break;
 
                 case CORINFO_CALL_KIND.CORINFO_VIRTUALCALL_LDVIRTFTN:
@@ -1606,7 +1675,7 @@ namespace Internal.JitInterface
                         bool atypicalCallsite = (flags & CORINFO_CALLINFO_FLAGS.CORINFO_CALLINFO_ATYPICAL_CALLSITE) != 0;
                         pResult->codePointerOrStubLookup.constLookup = CreateConstLookupToSymbol(
                             _compilation.NodeFactory.DynamicHelperCell(
-                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null),
+                                new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType: null, unboxing: false),
                                 useInstantiatingStub));
 
                         Debug.Assert(!pResult->sig.hasTypeArg());
@@ -1628,13 +1697,12 @@ namespace Internal.JitInterface
                 }
                 else
                 {
-                    GenericContext methodContext = new GenericContext(entityFromContext(pResolvedToken.tokenContext));
                     MethodDesc canonMethod = targetMethod.GetCanonMethodTarget(CanonicalFormKind.Specific);
                     if (canonMethod.RequiresInstMethodDescArg())
                     {
                         pResult->instParamLookup = CreateConstLookupToSymbol(_compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                             ReadyToRunHelperId.MethodDictionary,
-                            new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType)));
+                            new MethodWithToken(targetMethod, HandleToModuleToken(ref pResolvedToken, targetMethod), constrainedType, unboxing: false)));
                     }
                     else
                     {
@@ -1666,19 +1734,21 @@ namespace Internal.JitInterface
             pResult.indirections = CORINFO.USEHELPER;
             pResult.sizeOffset = CORINFO.CORINFO_NO_SIZE_CHECK;
 
-            MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
-            TypeDesc contextType = typeFromContext(pResolvedToken.tokenContext);
-
-            // Do not bother computing the runtime lookup if we are inlining. The JIT is going
-            // to abort the inlining attempt anyway.
-            if (contextMethod != MethodBeingCompiled)
+            // Runtime lookups in inlined contexts are not supported by the runtime for now
+            if (pResolvedToken.tokenContext != contextFromMethodBeingCompiled())
             {
+                pResultLookup.lookupKind.runtimeLookupKind = CORINFO_RUNTIME_LOOKUP_KIND.CORINFO_LOOKUP_NOT_SUPPORTED;
                 return;
             }
 
+            MethodDesc contextMethod = methodFromContext(pResolvedToken.tokenContext);
+            TypeDesc contextType = typeFromContext(pResolvedToken.tokenContext);
+
             // There is a pathological case where invalid IL refereces __Canon type directly, but there is no dictionary availabled to store the lookup. 
-            // All callers of ComputeRuntimeLookupForSharedGenericToken have to filter out this case. We can't do much about it here.
-            Debug.Assert(contextMethod.IsSharedByGenericInstantiations);
+            if (!contextMethod.IsSharedByGenericInstantiations)
+            {
+                ThrowHelper.ThrowInvalidProgramException();
+            }
 
             if (contextMethod.RequiresInstMethodDescArg())
             {
@@ -1800,15 +1870,7 @@ namespace Internal.JitInterface
 
             Debug.Assert(pResult.compileTimeHandle != null);
 
-            if (runtimeLookup
-                /* TODO: this Crossgen check doesn't pass for ThisObjGenericLookupTest when inlining
-                 * GenericLookup<object>.CheckInstanceTypeArg -> GetTypeName<object> because 
-                 * tokenContext is GenericLookup<object> which is an exact class. Crossgen doesn't hit
-                 * this code path as it properly propagates the object generic type argument to GetTypeName
-                 * and inlines the method too.
-                    // Handle invalid IL - see comment in code:CEEInfo::ComputeRuntimeLookupForSharedGenericToken
-                    && ContextIsShared(pResolvedToken.tokenContext)
-                */)
+            if (runtimeLookup)
             {
                 DictionaryEntryKind entryKind = DictionaryEntryKind.EmptySlot;
                 switch (pResult.handleType)
@@ -1871,14 +1933,15 @@ namespace Internal.JitInterface
                             MethodDesc md = HandleToObject(pResolvedToken.hMethod);
                             TypeDesc td = HandleToObject(pResolvedToken.hClass);
 
+                            bool unboxingStub = false;
                             if ((td.IsValueType) && !md.Signature.IsStatic)
                             {
-                                md = getUnboxingThunk(md);
+                                unboxingStub = true;
                             }
 
                             symbolNode = _compilation.SymbolNodeFactory.CreateReadyToRunHelper(
                                 ReadyToRunHelperId.MethodHandle,
-                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null));
+                                new MethodWithToken(md, HandleToModuleToken(ref pResolvedToken), constrainedType: null, unboxing: unboxingStub));
                         }
                         break;
 
@@ -1898,7 +1961,7 @@ namespace Internal.JitInterface
 
         private MethodDesc getUnboxingThunk(MethodDesc method)
         {
-            return s_unboxingThunkFactory.GetUnboxingMethod(method);
+            return _unboxingThunkFactory.GetUnboxingMethod(method);
         }
 
         private CORINFO_METHOD_STRUCT_* embedMethodHandle(CORINFO_METHOD_STRUCT_* handle, ref void* ppIndirection)
@@ -1916,7 +1979,7 @@ namespace Internal.JitInterface
             if (!type.IsValueType)
                 return false;
 
-            return !_compilation.IsLayoutFixedInCurrentVersionBubble(type);
+            return !_compilation.IsLayoutFixedInCurrentVersionBubble(type) || (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !((MetadataType)type).IsNonVersionable());
         }
 
         private bool HasLayoutMetadata(TypeDesc type)
@@ -1957,6 +2020,9 @@ namespace Internal.JitInterface
                 if (pMT.IsValueType)
                 {
                     // ENCODE_CHECK_FIELD_OFFSET
+                    if (pResult->offset > FieldFixupSignature.MaxCheckableOffset)
+                        throw new RequiresRuntimeJitException(callerMethod.ToString() + " -> " + field.ToString());
+
                     _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
                     // No-op other than generating the check field offset fixup
                 }
@@ -1972,10 +2038,20 @@ namespace Internal.JitInterface
             }
             else if (pMT.IsValueType)
             {
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))
+                {
+                    // ENCODE_CHECK_FIELD_OFFSET
+                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                }
                 // ENCODE_NONE
             }
             else if (_compilation.IsInheritanceChainLayoutFixedInCurrentVersionBubble(pMT.BaseType))
             {
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))
+                {
+                    // ENCODE_CHECK_FIELD_OFFSET
+                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                }
                 // ENCODE_NONE
             }
             else if (HasLayoutMetadata(pMT))
@@ -1993,6 +2069,12 @@ namespace Internal.JitInterface
             {
                 PreventRecursiveFieldInlinesOutsideVersionBubble(field, callerMethod);
 
+                if (_compilation.SymbolNodeFactory.VerifyTypeAndFieldLayout && !callerMethod.IsNonVersionable() && (pResult->offset <= FieldFixupSignature.MaxCheckableOffset))
+                {
+                    // ENCODE_CHECK_FIELD_OFFSET
+                    _methodCodeNode.Fixups.Add(_compilation.SymbolNodeFactory.CheckFieldOffset(field));
+                }
+
                 // ENCODE_FIELD_BASE_OFFSET
                 Debug.Assert(pResult->offset >= (uint)pMT.BaseType.InstanceByteCount.AsInt);
                 pResult->offset -= (uint)pMT.BaseType.InstanceByteCount.AsInt;
@@ -2005,6 +2087,12 @@ namespace Internal.JitInterface
         {
             *pCookieVal = IntPtr.Zero;
             *ppCookieVal = (IntPtr *)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.GSCookie));
+        }
+
+        private int* getAddrOfCaptureThreadGlobal(ref void* ppIndirection)
+        {
+            ppIndirection = (void*)ObjectToHandle(_compilation.NodeFactory.GetReadyToRunHelperCell(ReadyToRunHelper.IndirectTrapThreads));
+            return null;
         }
 
         private void getMethodVTableOffset(CORINFO_METHOD_STRUCT_* method, ref uint offsetOfIndirection, ref uint offsetAfterIndirection, ref bool isRelative)
@@ -2090,7 +2178,7 @@ namespace Internal.JitInterface
                 methodDesc = rawPInvoke.Target;
             EcmaMethod ecmaMethod = (EcmaMethod)methodDesc;
             ModuleToken moduleToken = new ModuleToken(ecmaMethod.Module, ecmaMethod.Handle);
-            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null);
+            MethodWithToken methodWithToken = new MethodWithToken(ecmaMethod, moduleToken, constrainedType: null, unboxing: false);
 
             if (ecmaMethod.IsSuppressGCTransition())
             {

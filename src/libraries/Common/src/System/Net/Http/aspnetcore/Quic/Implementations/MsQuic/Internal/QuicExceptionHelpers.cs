@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 namespace System.Net.Quic.Implementations.MsQuic.Internal
@@ -11,8 +10,13 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
         {
             if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
             {
-                throw new QuicException($"{message} Error Code: {MsQuicStatusCodes.GetError(status)}");
+                throw CreateExceptionForHResult(status, message, innerException);
             }
+        }
+
+        internal static Exception CreateExceptionForHResult(uint status, string? message = null, Exception? innerException = null)
+        {
+            return new QuicException($"{message} Error Code: {MsQuicStatusCodes.GetError(status)}", innerException);
         }
     }
 }

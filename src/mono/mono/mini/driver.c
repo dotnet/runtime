@@ -39,6 +39,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/environment.h>
+#include <mono/metadata/environment-internals.h>
 #include <mono/metadata/verify.h>
 #include <mono/metadata/verify-internals.h>
 #include <mono/metadata/mono-debug.h>
@@ -344,14 +345,15 @@ interp_opt_sets [] = {
 	INTERP_OPT_INLINE | INTERP_OPT_CPROP,
 	INTERP_OPT_INLINE | INTERP_OPT_SUPER_INSTRUCTIONS,
 	INTERP_OPT_CPROP | INTERP_OPT_SUPER_INSTRUCTIONS,
-	INTERP_OPT_INLINE | INTERP_OPT_CPROP | INTERP_OPT_SUPER_INSTRUCTIONS,
+	INTERP_OPT_INLINE | INTERP_OPT_CPROP | INTERP_OPT_SUPER_INSTRUCTIONS | INTERP_OPT_BBLOCKS,
 };
 
 static const char* const
 interp_opflags_names [] = {
 	"inline",
 	"cprop",
-	"super-insn"
+	"super-insn",
+	"bblocks"
 };
 
 static const char*
@@ -2006,10 +2008,6 @@ apply_root_domain_configuration_file_bindings (MonoDomain *domain, char *root_do
 static void
 mono_check_interp_supported (void)
 {
-#ifdef DISABLE_INTERPRETER
-	g_error ("Mono IL interpreter support is missing\n");
-#endif
-
 #ifdef MONO_CROSS_COMPILE
 	g_error ("--interpreter on cross-compile runtimes not supported\n");
 #endif
@@ -2647,6 +2645,8 @@ mono_main (int argc, char* argv[])
 	}
 
 	mono_set_defaults (mini_verbose_level, opt);
+	mono_set_os_args (argc, argv);
+
 	domain = mini_init (argv [i], forced_version);
 
 	mono_gc_set_stack_end (&domain);
@@ -2999,7 +2999,7 @@ mono_runtime_set_execution_mode_full (int mode, gboolean override)
 		mono_llvm_only = TRUE;
 		break;
 
-	case MONO_EE_MODE_INTERP:
+	case MONO_AOT_MODE_INTERP_ONLY:
 		mono_check_interp_supported ();
 		mono_use_interpreter = TRUE;
 

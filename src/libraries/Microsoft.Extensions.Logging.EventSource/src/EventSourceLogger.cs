@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Buffers;
@@ -57,11 +56,12 @@ namespace Microsoft.Extensions.Logging.EventSource
             {
                 return;
             }
+            string message = null;
 
             // See if they want the formatted message
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.FormattedMessage))
             {
-                string message = formatter(state, exception);
+                message = formatter(state, exception);
                 _eventSource.FormattedMessage(
                     logLevel,
                     _factoryID,
@@ -104,6 +104,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                     exceptionJson = ToJson(exceptionInfoData);
                 }
                 IReadOnlyList<KeyValuePair<string, string>> arguments = GetProperties(state);
+                message ??= formatter(state, exception);
                 _eventSource.MessageJson(
                     logLevel,
                     _factoryID,
@@ -111,7 +112,8 @@ namespace Microsoft.Extensions.Logging.EventSource
                     eventId.Id,
                     eventId.Name,
                     exceptionJson,
-                    ToJson(arguments));
+                    ToJson(arguments),
+                    message);
             }
         }
 

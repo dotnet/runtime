@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections;
 
@@ -15,16 +14,18 @@ namespace System.Xml
             _container = container;
         }
 
-        public override XmlNode Item(int i)
+        public override XmlNode? Item(int i)
         {
             // Out of range indexes return a null XmlNode
             if (i < 0)
                 return null;
-            for (XmlNode n = _container.FirstChild; n != null; n = n.NextSibling, i--)
+
+            for (XmlNode? n = _container.FirstChild; n != null; n = n.NextSibling, i--)
             {
                 if (i == 0)
                     return n;
             }
+
             return null;
         }
 
@@ -33,10 +34,11 @@ namespace System.Xml
             get
             {
                 int c = 0;
-                for (XmlNode n = _container.FirstChild; n != null; n = n.NextSibling)
+                for (XmlNode? n = _container.FirstChild; n != null; n = n.NextSibling)
                 {
                     c++;
                 }
+
                 return c;
             }
         }

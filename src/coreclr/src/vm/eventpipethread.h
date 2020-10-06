@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __EVENTPIPE_THREAD_H__
 #define __EVENTPIPE_THREAD_H__
@@ -19,7 +18,9 @@ class EventPipeThread;
 
 void ReleaseEventPipeThreadRef(EventPipeThread* pThread);
 void AcquireEventPipeThreadRef(EventPipeThread* pThread);
-typedef Wrapper<EventPipeThread*, AcquireEventPipeThreadRef, ReleaseEventPipeThreadRef> EventPipeThreadHolder;
+typedef Wrapper<EventPipeThread *, AcquireEventPipeThreadRef, ReleaseEventPipeThreadRef> EventPipeThreadHolder;
+
+typedef EventPipeIterator<EventPipeThread *> EventPipeThreadIterator;
 
 class EventPipeThreadSessionState
 {
@@ -85,6 +86,9 @@ class EventPipeThread
 {
     static thread_local EventPipeThreadHolder gCurrentEventPipeThreadHolder;
 
+    static SpinLock s_threadsLock;
+    static SList<SListElem<EventPipeThread *>> s_pThreads;
+
     ~EventPipeThread();
 
     // The EventPipeThreadHolder maintains one count while the thread is alive
@@ -115,11 +119,23 @@ class EventPipeThread
     //
     EventPipeSession *m_pRundownSession = nullptr;
 
+    // Use Get/GetOrCreate instead
+    EventPipeThread();
+
 public:
+    static void Initialize();
+
     static EventPipeThread *Get();
     static EventPipeThread* GetOrCreate();
 
-    EventPipeThread();
+    static EventPipeThreadIterator GetThreads();
+    static SpinLock *GetGlobalThreadLock()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return &s_threadsLock;
+    }
+
     void AddRef();
     void Release();
     SpinLock *GetLock();

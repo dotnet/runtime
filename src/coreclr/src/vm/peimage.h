@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // --------------------------------------------------------------------------------
 // PEImage.h
 //
@@ -120,14 +119,9 @@ public:
 
     };
 
-    // pUnkResource must be one of the ICLRPrivResource* interfaces defined in CLRPrivBinding.IDL.
-    // pUnkResource will be queried for each of these to find a match and
-    static PEImage * OpenImage(
-        ICLRPrivResource * pIResource,
-        MDInternalImportFlags flags = MDInternalImport_Default);
-
     static PTR_PEImage FindById(UINT64 uStreamAsmId, DWORD dwModuleId);
-    static PTR_PEImage FindByPath(LPCWSTR pPath);
+    static PTR_PEImage FindByPath(LPCWSTR pPath,
+                                  BOOL isInBundle = TRUE);
     static PTR_PEImage FindByShortPath(LPCWSTR pPath);
     static PTR_PEImage FindByLongPath(LPCWSTR pPath);
     void AddToHashMap();
@@ -244,9 +238,7 @@ private:
     // Private routines
     // ------------------------------------------------------------
 
-    void  Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
-    void  Init(IStream* pStream, UINT64 uStreamAsmId,
-               DWORD dwModuleId, BOOL resourceFile);
+    void Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation);
 
     void VerifyIsILOrNIAssembly(BOOL fIL);
 
@@ -254,15 +246,18 @@ private:
     {
 
         LPCWSTR m_pPath;
+        BOOL m_bIsInBundle;
 
-        PEImageLocator(LPCWSTR pPath)
-            : m_pPath(pPath)
+        PEImageLocator(LPCWSTR pPath, BOOL bIsInBundle)
+            : m_pPath(pPath),
+              m_bIsInBundle(bIsInBundle)
         {
         }
 
         PEImageLocator(PEImage * pImage)
             : m_pPath(pImage->m_path.GetUnicode())
         {
+            m_bIsInBundle = pImage->IsInBundle();
         }
     };
 

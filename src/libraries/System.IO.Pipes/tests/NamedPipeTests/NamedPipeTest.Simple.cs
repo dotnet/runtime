@@ -1,10 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -118,7 +116,7 @@ namespace System.IO.Pipes.Tests
                     Task<int> clientTask = client.ReadAsync(received1, 0, received1.Length);
                     using (NamedPipeServerStream server = new NamedPipeServerStream(PipeDirection.Out, false, true, serverBase.SafePipeHandle))
                     {
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        if (OperatingSystem.IsWindows())
                         {
                             Assert.Equal(1, client.NumberOfServerInstances);
                         }
@@ -156,7 +154,7 @@ namespace System.IO.Pipes.Tests
                 {
                     using (NamedPipeClientStream client = new NamedPipeClientStream(PipeDirection.In, false, true, pair.clientStream.SafePipeHandle))
                     {
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                        if (OperatingSystem.IsWindows())
                         {
                             Assert.Equal(1, client.NumberOfServerInstances);
                         }
@@ -225,7 +223,7 @@ namespace System.IO.Pipes.Tests
                 NamedPipeServerStream server = pair.serverStream;
                 var ctx = new CancellationTokenSource();
 
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // cancellation token after the operation has been initiated
+                if (OperatingSystem.IsWindows()) // cancellation token after the operation has been initiated
                 {
                     Task serverWaitTimeout = server.WaitForConnectionAsync(ctx.Token);
                     ctx.Cancel();
@@ -323,7 +321,7 @@ namespace System.IO.Pipes.Tests
 
                 if (!pair.writeToServer)
                 {
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // writes on Unix may still succeed after other end disconnects, due to socket being used
+                    if (OperatingSystem.IsWindows()) // writes on Unix may still succeed after other end disconnects, due to socket being used
                     {
                         // Pipe is broken
                         Assert.Throws<IOException>(() => client.Write(buffer, 0, buffer.Length));
@@ -339,7 +337,7 @@ namespace System.IO.Pipes.Tests
                     Assert.Equal(0, client.Read(buffer, 0, buffer.Length));
                     Assert.Equal(-1, client.ReadByte());
 
-                    if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // NumberOfServerInstances not supported on Unix
+                    if (!OperatingSystem.IsWindows()) // NumberOfServerInstances not supported on Unix
                     {
                         Assert.Throws<PlatformNotSupportedException>(() => client.NumberOfServerInstances);
                     }
@@ -548,7 +546,7 @@ namespace System.IO.Pipes.Tests
                 if (server.CanWrite)
                 {
                     var ctx1 = new CancellationTokenSource();
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // On Unix WriteAsync's aren't cancelable once initiated
+                    if (OperatingSystem.IsWindows()) // On Unix WriteAsync's aren't cancelable once initiated
                     {
                         Task serverWriteToken = server.WriteAsync(buffer, 0, buffer.Length, ctx1.Token);
                         ctx1.Cancel();
@@ -644,7 +642,7 @@ namespace System.IO.Pipes.Tests
                 if (client.CanWrite)
                 {
                     var ctx1 = new CancellationTokenSource();
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)) // On Unix WriteAsync's aren't cancelable once initiated
+                    if (OperatingSystem.IsWindows()) // On Unix WriteAsync's aren't cancelable once initiated
                     {
                         Task serverWriteToken = client.WriteAsync(buffer, 0, buffer.Length, ctx1.Token);
                         ctx1.Cancel();

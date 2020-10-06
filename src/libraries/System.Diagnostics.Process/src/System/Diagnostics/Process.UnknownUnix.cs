@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Diagnostics
 {
@@ -73,11 +72,6 @@ namespace System.Diagnostics
         /// <param name="resultingMin">The resulting minimum working set limit after any changes applied.</param>
         /// <param name="resultingMax">The resulting maximum working set limit after any changes applied.</param>
         private void SetWorkingSetLimitsCore(IntPtr? newMin, IntPtr? newMax, out IntPtr resultingMin, out IntPtr resultingMax)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        private static string GetExePath()
         {
             throw new PlatformNotSupportedException();
         }

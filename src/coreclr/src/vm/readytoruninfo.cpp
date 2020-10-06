@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 // ===========================================================================
 // File: ReadyToRunInfo.cpp
 //
@@ -504,10 +503,6 @@ static NativeImage *AcquireCompositeImage(Module * pModule, PEImageLayout * pLay
     if (ownerCompositeExecutableName != NULL)
     {
         AssemblyLoadContext *loadContext = pModule->GetFile()->GetAssemblyLoadContext();
-        if (loadContext == nullptr)
-        {
-            loadContext = (AssemblyLoadContext *)AppDomain::GetCurrentDomain()->CreateBinderContext();
-        }
         return loadContext->LoadNativeImage(pModule, ownerCompositeExecutableName);
     }
     
@@ -688,6 +683,8 @@ ReadyToRunInfo::ReadyToRunInfo(Module * pModule, PEImageLayout * pLayout, READYT
         m_methodDefEntryPoints = NativeArray(&m_nativeReader, pEntryPointsDir->VirtualAddress);
     }
 
+    m_pSectionDelayLoadMethodCallThunks = m_pComposite->FindSection(ReadyToRunSectionType::DelayLoadMethodCallThunks);
+
     IMAGE_DATA_DIRECTORY * pinstMethodsDir = m_pComposite->FindSection(ReadyToRunSectionType::InstanceMethodEntryPoints);
     if (pinstMethodsDir != NULL)
     {
@@ -832,6 +829,8 @@ PCODE ReadyToRunInfo::GetEntryPoint(MethodDesc * pMD, PrepareCodeConfig* pConfig
     // If R2R code is disabled for this module, simply behave as if it is never found
     if (m_readyToRunCodeDisabled)
         goto done;
+
+    ETW::MethodLog::GetR2RGetEntryPointStart(pMD);
 
     uint offset;
     if (pMD->HasClassOrMethodInstantiation())

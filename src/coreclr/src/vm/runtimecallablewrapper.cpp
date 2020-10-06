@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -484,12 +483,12 @@ IClassFactory *ComClassFactory::GetIClassFactory()
     GCX_PREEMP();
 
     // If a server name is specified, then first try CLSCTX_REMOTE_SERVER.
-    if (m_pwszServer)
+    if (m_wszServer)
     {
         // Set up the COSERVERINFO struct.
         COSERVERINFO ServerInfo;
         memset(&ServerInfo, 0, sizeof(COSERVERINFO));
-        ServerInfo.pwszName = m_pwszServer;
+        ServerInfo.pwszName = (LPWSTR)m_wszServer;
 
         // Try to retrieve the IClassFactory passing in CLSCTX_REMOTE_SERVER.
         hr = CoGetClassObject(m_rclsid, CLSCTX_REMOTE_SERVER, &ServerInfo, IID_IClassFactory, (void**)&pClassFactory);
@@ -520,10 +519,10 @@ IClassFactory *ComClassFactory::GetIClassFactory()
         GetHRMsg(hr, strHRDescription);
 
         // Throw the actual exception indicating we couldn't find the class factory.
-        if (m_pwszServer == NULL)
+        if (m_wszServer == NULL)
             COMPlusThrowHR(hr, IDS_EE_LOCAL_COGETCLASSOBJECT_FAILED, strHRHex, strClsid, strHRDescription.GetUnicode());
         else
-            COMPlusThrowHR(hr, IDS_EE_REMOTE_COGETCLASSOBJECT_FAILED, strHRHex, strClsid, m_pwszServer, strHRDescription.GetUnicode());
+            COMPlusThrowHR(hr, IDS_EE_REMOTE_COGETCLASSOBJECT_FAILED, strHRHex, strClsid, m_wszServer, strHRDescription.GetUnicode());
     }
 
     RETURN pClassFactory;
@@ -588,12 +587,11 @@ OBJECTREF ComClassFactory::CreateInstance(MethodTable* pMTClass, BOOL ForManaged
 
 //--------------------------------------------------------------
 // Init the ComClassFactory.
-void ComClassFactory::Init(__in_opt WCHAR* pwszProgID, __in_opt WCHAR* pwszServer, MethodTable* pClassMT)
+void ComClassFactory::Init(__in_opt PCWSTR wszServer, MethodTable* pClassMT)
 {
     LIMITED_METHOD_CONTRACT;
 
-    m_pwszProgID = pwszProgID;
-    m_pwszServer = pwszServer;
+    m_wszServer = wszServer;
     m_pClassMT = pClassMT;
 }
 
@@ -611,11 +609,8 @@ void ComClassFactory::Cleanup()
     if (m_bManagedVersion)
         return;
 
-    if (m_pwszProgID != NULL)
-        delete [] m_pwszProgID;
-
-    if (m_pwszServer != NULL)
-        delete [] m_pwszServer;
+    if (m_wszServer != NULL)
+        delete [] m_wszServer;
 
     delete this;
 }
@@ -947,37 +942,6 @@ void RCWCache::ReleaseWrappersWorker(LPVOID pCtxCookie)
 
                     pWrap->DecoupleFromObject();
                     RemoveWrapper(pWrap);
-                }
-                else if (!pWrap->IsFreeThreaded())
-                {
-                    // We have a non-zero pCtxCookie but this RCW was not created in that context. We still
-                    // need to take a closer look at the RCW because its interface pointer cache may contain
-                    // pointers acquired in the given context - and those need to be released here.
-                    if (pWrap->m_pAuxiliaryData != NULL)
-                    {
-                        RCWAuxiliaryData::InterfaceEntryIterator it = pWrap->m_pAuxiliaryData->IterateInterfacePointers();
-                        while (it.Next())
-                        {
-                            InterfaceEntry *pEntry = it.GetEntry();
-                            if (!pEntry->IsFree() && it.GetCtxCookie() == pCtxCookie)
-                            {
-                                RCWInterfacePointer intfPtr;
-                                intfPtr.m_pUnk = pEntry->m_pUnknown;
-                                intfPtr.m_pRCW = pWrap;
-                                intfPtr.m_pCtxEntry = it.GetCtxEntryNoAddRef();
-
-                                if (!pWrap->IsURTAggregated())
-                                    InterfacePointerList.Push(intfPtr);
-                                else
-                                    AggregatedInterfacePointerList.Push(intfPtr);
-
-                                // Reset the CtxEntry first, so we don't race with RCWAuxiliaryData::CacheInterfacePointer
-                                // which may try to reuse the InterfaceEntry for another (pUnk, MT, CtxEntry) triplet.
-                                it.ResetCtxEntry();
-                                pEntry->Free();
-                            }
-                        }
-                    }
                 }
             }
         }
@@ -1427,150 +1391,6 @@ VOID RCWCleanupList::ReleaseRCWListRaw(RCW* pRCW)
         pRCW->Cleanup();
         pRCW = pNext;
     }
-}
-
-// Destroys RCWAuxiliaryData. Note that we do not release interface pointers stored in the
-// auxiliary interface pointer cache here. That needs to be done in the right COM context
-// (see code:RCW::ReleaseAuxInterfacesCallBack).
-RCWAuxiliaryData::~RCWAuxiliaryData()
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_prVariantInterfaces != NULL)
-    {
-        delete m_prVariantInterfaces;
-    }
-
-    InterfaceEntryEx *pEntry = m_pInterfaceCache;
-    while (pEntry)
-    {
-        InterfaceEntryEx *pNextEntry = pEntry->m_pNext;
-
-        delete pEntry;
-        pEntry = pNextEntry;
-    }
-
-    if (VARIANCE_STUB_TARGET_IS_HANDLE(m_ohObjectVariantCallTarget_IEnumerable))
-    {
-        DestroyHandle(m_ohObjectVariantCallTarget_IEnumerable);
-    }
-    if (VARIANCE_STUB_TARGET_IS_HANDLE(m_ohObjectVariantCallTarget_IReadOnlyList))
-    {
-        DestroyHandle(m_ohObjectVariantCallTarget_IReadOnlyList);
-    }
-}
-
-// Inserts variant interfaces to the cache.
-void RCWAuxiliaryData::CacheVariantInterface(MethodTable *pMT)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    CrstHolder ch(&m_VarianceCacheCrst);
-
-    if (m_prVariantInterfaces == NULL)
-    {
-        m_prVariantInterfaces = new ArrayList();
-    }
-
-    if (pMT->HasVariance() && m_prVariantInterfaces->FindElement(0, pMT) == ArrayList::NOT_FOUND)
-    {
-        m_prVariantInterfaces->Append(pMT);
-    }
-
-    // check implemented interfaces as well
-    MethodTable::InterfaceMapIterator it = pMT->IterateInterfaceMap();
-    while (it.Next())
-    {
-        MethodTable *pItfMT = it.GetInterface();
-        if (pItfMT->HasVariance() && m_prVariantInterfaces->FindElement(0, pItfMT) == ArrayList::NOT_FOUND)
-        {
-            m_prVariantInterfaces->Append(pItfMT);
-        }
-    }
-}
-
-// Inserts an interface pointer in the cache.
-void RCWAuxiliaryData::CacheInterfacePointer(MethodTable *pMT, IUnknown *pUnk, LPVOID pCtxCookie)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    InterfaceEntryEx *pEntry = NULL;
-
-    // first, try to find a free entry to reuse
-    InterfaceEntryIterator it = IterateInterfacePointers();
-    while (it.Next())
-    {
-        InterfaceEntry *pEntry = it.GetEntry();
-        if (pEntry->IsFree() && pEntry->Init(pMT, pUnk))
-        {
-            // setting the cookie after "publishing" the entry is fine, at worst
-            // we may miss the cache if someone looks for this pMT concurrently
-            _ASSERTE_MSG(it.GetCtxCookie() == NULL, "Race condition detected, we are supposed to own the InterfaceEntry at this point");
-            it.SetCtxCookie(pCtxCookie);
-            return;
-        }
-    }
-
-    // create a new entry if a free one was not found
-    InterfaceEntryEx *pEntryEx = new InterfaceEntryEx();
-    ZeroMemory(pEntryEx, sizeof(InterfaceEntryEx));
-
-    pEntryEx->m_BaseEntry.Init(pMT, pUnk);
-
-    if (pCtxCookie != NULL)
-    {
-        pEntryEx->m_pCtxEntry = CtxEntryCache::GetCtxEntryCache()->FindCtxEntry(pCtxCookie, GetThread());
-    }
-    else
-    {
-        pEntryEx->m_pCtxEntry = NULL;
-    }
-
-    // and insert it into the linked list (the interlocked operation ensures that
-    // the list is walkable by other threads at all times)
-    InterfaceEntryEx *pNext;
-    do
-    {
-        pNext = VolatileLoad(&m_pInterfaceCache); // our candidate "next"
-        pEntryEx->m_pNext = pNext;
-    }
-    while (FastInterlockCompareExchangePointer(&m_pInterfaceCache, pEntryEx, pNext) != pNext);
-}
-
-// Returns a cached interface pointer or NULL if there was no match.
-IUnknown *RCWAuxiliaryData::FindInterfacePointer(MethodTable *pMT, LPVOID pCtxCookie)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    InterfaceEntryIterator it = IterateInterfacePointers();
-    while (it.Next())
-    {
-        InterfaceEntry *pEntry = it.GetEntry();
-        if (!pEntry->IsFree() && pEntry->m_pMT == (IE_METHODTABLE_PTR)pMT && it.GetCtxCookie() == pCtxCookie)
-        {
-            return pEntry->m_pUnknown;
-        }
-    }
-
-    return NULL;
 }
 
 const int RCW::s_rGCPressureTable[GCPressureSize_COUNT] =
@@ -2128,11 +1948,6 @@ void RCW::Cleanup()
             RemoveMemoryPressure();
     }
 
-    if (m_pAuxiliaryData != NULL)
-    {
-        delete m_pAuxiliaryData;
-    }
-
 #ifdef _DEBUG
     m_cbRefCount = 0;
     m_SyncBlockIndex = 0;
@@ -2405,7 +2220,7 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
     if (hr == CO_E_OBJNOTCONNECTED || hr == RPC_E_INVALID_OBJECT || hr == RPC_E_INVALID_OBJREF || hr == CO_E_OBJNOTREG)
     {
         // set apartment state
-        GetThread()->SetApartment(Thread::AS_InMTA, FALSE);
+        GetThread()->SetApartment(Thread::AS_InMTA);
 
         // Release the stream of the IUnkEntry to force UnmarshalIUnknownForCurrContext
         // to remarshal to the stream.
@@ -2429,9 +2244,9 @@ HRESULT RCW::SafeQueryInterfaceRemoteAware(REFIID iid, IUnknown** ppResUnk)
 #endif //#ifndef CROSSGEN_COMPILE
 
 // Helper method to allow us to compare a MethodTable against a known method table
-// from mscorlib.  If the mscorlib type isn't loaded, we don't load it because we
+// from CoreLib.  If the CoreLib type isn't loaded, we don't load it because we
 // know that it can't be the MethodTable we're curious about.
-static bool MethodTableHasSameTypeDefAsMscorlibClass(MethodTable* pMT, BinderClassID classId)
+static bool MethodTableHasSameTypeDefAsCoreLibClass(MethodTable* pMT, BinderClassID classId)
 {
     CONTRACTL
     {
@@ -2441,11 +2256,11 @@ static bool MethodTableHasSameTypeDefAsMscorlibClass(MethodTable* pMT, BinderCla
     }
     CONTRACTL_END;
 
-    MethodTable* pMT_MscorlibClass = MscorlibBinder::GetClassIfExist(classId);
-    if (pMT_MscorlibClass == NULL)
+    MethodTable* pMT_CoreLibClass = CoreLibBinder::GetClassIfExist(classId);
+    if (pMT_CoreLibClass == NULL)
         return false;
 
-    return (pMT->HasSameTypeDefAs(pMT_MscorlibClass) != FALSE);
+    return (pMT->HasSameTypeDefAs(pMT_CoreLibClass) != FALSE);
 }
 
 #ifndef CROSSGEN_COMPILE
@@ -2517,17 +2332,6 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
         }
     }
 
-    if (m_pAuxiliaryData != NULL)
-    {
-        pUnk = m_pAuxiliaryData->FindInterfacePointer(pMT, (IsFreeThreaded() ? NULL : pCtxCookie));
-        if (pUnk != NULL)
-        {
-            cbRef = SafeAddRef(pUnk);
-            LogInteropAddRef(pUnk, cbRef, "RCW::GetComIPForMethodTableFromCache: Addref because returning pUnk fetched from auxiliary interface pointer cache");
-            RETURN pUnk;
-        }
-    }
-
     // We're going to be making some COM calls, better initialize COM.
     EnsureComStarted();
 
@@ -2537,11 +2341,8 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
     if (pUnk == NULL)
         RETURN NULL;
 
-    bool fAllowOutOfContextCache = false;
-
     // try to cache the interface pointer in the inline cache. This cache can only store interface pointers
     // returned from QI's in the same context where we created the RCW.
-    bool fInterfaceCached = false;
     if (GetWrapperCtxCookie() == pCtxCookie || IsFreeThreaded())
     {
         for (i = 0; i < INTERFACE_ENTRY_CACHE_SIZE; i++)
@@ -2556,27 +2357,9 @@ IUnknown* RCW::GetComIPForMethodTableFromCache(MethodTable* pMT)
                     LogInteropAddRef(pUnk, cbRef, "RCW::GetComIPForMethodTableFromCache: Addref because storing pUnk in InterfaceEntry cache");
                 }
 
-                fInterfaceCached = true;
                 break;
             }
         }
-    }
-
-    if (!fInterfaceCached && fAllowOutOfContextCache)
-    {
-        // We couldn't insert into the inline cache, either because it didn't fit, or because
-        // we are in a wrong COM context. We'll use the RCWAuxiliaryData structure.
-        GetOrCreateAuxiliaryData()->CacheInterfacePointer(pMT, pUnk, (IsFreeThreaded() ? NULL : pCtxCookie));
-
-        // If the component is not aggregated then we need to ref-count
-        if (!IsURTAggregated())
-        {
-            // Get an extra addref to hold this reference alive in our cache
-            cbRef = SafeAddRef(pUnk);
-            LogInteropAddRef(pUnk, cbRef, "RCW::GetComIPForMethodTableFromCache: Addref because storing pUnk in the auxiliary interface pointer cache");
-        }
-
-        fInterfaceCached = true;
     }
 
     RETURN pUnk;
@@ -2638,53 +2421,6 @@ HRESULT RCW::EnterContext(PFNCTXCALLBACK pCallbackFunc, LPVOID pData)
 }
 
 //---------------------------------------------------------------------
-// Callback called to release the interfaces in the auxiliary cache.
-HRESULT __stdcall RCW::ReleaseAuxInterfacesCallBack(LPVOID pData)
-{
-    CONTRACT(HRESULT)
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-        PRECONDITION(CheckPointer(pData));
-        POSTCONDITION(SUCCEEDED(RETVAL));
-    }
-    CONTRACT_END;
-
-    RCW* pWrap = (RCW*)pData;
-
-    LPVOID pCurrentCtxCookie = GetCurrentCtxCookie();
-    _ASSERTE(pCurrentCtxCookie != NULL);
-
-    RCW_VTABLEPTR(pWrap);
-
-    // we don't come here for free-threaded RCWs
-    _ASSERTE(!pWrap->IsFreeThreaded());
-
-    // we don't come here if there are no interfaces in the aux cache
-    _ASSERTE(pWrap->m_pAuxiliaryData != NULL);
-
-    RCWAuxiliaryData::InterfaceEntryIterator it = pWrap->m_pAuxiliaryData->IterateInterfacePointers();
-    while (it.Next())
-    {
-        InterfaceEntry *pEntry = it.GetEntry();
-        if (!pEntry->IsFree())
-        {
-            if (pCurrentCtxCookie == it.GetCtxCookie())
-            {
-                IUnknown *pUnk = it.GetEntry()->m_pUnknown;
-
-                // make sure we never try to clean this up again
-                pEntry->Free();
-                SafeReleasePreemp(pUnk, pWrap);
-            }
-        }
-    }
-
-    RETURN S_OK;
-}
-
-//---------------------------------------------------------------------
 // Callback called to release the IUnkEntry and the Interface entries.
 HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
 {
@@ -2720,47 +2456,6 @@ HRESULT __stdcall RCW::ReleaseAllInterfacesCallBack(LPVOID pData)
             // have a pointer to a proxy which is no longer attached to the object.
 
             pWrap->ReleaseAllInterfaces();
-        }
-    }
-
-    // Free auxiliary interface entries if this is not an extensible RCW
-    if (!pWrap->IsURTAggregated() && pWrap->m_pAuxiliaryData != NULL)
-    {
-        RCWAuxiliaryData::InterfaceEntryIterator it = pWrap->m_pAuxiliaryData->IterateInterfacePointers();
-        while (it.Next())
-        {
-            InterfaceEntry *pEntry = it.GetEntry();
-            if (!pEntry->IsFree())
-            {
-                IUnknown *pUnk = it.GetEntry()->m_pUnknown;
-
-                if (pCurrentCtxCookie == NULL || pCurrentCtxCookie == it.GetCtxCookie() || pWrap->IsFreeThreaded())
-                {
-                    // make sure we never try to clean this up again
-                    pEntry->Free();
-                    SafeReleasePreemp(pUnk, pWrap);
-                }
-                else
-                {
-                    // Retrieve the addref'ed context entry that the wrapper lives in.
-                    CtxEntryHolder pCtxEntry = it.GetCtxEntry();
-
-                    // Transition into the context to release the interfaces.
-                    HRESULT hr = pCtxEntry->EnterContext(ReleaseAuxInterfacesCallBack, pWrap);
-                    if (FAILED(hr))
-                    {
-                        // The context is disconnected so we cannot transition into it to clean up.
-                        // The only option we have left is to try and release the interfaces from
-                        // the current context. This will work for context agile object's since we have
-                        // a pointer to them directly. It will however fail for others since we only
-                        // have a pointer to a proxy which is no longer attached to the object.
-
-                        // make sure we never try to clean this up again
-                        pEntry->Free();
-                        SafeReleasePreemp(pUnk, pWrap);
-                    }
-                }
-            }
         }
     }
 
@@ -2800,29 +2495,6 @@ void RCW::ReleaseAllInterfaces()
             }
         }
     }
-}
-
-//---------------------------------------------------------------------
-// Returns RCWAuxiliaryData associated with this RCW.
-PTR_RCWAuxiliaryData RCW::GetOrCreateAuxiliaryData()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-
-    if (m_pAuxiliaryData == NULL)
-    {
-        NewHolder<RCWAuxiliaryData> pData = new RCWAuxiliaryData();
-        if (InterlockedCompareExchangeT(&m_pAuxiliaryData, pData.GetValue(), NULL) == NULL)
-        {
-            pData.SuppressRelease();
-        }
-    }
-    return m_pAuxiliaryData;
 }
 
 //---------------------------------------------------------------------
@@ -2866,7 +2538,7 @@ bool RCW::SupportsMngStdInterface(MethodTable *pItfMT)
 
         // If the requested interface is IEnumerable then we need to check to see if the
         // COM object implements IDispatch and has a member with DISPID_NEWENUM.
-        if (pItfMT == MscorlibBinder::GetClass(CLASS__IENUMERABLE))
+        if (pItfMT == CoreLibBinder::GetClass(CLASS__IENUMERABLE))
         {
             SafeComHolder<IDispatch> pDisp = GetIDispatch();
             if (pDisp)
@@ -2956,6 +2628,11 @@ BOOL ComObject::SupportsInterface(OBJECTREF oref, MethodTable* pIntfTable)
 
     // Make sure the interface method table has been restored.
     pIntfTable->CheckRestore();
+
+    if (pIntfTable->GetComInterfaceType() == ifInspectable)
+    {
+        COMPlusThrow(kPlatformNotSupportedException, IDS_EE_NO_IINSPECTABLE);
+    }
 
     // Check to see if the static class definition indicates we implement the interface.
     MethodTable *pMT = oref->GetMethodTable();
@@ -3148,7 +2825,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_EVENTITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),
                 strCastToName.GetUnicode(), strIID, strSrcItfIID);
         }
-        else if (thCastTo == TypeHandle(MscorlibBinder::GetClass(CLASS__IENUMERABLE)))
+        else if (thCastTo == TypeHandle(CoreLibBinder::GetClass(CLASS__IENUMERABLE)))
         {
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_IENUMERABLE,
                 strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(), strCastToName.GetUnicode(), strIID);

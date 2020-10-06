@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // SYNCBLK.H
 //
@@ -606,9 +605,15 @@ typedef DPTR(class ComCallWrapper)        PTR_ComCallWrapper;
 #include "shash.h"
 #endif // FEATURE_COMINTEROP
 
+using ManagedObjectComWrapperByIdMap = MapSHash<INT64, void*>;
+typedef DPTR(ManagedObjectComWrapperByIdMap) PTR_ManagedObjectComWrapperByIdMap;
+
 class InteropSyncBlockInfo
 {
     friend class RCWHolder;
+#ifdef DACCESS_COMPILE
+    friend class ClrDataAccess;
+#endif
 
 public:
 #ifndef TARGET_UNIX
@@ -793,6 +798,7 @@ public:
 #endif
 
 public:
+
     bool TryGetManagedObjectComWrapper(_In_ INT64 wrapperId, _Out_ void** mocw)
     {
         LIMITED_METHOD_DAC_CONTRACT;
@@ -803,6 +809,15 @@ public:
 
         CrstHolder lock(&m_managedObjectComWrapperLock);
         return m_managedObjectComWrapperMap->Lookup(wrapperId, mocw);
+    }
+
+    using EnumWrappersCallback = void(void* mocw, void *additionalData);
+    void IterateComWrappers(EnumWrappersCallback* callback, void *additionalData = NULL)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+
+        CrstHolder lock(&m_managedObjectComWrapperLock);
+        IterateComWrappersDontTakeLock(callback, additionalData);
     }
 
 #ifndef DACCESS_COMPILE
@@ -831,7 +846,6 @@ public:
         return true;
     }
 
-    using EnumWrappersCallback = void(void* mocw);
     void ClearManagedObjectComWrappers(EnumWrappersCallback* callback)
     {
         LIMITED_METHOD_CONTRACT;
@@ -840,20 +854,9 @@ public:
             return;
 
         CrstHolder lock(&m_managedObjectComWrapperLock);
-
-        if (callback != NULL)
-        {
-            ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
-            while (iter != m_managedObjectComWrapperMap->End())
-            {
-                callback(iter->Value());
-                ++iter;
-            }
-        }
-
+        IterateComWrappersDontTakeLock(callback);
         m_managedObjectComWrapperMap->RemoveAll();
     }
-#endif // !DACCESS_COMPILE
 
     bool TryGetExternalComObjectContext(_Out_ void** eoc)
     {
@@ -862,7 +865,6 @@ public:
         return (*eoc != NULL);
     }
 
-#ifndef DACCESS_COMPILE
     bool TrySetExternalComObjectContext(_In_ void* eoc, _In_ void* curr = NULL)
     {
         LIMITED_METHOD_CONTRACT;
@@ -876,11 +878,26 @@ public:
 
 private:
     // See InteropLib API for usage.
-    void* m_externalComObjectContext;
+    PTR_VOID m_externalComObjectContext;
 
-    using ManagedObjectComWrapperByIdMap = MapSHash<INT64, void*>;
     CrstExplicitInit m_managedObjectComWrapperLock;
-    NewHolder<ManagedObjectComWrapperByIdMap> m_managedObjectComWrapperMap;
+    PTR_ManagedObjectComWrapperByIdMap m_managedObjectComWrapperMap;
+
+    void IterateComWrappersDontTakeLock(EnumWrappersCallback* callback, void *additionalData = NULL)
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        
+        if (m_managedObjectComWrapperMap != NULL && callback != NULL)
+        {
+            ManagedObjectComWrapperByIdMap::Iterator iter = m_managedObjectComWrapperMap->Begin();
+            while (iter != m_managedObjectComWrapperMap->End())
+            {
+                callback(iter->Value(), additionalData);
+                ++iter;
+            }
+        }
+    }
+
 #endif // FEATURE_COMINTEROP
 
 };
@@ -890,6 +907,7 @@ typedef DPTR(InteropSyncBlockInfo) PTR_InteropSyncBlockInfo;
 // this is a lazily created additional block for an object which contains
 // synchronzation information and other "kitchen sink" data
 typedef DPTR(SyncBlock) PTR_SyncBlock;
+
 // See code:#SyncBlockOverview for more
 class SyncBlock
 {
@@ -1141,7 +1159,7 @@ class SyncBlock
         return m_Monitor.LeaveCompletely();
     }
 
-    BOOL Wait(INT32 timeOut, BOOL exitContext);
+    BOOL Wait(INT32 timeOut);
     void Pulse();
     void PulseAll();
 
@@ -1570,7 +1588,7 @@ class ObjHeader
         return dac_cast<PTR_Object>(dac_cast<TADDR>(this + 1));
     }
 
-    BOOL Wait(INT32 timeOut, BOOL exitContext);
+    BOOL Wait(INT32 timeOut);
     void Pulse();
     void PulseAll();
 

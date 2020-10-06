@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================
 **
@@ -22,7 +21,7 @@
 #define ModuleName    "rotor_pal.dll"
 #endif
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(loader_LoadLibraryW_test1_paltest_loadlibraryw_test1, "loader/LoadLibraryW/test1/paltest_loadlibraryw_test1")
 {
     HMODULE ModuleHandle;
     int err;

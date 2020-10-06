@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Globalization;
 using System.Runtime.CompilerServices;
@@ -143,7 +142,7 @@ namespace System
 
         [NonVersionable]
         public static unsafe UIntPtr operator +(UIntPtr pointer, int offset) =>
-            new UIntPtr((nuint)pointer._value + (nuint)offset);
+            (nuint)pointer._value + (nuint)offset;
 
         [NonVersionable]
         public static UIntPtr Subtract(UIntPtr pointer, int offset) =>
@@ -151,7 +150,7 @@ namespace System
 
         [NonVersionable]
         public static unsafe UIntPtr operator -(UIntPtr pointer, int offset) =>
-            new UIntPtr((nuint)pointer._value - (nuint)offset);
+            (nuint)pointer._value - (nuint)offset;
 
         public static int Size
         {

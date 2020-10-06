@@ -22,6 +22,25 @@
     </AssemblyMetadata>
   </ItemGroup>
 
+  <!-- Adds SupportedOSPlatform attribute for Windows Specific libraries -->
+  <ItemGroup Condition="'$(IsWindowsSpecific)' == 'true' and '$(IsTestProject)' != 'true'">
+    <AssemblyAttribute Include="System.Runtime.Versioning.SupportedOSPlatform">
+        <_Parameter1>windows</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <_unsupportedOSPlatforms Include="$(UnsupportedOSPlatforms)" />
+  </ItemGroup>
+
+  <Target Name="AddUnsupportedOSPlatformAttribute" BeforeTargets="GenerateAssemblyInfo" AfterTargets="PrepareForBuild">
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Runtime.Versioning.UnsupportedOSPlatform" Condition="'@(_unsupportedOSPlatforms)' != ''">
+        <_Parameter1>%(_unsupportedOSPlatforms.Identity)</_Parameter1>
+      </AssemblyAttribute>
+    </ItemGroup>
+  </Target>
+
   <Target Name="DecideIfWeNeedToIncludeDllSafeSearchPathAttribute"
           Condition="'$(IsDotNetFrameworkProductAssembly)' == 'true' and '$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
 
@@ -55,6 +74,10 @@
     <ItemGroup>
       <AssemblyAttribute Include="System.Reflection.AssemblyDefaultAliasAttribute">
         <_Parameter1>$(AssemblyName)</_Parameter1>
+      </AssemblyAttribute>
+
+      <AssemblyAttribute Include="System.Resources.NeutralResourcesLanguage" Condition="'@(EmbeddedResource)' != '' and '$(IsSourceProject)' == 'true'">
+        <_Parameter1>en-US</_Parameter1>
       </AssemblyAttribute>
 
       <AssemblyAttribute Include="System.Reflection.AssemblyMetadata"

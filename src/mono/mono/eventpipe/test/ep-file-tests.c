@@ -1,4 +1,8 @@
 #include "mono/eventpipe/ep.h"
+#include "mono/eventpipe/ep-config.h"
+#include "mono/eventpipe/ep-event.h"
+#include "mono/eventpipe/ep-event-instance.h"
+#include "mono/eventpipe/ep-file.h"
 #include "eglib/test/test.h"
 
 #define TEST_PROVIDER_NAME "MyTestProvider"
@@ -75,7 +79,7 @@ test_file_write_event (EventPipeSerializationFormat format, bool write_event, bo
 	test_location = 2;
 
 	if (write_event) {
-		provider = ep_create_provider (TEST_PROVIDER_NAME, NULL, NULL);
+		provider = ep_create_provider (TEST_PROVIDER_NAME, NULL, NULL, NULL);
 		ep_raise_error_if_nok (provider != NULL);
 
 		test_location = 3;

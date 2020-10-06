@@ -43,6 +43,7 @@ You can use code blocks like this:
 
 <!--
 Were there other options you considered, such as alternative API shapes?
+How does this compare to analogous APIs in other ecosystems and libraries?
 -->
 
 ## Risks

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
@@ -266,7 +265,7 @@ namespace System.Threading.Tasks
     internal class ParallelLoopState32 : ParallelLoopState
     {
         private readonly ParallelLoopStateFlags32 _sharedParallelStateFlags;
-        private int _currentIteration = 0;
+        private int _currentIteration;
 
         /// <summary>
         /// Internal constructor to ensure an instance isn't created by users.
@@ -330,7 +329,7 @@ namespace System.Threading.Tasks
     internal class ParallelLoopState64 : ParallelLoopState
     {
         private readonly ParallelLoopStateFlags64 _sharedParallelStateFlags;
-        private long _currentIteration = 0;
+        private long _currentIteration;
 
         /// <summary>
         /// Internal constructor to ensure an instance isn't created by users.

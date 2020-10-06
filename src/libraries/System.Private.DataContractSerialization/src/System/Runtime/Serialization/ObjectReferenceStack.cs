@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Xml;
@@ -15,9 +14,9 @@ namespace System.Runtime.Serialization
         private const int InitialArraySize = 4;
 
         private int _count;
-        private object[] _objectArray;
-        private bool[] _isReferenceArray;
-        private Dictionary<object, object> _objectDictionary;
+        private object[]? _objectArray;
+        private bool[]? _isReferenceArray;
+        private Dictionary<object, object?>? _objectDictionary;
 
         internal void Push(object obj)
         {
@@ -35,7 +34,7 @@ namespace System.Runtime.Serialization
             else
             {
                 if (_objectDictionary == null)
-                    _objectDictionary = new Dictionary<object, object>();
+                    _objectDictionary = new Dictionary<object, object?>();
 
                 _objectDictionary.Add(obj, null);
                 _count++;
@@ -96,7 +95,7 @@ namespace System.Runtime.Serialization
             }
             for (int i = (currentCount - 1); i >= 0; i--)
             {
-                if (object.ReferenceEquals(obj, _objectArray[i]) && _isReferenceArray != null && !_isReferenceArray[i])
+                if (object.ReferenceEquals(obj, _objectArray![i]) && _isReferenceArray != null && !_isReferenceArray[i])
                     return true;
             }
             return false;

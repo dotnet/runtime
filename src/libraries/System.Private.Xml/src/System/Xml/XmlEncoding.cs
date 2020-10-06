@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System.Text;
 using System.Diagnostics;
 
@@ -411,7 +409,7 @@ namespace System.Xml
     internal abstract class Ucs4Decoder : Decoder
     {
         internal byte[] lastBytes = new byte[4];
-        internal int lastBytesCount = 0;
+        internal int lastBytesCount;
 
         public override int GetCharCount(byte[] bytes, int index, int count)
         {

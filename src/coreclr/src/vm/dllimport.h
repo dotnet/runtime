@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //
 // File: DllImport.h
 //
@@ -83,7 +82,11 @@ public:
     static VOID NDirectLink(NDirectMethodDesc *pMD);
 
     // Either MD or signature & module must be given.
-    static BOOL MarshalingRequired(MethodDesc *pMD, PCCOR_SIGNATURE pSig = NULL, Module *pModule = NULL);
+    static BOOL MarshalingRequired(
+        _In_opt_ MethodDesc* pMD,
+        _In_opt_ PCCOR_SIGNATURE pSig = NULL,
+        _In_opt_ Module* pModule = NULL,
+        _In_ bool unmanagedCallersOnlyRequiresMarshalling = true);
     static void PopulateNDirectMethodDesc(NDirectMethodDesc* pNMD, PInvokeStaticSigInfo* pSigInfo, BOOL throwOnError = TRUE);
 
     static MethodDesc* CreateCLRToNativeILStub(
@@ -188,7 +191,6 @@ enum ILStubTypes
     ILSTUB_WRAPPERDELEGATE_INVOKE        = 0x80000007,
     ILSTUB_TAILCALL_STOREARGS            = 0x80000008,
     ILSTUB_TAILCALL_CALLTARGET           = 0x80000009,
-    ILSTUB_TAILCALL_DISPATCH             = 0x8000000A,
 };
 
 #ifdef FEATURE_COMINTEROP
@@ -228,7 +230,6 @@ inline bool SF_IsInstantiatingStub      (DWORD dwStubFlags) { LIMITED_METHOD_CON
 #endif
 inline bool SF_IsTailCallStoreArgsStub  (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_STOREARGS); }
 inline bool SF_IsTailCallCallTargetStub (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_CALLTARGET); }
-inline bool SF_IsTailCallDispatcherStub (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return (dwStubFlags == ILSTUB_TAILCALL_DISPATCH); }
 
 inline bool SF_IsCOMStub               (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COM)); }
 inline bool SF_IsCOMLateBoundStub      (DWORD dwStubFlags) { LIMITED_METHOD_CONTRACT; return COM_ONLY(dwStubFlags < NDIRECTSTUB_FL_INVALID && 0 != (dwStubFlags & NDIRECTSTUB_FL_COMLATEBOUND)); }
@@ -240,8 +241,7 @@ inline bool SF_IsSharedStub(DWORD dwStubFlags)
 {
     WRAPPER_NO_CONTRACT;
 
-    if (SF_IsTailCallStoreArgsStub(dwStubFlags) || SF_IsTailCallCallTargetStub(dwStubFlags) ||
-        SF_IsTailCallDispatcherStub(dwStubFlags))
+    if (SF_IsTailCallStoreArgsStub(dwStubFlags) || SF_IsTailCallCallTargetStub(dwStubFlags))
     {
         return false;
     }
@@ -542,7 +542,6 @@ protected:
 #ifdef FEATURE_COMINTEROP
     DWORD               m_dwTargetInterfacePointerLocalNum;
     DWORD               m_dwTargetEntryPointLocalNum;
-    DWORD               m_dwWinRTFactoryObjectLocalNum;
 #endif // FEATURE_COMINTEROP
 
     BOOL                m_fHasCleanupCode;

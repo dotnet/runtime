@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 //
 // Interface between the VM and Interop library.
@@ -36,7 +35,7 @@ public: // Native QCalls for the abstract ComWrappers managed type.
         _Inout_ QCall::ObjectHandleOnStack retValue);
 
 public: // Lifetime management for COM Wrappers
-    static void DestroyManagedObjectComWrapper(_In_ void* wrapper);
+    static void DestroyManagedObjectComWrapper(_In_ void* wrapper, _Out_opt_ void *unused);
     static void DestroyExternalComObjectContext(_In_ void* context);
     static void MarkExternalComObjectContextCollected(_In_ void* context);
 
@@ -100,3 +99,5 @@ public:
     // Notify when GC finished
     static void OnGCFinished(_In_ int nCondemnedGeneration);
 };
+
+constexpr INT_PTR ExternalObjectContextSentinelValue = (INT_PTR)0xE0E0E0E0E0E0E0E0;

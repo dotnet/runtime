@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.IO;
@@ -70,7 +69,8 @@ namespace System.Net.NetworkInformation.Tests
         {
             string fileName = GetTestFilePath();
             FileUtil.NormalizeLineEndings("NetworkFiles/dhclient.leases", fileName);
-            List<IPAddress> dhcpServerAddresses = StringParsingHelpers.ParseDhcpServerAddressesFromLeasesFile(fileName, "wlan0");
+            List<IPAddress> dhcpServerAddresses = new List<IPAddress>();
+            StringParsingHelpers.ParseDhcpServerAddressesFromLeasesFile(dhcpServerAddresses, fileName, "wlan0");
             Assert.Equal(1, dhcpServerAddresses.Count);
             Assert.Equal(IPAddress.Parse("10.105.128.4"), dhcpServerAddresses[0]);
         }

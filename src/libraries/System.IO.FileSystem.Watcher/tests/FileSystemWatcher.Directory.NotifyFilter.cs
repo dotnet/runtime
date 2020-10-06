@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
@@ -37,11 +36,11 @@ namespace System.IO.Tests
                 WatcherChangeTypes expected = 0;
                 if (filter == NotifyFilters.Attributes)
                     expected |= WatcherChangeTypes.Changed;
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && ((filter & LinuxFiltersForAttribute) > 0))
+                else if (OperatingSystem.IsLinux() && ((filter & LinuxFiltersForAttribute) > 0))
                     expected |= WatcherChangeTypes.Changed;
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && ((filter & OSXFiltersForModify) > 0))
+                else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
                     expected |= WatcherChangeTypes.Changed;
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && ((filter & NotifyFilters.Security) > 0))
+                else if (OperatingSystem.IsMacOS() && ((filter & NotifyFilters.Security) > 0))
                     expected |= WatcherChangeTypes.Changed; // Attribute change on OSX is a ChangeOwner operation which passes the Security NotifyFilter.
                 ExpectEvent(watcher, expected, action, cleanup, dir.Path);
             }
@@ -61,9 +60,9 @@ namespace System.IO.Tests
                 WatcherChangeTypes expected = 0;
                 if (filter == NotifyFilters.CreationTime)
                     expected |= WatcherChangeTypes.Changed;
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && ((filter & LinuxFiltersForAttribute) > 0))
+                else if (OperatingSystem.IsLinux() && ((filter & LinuxFiltersForAttribute) > 0))
                     expected |= WatcherChangeTypes.Changed;
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && ((filter & OSXFiltersForModify) > 0))
+                else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
                     expected |= WatcherChangeTypes.Changed;
 
                 ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
@@ -107,9 +106,9 @@ namespace System.IO.Tests
                 WatcherChangeTypes expected = 0;
                 if (filter == NotifyFilters.LastAccess)
                     expected |= WatcherChangeTypes.Changed;
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && ((filter & LinuxFiltersForAttribute) > 0))
+                else if (OperatingSystem.IsLinux() && ((filter & LinuxFiltersForAttribute) > 0))
                     expected |= WatcherChangeTypes.Changed;
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && ((filter & OSXFiltersForModify) > 0))
+                else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
                     expected |= WatcherChangeTypes.Changed;
 
                 ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
@@ -130,9 +129,9 @@ namespace System.IO.Tests
                 WatcherChangeTypes expected = 0;
                 if (filter == NotifyFilters.LastWrite)
                     expected |= WatcherChangeTypes.Changed;
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && ((filter & LinuxFiltersForAttribute) > 0))
+                else if (OperatingSystem.IsLinux() && ((filter & LinuxFiltersForAttribute) > 0))
                     expected |= WatcherChangeTypes.Changed;
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && ((filter & OSXFiltersForModify) > 0))
+                else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
                     expected |= WatcherChangeTypes.Changed;
 
                 ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
@@ -157,9 +156,9 @@ namespace System.IO.Tests
                     WatcherChangeTypes expected = 0;
                     if ((filter & NotifyFilters.LastWrite) > 0)
                         expected |= WatcherChangeTypes.Changed;
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && ((filter & LinuxFiltersForAttribute) > 0))
+                    else if (OperatingSystem.IsLinux() && ((filter & LinuxFiltersForAttribute) > 0))
                         expected |= WatcherChangeTypes.Changed;
-                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && ((filter & OSXFiltersForModify) > 0))
+                    else if (OperatingSystem.IsMacOS() && ((filter & OSXFiltersForModify) > 0))
                         expected |= WatcherChangeTypes.Changed;
                     ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
                 }

@@ -1,12 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.Tracing;
 
 namespace System.Net.Test.Common
 {
-    [EventSource(Name = "Microsoft-System-Net-TestLogging")]
+    [EventSource(Name = "System.Net.TestLogging")]
     internal class EventSourceTestLogging : EventSource
     {
         private static EventSourceTestLogging s_log = new EventSourceTestLogging();

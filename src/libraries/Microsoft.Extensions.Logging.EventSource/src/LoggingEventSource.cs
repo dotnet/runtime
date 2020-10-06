@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -32,7 +31,9 @@ namespace Microsoft.Extensions.Logging.EventSource
     ///
     /// SPEC =                          // empty spec, same as *
     ///      | NAME                     // Just a name the level is the default level
-    ///      | NAME : LEVEL            // specifies level for a particular logger (can have a * suffix).
+    ///      | NAME : LEVEL             // specifies level for a particular logger (can have a * suffix).
+    ///
+    /// When "UseAppFilters" is specified in the FilterSpecs, it avoids disabling all categories which happens by default otherwise.
     ///
     /// Where Name is the name of a ILoggger (case matters), Name can have a * which acts as a wildcard
     /// AS A SUFFIX.   Thus Net* will match any loggers that start with the 'Net'.
@@ -112,6 +113,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         // having assignment in ctor would overwrite the value
         private LoggerFilterRule[] _filterSpec = Array.Empty<LoggerFilterRule>();
         private CancellationTokenSource _cancellationTokenSource;
+        private const string UseAppFilters = "UseAppFilters";
 
         private LoggingEventSource() : base(EventSourceSettings.EtwSelfDescribingEventFormat)
         {
@@ -196,7 +198,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         }
 
         [Event(5, Keywords = Keywords.JsonMessage, Level = EventLevel.LogAlways)]
-        internal unsafe void MessageJson(LogLevel Level, int FactoryID, string LoggerName, int EventId, string EventName, string ExceptionJson, string ArgumentsJson)
+        internal unsafe void MessageJson(LogLevel Level, int FactoryID, string LoggerName, int EventId, string EventName, string ExceptionJson, string ArgumentsJson, string FormattedMessage)
         {
             if (IsEnabled())
             {
@@ -204,13 +206,15 @@ namespace Microsoft.Extensions.Logging.EventSource
                 EventName ??= "";
                 ExceptionJson ??= "";
                 ArgumentsJson ??= "";
+                FormattedMessage ??= "";
 
                 fixed (char* loggerName = LoggerName)
                 fixed (char* eventName = EventName)
                 fixed (char* exceptionJson = ExceptionJson)
                 fixed (char* argumentsJson = ArgumentsJson)
+                fixed (char* formattedMessage = FormattedMessage)
                 {
-                    const int eventDataCount = 7;
+                    const int eventDataCount = 8;
                     EventData* eventData = stackalloc EventData[eventDataCount];
 
                     SetEventData(ref eventData[0], ref Level);
@@ -220,6 +224,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                     SetEventData(ref eventData[4], ref EventName, eventName);
                     SetEventData(ref eventData[5], ref ExceptionJson, exceptionJson);
                     SetEventData(ref eventData[6], ref ArgumentsJson, argumentsJson);
+                    SetEventData(ref eventData[7], ref FormattedMessage, formattedMessage);
 
                     WriteEventCore(5, eventDataCount, eventData);
                 }
@@ -334,39 +339,50 @@ namespace Microsoft.Extensions.Logging.EventSource
                 return new[] { new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, defaultLevel, null) };
             }
 
-            var rules = new List<LoggerFilterRule>();
-
-            // All event source loggers are disabled by default
-            rules.Add(new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, LogLevel.None, null));
-
-            if (filterSpec != null)
+            if (filterSpec == null)
             {
-                string[] ruleStrings = filterSpec.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
-                foreach (string rule in ruleStrings)
+                // All event source loggers are disabled by default
+                return new[] { new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, LogLevel.None, null) };
+            }
+
+            var rules = new List<LoggerFilterRule>();
+            int ruleStringsStartIndex = 0;
+            string[] ruleStrings = filterSpec.Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            if (ruleStrings.Length > 0 && ruleStrings[0].Equals(UseAppFilters, StringComparison.OrdinalIgnoreCase))
+            {
+                // Avoid adding default rule to disable event source loggers
+                ruleStringsStartIndex = 1;
+            }
+            else
+            {
+                rules.Add(new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, LogLevel.None, null));
+            }
+
+            for (int i = ruleStringsStartIndex; i < ruleStrings.Length; i++)
+            {
+                string rule = ruleStrings[i];
+                LogLevel level = defaultLevel;
+                string[] parts = rule.Split(new[] { ':' }, 2);
+                string loggerName = parts[0];
+                if (loggerName.Length == 0)
                 {
-                    LogLevel level = defaultLevel;
-                    string[] parts = rule.Split(new[] { ':' }, 2);
-                    string loggerName = parts[0];
-                    if (loggerName.Length == 0)
+                    continue;
+                }
+
+                if (loggerName[loggerName.Length - 1] == '*')
+                {
+                    loggerName = loggerName.Substring(0, loggerName.Length - 1);
+                }
+
+                if (parts.Length == 2)
+                {
+                    if (!TryParseLevel(defaultLevel, parts[1], out level))
                     {
                         continue;
                     }
-
-                    if (loggerName[loggerName.Length - 1] == '*')
-                    {
-                        loggerName = loggerName.Substring(0, loggerName.Length - 1);
-                    }
-
-                    if (parts.Length == 2)
-                    {
-                        if (!TryParseLevel(defaultLevel, parts[1], out level))
-                        {
-                            continue;
-                        }
-                    }
-
-                    rules.Add(new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, loggerName, level, null));
                 }
+
+                rules.Add(new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, loggerName, level, null));
             }
 
             return rules.ToArray();

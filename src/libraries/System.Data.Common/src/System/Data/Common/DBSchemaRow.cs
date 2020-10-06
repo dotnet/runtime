@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
 using System.Globalization;
@@ -15,7 +14,7 @@ namespace System.Data.Common
 
         internal static DbSchemaRow[] GetSortedSchemaRows(DataTable dataTable, bool returnProviderSpecificTypes)
         {
-            DataColumn sortindex = dataTable.Columns[SchemaMappingUnsortedIndex];
+            DataColumn? sortindex = dataTable.Columns[SchemaMappingUnsortedIndex];
             if (null == sortindex)
             {
                 sortindex = new DataColumn(SchemaMappingUnsortedIndex, typeof(int));
@@ -63,7 +62,7 @@ namespace System.Data.Common
                 object value = _dataRow[_schemaTable.ColumnName, DataRowVersion.Default];
                 if (!Convert.IsDBNull(value))
                 {
-                    return Convert.ToString(value, CultureInfo.InvariantCulture);
+                    return Convert.ToString(value, CultureInfo.InvariantCulture)!;
                 }
                 return string.Empty;
             }
@@ -92,7 +91,7 @@ namespace System.Data.Common
                     object value = _dataRow[_schemaTable.BaseColumnName, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
                     {
-                        return Convert.ToString(value, CultureInfo.InvariantCulture);
+                        return Convert.ToString(value, CultureInfo.InvariantCulture)!;
                     }
                 }
                 return string.Empty;
@@ -108,7 +107,7 @@ namespace System.Data.Common
                     object value = _dataRow[_schemaTable.BaseServerName, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
                     {
-                        return Convert.ToString(value, CultureInfo.InvariantCulture);
+                        return Convert.ToString(value, CultureInfo.InvariantCulture)!;
                     }
                 }
                 return string.Empty;
@@ -125,7 +124,7 @@ namespace System.Data.Common
                     object value = _dataRow[_schemaTable.BaseCatalogName, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
                     {
-                        return Convert.ToString(value, CultureInfo.InvariantCulture);
+                        return Convert.ToString(value, CultureInfo.InvariantCulture)!;
                     }
                 }
                 return string.Empty;
@@ -141,7 +140,7 @@ namespace System.Data.Common
                     object value = _dataRow[_schemaTable.BaseSchemaName, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
                     {
-                        return Convert.ToString(value, CultureInfo.InvariantCulture);
+                        return Convert.ToString(value, CultureInfo.InvariantCulture)!;
                     }
                 }
                 return string.Empty;
@@ -157,7 +156,7 @@ namespace System.Data.Common
                     object value = _dataRow[_schemaTable.BaseTableName, DataRowVersion.Default];
                     if (!Convert.IsDBNull(value))
                     {
-                        return Convert.ToString(value, CultureInfo.InvariantCulture);
+                        return Convert.ToString(value, CultureInfo.InvariantCulture)!;
                     }
                 }
                 return string.Empty;
@@ -292,7 +291,7 @@ namespace System.Data.Common
             }
         }
 
-        internal Type DataType
+        internal Type? DataType
         {
             get
             {
@@ -328,7 +327,7 @@ namespace System.Data.Common
         {
             get
             {
-                return (int)_dataRow[_schemaTable.UnsortedIndex, DataRowVersion.Default];
+                return (int)_dataRow[_schemaTable.UnsortedIndex!, DataRowVersion.Default];
             }
         }
     }

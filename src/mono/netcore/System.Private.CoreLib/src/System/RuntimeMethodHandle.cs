@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Reflection;
 using System.Runtime.Serialization;
@@ -71,14 +70,14 @@ namespace System
         {
             var sb = new StringBuilder();
             Type[]? gen_params = method.GetGenericArguments();
-            sb.Append("[");
+            sb.Append('[');
             for (int j = 0; j < gen_params.Length; j++)
             {
                 if (j > 0)
-                    sb.Append(",");
+                    sb.Append(',');
                 sb.Append(gen_params[j].Name);
             }
-            sb.Append("]");
+            sb.Append(']');
             return sb.ToString();
         }
 

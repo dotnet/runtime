@@ -393,8 +393,7 @@ CorInfoInitClassResult initClass(CORINFO_FIELD_HANDLE field, // Non-NULL - inqui
                                                              // field access NULL - inquire about cctor trigger in
                                                              // method prolog
                                  CORINFO_METHOD_HANDLE  method,             // Method referencing the field or prolog
-                                 CORINFO_CONTEXT_HANDLE context,            // Exact context of method
-                                 BOOL                   speculative = FALSE // TRUE means don't actually run it
+                                 CORINFO_CONTEXT_HANDLE context             // Exact context of method
                                  );
 
 // This used to be called "loadClass".  This records the fact

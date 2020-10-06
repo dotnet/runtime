@@ -1,49 +1,70 @@
 {
- "tool": "Credential Scanner",
- "suppressions": [
-  {
-    "file": [
-      "/eng/common/internal-feed-operations.ps1",
-      "/eng/common/internal-feed-operations.sh",
-      "/src/libraries/Common/src/Interop/Windows/WinHttp/Interop.winhttp_types.cs",
-      "/src/libraries/Common/src/System/Security/Cryptography/EccSecurityTransforms.cs",
-      "/src/libraries/Common/tests/System/Net/Configuration.Certificates.cs",
-      "/src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.Authentication.cs",
-      "/src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.cs",
-      "/src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.DefaultProxyCredentials.cs",
-      "/src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.Proxy.cs",
-      "/src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.ServerCertificates.cs",
-      "/src/libraries/Common/tests/System/Net/Http/PostScenarioTest.cs",
-      "/src/libraries/Common/tests/System/Net/Prerequisites/Deployment/setup_certificates.ps1",
-      "/src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/EC/ECKeyFileTests.cs",
-      "/src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/EC/ECKeyFileTests.LimitedPrivate.cs",
-      "/src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/RSA/RSAKeyFileTests.cs",
-      "/src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/RSA/RSAKeyPemTests.cs",
-      "/src/libraries/System.Data.Common/tests/System/Data/Common/DbConnectionStringBuilderTest.cs",
-      "/src/libraries/System.Diagnostics.Process/tests/ProcessStartInfoTests.cs",
-      "/src/libraries/System.DirectoryServices.AccountManagement/src/System/DirectoryServices/AccountManagement/constants.cs",
-      "/src/libraries/System.DirectoryServices.AccountManagement/tests/PrincipalTest.cs",
-      "/src/libraries/System.DirectoryServices.AccountManagement/tests/UserPrincipalTest.cs",
-      "/src/libraries/System.Net.Http/tests/FunctionalTests/SocketsHttpHandlerTest.cs",
-      "/src/libraries/System.Net.Http/tests/UnitTests/DigestAuthenticationTests.cs",
-      "/src/libraries/System.Net.Http/tests/UnitTests/HttpEnvironmentProxyTest.cs",
-      "/src/libraries/System.Net.Mail/tests/Functional/SmtpClientTest.cs",
-      "/src/libraries/System.Net.Requests/src/System/Net/FtpControlStream.cs",
-      "/src/libraries/System.Net.Requests/src/System/Net/FtpWebRequest.cs",
-      "/src/libraries/System.Net.WebSockets.Client/tests/ConnectTest.cs",
-      "/src/libraries/System.Private.Uri/tests/ExtendedFunctionalTests/UriRelativeResolutionTest.cs",
-      "/src/libraries/System.Private.Uri/tests/FunctionalTests/UriBuilderRefreshTest.cs",
-      "/src/libraries/System.Private.Uri/tests/FunctionalTests/UriBuilderTests.cs",
-      "/src/libraries/System.Private.Uri/tests/FunctionalTests/UriRelativeResolutionTest.cs",
-      "/src/libraries/System.Runtime/tests/System/Uri.CreateStringTests.cs",
-      "/src/libraries/System.Security.Cryptography.Algorithms/tests/Rfc2898Tests.cs",
-      "/src/libraries/System.Security.Cryptography.Pkcs/tests/Pkcs12/Pkcs12Documents.cs",
-      "/src/libraries/System.Security.Cryptography.X509Certificates/tests/ExportTests.cs",
-      "/src/libraries/System.Security.Cryptography.Xml/tests/EncryptedXmlTest.cs",
-      "/src/libraries/System.Security.Cryptography.Xml/tests/SignedXmlTest.cs",
-      "/src/libraries/System.Security.Cryptography.Xml/tests/TestHelpers.cs"
-    ],
-    "_justification": "Mostly test files. Other files contain harmless examples or constants."
-  },
- ]
+    "tool": "Credential Scanner",
+    "suppressions": [
+        {
+            "_justification": "Unit test containing connection strings under the test.",
+            "file": [
+                "src/libraries/System.Data.Common/tests/System/Data/Common/DbConnectionStringBuilderTest.cs"
+            ]
+        },
+        {
+            "_justification": "Private key for testing purpose.",
+            "file": [
+                "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/DSA/DSAKeyPemTests.cs",
+                "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/EC/ECKeyPemTests.cs",
+                "src/libraries/Common/tests/System/Security/Cryptography/AlgorithmImplementations/RSA/RSAKeyPemTests.cs",
+                "src/libraries/System.Security.Cryptography.X509Certificates/tests/TestData.cs"
+            ],
+            "placeholder": [
+                "-----BEGIN PRIVATE KEY-----",
+                "-----BEGIN * PRIVATE KEY-----"
+            ]
+        },
+        {
+            "_justification": "Test credential for Uri testing",
+            "file": [
+                "src/libraries/System.Net.Http/tests/UnitTests/HttpEnvironmentProxyTest.cs",
+                "src/libraries/System.Private.Uri/tests/ExtendedFunctionalTests/UriRelativeResolutionTest.cs",
+                "src/libraries/System.Private.Uri/tests/FunctionalTests/UriBuilderRefreshTest.cs",
+                "src/libraries/System.Private.Uri/tests/FunctionalTests/UriBuilderTests.cs",
+                "src/libraries/System.Private.Uri/tests/FunctionalTests/UriRelativeResolutionTest.cs",
+                "src/libraries/System.Runtime/tests/System/Uri.CreateStringTests.cs"
+            ],
+            "placeholder": [
+                "//*:;&$=123USERINFO@",
+                "//*:bar@",
+                "//*:bar1@",
+                "//*:password1@",
+                "//*:psw@",
+                "//*:userinfo2@"
+            ]
+        },
+        {
+            "_justification": "Generic test password.",
+            "file": [
+                "src/libraries/Common/tests/System/Net/Configuration.Certificates.cs",
+                "src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.Authentication.cs",
+                "src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.cs",
+                "src/libraries/Common/tests/System/Net/Http/HttpClientHandlerTest.DefaultProxyCredentials.cs",
+                "src/libraries/Common/tests/System/Net/Http/PostScenarioTest.cs",
+                "src/libraries/Common/tests/System/Net/Prerequisites/Deployment/setup_certificates.ps1",
+                "src/libraries/System.Net.Http/tests/FunctionalTests/SocketsHttpHandlerTest.cs",
+                "src/libraries/System.Net.Http/tests/UnitTests/DigestAuthenticationTests.cs",
+                "src/libraries/System.Net.Http/tests/UnitTests/HttpEnvironmentProxyTest.cs",
+                "src/libraries/System.Net.Mail/tests/Functional/SmtpClientTest.cs",
+                "src/libraries/System.Security.Cryptography.Xml/tests/SignedXmlTest.cs",
+                "src/libraries/System.Security.Cryptography.Xml/tests/TestHelpers.cs"
+            ],
+            "placeholder": [
+                "\"anotherpassword\"",
+                "\"bar\"",
+                "\"mono\"",
+                "\"password1\"",
+                "\"rightpassword\"",
+                "\"testcertificate\"",
+                "\"unused\"",
+                "\"wrongpassword\""
+            ]
+        }
+    ]
 }

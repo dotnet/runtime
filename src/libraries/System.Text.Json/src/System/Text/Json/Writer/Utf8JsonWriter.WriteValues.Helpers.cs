@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Text;
@@ -13,25 +12,24 @@ namespace System.Text.Json
     {
         private void ValidateWritingValue()
         {
-            if (!_options.SkipValidation)
-            {
-                if (_inObject)
-                {
-                    if (_tokenType != JsonTokenType.PropertyName)
-                    {
-                        Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
-                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteValueWithinObject, currentDepth: default, token: default, _tokenType);
-                    }
-                }
-                else
-                {
-                    Debug.Assert(_tokenType != JsonTokenType.PropertyName);
+            Debug.Assert(!_options.SkipValidation);
 
-                    // It is more likely for CurrentDepth to not equal 0 when writing valid JSON, so check that first to rely on short-circuiting and return quickly.
-                    if (CurrentDepth == 0 && _tokenType != JsonTokenType.None)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteValueAfterPrimitiveOrClose, currentDepth: default, token: default, _tokenType);
-                    }
+            if (_inObject)
+            {
+                if (_tokenType != JsonTokenType.PropertyName)
+                {
+                    Debug.Assert(_tokenType != JsonTokenType.None && _tokenType != JsonTokenType.StartArray);
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteValueWithinObject, currentDepth: default, token: default, _tokenType);
+                }
+            }
+            else
+            {
+                Debug.Assert(_tokenType != JsonTokenType.PropertyName);
+
+                // It is more likely for CurrentDepth to not equal 0 when writing valid JSON, so check that first to rely on short-circuiting and return quickly.
+                if (CurrentDepth == 0 && _tokenType != JsonTokenType.None)
+                {
+                    ThrowHelper.ThrowInvalidOperationException(ExceptionResource.CannotWriteValueAfterPrimitiveOrClose, currentDepth: default, token: default, _tokenType);
                 }
             }
         }

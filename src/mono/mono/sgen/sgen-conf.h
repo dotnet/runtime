@@ -130,7 +130,12 @@ typedef target_mword SgenDescriptor;
  * Making this a constant enables us to put logging in a lot of places and
  * not pay its cost on release builds.
  */
+#ifndef DISABLE_SGEN_DEBUG_HELPERS
 #define SGEN_MAX_DEBUG_LEVEL 2
+#else
+/* No logging support */
+#define SGEN_MAX_DEBUG_LEVEL (-1)
+#endif
 
 /*
  * Maximum level of asserts to enable on this build.

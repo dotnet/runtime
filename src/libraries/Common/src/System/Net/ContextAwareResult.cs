@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Threading;
@@ -275,7 +274,7 @@ namespace System.Net
         protected override void Cleanup()
         {
             base.Cleanup();
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
             CleanupInternal();
         }
 
@@ -299,7 +298,7 @@ namespace System.Net
             // capturing the context won't be sufficient.
             if ((_flags & StateFlags.CaptureIdentity) != 0 && !InternalPeekCompleted && (!capturingContext))
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "starting identity capture");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "starting identity capture");
                 SafeCaptureIdentity();
             }
 
@@ -307,7 +306,7 @@ namespace System.Net
             // Note that Capture() can return null, for example if SuppressFlow() is in effect.
             if (capturingContext && !InternalPeekCompleted)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "starting capture");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "starting capture");
 
                 if (cachedContext == null)
                 {
@@ -327,12 +326,12 @@ namespace System.Net
                     }
                 }
 
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_context:{_context}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_context:{_context}");
             }
             else
             {
                 // Otherwise we have to have completed synchronously, or not needed the context.
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Skipping capture");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Skipping capture");
 
                 cachedContext = null;
                 if (AsyncCallback != null && !CompletedSynchronously)
@@ -348,7 +347,7 @@ namespace System.Net
             DebugProtectState(false);
             if (CompletedSynchronously)
             {
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Completing synchronously");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Completing synchronously");
                 base.Complete(IntPtr.Zero);
                 return true;
             }
@@ -359,7 +358,7 @@ namespace System.Net
         // This method is guaranteed to be called only once.  If called with a non-zero userToken, the context is not flowed.
         protected override void Complete(IntPtr userToken)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_context(set):{_context != null} userToken:{userToken}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_context(set):{_context != null} userToken:{userToken}");
 
             // If no flowing, just complete regularly.
             if ((_flags & StateFlags.PostBlockStarted) == 0)
@@ -391,7 +390,7 @@ namespace System.Net
 
         private void CompleteCallback()
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Context set, calling callback.");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Context set, calling callback.");
             base.Complete(IntPtr.Zero);
         }
 

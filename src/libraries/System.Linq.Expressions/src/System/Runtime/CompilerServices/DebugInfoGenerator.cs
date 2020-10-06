@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 
 using System.Linq.Expressions;
@@ -18,6 +17,7 @@ namespace System.Runtime.CompilerServices
         /// Creates PDB symbol generator.
         /// </summary>
         /// <returns>PDB symbol generator.</returns>
+        [Obsolete(Obsoletions.CreatePdbGeneratorMessage, DiagnosticId = Obsoletions.CreatePdbGeneratorDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static DebugInfoGenerator CreatePdbGenerator()
         {
             // Creating PDBs is not supported in .NET Core

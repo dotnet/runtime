@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 // Runtime headers
 #include "common.h"
@@ -13,6 +12,7 @@
 
 #include "interoplibinterface.h"
 
+
 using CreateObjectFlags = InteropLib::Com::CreateObjectFlags;
 using CreateComInterfaceFlags = InteropLib::Com::CreateComInterfaceFlags;
 
@@ -23,6 +23,7 @@ namespace
     {
         static const DWORD InvalidSyncBlockIndex;
 
+        INT_PTR Sentinel;
         void* Identity;
         void* ThreadContext;
         DWORD SyncBlockIndex;
@@ -56,6 +57,7 @@ namespace
             }
             CONTRACTL_END;
 
+            cxt->Sentinel = ExternalObjectContextSentinelValue; 
             cxt->Identity = (void*)identity;
             cxt->ThreadContext = threadContext;
             cxt->SyncBlockIndex = syncBlockIndex;
@@ -129,6 +131,12 @@ namespace
             return Key(Identity, WrapperId);
         }
     };
+
+    // These Sentinel and Identity are used by the DAC, any changes to the layout must be updated on the DAC side (request.cpp)
+    static constexpr size_t DACSentinelOffset = 0;
+    static constexpr size_t DACIdentityOffset = sizeof(INT_PTR);
+    static_assert(offsetof(ExternalObjectContext, Sentinel) == DACSentinelOffset, "Keep in sync with DAC interfaces");
+    static_assert(offsetof(ExternalObjectContext, Identity) == DACIdentityOffset, "Keep in sync with DAC interfaces");
 
     const DWORD ExternalObjectContext::InvalidSyncBlockIndex = 0; // See syncblk.h
 
@@ -1360,7 +1368,7 @@ void QCALLTYPE ComWrappersNative::GetIUnknownImpl(
     END_QCALL;
 }
 
-void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
+void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper, void *unused)
 {
     CONTRACTL
     {
@@ -1369,6 +1377,8 @@ void ComWrappersNative::DestroyManagedObjectComWrapper(_In_ void* wrapper)
         PRECONDITION(wrapper != NULL);
     }
     CONTRACTL_END;
+
+    _ASSERTE(unused == NULL && "Someone is passing data to this function but it is ignoring it.");
 
     STRESS_LOG1(LF_INTEROP, LL_INFO100, "Destroying MOW: 0x%p\n", wrapper);
     InteropLib::Com::DestroyWrapperForObject(wrapper);

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
 using System.Collections;
@@ -18,7 +17,7 @@ namespace System.IO.Ports
 
         // members supporting properties exposed to SerialPort
         private readonly string _portName;
-        private bool _inBreak = false;
+        private bool _inBreak;
         private Handshake _handshake;
 
 #pragma warning disable CS0067 // Events shared by Windows and Linux, on Linux we currently never call them

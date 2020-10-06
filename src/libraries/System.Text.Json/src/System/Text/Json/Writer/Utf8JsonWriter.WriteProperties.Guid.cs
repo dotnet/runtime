@@ -1,6 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Buffers.Text;
@@ -22,10 +21,8 @@ namespace System.Text.Json
         /// Writes the <see cref="Guid"/> using the default <see cref="StandardFormat"/> (that is, 'D'), as the form: nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn.
         /// </remarks>
         public void WriteString(JsonEncodedText propertyName, Guid value)
-            => WriteStringHelper(propertyName.EncodedUtf8Bytes, value);
-
-        private void WriteStringHelper(ReadOnlySpan<byte> utf8PropertyName, Guid value)
         {
+            ReadOnlySpan<byte> utf8PropertyName = propertyName.EncodedUtf8Bytes;
             Debug.Assert(utf8PropertyName.Length <= JsonConstants.MaxUnescapedTokenSize);
 
             WriteStringByOptions(utf8PropertyName, value);
@@ -377,6 +374,14 @@ namespace System.Text.Json
             BytesPending += bytesWritten;
 
             output[BytesPending++] = JsonConstants.Quote;
+        }
+
+        internal void WritePropertyName(Guid value)
+        {
+            Span<byte> utf8PropertyName = stackalloc byte[JsonConstants.MaximumFormatGuidLength];
+            bool result = Utf8Formatter.TryFormat(value, utf8PropertyName, out int bytesWritten);
+            Debug.Assert(result);
+            WritePropertyNameUnescaped(utf8PropertyName.Slice(0, bytesWritten));
         }
     }
 }

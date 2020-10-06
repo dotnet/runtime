@@ -1,11 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
-#nullable enable
 using System.ComponentModel;
 using System.Xml.Serialization;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Schema
 {
@@ -27,7 +26,7 @@ namespace System.Xml.Schema
         private XmlQualifiedName _refName = XmlQualifiedName.Empty;
         private XmlQualifiedName _substitutionGroup = XmlQualifiedName.Empty;
         private XmlQualifiedName _typeName = XmlQualifiedName.Empty;
-        private XmlSchemaType? _type = null;
+        private XmlSchemaType? _type;
 
         private XmlQualifiedName _qualifiedName = XmlQualifiedName.Empty;
         private XmlSchemaType? _elementType;
@@ -112,6 +111,7 @@ namespace System.Xml.Schema
         }
 
         [XmlAttribute("ref")]
+        [AllowNull]
         public XmlQualifiedName RefName
         {
             get { return _refName; }
@@ -119,6 +119,7 @@ namespace System.Xml.Schema
         }
 
         [XmlAttribute("substitutionGroup")]
+        [AllowNull]
         public XmlQualifiedName SubstitutionGroup
         {
             get { return _substitutionGroup; }
@@ -126,6 +127,7 @@ namespace System.Xml.Schema
         }
 
         [XmlAttribute("type")]
+        [AllowNull]
         public XmlQualifiedName SchemaTypeName
         {
             get { return _typeName; }
@@ -196,7 +198,8 @@ namespace System.Xml.Schema
             get { return _finalResolved; }
         }
 
-        internal XmlReader? Validate(XmlReader reader, XmlResolver resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
+        [return: NotNullIfNotNull("schemaSet")]
+        internal XmlReader? Validate(XmlReader reader, XmlResolver? resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
             if (schemaSet != null)
             {

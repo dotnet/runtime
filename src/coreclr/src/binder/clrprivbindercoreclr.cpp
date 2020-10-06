@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #include "common.h"
 #include "assemblybinder.hpp"
@@ -21,8 +20,8 @@ HRESULT CLRPrivBinderCoreCLR::BindAssemblyByNameWorker(BINDER_SPACE::AssemblyNam
     HRESULT hr = S_OK;
 
 #ifdef _DEBUG
-    // MSCORLIB should be bound using BindToSystem
-    _ASSERTE(!pAssemblyName->IsMscorlib());
+    // CoreLib should be bound using BindToSystem
+    _ASSERTE(!pAssemblyName->IsCoreLib());
 #endif
 
     hr = AssemblyBinder::BindAssembly(&m_appContext,
@@ -156,8 +155,8 @@ HRESULT CLRPrivBinderCoreCLR::BindUsingPEImage( /* in */ PEImage *pPEImage,
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_BAD_FORMAT));
         }
 
-        // Easy out for mscorlib
-        if (pAssemblyName->IsMscorlib())
+        // Easy out for CoreLib
+        if (pAssemblyName->IsCoreLib())
         {
             IF_FAIL_GO(HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND));
         }

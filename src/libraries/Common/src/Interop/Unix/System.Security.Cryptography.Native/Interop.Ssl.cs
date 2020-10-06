@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System;
@@ -193,6 +192,25 @@ internal static partial class Interop
             return true;
         }
 
+        internal static bool AddExtraChainCertificates(SafeSslHandle sslContext, X509Certificate2[] chain)
+        {
+            // send pre-computed list of intermediates.
+            for (int i = 0; i < chain.Length; i++)
+            {
+                SafeX509Handle dupCertHandle = Crypto.X509UpRef(chain[i].Handle);
+                Crypto.CheckValidOpenSslHandle(dupCertHandle);
+                if (!SslAddExtraChainCert(sslContext, dupCertHandle))
+                {
+                    Crypto.ErrClearError();
+                    dupCertHandle.Dispose(); // we still own the safe handle; clean it up
+                    return false;
+                }
+                dupCertHandle.SetHandleAsInvalid(); // ownership has been transferred to sslHandle; do not free via this safe handle
+            }
+
+            return true;
+        }
+
         internal static class SslMethods
         {
             internal static readonly IntPtr SSLv23_method = SslV2_3Method();
@@ -223,7 +241,7 @@ namespace Microsoft.Win32.SafeHandles
         private SafeBioHandle? _readBio;
         private SafeBioHandle? _writeBio;
         private bool _isServer;
-        private bool _handshakeCompleted = false;
+        private bool _handshakeCompleted;
 
         public GCHandle AlpnHandle;
 

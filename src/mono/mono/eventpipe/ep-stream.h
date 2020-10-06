@@ -7,6 +7,12 @@
 #include "ep-rt-config.h"
 #include "ep-types.h"
 
+#undef EP_IMPL_GETTER_SETTER
+#ifdef EP_IMPL_STREAM_GETTER_SETTER
+#define EP_IMPL_GETTER_SETTER
+#endif
+#include "ep-getter-setter.h"
+
 // the enumeration has a specific set of values to keep it compatible with consumer library
 // it's sibling is defined in https://github.com/Microsoft/perfview/blob/10d1f92b242c98073b3817ac5ee6d98cd595d39b/src/FastSerialization/FastSerialization.cs#L2295
 typedef enum
@@ -41,7 +47,7 @@ struct _StreamWriterVtable {
 	StreamWriterWriteFunc write_func;
 };
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _StreamWriter {
 #else
 struct _StreamWriter_Internal {
@@ -49,7 +55,7 @@ struct _StreamWriter_Internal {
 	StreamWriterVtable *vtable;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _StreamWriter {
 	uint8_t _internal [sizeof (struct _StreamWriter_Internal)];
 };
@@ -94,7 +100,7 @@ struct _FastSerializableObjectVtable {
 	FastSerializableObjectGetTypeNameFunc get_type_name_func;
 };
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _FastSerializableObject {
 #else
 struct _FastSerializableObject_Internal {
@@ -105,15 +111,13 @@ struct _FastSerializableObject_Internal {
 	bool is_private;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _FastSerializableObject {
 	uint8_t _internal [sizeof (struct _FastSerializableObject_Internal)];
 };
 #endif
 
-EP_DEFINE_GETTER(FastSerializableObject *, fast_serializable_object, int32_t, object_version)
-EP_DEFINE_GETTER(FastSerializableObject *, fast_serializable_object, int32_t, min_reader_version)
-EP_DEFINE_GETTER(FastSerializableObject *, fast_serializable_object, bool, is_private)
+EP_DEFINE_GETTER(FastSerializableObject *, fast_serializable_object, FastSerializableObjectVtable *, vtable)
 
 FastSerializableObject *
 ep_fast_serializable_object_init (
@@ -151,7 +155,7 @@ ep_fast_serializable_object_fast_serialize_vcall (
 
 #define FAST_SERIALIZER_ALIGNMENT_SIZE 4
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _FastSerializer {
 #else
 struct _FastSerializer_Internal {
@@ -161,7 +165,7 @@ struct _FastSerializer_Internal {
 	bool write_error_encountered;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _FastSerializer {
 	uint8_t _internal [sizeof (struct _FastSerializer_Internal)];
 };
@@ -169,9 +173,7 @@ struct _FastSerializer {
 
 EP_DEFINE_GETTER(FastSerializer *, fast_serializer, StreamWriter *, stream_writer)
 EP_DEFINE_GETTER(FastSerializer *, fast_serializer, uint32_t, required_padding)
-EP_DEFINE_SETTER(FastSerializer *, fast_serializer, uint32_t, required_padding)
 EP_DEFINE_GETTER(FastSerializer *, fast_serializer, bool, write_error_encountered)
-EP_DEFINE_SETTER(FastSerializer *, fast_serializer, bool, write_error_encountered)
 
 FastSerializer *
 ep_fast_serializer_alloc (StreamWriter *stream_writer);
@@ -207,7 +209,7 @@ ep_fast_serializer_write_tag (
 * FileStream.
 */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _FileStream {
 #else
 struct _FileStream_Internal {
@@ -215,7 +217,7 @@ struct _FileStream_Internal {
 	ep_rt_file_handle_t rt_file;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _FileStream {
 	uint8_t _internal [sizeof (struct _FileStream_Internal)];
 };
@@ -249,7 +251,7 @@ ep_file_stream_write (
  * FileStreamWriter.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _FileStreamWriter {
 #else
 struct _FileStreamWriter_Internal {
@@ -258,7 +260,7 @@ struct _FileStreamWriter_Internal {
 	FileStream *file_stream;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _FileStreamWriter {
 	uint8_t _internal [sizeof (struct _FileStreamWriter_Internal)];
 };
@@ -284,50 +286,72 @@ ep_file_stream_writer_write (
  * IpcStream.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
-//TODO: Implement.
+typedef void (*IpcStreamFreeFunc)(void *object);
+typedef bool (*IpcStreamReadFunc)(void *object, uint8_t *buffer, uint32_t bytes_to_read, uint32_t *bytes_read, uint32_t timeout_ms);
+typedef bool (*IpcStreamWriteFunc)(void *object, const uint8_t *buffer, uint32_t bytes_to_write, uint32_t *bytes_written, uint32_t timeout_ms);
+typedef bool (*IpcStreamFlushFunc)(void *object);
+typedef bool (*IpcStreamCloseFunc)(void *object);
+
+struct _IpcStreamVtable {
+	IpcStreamFreeFunc free_func;
+	IpcStreamReadFunc read_func;
+	IpcStreamWriteFunc write_func;
+	IpcStreamFlushFunc flush_func;
+	IpcStreamCloseFunc close_func;
+};
+
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _IpcStream {
 #else
 struct _IpcStream_Internal {
 #endif
-	ep_rt_ipc_handle_t rt_ipc;
+	IpcStreamVtable *vtable;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _IpcStream {
 	uint8_t _internal [sizeof (struct _IpcStream_Internal)];
 };
 #endif
 
-EP_DEFINE_GETTER(IpcStream *, ipc_stream, ep_rt_ipc_handle_t, rt_ipc)
-
 IpcStream *
-ep_ipc_stream_alloc (ep_rt_ipc_handle_t rt_ipc);
+ep_ipc_stream_init (
+	IpcStream *ipc_stream,
+	IpcStreamVtable *vtable);
 
 void
-ep_ipc_stream_free (IpcStream *ipc_stream);
+ep_ipc_stream_fini (IpcStream *ipc_stream);
+
+void
+ep_ipc_stream_free_vcall (IpcStream *ipc_stream);
 
 bool
-ep_ipc_stream_flush (IpcStream *stream);
+ep_ipc_stream_read_vcall (
+	IpcStream *ipc_stream,
+	uint8_t *buffer,
+	uint32_t bytes_to_read,
+	uint32_t *bytes_read,
+	uint32_t timeout_ms);
 
 bool
-ep_ipc_stream_disconnect (IpcStream *stream);
-
-bool
-ep_ipc_stream_close (IpcStream *stream);
-
-bool
-ep_ipc_stream_write (
-	IpcStream *stream,
+ep_ipc_stream_write_vcall (
+	IpcStream *ipc_stream,
 	const uint8_t *buffer,
 	uint32_t bytes_to_write,
-	uint32_t *bytes_written);
+	uint32_t *bytes_written,
+	uint32_t timeout_ms);
+
+bool
+ep_ipc_stream_flush_vcall (IpcStream *ipc_stream);
+
+bool
+ep_ipc_stream_close_vcall (IpcStream *ipc_stream);
 
 /*
  * IpcStreamWriter.
  */
 
-#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_GETTER_SETTER)
+#if defined(EP_INLINE_GETTER_SETTER) || defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _IpcStreamWriter {
 #else
 struct _IpcStreamWriter_Internal {
@@ -336,7 +360,7 @@ struct _IpcStreamWriter_Internal {
 	IpcStream *ipc_stream;
 };
 
-#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_GETTER_SETTER)
+#if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_STREAM_GETTER_SETTER)
 struct _IpcStreamWriter {
 	uint8_t _internal [sizeof (struct _IpcStreamWriter_Internal)];
 };
@@ -361,4 +385,4 @@ ep_ipc_stream_writer_write (
 	uint32_t *bytes_written);
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_STREAM_H__ **/
+#endif /* __EVENTPIPE_STREAM_H__ */

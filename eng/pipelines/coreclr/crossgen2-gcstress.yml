@@ -1,0 +1,60 @@
+trigger: none
+
+pr: none
+
+schedules:
+- cron: "0 6 * * 0,1"
+  displayName: Sat and Sun at 10:00 PM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
+
+jobs:
+#
+# Checkout repository
+#
+- template: /eng/pipelines/common/checkout-job.yml
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/build-coreclr-and-libraries-job.yml
+    buildConfig: checked
+    platforms:
+    - Linux_x64
+    - Linux_arm64
+    - OSX_x64
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: gcstress-extra
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml
+    buildConfig: checked
+    platforms:
+    - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
+    jobParameters:
+      testGroup: gcstress-extra
+      liveLibrariesBuildConfig: Release
+
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
+    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
+    buildConfig: checked
+    platforms:
+    - Linux_x64
+    - Linux_arm64
+    - OSX_x64
+    - Windows_NT_x64
+    - Windows_NT_arm64
+    jobParameters:
+      testGroup: gcstress-extra
+      readyToRun: true
+      crossgen2: true
+      compositeBuildMode: true
+      displayNameArgs: Composite
+      liveLibrariesBuildConfig: Release

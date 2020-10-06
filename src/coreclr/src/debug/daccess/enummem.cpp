@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 //*****************************************************************************
 // File: enummem.cpp
 //
@@ -277,7 +276,7 @@ HRESULT ClrDataAccess::EnumMemCLRStatic(IN CLRDataEnumMemoryFlags flags)
     }
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pEEDbgInterfaceImpl.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CORDebuggerControlFlags.EnumMem(); )
-    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_Mscorlib.EnumMem(); )
+    CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_CoreLib.EnumMem(); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pPredefinedArrayTypes[ELEMENT_TYPE_OBJECT].EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( StubManager::EnumMemoryRegions(flags); )
     CATCH_ALL_EXCEPT_RETHROW_COR_E_OPERATIONCANCELLED( g_pFinalizerThread.EnumMem(); )
@@ -1425,21 +1424,21 @@ HRESULT ClrDataAccess::DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, C
 
     OBJECTREF managedExceptionObject = NULL;
 
-#ifdef FEATURE_COMINTEROP
-    // dump the managed exception object wrapped in CCW
-    // memory of the CCW object itself is dumped later by DacInstanceManager::DumpAllInstances
-    DacpCCWData ccwData;
-    GetCCWData(ccwPtr, &ccwData);   // this call collects some memory implicitly
-    managedExceptionObject = OBJECTREF(CLRDATA_ADDRESS_TO_TADDR(ccwData.managedObject));
-#endif
 #ifdef FEATURE_COMWRAPPERS
+    OBJECTREF wrappedObjAddress;
+    if (DACTryGetComWrappersObjectFromCCW(ccwPtr, &wrappedObjAddress) == S_OK)
+    {
+        managedExceptionObject = wrappedObjAddress;
+    }
+#endif
+#ifdef FEATURE_COMINTEROP
     if (managedExceptionObject == NULL)
     {
-        OBJECTREF wrappedObjAddress;
-        if (DACTryGetComWrappersObjectFromCCW(ccwPtr, &wrappedObjAddress) == S_OK)
-        {
-            managedExceptionObject = wrappedObjAddress;
-        }
+        // dump the managed exception object wrapped in CCW
+        // memory of the CCW object itself is dumped later by DacInstanceManager::DumpAllInstances
+        DacpCCWData ccwData;
+        GetCCWData(ccwPtr, &ccwData);   // this call collects some memory implicitly
+        managedExceptionObject = OBJECTREF(CLRDATA_ADDRESS_TO_TADDR(ccwData.managedObject));
     }
 #endif
     DumpManagedExcepObject(flags, managedExceptionObject);

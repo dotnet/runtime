@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -65,7 +64,7 @@ namespace System.Threading.Tests
             Assert.False(Monitor.IsEntered(obj));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void IsEntered_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException()
         {
             var obj = new object();
@@ -127,7 +126,7 @@ namespace System.Threading.Tests
             Assert.Throws<SynchronizationLockException>(() => Monitor.Exit(valueType));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Exit_WhenHeldBySomeoneElse_ThrowsSynchronizationLockException()
         {
             var obj = new object();
@@ -208,7 +207,7 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentException>("lockTaken", () => Monitor.TryEnter(obj, TimeSpan.Zero, ref lockTaken));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Enter_HasToWait()
         {
             var thinLock = new object();
@@ -401,7 +400,7 @@ namespace System.Threading.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("timeout", () => Monitor.Wait(obj, TimeSpan.FromMilliseconds(-2)));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void WaitTest()
         {
             var obj = new object();
@@ -437,7 +436,7 @@ namespace System.Threading.Tests
             Monitor.Exit(obj);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void Enter_HasToWait_LockContentionCountTest()
         {
             long initialLockContentionCount = Monitor.LockContentionCount;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Diagnostics;
@@ -106,12 +105,13 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
             dataBuilder.EmitByte((byte)_fixupKind);
             if (_methodArgument != null)
             {
+                Debug.Assert(_methodArgument.Unboxing == false);
+
                 dataBuilder.EmitMethodSignature(
                     _methodArgument,
                     enforceDefEncoding: false,
                     enforceOwningType: false,
                     context: innerContext,
-                    isUnboxingStub: false,
                     isInstantiatingStub: true);
             }
             else if (_typeArgument != null)
@@ -210,7 +210,21 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                     return result;
             }
 
-            return comparer.Compare(_methodContext.ContextMethod, otherNode._methodContext.ContextMethod);
+            var contextAsMethod = _methodContext.Context as MethodDesc;
+            var otherContextAsMethod = otherNode._methodContext.Context as MethodDesc;
+            if (contextAsMethod != null || otherContextAsMethod != null)
+            {
+                if (contextAsMethod == null)
+                    return -1;
+                if (otherContextAsMethod == null)
+                    return 1;
+
+                return comparer.Compare(contextAsMethod, otherContextAsMethod);
+            }
+            else
+            {
+                return comparer.Compare(_methodContext.ContextType, otherNode._methodContext.ContextType);
+            }
         }
     }
 }

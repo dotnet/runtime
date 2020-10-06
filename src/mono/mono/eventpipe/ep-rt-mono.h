@@ -6,6 +6,10 @@
 
 #ifdef ENABLE_PERFTRACING
 #include "ep-rt-config.h"
+#include "ep-thread.h"
+#include "ep-types.h"
+#include "ep-provider.h"
+#include "ep-session-provider.h"
 #include <glib.h>
 #include <mono/utils/checked-build.h>
 #include <mono/utils/mono-threads.h>
@@ -14,7 +18,10 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/mono-rand.h>
 #include <mono/metadata/w32file.h>
-#include "ep.h"
+#include <mono/metadata/w32event.h>
+#include <mono/metadata/environment-internals.h>
+#include <mono/utils/mono-lazy-init.h>
+#include <mono/utils/w32api.h>
 
 #undef EP_ARRAY_SIZE
 #define EP_ARRAY_SIZE(expr) G_N_ELEMENTS(expr)
@@ -22,115 +29,162 @@
 #undef EP_INFINITE_WAIT
 #define EP_INFINITE_WAIT MONO_INFINITE_WAIT
 
-//TODO: Should make sure block is executed in safe mode.
 #undef EP_GCX_PREEMP_ENTER
 #define EP_GCX_PREEMP_ENTER {
 
-//TODO: Should make sure block is returned back to previous mode.
 #undef EP_GCX_PREEMP_EXIT
 #define EP_GCX_PREEMP_EXIT }
 
-#define EP_RT_DEFINE_LIST(list_name, list_type, item_type) \
-	static inline void ep_rt_ ## list_name ## _free (list_type *list, void (*callback)(void *)) { \
-		for (GSList *l = list->list; l; l = l->next) { \
-			if (callback != NULL) \
+#undef EP_ALWAYS_INLINE
+#define EP_ALWAYS_INLINE MONO_ALWAYS_INLINE
+
+#undef EP_NEVER_INLINE
+#define EP_NEVER_INLINE MONO_NEVER_INLINE
+
+#undef EP_ALIGN_UP
+#define EP_ALIGN_UP(val,align) ALIGN_TO(val,align)
+
+#ifndef EP_RT_BUILD_TYPE_FUNC_NAME
+#define EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, type_name, func_name) \
+prefix_name ## _rt_ ## type_name ## _ ## func_name
+#endif
+
+#define EP_RT_DEFINE_LIST_PREFIX(prefix_name, list_name, list_type, item_type) \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, free) (list_type *list, void (*callback)(void *)) { \
+		if (callback) { \
+			for (GSList *l = list->list; l; l = l->next) { \
 				callback (l->data); \
+			} \
 		} \
 		g_slist_free (list->list); \
 		list->list = NULL; \
 	} \
-	static inline void ep_rt_ ## list_name ## _clear (list_type *list, void (*callback)(void *)) { ep_rt_ ## list_name ## _free (list, callback); } \
-	static inline void ep_rt_ ## list_name ## _append (list_type *list, item_type item) { list->list = g_slist_append (list->list, ((gpointer)(gsize)item)); } \
-	static inline void ep_rt_ ## list_name ## _remove (list_type *list, const item_type item) { list->list = g_slist_remove (list->list, ((gconstpointer)(const gsize)item)); } \
-	static inline bool ep_rt_ ## list_name ## _find (const list_type *list, const item_type item_to_find, item_type *found_item) { \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, clear) (list_type *list, void (*callback)(void *)) { ep_rt_ ## list_name ## _free (list, callback); } \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, append) (list_type *list, item_type item) { list->list = g_slist_append (list->list, ((gpointer)(gsize)item)); } \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, remove) (list_type *list, const item_type item) { list->list = g_slist_remove (list->list, ((gconstpointer)(const gsize)item)); } \
+	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, find) (const list_type *list, const item_type item_to_find, item_type *found_item) { \
 		GSList *found_glist_item = g_slist_find (list->list, ((gconstpointer)(const gsize)item_to_find)); \
 		*found_item = (found_glist_item != NULL) ? ((item_type)(gsize)(found_glist_item->data)) : ((item_type)(gsize)NULL); \
 		return *found_item != NULL; \
 	} \
-	static inline bool ep_rt_ ## list_name ## _is_empty (const list_type *list) { return list->list == NULL; }
+	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, is_empty) (const list_type *list) { return list->list == NULL; }
+
+#define EP_RT_DEFINE_LIST(list_name, list_type, item_type) \
+	EP_RT_DEFINE_LIST_PREFIX(ep, list_name, list_type, item_type)
+
+#define EP_RT_DEFINE_LIST_ITERATOR_PREFIX(prefix_name, list_name, list_type, iterator_type, item_type) \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, iterator_begin) (const list_type *list, iterator_type *iterator) { iterator->iterator = list->list; } \
+	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, iterator_end) (const list_type *list, const iterator_type *iterator) { return iterator->iterator == NULL; } \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, iterator_next) (const list_type *list, iterator_type *iterator) { iterator->iterator = iterator->iterator->next; } \
+	static inline item_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, list_name, iterator_value) (const iterator_type *iterator) { return ((item_type)(gsize)(iterator->iterator->data)); }
 
 #define EP_RT_DEFINE_LIST_ITERATOR(list_name, list_type, iterator_type, item_type) \
-	static inline void ep_rt_ ## list_name ## _iterator_begin (const list_type *list, iterator_type *iterator) { iterator->iterator = list->list; } \
-	static inline bool ep_rt_ ## list_name ## _iterator_end (const list_type *list, const iterator_type *iterator) { return iterator->iterator == NULL; } \
-	static inline void ep_rt_ ## list_name ## _iterator_next (const list_type *list, iterator_type *iterator) { iterator->iterator = iterator->iterator->next; } \
-	static inline item_type ep_rt_ ## list_name ## _iterator_value (const iterator_type *iterator) { return ((item_type)(gsize)(iterator->iterator->data)); }
+	EP_RT_DEFINE_LIST_ITERATOR_PREFIX(ep, list_name, list_type, iterator_type, item_type)
+
+#define EP_RT_DEFINE_QUEUE_PREFIX(prefix_name, queue_name, queue_type, item_type) \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, alloc) (queue_type *queue) { queue->queue = g_queue_new (); } \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, free) (queue_type *queue) { g_queue_free (queue->queue); queue->queue = NULL; } \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, pop_head) (queue_type *queue, item_type *item) { *item = ((item_type)(gsize)g_queue_pop_head (queue->queue)); } \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, push_head) (queue_type *queue, item_type item) { g_queue_push_head (queue->queue, ((gpointer)(gsize)item)); } \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, push_tail) (queue_type *queue, item_type item) { g_queue_push_tail (queue->queue, ((gpointer)(gsize)item)); } \
+	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, queue_name, is_empty) (const queue_type *queue) { return g_queue_is_empty (queue->queue); }
 
 #define EP_RT_DEFINE_QUEUE(queue_name, queue_type, item_type) \
-	static inline void ep_rt_ ## queue_name ## _alloc (queue_type *queue) { \
-		queue->queue = g_queue_new ();\
-	} \
-	static inline void ep_rt_ ## queue_name ## _free (queue_type *queue) { \
-		g_queue_free (queue->queue); \
-		queue->queue = NULL; \
-	} \
-	static inline void ep_rt_ ## queue_name ## _pop_head (queue_type *queue, item_type *item) { \
-		*item = ((item_type)(gsize)g_queue_pop_head (queue->queue)); \
-	} \
-	static inline void ep_rt_ ## queue_name ## _push_head (queue_type *queue, item_type item) { \
-		g_queue_push_head (queue->queue, ((gpointer)(gsize)item)); \
-	} \
-	static inline void ep_rt_ ## queue_name ## _push_tail (queue_type *queue, item_type item) { \
-		g_queue_push_tail (queue->queue, ((gpointer)(gsize)item)); \
-	} \
-	static inline bool ep_rt_ ## queue_name ## _is_empty (const queue_type *queue) { \
-		return g_queue_is_empty (queue->queue); \
-	}
+	EP_RT_DEFINE_QUEUE_PREFIX(ep, queue_name, queue_type, item_type)
 
-#define EP_RT_DEFINE_HASH_MAP(hash_map_name, hash_map_type, key_type, value_type) \
-	static inline void ep_rt_ ## hash_map_name ## _alloc (hash_map_type *hash_map, uint32_t (*hash_callback)(const void *), bool (*eq_callback)(const void *, const void *), void (*key_free_callback)(void *), void (*value_free_callback)(void *)) { \
+#define EP_RT_DEFINE_ARRAY_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, alloc) (array_type *ep_array) { ep_array->array = g_array_new (FALSE, FALSE, sizeof (item_type)); } \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, alloc_capacity) (array_type *ep_array, size_t capacity) { ep_array->array = g_array_sized_new (FALSE, FALSE, sizeof (item_type), capacity); } \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, free) (array_type *ep_array) { g_array_free (ep_array->array, TRUE); } \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, append) (array_type *ep_array, item_type item) { g_array_append_val (ep_array->array, item); } \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, clear) (array_type *ep_array, void (*callback)(void *)) { g_array_set_size (ep_array->array, 0); } \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, remove) (array_type *ep_array, iterator_type *pos) { \
+		EP_ASSERT (pos->index < ep_array->array->len); \
+		ep_array->array = g_array_remove_index_fast (ep_array->array, pos->index); \
+	} \
+	static inline size_t EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, size) (const array_type *ep_array) { return ep_array->array->len; } \
+	static inline item_type * EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, data) (const array_type *ep_array) { return (item_type *)ep_array->array->data; }
+
+#define EP_RT_DEFINE_ARRAY(array_name, array_type, iterator_type, item_type) \
+	EP_RT_DEFINE_ARRAY_PREFIX(ep, array_name, array_type, iterator_type, item_type)
+
+#define EP_RT_DEFINE_ARRAY_ITERATOR_PREFIX(prefix_name, array_name, array_type, iterator_type, item_type) \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, iterator_begin) (const array_type *ep_array, iterator_type *iterator) { iterator->array = ep_array->array; iterator->index = 0; } \
+	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, iterator_end) (const array_type *ep_array, const iterator_type *iterator) { return iterator->index >= iterator->array->len; } \
+	static void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, iterator_next) (const array_type *ep_array, iterator_type *iterator) { iterator->index++; } \
+	static item_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, array_name, iterator_value) (const iterator_type *iterator) { return g_array_index(iterator->array, item_type, iterator->index); }
+
+#define EP_RT_DEFINE_ARRAY_ITERATOR(array_name, array_type, iterator_type, item_type) \
+	EP_RT_DEFINE_ARRAY_ITERATOR_PREFIX(ep, array_name, array_type, iterator_type, item_type)
+
+#define EP_RT_DEFINE_HASH_MAP_PREFIX(prefix_name, hash_map_name, hash_map_type, key_type, value_type) \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, alloc) (hash_map_type *hash_map, uint32_t (*hash_callback)(const void *), bool (*eq_callback)(const void *, const void *), void (*key_free_callback)(void *), void (*value_free_callback)(void *)) { \
 		hash_map->table = g_hash_table_new_full ((GHashFunc)hash_callback, (GEqualFunc)eq_callback, (GDestroyNotify)key_free_callback, (GDestroyNotify)value_free_callback); \
 		hash_map->count = 0;\
 	} \
-	static inline void ep_rt_ ## hash_map_name ## _free (hash_map_type *hash_map) { \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, free) (hash_map_type *hash_map) { \
 		g_hash_table_destroy (hash_map->table); \
 		hash_map->table = NULL; \
 		hash_map->count = 0; \
 	} \
-	static inline void ep_rt_ ## hash_map_name ## _add (hash_map_type *hash_map, key_type key, value_type value) { \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, add) (hash_map_type *hash_map, key_type key, value_type value) { \
 		g_hash_table_replace (hash_map->table, (gpointer)key, ((gpointer)(gsize)value)); \
 		hash_map->count++; \
 	} \
-	static inline void ep_rt_ ## hash_map_name ## _remove (hash_map_type *hash_map, const key_type key) { \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, remove) (hash_map_type *hash_map, const key_type key) { \
 		if (g_hash_table_remove (hash_map->table, (gconstpointer)key)) \
 			hash_map->count--; \
 	} \
-	static inline void ep_rt_ ## hash_map_name ## _remove_all (hash_map_type *hash_map) { \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, remove_all) (hash_map_type *hash_map) { \
 		g_hash_table_remove_all (hash_map->table); \
 		hash_map->count = 0; \
 	} \
-	static inline bool ep_rt_ ## hash_map_name ## _lookup (const hash_map_type *hash_map, const key_type key, value_type *value) { \
+	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, lookup) (const hash_map_type *hash_map, const key_type key, value_type *value) { \
 		gpointer _value = NULL; \
 		bool result = g_hash_table_lookup_extended (hash_map->table, (gconstpointer)key, NULL, &_value); \
 		*value = ((value_type)(gsize)_value); \
 		return result; \
 	} \
-	static inline uint32_t ep_rt_ ## hash_map_name ## _count (const hash_map_type *hash_map) { \
+	static inline uint32_t EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, count) (const hash_map_type *hash_map) { \
 		return hash_map->count; \
 	}
 
-#define EP_RT_DEFINE_HASH_MAP_ITERATOR(hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
-	static inline void ep_rt_ ## hash_map_name ## _iterator_begin (const hash_map_type *hash_map, iterator_type *iterator) { \
+#define EP_RT_DEFINE_HASH_MAP(hash_map_name, hash_map_type, key_type, value_type) \
+	EP_RT_DEFINE_HASH_MAP_PREFIX(ep, hash_map_name, hash_map_type, key_type, value_type)
+
+#define EP_RT_DEFINE_HASH_MAP_ITERATOR_PREFIX(prefix_name, hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, iterator_begin) (const hash_map_type *hash_map, iterator_type *iterator) { \
 		g_hash_table_iter_init (&iterator->iterator, hash_map->table); \
-		if (hash_map->table) \
-			iterator->end = g_hash_table_iter_next (&iterator->iterator, &iterator->key, &iterator->value); \
+		if (hash_map->table && hash_map->count > 0) \
+			iterator->end = !g_hash_table_iter_next (&iterator->iterator, &iterator->key, &iterator->value); \
 		else \
 			iterator->end = true; \
 	} \
-	static inline bool ep_rt_ ## hash_map_name ## _iterator_end (const hash_map_type *hash_map, const iterator_type *iterator) { \
+	static inline bool EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, iterator_end) (const hash_map_type *hash_map, const iterator_type *iterator) { \
 		return iterator->end; \
 	} \
-	static inline void ep_rt_ ## hash_map_name ## _iterator_next (const hash_map_type *hash_map, iterator_type *iterator) { \
-		iterator->end = g_hash_table_iter_next (&iterator->iterator, &iterator->key, &iterator->value); \
+	static inline void EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, iterator_next) (const hash_map_type *hash_map, iterator_type *iterator) { \
+		iterator->end = !g_hash_table_iter_next (&iterator->iterator, &iterator->key, &iterator->value); \
 	} \
-	static inline key_type ep_rt_ ## hash_map_name ## _iterator_key (const iterator_type *iterator) { \
+	static inline key_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, iterator_key) (const iterator_type *iterator) { \
 			return ((key_type)(gsize)iterator->key); \
 	} \
-	static inline value_type ep_rt_ ## hash_map_name ## _iterator_value (const iterator_type *iterator) { \
+	static inline value_type EP_RT_BUILD_TYPE_FUNC_NAME(prefix_name, hash_map_name, iterator_value) (const iterator_type *iterator) { \
 		return ((value_type)(gsize)iterator->value); \
 	}
 
-typedef gint64 (*ep_rt_mono_100ns_ticks_func)(void);
-typedef gint64 (*ep_rt_mono_100ns_datetime_func)(void);
+#define EP_RT_DEFINE_HASH_MAP_ITERATOR(hash_map_name, hash_map_type, iterator_type, key_type, value_type) \
+	EP_RT_DEFINE_HASH_MAP_ITERATOR_PREFIX(ep, hash_map_name, hash_map_type, iterator_type, key_type, value_type)
+
+typedef MonoThreadStart ep_rt_thread_start_func;
+typedef mono_thread_start_return_t ep_rt_thread_start_func_return_t;
+typedef MonoNativeThreadId ep_rt_thread_id_t;
+
+typedef EventPipeThreadHolder * (*ep_rt_thread_holder_alloc_func)(void);
+typedef void (*ep_rt_thread_holder_free_func)(EventPipeThreadHolder *thread_holder);
+
+#define EP_RT_DEFINE_THREAD_FUNC(name) static mono_thread_start_return_t WINAPI name (gpointer data)
+
 typedef int (*ep_rt_mono_cpu_count_func)(void);
 typedef int (*ep_rt_mono_process_current_pid_func)(void);
 typedef MonoNativeThreadId (*ep_rt_mono_native_thread_id_get_func)(void);
@@ -140,13 +194,25 @@ typedef gboolean (*ep_rt_mono_rand_try_get_bytes_func)(guchar *buffer, gssize bu
 typedef EventPipeThread * (*ep_rt_mono_thread_get_func)(void);
 typedef EventPipeThread * (*ep_rt_mono_thread_get_or_create_func)(void);
 typedef void (*ep_rt_mono_thread_exited_func)(void);
+typedef gint (*ep_rt_mono_thread_info_sleep_func)(guint32 ms, gboolean *alerted);
+typedef gboolean (*ep_rt_mono_thread_info_yield_func)(void);
 typedef gpointer (*ep_rt_mono_w32file_create_func)(const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs);
 typedef gboolean (*ep_rt_mono_w32file_write_func)(gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, gint32 *win32error);
 typedef gboolean (*ep_rt_mono_w32file_close_func)(gpointer handle);
+typedef gpointer (*ep_rt_mono_w32event_create_func)(gboolean manual, gboolean initial);
+typedef gboolean (*ep_rt_mono_w32event_close_func)(gpointer handle);
+typedef void (*ep_rt_mono_w32event_set_func)(gpointer handle);
+typedef MonoW32HandleWaitRet (*ep_rt_mono_w32handle_wait_one_func)(gpointer handle, guint32 timeout, gboolean alertable);
+typedef void* (*ep_rt_mono_valloc_func)(void *addr, size_t length, int flags, MonoMemAccountType type);
+typedef int (*ep_rt_mono_vfree_func)(void *addr, size_t length, MonoMemAccountType type);
+typedef int (*ep_rt_mono_valloc_granule_func)(void);
+typedef gboolean (*ep_rt_mono_thread_platform_create_thread_func)(ep_rt_thread_start_func thread_func, gpointer thread_data, gsize * const stack_size, ep_rt_thread_id_t *thread_id);
+typedef gpointer (*ep_rt_mono_thread_attach_func)(gboolean);
+typedef void (*ep_rt_mono_thread_detach_func)(void);
+typedef char* (*ep_rt_mono_get_os_cmd_line_func)(void);
+typedef char* (*ep_rt_mono_get_managed_cmd_line_func)(void);
 
 typedef struct _EventPipeMonoFuncTable {
-	ep_rt_mono_100ns_ticks_func ep_rt_mono_100ns_ticks;
-	ep_rt_mono_100ns_datetime_func ep_rt_mono_100ns_datetime;
 	ep_rt_mono_process_current_pid_func ep_rt_mono_process_current_pid;
 	ep_rt_mono_cpu_count_func ep_rt_mono_cpu_count;
 	ep_rt_mono_native_thread_id_get_func ep_rt_mono_native_thread_id_get;
@@ -156,13 +222,143 @@ typedef struct _EventPipeMonoFuncTable {
 	ep_rt_mono_thread_get_func ep_rt_mono_thread_get;
 	ep_rt_mono_thread_get_or_create_func ep_rt_mono_thread_get_or_create;
 	ep_rt_mono_thread_exited_func ep_rt_mono_thread_exited;
+	ep_rt_mono_thread_info_sleep_func ep_rt_mono_thread_info_sleep;
+	ep_rt_mono_thread_info_yield_func ep_rt_mono_thread_info_yield;
 	ep_rt_mono_w32file_create_func ep_rt_mono_w32file_create;
 	ep_rt_mono_w32file_write_func ep_rt_mono_w32file_write;
 	ep_rt_mono_w32file_close_func ep_rt_mono_w32file_close;
+	ep_rt_mono_w32event_create_func ep_rt_mono_w32event_create;
+	ep_rt_mono_w32event_close_func ep_rt_mono_w32event_close;
+	ep_rt_mono_w32event_set_func ep_rt_mono_w32event_set;
+	ep_rt_mono_w32handle_wait_one_func ep_rt_mono_w32hadle_wait_one;
+	ep_rt_mono_valloc_func ep_rt_mono_valloc;
+	ep_rt_mono_vfree_func ep_rt_mono_vfree;
+	ep_rt_mono_valloc_granule_func ep_rt_mono_valloc_granule;
+	ep_rt_mono_thread_platform_create_thread_func ep_rt_mono_thread_platform_create_thread;
+	ep_rt_mono_thread_attach_func ep_rt_mono_thread_attach;
+	ep_rt_mono_thread_detach_func ep_rt_mono_thread_detach;
+	ep_rt_mono_get_os_cmd_line_func ep_rt_mono_get_os_cmd_line;
+	ep_rt_mono_get_managed_cmd_line_func ep_rt_mono_get_managed_cmd_line;
 } EventPipeMonoFuncTable;
 
-typedef EventPipeThreadHolder * (*ep_rt_thread_holder_alloc_func)(void);
-typedef void (*ep_rt_thread_holder_free_func)(EventPipeThreadHolder *thread_holder);
+int64_t
+ep_rt_mono_perf_counter_query (void);
+
+int64_t
+ep_rt_mono_perf_frequency_query (void);
+
+void
+ep_rt_mono_system_time_get (EventPipeSystemTime *system_time);
+
+int64_t
+ep_rt_mono_system_timestamp_get (void);
+
+#ifndef EP_RT_MONO_USE_STATIC_RUNTIME
+static
+inline
+EventPipeMonoFuncTable *
+ep_rt_mono_func_table_get (void)
+{
+	extern EventPipeMonoFuncTable _ep_rt_mono_func_table;
+	return &_ep_rt_mono_func_table;
+}
+#endif
+
+static
+inline
+char *
+os_command_line_get (void)
+{
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	return mono_get_os_cmd_line ();
+#else
+	return ep_rt_mono_func_table_get ()->ep_rt_mono_get_os_cmd_line ();
+#endif
+}
+
+static
+inline
+char **
+os_command_line_get_ref (void)
+{
+	extern char *_ep_rt_mono_os_cmd_line;
+	return &_ep_rt_mono_os_cmd_line;
+}
+
+static
+inline
+mono_lazy_init_t *
+os_command_line_get_init (void)
+{
+	extern mono_lazy_init_t _ep_rt_mono_os_cmd_line_init;
+	return &_ep_rt_mono_os_cmd_line_init;
+}
+
+static
+inline
+void
+os_command_line_lazy_init (void)
+{
+	if (!*os_command_line_get_ref ())
+		*os_command_line_get_ref () = os_command_line_get ();
+}
+
+static
+inline
+void
+os_command_line_lazy_clean (void)
+{
+	g_free (*os_command_line_get_ref ());
+	*os_command_line_get_ref () = NULL;
+}
+
+static
+inline
+char *
+managed_command_line_get (void)
+{
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	return mono_runtime_get_managed_cmd_line ();
+#else
+	return ep_rt_mono_func_table_get ()->ep_rt_mono_get_managed_cmd_line ();
+#endif
+}
+
+static
+inline
+char **
+managed_command_line_get_ref (void)
+{
+	extern char *_ep_rt_mono_managed_cmd_line;
+	return &_ep_rt_mono_managed_cmd_line;
+}
+
+static
+inline
+mono_lazy_init_t *
+managed_command_line_get_init (void)
+{
+	extern mono_lazy_init_t _ep_rt_mono_managed_cmd_line_init;
+	return &_ep_rt_mono_managed_cmd_line_init;
+}
+
+static
+inline
+void
+managed_command_line_lazy_init (void)
+{
+	if (!*managed_command_line_get_ref ())
+		*managed_command_line_get_ref () = managed_command_line_get ();
+}
+
+static
+inline
+void
+managed_command_line_lazy_clean (void)
+{
+	g_free (*managed_command_line_get_ref ());
+	*managed_command_line_get_ref () = NULL;
+}
 
 static
 inline
@@ -171,15 +367,6 @@ ep_rt_mono_config_lock_get (void)
 {
 	extern ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock;
 	return &_ep_rt_mono_config_lock;
-}
-
-static
-inline
-EventPipeMonoFuncTable *
-ep_rt_mono_func_table_get (void)
-{
-	extern EventPipeMonoFuncTable _ep_rt_mono_func_table;
-	return &_ep_rt_mono_func_table;
 }
 
 MONO_PROFILER_API
@@ -326,11 +513,31 @@ ep_rt_atomic_dec_int32_t (volatile int32_t *value)
 	return (int32_t)mono_atomic_dec_i32 ((volatile gint32 *)value);
 }
 
+static
+inline
+int64_t
+ep_rt_atomic_inc_int64_t (volatile int64_t *value)
+{
+	return (int64_t)mono_atomic_inc_i64 ((volatile gint64 *)value);
+}
+
+static
+inline
+int64_t
+ep_rt_atomic_dec_int64_t (volatile int64_t *value)
+{
+	return (int64_t)mono_atomic_dec_i64 ((volatile gint64 *)value);
+}
+
 /*
  * EventPipe.
  */
 
+EP_RT_DEFINE_ARRAY (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
+EP_RT_DEFINE_ARRAY_ITERATOR (session_id_array, ep_rt_session_id_array_t, ep_rt_session_id_array_iterator_t, EventPipeSessionID)
+
 static
+inline
 EventPipeThreadHolder *
 thread_holder_alloc_func (void)
 {
@@ -338,6 +545,7 @@ thread_holder_alloc_func (void)
 }
 
 static
+inline
 void
 thread_holder_free_func (EventPipeThreadHolder * thread_holder)
 {
@@ -349,7 +557,11 @@ inline
 void
 ep_rt_init (void)
 {
+#ifndef EP_RT_MONO_USE_STATIC_RUNTIME
 	mono_eventpipe_init (ep_rt_mono_func_table_get (), thread_holder_alloc_func, thread_holder_free_func);
+#else
+	mono_eventpipe_init (NULL, thread_holder_alloc_func, thread_holder_free_func);
+#endif
 	ep_rt_spin_lock_alloc (ep_rt_mono_config_lock_get ());
 }
 
@@ -358,6 +570,9 @@ inline
 void
 ep_rt_shutdown (void)
 {
+	mono_lazy_cleanup (managed_command_line_get_init (), managed_command_line_lazy_clean);
+	mono_lazy_cleanup (os_command_line_get_init (), os_command_line_lazy_clean);
+
 	ep_rt_spin_lock_free (ep_rt_mono_config_lock_get ());
 	mono_eventpipe_fini ();
 }
@@ -396,6 +611,45 @@ ep_rt_config_requires_lock_not_held (void)
 	ep_rt_spin_lock_requires_lock_not_held (ep_rt_mono_config_lock_get ());
 }
 #endif
+
+static
+inline
+bool
+ep_rt_walk_managed_stack_for_current_thread (EventPipeStackContents *stack_contents)
+{
+	// TODO: Implement.
+	return true;
+}
+
+static
+inline
+void
+ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
+{
+	;
+}
+
+static
+inline
+void
+ep_rt_init_providers_and_events (void)
+{
+	;
+}
+
+/*
+ * EventPipeBuffer.
+ */
+
+EP_RT_DEFINE_ARRAY (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
+EP_RT_DEFINE_ARRAY_ITERATOR (buffer_array, ep_rt_buffer_array_t, ep_rt_buffer_array_iterator_t, EventPipeBuffer *)
+
+/*
+ * EventPipeBufferList.
+ */
+
+EP_RT_DEFINE_ARRAY (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
+EP_RT_DEFINE_ARRAY_ITERATOR (buffer_list_array, ep_rt_buffer_list_array_t, ep_rt_buffer_list_array_iterator_t, EventPipeBufferList *)
 
 /*
  * EventPipeEvent.
@@ -443,6 +697,55 @@ ep_rt_provider_list_find_by_name (
 }
 
 /*
+ * EventPipeProviderConfiguration.
+ */
+
+EP_RT_DEFINE_ARRAY (provider_config_array, ep_rt_provider_config_array_t, ep_rt_provider_config_array_iterator_t, EventPipeProviderConfiguration)
+EP_RT_DEFINE_ARRAY_ITERATOR (provider_config_array, ep_rt_provider_config_array_t, ep_rt_provider_config_array_iterator_t, EventPipeProviderConfiguration)
+
+static
+inline
+bool
+ep_rt_config_value_get_enable (void)
+{
+	bool enable = false;
+	gchar *value = g_getenv ("COMPlus_EnableEventPipe");
+	if (value && atoi (value) == 1)
+		enable = true;
+	g_free (value);
+	return enable;
+}
+
+static
+inline
+ep_char8_t *
+ep_rt_config_value_get_config (void)
+{
+	return g_getenv ("COMPlus_EventPipeConfig");
+}
+
+static
+inline
+ep_char8_t *
+ep_rt_config_value_get_output_path (void)
+{
+	return g_getenv ("COMPlus_EventPipeOutputPath");
+}
+
+static
+inline
+uint32_t
+ep_rt_config_value_get_circular_mb (void)
+{
+	uint32_t circular_mb = 0;
+	gchar *value = g_getenv ("COMPlus_EventPipeCircularMB");
+	if (value)
+		circular_mb = strtoul (value, NULL, 9);
+	g_free (value);
+	return circular_mb;
+}
+
+/*
  * EventPipeSampleProfiler.
  */
 
@@ -451,7 +754,7 @@ inline
 void
 ep_rt_sample_profiler_init (EventPipeProviderCallbackDataQueue *provider_callback_data_queue)
 {
-	//TODO: Not supported.
+	// TODO: Not supported.
 }
 
 static
@@ -459,7 +762,7 @@ inline
 void
 ep_rt_sample_profiler_enable (void)
 {
-	//TODO: Not supported.
+	// TODO: Not supported.
 }
 
 static
@@ -467,23 +770,70 @@ inline
 void
 ep_rt_sample_profiler_disable (void)
 {
-	//TODO: Not supported.
+	// TODO: Not supported.
 }
 
 static
+inline
 uint32_t
 ep_rt_sample_profiler_get_sampling_rate (void)
 {
-	//TODO: Not supported.
+	// TODO: Not supported.
 	return 0;
 }
 
+static
+inline
+void
+ep_rt_sample_profiler_set_sampling_rate (uint32_t nanoseconds)
+{
+	// TODO: Not supported.
+}
+
+static
+void
+ep_rt_sample_profiler_can_start_sampling (void)
+{
+	// TODO: Not supported.
+}
+
+static
+void
+ep_rt_notify_profiler_provider_created (EventPipeProvider *provider)
+{
+	// TODO: Not supported.
+}
+
 /*
- * EvetPipeSessionProvider.
+ * EventPipeSessionProvider.
  */
 
 EP_RT_DEFINE_LIST (session_provider_list, ep_rt_session_provider_list_t, EventPipeSessionProvider *)
 EP_RT_DEFINE_LIST_ITERATOR (session_provider_list, ep_rt_session_provider_list_t, ep_rt_session_provider_list_iterator_t, EventPipeSessionProvider *)
+
+/*
+ * EventPipeSequencePoint.
+ */
+
+EP_RT_DEFINE_LIST (sequence_point_list, ep_rt_sequence_point_list_t, EventPipeSequencePoint *)
+EP_RT_DEFINE_LIST_ITERATOR (sequence_point_list, ep_rt_sequence_point_list_t, ep_rt_sequence_point_list_iterator_t, EventPipeSequencePoint *)
+
+/*
+ * EventPipeThread.
+ */
+
+EP_RT_DEFINE_ARRAY (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
+EP_RT_DEFINE_ARRAY_ITERATOR (thread_array, ep_rt_thread_array_t, ep_rt_thread_array_iterator_t, EventPipeThread *)
+
+/*
+ * EventPipeThreadSessionState.
+ */
+
+EP_RT_DEFINE_LIST (thread_session_state_list, ep_rt_thread_session_state_list_t, EventPipeThreadSessionState *)
+EP_RT_DEFINE_LIST_ITERATOR (thread_session_state_list, ep_rt_thread_session_state_list_t, ep_rt_thread_session_state_list_iterator_t, EventPipeThreadSessionState *)
+
+EP_RT_DEFINE_ARRAY (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
+EP_RT_DEFINE_ARRAY_ITERATOR (thread_session_state_array, ep_rt_thread_session_state_array_t, ep_rt_thread_session_state_array_iterator_t, EventPipeThreadSessionState *)
 
 static
 inline
@@ -502,7 +852,7 @@ ep_rt_session_provider_list_find_by_name (
 	const ep_rt_session_provider_list_t *list,
 	const ep_char8_t *name)
 {
-	GSList *item = g_slist_find_custom (list->list, name, compare_provider_name);
+	GSList *item = g_slist_find_custom (list->list, name, compare_session_provider_name);
 	return (item != NULL) ? (EventPipeSessionProvider *)item->data : NULL;
 }
 
@@ -533,12 +883,17 @@ ep_rt_byte_array_free (uint8_t *ptr)
 static
 inline
 void
-ep_rt_wait_event_alloc (ep_rt_wait_event_handle_t *wait_event)
+ep_rt_wait_event_alloc (
+	ep_rt_wait_event_handle_t *wait_event,
+	bool manual,
+	bool initial)
 {
 	EP_ASSERT (wait_event != NULL);
-	wait_event->event = g_new0 (MonoOSEvent, 1);
-	if (wait_event->event)
-		mono_os_event_init (wait_event->event, false);
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	wait_event->event = mono_w32event_create (manual, initial);
+#else
+	wait_event->event = ep_rt_mono_func_table_get ()->ep_rt_mono_w32event_create (manual, initial);
+#endif
 }
 
 static
@@ -547,8 +902,11 @@ void
 ep_rt_wait_event_free (ep_rt_wait_event_handle_t *wait_event)
 {
 	if (wait_event != NULL && wait_event->event != NULL) {
-		mono_os_event_destroy (wait_event->event);
-		g_free (wait_event->event);
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+		mono_w32event_close (wait_event->event);
+#else
+		ep_rt_mono_func_table_get ()->ep_rt_mono_w32event_close (wait_event->event);
+#endif
 		wait_event->event = NULL;
 	}
 }
@@ -559,7 +917,11 @@ bool
 ep_rt_wait_event_set (ep_rt_wait_event_handle_t *wait_event)
 {
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
-	mono_os_event_set (wait_event->event);
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	mono_w32event_set (wait_event->event);
+#else
+	ep_rt_mono_func_table_get ()->ep_rt_mono_w32event_set (wait_event->event);
+#endif
 	return true;
 }
 
@@ -572,7 +934,11 @@ ep_rt_wait_event_wait (
 	bool alertable)
 {
 	EP_ASSERT (wait_event != NULL && wait_event->event != NULL);
-	return mono_os_event_wait_one (wait_event->event, timeout, alertable);
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	return (int32_t)mono_w32handle_wait_one (wait_event->event, timeout, alertable);
+#else
+	return (int32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_w32hadle_wait_one (wait_event->event, timeout, alertable);
+#endif
 }
 
 static
@@ -584,9 +950,32 @@ ep_rt_wait_event_get_wait_handle (ep_rt_wait_event_handle_t *wait_event)
 	return (EventPipeWaitHandle)wait_event;
 }
 
+static
+inline
+bool
+ep_rt_wait_event_is_valid (ep_rt_wait_event_handle_t *wait_event)
+{
+	if (wait_event == NULL || wait_event->event == NULL || wait_event->event == INVALID_HANDLE_VALUE)
+		return false;
+	else
+		return true;
+}
+
 /*
  * Misc.
  */
+
+static
+inline
+int
+ep_rt_get_last_error (void)
+{
+#ifdef HOST_WIN32
+	return GetLastError ();
+#else
+	return errno;
+#endif
+}
 
 static
 inline
@@ -607,6 +996,7 @@ ep_rt_create_activity_id (
 	uint8_t *activity_id,
 	uint32_t activity_id_len)
 {
+	EP_ASSERT (activity_id != NULL);
 	EP_ASSERT (activity_id_len == EP_ACTIVITY_ID_SIZE);
 
 	ERROR_DECL (error);
@@ -643,6 +1033,17 @@ ep_rt_create_activity_id (
 #undef ep_rt_object_alloc
 #define ep_rt_object_alloc(obj_type) (g_new0 (obj_type, 1))
 
+#undef ep_rt_object_array_alloc
+#define ep_rt_object_array_alloc(obj_type,size) (g_new0 (obj_type, size))
+
+static
+inline
+void
+ep_rt_object_array_free (void *ptr)
+{
+	g_free (ptr);
+}
+
 static
 inline
 void
@@ -654,6 +1055,29 @@ ep_rt_object_free (void *ptr)
 /*
  * PAL.
  */
+
+static
+inline
+bool
+ep_rt_thread_create (
+	void *thread_func,
+	void *params,
+	void *id)
+{
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	return (bool)mono_thread_platform_create_thread ((ep_rt_thread_start_func)thread_func, params, NULL, (ep_rt_thread_id_t *)id);
+#else
+	return (bool)ep_rt_mono_func_table_get ()->ep_rt_mono_thread_platform_create_thread ((ep_rt_thread_start_func)thread_func, params, NULL, (ep_rt_thread_id_t *)id);
+#endif
+}
+
+static
+inline
+void
+ep_rt_thread_sleep (uint64_t ns)
+{
+	g_usleep (ns / 1000);
+}
 
 static
 inline
@@ -701,44 +1125,63 @@ ep_rt_current_thread_get_id (void)
 
 static
 inline
-uint64_t
+int64_t
 ep_rt_perf_counter_query (void)
 {
-#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	return (uint64_t)mono_100ns_ticks ();
-#else
-	return (uint64_t)ep_rt_mono_func_table_get ()->ep_rt_mono_100ns_ticks ();
-#endif
+	return ep_rt_mono_perf_counter_query ();
 }
 
 static
 inline
-uint64_t
+int64_t
 ep_rt_perf_frequency_query (void)
 {
-	//Counter uses resolution of 100ns ticks.
-	return 100 * 1000 * 1000;
+	return ep_rt_mono_perf_frequency_query ();
 }
 
 static
 inline
-uint64_t
-ep_rt_system_time_get (void)
+void
+ep_rt_system_time_get (EventPipeSystemTime *system_time)
+{
+	ep_rt_mono_system_time_get (system_time);
+}
+
+static
+inline
+int64_t
+ep_rt_system_timestamp_get (void)
+{
+	return ep_rt_mono_system_timestamp_get ();
+}
+
+static
+inline
+int32_t
+ep_rt_system_get_alloc_granularity (void)
 {
 #ifdef EP_RT_MONO_USE_STATIC_RUNTIME
-	return (uint64_t)mono_100ns_datetime ();
+	return (int32_t)mono_valloc_granule ();
 #else
-	return (uint64_t)ep_rt_mono_func_table_get ()->ep_rt_mono_100ns_datetime ();
+	return (int32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_valloc_granule ();
 #endif
 }
 
 static
 inline
 const ep_char8_t *
-ep_rt_command_line_get (void)
+ep_rt_os_command_line_get (void)
 {
-	//TODO: Implement.
-	return "";
+	if (!mono_lazy_is_initialized (os_command_line_get_init ())) {
+		char *cmd_line = os_command_line_get ();
+		if (!cmd_line)
+			return NULL;
+		g_free (cmd_line);
+	}
+
+	mono_lazy_initialize (os_command_line_get_init (), os_command_line_lazy_init);
+	EP_ASSERT (*os_command_line_get_ref () != NULL);
+	return *os_command_line_get_ref ();
 }
 
 static
@@ -756,6 +1199,7 @@ ep_rt_file_open_write (const ep_char8_t *path)
 }
 
 static
+inline
 bool
 ep_rt_file_close (ep_rt_file_handle_t file_handle)
 {
@@ -764,6 +1208,7 @@ ep_rt_file_close (ep_rt_file_handle_t file_handle)
 }
 
 static
+inline
 bool
 ep_rt_file_write (
 	ep_rt_file_handle_t file_handle,
@@ -780,6 +1225,64 @@ ep_rt_file_write (
 		*bytes_written = bytes_to_write;
 
 	return result;
+}
+
+static
+inline
+uint8_t *
+ep_rt_valloc0 (size_t buffer_size)
+{
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	uint8_t *buffer = (uint8_t *)mono_valloc (NULL, buffer_size, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_PROFILER);
+#else
+	uint8_t *buffer = (uint8_t *)ep_rt_mono_func_table_get ()->ep_rt_mono_valloc (NULL, buffer_size, MONO_MMAP_READ | MONO_MMAP_WRITE, MONO_MEM_ACCOUNT_PROFILER);
+#endif
+	if (buffer)
+		memset (buffer, 0, buffer_size);
+	return buffer;
+}
+
+static
+inline
+void
+ep_rt_vfree (
+	uint8_t *buffer,
+	size_t buffer_size)
+{
+	if (buffer)
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+		mono_vfree (buffer, buffer_size, MONO_MEM_ACCOUNT_PROFILER);
+#else
+		ep_rt_mono_func_table_get ()->ep_rt_mono_vfree (buffer, buffer_size, MONO_MEM_ACCOUNT_PROFILER);
+#endif
+}
+
+static
+inline
+uint32_t
+ep_rt_temp_path_get (
+	ep_char8_t *buffer,
+	uint32_t buffer_len)
+{
+	EP_ASSERT (buffer != NULL);
+	EP_ASSERT (buffer_len > 0);
+
+	const ep_char8_t *path = g_get_tmp_dir ();
+	int32_t result = snprintf (buffer, buffer_len, "%s", path);
+	if (result <= 0 || result > buffer_len)
+		ep_raise_error ();
+
+	if (buffer [result - 1] != G_DIR_SEPARATOR) {
+		buffer [result++] = G_DIR_SEPARATOR;
+		buffer [result] = '\0';
+	}
+
+ep_on_exit:
+	return result;
+
+ep_on_error:
+	result = 0;
+	ep_exit_error_handler ();
 }
 
 /*
@@ -833,6 +1336,7 @@ ep_rt_spin_lock_release (ep_rt_spin_lock_handle_t *spin_lock)
 	if (spin_lock && spin_lock->lock) {
 #ifdef EP_CHECKED_BUILD
 		spin_lock->lock_is_held = false;
+		spin_lock->owning_thread_id = MONO_UINT_TO_NATIVE_THREAD_ID (0);
 #endif
 		mono_coop_mutex_unlock (spin_lock->lock);
 	}
@@ -880,6 +1384,32 @@ ep_rt_utf8_string_compare (
 
 static
 inline
+int
+ep_rt_utf8_string_compare_ignore_case (
+	const ep_char8_t *str1,
+	const ep_char8_t *str2)
+{
+	return g_strcasecmp ((const char *)str1, (const char *)str2);
+}
+
+static
+inline
+bool
+ep_rt_utf8_string_is_null_or_empty (const ep_char8_t *str)
+{
+	if (str == NULL)
+		return true;
+
+	while (*str) {
+		if (!isspace(*str))
+			return false;
+		str++;
+	}
+	return true;
+}
+
+static
+inline
 ep_char16_t *
 ep_rt_utf8_to_utf16_string (
 	const ep_char8_t *str,
@@ -895,6 +1425,24 @@ ep_rt_utf8_string_dup (const ep_char8_t *str)
 {
 	return g_strdup (str);
 }
+
+static
+inline
+ep_char8_t *
+ep_rt_utf8_string_strtok (
+	ep_char8_t *str,
+	const ep_char8_t *delimiter,
+	ep_char8_t **context)
+{
+	return strtok_r (str, delimiter, context);
+}
+
+#undef ep_rt_utf8_string_snprintf
+#define ep_rt_utf8_string_snprintf( \
+	str, \
+	str_len, \
+	format, ...) \
+g_snprintf ((gchar *)str, (gulong)str_len, (const gchar *)format, __VA_ARGS__)
 
 static
 inline
@@ -932,11 +1480,41 @@ ep_rt_utf16_string_free (ep_char16_t *str)
 
 static
 inline
+wchar_t *
+ep_rt_utf8_to_wcs_string (
+	const ep_char8_t *str,
+	size_t len)
+{
+#if WCHAR_MAX == 0xFFFF
+	return (wchar_t *)ep_rt_utf8_to_utf16_string (str, len);
+#else
+	return (wchar_t *)g_utf8_to_ucs4 (str, len, NULL, NULL, NULL);
+#endif
+}
+
+static
+inline
+void
+ep_rt_wcs_string_free (wchar_t *str)
+{
+	g_free (str);
+}
+
+static
+inline
 const ep_char8_t *
 ep_rt_managed_command_line_get (void)
 {
-	//TODO: Implement.
-	return "";
+	if (!mono_lazy_is_initialized (managed_command_line_get_init ())) {
+		char *cmd_line = managed_command_line_get ();
+		if (!cmd_line)
+			return NULL;
+		g_free (cmd_line);
+	}
+
+	mono_lazy_initialize (managed_command_line_get_init (), managed_command_line_lazy_init);
+	EP_ASSERT (*managed_command_line_get_ref () != NULL);
+	return *managed_command_line_get_ref ();
 }
 
 /*
@@ -945,9 +1523,34 @@ ep_rt_managed_command_line_get (void)
 static
 inline
 void
-ep_rt_thread_setup (void)
+ep_rt_thread_setup (bool background_thread)
 {
-	//TODO: Is this needed on Mono runtime? Looks like a thread attach, making sure thread is attached to runtime.
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	// NOTE, under netcore, only root domain exists.
+	if (!mono_thread_current ()) {
+		MonoThread *thread = mono_thread_attach (mono_get_root_domain ());
+		if (background_thread && thread) {
+			mono_thread_set_state (thread, ThreadState_Background);
+			mono_thread_info_set_flags (MONO_THREAD_INFO_FLAGS_NO_SAMPLE);
+		}
+	}
+#else
+	ep_rt_mono_func_table_get ()->ep_rt_mono_thread_attach (background_thread);
+#endif
+}
+
+static
+inline
+void
+ep_rt_thread_teardown (void)
+{
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	MonoThread *current_thread = mono_thread_current ();
+	if (current_thread)
+		mono_thread_detach (current_thread);
+#else
+	ep_rt_mono_func_table_get ()->ep_rt_mono_thread_detach ();
+#endif
 }
 
 static
@@ -982,6 +1585,57 @@ ep_rt_thread_get_or_create (void)
 #endif
 }
 
+static
+inline
+int32_t
+ep_rt_mono_thread_sleep (uint32_t ms, bool alertable)
+{
+	gboolean alerted = false;
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	if (alertable)
+		return (int32_t)mono_thread_info_sleep (ms, &alerted);
+	else
+		return (int32_t)mono_thread_info_sleep (ms, NULL);
+#else
+	if (alertable)
+		return (int32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_sleep (ms, &alerted);
+	else
+		return (int32_t)ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_sleep (ms, NULL);
+#endif
+}
+
+static
+inline
+bool
+ep_rt_mono_thread_yield (void)
+{
+#ifdef EP_RT_MONO_USE_STATIC_RUNTIME
+	return (bool)mono_thread_info_yield ();
+#else
+	return (bool)ep_rt_mono_func_table_get ()->ep_rt_mono_thread_info_yield ();
+#endif
+}
+
+// See src/coreclr/src/vm/spinlock.h for details.
+#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+	#define EP_SLEEP_START_THRESHOLD (5 * 1024)
+#else
+	#define EP_SLEEP_START_THRESHOLD (32 * 1024)
+#endif
+
+#undef EP_YIELD_WHILE
+#define EP_YIELD_WHILE(condition) { \
+	int32_t __switch_count = 0; \
+	while (condition) { \
+		if (++__switch_count >= EP_SLEEP_START_THRESHOLD) { \
+			ep_rt_mono_thread_sleep (1, false); \
+		} \
+	} \
+	{ \
+		ep_rt_mono_thread_yield (); \
+	} \
+}
+
 /*
  * ThreadSequenceNumberMap.
  */
@@ -998,7 +1652,7 @@ inline
 uint32_t
 ep_rt_volatile_load_uint32_t (const volatile uint32_t *ptr)
 {
-	return mono_atomic_load_i32 ((volatile gint32 *)ptr);
+	return (uint32_t)mono_atomic_load_i32 ((volatile gint32 *)ptr);
 }
 
 static
@@ -1035,7 +1689,7 @@ inline
 uint64_t
 ep_rt_volatile_load_uint64_t (const volatile uint64_t *ptr)
 {
-	return mono_atomic_load_i64 ((volatile gint64 *)ptr);
+	return (uint64_t)mono_atomic_load_i64 ((volatile gint64 *)ptr);
 }
 
 static
@@ -1063,6 +1717,42 @@ void
 ep_rt_volatile_store_uint64_t_without_barrier (
 	volatile uint64_t *ptr,
 	uint64_t value)
+{
+	*ptr = value;
+}
+
+static
+inline
+int64_t
+ep_rt_volatile_load_int64_t (const volatile int64_t *ptr)
+{
+	return mono_atomic_load_i64 ((volatile gint64 *)ptr);
+}
+
+static
+inline
+int64_t
+ep_rt_volatile_load_int64_t_without_barrier (const volatile int64_t *ptr)
+{
+	return *ptr;
+}
+
+static
+inline
+void
+ep_rt_volatile_store_int64_t (
+	volatile int64_t *ptr,
+	int64_t value)
+{
+	mono_atomic_store_i64 ((volatile gint64 *)ptr, (gint64)value);
+}
+
+static
+inline
+void
+ep_rt_volatile_store_int64_t_without_barrier (
+	volatile int64_t *ptr,
+	int64_t value)
 {
 	*ptr = value;
 }

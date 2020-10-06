@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Runtime.Serialization;
@@ -11,7 +10,7 @@ namespace System.Threading.Tests
 {
     public static class ExecutionContextTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CreateCopyTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -32,6 +31,29 @@ namespace System.Threading.Tests
         }
 
         [Fact]
+        public static void RestoreTest()
+        {
+            ExecutionContext defaultEC = ExecutionContext.Capture();
+            var asyncLocal = new AsyncLocal<int>();
+            Assert.Equal(0, asyncLocal.Value);
+
+            asyncLocal.Value = 1;
+            ExecutionContext oneEC = ExecutionContext.Capture();
+            Assert.Equal(1, asyncLocal.Value);
+
+            ExecutionContext.Restore(defaultEC);
+            Assert.Equal(0, asyncLocal.Value);
+
+            ExecutionContext.Restore(oneEC);
+            Assert.Equal(1, asyncLocal.Value);
+
+            ExecutionContext.Restore(defaultEC);
+            Assert.Equal(0, asyncLocal.Value);
+
+            Assert.Throws<InvalidOperationException>(() => ExecutionContext.Restore(null!));
+        }
+
+        [Fact]
         public static void DisposeTest()
         {
             ExecutionContext executionContext = ExecutionContext.Capture();
@@ -39,7 +61,7 @@ namespace System.Threading.Tests
             executionContext.CreateCopy().Dispose();
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void FlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -146,7 +168,7 @@ namespace System.Threading.Tests
             });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void CaptureThenSuppressThenRunFlowTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
@@ -227,7 +249,7 @@ namespace System.Threading.Tests
             Assert.Equal(expectedValue, asyncLocalValue);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void AsyncFlowControlTest()
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>

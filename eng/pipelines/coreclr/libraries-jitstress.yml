@@ -3,11 +3,17 @@ trigger: none
 pr: none
 
 schedules:
-- cron: "0 7 * * *"
-  displayName: Mon through Sun at 11:00 PM (UTC-8:00)
+- cron: "0 7 * * 0,2,4,6"
+  displayName: Sun, Tue, Thu, Sat at 11:00 PM (UTC-8:00)
   branches:
     include:
     - master
+  always: true
+- cron: "0 7 * * 1,3,5"
+  displayName: Mon, Wed, Fri at 11:00 PM (UTC-8:00)
+  branches:
+    include:
+    - release/*.*
   always: true
 
 jobs:
@@ -30,20 +36,11 @@ jobs:
     - Windows_NT_x86
     - Windows_NT_x64
     - Windows_NT_arm64
-
-#
-# Libraries Test Build - Release innerloop. All libraries are built on x64 and reused on all platforms.
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/libraries/build-test-job.yml
-    buildConfig: Release
-    platforms:
-    - Linux_x64
-    - Windows_NT_x64
     jobParameters:
-      liveRuntimeBuildConfig: checked
-      testScope: innerloop
+      # libraries test build platforms
+      testBuildPlatforms:
+      - Linux_x64
+      - Windows_NT_x64
 
 #
 # Libraries Test Run using Release libraries, Checked CoreCLR, and stress modes

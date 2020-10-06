@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #nullable enable
 using System.Collections;
@@ -158,11 +157,11 @@ namespace System.Resources
                     // Close the stream in a thread-safe way.  This fix means
                     // that we may call Close n times, but that's safe.
                     BinaryReader copyOfStore = _store;
-                    _store = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                    _store = null!;
                     if (copyOfStore != null)
                         copyOfStore.Close();
                 }
-                _store = null!; // TODO-NULLABLE: Avoid nulling out in Dispose
+                _store = null!;
                 _namePositions = null;
                 _nameHashes = null;
                 _ums = null;

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using System.Security.Cryptography.X509Certificates;
@@ -1156,7 +1155,9 @@ namespace System.Security.Cryptography.Pkcs.Tests
 
             // CheckSignature doesn't read the public mutable data
             contentInfo.Content[0] ^= 0xFF;
+#if !NETCOREAPP
             contentInfo.ContentType.Value = Oids.Pkcs7Hashed;
+#endif
             cms.CheckSignature(true);
 
             using (X509Certificate2 signerCert = Certificates.RSA2048SignatureOnly.TryGetCertificateWithPrivateKey())

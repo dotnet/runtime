@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*============================================================
 **
@@ -236,7 +235,7 @@ namespace System.IO
 
         public virtual Task FlushAsync(CancellationToken cancellationToken)
         {
-            return Task.Factory.StartNew(state => ((Stream)state!).Flush(), this,
+            return Task.Factory.StartNew(static state => ((Stream)state!).Flush(), this,
                 cancellationToken, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
         }
 
@@ -476,7 +475,7 @@ namespace System.IO
             return asyncResult; // return it
         }
 
-        private void RunReadWriteTaskWhenReady(Task asyncWaiter, ReadWriteTask readWriteTask)
+        private static void RunReadWriteTaskWhenReady(Task asyncWaiter, ReadWriteTask readWriteTask)
         {
             Debug.Assert(readWriteTask != null);
             Debug.Assert(asyncWaiter != null);
@@ -489,17 +488,17 @@ namespace System.IO
             }
             else  // Otherwise, wait for our turn, and then run the task.
             {
-                asyncWaiter.ContinueWith((t, state) =>
+                asyncWaiter.ContinueWith(static (t, state) =>
                 {
                     Debug.Assert(t.IsCompletedSuccessfully, "The semaphore wait should always complete successfully.");
                     var rwt = (ReadWriteTask)state!;
-                    Debug.Assert(rwt._stream != null);
-                    rwt._stream.RunReadWriteTask(rwt); // RunReadWriteTask(readWriteTask);
+                    Debug.Assert(rwt._stream != null, "Validates that this code isn't run a second time.");
+                    RunReadWriteTask(rwt); // RunReadWriteTask(readWriteTask);
                 }, readWriteTask, default, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }
 
-        private void RunReadWriteTask(ReadWriteTask readWriteTask)
+        private static void RunReadWriteTask(ReadWriteTask readWriteTask)
         {
             Debug.Assert(readWriteTask != null);
 
@@ -680,7 +679,7 @@ namespace System.IO
             }
         }
 
-        private async Task FinishWriteAsync(Task writeTask, byte[] localBuffer)
+        private static async Task FinishWriteAsync(Task writeTask, byte[] localBuffer)
         {
             try
             {

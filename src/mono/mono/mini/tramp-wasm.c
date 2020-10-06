@@ -1,7 +1,6 @@
 #include "mini.h"
 #include "interp/interp.h"
 
-void mono_wasm_interp_to_native_trampoline (void *target_func, InterpMethodArguments *margs);
 void mono_sdb_single_step_trampoline (void);
 
 static void
@@ -11,7 +10,7 @@ mono_wasm_specific_trampoline (void)
 }
 
 gpointer
-mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoDomain *domain, guint32 *code_len)
+mono_arch_create_specific_trampoline (gpointer arg1, MonoTrampolineType tramp_type, MonoMemoryManager *mem_manager, guint32 *code_len)
 {
 	return (gpointer)mono_wasm_specific_trampoline;
 }
@@ -48,18 +47,25 @@ mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 }
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
+mono_arch_get_static_rgctx_trampoline (MonoMemoryManager *mem_manager, gpointer arg, gpointer addr)
 {
 	g_error (__func__);
 	return NULL;
+}
+
+static void
+interp_to_native_trampoline (void *target_func, InterpMethodArguments *margs)
+{
+	// Unused on wasm
+	g_assert_not_reached ();
 }
 
 gpointer
 mono_arch_get_interp_to_native_trampoline (MonoTrampInfo **info)
 {
 	if (info)
-		*info = mono_tramp_info_create ("interp_to_native_trampoline", (guint8*)mono_wasm_interp_to_native_trampoline, 1, NULL, NULL);
-	return (gpointer)mono_wasm_interp_to_native_trampoline;
+		*info = mono_tramp_info_create ("interp_to_native_trampoline", (guint8*)interp_to_native_trampoline, 1, NULL, NULL);
+	return (gpointer)interp_to_native_trampoline;
 }
 
 guint8*

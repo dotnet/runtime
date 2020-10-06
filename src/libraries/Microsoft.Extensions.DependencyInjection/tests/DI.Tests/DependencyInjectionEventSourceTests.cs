@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -11,7 +10,7 @@ using Microsoft.Extensions.DependencyInjection.Specification.Fakes;
 using Newtonsoft.Json.Linq;
 using Xunit;
 
-namespace Microsoft.Extensions.DependencyInjection
+namespace Microsoft.Extensions.DependencyInjection.Tests
 {
     [CollectionDefinition(nameof(EventSourceTests), DisableParallelization = true)]
     public class EventSourceTests : ICollectionFixture<EventSourceTests>
@@ -181,7 +180,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddTransient<IFakeService, FakeService>();
 
-            var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions { Mode = ServiceProviderMode.Expressions });
+            var serviceProvider = serviceCollection.BuildServiceProvider(ServiceProviderMode.Expressions);
 
             serviceProvider.GetService<IFakeService>();
 
@@ -200,7 +199,7 @@ namespace Microsoft.Extensions.DependencyInjection
             var serviceCollection = new ServiceCollection();
             serviceCollection.AddTransient<IFakeService, FakeService>();
 
-            var serviceProvider = serviceCollection.BuildServiceProvider(new ServiceProviderOptions { Mode = ServiceProviderMode.ILEmit });
+            var serviceProvider = serviceCollection.BuildServiceProvider(ServiceProviderMode.ILEmit);
 
             serviceProvider.GetService<IFakeService>();
 

@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Runtime.InteropServices;
 using System.Collections;
@@ -28,36 +27,35 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class ActiveDirectorySite : IDisposable
     {
-        internal readonly DirectoryContext context = null;
-        private readonly string _name = null;
-        internal readonly DirectoryEntry cachedEntry = null;
-        private DirectoryEntry _ntdsEntry = null;
-        private readonly ActiveDirectorySubnetCollection _subnets = null;
-        private DirectoryServer _topologyGenerator = null;
+        internal readonly DirectoryContext context;
+        private readonly string _name;
+        internal readonly DirectoryEntry cachedEntry;
+        private DirectoryEntry _ntdsEntry;
+        private readonly ActiveDirectorySubnetCollection _subnets;
+        private DirectoryServer _topologyGenerator;
         private readonly ReadOnlySiteCollection _adjacentSites = new ReadOnlySiteCollection();
-        private bool _disposed = false;
+        private bool _disposed;
         private readonly DomainCollection _domains = new DomainCollection(null);
         private readonly ReadOnlyDirectoryServerCollection _servers = new ReadOnlyDirectoryServerCollection();
         private readonly ReadOnlySiteLinkCollection _links = new ReadOnlySiteLinkCollection();
         private ActiveDirectorySiteOptions _siteOptions = ActiveDirectorySiteOptions.None;
         private ReadOnlyDirectoryServerCollection _bridgeheadServers = new ReadOnlyDirectoryServerCollection();
-        private readonly DirectoryServerCollection _SMTPBridgeheadServers = null;
-        private readonly DirectoryServerCollection _RPCBridgeheadServers = null;
-        private byte[] _replicationSchedule = null;
+        private readonly DirectoryServerCollection _SMTPBridgeheadServers;
+        private readonly DirectoryServerCollection _RPCBridgeheadServers;
+        private byte[] _replicationSchedule;
 
-        internal bool existing = false;
-        private bool _subnetRetrieved = false;
-        private bool _isADAMServer = false;
-        private readonly bool _checkADAM = false;
-        private bool _topologyTouched = false;
-        private bool _adjacentSitesRetrieved = false;
-        private readonly string _siteDN = null;
-        private bool _domainsRetrieved = false;
-        private bool _serversRetrieved = false;
-        private bool _belongLinksRetrieved = false;
-        private bool _bridgeheadServerRetrieved = false;
-        private bool _SMTPBridgeRetrieved = false;
-        private bool _RPCBridgeRetrieved = false;
+        internal bool existing;
+        private bool _subnetRetrieved;
+        private bool _isADAMServer;
+        private bool _topologyTouched;
+        private bool _adjacentSitesRetrieved;
+        private readonly string _siteDN;
+        private bool _domainsRetrieved;
+        private bool _serversRetrieved;
+        private bool _belongLinksRetrieved;
+        private bool _bridgeheadServerRetrieved;
+        private bool _SMTPBridgeRetrieved;
+        private bool _RPCBridgeRetrieved;
 
         private const int ERROR_NO_SITENAME = 1919;
 
@@ -664,22 +662,19 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (!_checkADAM)
+                DirectoryEntry de = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
+                PropertyValueCollection values;
+                try
                 {
-                    DirectoryEntry de = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
-                    PropertyValueCollection values = null;
-                    try
-                    {
-                        values = de.Properties["supportedCapabilities"];
-                    }
-                    catch (COMException e)
-                    {
-                        throw ExceptionHelper.GetExceptionFromCOMException(context, e);
-                    }
-
-                    if (values.Contains(SupportedCapability.ADAMOid))
-                        _isADAMServer = true;
+                    values = de.Properties["supportedCapabilities"];
                 }
+                catch (COMException e)
+                {
+                    throw ExceptionHelper.GetExceptionFromCOMException(context, e);
+                }
+
+                if (values.Contains(SupportedCapability.ADAMOid))
+                    _isADAMServer = true;
 
                 return _isADAMServer;
             }

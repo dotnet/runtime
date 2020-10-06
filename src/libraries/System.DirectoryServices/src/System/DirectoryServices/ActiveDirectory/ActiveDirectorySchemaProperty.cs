@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Text;
 using System.Diagnostics;
@@ -22,42 +21,42 @@ namespace System.DirectoryServices.ActiveDirectory
     public class ActiveDirectorySchemaProperty : IDisposable
     {
         // private variables
-        private DirectoryEntry _schemaEntry = null;
-        private DirectoryEntry _propertyEntry = null;
-        private DirectoryEntry _abstractPropertyEntry = null;
-        private readonly NativeComInterfaces.IAdsProperty _iadsProperty = null;
-        private readonly DirectoryContext _context = null;
-        internal bool isBound = false;
-        private bool _disposed = false;
-        private ActiveDirectorySchema _schema = null;
-        private bool _propertiesFromSchemaContainerInitialized = false;
-        private bool _isDefunctOnServer = false;
-        private SearchResult _propertyValuesFromServer = null;
+        private DirectoryEntry _schemaEntry;
+        private DirectoryEntry _propertyEntry;
+        private DirectoryEntry _abstractPropertyEntry;
+        private readonly NativeComInterfaces.IAdsProperty _iadsProperty;
+        private readonly DirectoryContext _context;
+        internal bool isBound;
+        private bool _disposed;
+        private ActiveDirectorySchema _schema;
+        private bool _propertiesFromSchemaContainerInitialized;
+        private bool _isDefunctOnServer;
+        private SearchResult _propertyValuesFromServer;
 
         // private variables for caching properties
-        private readonly string _ldapDisplayName = null;
-        private string _commonName = null;
-        private string _oid = null;
+        private readonly string _ldapDisplayName;
+        private string _commonName;
+        private string _oid;
         private ActiveDirectorySyntax _syntax = (ActiveDirectorySyntax)(-1);
-        private bool _syntaxInitialized = false;
-        private string _description = null;
-        private bool _descriptionInitialized = false;
-        private bool _isSingleValued = false;
-        private bool _isSingleValuedInitialized = false;
-        private bool _isInGlobalCatalog = false;
-        private bool _isInGlobalCatalogInitialized = false;
-        private Nullable<int> _rangeLower = null;
-        private bool _rangeLowerInitialized = false;
-        private Nullable<int> _rangeUpper = null;
-        private bool _rangeUpperInitialized = false;
-        private bool _isDefunct = false;
+        private bool _syntaxInitialized;
+        private string _description;
+        private bool _descriptionInitialized;
+        private bool _isSingleValued;
+        private bool _isSingleValuedInitialized;
+        private bool _isInGlobalCatalog;
+        private bool _isInGlobalCatalogInitialized;
+        private Nullable<int> _rangeLower;
+        private bool _rangeLowerInitialized;
+        private Nullable<int> _rangeUpper;
+        private bool _rangeUpperInitialized;
+        private bool _isDefunct;
         private SearchFlags _searchFlags = SearchFlags.None;
-        private bool _searchFlagsInitialized = false;
-        private ActiveDirectorySchemaProperty _linkedProperty = null;
-        private bool _linkedPropertyInitialized = false;
-        private Nullable<int> _linkId = null;
-        private bool _linkIdInitialized = false;
-        private byte[] _schemaGuidBinaryForm = null;
+        private bool _searchFlagsInitialized;
+        private ActiveDirectorySchemaProperty _linkedProperty;
+        private bool _linkedPropertyInitialized;
+        private Nullable<int> _linkId;
+        private bool _linkIdInitialized;
+        private byte[] _schemaGuidBinaryForm;
 
         // OMObjectClass values for the syntax
         //0x2B0C0287731C00854A

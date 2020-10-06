@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 namespace System.Net.NetworkInformation
 {
@@ -24,6 +23,8 @@ namespace System.Net.NetworkInformation
         public const string Udp4ConnectionsFile = "/proc/net/udp";
         public const string Udp6ConnectionsFile = "/proc/net/udp6";
         public const string DHClientLeasesFile = "/var/lib/dhcp/dhclient.leases";
+        public const string DHClientInterfaceLeasesFile = "/var/lib/dhcp/dhclient.{0}.leases";
+        public const string DHClientSecondaryInterfaceLeasesFile = "/var/lib/dhcp/dhclient6.{0}.leases";
         public const string SmbConfFile = "/etc/samba/smb.conf";
 
         // Individual file names

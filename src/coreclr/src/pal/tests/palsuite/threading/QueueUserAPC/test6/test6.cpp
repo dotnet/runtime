@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=============================================================================
 **
@@ -26,11 +25,11 @@
 #include <palsuite.h>
 
 
-static BOOL bAPCExecuted = FALSE;
+static BOOL bAPCExecuted_QueueUserAPC_test6 = FALSE;
 
-VOID PALAPI APCFunc( ULONG_PTR dwParam )
+VOID PALAPI APCFunc_QueueUserAPC_test6( ULONG_PTR dwParam )
 {
-    bAPCExecuted = TRUE;
+    bAPCExecuted_QueueUserAPC_test6 = TRUE;
 }
 
 /**
@@ -38,7 +37,7 @@ VOID PALAPI APCFunc( ULONG_PTR dwParam )
  *
  * Dummy thread function for APC queuing.
  */
-DWORD PALAPI ThreadFunc( LPVOID param )
+DWORD PALAPI ThreadFunc_QueueUserAPC_test6( LPVOID param )
 {
     int i;
 
@@ -50,7 +49,7 @@ DWORD PALAPI ThreadFunc( LPVOID param )
 }
 
 
-int __cdecl main( int argc, char **argv )
+PALTEST(threading_QueueUserAPC_test6_paltest_queueuserapc_test6, "threading/QueueUserAPC/test6/paltest_queueuserapc_test6")
 
 {
     /* local variables */
@@ -67,7 +66,7 @@ int __cdecl main( int argc, char **argv )
     /* run another dummy thread to cause notification of the library       */
     hThread = CreateThread(    NULL,             /* no security attributes */
                                0,                /* use default stack size */
-      (LPTHREAD_START_ROUTINE) ThreadFunc,       /* thread function        */
+      (LPTHREAD_START_ROUTINE) ThreadFunc_QueueUserAPC_test6,       /* thread function        */
                       (LPVOID) NULL,             /* pass thread index as   */
                                                  /* function argument      */
                                CREATE_SUSPENDED, /* create suspended       */
@@ -98,7 +97,7 @@ int __cdecl main( int argc, char **argv )
     }
 
     /* queue our APC on the finished thread */
-    ret = QueueUserAPC( APCFunc, hThread, 0 );
+    ret = QueueUserAPC( APCFunc_QueueUserAPC_test6, hThread, 0 );
     if( ret != 0 )
     {
         Trace( "ERROR:QueueUserAPC call succeeded on a terminated thread\n" );
@@ -115,7 +114,7 @@ int __cdecl main( int argc, char **argv )
     }
 
     /* dummy check that the APC function wasn't actually executed */
-    if( bAPCExecuted != FALSE )
+    if( bAPCExecuted_QueueUserAPC_test6 != FALSE )
     {
         Fail( "ERROR:APC function was executed\n" );
     }

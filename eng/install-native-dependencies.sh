@@ -11,6 +11,7 @@ if [ "$1" = "Linux" ]; then
     fi
 elif [ "$1" = "OSX" ] || [ "$1" = "tvOS" ] || [ "$1" = "iOS" ]; then
     engdir=$(dirname "${BASH_SOURCE[0]}")
+    brew update --preinstall
     brew bundle --no-lock --file "${engdir}/Brewfile"
     if [ "$?" != "0" ]; then
         exit 1;

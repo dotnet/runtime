@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
@@ -123,7 +122,7 @@ public class AppleAppBuilderTask : Task
             throw new ArgumentException($"ProjectName='{ProjectName}' should not contain spaces");
         }
 
-        string[] excludes = new string[0];
+        string[] excludes = Array.Empty<string>();
         if (ExcludeFromAppDir != null)
         {
             excludes = ExcludeFromAppDir
@@ -144,7 +143,7 @@ public class AppleAppBuilderTask : Task
         {
             // use AOT files if available
             var obj = file.GetMetadata("AssemblerFile");
-            if (!String.IsNullOrEmpty(obj))
+            if (!string.IsNullOrEmpty(obj))
             {
                 assemblerFiles.Add(obj);
             }

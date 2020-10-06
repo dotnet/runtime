@@ -1,9 +1,15 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 #ifndef __GCENV_OBJECT_H__
 #define __GCENV_OBJECT_H__
+
+// ARM requires that 64-bit primitive types are aligned at 64-bit boundaries for interlocked-like operations.
+// Additionally the platform ABI requires these types and composite type containing them to be similarly
+// aligned when passed as arguments.
+#ifdef TARGET_ARM
+#define FEATURE_64BIT_ALIGNMENT
+#endif
 
 //-------------------------------------------------------------------------------------------------
 //
@@ -36,18 +42,25 @@ public:
 
 static_assert(sizeof(ObjHeader) == sizeof(uintptr_t), "this assumption is made by the VM!");
 
-#define MTFlag_ContainsPointers     0x0100
-#define MTFlag_HasCriticalFinalizer 0x0800
-#define MTFlag_HasFinalizer         0x0010
-#define MTFlag_IsArray              0x0008
-#define MTFlag_Collectible          0x1000
-#define MTFlag_HasComponentSize     0x8000
+#define MTFlag_RequireAlign8            0x00001000
+#define MTFlag_Category_ValueType       0x00040000
+#define MTFlag_Category_ValueType_Mask  0x000C0000
+#define MTFlag_ContainsPointers         0x01000000
+#define MTFlag_HasCriticalFinalizer     0x08000000
+#define MTFlag_HasFinalizer             0x00100000
+#define MTFlag_IsArray                  0x00080000
+#define MTFlag_Collectible              0x10000000
+#define MTFlag_HasComponentSize         0x80000000
 
 class MethodTable
 {
 public:
-    uint16_t    m_componentSize;
-    uint16_t    m_flags;
+    union
+    {
+        uint16_t    m_componentSize;
+        uint32_t    m_flags;
+    };
+
     uint32_t    m_baseSize;
 
     MethodTable * m_pRelatedType;
@@ -56,8 +69,8 @@ public:
     void InitializeFreeObject()
     {
         m_baseSize = 3 * sizeof(void *);
-        m_componentSize = 1;
         m_flags = MTFlag_HasComponentSize | MTFlag_IsArray;
+        m_componentSize = 1;
     }
 
     uint32_t GetBaseSize()
@@ -83,6 +96,16 @@ public:
     bool ContainsPointersOrCollectible()
     {
         return ContainsPointers() || Collectible();
+    }
+
+    bool RequiresAlign8()
+    {
+        return (m_flags & MTFlag_RequireAlign8) != 0;
+    }
+
+    bool IsValueType()
+    {
+        return (m_flags & MTFlag_Category_ValueType_Mask) == MTFlag_Category_ValueType;
     }
 
     bool HasComponentSize()

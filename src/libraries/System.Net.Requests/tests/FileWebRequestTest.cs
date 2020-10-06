@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.IO;
 using System.Threading.Tasks;
@@ -88,7 +87,7 @@ namespace System.Net.Tests
         public abstract Task<WebResponse> GetResponseAsync(WebRequest request);
         public abstract Task<Stream> GetRequestStreamAsync(WebRequest request);
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task ReadFile_ContainsExpectedContent()
         {
             string path = Path.GetTempFileName();
@@ -125,7 +124,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task WriteFile_ContainsExpectedContent()
         {
             string path = Path.GetTempFileName();
@@ -151,7 +150,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task WriteThenReadFile_WriteAccessResultsInNullResponseStream()
         {
             string path = Path.GetTempFileName();
@@ -183,13 +182,12 @@ namespace System.Net.Tests
 
         protected virtual bool EnableConcurrentReadWriteTests => true;
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Fact]
         public async Task RequestAfterResponse_throws()
         {
             string path = Path.GetTempFileName();
             try
             {
-                var data = new byte[1024];
                 WebRequest request = WebRequest.Create("file://" + path);
                 request.Method = WebRequestMethods.File.UploadFile;
                 using (WebResponse response = await GetResponseAsync(request))
@@ -203,7 +201,7 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [Theory]
         [InlineData(null)]
         [InlineData(false)]
         [InlineData(true)]

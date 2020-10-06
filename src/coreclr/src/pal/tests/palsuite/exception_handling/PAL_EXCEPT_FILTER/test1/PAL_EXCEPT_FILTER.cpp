@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -47,7 +46,7 @@ LONG ExitFilter(EXCEPTION_POINTERS* ep, LPVOID pnTestInt)
 }
 
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(exception_handling_PAL_EXCEPT_FILTER_test1_paltest_pal_except_filter_test1, "exception_handling/PAL_EXCEPT_FILTER/test1/paltest_pal_except_filter_test1")
 {
     int* p = 0x00000000;   /* pointer to NULL */
     BOOL bExcept = FALSE;

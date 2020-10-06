@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 /*=====================================================================
 **
@@ -17,8 +16,8 @@
 #include <palsuite.h>
 
 
-const char* szStringTest = "The quick fox jumped over the lazy dog's back.";
-const char* szTextFile = "test.tmp";
+#define szStringTest "The quick fox jumped over the lazy dog's back."
+#define szTextFile "test.tmp"
 
 static void Cleanup(HANDLE hFile)
 {
@@ -90,7 +89,7 @@ static void DoTest(HANDLE hFile, DWORD dwOffset, DWORD dwMethod)
     }
 }
 
-int __cdecl main(int argc, char *argv[])
+PALTEST(file_io_SetEndOfFile_test4_paltest_setendoffile_test4, "file_io/SetEndOfFile/test4/paltest_setendoffile_test4")
 {
     HANDLE hFile = NULL;
     DWORD dwBytesWritten;

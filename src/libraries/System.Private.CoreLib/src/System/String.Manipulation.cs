@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -1016,7 +1015,7 @@ namespace System
                 ?? this;
         }
 
-        private static unsafe string? ReplaceCore(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, CompareInfo compareInfo, CompareOptions options)
+        private static string? ReplaceCore(ReadOnlySpan<char> searchSpace, ReadOnlySpan<char> oldValue, ReadOnlySpan<char> newValue, CompareInfo compareInfo, CompareOptions options)
         {
             Debug.Assert(!oldValue.IsEmpty);
             Debug.Assert(compareInfo != null);
@@ -1024,12 +1023,11 @@ namespace System
             var result = new ValueStringBuilder(stackalloc char[256]);
             result.EnsureCapacity(searchSpace.Length);
 
-            int matchLength = 0;
             bool hasDoneAnyReplacements = false;
 
             while (true)
             {
-                int index = compareInfo.IndexOf(searchSpace, oldValue, &matchLength, options, fromBeginning: true);
+                int index = compareInfo.IndexOf(searchSpace, oldValue, options, out int matchLength);
 
                 // There's the possibility that 'oldValue' has zero collation weight (empty string equivalent).
                 // If this is the case, we behave as if there are no more substitutions to be made.

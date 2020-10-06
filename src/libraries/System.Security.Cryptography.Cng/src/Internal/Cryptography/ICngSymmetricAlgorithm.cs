@@ -1,6 +1,5 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Security.Cryptography;
 using Internal.NativeCrypto;
@@ -17,6 +16,7 @@ namespace Internal.Cryptography
     {
         // SymmetricAlgorithm members used by the core.
         int BlockSize { get; }
+        int FeedbackSize { get; }
         CipherMode Mode { get; }
         PaddingMode Padding { get; }
         byte[] IV { get; set; }
@@ -31,5 +31,6 @@ namespace Internal.Cryptography
         SafeAlgorithmHandle GetEphemeralModeHandle();
         string GetNCryptAlgorithmIdentifier();
         byte[] PreprocessKey(byte[] key);
+        int GetPaddingSize();
     }
 }
