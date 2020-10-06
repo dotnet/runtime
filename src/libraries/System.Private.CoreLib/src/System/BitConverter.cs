@@ -608,6 +608,7 @@ namespace System
         /// </exception>
         /// <exception cref="ArgumentNullException"><paramref name="value"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="startIndex"/> is less than zero or greater than the length of <paramref name="value"/> minus 1.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ToDouble(byte[] value, int startIndex) => Int64BitsToDouble(ToInt64(value, startIndex));
 
         /// <summary>
@@ -616,6 +617,7 @@ namespace System
         /// <param name="value">A read-only span containing the bytes to convert.</param>
         /// <returns>A double-precision floating-point value representing the converted bytes.</returns>
         /// <exception cref="ArgumentOutOfRangeException">The length of <paramref name="value"/> is less than 8.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double ToDouble(ReadOnlySpan<byte> value)
         {
             if (value.Length < sizeof(double))
