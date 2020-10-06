@@ -4,8 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Net.Quic;
-using System.Net.Quic.Implementations;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,9 +14,6 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-#if WINHTTPHANDLER_TEST
-    using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
-#endif
 
     public abstract partial class HttpClientHandlerTestBase : FileCleanupTestBase
     {
@@ -28,11 +23,7 @@ namespace System.Net.Http.Functional.Tests
 
         protected virtual Version UseVersion => HttpVersion.Version11;
 
-        protected virtual QuicImplementationProvider UseQuicImplementationProvider => null;
-
         protected virtual bool TestAsync => true;
-
-        public static bool IsMsQuicSupported => QuicImplementationProviders.MsQuic.IsSupported;
 
         public HttpClientHandlerTestBase(ITestOutputHelper output)
         {
@@ -57,27 +48,6 @@ namespace System.Net.Http.Functional.Tests
                 DefaultRequestVersion = Version.Parse(useVersionString)
 #endif
             };
-
-        protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion, UseQuicImplementationProvider);
-
-        protected static HttpClientHandler CreateHttpClientHandler(string useVersionString) =>
-            CreateHttpClientHandler(Version.Parse(useVersionString));
-
-        protected LoopbackServerFactory LoopbackServerFactory => GetFactoryForVersion(UseVersion, UseQuicImplementationProvider);
-
-        protected static LoopbackServerFactory GetFactoryForVersion(Version useVersion, QuicImplementationProvider quicImplementationProvider = null)
-        {
-            return useVersion.Major switch
-            {
-#if NETCOREAPP || WINHTTPHANDLER_TEST
-#if HTTP3
-                3 => new Http3LoopbackServerFactory(quicImplementationProvider),
-#endif
-                2 => Http2LoopbackServerFactory.Singleton,
-#endif
-                _ => Http11LoopbackServerFactory.Singleton
-            };
-        }
 
         public static readonly bool[] BoolValues = new[] { true, false };
 

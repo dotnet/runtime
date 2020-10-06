@@ -18,7 +18,6 @@ using Microsoft.DotNet.XUnitExtensions;
 using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
-using System.Net.Quic;
 
 namespace System.Net.Http.Functional.Tests
 {
@@ -236,7 +235,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion30 && UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -270,7 +269,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            if (UseVersion == HttpVersion30 && UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
