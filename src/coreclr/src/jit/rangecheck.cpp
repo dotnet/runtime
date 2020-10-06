@@ -834,6 +834,7 @@ void RangeCheck::MergeEdgeAssertions(ValueNum normalLclVN, ASSERT_VALARG_TP asse
             case GT_EQ:
                 pRange->uLimit = limit;
                 pRange->lLimit = limit;
+                break;
 
             default:
                 // All other 'cmpOper' kinds leave lLimit/uLimit unchanged
