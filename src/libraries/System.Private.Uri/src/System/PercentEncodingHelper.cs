@@ -1,6 +1,5 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-// See the LICENSE file in the project root for more information.
 
 using System.Buffers;
 using System.Diagnostics;
@@ -15,8 +14,8 @@ namespace System
             // As an optimization, this method should only be called after the first character is known to be a part of a non-ascii UTF8 sequence
             Debug.Assert(length >= 3);
             Debug.Assert(input[0] == '%');
-            Debug.Assert(UriHelper.EscapedAscii(input[1], input[2]) != Uri.c_DummyChar);
-            Debug.Assert(UriHelper.EscapedAscii(input[1], input[2]) >= 128);
+            Debug.Assert(UriHelper.DecodeHexChars(input[1], input[2]) != Uri.c_DummyChar);
+            Debug.Assert(UriHelper.DecodeHexChars(input[1], input[2]) >= 128);
 
             uint fourByteBuffer = 0;
             int bytesLeftInBuffer = 0;
