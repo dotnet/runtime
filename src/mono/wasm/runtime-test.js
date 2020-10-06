@@ -7,41 +7,64 @@
 var is_browser = typeof window != "undefined";
 var consoleWebSocket;
 var print;
+var printErr;
+var make_print_fn;
 
 if (is_browser) {
-	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
+	make_print_fn = function(level) {
+		return function(_msg) {
+			window.real_print(JSON.stringify({
+				method: `console.${level}`,
+				payload: _msg
+			}));
+		};
+	};
 	window.real_print = console.log;
-	print = function(_msg) { window.real_print(_msg); };
-	console.log = print;
-	console.debug = print;
-	console.error = print;
-	console.trace = print;
-	console.warn = print;
-	console.info = print;
 
 	const consoleUrl = `${window.location.origin}/console`.replace('http://', 'ws://');
 
 	consoleWebSocket = new WebSocket(consoleUrl);
 	consoleWebSocket.onopen = function(event) {
-		consoleWebSocket.send("browser: Console websocket connected.");
-
 		window.real_print = function(msg) {
 			consoleWebSocket.send(msg);
 		};
+
+		print("browser: Console websocket connected.");
 	};
 	consoleWebSocket.onerror = function(event) {
 		console.log(`websocket error: ${event}`);
 	};
 
+	// We expect to be run by tests/runtime/run.js which passes in the arguments using http parameters
 	var url = new URL (decodeURI (window.location));
 	arguments = [];
 	for (var v of url.searchParams) {
 		if (v [0] == "arg") {
-			console.log ("URL ARG: " + v [0] + "=" + v [1]);
+			console.debug ("URL ARG: " + v [0] + "=" + v [1]);
 			arguments.push (v [1]);
 		}
 	}
+} else {
+    let real_console_log = console.log;
+    make_print_fn = function(level) {
+		return function(_msg) {
+			real_console_log(JSON.stringify({
+				method: `console.${level}`,
+				payload: _msg
+			}));
+		};
+	};
 }
+
+console.log = make_print_fn('log');
+console.debug = make_print_fn('debug');
+console.info = make_print_fn('info');
+console.error = make_print_fn('error');
+console.warn = make_print_fn('warning');
+console.trace = make_print_fn('trace');
+
+print = console.log;
+printErr = console.error;
 
 // JavaScript core does not have a console defined
 if (typeof console === "undefined") {
@@ -201,8 +224,8 @@ loadScript ("mono-config.js");
 var Module = {
 	mainScriptUrlOrBlob: "dotnet.js",
 
-	print: print,
-	printErr: function(x) { print ("WASM-ERR: " + x) },
+	print,
+	printErr,
 
 	onAbort: function(x) {
 		print ("ABORT: " + x);
