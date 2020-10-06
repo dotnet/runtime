@@ -182,12 +182,13 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private void LogOnEventWritten(EventWrittenEventArgs eventData)
+        private static void LogOnEventWritten(EventWrittenEventArgs eventData)
         {
             string payload = "";
             if (eventData.Payload != null)
             {
-                try{
+                try
+                {
                     payload = Serialize(eventData.PayloadNames, eventData.Payload, eventData.Message);
                 }
                 catch (Exception ex)

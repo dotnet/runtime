@@ -294,9 +294,13 @@ union _MonoClassSizes {
 
 /* If MonoClass definition is hidden, just declare the getters.
  * Otherwise, define them as static inline functions.
+ *
+ * In-tree profilers are allowed to use the getters.  So if we're compiling
+ * with --enable-checked-build=private_types, mark the symbols with
+ * MONO_PROFILER_API
  */
 #ifdef MONO_CLASS_DEF_PRIVATE
-#define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) rettype funcname (argtype *klass);
+#define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) MONO_PROFILER_API rettype funcname (argtype *klass);
 #else
 #define MONO_CLASS_GETTER(funcname, rettype, optref, argtype, fieldname) static inline rettype funcname (argtype *klass) { return optref klass-> fieldname ; }
 #endif

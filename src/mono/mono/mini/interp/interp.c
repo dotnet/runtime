@@ -793,6 +793,7 @@ stackval_from_data (MonoType *type, stackval *result, const void *data, gboolean
 		result->data.nati = *(mono_i*)data;
 		return;
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		result->data.p = *(gpointer*)data;
 		return;
 	case MONO_TYPE_U4:
@@ -916,7 +917,8 @@ stackval_to_data (MonoType *type, stackval *val, void *data, gboolean pinvoke)
 		mono_gc_wbarrier_generic_store_internal (p, val->data.o);
 		return;
 	}
-	case MONO_TYPE_PTR: {
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR: {
 		gpointer *p = (gpointer *) data;
 		*p = val->data.p;
 		return;
@@ -987,6 +989,7 @@ stackval_to_data_addr (MonoType *type, stackval *val)
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 		return &val->data.p;
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (type->data.klass))
@@ -1216,6 +1219,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
@@ -1284,6 +1288,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
@@ -1347,6 +1352,7 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 		case MONO_TYPE_I:
 		case MONO_TYPE_U:
 		case MONO_TYPE_PTR:
+		case MONO_TYPE_FNPTR:
 		case MONO_TYPE_SZARRAY:
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT:
@@ -1709,6 +1715,7 @@ dump_stackval (GString *str, stackval *s, MonoType *type)
 	case MONO_TYPE_OBJECT:
 	case MONO_TYPE_ARRAY:
 	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
 	case MONO_TYPE_I:
 	case MONO_TYPE_U:
 		g_string_append_printf (str, "[%p] ", s->data.p);

@@ -494,15 +494,10 @@ namespace System.Diagnostics.Tests
         {
             Process p = Process.GetCurrentProcess();
 
-            // On UAP casing may not match - we use Path.GetFileName(exePath) instead of kernel32!GetModuleFileNameEx which is not available on UAP
-            Func<string, string> normalize = PlatformDetection.IsInAppContainer ?
-                (Func<string, string>)((s) => s.ToLowerInvariant()) :
-                (s) => s;
-
             Assert.InRange(p.Modules.Count, 1, int.MaxValue);
-            Assert.Equal(normalize(RemoteExecutor.HostRunnerName), normalize(p.MainModule.ModuleName));
-            Assert.EndsWith(normalize(RemoteExecutor.HostRunnerName), normalize(p.MainModule.FileName));
-            Assert.Equal(normalize(string.Format("System.Diagnostics.ProcessModule ({0})", RemoteExecutor.HostRunnerName)), normalize(p.MainModule.ToString()));
+            Assert.Equal(RemoteExecutor.HostRunnerName, p.MainModule.ModuleName);
+            Assert.EndsWith(RemoteExecutor.HostRunnerName, p.MainModule.FileName);
+            Assert.Equal(string.Format("System.Diagnostics.ProcessModule ({0})", RemoteExecutor.HostRunnerName), p.MainModule.ToString());
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
