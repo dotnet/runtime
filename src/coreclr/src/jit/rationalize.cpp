@@ -943,9 +943,9 @@ PhaseStatus Rationalizer::DoPhase()
         for (Statement* statement : StatementList(firstStatement))
         {
             assert(statement->GetTreeList() != nullptr);
-            assert(statement->GetTreeList()->gtPrev == nullptr);
+            noway_assert(statement->GetTreeList()->gtPrev == nullptr);
             assert(statement->GetRootNode() != nullptr);
-            assert(statement->GetRootNode()->gtNext == nullptr);
+            noway_assert(statement->GetRootNode()->gtNext == nullptr);
 
             BlockRange().InsertAtEnd(LIR::Range(statement->GetTreeList(), statement->GetRootNode()));
 

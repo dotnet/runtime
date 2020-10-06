@@ -2781,9 +2781,6 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 // Return Value:
 //    The regNumber, if any, allocated to the RefPositon.  Returns REG_NA if no free register is found.
 //
-// Notes:
-//    TODO-CQ: Consider whether we need to use a different order for tree temps than for vars, as
-//    reg predict does
 
 static const regNumber lsraRegOrder[]      = {REG_VAR_ORDER};
 const unsigned         lsraRegOrderSize    = ArrLen(lsraRegOrder);
@@ -3075,6 +3072,10 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
     // we'll need to avoid the short-circuit if we've got a stress option to reverse
     // the selection.
     int bestPossibleScore = COVERS + UNASSIGNED + OWN_PREFERENCE + CALLER_CALLEE;
+    if (currentInterval->isConstant)
+    {
+        bestPossibleScore |= VALUE_AVAILABLE;
+    }
     if (relatedPreferences != RBM_NONE)
     {
         bestPossibleScore |= RELATED_PREFERENCE + COVERS_RELATED;
@@ -3244,7 +3245,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
         }
 
         // there is no way we can get a better score so break out
-        if (!reverseSelect && score == bestPossibleScore && bestLocation == rangeEndLocation + 1)
+        if (!reverseSelect && score == bestPossibleScore && bestLocation == lastLocation + 1)
         {
             break;
         }
@@ -4017,7 +4018,8 @@ bool LinearScan::isAssigned(RegRecord* regRec, LsraLocation lastLocation ARM_ARG
 {
     Interval* assignedInterval = regRec->assignedInterval;
 
-    if ((assignedInterval == nullptr) || assignedInterval->getNextRefLocation() > lastLocation)
+    if ((assignedInterval == nullptr) || (assignedInterval->physReg != regRec->regNum) ||
+        (assignedInterval->getNextRefLocation() > lastLocation))
     {
 #ifdef TARGET_ARM
         if (newRegType == TYP_DOUBLE)
@@ -10019,6 +10021,12 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
     if ((interval != nullptr) && (reg != REG_NA) && (reg != REG_STK))
     {
         registersToDump |= genRegMask(reg);
+#ifdef TARGET_ARM
+        if (interval->registerType == TYP_DOUBLE)
+        {
+            registersToDump |= genRegMask((regNumber)(reg + 1));
+        }
+#endif
         dumpRegRecordTitleIfNeeded();
     }
 
@@ -10168,7 +10176,7 @@ void LinearScan::dumpLsraAllocationEvent(LsraDumpEvent event,
 
         case LSRA_EVENT_ALLOC_SPILLED_REG:
             dumpRefPositionShort(activeRefPosition, currentBlock);
-            printf("Steal %-4s ", getRegName(reg));
+            printf("Alloc %-4s ", getRegName(reg));
             break;
 
         case LSRA_EVENT_NO_ENTRY_REG_ALLOCATED:

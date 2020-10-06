@@ -3032,42 +3032,61 @@ void LinearScan::setDelayFree(RefPosition* use)
 //                     and which need to be marked delayRegFree
 //
 // Arguments:
-//    node      - The node of interest
+//    node       - The node of interest
+//    rmwNode    - The node that has RMW semantics (if applicable)
+//    candidates - The set of candidates for the uses
 //
 // Return Value:
 //    The number of source registers used by the *parent* of this node.
 //
-int LinearScan::BuildDelayFreeUses(GenTree* node, regMaskTP candidates)
+int LinearScan::BuildDelayFreeUses(GenTree* node, GenTree* rmwNode, regMaskTP candidates)
 {
-    RefPosition* use;
+    RefPosition* use          = nullptr;
+    Interval*    rmwInterval  = nullptr;
+    bool         rmwIsLastUse = false;
+    GenTree*     addr         = nullptr;
+    if ((rmwNode != nullptr) && isCandidateLocalRef(rmwNode))
+    {
+        rmwInterval = getIntervalForLocalVarNode(rmwNode->AsLclVar());
+        // Note: we don't handle multi-reg vars here. It's not clear that there are any cases
+        // where we'd encounter a multi-reg var in an RMW context.
+        rmwIsLastUse = rmwNode->AsLclVar()->IsLastUse(0);
+    }
     if (!node->isContained())
     {
         use = BuildUse(node, candidates);
-        setDelayFree(use);
-        return 1;
     }
-    if (node->OperIsHWIntrinsic())
+    else if (node->OperIsHWIntrinsic())
     {
         use = BuildUse(node->gtGetOp1(), candidates);
-        setDelayFree(use);
-        return 1;
     }
-    if (!node->OperIsIndir())
+    else if (!node->OperIsIndir())
     {
         return 0;
     }
-    GenTreeIndir* indirTree = node->AsIndir();
-    GenTree*      addr      = indirTree->gtOp1;
-    if (!addr->isContained())
+    else
     {
-        use = BuildUse(addr, candidates);
-        setDelayFree(use);
+        GenTreeIndir* indirTree = node->AsIndir();
+        addr                    = indirTree->gtOp1;
+        if (!addr->isContained())
+        {
+            use = BuildUse(addr, candidates);
+        }
+        else if (!addr->OperIs(GT_LEA))
+        {
+            return 0;
+        }
+    }
+    if (use != nullptr)
+    {
+        if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
+        {
+            setDelayFree(use);
+        }
         return 1;
     }
-    if (!addr->OperIs(GT_LEA))
-    {
-        return 0;
-    }
+
+    // If we reach here we have a contained LEA in 'addr'.
 
     GenTreeAddrMode* const addrMode = addr->AsAddrMode();
 
@@ -3075,13 +3094,19 @@ int LinearScan::BuildDelayFreeUses(GenTree* node, regMaskTP candidates)
     if ((addrMode->Base() != nullptr) && !addrMode->Base()->isContained())
     {
         use = BuildUse(addrMode->Base(), candidates);
-        setDelayFree(use);
+        if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
+        {
+            setDelayFree(use);
+        }
         srcCount++;
     }
     if ((addrMode->Index() != nullptr) && !addrMode->Index()->isContained())
     {
         use = BuildUse(addrMode->Index(), candidates);
-        setDelayFree(use);
+        if ((use->getInterval() != rmwInterval) || (!rmwIsLastUse && !use->lastUse))
+        {
+            setDelayFree(use);
+        }
         srcCount++;
     }
     return srcCount;

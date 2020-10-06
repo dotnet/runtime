@@ -1288,7 +1288,7 @@ typedef unsigned char   regNumberSmall;
                                    REG_R6, REG_R7, REG_R8, REG_R9, REG_R10,        \
                                    REG_R11, REG_R13, REG_R14,                      \
                                    REG_R12, REG_R15, REG_IP0, REG_IP1,             \
-                                   REG_CALLEE_SAVED_ORDER
+                                   REG_CALLEE_SAVED_ORDER, REG_LR
 
   #define REG_VAR_ORDER_FLT        REG_V16, REG_V17, REG_V18, REG_V19, \
                                    REG_V20, REG_V21, REG_V22, REG_V23, \

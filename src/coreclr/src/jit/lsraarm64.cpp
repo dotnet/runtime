@@ -1098,8 +1098,8 @@ int LinearScan::BuildHWIntrinsic(GenTreeHWIntrinsic* intrinsicTree)
         {
             if (isRMW)
             {
-                srcCount += BuildDelayFreeUses(intrin.op2);
-                srcCount += BuildDelayFreeUses(intrin.op3, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS);
+                srcCount += BuildDelayFreeUses(intrin.op2, nullptr);
+                srcCount += BuildDelayFreeUses(intrin.op3, nullptr, RBM_ASIMD_INDEXED_H_ELEMENT_ALLOWED_REGS);
             }
             else
             {
