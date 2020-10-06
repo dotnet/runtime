@@ -844,7 +844,6 @@ namespace System.Net.Http
 
         private abstract class WriteQueueEntry : TaskCompletionSource
         {
-            private readonly CancellationToken _cancellationToken;
             private readonly CancellationTokenRegistration _cancellationRegistration;
 
             public WriteQueueEntry(int writeBytes, CancellationToken cancellationToken)
@@ -852,16 +851,10 @@ namespace System.Net.Http
             {
                 WriteBytes = writeBytes;
 
-                _cancellationToken = cancellationToken;
-                _cancellationRegistration = cancellationToken.UnsafeRegister(static s => ((WriteQueueEntry)s!).OnCancellation(), this);
+                _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, cancellationToken) => ((WriteQueueEntry)s!).TrySetCanceled(cancellationToken), this);
             }
 
             public int WriteBytes { get; }
-
-            private void OnCancellation()
-            {
-                SetCanceled(_cancellationToken);
-            }
 
             public bool TryDisableCancellation()
             {

@@ -5412,25 +5412,23 @@ namespace System.Threading.Tasks
         /// <summary>DelayPromise that also supports cancellation.</summary>
         private sealed class DelayPromiseWithCancellation : DelayPromise
         {
-            private readonly CancellationToken _token;
             private readonly CancellationTokenRegistration _registration;
 
             internal DelayPromiseWithCancellation(int millisecondsDelay, CancellationToken token) : base(millisecondsDelay)
             {
                 Debug.Assert(token.CanBeCanceled);
 
-                _token = token;
-                _registration = token.UnsafeRegister(static state => ((DelayPromiseWithCancellation)state!).CompleteCanceled(), this);
-            }
-
-            private void CompleteCanceled()
-            {
-                if (TrySetCanceled(_token))
+                _registration = token.UnsafeRegister(static (state, cancellationToken) =>
                 {
-                    Cleanup();
-                    // This path doesn't invoke RemoveFromActiveTasks or TraceOperationCompletion
-                    // because that's strangely already handled inside of TrySetCanceled.
-                }
+                    var thisRef = (DelayPromiseWithCancellation)state!;
+                    if (thisRef.TrySetCanceled(cancellationToken))
+                    {
+                        thisRef.Cleanup();
+                        // This path doesn't invoke RemoveFromActiveTasks or TraceOperationCompletion
+                        // because that's strangely already handled inside of TrySetCanceled.
+                    }
+                }, this);
+
             }
 
             protected override void Cleanup()

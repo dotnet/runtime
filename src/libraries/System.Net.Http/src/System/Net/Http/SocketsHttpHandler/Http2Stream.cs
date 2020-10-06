@@ -1326,7 +1326,7 @@ namespace System.Net.Http
                 // However, this could still be non-cancelable if HttpMessageInvoker was used, at which point this will only be
                 // cancelable if the caller's token was cancelable.
 
-                _waitSourceCancellation = cancellationToken.UnsafeRegister(static s =>
+                _waitSourceCancellation = cancellationToken.UnsafeRegister(static (s, cancellationToken) =>
                 {
                     var thisRef = (Http2Stream)s!;
 
@@ -1342,7 +1342,7 @@ namespace System.Net.Http
                     {
                         // Wake up the wait.  It will then immediately check whether cancellation was requested and throw if it was.
                         thisRef._waitSource.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(
-                            CancellationHelper.CreateOperationCanceledException(null, thisRef._waitSourceCancellation.Token)));
+                            CancellationHelper.CreateOperationCanceledException(null, cancellationToken)));
                     }
                 }, this);
 
