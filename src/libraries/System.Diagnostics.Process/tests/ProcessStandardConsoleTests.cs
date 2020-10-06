@@ -11,9 +11,14 @@ namespace System.Diagnostics.Tests
     public class ProcessStandardConsoleTests : ProcessTestBase
     {
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer), nameof(PlatformDetection.IsNotWindowsServerCore), nameof(PlatformDetection.IsNotWindowsIoTCore))]
         public void TestChangesInConsoleEncoding()
         {
+            // These OS variants don't work with setting a default Encoding.
+            if (PlatformDetection.IsNotWindowsNanoServer || PlatformDetection.IsNotWindowsServerCore || PlatformDetection.IsNotWindowsIoTCore)
+            {
+                return;
+            }
+
             const int ConsoleEncoding = 437;
 
             void RunWithExpectedCodePage(int expectedCodePage)
