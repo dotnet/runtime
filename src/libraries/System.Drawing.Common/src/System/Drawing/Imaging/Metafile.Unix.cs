@@ -107,7 +107,7 @@ namespace System.Drawing.Imaging
                         int status = Gdip.GdipDisposeImage(nativeImage);
                         Gdip.CheckStatus(status);
                     }
-                 }
+                }
             }
 
             internal void MetafileDisposed(IntPtr nativeImage)
@@ -242,6 +242,7 @@ namespace System.Drawing.Imaging
                 _metafileHolder = null;
                 nativeImage = IntPtr.Zero;
             }
+
             base.Dispose(disposing);
         }
 
