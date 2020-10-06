@@ -45,6 +45,8 @@ steps:
         helixBuild: $(Build.BuildNumber)
         helixSource: $(_HelixSource)
 
+        helixType: 'test/functional/cli/'
+
         helixQueues: ${{ parameters.helixQueues }}
 
         # This tests whether an array is empty
