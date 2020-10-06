@@ -10,10 +10,9 @@ using Xunit;
 
 namespace System.Net.Quic.Tests
 {
-    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
-    public class QuicListenerTests : MsQuicTestBase
+    public abstract class QuicListenerTests<T> : QuicTestBase<T>
+        where T : IQuicImplProviderFactory, new()
     {
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/32048")]
         [Fact]
         public async Task Listener_Backlog_Success()
         {
@@ -28,4 +27,9 @@ namespace System.Net.Quic.Tests
             }).TimeoutAfter(millisecondsTimeout: 5_000);
         }
     }
+
+    public sealed class QuicListenerTests_MockProvider : QuicListenerTests<MockProviderFactory> { }
+
+    [ConditionalClass(typeof(QuicTestBase<MsQuicProviderFactory>), nameof(QuicTestBase<MsQuicProviderFactory>.IsSupported))]
+    public sealed class QuicListenerTests_MsQuicProvider : QuicListenerTests<MsQuicProviderFactory> { }
 }

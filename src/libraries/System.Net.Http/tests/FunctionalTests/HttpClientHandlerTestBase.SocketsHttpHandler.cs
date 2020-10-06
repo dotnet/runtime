@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -11,16 +13,23 @@ namespace System.Net.Http.Functional.Tests
     {
         protected static bool IsWinHttpHandler => false;
 
-        protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null)
+        protected static HttpClientHandler CreateHttpClientHandler(Version useVersion = null, QuicImplementationProvider quicImplementationProvider = null)
         {
             useVersion ??= HttpVersion.Version11;
 
-            HttpClientHandler handler = PlatformDetection.SupportsAlpn ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
+            HttpClientHandler handler = (PlatformDetection.SupportsAlpn && useVersion != HttpVersion30) ? new HttpClientHandler() : new VersionHttpClientHandler(useVersion);
 
             if (useVersion >= HttpVersion.Version20)
             {
                 handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             }
+
+            if (quicImplementationProvider != null)
+            {
+                SocketsHttpHandler socketsHttpHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
+                socketsHttpHandler.QuicImplementationProvider = quicImplementationProvider;
+            }
+
             return handler;
         }
 
