@@ -2813,7 +2813,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
     opts.dspInstrs       = false;
-    opts.dspEmit         = false;
     opts.dspLines        = false;
     opts.varNames        = false;
     opts.dmpHex          = false;
@@ -6097,7 +6096,7 @@ int Compiler::compCompileHelper(CORINFO_MODULE_HANDLE classPtr,
 #ifdef DEBUG
     /* Give the function a unique number */
 
-    if (opts.disAsm || opts.dspEmit || verbose)
+    if (opts.disAsm || verbose)
     {
         compMethodID = ~info.compMethodHash() & 0xffff;
     }

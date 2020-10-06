@@ -11462,7 +11462,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
     size_t expected = emitSizeOfInsDsc(id);
     assert(sz == expected);
 
-    if (emitComp->opts.disAsm || emitComp->opts.dspEmit || emitComp->verbose)
+    if (emitComp->opts.disAsm || emitComp->verbose)
     {
         emitDispIns(id, false, dspOffs, true, emitCurCodeOffs(odst), *dp, (dst - *dp), ig);
     }
@@ -12107,7 +12107,7 @@ void emitter::emitDispIns(
     if (pCode == NULL)
         sz = 0;
 
-    if (!emitComp->opts.dspEmit && !isNew && !asmfm && sz)
+    if (!isNew && !asmfm && sz)
     {
         doffs = true;
     }
