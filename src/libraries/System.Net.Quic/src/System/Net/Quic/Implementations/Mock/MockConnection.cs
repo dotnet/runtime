@@ -3,6 +3,7 @@
 
 #nullable enable
 using System.Diagnostics;
+using System.Net;
 using System.Net.Security;
 using System.Threading;
 using System.Threading.Channels;
@@ -26,9 +27,15 @@ namespace System.Net.Quic.Implementations.Mock
         // Constructor for outbound connections
         internal MockConnection(EndPoint? remoteEndPoint, SslClientAuthenticationOptions? sslClientAuthenticationOptions, IPEndPoint? localEndPoint = null)
         {
-            if (!(remoteEndPoint is IPEndPoint ipEndPoint))
+            if (remoteEndPoint is null)
             {
-                throw new ArgumentException("Expected IPEndPoint", nameof(remoteEndPoint));
+                throw new ArgumentNullException(nameof(remoteEndPoint));
+            }
+
+            IPEndPoint ipEndPoint = GetIPEndPoint(remoteEndPoint);
+            if (ipEndPoint.Address != IPAddress.Loopback)
+            {
+                throw new ArgumentException("Expected loopback address", nameof(remoteEndPoint));
             }
 
             _isClient = true;
@@ -52,6 +59,26 @@ namespace System.Net.Quic.Implementations.Mock
             _nextOutboundUnidirectionalStream = 3;
 
             _state = state;
+        }
+
+        private static IPEndPoint GetIPEndPoint(EndPoint endPoint)
+        {
+            if (endPoint is IPEndPoint ipEndPoint)
+            {
+                return ipEndPoint;
+            }
+
+            if (endPoint is DnsEndPoint dnsEndPoint)
+            {
+                if (dnsEndPoint.Host == "127.0.0.1")
+                {
+                    return new IPEndPoint(IPAddress.Loopback, dnsEndPoint.Port);
+                }
+
+                throw new InvalidOperationException($"invalid DNS name {dnsEndPoint.Host}");
+            }
+
+            throw new InvalidOperationException("unknown EndPoint type");
         }
 
         internal override bool Connected
