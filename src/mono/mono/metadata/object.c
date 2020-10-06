@@ -7178,7 +7178,7 @@ mono_value_box_handle (MonoDomain *domain, MonoClass *klass, gpointer value, Mon
 	g_assert (value != NULL);
 	if (G_UNLIKELY (m_class_is_byreflike (klass))) {
 		char *full_name = mono_type_get_full_name (klass);
-		mono_error_set_execution_engine (error, "Cannot box IsByRefLike type %s", full_name);
+		mono_error_set_not_supported (error, "Cannot box IsByRefLike type %s", full_name);
 		g_free (full_name);
 		return NULL_HANDLE;
 	}
