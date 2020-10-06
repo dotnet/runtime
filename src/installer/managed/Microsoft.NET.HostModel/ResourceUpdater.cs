@@ -191,7 +191,6 @@ namespace Microsoft.NET.HostModel
                     int lastWin32Error = Marshal.GetLastWin32Error();
 
                     if (handle.IsInvalid && (lastWin32Error == 0 || lastWin32Error == Kernel32.ERROR_CALL_NOT_IMPLEMENTED))
-                        lastWin32Error == Kernel32.ERROR_CALL_NOT_IMPLEMENTED)
                     {
                         return false;
                     }
