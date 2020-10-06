@@ -338,6 +338,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task SendAsync_GetWithValidHostHeader_Success(bool withPort)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // External servers do not support HTTP3 currently.
+                return;
+            }
+
             var m = new HttpRequestMessage(HttpMethod.Get, Configuration.Http.SecureRemoteEchoServer) { Version = UseVersion };
             m.Headers.Host = withPort ? Configuration.Http.SecureHost + ":443" : Configuration.Http.SecureHost;
 
