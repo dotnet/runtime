@@ -1451,7 +1451,7 @@ bool isHardwareException(uint64_t esr)
     const int ESR_EC_SVC = 0x15; // Supervisor Call exception from aarch64.
 
     // Assume only supervisor calls from aarch64 are not hardware exceptions
-    return (esr_ec != ESR_EC_SVC)
+    return (esr_ec != ESR_EC_SVC);
 }
 #endif
 
