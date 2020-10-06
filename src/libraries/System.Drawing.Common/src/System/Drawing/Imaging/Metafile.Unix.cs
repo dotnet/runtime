@@ -81,13 +81,13 @@ namespace System.Drawing.Imaging
 
 
             internal bool Disposed { get => disposed; }
-            internal MetafileHolder ()
+            internal MetafileHolder()
             {
                 disposed = false;
                 _nativeImage = IntPtr.Zero;
             }
 
-            ~MetafileHolder () => Dispose(false);
+            ~MetafileHolder() => Dispose(false);
 
             public void Dispose()
             {
@@ -97,21 +97,22 @@ namespace System.Drawing.Imaging
 
             internal void Dispose(bool disposing)
             {
-                if (disposed)
-                    return;
-                IntPtr nativeImage = _nativeImage;
-                _nativeImage = IntPtr.Zero;
-                disposed = true;
-                if (nativeImage != IntPtr.Zero)
-                    Metafile.DisposeNativeInstance (nativeImage);
+                if (!disposed)
+                {
+                    IntPtr nativeImage = _nativeImage;
+                    _nativeImage = IntPtr.Zero;
+                    disposed = true;
+                    if (nativeImage != IntPtr.Zero)
+                        Metafile.DisposeNativeInstance(nativeImage);
+                 }
             }
 
-            internal void MetafileDisposed (IntPtr nativeImage)
+            internal void MetafileDisposed(IntPtr nativeImage)
             {
                 _nativeImage = nativeImage;
             }
 
-            internal void GraphicsDisposed ()
+            internal void GraphicsDisposed()
             {
                 Dispose();
             }
@@ -240,11 +241,11 @@ namespace System.Drawing.Imaging
                 // There's a graphics instance created from this Metafile,
                 // transfer responsibility for disposing the nativeImage to the
                 // MetafileHolder
-                _metafileHolder.MetafileDisposed (nativeImage);
+                _metafileHolder.MetafileDisposed(nativeImage);
                 _metafileHolder = null;
                 nativeImage = IntPtr.Zero;
             }
-            base.Dispose (disposing);
+            base.Dispose(disposing);
         }
 
         // methods
