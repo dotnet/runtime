@@ -80,6 +80,7 @@ namespace System.Runtime.CompilerServices
     public sealed partial class IDispatchConstantAttribute : System.Runtime.CompilerServices.CustomConstantAttribute
     {
         public IDispatchConstantAttribute() { }
+        [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public override object Value { get { throw null; } }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Field | System.AttributeTargets.Parameter, Inherited=false)]

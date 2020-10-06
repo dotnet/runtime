@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
+using System.Runtime.Versioning;
 
 namespace System.DirectoryServices.Protocols
 {
@@ -1026,11 +1027,13 @@ namespace System.DirectoryServices.Protocols
 
         public QuotaControl() : base("1.2.840.113556.1.4.1852", null, true, true) { }
 
+        [SupportedOSPlatform("windows")]
         public QuotaControl(SecurityIdentifier querySid) : this()
         {
             QuerySid = querySid;
         }
 
+        [SupportedOSPlatform("windows")]
         public SecurityIdentifier QuerySid
         {
             get => _sid == null ? null : new SecurityIdentifier(_sid, 0);

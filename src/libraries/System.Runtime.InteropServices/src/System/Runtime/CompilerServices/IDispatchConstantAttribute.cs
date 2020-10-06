@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.CompilerServices
 {
@@ -10,6 +11,7 @@ namespace System.Runtime.CompilerServices
     {
         public IDispatchConstantAttribute() { }
 
+        [SupportedOSPlatform("windows")]
         public override object Value => new DispatchWrapper(null);
     }
 }

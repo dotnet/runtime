@@ -4,6 +4,7 @@
 using System.Collections;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Diagnostics;
 
 namespace System
 {
@@ -87,6 +88,7 @@ namespace System
                         if (o is IDisposable DisposableObj)
                             DisposableObj.Dispose();
 
+                        Debug.Assert(OperatingSystem.IsWindows());
                         // If the object is a derived from __ComObject, then call Marshal.ReleaseComObject on it.
                         if (o is __ComObject ComObj)
                             Marshal.ReleaseComObject(ComObj);

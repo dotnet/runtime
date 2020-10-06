@@ -215,6 +215,7 @@ namespace System.Runtime.InteropServices
             // convert result to VARIANT
             if (pVarResult != IntPtr.Zero)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 Marshal.GetNativeVariantForObject(result, pVarResult);
             }
 
@@ -237,6 +238,7 @@ namespace System.Runtime.InteropServices
             ppv = IntPtr.Zero;
             if (iid == _iidSourceItf || iid == typeof(IDispatch).GUID)
             {
+                Debug.Assert(OperatingSystem.IsWindows());
                 ppv = Marshal.GetComInterfaceForObject(this, typeof(IDispatch), CustomQueryInterfaceMode.Ignore);
                 return CustomQueryInterfaceResult.Handled;
             }
@@ -267,6 +269,7 @@ namespace System.Runtime.InteropServices
             try
             {
                 _connectionPoint.Unadvise(_cookie);
+                Debug.Assert(OperatingSystem.IsWindows());
                 Marshal.ReleaseComObject(_connectionPoint);
             }
             catch
