@@ -12,9 +12,11 @@ using Xunit;
 
 namespace System.Net.Quic.Tests
 {
-    [ConditionalClass(typeof(QuicConnection), nameof(QuicConnection.IsQuicSupported))]
+    [ConditionalClass(typeof(MsQuicTests), nameof(MsQuicTests.IsMsQuicSupported))]
     public class MsQuicTests : MsQuicTestBase
     {
+        public static bool IsMsQuicSupported => QuicImplementationProviders.MsQuic.IsSupported;
+
         private static ReadOnlyMemory<byte> s_data = Encoding.UTF8.GetBytes("Hello world!");
 
         [Fact]
