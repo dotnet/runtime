@@ -29,7 +29,7 @@ namespace System.Net.Quic.Tests
             int pnOffset = 18;
             int payloadLength = 1162 + 4 + 16;
             seal.UnprotectHeader(packet, pnOffset);
-            Assert.True(seal.DecryptPacket(packet, pnOffset, payloadLength, 0));
+            Assert.True(seal.UnprotectPacket(packet, pnOffset, payloadLength, 0));
 
             const string headerHex = ReferenceData.ClientInitialPacketHeaderHex;
             int headerLen = headerHex.Length / 2;
@@ -57,7 +57,7 @@ namespace System.Net.Quic.Tests
             CryptoSeal seal = DeriveClientCryptoSeal();
 
             int pnOffset = headerLen - 4 /*pnLength*/;
-            seal.EncryptPacket(buff, pnOffset, ReferenceData.ClientInitialPayloadLength + 4 + 16, 2);
+            seal.ProtectPacket(buff, pnOffset, ReferenceData.ClientInitialPayloadLength + 4 + 16, 2);
             seal.ProtectHeader(buff, pnOffset);
 
             Assert.Equal(encryptedClientInitial, buff);
@@ -75,7 +75,7 @@ namespace System.Net.Quic.Tests
             var alg = CryptoSealAlgorithm.Create(QuicConstants.InitialCipherSuite, new byte[16], headerKey);
 
             Span<byte> protectionMask = stackalloc byte[5];
-            alg.CreateProtectionMask(payloadSample, protectionMask);
+            alg.CreateHeaderProtectionMask(payloadSample, protectionMask);
             Assert.Equal(expectedMask, HexHelpers.ToHexString(protectionMask));
 
             var actual = (byte[])header.Clone();

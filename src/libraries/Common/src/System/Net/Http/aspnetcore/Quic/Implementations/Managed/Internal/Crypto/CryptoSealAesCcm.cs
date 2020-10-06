@@ -23,13 +23,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
         internal override TlsCipherSuite CipherSuite => TlsCipherSuite.TLS_AES_128_CCM_SHA256;
         internal override int TagLength => 16;
 
-        internal override void Encrypt(ReadOnlySpan<byte> nonce, Span<byte> buffer, Span<byte> tag,
+        internal override void Protect(ReadOnlySpan<byte> nonce, Span<byte> buffer, Span<byte> tag,
             ReadOnlySpan<byte> aad)
         {
             _aesCcm.Encrypt(nonce, buffer, buffer, tag, aad);
         }
 
-        internal override bool Decrypt(ReadOnlySpan<byte> nonce, Span<byte> buffer, ReadOnlySpan<byte> tag, ReadOnlySpan<byte> aad)
+        internal override bool Unprotect(ReadOnlySpan<byte> nonce, Span<byte> buffer, ReadOnlySpan<byte> tag, ReadOnlySpan<byte> aad)
         {
             try
             {

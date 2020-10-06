@@ -153,7 +153,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal void OnStreamDataWritten(ManagedQuicStream stream)
         {
             _streams.MarkFlushable(stream);
-            _socketContext.Ping();
+            _socketContext!.Ping();
         }
 
         internal void OnStreamDataRead(ManagedQuicStream stream, int bytesRead)
@@ -168,7 +168,7 @@ namespace System.Net.Quic.Implementations.Managed
         internal void OnStreamStateUpdated(ManagedQuicStream stream)
         {
             _streams.MarkForUpdate(stream);
-            _socketContext.Ping();
+            _socketContext!.Ping();
         }
     }
 }

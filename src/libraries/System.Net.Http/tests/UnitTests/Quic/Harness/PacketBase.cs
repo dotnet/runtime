@@ -93,7 +93,7 @@ namespace System.Net.Quic.Tests.Harness
                 QuicPrimitives.WriteVarInt(payloadLengthSpan, payloadLength, 2);
             }
 
-            seal.EncryptPacket(writer.Buffer.Span, pnOffset, payloadLength, (uint) PacketNumber);
+            seal.ProtectPacket(writer.Buffer.Span, pnOffset, payloadLength, (uint) PacketNumber);
             seal.ProtectHeader(writer.Buffer.Span, pnOffset);
         }
 
@@ -108,7 +108,7 @@ namespace System.Net.Quic.Tests.Harness
 
             // guess largest acked packet number to make deserialization work
             seal.UnprotectHeader(reader.Buffer.Span, pnOffset);
-            Assert.True(seal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength, Math.Max(0, (int) expectedPn - 3)));
+            Assert.True(seal.UnprotectPacket(reader.Buffer.Span, pnOffset, payloadLength, Math.Max(0, (int) expectedPn - 3)));
 
             int pnLength = HeaderHelpers.GetPacketNumberLength(reader.Buffer.Span[0]);
             reader.TryReadPacketNumber(pnLength,expectedPn, out long packetNumber);

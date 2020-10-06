@@ -25,11 +25,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
         internal abstract int TagLength { get; }
         internal abstract int SampleLength { get; }
 
-        internal abstract void Encrypt(ReadOnlySpan<byte> nonce, Span<byte> buffer, Span<byte> tag, ReadOnlySpan<byte> aad);
+        internal abstract void Protect(ReadOnlySpan<byte> nonce, Span<byte> buffer, Span<byte> tag, ReadOnlySpan<byte> aad);
 
-        internal abstract bool Decrypt(ReadOnlySpan<byte> nonce, Span<byte> buffer, ReadOnlySpan<byte> tag,
+        internal abstract bool Unprotect(ReadOnlySpan<byte> nonce, Span<byte> buffer, ReadOnlySpan<byte> tag,
             ReadOnlySpan<byte> aad);
 
-        internal abstract void CreateProtectionMask(ReadOnlySpan<byte> payloadSample, Span<byte> mask);
+        internal abstract void CreateHeaderProtectionMask(ReadOnlySpan<byte> payloadSample, Span<byte> mask);
     }
 }

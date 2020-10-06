@@ -14,9 +14,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
         internal override int SampleLength => 16;
 
-        // ICryptoTransform is not span-based, so we need intermediate copies in order to avoid allocation.
-        private byte[] _sampleArray = new byte[16];
-        private byte[] _maskArray = new byte[16];
+        // ICryptoTransform is not span-based, so we need arrays for intermediate results in order to avoid allocation.
+        private readonly byte[] _sampleArray = new byte[16];
+        private readonly byte[] _maskArray = new byte[16];
 
         protected CryptoSealAesBase(byte[] headerKey)
         {
@@ -24,7 +24,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
                 .CreateEncryptor();
         }
 
-        internal override void CreateProtectionMask(ReadOnlySpan<byte> payloadSample, Span<byte> mask)
+        internal override void CreateHeaderProtectionMask(ReadOnlySpan<byte> payloadSample, Span<byte> mask)
         {
             Debug.Assert(payloadSample.Length == SampleLength);
             Debug.Assert(mask.Length == 5);

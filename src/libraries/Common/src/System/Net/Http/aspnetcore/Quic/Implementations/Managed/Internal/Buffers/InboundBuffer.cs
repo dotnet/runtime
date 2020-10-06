@@ -79,14 +79,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         }
 
         /// <summary>
-        ///     Ranges of data which are received, but not delivered.
+        ///     Ranges of data which are received, but weren't queued for delivery in the delivery channel because they
+        ///     were received out-of-order.
         /// </summary>
-        private readonly RangeSet _undelivered = new RangeSet();
+        private readonly RangeSet _toBeQueuedRanges = new RangeSet();
 
         /// <summary>
         ///     Number of bytes streamed through the <see cref="_deliverableChannel"/>.
         /// </summary>
-        private long _bytesDeliverable;
+        private long _bytesQueued;
 
         /// <summary>
         ///     Total number of bytes delivered.
@@ -106,7 +107,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// <summary>
         ///     Number of bytes ready to be read from the stream.
         /// </summary>
-        internal long BytesAvailable => _bytesDeliverable - BytesRead;
+        internal long BytesAvailable => _bytesQueued - BytesRead;
 
         /// <summary>
         ///     Error code if the inbound buffer was aborted.
@@ -275,16 +276,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             Size = Math.Max(Size, offset + data.Length);
 
             // deliver new data if present
-            if (!data.IsEmpty && offset + data.Length > _bytesDeliverable)
+            if (!data.IsEmpty && offset + data.Length > _bytesQueued)
             {
-                if (offset < _bytesDeliverable)
+                if (offset < _bytesQueued)
                 {
                     // drop duplicate prefix;
-                    data = data.Slice((int)(_bytesDeliverable - offset));
-                    offset = _bytesDeliverable;
+                    data = data.Slice((int)(_bytesQueued - offset));
+                    offset = _bytesQueued;
                 }
 
-                long recvBufStart = _bytesDeliverable - _bytesDeliverable % ReorderBuffersSize;
+                long recvBufStart = _bytesQueued - _bytesQueued % ReorderBuffersSize;
                 while (!data.IsEmpty)
                 {
                     int recvBufIndex = (int) ((offset - recvBufStart) / ReorderBuffersSize);
@@ -299,7 +300,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
                     int written = Math.Min(data.Length, ReorderBuffersSize - recvBufOffset);
                     data.Slice(0, written).CopyTo(_receivingBuffers[recvBufIndex].AsSpan().Slice(recvBufOffset));
-                    _undelivered.Add(offset, offset + written - 1);
+                    _toBeQueuedRanges.Add(offset, offset + written - 1);
 
                     data = data.Slice(written);
                     offset += written;
@@ -307,16 +308,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
 
                 // queue data for delivery
                 int buffersProcessed = 0;
-                while (_undelivered.Count > 0 && _undelivered.GetMin() == _bytesDeliverable)
+                while (_toBeQueuedRanges.Count > 0 && _toBeQueuedRanges.GetMin() == _bytesQueued)
                 {
                     Debug.Assert(_receivingBuffers.Count > buffersProcessed);
 
                     var buffer = _receivingBuffers[buffersProcessed];
 
                     long lastStreamOffsetInBuffer = recvBufStart + buffersProcessed * ReorderBuffersSize + ReorderBuffersSize - 1;
-                    long deliveryEnd = Math.Min(_undelivered[0].End, lastStreamOffsetInBuffer);
+                    long deliveryEnd = Math.Min(_toBeQueuedRanges[0].End, lastStreamOffsetInBuffer);
 
-                    int startOffset = (int)(_bytesDeliverable % ReorderBuffersSize);
+                    int startOffset = (int)(_bytesQueued % ReorderBuffersSize);
                     int endOffset = (int)(deliveryEnd % ReorderBuffersSize);
                     int delivered = endOffset - startOffset + 1;
 
@@ -326,23 +327,24 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
                     if (deliveryEnd == lastStreamOffsetInBuffer)
                     {
                         // entire buffer is filled, pass it in the chunk so that it gets returned and reused
-                        chunk = new StreamChunk(_bytesDeliverable, memory, buffer);
+                        chunk = new StreamChunk(_bytesQueued, memory, buffer);
                         buffersProcessed++;
                     }
                     else
                     {
-                        chunk = new StreamChunk(_bytesDeliverable, memory, null);
+                        chunk = new StreamChunk(_bytesQueued, memory, null);
                     }
 
                     _deliverableChannel.Writer.TryWrite(chunk);
-                    _undelivered.Remove(_bytesDeliverable, deliveryEnd);
-                    _bytesDeliverable += delivered;
+                    _toBeQueuedRanges.Remove(_bytesQueued, deliveryEnd);
+                    _bytesQueued += delivered;
                 }
 
+                // remove buffers which were passed to the deliverable channel
                 _receivingBuffers.RemoveRange(0, buffersProcessed);
             }
 
-            if (FinalSizeKnown && Size == _bytesDeliverable)
+            if (FinalSizeKnown && Size == _bytesQueued)
             {
                 OnAllReceived();
             }

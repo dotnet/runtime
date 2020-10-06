@@ -25,13 +25,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
         internal override TlsCipherSuite CipherSuite { get; }
         internal override int TagLength => IntegrityTagLength;
 
-        internal override void Encrypt(ReadOnlySpan<byte> nonce, Span<byte> buffer, Span<byte> tag,
+        internal override void Protect(ReadOnlySpan<byte> nonce, Span<byte> buffer, Span<byte> tag,
             ReadOnlySpan<byte> aad)
         {
             _aesGcm.Encrypt(nonce, buffer, buffer, tag, aad);
         }
 
-        internal override bool Decrypt(ReadOnlySpan<byte> nonce, Span<byte> buffer, ReadOnlySpan<byte> tag, ReadOnlySpan<byte> aad)
+        internal override bool Unprotect(ReadOnlySpan<byte> nonce, Span<byte> buffer, ReadOnlySpan<byte> tag, ReadOnlySpan<byte> aad)
         {
             try
             {

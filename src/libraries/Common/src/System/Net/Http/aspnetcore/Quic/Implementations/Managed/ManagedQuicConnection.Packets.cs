@@ -221,7 +221,7 @@ namespace System.Net.Quic.Implementations.Managed
                 PacketType packetType = PacketType.OneRtt;
                 int payloadLength = reader.BytesLeft;
 
-                if (!recvSeal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength,
+                if (!recvSeal.UnprotectPacket(reader.Buffer.Span, pnOffset, payloadLength,
                     pnSpace.LargestReceivedPacketNumber))
                 {
                     // decryption failed, drop the packet.
@@ -301,7 +301,7 @@ namespace System.Net.Quic.Implementations.Managed
             PacketType packetType = header.PacketType;
             var seal = pnSpace.RecvCryptoSeal!;
 
-            if (!seal.DecryptPacket(reader.Buffer.Span, pnOffset, payloadLength,
+            if (!seal.UnprotectPacket(reader.Buffer.Span, pnOffset, payloadLength,
                 pnSpace.LargestReceivedPacketNumber))
             {
                 // decryption failed, drop the packet.
@@ -538,7 +538,7 @@ namespace System.Net.Quic.Implementations.Managed
                 QuicPrimitives.WriteVarInt(payloadLengthSpan, payloadLength, 2);
             }
 
-            seal.EncryptPacket(writer.Buffer.Span, pnOffset, payloadLength, truncatedPn);
+            seal.ProtectPacket(writer.Buffer.Span, pnOffset, payloadLength, truncatedPn);
             seal.ProtectHeader(writer.Buffer.Span, pnOffset);
 
             // remember what we sent in this packet
