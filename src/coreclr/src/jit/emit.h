@@ -1508,7 +1508,7 @@ protected:
     void emitDispGCinfo();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
     void emitDispFrameRef(int varx, int disp, int offs, bool asmfm);
-    void emitDispInsOffs(unsigned offs, bool doffs);
+    void emitDispInsOffs(unsigned offs, bool doffs, BYTE* code);
     void emitDispInsHex(instrDesc* id, BYTE* code, size_t sz);
 
 #else // !DEBUG

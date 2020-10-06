@@ -2820,6 +2820,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
     opts.disAsm          = false;
     opts.disAsmSpilled   = false;
     opts.disDiffable     = false;
+    opts.disAddr         = false;
     opts.dspCode         = false;
     opts.dspEHTable      = false;
     opts.dspDebugInfo    = false;
@@ -2960,6 +2961,12 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         {
             opts.disDiffable = true;
             opts.dspDiffable = true;
+        }
+
+        // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDasmWithAddress=1
+        if (JitConfig.DasmWithAddress() != 0)
+        {
+            opts.disAddr = true;
         }
 
         if (JitConfig.JitLongAddress() != 0)

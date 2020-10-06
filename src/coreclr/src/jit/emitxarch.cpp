@@ -8245,7 +8245,7 @@ void emitter::emitDispIns(
 
     /* Display the instruction offset */
 
-    emitDispInsOffs(offset, doffs);
+    emitDispInsOffs(offset, doffs, code);
 
     if (code != nullptr)
     {
@@ -13985,6 +13985,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
 
     switch (ins)
     {
+        case INS_align:
         case INS_nop:
         case INS_int3:
             assert(memFmt == IF_NONE);

@@ -6977,11 +6977,13 @@ void emitter::emitDispInsHelp(
         sz = 0;
 
     if (!emitComp->opts.dspEmit && !isNew && !asmfm && sz)
+    {
         doffs = true;
+    }
 
     /* Display the instruction offset */
 
-    emitDispInsOffs(offset, doffs);
+    emitDispInsOffs(offset, doffs, code);
 
     /* Display the instruction hex code */
 

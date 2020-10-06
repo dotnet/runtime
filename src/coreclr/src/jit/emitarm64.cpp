@@ -12108,11 +12108,13 @@ void emitter::emitDispIns(
         sz = 0;
 
     if (!emitComp->opts.dspEmit && !isNew && !asmfm && sz)
+    {
         doffs = true;
+    }
 
     /* Display the instruction offset */
 
-    emitDispInsOffs(offset, doffs);
+    emitDispInsOffs(offset, doffs, pCode);
 
     /* Display the instruction hex code */
 

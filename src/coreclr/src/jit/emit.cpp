@@ -1211,8 +1211,13 @@ void emitter::appendToCurIG(instrDesc* id)
 
 #ifdef DEBUG
 
-void emitter::emitDispInsOffs(unsigned offs, bool doffs)
+void emitter::emitDispInsOffs(unsigned offs, bool doffs, BYTE* code)
 {
+    if (emitComp->opts.disAddr)
+    {
+        printf("[" FMT_ADDR "] ", DBG_ADDR(code));
+    }
+
     if (doffs)
     {
         printf("%06X", offs);
@@ -5085,7 +5090,12 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
             else
             {
-                printf("\nG_M%03u_IG%02u:\n", emitComp->compMethodID, ig->igNum);
+                printf("\nG_M%03u_IG%02u:", emitComp->compMethodID, ig->igNum);
+                if (emitComp->opts.disAddr)
+                {
+                    printf("\t\t;; offset=%04XH", ig->igOffs);
+                }
+                printf("\n");
             }
         }
 #endif // DEBUG
