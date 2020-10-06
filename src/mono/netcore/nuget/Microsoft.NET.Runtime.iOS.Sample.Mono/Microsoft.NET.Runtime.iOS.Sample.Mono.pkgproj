@@ -7,6 +7,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="$(RepoToolsLocalDir)tasks\mobile.tasks\AppleAppBuilder\AppleAppBuilder.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <_iOSSampleFiles Include="$(ArtifactsDir)bin\AppleAppBuilder\$(Configuration)\net5.0\AppleAppBuilder.dll" />
     <_iOSSampleFiles Include="$(RepoToolsLocalDir)tasks\mobile.tasks\AppleAppBuilder\Templates\runtime.m" />
     <_iOSSampleFiles Include="$(RepoToolsLocalDir)tasks\mobile.tasks\AppleAppBuilder\Templates\runtime.h" />
