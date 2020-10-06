@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
 {
-    public class BackgroundHostedServiceTests
+    public class BackgroundServiceTests
     {
         [Fact]
         public void StartReturnsCompletedTaskIfLongRunningTaskIsIncomplete()
@@ -23,7 +21,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             Assert.True(task.IsCompleted);
             Assert.False(tcs.Task.IsCompleted);
 
-            // Complete the tsk
+            // Complete the task
             tcs.TrySetResult(null);
         }
 
@@ -37,6 +35,7 @@ namespace Microsoft.Extensions.Hosting.Tests
             var task = service.StartAsync(CancellationToken.None);
 
             Assert.True(task.IsCompleted);
+            Assert.Same(task, service.ExecuteTask);
         }
 
         [Fact]
@@ -175,8 +174,6 @@ namespace Microsoft.Extensions.Hosting.Tests
         {
             private readonly Task _task;
 
-            public Task ExecuteTask { get; set; }
-
             public MyBackgroundService(Task task)
             {
                 _task = task;
@@ -184,8 +181,7 @@ namespace Microsoft.Extensions.Hosting.Tests
 
             protected override async Task ExecuteAsync(CancellationToken stoppingToken)
             {
-                ExecuteTask = ExecuteCore(stoppingToken);
-                await ExecuteTask;
+                await ExecuteCore(stoppingToken);
             }
 
             private async Task ExecuteCore(CancellationToken stoppingToken)
