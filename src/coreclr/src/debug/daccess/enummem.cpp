@@ -20,6 +20,11 @@
 #include "binder.h"
 #include "win32threadpool.h"
 
+#ifdef FEATURE_COMWRAPPERS
+#include <interoplibinterface.h>
+#include <interoplibabi.h>
+#endif // FEATURE_COMWRAPPERS
+
 extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
 #if defined(DAC_MEASURE_PERF)
@@ -1429,6 +1434,21 @@ HRESULT ClrDataAccess::DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, C
     if (DACTryGetComWrappersObjectFromCCW(ccwPtr, &wrappedObjAddress) == S_OK)
     {
         managedExceptionObject = wrappedObjAddress;
+        // Now report the CCW itself
+        ReportMem(TO_TADDR(ccwPtr), sizeof(TADDR));
+        TADDR managedObjectWrapperPtrPtr = ccwPtr & InteropLib::ABI::DispatchThisPtrMask;
+        ReportMem(managedObjectWrapperPtrPtr, sizeof(TADDR));
+
+        // Plus its QI and VTable that we query to determine if it is a ComWrappers CCW
+        TADDR vTableAddress = NULL;
+        TADDR qiAddress = NULL;
+        DACGetComWrappersCCWVTableQIAddress(ccwPtr, &vTableAddress, &qiAddress);
+        ReportMem(vTableAddress, sizeof(TADDR));
+        ReportMem(qiAddress, sizeof(TADDR));
+
+        // And the MOW it points to
+        TADDR mow = DACGetManagedObjectWrapperFromCCW(ccwPtr);
+        ReportMem(mow, sizeof(ManagedObjectWrapperDACInterface));
     }
 #endif
 #ifdef FEATURE_COMINTEROP
