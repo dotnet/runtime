@@ -99,6 +99,9 @@ namespace System.Net.Http
         public const int DefaultHttpPort = 80;
         public const int DefaultHttpsPort = 443;
 
+        [DllImport("msvcrt")] private static extern int printf(string format, string arg);
+        private static void Print(string s) => printf("%s\n", s);
+
         /// <summary>Initializes the pool.</summary>
         /// <param name="poolManager">The manager associated with this pool.</param>
         /// <param name="kind">The kind of HTTP connections stored in this pool.</param>
@@ -121,6 +124,8 @@ namespace System.Net.Http
 
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
             _http3Enabled = _poolManager.Settings._maxHttpVersion >= Http3Connection.HttpVersion30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
+
+            Trace($"_http3Enabled={_http3Enabled}");
 
             switch (kind)
             {
@@ -338,6 +343,8 @@ namespace System.Net.Http
         private ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
             GetConnectionAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
         {
+            Print($"GetConnectionAsync: _http3Enabled={_http3Enabled}, request.Version.Major={request.Version.Major}, request.VersionPolicy={request.VersionPolicy}, IsSecure={IsSecure}");
+
             // Do not even attempt at getting/creating a connection if it's already obvious we cannot provided the one requested.
             if (request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
@@ -356,6 +363,8 @@ namespace System.Net.Http
             // Either H3 explicitly requested or secured upgraded allowed.
             if (_http3Enabled && (request.Version.Major >= 3 || (request.VersionPolicy == HttpVersionPolicy.RequestVersionOrHigher && IsSecure)))
             {
+                Print("GetConnectionAsync: Trying HTTP3");
+
                 HttpAuthority? authority = _http3Authority;
                 // H3 is explicitly requested, assume prenegotiated H3.
                 if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
@@ -366,13 +375,20 @@ namespace System.Net.Http
                 {
                     if (IsAltSvcBlocked(authority))
                     {
+                        Print($"GetConnectionAsync: AltSvcBlocked, authority={authority}");
+
                         return ValueTask.FromException<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>(
                             new HttpRequestException(SR.Format(SR.net_http_requested_version_cannot_establish, request.Version, request.VersionPolicy, 3)));
                     }
 
                     return GetHttp3ConnectionAsync(request, authority, cancellationToken);
                 }
+
+                Print($"GetConnectionAsync: failed, authority={authority}, _http3Authority={_http3Authority}, _originAuthority={_originAuthority}");
             }
+
+            Print("GetConnectionAsync: Skipped HTTP3");
+
             // If we got here, we cannot provide HTTP/3 connection. Do not continue if downgrade is not allowed.
             if (request.Version.Major >= 3 && request.VersionPolicy != HttpVersionPolicy.RequestVersionOrLower)
             {
@@ -757,6 +773,8 @@ namespace System.Net.Http
         private async ValueTask<(HttpConnectionBase? connection, bool isNewConnection, HttpResponseMessage? failureResponse)>
             GetHttp3ConnectionAsync(HttpRequestMessage request, HttpAuthority authority, CancellationToken cancellationToken)
         {
+            Print($"GetHttp3ConnectionAsync");
+
             Debug.Assert(_kind == HttpConnectionKind.Https);
             Debug.Assert(_http3Enabled == true);
 
@@ -815,10 +833,13 @@ namespace System.Net.Http
                 QuicConnection quicConnection;
                 try
                 {
+                    Print($"CAll ConnectQuicAsync");
                     quicConnection = await ConnectHelper.ConnectQuicAsync(Settings._quicImplementationProvider ?? QuicImplementationProviders.Default, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
                 }
-                catch
+                catch (Exception e)
                 {
+                    Print($"Caught {e}");
+
                     // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
                     BlocklistAuthority(authority);
                     throw;

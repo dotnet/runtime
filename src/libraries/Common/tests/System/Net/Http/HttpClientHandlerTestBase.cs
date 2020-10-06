@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,6 +27,8 @@ namespace System.Net.Http.Functional.Tests
         public readonly ITestOutputHelper _output;
 
         protected virtual Version UseVersion => HttpVersion.Version11;
+
+        protected virtual QuicImplementationProvider UseQuicImplementationProvider => null;
 
         protected virtual bool TestAsync => true;
 
@@ -55,20 +58,20 @@ namespace System.Net.Http.Functional.Tests
 #endif
             };
 
-        protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion);
+        protected HttpClientHandler CreateHttpClientHandler() => CreateHttpClientHandler(UseVersion, UseQuicImplementationProvider);
 
         protected static HttpClientHandler CreateHttpClientHandler(string useVersionString) =>
             CreateHttpClientHandler(Version.Parse(useVersionString));
 
-        protected LoopbackServerFactory LoopbackServerFactory => GetFactoryForVersion(UseVersion);
+        protected LoopbackServerFactory LoopbackServerFactory => GetFactoryForVersion(UseVersion, UseQuicImplementationProvider);
 
-        protected static LoopbackServerFactory GetFactoryForVersion(Version useVersion)
+        protected static LoopbackServerFactory GetFactoryForVersion(Version useVersion, QuicImplementationProvider quicImplementationProvider = null)
         {
             return useVersion.Major switch
             {
 #if NETCOREAPP || WINHTTPHANDLER_TEST
 #if HTTP3
-                3 => Http3LoopbackServerFactory.Singleton,
+                3 => new Http3LoopbackServerFactory(quicImplementationProvider),
 #endif
                 2 => Http2LoopbackServerFactory.Singleton,
 #endif

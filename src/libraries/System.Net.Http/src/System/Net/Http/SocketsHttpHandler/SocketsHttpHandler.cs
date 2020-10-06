@@ -396,7 +396,7 @@ namespace System.Net.Http
         /// <summary>
         /// Gets or sets the QUIC implementation to be used for HTTP3 requests.
         /// </summary>
-        public QuicImplementationProvider? QuicImplementationProviders
+        public QuicImplementationProvider? QuicImplementationProvider
         {
             // !!! NOTE !!!
             // This is temporary and will not ship.
