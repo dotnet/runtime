@@ -225,7 +225,8 @@ REM Set the environment for the native build
 
 REM Eval the output from set-cmake-path.ps1
 for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& ""%__SourceDir%\pal\tools\set-cmake-path.ps1"""') do %%a
-echo %__MsgPrefix%Using CMake from !CMakePath!
+echo %__MsgPrefix%Using CMake from '!CMakePath!'
+"!CMakePath!" --version
 
 REM NumberOfCores is an WMI property providing number of physical cores on machine
 REM processor(s). It is used to set optimal level of CL parallelism during native build step
