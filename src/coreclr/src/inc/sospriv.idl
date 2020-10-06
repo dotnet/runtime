@@ -424,3 +424,17 @@ interface ISOSDacInterface9 : IUnknown
 {
     HRESULT GetBreakingChangeVersion(int* pVersion);
 }
+
+[
+    object,
+    local,
+    uuid(90B8FCC3-7251-4B0A-AE3D-5C13A67EC9AA)
+]
+interface ISOSDacInterface10 : IUnknown
+{
+    HRESULT GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA_ADDRESS *rcw, unsigned int count, CLRDATA_ADDRESS *mowList, unsigned int *pNeeded);
+    HRESULT IsComWrappersCCW(CLRDATA_ADDRESS ccw, BOOL *isComWrappersCCW);
+    HRESULT GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRESS *managedObject, int *refCount);
+    HRESULT IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappersRCW);
+    HRESULT GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRESS *identity);
+}
