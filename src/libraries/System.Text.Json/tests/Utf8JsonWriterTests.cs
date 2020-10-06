@@ -7690,7 +7690,7 @@ namespace System.Text.Json.Tests
     {
         // Normalize comparisons against Json.NET.
         // Includes uppercasing the \u escaped hex characters and escaping forward slash to "\/" instead of "\u002f".
-        public static string NormalizeToJsonNetFormat(this string json, bool relaxedEscaping = true)
+        public static string NormalizeToJsonNetFormat(this string json)
         {
             var sb = new StringBuilder(json.Length);
             int i = 0;
@@ -7718,27 +7718,30 @@ namespace System.Text.Json.Tests
                         sb.Append("u002f");
                     }
                 }
-                else if (!relaxedEscaping)
+                // Convert > to \u003e
+                else if (json[i] == '>')
                 {
-                    // Convert > to \u003e
-                    if (json[i] == '>')
+                    i++;
+                    sb.Append("\\u003e");
+                }
+                // Convert < to \u003c
+                else if (json[i] == '<')
+                {
+                    i++;
+                    sb.Append("\\u003c");
+                }
+                // Remove .0
+                else if (json[i] == '.' && json[i + 1] == '0')
+                {
+                    while (json[i+2] == ' ')
                     {
                         i++;
-                        sb.Append("\\u003e");
                     }
-                    // Convert < to \u003c
-                    else if (json[i] == '<')
-                    {
-                        i++;
-                        sb.Append("\\u003c");
-                    }
-                    // Remove .0
-                    else if (json[i] == '.' && json[i + 1] == '0' &&
-                        (json[i + 2] == ',' || json[i + 2] == '\n' ||
-                        json[i + 2] == ']' || json[i + 2] == '}'))
+                    if (json[i + 2] == ',' || json[i + 2] == '\n' ||
+                        json[i + 2] == ']' || json[i + 2] == '}')
                     {
                         i += 2;
-                    }                    
+                    }
                 }
                 else
                 {
