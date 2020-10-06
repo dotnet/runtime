@@ -23,7 +23,7 @@
   </PropertyGroup>
 
   <!--
-    SDK currently doesnot know about net6.0 TargetFramework.
+    SDK currently does not know about net6.0 TargetFramework.
     We need to manually add these to correctly resolve the targeting packs.
     https://github.com/dotnet/sdk/issues/13950  
   -->
