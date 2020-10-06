@@ -48,7 +48,7 @@ namespace Mono.Linker
 
 		static TypeReference ResolveTypeName (AssemblyDefinition assembly, TypeName typeName)
 		{
-			if (assembly == null)
+			if (assembly == null || typeName == null)
 				return null;
 
 			if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {

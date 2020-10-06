@@ -37,6 +37,7 @@ namespace Mono.Linker.Tests.Cases.Reflection
 			TestTypeOverloadWith4Parameters ();
 			TestTypeOverloadWith5ParametersWithIgnoreCase ();
 			TestTypeOverloadWith5ParametersWithoutIgnoreCase ();
+			TestInvalidTypeName ();
 		}
 
 		[Kept]
@@ -336,6 +337,15 @@ namespace Mono.Linker.Tests.Cases.Reflection
 		{
 			const string reflectionTypeKeptString = "Mono.Linker.Tests.Cases.Reflection.TypeUsedViaReflection+OverloadWith5ParametersWithoutIgnoreCase";
 			var typeKept = Type.GetType (reflectionTypeKeptString, AssemblyResolver, GetTypeFromAssembly, false, false);
+		}
+
+		/// <summary>
+		/// This test verifies that if `TypeParser.ParseTypeName` hits an exception and returns null that the linker doesn't fail
+		/// </summary>
+		[Kept]
+		static void TestInvalidTypeName ()
+		{
+			var type = Type.GetType ("System.Collections.Generic.List`1[GenericClass`1[System.String]+Nested]");
 		}
 
 		[Kept]
