@@ -57,10 +57,10 @@
 #include <mono/utils/mono-os-wait.h>
 #include <mono/metadata/exception-internals.h>
 #include <mono/utils/mono-state.h>
-#include <mono/metadata/w32subset.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/utils/mono-tls-inline.h>
 #include <mono/utils/lifo-semaphore.h>
+#include <mono/utils/w32subset.h>
 
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
@@ -73,7 +73,11 @@
 #endif
 
 #if defined(HOST_WIN32)
+#include <mono/utils/mono-compiler.h>
+MONO_PRAGMA_WARNING_PUSH()
+MONO_PRAGMA_WARNING_DISABLE (4115) // warning C4115: 'IRpcStubBuffer': named type definition in parentheses
 #include <objbase.h>
+MONO_PRAGMA_WARNING_POP()
 #include <sys/timeb.h>
 extern gboolean
 mono_native_thread_join_handle (HANDLE thread_handle, gboolean close_handle);
@@ -2376,7 +2380,6 @@ ves_icall_System_Threading_WaitHandle_Wait_internal (gpointer *handles, gint32 n
 	return map_native_wait_result_to_managed (ret, numhandles);
 }
 
-#if HAVE_API_SUPPORT_WIN32_SIGNAL_OBJECT_AND_WAIT
 gint32
 ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (gpointer toSignal, gpointer toWait, gint32 ms, MonoError *error)
 {
@@ -2397,8 +2400,6 @@ ves_icall_System_Threading_WaitHandle_SignalAndWait_Internal (gpointer toSignal,
 
 	return map_native_wait_result_to_managed (ret, 1);
 }
-
-#endif
 
 gint32 ves_icall_System_Threading_Interlocked_Increment_Int (gint32 *location)
 {

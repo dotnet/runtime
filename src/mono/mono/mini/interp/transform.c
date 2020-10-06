@@ -3393,14 +3393,14 @@ interp_emit_load_const (TransformData *td, gpointer field_addr, int mt)
  *   Emit some implicit conversions which are not part of the .net spec, but are allowed by MS.NET.
  */
 static void
-emit_convert (TransformData *td, int stack_type, MonoType *ftype)
+emit_convert (TransformData *td, int stype, MonoType *ftype)
 {
 	ftype = mini_get_underlying_type (ftype);
 
 	// FIXME: Add more
 	switch (ftype->type) {
 	case MONO_TYPE_I8: {
-		switch (stack_type) {
+		switch (stype) {
 		case STACK_TYPE_I4:
 			interp_add_ins (td, MINT_CONV_I8_I4);
 			break;

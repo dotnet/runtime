@@ -8454,7 +8454,7 @@ mono_async_result_new (MonoDomain *domain, HANDLE handle, MonoObject *state, gpo
 }
 
 static MonoObject*
-mono_message_invoke (MonoThreadInfo* mono_thread_info_current_var,
+mono_message_invoke (MonoThreadInfo* thread_info_current_var,
 		     MonoObject* target, MonoMethodMessage* msg,
 		     MonoObject** exc, MonoArray** out_args, MonoError* error);
 
@@ -8614,7 +8614,7 @@ mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, MonoObject
 
 // FIXME inline in the only caller
 static MonoObject*
-mono_message_invoke (MonoThreadInfo *mono_thread_info_current_var,
+mono_message_invoke (MonoThreadInfo *thread_info_current_var,
 		     MonoObject *target, MonoMethodMessage *msg,
 		     MonoObject **exc, MonoArray **out_args, MonoError *error) 
 {
