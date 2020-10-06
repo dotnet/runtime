@@ -1329,6 +1329,17 @@ private:
     bool IsEnvironmentHeaderEqual(const Environment& prevEnv);
     bool IsEnvironmentContentEqual(const Environment& prevEnv);
 
+    enum class ReadyToRunCompilation
+    {
+        Uninitialized,
+        ReadyToRun,
+        NotReadyToRun
+    };
+
+    ReadyToRunCompilation isReadyToRunCompilation;
+
+    void InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags);
+
     template <typename key, typename value>
     static bool AreLWMHeadersEqual(LightWeightMap<key, value>* prev, LightWeightMap<key, value>* curr);
     static bool IsIntConfigContentEqual(LightWeightMap<Agnostic_ConfigIntInfo, DWORD>* prev,
