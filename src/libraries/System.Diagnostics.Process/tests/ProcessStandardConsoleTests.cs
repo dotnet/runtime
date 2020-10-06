@@ -13,12 +13,6 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestChangesInConsoleEncoding()
         {
-            // These OS variants don't work with setting a default Encoding.
-            if (PlatformDetection.IsNotWindowsNanoServer || PlatformDetection.IsNotWindowsServerCore || PlatformDetection.IsNotWindowsIoTCore)
-            {
-                return;
-            }
-
             const int ConsoleEncoding = 437;
 
             void RunWithExpectedCodePage(int expectedCodePage)
