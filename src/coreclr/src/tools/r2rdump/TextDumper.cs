@@ -462,7 +462,7 @@ namespace R2RDump
             {
                 entries.AddRange(importSection.Entries);
             }
-            entries.Sort((e1, e2) => e1.Signature.CompareTo(e2.Signature));
+            entries.Sort((e1, e2) => e1.Signature.ToString(_options.GetSignatureFormattingOptions()).CompareTo(e2.Signature.ToString(_options.GetSignatureFormattingOptions())));
             foreach (ReadyToRunImportSection.ImportSectionEntry entry in entries)
             {
                 entry.WriteTo(_writer, _options);

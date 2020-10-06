@@ -38,6 +38,7 @@ ep-fake-tests.c	\
 ep-fastserializer-tests.c	\
 ep-file-tests.c	\
 ep-provider-callback-dataqueue-tests.c	\
+ep-rt-tests.c	\
 ep-session-tests.c	\
 ep-setup-tests.c	\
 ep-teardown-tests.c \

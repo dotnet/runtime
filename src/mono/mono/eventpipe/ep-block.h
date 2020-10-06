@@ -297,7 +297,7 @@ struct _EventPipeSequencePointBlock {
 #else
 struct _EventPipeSequencePointBlock_Internal {
 #endif
-	EventPipeEventBlockBase event_block_base;
+	EventPipeBlock block;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_BLOCK_GETTER_SETTER)
@@ -329,7 +329,7 @@ struct _EventPipeStackBlock {
 #else
 struct _EventPipeStackBlock_Internal {
 #endif
-	EventPipeEventBlockBase event_block_base;
+	EventPipeBlock block;
 	uint32_t initial_index;
 	uint32_t count;
 	bool has_initial_index;
@@ -378,4 +378,4 @@ ep_stack_block_clear (EventPipeStackBlock *stack_block)
 }
 
 #endif /* ENABLE_PERFTRACING */
-#endif /** __EVENTPIPE_BLOCK_H__ **/
+#endif /* __EVENTPIPE_BLOCK_H__ */

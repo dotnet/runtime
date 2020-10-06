@@ -2,13 +2,13 @@ trigger: none
 
 pr: none
 
-# schedules:
-# - cron: "0 4 * * *"
-#  displayName: Daily at 8:00 PM (UTC-8:00)
-#  branches:
-#    include:
-#    - master
-#  always: true
+schedules:
+- cron: "0 17 * * 0"
+  displayName: Sun at 9:00 AM (UTC-8:00)
+  branches:
+    include:
+    - master
+  always: true
 
 jobs:
 #
@@ -33,7 +33,7 @@ jobs:
     jobParameters:
       testGroup: outerloop
 
-# TODO: Disable SPMI for P1 tests
+# TODO: Enable SPMI for P1 tests
 # - template: /eng/pipelines/common/platform-matrix.yml
 #   parameters:
 #     jobTemplate: /eng/pipelines/common/templates/runtimes/build-test-job.yml

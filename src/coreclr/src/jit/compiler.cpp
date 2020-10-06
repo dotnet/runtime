@@ -2274,7 +2274,7 @@ void Compiler::compSetProcessor()
         instructionSetFlags.RemoveInstructionSet(InstructionSet_PCLMULQDQ);
     }
 
-    // We need to additionaly check that COMPlus_EnableSSE3_4 is set, as that
+    // We need to additionally check that COMPlus_EnableSSE3_4 is set, as that
     // is a prexisting config flag that controls the SSE3+ ISAs
     if (!JitConfig.EnableSSE3() || !JitConfig.EnableSSE3_4())
     {
@@ -3319,7 +3319,7 @@ const LPCWSTR Compiler::s_compStressModeNames[STRESS_COUNT + 1] = {
 //------------------------------------------------------------------------
 // compStressCompile: determine if a stress mode should be enabled
 //
-// Argumemnts:
+// Arguments:
 //   stressArea - stress mode to possibly enable
 //   weight - percent of time this mode should be turned on
 //     (range 0 to 100); weight 0 effectively disables
