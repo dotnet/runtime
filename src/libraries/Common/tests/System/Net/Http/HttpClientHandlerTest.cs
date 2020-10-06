@@ -2841,18 +2841,6 @@ namespace System.Net.Http.Functional.Tests
                     Task<HttpResponseMessage> getResponseTask = client.GetAsync(uri);
                     Task<HttpRequestData> serverTask = server.AcceptConnectionSendResponseAndCloseAsync();
 
-                    Console.WriteLine("About to WhenAny");
-                    // Hack
-                    Task t = Task.WhenAny(getResponseTask, serverTask);
-                    if (t == getResponseTask)
-                    {
-                        Console.WriteLine("Response task completed");
-                    }
-                    else
-                    {
-                        Console.WriteLine("Server task completed");
-                    }
-
                     await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
                     HttpRequestData receivedRequest = await serverTask;
                     using (HttpResponseMessage response = await getResponseTask)
