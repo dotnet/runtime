@@ -66,6 +66,16 @@ void DECLSPEC_NORETURN noWay()
 }
 
 /*****************************************************************************/
+void DECLSPEC_NORETURN implLimitation()
+{
+#if MEASURE_FATAL
+    fatal_noWay += 1;
+#endif // MEASURE_FATAL
+
+    fatal(CORJIT_IMPLLIMITATION);
+}
+
+/*****************************************************************************/
 void DECLSPEC_NORETURN NOMEM()
 {
 #if MEASURE_FATAL

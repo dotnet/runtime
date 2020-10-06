@@ -12694,6 +12694,7 @@ void ThrowExceptionForJit(HRESULT res)
             break;
 
         case CORJIT_BADCODE:
+        case CORJIT_IMPLLIMITATION:
         default:
             COMPlusThrow(kInvalidProgramException);
             break;
