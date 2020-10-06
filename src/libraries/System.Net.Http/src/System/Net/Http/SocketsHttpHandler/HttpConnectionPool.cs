@@ -100,7 +100,8 @@ namespace System.Net.Http
         public const int DefaultHttpsPort = 443;
 
         [DllImport("msvcrt")] private static extern int printf(string format, string arg);
-        private static void Print(string s) => printf("%s\n", s);
+        //private static void Print(string s) => printf("%s\n", s);
+        private static void Print(string s) { }
 
         /// <summary>Initializes the pool.</summary>
         /// <param name="poolManager">The manager associated with this pool.</param>
@@ -125,7 +126,7 @@ namespace System.Net.Http
             _http2Enabled = _poolManager.Settings._maxHttpVersion >= HttpVersion.Version20;
             _http3Enabled = _poolManager.Settings._maxHttpVersion >= Http3Connection.HttpVersion30 && (_poolManager.Settings._quicImplementationProvider ?? QuicImplementationProviders.Default).IsSupported;
 
-            Trace($"_http3Enabled={_http3Enabled}");
+            Print($"_http3Enabled={_http3Enabled}");
 
             switch (kind)
             {
