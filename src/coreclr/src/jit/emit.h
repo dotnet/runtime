@@ -1694,7 +1694,7 @@ public:
     void emitSetMediumJump(instrDescJmp* id);
 
 public:
-    CORINFO_FIELD_HANDLE emitBlkConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign);
+    CORINFO_FIELD_HANDLE emitBlkConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign);
 
 private:
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);

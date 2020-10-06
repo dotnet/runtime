@@ -5515,7 +5515,7 @@ UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
  *  block.
  */
 
-UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET alignment, var_types dataType)
+UNATIVE_OFFSET emitter::emitDataGenBeg(unsigned size, unsigned alignment, var_types dataType)
 {
     unsigned     secOffs;
     dataSection* secDesc;
@@ -5552,8 +5552,8 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET align
 
         uint8_t zero[MaxAlignment] = {};
 
-        UNATIVE_OFFSET zeroSize  = alignment - (secOffs % alignment);
-        UNATIVE_OFFSET zeroAlign = 4;
+        unsigned zeroSize  = alignment - (secOffs % alignment);
+        unsigned zeroAlign = 4;
 
         emitBlkConst(&zero, zeroSize, zeroAlign);
         secOffs = emitConsDsc.dsdOffs;
@@ -5705,10 +5705,7 @@ void emitter::emitDataGenEnd()
  *
  * Returns constant number as offset into data section.
  */
-UNATIVE_OFFSET emitter::emitDataConst(const void*    cnsAddr,
-                                      UNATIVE_OFFSET cnsSize,
-                                      UNATIVE_OFFSET cnsAlign,
-                                      var_types      dataType)
+UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign, var_types dataType)
 {
     UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign, dataType);
     emitDataGenData(0, cnsAddr, cnsSize);
@@ -5728,7 +5725,7 @@ UNATIVE_OFFSET emitter::emitDataConst(const void*    cnsAddr,
 // Return Value:
 //    A field handle representing the data offset to access the constant.
 //
-CORINFO_FIELD_HANDLE emitter::emitBlkConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign)
+CORINFO_FIELD_HANDLE emitter::emitBlkConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign)
 {
     UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign, TYP_BLK);
     emitDataGenData(0, cnsAddr, cnsSize);
@@ -5775,8 +5772,8 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
     // (produced by eeFindJitDataOffs) which the emitter recognizes as being a reference
     // to constant data, not a real static field.
 
-    UNATIVE_OFFSET cnsSize  = (attr == EA_4BYTE) ? 4 : 8;
-    UNATIVE_OFFSET cnsAlign = cnsSize;
+    unsigned cnsSize  = (attr == EA_4BYTE) ? sizeof(float) : sizeof(double);
+    unsigned cnsAlign = (unsigned)cnsSize;
 
 #ifdef TARGET_XARCH
     if (emitComp->compCodeOpt() == Compiler::SMALL_CODE)
@@ -6004,13 +6001,13 @@ void emitter::emitDispDataSec(dataSecDsc* section)
             switch (data->dsSize)
             {
                 case 2:
-                    printf("dw\t%04Xh\n", *reinterpret_cast<uint16_t*>(&data->dsCont));
+                    printf("dw\t%04Xh", *reinterpret_cast<uint16_t*>(&data->dsCont));
                     break;
                 case 4:
-                    printf("dd\t%08Xh\n", *reinterpret_cast<uint32_t*>(&data->dsCont));
+                    printf("dd\t%08Xh", *reinterpret_cast<uint32_t*>(&data->dsCont));
                     break;
                 case 8:
-                    printf("dq\t%016llXh\n", *reinterpret_cast<uint64_t*>(&data->dsCont));
+                    printf("dq\t%016llXh", *reinterpret_cast<uint64_t*>(&data->dsCont));
                     break;
                 default:
                     printf("db\t");
@@ -6018,8 +6015,20 @@ void emitter::emitDispDataSec(dataSecDsc* section)
                     {
                         printf("%s0%02Xh", i > 0 ? ", " : "", data->dsCont[i]);
                     }
-                    printf("\n");
+                    break;
             }
+            switch (data->dsDataType)
+            {
+                case TYP_FLOAT:
+                    printf("\t\t; %f", (double)*reinterpret_cast<float*>(&data->dsCont));
+                    break;
+                case TYP_DOUBLE:
+                    printf("\t\t; %f", *reinterpret_cast<double*>(&data->dsCont));
+                    break;
+                default:
+                    break;
+            }
+            printf("\n");
         }
     }
 }
