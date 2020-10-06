@@ -994,7 +994,7 @@ namespace Mono.Linker
 			return false;
 		}
 
-		static bool GetWarningSuppressionWriterFileOutputKind (string text, out WarningSuppressionWriter.FileOutputKind fileOutputKind)
+		protected static bool GetWarningSuppressionWriterFileOutputKind (string text, out WarningSuppressionWriter.FileOutputKind fileOutputKind)
 		{
 			switch (text.ToLowerInvariant ()) {
 			case "cs":
