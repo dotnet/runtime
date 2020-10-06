@@ -82,7 +82,7 @@ void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
 /*                   Emit initialized data sections                     */
 /************************************************************************/
 
-UNATIVE_OFFSET emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET alignment);
+UNATIVE_OFFSET emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET alignment, var_types dataType);
 
 UNATIVE_OFFSET emitBBTableDataGenBeg(unsigned numEntries, bool relativeAddr);
 
@@ -92,7 +92,7 @@ void emitDataGenData(unsigned offs, BasicBlock* label);
 
 void emitDataGenEnd();
 
-UNATIVE_OFFSET emitDataConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign);
+UNATIVE_OFFSET emitDataConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign, var_types dataType);
 
 UNATIVE_OFFSET emitDataSize();
 

@@ -5515,7 +5515,7 @@ UNATIVE_OFFSET emitter::emitFindOffset(insGroup* ig, unsigned insNum)
  *  block.
  */
 
-UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET alignment)
+UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET alignment, var_types dataType)
 {
     unsigned     secOffs;
     dataSection* secDesc;
@@ -5555,7 +5555,7 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET align
         UNATIVE_OFFSET zeroSize  = alignment - (secOffs % alignment);
         UNATIVE_OFFSET zeroAlign = 4;
 
-        emitAnyConst(&zero, zeroSize, zeroAlign);
+        emitBlkConst(&zero, zeroSize, zeroAlign);
         secOffs = emitConsDsc.dsdOffs;
     }
 
@@ -5572,6 +5572,8 @@ UNATIVE_OFFSET emitter::emitDataGenBeg(UNATIVE_OFFSET size, UNATIVE_OFFSET align
     secDesc->dsSize = size;
 
     secDesc->dsType = dataSection::data;
+
+    secDesc->dsDataType = dataType;
 
     secDesc->dsNext = nullptr;
 
@@ -5628,6 +5630,8 @@ UNATIVE_OFFSET emitter::emitBBTableDataGenBeg(unsigned numEntries, bool relative
     secDesc->dsSize = emittedSize;
 
     secDesc->dsType = relativeAddr ? dataSection::blockRelative32 : dataSection::blockAbsoluteAddr;
+
+    secDesc->dsDataType = TYP_UNKNOWN;
 
     secDesc->dsNext = nullptr;
 
@@ -5701,9 +5705,12 @@ void emitter::emitDataGenEnd()
  *
  * Returns constant number as offset into data section.
  */
-UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign)
+UNATIVE_OFFSET emitter::emitDataConst(const void*    cnsAddr,
+                                      UNATIVE_OFFSET cnsSize,
+                                      UNATIVE_OFFSET cnsAlign,
+                                      var_types      dataType)
 {
-    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign);
+    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign, dataType);
     emitDataGenData(0, cnsAddr, cnsSize);
     emitDataGenEnd();
 
@@ -5711,7 +5718,7 @@ UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, UNATIVE_OFFSET cnsSiz
 }
 
 //------------------------------------------------------------------------
-// emitAnyConst: Create a data section constant of arbitrary size.
+// emitBlkConst: Create a data section constant of arbitrary size.
 //
 // Arguments:
 //    cnsAddr   - pointer to the data to be placed in the data section
@@ -5721,9 +5728,9 @@ UNATIVE_OFFSET emitter::emitDataConst(const void* cnsAddr, UNATIVE_OFFSET cnsSiz
 // Return Value:
 //    A field handle representing the data offset to access the constant.
 //
-CORINFO_FIELD_HANDLE emitter::emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign)
+CORINFO_FIELD_HANDLE emitter::emitBlkConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign)
 {
-    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign);
+    UNATIVE_OFFSET cnum = emitDataGenBeg(cnsSize, cnsAlign, TYP_BLK);
     emitDataGenData(0, cnsAddr, cnsSize);
     emitDataGenEnd();
 
@@ -5748,17 +5755,20 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
 {
     assert((attr == EA_4BYTE) || (attr == EA_8BYTE));
 
-    void* cnsAddr;
-    float f;
+    void*     cnsAddr;
+    float     f;
+    var_types dataType;
 
     if (attr == EA_4BYTE)
     {
-        f       = forceCastToFloat(constValue);
-        cnsAddr = &f;
+        f        = forceCastToFloat(constValue);
+        cnsAddr  = &f;
+        dataType = TYP_FLOAT;
     }
     else
     {
-        cnsAddr = &constValue;
+        cnsAddr  = &constValue;
+        dataType = TYP_DOUBLE;
     }
 
     // Access to inline data is 'abstracted' by a special type of static member
@@ -5778,7 +5788,7 @@ CORINFO_FIELD_HANDLE emitter::emitFltOrDblConst(double constValue, emitAttr attr
     }
 #endif // TARGET_XARCH
 
-    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign);
+    UNATIVE_OFFSET cnum = emitDataConst(cnsAddr, cnsSize, cnsAlign, dataType);
     return emitComp->eeFindJitDataOffs(cnum);
 }
 

@@ -1694,7 +1694,7 @@ public:
     void emitSetMediumJump(instrDescJmp* id);
 
 public:
-    CORINFO_FIELD_HANDLE emitAnyConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign);
+    CORINFO_FIELD_HANDLE emitBlkConst(const void* cnsAddr, UNATIVE_OFFSET cnsSize, UNATIVE_OFFSET cnsAlign);
 
 private:
     CORINFO_FIELD_HANDLE emitFltOrDblConst(double constValue, emitAttr attr);
@@ -2177,6 +2177,8 @@ public:
         dataSection*   dsNext;
         UNATIVE_OFFSET dsSize;
         sectionType    dsType;
+        var_types      dsDataType;
+
         // variable-sized array used to store the constant data
         // or BasicBlock* array in the block cases.
         BYTE dsCont[0];
