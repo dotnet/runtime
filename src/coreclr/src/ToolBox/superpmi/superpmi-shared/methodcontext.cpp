@@ -47,6 +47,7 @@ MethodContext::MethodContext()
 
     cr    = new CompileResult();
     index = -1;
+    isReadyToRunCompilation = ReadyToRunCompilation::Uninitialized;
 }
 
 MethodContext::~MethodContext()
@@ -1119,6 +1120,8 @@ void MethodContext::recGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes, DW
     //       zero.
     GetJitFlags->Add((DWORD)0, value);
     DEBUG_REC(dmpGetJitFlags((DWORD)0, value));
+    InitReadyToRunFlag(jitFlags);
+
 }
 void MethodContext::dmpGetJitFlags(DWORD key, DD value)
 {
@@ -1132,6 +1135,7 @@ DWORD MethodContext::repGetJitFlags(CORJIT_FLAGS* jitFlags, DWORD sizeInBytes)
     CORJIT_FLAGS* resultFlags = (CORJIT_FLAGS*)GetJitFlags->GetBuffer(value.A);
     memcpy(jitFlags, resultFlags, value.B);
     DEBUG_REP(dmpGetJitFlags((DWORD)0, value));
+    InitReadyToRunFlag(resultFlags);
     return value.B;
 }
 
@@ -3368,8 +3372,13 @@ void MethodContext::recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndi
 
     value.fieldValue = (DWORD)-1;
 
-    // Make an attempt at stashing a copy of the value
-    if (result > (void*)0xffff) // TODO-Cleanup: sometimes there is a field offset?
+    AssertCodeMsg(isReadyToRunCompilation != ReadyToRunCompilation::Uninitialized, EXCEPTIONCODE_MC,
+                  "ReadyToRun flag should be initialized");
+
+    // Make an attempt at stashing a copy of the value, Jit can try to access
+    // a static readonly field value.
+    if (isReadyToRunCompilation == ReadyToRunCompilation::NotReadyToRun &&
+        result > (void*)0xffff)
     {
         DWORDLONG scratch = 0x4242424242424242;
         switch (cit)
@@ -3408,8 +3417,9 @@ void MethodContext::recGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppIndi
                 value.fieldValue =
                     (DWORD)GetFieldAddress->AddBuffer((unsigned char*)result, sizeof(size_t),
                                                       true); // important to not merge two fields into one address
-                GetFieldAddress->AddBuffer((unsigned char*)&scratch, sizeof(DWORD)); // Padding out the data so we can
-                                                                                     // read it back "safetly" on x64
+                GetFieldAddress->AddBuffer((unsigned char*)&scratch, sizeof(DWORD)); // Padding out the data so we
+                                                                                     // can read it back "safetly"
+                                                                                     // on x64
                 break;
             default:
                 break;
@@ -3429,8 +3439,13 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
 
     value = GetFieldAddress->Get((DWORDLONG)field);
 
+    AssertCodeMsg(isReadyToRunCompilation != ReadyToRunCompilation::Uninitialized,
+        EXCEPTIONCODE_MC, "isReadyToRunCompilation should be initialized");
+
     if (ppIndirection != nullptr)
+    {
         *ppIndirection = (void*)value.ppIndirection;
+    }
     void* temp;
 
     if (value.fieldValue != (DWORD)-1)
@@ -3439,7 +3454,9 @@ void* MethodContext::repGetFieldAddress(CORINFO_FIELD_HANDLE field, void** ppInd
         cr->recAddressMap((void*)value.fieldAddress, temp, toCorInfoSize(repGetFieldType(field, nullptr, nullptr)));
     }
     else
+    {
         temp = (void*)value.fieldAddress;
+    }
 
     DEBUG_REP(dmpGetFieldAddress((DWORDLONG)field, value));
     return temp;
@@ -6490,4 +6507,17 @@ bool MethodContext::IsStringContentEqual(LightWeightMap<DWORD, DWORD>* prev, Lig
     {
         return (prev == curr);
     }
+}
+
+void MethodContext::InitReadyToRunFlag(const CORJIT_FLAGS* jitFlags)
+{
+    if (jitFlags->IsSet(CORJIT_FLAGS::CORJIT_FLAG_READYTORUN))
+    {
+        isReadyToRunCompilation = ReadyToRunCompilation::ReadyToRun;
+    }
+    else
+    {
+        isReadyToRunCompilation = ReadyToRunCompilation::NotReadyToRun;
+    }
+
 }
