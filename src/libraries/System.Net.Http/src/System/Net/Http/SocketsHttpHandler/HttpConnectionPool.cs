@@ -818,7 +818,7 @@ namespace System.Net.Http
                 {
                     quicConnection = await ConnectHelper.ConnectQuicAsync(Settings._quicImplementationProvider ?? QuicImplementationProviders.Default, new DnsEndPoint(authority.IdnHost, authority.Port), _sslOptionsHttp3, cancellationToken).ConfigureAwait(false);
                 }
-                catch (Exception e)
+                catch
                 {
                     // Disables HTTP/3 until server announces it can handle it via Alt-Svc.
                     BlocklistAuthority(authority);
