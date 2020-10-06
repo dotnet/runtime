@@ -20,7 +20,7 @@ namespace System.Net.Test.Common
 
         public override Uri Address => new Uri($"https://{_listener.ListenEndPoint}/");
 
-        public Http3LoopbackServer(QuicImplementationProvider quicImplememntationProvider = null, GenericLoopbackOptions options = null)
+        public Http3LoopbackServer(QuicImplementationProvider quicImplementationProvider = null, GenericLoopbackOptions options = null)
         {
             options ??= new GenericLoopbackOptions();
 
@@ -34,7 +34,7 @@ namespace System.Net.Test.Common
                 ClientCertificateRequired = false
             };
 
-            _listener = new QuicListener(quicImplememntationProvider ?? QuicImplementationProviders.Default, new IPEndPoint(options.Address, 0), sslOpts);
+            _listener = new QuicListener(quicImplementationProvider ?? QuicImplementationProviders.Default, new IPEndPoint(options.Address, 0), sslOpts);
             _listener.Start();
         }
 
