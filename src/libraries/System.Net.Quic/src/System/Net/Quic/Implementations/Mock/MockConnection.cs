@@ -176,15 +176,9 @@ namespace System.Net.Quic.Implementations.Mock
             return new MockStream(streamState, true);
         }
 
-        internal override long GetRemoteAvailableUnidirectionalStreamCount()
-        {
-            throw new NotImplementedException();
-        }
+        internal override long GetRemoteAvailableUnidirectionalStreamCount() => long.MaxValue;
 
-        internal override long GetRemoteAvailableBidirectionalStreamCount()
-        {
-            throw new NotImplementedException();
-        }
+        internal override long GetRemoteAvailableBidirectionalStreamCount() => long.MaxValue;
 
         internal override async ValueTask<QuicStreamProvider> AcceptStreamAsync(CancellationToken cancellationToken = default)
         {
