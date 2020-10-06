@@ -14,6 +14,11 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 	[SkipPeVerify ("System.Core.dll")]
 	// Fails with `Runtime critical type System.Reflection.CustomAttributeData not found`
 	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
+#if !NETCOREAPP
+	// .NET Framework System.dll doesn't pass peverify
+	[SkipPeVerify ("System.dll")]
+#endif
+
 	class CanLinkCoreLibrariesWithOnlyKeepUsedAttributes
 	{
 		static void Main ()
