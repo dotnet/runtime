@@ -34,7 +34,7 @@ eventpipe_dirs = eventpipe
 endif
 
 if ENABLE_NETCORE
-SUBDIRS = eglib arch utils sgen zlib $(eventpipe_dirs) metadata mini profiler $(native_unit_test_dirs)
+SUBDIRS = eglib arch utils sgen zlib $(eventpipe_dirs) $(coregc_dirs) metadata mini profiler $(native_unit_test_dirs)
 else
 
 if CROSS_COMPILING

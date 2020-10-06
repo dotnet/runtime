@@ -25,6 +25,7 @@ AC_DEFUN([AC_MONO_OUTPUT], [
 		mono/arch/mips/Makefile
 		mono/arch/riscv/Makefile
 		mono/sgen/Makefile
+		mono/coregc/Makefile
 		mono/mini/Makefile
 		mono/profiler/Makefile
 		mono/eglib/Makefile
