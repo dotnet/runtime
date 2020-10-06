@@ -234,9 +234,9 @@ namespace System.Diagnostics
         /// It will eventually go away, but we should always reserve the ID for this.
         /// </summary>
         [Event(3, Keywords = Keywords.Events)]
-        private void EventJson(string SourceName, string EventName, string ArgmentsJson)
+        private void EventJson(string SourceName, string EventName, string ArgumentsJson)
         {
-            WriteEvent(3, SourceName, EventName, ArgmentsJson);
+            WriteEvent(3, SourceName, EventName, ArgumentsJson);
         }
 
 #if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT

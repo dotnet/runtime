@@ -371,7 +371,7 @@ namespace R2RDump
                 {
                     if (first)
                     {
-                        _writer.WriteLine("Methods with identical disasssbly skipped in common method diff:");
+                        _writer.WriteLine("Methods with identical disassembly skipped in common method diff:");
                         first = false;
                     }
                     _writer.WriteLine(commonMethod.Key);

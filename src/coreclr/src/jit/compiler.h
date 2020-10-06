@@ -6154,12 +6154,12 @@ public:
         int lpHoistedExprCount; // The register count for the non-FP expressions from inside this loop that have been
                                 // hoisted
         int lpLoopVarCount;     // The register count for the non-FP LclVars that are read/written inside this loop
-        int lpVarInOutCount;    // The register count for the non-FP LclVars that are alive inside or accross this loop
+        int lpVarInOutCount;    // The register count for the non-FP LclVars that are alive inside or across this loop
 
         int lpHoistedFPExprCount; // The register count for the FP expressions from inside this loop that have been
                                   // hoisted
         int lpLoopVarFPCount;     // The register count for the FP LclVars that are read/written inside this loop
-        int lpVarInOutFPCount;    // The register count for the FP LclVars that are alive inside or accross this loop
+        int lpVarInOutFPCount;    // The register count for the FP LclVars that are alive inside or across this loop
 
         typedef JitHashTable<CORINFO_FIELD_HANDLE, JitPtrKeyFuncs<struct CORINFO_FIELD_STRUCT_>, bool> FieldHandleSet;
         FieldHandleSet* lpFieldsModified; // This has entries (mappings to "true") for all static field and object
