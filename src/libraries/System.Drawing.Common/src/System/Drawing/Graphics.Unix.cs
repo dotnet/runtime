@@ -58,7 +58,7 @@ namespace System.Drawing
         {
             if (image is Metafile mf)
             {
-                _metafileHolder = mf.AddMetafileHolder(this);
+                _metafileHolder = mf.AddMetafileHolder();
             }
         }
 

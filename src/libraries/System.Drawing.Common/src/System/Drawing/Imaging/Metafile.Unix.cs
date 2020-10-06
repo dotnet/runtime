@@ -76,14 +76,14 @@ namespace System.Drawing.Imaging
         //      Graphics g2 = Graphics.FromImage(mf);  // throws OutOfMemoryException on GDI+ on Win32
         internal sealed class MetafileHolder : IDisposable
         {
-            private bool disposed;
+            private bool _disposed;
             private IntPtr _nativeImage;
 
 
-            internal bool Disposed { get => disposed; }
+            internal bool Disposed { get => _disposed; }
             internal MetafileHolder()
             {
-                disposed = false;
+                _disposed = false;
                 _nativeImage = IntPtr.Zero;
             }
 
@@ -97,11 +97,11 @@ namespace System.Drawing.Imaging
 
             internal void Dispose(bool disposing)
             {
-                if (!disposed)
+                if (!_disposed)
                 {
                     IntPtr nativeImage = _nativeImage;
                     _nativeImage = IntPtr.Zero;
-                    disposed = true;
+                    _disposed = true;
                     if (nativeImage != IntPtr.Zero)
                         Metafile.DisposeNativeInstance(nativeImage);
                  }
@@ -118,7 +118,7 @@ namespace System.Drawing.Imaging
             }
         }
 
-        internal MetafileHolder? AddMetafileHolder(Graphics g)
+        internal MetafileHolder? AddMetafileHolder()
         {
             // If _metafileHolder is not null and hasn't been disposed yet, there's already a graphics instance associated with
             // this metafile, the native code will return an error status.
