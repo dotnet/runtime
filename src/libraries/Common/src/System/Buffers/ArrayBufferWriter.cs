@@ -186,6 +186,7 @@ namespace System.Buffers
                 {
                     // Attempt to grow to MaxArrayLength.
                     uint needed = (uint)(currentLength - FreeCapacity + sizeHint);
+                    Debug.Assert(needed > currentLength);
 
                     if (needed > MaxArrayLength)
                     {
