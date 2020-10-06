@@ -127,9 +127,12 @@ namespace System.Net.Quic.Implementations.Mock
             throw new NotImplementedException();
         }
 
-        internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
+        internal override async ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            for (int i = 0; i < buffers.Length; i++)
+            {
+                await WriteAsync(buffers.Span[i], cancellationToken).ConfigureAwait(false);
+            }
         }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
@@ -180,7 +183,8 @@ namespace System.Net.Quic.Implementations.Mock
         {
             CheckDisposed();
 
-            //_socket!.Shutdown(SocketShutdown.Send);
+            // This seems to mean shutdown send, in particular, not both.
+            WriteStreamBuffer?.EndWrite();
         }
 
         private void CheckDisposed()
