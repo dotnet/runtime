@@ -215,10 +215,9 @@ namespace System.Net.Sockets.Tests
         [PlatformSpecific(TestPlatforms.Linux)]
         public async Task DisposeShouldAbortSyncConnectOnLinux()
         {
-            IPAddress ip = (Dns.GetHostAddresses("microsoft.com"))[0];
-            IPEndPoint endPoint = new IPEndPoint(ip, 12345);
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse("1.1.1.1"), 23);
 
-            using var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
+            var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
             Task connectTask = ConnectAsync(client, endPoint);
 
@@ -318,6 +317,46 @@ namespace System.Net.Sockets.Tests
     public sealed class ConnectTask : Connect<SocketHelperTask>
     {
         public ConnectTask(ITestOutputHelper output) : base(output) {}
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        public async Task DisposeShouldAbortSyncConnectOnLinux()
+        {
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse("1.1.1.1"), 23);
+
+            var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
+
+            Task connectTask = ConnectAsync(client, endPoint);
+
+            // Make 100% sure the connect operation starts
+            await Task.Delay(200);
+
+            Task timeoutTask = Task.Delay(2000);
+            Task disposeTask = Task.Run(() => client.Dispose());
+
+            Task finishedFirst = null;
+            try
+            {
+                finishedFirst = await Task.WhenAny(connectTask, timeoutTask, disposeTask);
+            }
+            catch (SocketException ex)
+            {
+                Assert.True(finishedFirst == connectTask, $"Got {ex.SocketErrorCode} during Dispose: {ex.Message}");
+            }
+
+            if (finishedFirst == timeoutTask)
+            {
+                throw new TimeoutException();
+            }
+            else if (finishedFirst == connectTask)
+            {
+                await disposeTask;
+            }
+            else
+            {
+                await Assert.ThrowsAsync<SocketException>(() => connectTask);
+            }
+        }
     }
 
     public sealed class ConnectEap : Connect<SocketHelperEap>
