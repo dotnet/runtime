@@ -103,7 +103,10 @@ namespace System.Drawing.Imaging
                     _nativeImage = IntPtr.Zero;
                     _disposed = true;
                     if (nativeImage != IntPtr.Zero)
-                        Metafile.DisposeNativeInstance(nativeImage);
+                    {
+                        int status = Gdip.GdipDisposeImage(nativeImage);
+                        Gdip.CheckStatus(status);
+                    }
                  }
             }
 
@@ -126,12 +129,6 @@ namespace System.Drawing.Imaging
                 return null;
             _metafileHolder = new MetafileHolder();
             return _metafileHolder;
-        }
-
-        internal static void DisposeNativeInstance(IntPtr nativeImage)
-        {
-            int status = Gdip.GdipDisposeImage(nativeImage);
-            Gdip.CheckStatus(status);
         }
 
         // Usually called when cloning images that need to have
