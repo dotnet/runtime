@@ -6020,10 +6020,10 @@ void emitter::emitDispDataSec(dataSecDsc* section)
             switch (data->dsDataType)
             {
                 case TYP_FLOAT:
-                    printf("\t\t; %f", (double)*reinterpret_cast<float*>(&data->dsCont));
+                    printf("\t\t; %9.6g", (double)*reinterpret_cast<float*>(&data->dsCont));
                     break;
                 case TYP_DOUBLE:
-                    printf("\t\t; %f", *reinterpret_cast<double*>(&data->dsCont));
+                    printf("\t\t; %12.9g", *reinterpret_cast<double*>(&data->dsCont));
                     break;
                 default:
                     break;
