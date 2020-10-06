@@ -385,27 +385,28 @@ namespace System
         /// <returns>A value less than zero if this is less than <paramref name="other"/>, zero if this is equal to <paramref name="other"/>, or a value greater than zero if this is greater than <paramref name="other"/>.</returns>
         public int CompareTo(Half other)
         {
-            if (this < other)
-            {
-                return -1;
-            }
+            bool thisIsNaN = IsNaN(this);
+            bool otherIsNaN = IsNaN(other);
 
-            if (this > other)
+            if (thisIsNaN || otherIsNaN)
+                return otherIsNaN.CompareTo(thisIsNaN);
+
+            if ((this._value == other._value) || AreZero(this, other))
+                return 0;
+
+            bool thisIsNegative = IsNegative(this);
+
+            if (thisIsNegative != IsNegative(other))
             {
+                if (thisIsNegative && !AreZero(this, other))
+                    return -1;
+
                 return 1;
             }
 
-            if (this == other)
-            {
-                return 0;
-            }
+            if ((this._value < other._value) ^ thisIsNegative)
+                return -1;
 
-            if (IsNaN(this))
-            {
-                return IsNaN(other) ? 0 : -1;
-            }
-
-            Debug.Assert(IsNaN(other));
             return 1;
         }
 
