@@ -4821,11 +4821,15 @@ HRESULT ClrDataAccess::GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA
             DPTR(ManagedObjectComWrapperByIdMap) pMap(TO_TADDR(*ppMap));
 
             CQuickArrayList<CLRDATA_ADDRESS> comWrappers;
-            ManagedObjectComWrapperByIdMap::Iterator iter = pMap->Begin();
-            while (iter != pMap->End())
+            if (pMap != NULL)
             {
-                comWrappers.Push(TO_CDADDR(iter->Value()));
-                ++iter;
+                ManagedObjectComWrapperByIdMap::Iterator iter = pMap->Begin();
+                while (iter != pMap->End())
+                {
+                    comWrappers.Push(TO_CDADDR(iter->Value()));
+                    ++iter;
+                
+                }
             }
 
             if (pNeeded != NULL)
@@ -4933,10 +4937,58 @@ HRESULT ClrDataAccess::GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRES
 
 HRESULT ClrDataAccess::IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappersRCW)
 {
-    // Due to constraints around changing object layouts, the code checked in to release/5.0
-    // did not add the sentinel value to ExternalObjectContext and thus cannot check
-    // if the rcw passed in is a ComWrappers rcw.
+#ifdef FEATURE_COMWRAPPERS
+    if (rcw == 0)
+    {
+        return E_INVALIDARG;
+    }
+
+    SOSDacEnter();
+    
+    if (isComWrappersRCW != NULL)
+    {
+        PTR_ExternalObjectContext pRCW(TO_TADDR(rcw));
+        BOOL stillValid = TRUE;
+        if(pRCW->SyncBlockIndex >= SyncBlockCache::s_pSyncBlockCache->m_SyncTableSize)
+        {
+            stillValid = FALSE;
+        }
+
+        PTR_SyncBlock pSyncBlk = NULL;
+        if (stillValid)
+        {
+            PTR_SyncTableEntry ste = PTR_SyncTableEntry(dac_cast<TADDR>(g_pSyncTable) + (sizeof(SyncTableEntry) * pRCW->SyncBlockIndex));
+            pSyncBlk = ste->m_SyncBlock;
+            if(pSyncBlk == NULL)
+            {
+                stillValid = FALSE;
+            }
+        }
+
+        PTR_InteropSyncBlockInfo pInfo = NULL;
+        if (stillValid)
+        {   
+            pInfo = pSyncBlk->GetInteropInfoNoCreate();
+            if(pInfo == NULL)
+            {
+                stillValid = FALSE;
+            }
+        }
+
+        if (stillValid)
+        {
+            stillValid = TO_TADDR(pInfo->m_externalComObjectContext) == PTR_HOST_TO_TADDR(pRCW);
+        }
+
+        *isComWrappersRCW = stillValid;
+        hr = *isComWrappersRCW ? S_OK : S_FALSE; 
+    }
+
+    SOSDacLeave();
+    return hr;    
+#else // FEATURE_COMWRAPPERS
     return E_NOTIMPL;
+#endif // FEATURE_COMWRAPPERS
 }
 
 HRESULT ClrDataAccess::GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRESS *identity)

@@ -4045,7 +4045,7 @@ struct ExternalObjectContextDACnterface
 {
     PTR_VOID identity;
     INT_PTR _padding1;
-    DWORD _padding2;
+    DWORD SyncBlockIndex;
     INT64 _padding3;
 };
 
