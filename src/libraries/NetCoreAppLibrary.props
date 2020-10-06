@@ -75,6 +75,7 @@
       System.Net.WebSockets.Client;
       System.Numerics.Vectors;
       System.ObjectModel;
+      System.Private.CoreLib;
       System.Private.DataContractSerialization;
       System.Private.Runtime.InteropServices.JavaScript;
       System.Private.Uri;
@@ -148,6 +149,12 @@
       Microsoft.Win32.Registry;
       System.IO.FileSystem.AccessControl;
       System.IO.Pipes.AccessControl;
+      System.Private.CoreLib;
+      System.Private.DataContractSerialization;
+      System.Private.Runtime.InteropServices.JavaScript;
+      System.Private.Uri;
+      System.Private.Xml;
+      System.Private.Xml.Linq;
       System.Security.AccessControl;
       System.Security.Cryptography.Cng;
       System.Security.Cryptography.OpenSsl;
