@@ -1,19 +1,11 @@
 #!/usr/bin/env bash
 
-EXECUTION_DIR=$(dirname $0)
-TEST_NAME=$1
-JS_ENGINE=$2
-JS_ENGINE_ARGS=$3
-TEST_FILTER=$4
+EXECUTION_DIR="$(dirname "$0")"
+TEST_NAME="$1"
+JS_ENGINE="${2:-V8}"
+JS_ENGINE_ARGS="$3"
+TEST_FILTER="${4:--notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing}"
 XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
-
-if [ -z ${2+x} ]; then
-	JS_ENGINE=V8
-fi
-
-if [ -z ${4+x} ]; then
-    TEST_FILTER="-notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing"
-fi
 
 # Find a better way to express this
 if [ "$TEST_NAME" == "System.IO.FileSystem.Tests" ]; then
