@@ -1336,7 +1336,7 @@ namespace Mono.Linker.Dataflow
 								continue;
 							}
 
-							var resolvedType = (TypeNameResolver.ResolveTypeName (resolvedAssembly, typeNameStringValue.Contents))?.Resolve ();
+							var resolvedType = (_context.TypeNameResolver.ResolveTypeName (resolvedAssembly, typeNameStringValue.Contents))?.Resolve ();
 							if (resolvedType == null) {
 								// It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
 								// Note that we did find the assembly, so it's not a linker config problem, it's either intentional, or wrong versions of assemblies

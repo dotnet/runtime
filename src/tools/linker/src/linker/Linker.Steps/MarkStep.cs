@@ -748,7 +748,7 @@ namespace Mono.Linker.Steps
 
 			TypeDefinition td;
 			if (args.Count >= 2 && args[1].Value is string typeName) {
-				td = TypeNameResolver.ResolveTypeName (assembly ?? context.Module.Assembly, typeName)?.Resolve ();
+				td = _context.TypeNameResolver.ResolveTypeName (assembly ?? context.Module.Assembly, typeName)?.Resolve ();
 				if (td == null) {
 					_context.LogWarning (
 						$"Could not resolve dependency type '{typeName}' specified in a `PreserveDependency` attribute", 2004, context.Resolve ());
@@ -1562,10 +1562,10 @@ namespace Mono.Linker.Steps
 					TypeName typeName = TypeParser.ParseTypeName (targetTypeName);
 					if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
 						AssemblyDefinition assembly = _context.GetLoadedAssembly (assemblyQualifiedTypeName.AssemblyName.Name);
-						return TypeNameResolver.ResolveTypeName (assembly, targetTypeName)?.Resolve ();
+						return _context.TypeNameResolver.ResolveTypeName (assembly, targetTypeName)?.Resolve ();
 					}
 
-					return TypeNameResolver.ResolveTypeName (asm, targetTypeName)?.Resolve ();
+					return _context.TypeNameResolver.ResolveTypeName (asm, targetTypeName)?.Resolve ();
 				}
 			}
 

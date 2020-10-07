@@ -28,8 +28,7 @@ namespace Mono.Linker
 			}
 
 			if (parsedTypeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
-				AssemblyDefinition assembly = _context.GetLoadedAssembly (assemblyQualifiedTypeName.AssemblyName.Name);
-				return ResolveTypeName (assembly, assemblyQualifiedTypeName.TypeName);
+				return ResolveTypeName (null, assemblyQualifiedTypeName);
 			}
 
 			foreach (var assemblyDefiniton in _context.GetAssemblies ()) {
@@ -41,19 +40,23 @@ namespace Mono.Linker
 			return null;
 		}
 
-		public static TypeReference ResolveTypeName (AssemblyDefinition assembly, string typeNameString)
+		public TypeReference ResolveTypeName (AssemblyDefinition assembly, string typeNameString)
 		{
 			return ResolveTypeName (assembly, TypeParser.ParseTypeName (typeNameString));
 		}
 
-		static TypeReference ResolveTypeName (AssemblyDefinition assembly, TypeName typeName)
+		TypeReference ResolveTypeName (AssemblyDefinition assembly, TypeName typeName)
 		{
+			if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
+				// In this case we ignore the assembly parameter since the type name has assembly in it
+				var assemblyFromName = _context.GetLoadedAssembly (assemblyQualifiedTypeName.AssemblyName.Name);
+				return ResolveTypeName (assemblyFromName, assemblyQualifiedTypeName.TypeName);
+			}
+
 			if (assembly == null || typeName == null)
 				return null;
 
-			if (typeName is AssemblyQualifiedTypeName assemblyQualifiedTypeName) {
-				return ResolveTypeName (assembly, assemblyQualifiedTypeName.TypeName);
-			} else if (typeName is ConstructedGenericTypeName constructedGenericTypeName) {
+			if (typeName is ConstructedGenericTypeName constructedGenericTypeName) {
 				var genericTypeRef = ResolveTypeName (assembly, constructedGenericTypeName.GenericType);
 				if (genericTypeRef == null)
 					return null;
