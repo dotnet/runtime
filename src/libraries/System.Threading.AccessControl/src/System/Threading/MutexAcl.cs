@@ -68,6 +68,19 @@ namespace System.Threading
             }
         }
 
+        /// <summary>
+        /// Opens a specified named mutex, if it already exists, applying the desired access rights.
+        /// </summary>
+        /// <param name="name">The name of the mutex to be opened. If it's prefixed by "Global", it refers to a machine-wide mutex. If it's prefixed by "Local", or doesn't have a prefix, it refers to a session-wide mutex. Both prefix and name are case-sensitive.</param>
+        /// <param name="rights">The desired access rights to apply to the returned mutex.</param>
+        /// <returns>An existing named mutex.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is an empty string.</exception>
+        /// <exception cref="WaitHandleCannotBeOpenedException">The named mutex does not exist or is invalid.</exception>
+        /// <exception cref="IOException">The path was not found.
+        /// -or-
+        /// A Win32 error occurred.</exception>
+        /// <exception cref="UnauthorizedAccessException">The named mutex exists, but the user does not have the security access required to use it.</exception>
         public static Mutex OpenExisting(string name, MutexRights rights)
         {
             switch (OpenExistingWorker(name, rights, out Mutex? result))
@@ -79,7 +92,7 @@ namespace System.Threading
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
                 case OpenExistingResult.PathNotFound:
-                    throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, name));
+                    throw new IOException(SR.Format(SR.IO_PathNotFound_Path, name));
 
                 case OpenExistingResult.Success:
                 default:
@@ -88,6 +101,17 @@ namespace System.Threading
             }
         }
 
+        /// <summary>
+        /// Tries to open a specified named mutex, if it already exists, applying the desired access rights, and returns a value that indicates whether the operation succeeded.
+        /// </summary>
+        /// <param name="name">The name of the mutex to be opened. If it's prefixed by "Global", it refers to a machine-wide mutex. If it's prefixed by "Local", or doesn't have a prefix, it refers to a session-wide mutex. Both prefix and name are case-sensitive.</param>
+        /// <param name="rights">The desired access rights to apply to the returned mutex.</param>
+        /// <param name="result">When this method returns, contains an object that represents the named mutex if the call succeeded, or <see langword="null" /> if the call failed. This parameter is treated as uninitialized.</param>
+        /// <returns><see langword="true" /> if the named mutex was opened successfully; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null" /></exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is an empty string.</exception>
+        /// <exception cref="IOException">A Win32 error occurred.</exception>
+        /// <exception cref="UnauthorizedAccessException">The named mutex exists, but the user does not have the security access required to use it.</exception>
         public static bool TryOpenExisting(string name, MutexRights rights, out Mutex result) =>
             OpenExistingWorker(name, rights, out result!) == OpenExistingResult.Success;
 
