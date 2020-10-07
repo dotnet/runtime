@@ -340,7 +340,10 @@ namespace System.IO
 
             public void Reset()
             {
-                Debug.Assert(_hasWaiter == 0);
+                if (_hasWaiter != 0)
+                {
+                    throw new InvalidOperationException("Concurrent use is not supported");
+                }
 
                 _waitSource.Reset();
                 Volatile.Write(ref _hasWaiter, 1);
