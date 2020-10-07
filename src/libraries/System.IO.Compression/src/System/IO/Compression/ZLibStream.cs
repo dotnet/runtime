@@ -23,7 +23,7 @@ namespace System.IO.Compression
         /// <summary>Initializes a new instance of the <see cref="ZLibStream"/> class by using the specified stream, compression mode, and whether to leave the <paramref name="stream"/> open.</summary>
         /// <param name="stream">The stream to which compressed data is written or from which decompressed data is read.</param>
         /// <param name="mode">One of the enumeration values that indicates whether to compress or decompress the stream.</param>
-        /// <param name="leaveOpen"><c>true</c> to leave the stream object open after disposing the <see cref="ZLibStream"/> object; otherwise, <c>false</c>.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="ZLibStream"/> object; otherwise, <see langword="false" />.</param>
         public ZLibStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
             _deflateStream = new DeflateStream(stream, mode, leaveOpen, ZLibNative.ZLib_DefaultWindowBits);
@@ -39,7 +39,7 @@ namespace System.IO.Compression
         /// <summary>Initializes a new instance of the <see cref="ZLibStream"/> class by using the specified stream, compression level, and whether to leave the <paramref name="stream"/> open.</summary>
         /// <param name="stream">The stream to which compressed data is written.</param>
         /// <param name="compressionLevel">One of the enumeration values that indicates whether to emphasize speed or compression efficiency when compressing the stream.</param>
-        /// <param name="leaveOpen"><c>true</c> to leave the stream object open after disposing the <see cref="ZLibStream"/> object; otherwise, <c>false</c>.</param>
+        /// <param name="leaveOpen"><see langword="true" /> to leave the stream object open after disposing the <see cref="ZLibStream"/> object; otherwise, <see langword="false" />.</param>
         public ZLibStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen)
         {
             _deflateStream = new DeflateStream(stream, compressionLevel, leaveOpen, ZLibNative.ZLib_DefaultWindowBits);
@@ -87,7 +87,7 @@ namespace System.IO.Compression
         public override void SetLength(long value) => throw new NotSupportedException();
 
         /// <summary>Reads a byte from the stream and advances the position within the stream by one byte, or returns -1 if at the end of the stream.</summary>
-        /// <returns></returns>
+        /// <returns>The unsigned byte cast to an <see cref="int" />, or -1 if at the end of the stream.</returns>
         public override int ReadByte()
         {
             ThrowIfClosed();
