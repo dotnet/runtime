@@ -992,10 +992,11 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             }
         }
 
-        UNATIVE_OFFSET cnsSize  = (simdSize == 12) ? 16 : simdSize;
-        UNATIVE_OFFSET cnsAlign = cnsSize;
+        unsigned  cnsSize  = (simdSize == 12) ? 16 : simdSize;
+        unsigned  cnsAlign = cnsSize;
+        var_types dataType = Compiler::getSIMDTypeForSize(simdSize);
 
-        CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitAnyConst(&vecCns, cnsSize, cnsAlign);
+        CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitDataConst(&vecCns, cnsSize, cnsAlign, dataType);
         GenTree* clsVarAddr      = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
         BlockRange().InsertBefore(node, clsVarAddr);
 

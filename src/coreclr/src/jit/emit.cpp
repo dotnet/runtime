@@ -5896,6 +5896,17 @@ void emitter::emitOutputDataSec(dataSecDsc* sec, BYTE* dst)
                         printf("\n  ");
                     }
                 }
+                switch (dsc->dsDataType)
+                {
+                    case TYP_FLOAT:
+                        printf(" ; float  %9.6g", (double)*reinterpret_cast<float*>(&dsc->dsCont));
+                        break;
+                    case TYP_DOUBLE:
+                        printf(" ; double %12.9g", *reinterpret_cast<double*>(&dsc->dsCont));
+                        break;
+                    default:
+                        break;
+                }
                 printf("\n");
             }
 #endif // DEBUG
@@ -5925,7 +5936,7 @@ void emitter::emitDispDataSec(dataSecDsc* section)
 
     for (dataSection* data = section->dsdList; data != nullptr; data = data->dsNext)
     {
-        const char* labelFormat = "%-7s";
+        const char* labelFormat = "%-7s ";
         char        label[64];
         sprintf_s(label, _countof(label), "RWD%02u", offset);
         printf(labelFormat, label);
