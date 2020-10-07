@@ -168,62 +168,34 @@ namespace System.Net.Mail
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class SmtpClient : System.IDisposable
     {
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public SmtpClient() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public SmtpClient(string? host) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public SmtpClient(string? host, int port) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Security.Cryptography.X509Certificates.X509CertificateCollection ClientCertificates { get { throw null; } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.ICredentialsByHost? Credentials { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.Mail.SmtpDeliveryFormat DeliveryFormat { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.Mail.SmtpDeliveryMethod DeliveryMethod { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool EnableSsl { get { throw null; } set { } }
         [System.Diagnostics.CodeAnalysis.DisallowNullAttribute]
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public string? Host { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public string? PickupDirectoryLocation { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public int Port { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Net.ServicePoint ServicePoint { get { throw null; } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public string? TargetName { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public int Timeout { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public bool UseDefaultCredentials { get { throw null; } set { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public event System.Net.Mail.SendCompletedEventHandler? SendCompleted { add { } remove { } }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Dispose() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         protected virtual void Dispose(bool disposing) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         protected void OnSendCompleted(System.ComponentModel.AsyncCompletedEventArgs e) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Send(System.Net.Mail.MailMessage message) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void Send(string from, string recipients, string? subject, string? body) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void SendAsync(System.Net.Mail.MailMessage message, object? userToken) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void SendAsync(string from, string recipients, string? subject, string? body, object? userToken) { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public void SendAsyncCancel() { }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Threading.Tasks.Task SendMailAsync(System.Net.Mail.MailMessage message) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Threading.Tasks.Task SendMailAsync(string from, string recipients, string? subject, string? body) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Threading.Tasks.Task SendMailAsync(System.Net.Mail.MailMessage message, System.Threading.CancellationToken cancellationToken) { throw null; }
-        [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
         public System.Threading.Tasks.Task SendMailAsync(string from, string recipients, string? subject, string? body, System.Threading.CancellationToken cancellationToken) { throw null; }
     }
     public enum SmtpDeliveryFormat

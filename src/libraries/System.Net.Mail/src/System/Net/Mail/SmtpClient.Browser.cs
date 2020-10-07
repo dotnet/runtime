@@ -30,22 +30,18 @@ namespace System.Net.Mail
     public class SmtpClient : IDisposable
     {
 #pragma warning disable CS0067      // Field is not used
-        [UnsupportedOSPlatform("browser")]
         public event SendCompletedEventHandler? SendCompleted;
 #pragma warning restore CS0067
-        [UnsupportedOSPlatform("browser")]
         public SmtpClient()
         {
             Initialize();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public SmtpClient(string? host)
         {
             Initialize();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public SmtpClient(string? host, int port)
         {
             Initialize();
