@@ -164,6 +164,11 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop("Uses external servers")]
         public async Task UseDefaultCredentials_SetToFalseAndServerNeedsAuth_StatusCodeUnauthorized(bool useProxy)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.UseProxy = useProxy;
             handler.UseDefaultCredentials = false;
@@ -230,6 +235,10 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
 
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
@@ -256,6 +265,11 @@ namespace System.Net.Http.Functional.Tests
         public async Task GetAsync_IPBasedUri_Success(IPAddress address)
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            {
+                return;
+            }
+
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -326,6 +340,11 @@ namespace System.Net.Http.Functional.Tests
             string ipv6Address = "http://" + host;
             bool connectionAccepted = false;
 
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -353,6 +372,11 @@ namespace System.Net.Http.Functional.Tests
         {
             string uri = "http://" + host;
             bool connectionAccepted = false;
+
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
 
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
             {
@@ -388,6 +412,11 @@ namespace System.Net.Http.Functional.Tests
             string expectedAddressUri = $"http://{host}/";
             bool connectionAccepted = false;
 
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
             {
                 using (HttpClientHandler handler = CreateHttpClientHandler())
@@ -414,6 +443,11 @@ namespace System.Net.Http.Functional.Tests
             string requestTarget = $"{Configuration.Http.SecureHost}:443";
             string addressUri = $"https://{requestTarget}/";
             bool connectionAccepted = false;
+
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
 
             await LoopbackServer.CreateClientAndServerAsync(async proxyUri =>
             {
@@ -443,6 +477,11 @@ namespace System.Net.Http.Functional.Tests
             if (IsWinHttpHandler)
             {
                 return; // Skip test since the fix is only in SocketsHttpHandler.
+            }
+
+            if (UseVersion == HttpVersion30)
+            {
+                return;
             }
 
             string addressUri = $"https://{Configuration.Http.SecureHost}/";
@@ -530,6 +569,11 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_ServerNeedsBasicAuthAndSetDefaultCredentials_StatusCodeUnauthorized(Configuration.Http.RemoteServer remoteServer)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Credentials = CredentialCache.DefaultCredentials;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
@@ -546,6 +590,11 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersMemberData))]
         public async Task GetAsync_ServerNeedsAuthAndSetCredential_StatusCodeOK(Configuration.Http.RemoteServer remoteServer)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             HttpClientHandler handler = CreateHttpClientHandler();
             handler.Credentials = _credential;
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer, handler))
@@ -562,6 +611,11 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_ServerNeedsAuthAndNoCredential_StatusCodeUnauthorized()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient(UseVersion.ToString()))
             {
                 Uri uri = Configuration.Http.RemoteHttp11Server.BasicAuthUriForCreds(userName: Username, password: Password);
@@ -611,6 +665,11 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             string name = "X-Cust-Header-NoValue";
             string value = "";
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
@@ -631,6 +690,11 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersHeaderValuesAndUris))]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(Configuration.Http.RemoteServer remoteServer, string name, string value, Uri uri)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             using (HttpClient client = CreateHttpClientForRemoteServer(remoteServer))
             {
                 _output.WriteLine($"name={name}, value={value}");
@@ -649,6 +713,11 @@ namespace System.Net.Http.Functional.Tests
         [Theory, MemberData(nameof(RemoteServersAndHeaderEchoUrisMemberData))]
         public async Task GetAsync_LargeRequestHeader_HeadersAndValuesSent(Configuration.Http.RemoteServer remoteServer, Uri uri)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             // Unfortunately, our remote servers seem to have pretty strict limits (around 16K?)
             // on the total size of the request header.
             // TODO: Figure out how to reconfigure remote endpoints to allow larger request headers,
@@ -720,6 +789,11 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("Content-Length      ")]
         public async Task GetAsync_InvalidHeaderNameValue_ThrowsHttpRequestException(string invalidHeader)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -739,6 +813,11 @@ namespace System.Net.Http.Functional.Tests
             if (IsWinHttpHandler)
             {
                 return; // see https://github.com/dotnet/runtime/issues/30115#issuecomment-508330958
+            }
+
+            if (UseVersion != HttpVersion.Version11)
+            {
+                return;
             }
 
             await LoopbackServer.CreateClientAndServerAsync(async uri =>
@@ -1115,6 +1194,11 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("7\v\f")] // unacceptable whitespace
         public async Task GetAsync_InvalidChunkSize_ThrowsHttpRequestException(string chunkSize)
         {
+            if (UseVersion != HttpVersion.Version11)
+            {
+                return;
+            }
+
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -1141,6 +1225,11 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_InvalidChunkTerminator_ThrowsHttpRequestException()
         {
+            if (UseVersion != HttpVersion.Version11)
+            {
+                return;
+            }
+
             await LoopbackServer.CreateClientAndServerAsync(async url =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -1163,6 +1252,11 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_InfiniteChunkSize_ThrowsHttpRequestException()
         {
+            if (UseVersion != HttpVersion.Version11)
+            {
+                return;
+            }
+
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -1260,6 +1354,11 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_ReadFromSlowStreamingServer_PartialDataReturned()
         {
+            if (UseVersion != HttpVersion.Version11)
+            {
+                return;
+            }
+
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -1551,6 +1650,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (UseVersion == HttpVersion30)
+            {
+                // TODO: Active issue
+                return;
+            }
+
             await LoopbackServerFactory.CreateServerAsync(async (server1, url1) =>
             {
                 await LoopbackServerFactory.CreateServerAsync(async (server2, url2) =>
@@ -1613,6 +1718,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task GetAsync_StatusCodeOutOfRange_ExpectedException(int statusCode)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // TODO: Try to make this test version-agnostic
+                return;
+            }
+
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -1928,6 +2039,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (UseVersion == HttpVersion30)
+            {
+                // TODO: ActiveIssue
+                return;
+            }
+
             const string ExpectedContent = "Hello, expecting and continuing world.";
             var clientCompleted = new TaskCompletionSource<bool>();
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -1970,6 +2087,12 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
+                return;
+            }
+
+            if (UseVersion == HttpVersion30)
+            {
+                // TODO: ActiveIssue
                 return;
             }
 
@@ -2042,6 +2165,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (UseVersion == HttpVersion30)
+            {
+                // TODO: ActiveIssue
+                return;
+            }
+
             var clientFinished = new TaskCompletionSource<bool>();
             const string TestString = "test";
 
@@ -2082,6 +2211,11 @@ namespace System.Net.Http.Functional.Tests
         public async Task SendAsync_MultipleExpected100Responses_ReceivesCorrectResponse()
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
+            {
+                return;
+            }
+
+            if (UseVersion == HttpVersion30)
             {
                 return;
             }
@@ -2134,6 +2268,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (UseVersion == HttpVersion30)
+            {
+                // TODO: ActiveIssue
+                return;
+            }
+
             var clientFinished = new TaskCompletionSource<bool>();
 
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
@@ -2166,6 +2306,12 @@ namespace System.Net.Http.Functional.Tests
         {
             if (IsWinHttpHandler && UseVersion >= HttpVersion20.Value)
             {
+                return;
+            }
+
+            if (UseVersion == HttpVersion30)
+            {
+                // TODO: ActiveIssue
                 return;
             }
 
@@ -2249,6 +2395,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(true)]
         public async Task PostAsync_ThrowFromContentCopy_RequestFails(bool syncFailure)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // TODO: Make this version-indepdendent
+                return;
+            }
+
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
             {
                 Task responseTask = server.AcceptConnectionAsync(async connection =>
@@ -2417,6 +2569,12 @@ namespace System.Net.Http.Functional.Tests
             string method,
             Uri serverUri)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // External servers do not support HTTP3 currently.
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(
@@ -2437,6 +2595,12 @@ namespace System.Net.Http.Functional.Tests
             string method,
             Uri serverUri)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // External servers do not support HTTP3 currently.
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(
@@ -2466,6 +2630,12 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("12345678910", 5)]
         public async Task SendAsync_SendSameRequestMultipleTimesDirectlyOnHandler_Success(string stringContent, int startingPosition)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // External servers do not support HTTP3 currently.
+                return;
+            }
+
             using (var handler = new HttpMessageInvoker(CreateHttpClientHandler()))
             {
                 byte[] byteContent = Encoding.ASCII.GetBytes(stringContent);
@@ -2500,6 +2670,12 @@ namespace System.Net.Http.Functional.Tests
             string method,
             Uri serverUri)
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // External servers do not support HTTP3 currently.
+                return;
+            }
+
             using (HttpClient client = CreateHttpClient())
             {
                 var request = new HttpRequestMessage(
@@ -2542,6 +2718,12 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (UseVersion == HttpVersion30)
+            {
+                // External servers do not support HTTP3 currently.
+                return;
+            }
+
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 0));
             Assert.Equal(new Version(1, 0), receivedRequestVersion);
         }
@@ -2550,6 +2732,12 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task SendAsync_RequestVersion11_ServerReceivesVersion11Request()
         {
+            if (UseVersion == HttpVersion30)
+            {
+                // External servers do not support HTTP3 currently.
+                return;
+            }
+
             Version receivedRequestVersion = await SendRequestAndGetRequestVersionAsync(new Version(1, 1));
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
@@ -2561,6 +2749,12 @@ namespace System.Net.Http.Functional.Tests
             // SocketsHttpHandler treats 0.0 as a bad version, and throws.
             if (!IsWinHttpHandler)
             {
+                return;
+            }
+
+            if (UseVersion == HttpVersion30)
+            {
+                // External servers do not support HTTP3 currently.
                 return;
             }
 
@@ -2578,6 +2772,12 @@ namespace System.Net.Http.Functional.Tests
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync)
             {
+                return;
+            }
+
+            if (UseVersion == HttpVersion30)
+            {
+                // External servers do not support HTTP3 currently.
                 return;
             }
 
@@ -2616,6 +2816,11 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
+            if (UseVersion == HttpVersion30)
+            {
+                return;
+            }
+
             await LoopbackServerFactory.CreateClientAndServerAsync(async uri =>
             {
                 using (HttpClient client = CreateHttpClient())
@@ -2636,6 +2841,12 @@ namespace System.Net.Http.Functional.Tests
             // Sync API supported only up to HTTP/1.1
             if (!TestAsync)
             {
+                return;
+            }
+
+            if (UseVersion == HttpVersion30)
+            {
+                // External servers do not support HTTP3 currently.
                 return;
             }
 

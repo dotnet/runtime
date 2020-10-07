@@ -10,11 +10,9 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic
 {
-    internal sealed class QuicConnection : IDisposable
+    public sealed class QuicConnection : IDisposable
     {
         private readonly QuicConnectionProvider _provider;
-
-        public static bool IsQuicSupported => MsQuicApi.IsQuicSupported;
 
         /// <summary>
         /// Create an outbound QUIC connection.

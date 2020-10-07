@@ -5,9 +5,11 @@ using System.Net.Security;
 
 namespace System.Net.Quic.Implementations
 {
-    internal abstract class QuicImplementationProvider
+    public abstract class QuicImplementationProvider
     {
         internal QuicImplementationProvider() { }
+
+        public abstract bool IsSupported { get; }
 
         internal abstract QuicListenerProvider CreateListener(QuicListenerOptions options);
 

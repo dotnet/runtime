@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic
 {
-    internal sealed class QuicListener : IDisposable
+    public sealed class QuicListener : IDisposable
     {
         private readonly QuicListenerProvider _provider;
 

@@ -3,7 +3,7 @@
 
 namespace System.Net.Quic
 {
-    internal class QuicStreamAbortedException : QuicException
+    public class QuicStreamAbortedException : QuicException
     {
         internal QuicStreamAbortedException(long errorCode)
             : this(SR.Format(SR.net_quic_streamaborted, errorCode), errorCode)
