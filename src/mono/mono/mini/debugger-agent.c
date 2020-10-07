@@ -549,7 +549,7 @@ static AgentConfig agent_config;
  * establishment and the startup of the agent thread is only done in response to
  * an event.
  */
-static gint32 inited;
+static gint32 agent_inited;
 
 #ifndef DISABLE_SOCKET_TRANSPORT
 static int conn_fd;
@@ -1046,7 +1046,7 @@ debugger_agent_init (void)
 static void
 finish_agent_init (gboolean on_startup)
 {
-	if (mono_atomic_cas_i32 (&inited, 1, 0) == 1)
+	if (mono_atomic_cas_i32 (&agent_inited, 1, 0) == 1)
 		return;
 
 	if (agent_config.launch) {
@@ -1088,7 +1088,7 @@ finish_agent_init (gboolean on_startup)
 static void
 mono_debugger_agent_cleanup (void)
 {
-	if (!inited)
+	if (!agent_inited)
 		return;
 
 	stop_debugger_thread ();
@@ -1621,7 +1621,7 @@ transport_handshake (void)
 static void
 stop_debugger_thread (void)
 {
-	if (!inited)
+	if (!agent_inited)
 		return;
 
 	transport_close1 ();
@@ -3858,7 +3858,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 	static int ecount;
 	int nevents;
 
-	if (!inited) {
+	if (!agent_inited) {
 		DEBUG_PRINTF (2, "Debugger agent not initialized yet: dropping %s\n", event_to_string (event));
 		return;
 	}
@@ -5117,7 +5117,7 @@ debugger_agent_unhandled_exception (MonoException *exc)
 	GSList *events;
 	EventInfo ei;
 
-	if (!inited)
+	if (!agent_inited)
 		return;
 
 	memset (&ei, 0, sizeof (ei));
@@ -5163,7 +5163,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 
 	/* Just-In-Time debugging */
 	if (!catch_ctx) {
-		if (agent_config.onuncaught && !inited) {
+		if (agent_config.onuncaught && !agent_inited) {
 			finish_agent_init (FALSE);
 
 			/*
@@ -5174,7 +5174,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 			process_event (EVENT_KIND_EXCEPTION, &ei, 0, throw_ctx, events, SUSPEND_POLICY_ALL);
 			return;
 		}
-	} else if (agent_config.onthrow && !inited) {
+	} else if (agent_config.onthrow && !agent_inited) {
 		GSList *l;
 		gboolean found = FALSE;
 
@@ -5201,7 +5201,7 @@ debugger_agent_handle_exception (MonoException *exc, MonoContext *throw_ctx,
 		}
 	}
 
-	if (!inited)
+	if (!agent_inited)
 		return;
 
 	ji = mini_jit_info_table_find (mono_domain_get (), (char *)MONO_CONTEXT_GET_IP (throw_ctx), NULL);
@@ -5263,7 +5263,7 @@ debugger_agent_begin_exception_filter (MonoException *exc, MonoContext *ctx, Mon
 {
 	DebuggerTlsData *tls;
 
-	if (!inited)
+	if (!agent_inited)
 		return;
 
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);
@@ -5302,7 +5302,7 @@ debugger_agent_end_exception_filter (MonoException *exc, MonoContext *ctx, MonoC
 {
 	DebuggerTlsData *tls;
 
-	if (!inited)
+	if (!agent_inited)
 		return;
 
 	tls = (DebuggerTlsData *)mono_native_tls_get_value (debugger_tls_id);

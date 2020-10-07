@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk" DefaultTargets="BuildApp">
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <TargetArchitecture>wasm</TargetArchitecture>
     <TargetOS>Browser</TargetOS>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.browser-wasm\Release\runtimes\browser-wasm\</MicrosoftNetCoreAppRuntimePackDir>
