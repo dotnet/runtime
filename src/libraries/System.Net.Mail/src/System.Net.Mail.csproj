@@ -46,7 +46,6 @@
     <Compile Include="System\Net\Mail\MailAddressCollection.cs" />
     <Compile Include="System\Net\Mail\MailMessage.cs" />
     <Compile Include="System\Net\Mail\MailPriority.cs" />
-    <Compile Include="System\Net\Mail\MailWriter.cs" />
     <Compile Include="System\Net\Mime\MimeMultiPart.cs" />
     <Compile Include="System\Net\Mime\MimeMultiPartType.cs" />
     <Compile Include="System\Net\Mime\MimeWriter.cs" />
@@ -97,6 +96,7 @@
     <Compile Include="System\Net\Mail\SmtpLoginAuthenticationModule.cs" />
     <Compile Include="System\Net\Mail\SmtpNegotiateAuthenticationModule.cs" />
     <Compile Include="System\Net\Mail\SmtpNtlmAuthenticationModule.cs" />
+    <Compile Include="System\Net\Mail\MailWriter.cs" />
     <Compile Include="System\Net\Mail\NetEventSource.Mail.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
              Link="Common\System\Net\ContextAwareResult.cs" />
