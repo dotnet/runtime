@@ -62,26 +62,21 @@ namespace System.Net.Mail
         private SmtpFailedRecipientException? _failedRecipientException;
         // ports above this limit are invalid
         private const int MaxPortValue = 65535;
-        [UnsupportedOSPlatform("browser")]
-
         public event SendCompletedEventHandler? SendCompleted;
         private bool _useDefaultCredentials;
         private ICredentialsByHost? _customCredentials;
 
-        [UnsupportedOSPlatform("browser")]
         public SmtpClient()
         {
             Initialize();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public SmtpClient(string? host)
         {
             _host = host;
             Initialize();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public SmtpClient(string? host, int port)
         {
             try
