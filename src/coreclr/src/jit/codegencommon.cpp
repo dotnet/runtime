@@ -11785,7 +11785,7 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
                 hasRegs = true;
                 if (varReg != reg)
                 {
-                    inst_RV_RV(ins_Copy(type), varReg, reg, type);
+                    inst_RV_RV(ins_Copy(reg, type), varReg, reg, type);
                 }
                 fieldVarDsc->SetRegNum(varReg);
             }
