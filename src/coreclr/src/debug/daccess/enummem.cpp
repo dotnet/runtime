@@ -20,6 +20,11 @@
 #include "binder.h"
 #include "win32threadpool.h"
 
+#ifdef FEATURE_COMWRAPPERS
+#include <interoplibinterface.h>
+#include <interoplibabi.h>
+#endif // FEATURE_COMWRAPPERS
+
 extern HRESULT GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG64 dacTableAddress);
 
 #if defined(DAC_MEASURE_PERF)
@@ -1424,21 +1429,36 @@ HRESULT ClrDataAccess::DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, C
 
     OBJECTREF managedExceptionObject = NULL;
 
-#ifdef FEATURE_COMINTEROP
-    // dump the managed exception object wrapped in CCW
-    // memory of the CCW object itself is dumped later by DacInstanceManager::DumpAllInstances
-    DacpCCWData ccwData;
-    GetCCWData(ccwPtr, &ccwData);   // this call collects some memory implicitly
-    managedExceptionObject = OBJECTREF(CLRDATA_ADDRESS_TO_TADDR(ccwData.managedObject));
-#endif
 #ifdef FEATURE_COMWRAPPERS
+    OBJECTREF wrappedObjAddress;
+    if (DACTryGetComWrappersObjectFromCCW(ccwPtr, &wrappedObjAddress) == S_OK)
+    {
+        managedExceptionObject = wrappedObjAddress;
+        // Now report the CCW itself
+        ReportMem(TO_TADDR(ccwPtr), sizeof(TADDR));
+        TADDR managedObjectWrapperPtrPtr = ccwPtr & InteropLib::ABI::DispatchThisPtrMask;
+        ReportMem(managedObjectWrapperPtrPtr, sizeof(TADDR));
+
+        // Plus its QI and VTable that we query to determine if it is a ComWrappers CCW
+        TADDR vTableAddress = NULL;
+        TADDR qiAddress = NULL;
+        DACGetComWrappersCCWVTableQIAddress(ccwPtr, &vTableAddress, &qiAddress);
+        ReportMem(vTableAddress, sizeof(TADDR));
+        ReportMem(qiAddress, sizeof(TADDR));
+
+        // And the MOW it points to
+        TADDR mow = DACGetManagedObjectWrapperFromCCW(ccwPtr);
+        ReportMem(mow, sizeof(ManagedObjectWrapperDACInterface));
+    }
+#endif
+#ifdef FEATURE_COMINTEROP
     if (managedExceptionObject == NULL)
     {
-        OBJECTREF wrappedObjAddress;
-        if (DACTryGetComWrappersObjectFromCCW(ccwPtr, &wrappedObjAddress) == S_OK)
-        {
-            managedExceptionObject = wrappedObjAddress;
-        }
+        // dump the managed exception object wrapped in CCW
+        // memory of the CCW object itself is dumped later by DacInstanceManager::DumpAllInstances
+        DacpCCWData ccwData;
+        GetCCWData(ccwPtr, &ccwData);   // this call collects some memory implicitly
+        managedExceptionObject = OBJECTREF(CLRDATA_ADDRESS_TO_TADDR(ccwData.managedObject));
     }
 #endif
     DumpManagedExcepObject(flags, managedExceptionObject);
