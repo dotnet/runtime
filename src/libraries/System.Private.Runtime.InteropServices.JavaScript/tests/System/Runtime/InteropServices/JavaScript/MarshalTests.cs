@@ -322,7 +322,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40112")]
         public static void MarshalTypedArray()
         {
             Runtime.InvokeJS(@"
