@@ -51,7 +51,8 @@ public class WindowAndCursorProps
     [InlineData(-1)]
     public static void WindowWidth_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
-        if (Console.IsOutputRedirected)
+        // Windows7 x86 doesn't throw an IOException when input/output is redirected: https://github.com/dotnet/runtime/issues/43138.
+        if (Console.IsOutputRedirected && (PlatformDetection.IsNotWindows7 || !PlatformDetection.Is32BitProcess))
         {
             Assert.Throws<IOException>(() => Console.WindowWidth = value);
         }
@@ -83,7 +84,8 @@ public class WindowAndCursorProps
     [InlineData(-1)]
     public static void WindowHeight_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
-        if (Console.IsOutputRedirected)
+        // Windows7 x86 doesn't throw an IOException when input/output is redirected: https://github.com/dotnet/runtime/issues/43138.
+        if (Console.IsOutputRedirected && (PlatformDetection.IsNotWindows7 || !PlatformDetection.Is32BitProcess))
         {
             Assert.Throws<IOException>(() => Console.WindowHeight = value);
         }
@@ -171,7 +173,8 @@ public class WindowAndCursorProps
     [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior specific to Windows
     public static void WindowLeftTop_Windows()
     {
-        if (Console.IsOutputRedirected)
+        // Windows7 x86 doesn't throw an IOException when input/output is redirected: https://github.com/dotnet/runtime/issues/43138.
+        if (Console.IsOutputRedirected && (PlatformDetection.IsNotWindows7 || !PlatformDetection.Is32BitProcess))
         {
             Assert.Throws<IOException>(() => Console.WindowLeft);
             Assert.Throws<IOException>(() => Console.WindowTop);
@@ -416,7 +419,8 @@ public class WindowAndCursorProps
     [PlatformSpecific(~TestPlatforms.Browser)]
     public void CursorLeft_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
-        if (PlatformDetection.IsWindows && Console.IsOutputRedirected)
+        // Windows7 x86 doesn't throw an IOException when input/output is redirected: https://github.com/dotnet/runtime/issues/43138.
+        if (PlatformDetection.IsWindows && Console.IsOutputRedirected && (PlatformDetection.IsNotWindows7 || !PlatformDetection.Is32BitProcess))
         {
             Assert.Throws<IOException>(() => Console.CursorLeft = value);
         }
@@ -459,7 +463,8 @@ public class WindowAndCursorProps
     [PlatformSpecific(~TestPlatforms.Browser)]
     public void CursorTop_SetInvalid_ThrowsArgumentOutOfRangeException(int value)
     {
-        if (PlatformDetection.IsWindows & Console.IsOutputRedirected)
+        // Windows7 x86 doesn't throw an IOException when input/output is redirected: https://github.com/dotnet/runtime/issues/43138.
+        if (PlatformDetection.IsWindows && Console.IsOutputRedirected && (PlatformDetection.IsNotWindows7 || !PlatformDetection.Is32BitProcess))
         {
             Assert.Throws<IOException>(() => Console.CursorTop = value);
         }
