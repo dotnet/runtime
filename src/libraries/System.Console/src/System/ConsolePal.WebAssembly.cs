@@ -76,7 +76,7 @@ namespace System
 
     internal static class ConsolePal
     {
-        private static bool s_consoleInitialized;
+        private static volatile bool s_consoleInitialized;
         private static JSObject? s_console;
 
         private static Encoding? s_outputEncoding;
@@ -175,6 +175,7 @@ namespace System
                 s_console = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("console");
                 s_consoleInitialized = true;
             }
+
             s_console?.Invoke("clear");
         }
 
