@@ -1025,7 +1025,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
         // If so, we should have already set howToReturnStruct, too.
         assert(howToReturnStruct != SPK_Unknown);
     }
-    else // We can't replace the struct with a "primitive" type
+    else if (canReturnInRegister) // We can't replace the struct with a "primitive" type
     {
         // See if we can return this struct by value, possibly in multiple registers
         // or if we should return it using a return buffer register
@@ -1095,8 +1095,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
                 // on x86 to match the native calling convention.
                 // So only do it for native calling conventions that aren't
                 // instance methods
-                if (structSize == MAX_RET_MULTIREG_BYTES && callConv != CORINFO_UNMANAGED_CALLCONV_UNKNOWN &&
-                    canReturnInRegister)
+                if (structSize == MAX_RET_MULTIREG_BYTES && callConv != CORINFO_UNMANAGED_CALLCONV_UNKNOWN)
                 {
                     // setup wbPassType and useType indicate that this is return by value in multiple registers
                     howToReturnStruct = SPK_ByValue;

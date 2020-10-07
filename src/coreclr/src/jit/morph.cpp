@@ -2669,9 +2669,18 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     // If/when we change that, the following code needs to be changed to correctly support the (TBD) managed calling
     // convention for x86/SSE.
 
-    // If we have a Fixed Return Buffer argument register then we setup a non-standard argument for it
+    // If we have a Fixed Return Buffer argument register then we setup a non-standard argument for it.
     //
+    // We don't use the fixed return buffer argument if we have the special unmanaged instance call convention.
+    // That convention doesn't use the fixed return buffer register.
+    //
+    CLANG_FORMAT_COMMENT_ANCHOR;
+
+#if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
+    if (hasFixedRetBuffReg() && call->HasRetBufArg() && (call->gtCallMoreFlags & GTF_CALL_M_UNMGD_INST_CALL) == 0)
+#else
     if (hasFixedRetBuffReg() && call->HasRetBufArg())
+#endif
     {
         args = call->gtCallArgs;
         assert(args != nullptr);
