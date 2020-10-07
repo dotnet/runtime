@@ -17,6 +17,10 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestFromTypeOf ();
 			TestFromTypeGetTypeOverConstant ();
 			TestFromStringContantWithAnnotation ();
+			TestFromStringConstantWithGeneric ();
+			TestFromStringConstantWithGenericAndAssemblyQualified ();
+			TestFromStringConstantWithGenericAndAssemblyQualifiedInvalidAssembly ();
+			TestFromStringConstantWithGenericAndAssemblyQualifiedNonExistingAssembly ();
 		}
 
 		[Kept]
@@ -122,6 +126,66 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				DynamicallyAccessedMemberTypes.PublicProperties)]
 			string typeName)
 		{
+		}
+
+		// Issue: https://github.com/mono/linker/issues/1537
+		//[Kept]
+		//[KeptMember (".ctor()")]
+		class FromStringConstantWithGenericInner
+		{
+		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		class FromStringConstantWithGeneric<T>
+		{
+			[Kept]
+			public T GetValue () { return default (T); }
+		}
+
+		[Kept]
+		static void TestFromStringConstantWithGeneric ()
+		{
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGeneric`1[[Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericInner]]");
+		}
+
+		[Kept]
+		[KeptMember (".ctor()")]
+		class FromStringConstantWithGenericAndAssemblyQualified<T>
+		{
+			[Kept]
+			public T GetValue () { return default (T); }
+		}
+
+		[Kept]
+		// This is a workaround for the inability to lazy load assemblies. The type name resolver will not load new assemblies
+		// and since the KeptAttribute is otherwise not referenced by the test anywhere (the test-validation attributes are removed before processing normally)
+		// it would not resolve from name - since its assembly is not loaded.
+		// Adding DynamicDependency solves this problem as it is basically the only attribute which has the ability to load new assemblies.
+		[DynamicDependency (DynamicallyAccessedMemberTypes.None, typeof (KeptAttribute))]
+		static void TestFromStringConstantWithGenericAndAssemblyQualified ()
+		{
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+FromStringConstantWithGenericAndAssemblyQualified`1[[Mono.Linker.Tests.Cases.Expectations.Assertions.KeptAttribute,Mono.Linker.Tests.Cases.Expectations]]");
+		}
+
+		class InvalidAssemblyNameType
+		{
+		}
+
+		[Kept]
+		static void TestFromStringConstantWithGenericAndAssemblyQualifiedInvalidAssembly ()
+		{
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+InvalidAssemblyNameType,Invalid/Assembly/Name");
+		}
+
+		class NonExistingAssemblyType
+		{
+		}
+
+		[Kept]
+		static void TestFromStringConstantWithGenericAndAssemblyQualifiedNonExistingAssembly ()
+		{
+			RequireCombinationOnString ("Mono.Linker.Tests.Cases.DataFlow.ApplyTypeAnnotations+InvalidAssemblyNameType,NonExistingAssembly");
 		}
 	}
 }
