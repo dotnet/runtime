@@ -109,6 +109,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public string MyString { get; set; }
         }
 
+        public class ByteArrayOptions
+        {
+            public byte[] MyByteArray { get; set; }
+        }
+
         [Fact]
         public void CanBindIConfigurationSection()
         {
@@ -810,6 +815,22 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<ValueTypeOptions>();
             Assert.Equal(42, options.MyInt32);
             Assert.Equal("hello world", options.MyString);
+        }
+
+        [Fact]
+        public void CanBindByteArray()
+        {
+            var bytes = new byte[] { 1, 2, 3, 4 };
+            var dic = new Dictionary<string, string>
+            {
+                { "MyByteArray", Convert.ToBase64String(bytes) }
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ByteArrayOptions>();
+            Assert.Equal(bytes, options.MyByteArray);
         }
 
         private interface ISomeInterface
