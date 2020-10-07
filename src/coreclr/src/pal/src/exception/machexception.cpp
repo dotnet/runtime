@@ -1439,20 +1439,28 @@ extern "C" void ActivationHandlerWrapper();
 extern "C" int ActivationHandlerReturnOffset;
 extern "C" unsigned int XmmYmmStateSupport();
 
-#ifdef HOST_ARM64
-bool isHardwareException(uint64_t esr)
+#if defined(HOST_AMD64)
+bool IsHardwareException(x86_exception_state64_t exceptionState)
+{
+    static const int MaxHardwareExceptionVector = 31;
+    return exceptionState.__trapno <= MaxHardwareExceptionVector;
+}
+#elif defined(HOST_ARM64)
+bool IsHardwareException(arm_exception_state64_t exceptionState)
 {
     // Infer exception state from the ESR_EL* register value.
     // Bits 31-26 represent the ESR.EC field
     const int ESR_EC_SHIFT = 26;
     const int ESR_EC_MASK = 0x3f;
-    const int esr_ec = (esr >> ESR_EC_SHIFT) & ESR_EC_MASK;
+    const int esr_ec = (exceptionState.__esr >> ESR_EC_SHIFT) & ESR_EC_MASK;
 
     const int ESR_EC_SVC = 0x15; // Supervisor Call exception from aarch64.
 
     // Assume only supervisor calls from aarch64 are not hardware exceptions
     return (esr_ec != ESR_EC_SVC);
 }
+#else
+#error Unexpected architecture
 #endif
 
 /*++
@@ -1506,17 +1514,8 @@ InjectActivationInternal(CPalThread* pThread)
                                    &count);
         _ASSERT_MSG(MachRet == KERN_SUCCESS, "thread_get_state for *_EXCEPTION_STATE64\n");
 
-#if defined(HOST_AMD64)
         // Inject the activation only if the thread doesn't have a pending hardware exception
-        static const int MaxHardwareExceptionVector = 31;
-        if (ExceptionState.__trapno > MaxHardwareExceptionVector)
-#elif defined(HOST_ARM64)
-        // Inject the activation only if the last ESR.EC was an SVC and therefore the thread doesn't have
-        // a pending hardware exception
-        if (!isHardwareException(ExceptionState.__esr))
-#else
-#error Unexpected architecture
-#endif
+        if (!IsHardwareException(ExceptionState))
         {
             count = threadCount;
             MachRet = thread_get_state(threadPort,
