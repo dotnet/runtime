@@ -449,10 +449,14 @@ static const int32_t GetSearchIteratorFromSortHandleUsingCollator(
         }
 
         UStringSearch* pNull = NULL;
-        if (!pal_atomic_cas_ptr((void* volatile*)&pSortHandle->searchIteratorPerOption[options], *pSearchIterator, pNull))
+        if (!pal_atomic_cas_ptr((void* volatile*)&pSortHandle->searchIteratorPerOption[options], USED_STRING_SEARCH, pNull))
         {
             usearch_close(*pSearchIterator);
             *pSearchIterator = pSortHandle->searchIteratorPerOption[options];
+        }
+        else
+        {
+            return options;
         }
     }
 
