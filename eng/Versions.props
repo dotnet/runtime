@@ -59,11 +59,11 @@
     <MicrosoftDotNetGenFacadesVersion>5.0.0-beta.20474.4</MicrosoftDotNetGenFacadesVersion>
     <MicrosoftDotNetXUnitExtensionsVersion>5.0.0-beta.20474.4</MicrosoftDotNetXUnitExtensionsVersion>
     <MicrosoftDotNetXUnitConsoleRunnerVersion>2.5.1-beta.20474.4</MicrosoftDotNetXUnitConsoleRunnerVersion>
-    <MicrosoftDotNetBuildTasksPackagingVersion>5.0.0-beta.20474.4</MicrosoftDotNetBuildTasksPackagingVersion>
+    <MicrosoftDotNetBuildTasksPackagingVersion>5.0.0-beta.20501.10</MicrosoftDotNetBuildTasksPackagingVersion>
     <MicrosoftDotNetRemoteExecutorVersion>5.0.0-beta.20474.4</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>5.0.0-beta.20474.4</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppVersion>5.0.0-preview.4.20202.18</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreAppVersion>5.0.0-rc.1.20451.14</MicrosoftNETCoreAppVersion>
     <MicrosoftNETCoreDotNetHostVersion>6.0.0-alpha.1.20501.4</MicrosoftNETCoreDotNetHostVersion>
     <MicrosoftNETCoreDotNetHostPolicyVersion>6.0.0-alpha.1.20501.4</MicrosoftNETCoreDotNetHostPolicyVersion>
     <MicrosoftExtensionsDependencyModelVersion>3.1.0</MicrosoftExtensionsDependencyModelVersion>
@@ -94,7 +94,7 @@
     <SystemSecurityCryptographyCngVersion>4.7.0</SystemSecurityCryptographyCngVersion>
     <SystemSecurityCryptographyPkcsVersion>4.7.0</SystemSecurityCryptographyPkcsVersion>
     <SystemSecurityCryptographyOpenSslVersion>4.7.0</SystemSecurityCryptographyOpenSslVersion>
-    <SystemTextJsonVersion>5.0.0-preview.4.20202.18</SystemTextJsonVersion>
+    <SystemTextJsonVersion>5.0.0-rc.1.20451.14</SystemTextJsonVersion>
     <SystemThreadingVersion>4.3.0</SystemThreadingVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>

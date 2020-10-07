@@ -38,9 +38,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>61cde6e8fb9d5c9790867b279deb41783a780cd8</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="5.0.0-beta.20474.4">
+    <Dependency Name="Microsoft.DotNet.Build.Tasks.Packaging" Version="5.0.0-beta.20501.10">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>61cde6e8fb9d5c9790867b279deb41783a780cd8</Sha>
+      <Sha>b6d0e8c2a27c94adc20bd97cf248d6522d20bf08</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.CodeAnalysis" Version="5.0.0-beta.20474.4">
       <Uri>https://github.com/dotnet/arcade</Uri>
@@ -158,9 +158,9 @@
       <Uri>https://github.com/dotnet/llvm-project</Uri>
       <Sha>67ada402f1f9e16199e876a1cab1649debe28eab</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-preview.4.20202.18">
+    <Dependency Name="Microsoft.NETCore.App" Version="5.0.0-rc.1.20451.14">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>0375524a91a47ca4db3ee1be548f74bab7e26e76</Sha>
+      <Sha>38017c3935de95d0335bac04f4901ddfc2718656</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NETCore.DotNetHost" Version="6.0.0-alpha.1.20501.4">
       <Uri>https://github.com/dotnet/runtime</Uri>
@@ -182,9 +182,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>bdfbf0cf85878673a80d7822cc11bde5c9fda30c</Sha>
     </Dependency>
-    <Dependency Name="System.Text.Json" Version="5.0.0-preview.4.20202.18">
+    <Dependency Name="System.Text.Json" Version="5.0.0-rc.1.20451.14">
       <Uri>https://github.com/dotnet/runtime</Uri>
-      <Sha>0375524a91a47ca4db3ee1be548f74bab7e26e76</Sha>
+      <Sha>38017c3935de95d0335bac04f4901ddfc2718656</Sha>
     </Dependency>
     <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="6.0.0-alpha.1.20478.2">
       <Uri>https://github.com/mono/linker</Uri>
