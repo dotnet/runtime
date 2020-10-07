@@ -487,13 +487,17 @@ namespace Mono.Linker.Dataflow
 
 		public override bool HandleCall (MethodBody callingMethodBody, MethodReference calledMethod, Instruction operation, ValueNodeList methodParams, out ValueNode methodReturnValue)
 		{
+			methodReturnValue = null;
+
+			var reflectionProcessed = _markStep.ProcessReflectionDependency (callingMethodBody, operation);
+			if (reflectionProcessed)
+				return false;
+
 			var callingMethodDefinition = callingMethodBody.Method;
 			bool shouldEnableReflectionWarnings = ShouldEnableReflectionPatternReporting (callingMethodDefinition);
 			var reflectionContext = new ReflectionPatternContext (_context, shouldEnableReflectionWarnings, callingMethodDefinition, calledMethod.Resolve (), operation);
 
 			DynamicallyAccessedMemberTypes returnValueDynamicallyAccessedMemberTypes = 0;
-
-			methodReturnValue = null;
 
 			var calledMethodDefinition = calledMethod.Resolve ();
 			if (calledMethodDefinition == null)

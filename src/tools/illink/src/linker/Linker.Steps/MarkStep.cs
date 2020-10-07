@@ -2942,7 +2942,7 @@ namespace Mono.Linker.Steps
 		//
 		// Extension point for reflection logic handling customization
 		//
-		protected virtual bool ProcessReflectionDependency (MethodBody body, Instruction instruction)
+		internal protected virtual bool ProcessReflectionDependency (MethodBody body, Instruction instruction)
 		{
 			return false;
 		}
@@ -2955,21 +2955,6 @@ namespace Mono.Linker.Steps
 			if (requiresReflectionMethodBodyScanner) {
 				var scanner = new ReflectionMethodBodyScanner (_context, this);
 				scanner.ScanAndProcessReturnValue (body);
-			}
-
-			var instructions = body.Instructions;
-
-			//
-			// Starting at 1 because all patterns require at least 1 instruction backward lookup
-			//
-			for (var i = 1; i < instructions.Count; i++) {
-				var instruction = instructions[i];
-
-				if (instruction.OpCode != OpCodes.Call && instruction.OpCode != OpCodes.Callvirt)
-					continue;
-
-				if (ProcessReflectionDependency (body, instruction))
-					continue;
 			}
 		}
 
