@@ -454,7 +454,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40112")]
         public static void MarshalTypedArrayByte()
         {
             Runtime.InvokeJS(@"
@@ -462,7 +461,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 App.call_test_method (""SetTypedArrayByte"", [ obj ]);
                 App.call_test_method (""GetTypedArrayByte"", [ obj ]);
             ");
-            Assert.Equal(11, HelperMarshal._taSByte.Length);
+            Assert.Equal(17, HelperMarshal._taByte.Length);
             Assert.Equal(104, HelperMarshal._taByte[0]);
             Assert.Equal(115, HelperMarshal._taByte[HelperMarshal._taByte.Length - 1]);
             Assert.Equal("hic sunt dracones", System.Text.Encoding.Default.GetString(HelperMarshal._taByte));
@@ -558,7 +557,6 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/40112")]
         public static void TestFunctionApply()
         {
             HelperMarshal._minValue = 0;
