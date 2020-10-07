@@ -1215,7 +1215,7 @@ void emitter::emitDispInsOffs(unsigned offs, bool doffs, BYTE* code)
 {
     if (emitComp->opts.disAddr)
     {
-        printf("[" FMT_ADDR "] ", DBG_ADDR(code));
+        printf(FMT_ADDR, DBG_ADDR(code));
     }
 
     if (doffs)
