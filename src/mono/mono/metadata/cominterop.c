@@ -45,8 +45,11 @@
 #include <errno.h>
 #include <mono/utils/w32api.h>
 #if defined (HOST_WIN32)
+MONO_PRAGMA_WARNING_PUSH()
+MONO_PRAGMA_WARNING_DISABLE (4115) // warning C4115: 'IRpcStubBuffer': named type definition in parentheses
 #include <oleauto.h>
-#include "mono/metadata/cominterop-win32-internals.h"
+MONO_PRAGMA_WARNING_POP()
+#include <mono/utils/w32subset.h>
 #endif
 #include "icall-decl.h"
 #include "icall-signatures.h"
@@ -3182,38 +3185,48 @@ mono_bstr_set_length (gunichar2 *bstr, int slen)
 	*((guint32 *)bstr - 1) = slen * sizeof (gunichar2);
 }
 
+static mono_bstr
+default_ptr_to_bstr (const gunichar2* ptr, int slen)
+{
+	// In Mono, historically BSTR was allocated with a guaranteed size prefix of 4 bytes regardless of platform.
+	// Presumably this is due to the BStr documentation page, which indicates that behavior and then directs you to call
+	// SysAllocString on Windows to handle the allocation for you. Unfortunately, this is not actually how it works:
+	// The allocation pre-string is pointer-sized, and then only 4 bytes are used for the length regardless. Additionally,
+	// the total length is also aligned to a 16-byte boundary. This preserves the old behavior on legacy and fixes it for
+	// netcore moving forward.
+#ifdef ENABLE_NETCORE
+	mono_bstr const s = (mono_bstr)mono_bstr_alloc ((slen + 1) * sizeof (gunichar2));
+	if (s == NULL)
+		return NULL;
+#else
+	/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
+	guint32 * const ret = (guint32 *)g_malloc ((slen + 1) * sizeof (gunichar2) + sizeof (guint32));
+	if (ret == NULL)
+		return NULL;
+	mono_bstr const s = (mono_bstr)(ret + 1);
+#endif
+	mono_bstr_set_length (s, slen);
+	if (ptr)
+		memcpy (s, ptr, slen * sizeof (gunichar2));
+	s [slen] = 0;
+	return s;
+}
+
 /* PTR can be NULL */
 mono_bstr
 mono_ptr_to_bstr (const gunichar2* ptr, int slen)
 {
 #ifdef HOST_WIN32
+#if HAVE_API_SUPPORT_WIN32_BSTR
 	return SysAllocStringLen (ptr, slen);
+#else
+	return default_ptr_to_bstr (ptr, slen);
+#endif
 #else
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT) {
 #endif
-		// In Mono, historically BSTR was allocated with a guaranteed size prefix of 4 bytes regardless of platform.
-		// Presumably this is due to the BStr documentation page, which indicates that behavior and then directs you to call
-		// SysAllocString on Windows to handle the allocation for you. Unfortunately, this is not actually how it works:
-		// The allocation pre-string is pointer-sized, and then only 4 bytes are used for the length regardless. Additionally,
-		// the total length is also aligned to a 16-byte boundary. This preserves the old behavior on legacy and fixes it for
-		// netcore moving forward.
-#ifdef ENABLE_NETCORE
-		mono_bstr const s = (mono_bstr)mono_bstr_alloc ((slen + 1) * sizeof (gunichar2));
-		if (s == NULL)
-			return NULL;
-#else
-		/* allocate len + 1 utf16 characters plus 4 byte integer for length*/
-		guint32 * const ret = (guint32 *)g_malloc ((slen + 1) * sizeof (gunichar2) + sizeof (guint32));
-		if (ret == NULL)
-			return NULL;
-		mono_bstr const s = (mono_bstr)(ret + 1);
-#endif
-		mono_bstr_set_length (s, slen);
-		if (ptr)
-			memcpy (s, ptr, slen * sizeof (gunichar2));
-		s [slen] = 0;
-		return s;
+		return default_ptr_to_bstr (ptr, slen);
 #ifndef DISABLE_COM
 	}
 	else if (com_provider == MONO_COM_MS && init_com_provider_ms ()) {
@@ -3250,7 +3263,11 @@ mono_string_from_bstr_checked (mono_bstr_const bstr, MonoError *error)
 	if (!bstr)
 		return NULL_HANDLE_STRING;
 #ifdef HOST_WIN32
+#if HAVE_API_SUPPORT_WIN32_BSTR
 	return mono_string_new_utf16_handle (mono_domain_get (), bstr, SysStringLen ((BSTR)bstr), error);
+#else
+	return mono_string_new_utf16_handle (mono_domain_get (), bstr, *((guint32 *)bstr - 1) / sizeof (gunichar2), error);
+#endif /* HAVE_API_SUPPORT_WIN32_BSTR */
 #else
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT)
@@ -3294,7 +3311,11 @@ mono_free_bstr (/*mono_bstr_const*/gpointer bstr)
 	if (!bstr)
 		return;
 #ifdef HOST_WIN32
+#if HAVE_API_SUPPORT_WIN32_BSTR
 	SysFreeString ((BSTR)bstr);
+#else
+	g_free (((char *)bstr) - 4);
+#endif /* HAVE_API_SUPPORT_WIN32_BSTR */
 #else
 #ifndef DISABLE_COM
 	if (com_provider == MONO_COM_DEFAULT) {
@@ -3704,13 +3725,21 @@ mono_cominterop_emit_marshal_safearray (EmitMarshalContext *m, int argnum, MonoT
 }
 
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static guint32
 mono_marshal_win_safearray_get_dim (gpointer safearray)
 {
 	return SafeArrayGetDim ((SAFEARRAY*)safearray);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static guint32
+mono_marshal_win_safearray_get_dim (gpointer safearray)
+{
+	g_unsupported_api ("SafeArrayGetDim");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return MONO_E_NOTIMPL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 static guint32
 mono_marshal_safearray_get_dim (gpointer safearray)
@@ -3734,13 +3763,21 @@ mono_marshal_safearray_get_dim (gpointer safearray)
 #endif /* HOST_WIN32 */
 
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static int
 mono_marshal_win_safe_array_get_lbound (gpointer psa, guint nDim, glong* plLbound)
 {
 	return SafeArrayGetLBound ((SAFEARRAY*)psa, nDim, plLbound);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static int
+mono_marshal_win_safe_array_get_lbound (gpointer psa, guint nDim, glong* plLbound)
+{
+	g_unsupported_api ("SafeArrayGetLBound");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return MONO_E_NOTIMPL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 static int
 mono_marshal_safe_array_get_lbound (gpointer psa, guint nDim, glong* plLbound)
@@ -3764,13 +3801,21 @@ mono_marshal_safe_array_get_lbound (gpointer psa, guint nDim, glong* plLbound)
 #endif /* HOST_WIN32 */
 
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static int
 mono_marshal_win_safe_array_get_ubound (gpointer psa, guint nDim, glong* plUbound)
 {
 	return SafeArrayGetUBound ((SAFEARRAY*)psa, nDim, plUbound);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static int
+mono_marshal_win_safe_array_get_ubound (gpointer psa, guint nDim, glong* plUbound)
+{
+	g_unsupported_api ("SafeArrayGetUBound");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return MONO_E_NOTIMPL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 static int
 mono_marshal_safe_array_get_ubound (gpointer psa, guint nDim, glong* plUbound)
@@ -3873,13 +3918,24 @@ mono_marshal_safearray_begin (gpointer safearray, MonoArray **result, gpointer *
 
 /* This is an icall */
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static int
 mono_marshal_win_safearray_get_value (gpointer safearray, gpointer indices, gpointer *result)
 {
 	return SafeArrayPtrOfIndex ((SAFEARRAY*)safearray, (LONG*)indices, result);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static int
+mono_marshal_win_safearray_get_value (gpointer safearray, gpointer indices, gpointer *result)
+{
+	ERROR_DECL (error);
+	g_unsupported_api ("SafeArrayPtrOfIndex");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "SafeArrayPtrOfIndex");
+	mono_error_set_pending_exception (error);
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return MONO_E_NOTIMPL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 static gpointer
 mono_marshal_safearray_get_value (gpointer safearray, gpointer indices)
@@ -3961,14 +4017,22 @@ gboolean mono_marshal_safearray_next (gpointer safearray, gpointer indices)
 }
 
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static void
 mono_marshal_win_safearray_end (gpointer safearray, gpointer indices)
 {
 	g_free(indices);
 	SafeArrayDestroy ((SAFEARRAY*)safearray);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static void
+mono_marshal_win_safearray_end (gpointer safearray, gpointer indices)
+{
+	g_free(indices);
+	g_unsupported_api ("SafeArrayDestroy");
+	SetLastError (ERROR_NOT_SUPPORTED);
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 static void
 mono_marshal_safearray_end (gpointer safearray, gpointer indices)
@@ -3991,14 +4055,23 @@ mono_marshal_safearray_end (gpointer safearray, gpointer indices)
 #endif /* HOST_WIN32 */
 
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static gboolean
 mono_marshal_win_safearray_create_internal (UINT cDims, SAFEARRAYBOUND *rgsabound, gpointer *newsafearray)
 {
 	*newsafearray = SafeArrayCreate (VT_VARIANT, cDims, rgsabound);
 	return TRUE;
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static gboolean
+mono_marshal_win_safearray_create_internal (UINT cDims, SAFEARRAYBOUND *rgsabound, gpointer *newsafearray)
+{
+	g_unsupported_api ("SafeArrayCreate");
+	SetLastError (ERROR_NOT_SUPPORTED);
+	*newsafearray = NULL;
+	return FALSE;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 static gboolean
 mono_marshal_safearray_create_internal (UINT cDims, SAFEARRAYBOUND *rgsabound, gpointer *newsafearray)
@@ -4054,13 +4127,24 @@ mono_marshal_safearray_create (MonoArray *input, gpointer *newsafearray, gpointe
 
 /* This is an icall */
 #ifdef HOST_WIN32
-#if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT)
+#if HAVE_API_SUPPORT_WIN32_SAFE_ARRAY
 static int
 mono_marshal_win_safearray_set_value (gpointer safearray, gpointer indices, gpointer value)
 {
 	return SafeArrayPutElement ((SAFEARRAY*)safearray, (LONG*)indices, value);
 }
-#endif /* G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT | HAVE_UWP_WINAPI_SUPPORT) */
+#elif !HAVE_EXTERN_DEFINED_WIN32_SAFE_ARRAY
+static int
+mono_marshal_win_safearray_set_value (gpointer safearray, gpointer indices, gpointer value)
+{
+	ERROR_DECL (error);
+	g_unsupported_api ("SafeArrayPutElement");
+	mono_error_set_not_supported (error, G_UNSUPPORTED_API, "SafeArrayPutElement");
+	mono_error_set_pending_exception (error);
+	SetLastError (ERROR_NOT_SUPPORTED);
+	return MONO_E_NOTIMPL;
+}
+#endif /* HAVE_API_SUPPORT_WIN32_SAFE_ARRAY */
 
 #endif /* HOST_WIN32 */
 
