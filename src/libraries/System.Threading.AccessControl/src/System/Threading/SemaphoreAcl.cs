@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
@@ -61,42 +63,89 @@ namespace System.Threading
                     (uint)SemaphoreRights.FullControl // Equivalent to SEMAPHORE_ALL_ACCESS
                 );
 
-                ValidateHandle(handle, name, out createdNew);
+                int errorCode = Marshal.GetLastWin32Error();
 
-                Semaphore semaphore = new Semaphore(initialCount, maximumCount);
-                SafeWaitHandle old = semaphore.SafeWaitHandle;
-                semaphore.SafeWaitHandle = handle;
-                old.Dispose();
+                if (handle.IsInvalid)
+                {
+                    if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
+                    {
+                        throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
+                    }
 
-                return semaphore;
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
+                }
+
+                createdNew = (errorCode != Interop.Errors.ERROR_ALREADY_EXISTS);
+
+                return CreateAndReplaceHandle(handle);
             }
         }
 
         public static Semaphore OpenExisting(string name, SemaphoreRights rights)
         {
-            throw null;
-        }
-
-        public static bool TryOpenExisting(string name, SemaphoreRights rights, out Semaphore result)
-        {
-            throw null;
-        }
-
-        private static void ValidateHandle(SafeWaitHandle handle, string? name, out bool createdNew)
-        {
-            int errorCode = Marshal.GetLastWin32Error();
-
-            if (handle.IsInvalid)
+            switch (OpenExistingWorker(name, rights, out Semaphore? result))
             {
-                if (!string.IsNullOrEmpty(name) && errorCode == Interop.Errors.ERROR_INVALID_HANDLE)
-                {
-                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
-                }
+                case OpenExistingResult.NameNotFound:
+                    throw new WaitHandleCannotBeOpenedException();
 
-                throw Win32Marshal.GetExceptionForLastWin32Error();
+                case OpenExistingResult.NameInvalid:
+                    throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
+
+                case OpenExistingResult.PathNotFound:
+                    throw new IOException(SR.Format(SR.IO_PathNotFound_Path, name));
+
+                case OpenExistingResult.Success:
+                default:
+                    Debug.Assert(result != null, "result should be non-null on success");
+                    return result;
+            }
+        }
+
+        public static bool TryOpenExisting(string name, SemaphoreRights rights, out Semaphore result) =>
+            OpenExistingWorker(name, rights, out result!) == OpenExistingResult.Success;
+
+        private static OpenExistingResult OpenExistingWorker(string name, SemaphoreRights rights, out Semaphore? result)
+        {
+            if (name == null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (name.Length == 0)
+            {
+                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
             }
 
-            createdNew = errorCode != Interop.Errors.ERROR_ALREADY_EXISTS;
+            result = null;
+            SafeWaitHandle handle = Interop.Kernel32.OpenSemaphore((int)rights, false, name);
+
+            int errorCode = Marshal.GetLastWin32Error();
+            if (handle.IsInvalid)
+            {
+                return errorCode switch
+                {
+                    Interop.Errors.ERROR_FILE_NOT_FOUND or Interop.Errors.ERROR_INVALID_NAME => OpenExistingResult.NameNotFound,
+                    Interop.Errors.ERROR_PATH_NOT_FOUND => OpenExistingResult.PathNotFound,
+                    Interop.Errors.ERROR_INVALID_HANDLE => OpenExistingResult.NameInvalid,
+                    _ => throw Win32Marshal.GetExceptionForLastWin32Error()
+                };
+            }
+
+            result = CreateAndReplaceHandle(handle);
+            return OpenExistingResult.Success;
+        }
+
+        private static Semaphore CreateAndReplaceHandle(SafeWaitHandle replacementHandle)
+        {
+            // The values of initialCount and maximumCount should not matter since we are replacing the
+            // handle with one from an existing Semaphore, and disposing the old one
+            // We should only make sure that they are valid values
+            Semaphore semaphore = new Semaphore(1, 2);
+
+            SafeWaitHandle old = semaphore.SafeWaitHandle;
+            semaphore.SafeWaitHandle = replacementHandle;
+            old.Dispose();
+
+            return semaphore;
         }
     }
 }
