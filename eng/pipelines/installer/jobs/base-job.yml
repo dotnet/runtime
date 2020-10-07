@@ -10,6 +10,8 @@ parameters:
   container: ''
   buildSteps: []
   dependsOn: []
+  dependsOnGlobalBuild: false
+  globalBuildSuffix: ''
   variables: []
   name: ''
   displayName: ''
@@ -332,26 +334,38 @@ jobs:
   dependsOn:
   - checkout
   - ${{ parameters.dependsOn }}
-  - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
-    - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
-        parameters.runtimeFlavor,
-        parameters.runtimeVariant,
-        parameters.osGroup,
-        parameters.osSubgroup,
-        parameters.archType,
-        parameters.liveRuntimeBuildConfig) }}
-  - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
-    - libraries_build_${{ format('{0}{1}_{2}_{3}',
-        parameters.osGroup,
-        parameters.osSubgroup,
-        parameters.archType,
-        parameters.liveLibrariesBuildConfig) }}
-  - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
-    - libraries_build_allconfigurations_Windows_NT_x64_Release
-  - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
-    - ${{ each platform in parameters.platforms }}:
-      - ${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_product_build_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}
-      - libraries_build_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
+  - ${{ if eq(parameters.dependsOnGlobalBuild, false) }}:
+    - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+        - ${{ format('{0}_{1}_product_build_{2}{3}_{4}_{5}',
+            parameters.runtimeFlavor,
+            parameters.runtimeVariant,
+            parameters.osGroup,
+            parameters.osSubgroup,
+            parameters.archType,
+            parameters.liveRuntimeBuildConfig) }}
+    - ${{ if ne(parameters.liveLibrariesBuildConfig, '') }}:
+      - libraries_build_${{ format('{0}{1}_{2}_{3}',
+          parameters.osGroup,
+          parameters.osSubgroup,
+          parameters.archType,
+          parameters.liveLibrariesBuildConfig) }}
+    - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
+      - libraries_build_allconfigurations_Windows_NT_x64_Release
+    - ${{ if eq(parameters.buildFullPlatformManifest, true) }}:
+      - ${{ each platform in parameters.platforms }}:
+        - ${{ parameters.runtimeFlavor }}_${{ parameters.runtimeVariant }}_product_build_${{ platform }}_${{ parameters.liveRuntimeBuildConfig }}
+        - libraries_build_${{ platform }}_${{ parameters.liveLibrariesBuildConfig }}
+
+  - ${{ if eq(parameters.dependsOnGlobalBuild, true) }}:
+    - ${{ if ne(parameters.liveRuntimeBuildConfig, '') }}:
+        - ${{ format('build_{0}{1}_{2}_{3}_{4}',
+            parameters.osGroup,
+            parameters.osSubgroup,
+            parameters.archType,
+            parameters.liveRuntimeBuildConfig,
+            parameters.globalBuildSuffix) }}
+    - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
+      - build_Windows_NT_x64_${{ parameters.liveLibrariesBuildConfig }}_All_Configurations
 
   steps:
 
