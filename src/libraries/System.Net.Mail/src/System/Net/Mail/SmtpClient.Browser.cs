@@ -52,62 +52,53 @@ namespace System.Net.Mail
             throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public string? Host
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public int Port
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public bool UseDefaultCredentials
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public ICredentialsByHost? Credentials
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public int Timeout
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public ServicePoint ServicePoint
         {
             get => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public SmtpDeliveryMethod DeliveryMethod
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public SmtpDeliveryFormat DeliveryFormat
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         public string? PickupDirectoryLocation
         {
             get => throw new PlatformNotSupportedException();
@@ -117,7 +108,6 @@ namespace System.Net.Mail
         /// <summary>
         ///    <para>Set to true if we need SSL</para>
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         public bool EnableSsl
         {
             get => throw new PlatformNotSupportedException();
@@ -127,58 +117,43 @@ namespace System.Net.Mail
         /// <summary>
         /// Certificates used by the client for establishing an SSL connection with the server.
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         public X509CertificateCollection ClientCertificates => throw new PlatformNotSupportedException();
 
-        [UnsupportedOSPlatform("browser")]
         public string? TargetName
         {
             get => throw new PlatformNotSupportedException();
             set => throw new PlatformNotSupportedException();
         }
 
-        [UnsupportedOSPlatform("browser")]
         private bool ServerSupportsEai => throw new PlatformNotSupportedException();
 
-        [UnsupportedOSPlatform("browser")]
         public void Send(string from, string recipients, string? subject, string? body) => throw new PlatformNotSupportedException();
 
-        [UnsupportedOSPlatform("browser")]
         public void Send(MailMessage message) => throw new PlatformNotSupportedException();
 
-        [UnsupportedOSPlatform("browser")]
         public void SendAsync(string from, string recipients, string? subject, string? body, object? userToken) => throw new PlatformNotSupportedException();
 
-        [UnsupportedOSPlatform("browser")]
         public void SendAsync(MailMessage message, object? userToken) => throw new PlatformNotSupportedException();
 
-        [UnsupportedOSPlatform("browser")]
         public void SendAsyncCancel()  => throw new PlatformNotSupportedException();
 
         //************* Task-based async public methods *************************
-        [UnsupportedOSPlatform("browser")]
         public Task SendMailAsync(string from, string recipients, string? subject, string? body) => throw new PlatformNotSupportedException();
 
-        [UnsupportedOSPlatform("browser")]
         public Task SendMailAsync(MailMessage message) => throw new PlatformNotSupportedException();
 
-        [UnsupportedOSPlatform("browser")]
         public Task SendMailAsync(string from, string recipients, string? subject, string? body, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
 
-        [UnsupportedOSPlatform("browser")]
         public Task SendMailAsync(MailMessage message, CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
 
-        [UnsupportedOSPlatform("browser")]
         protected void OnSendCompleted(AsyncCompletedEventArgs e) => throw new PlatformNotSupportedException();
 
-        [UnsupportedOSPlatform("browser")]
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        [UnsupportedOSPlatform("browser")]
         protected virtual void Dispose(bool disposing)
         { }
     }

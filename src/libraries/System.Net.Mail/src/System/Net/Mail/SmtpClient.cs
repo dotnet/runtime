@@ -155,7 +155,6 @@ namespace System.Net.Mail
         }
 
         [DisallowNull]
-        [UnsupportedOSPlatform("browser")]
         public string? Host
         {
             get
@@ -189,7 +188,6 @@ namespace System.Net.Mail
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public int Port
         {
             get
@@ -216,7 +214,6 @@ namespace System.Net.Mail
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public bool UseDefaultCredentials
         {
             get
@@ -235,7 +232,6 @@ namespace System.Net.Mail
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public ICredentialsByHost? Credentials
         {
             get
@@ -259,7 +255,6 @@ namespace System.Net.Mail
             _transport.Credentials = _useDefaultCredentials ? CredentialCache.DefaultNetworkCredentials : _customCredentials;
         }
 
-        [UnsupportedOSPlatform("browser")]
         public int Timeout
         {
             get
@@ -282,7 +277,6 @@ namespace System.Net.Mail
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public ServicePoint ServicePoint
         {
             get
@@ -299,7 +293,6 @@ namespace System.Net.Mail
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public SmtpDeliveryMethod DeliveryMethod
         {
             get
@@ -312,7 +305,6 @@ namespace System.Net.Mail
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public SmtpDeliveryFormat DeliveryFormat
         {
             get
@@ -325,7 +317,6 @@ namespace System.Net.Mail
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public string? PickupDirectoryLocation
         {
             get
@@ -341,7 +332,6 @@ namespace System.Net.Mail
         /// <summary>
         ///    <para>Set to true if we need SSL</para>
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         public bool EnableSsl
         {
             get
@@ -357,7 +347,6 @@ namespace System.Net.Mail
         /// <summary>
         /// Certificates used by the client for establishing an SSL connection with the server.
         /// </summary>
-        [UnsupportedOSPlatform("browser")]
         public X509CertificateCollection ClientCertificates
         {
             get
@@ -366,7 +355,6 @@ namespace System.Net.Mail
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public string? TargetName
         {
             get { return _targetName; }
@@ -413,7 +401,6 @@ namespace System.Net.Mail
             return new MailWriter(fileStream, encodeForTransport: false);
         }
 
-        [UnsupportedOSPlatform("browser")]
         protected void OnSendCompleted(AsyncCompletedEventArgs e)
         {
             SendCompleted?.Invoke(this, e);
@@ -424,7 +411,6 @@ namespace System.Net.Mail
             OnSendCompleted((AsyncCompletedEventArgs)operationState!);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public void Send(string from, string recipients, string? subject, string? body)
         {
             if (_disposed)
@@ -436,7 +422,6 @@ namespace System.Net.Mail
             Send(mailMessage);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public void Send(MailMessage message)
         {
             if (_disposed)
@@ -580,7 +565,6 @@ namespace System.Net.Mail
             }
         }
 
-        [UnsupportedOSPlatform("browser")]
         public void SendAsync(string from, string recipients, string? subject, string? body, object? userToken)
         {
             if (_disposed)
@@ -590,7 +574,6 @@ namespace System.Net.Mail
             SendAsync(new MailMessage(from, recipients, subject, body), userToken);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public void SendAsync(MailMessage message, object? userToken)
         {
             if (_disposed)
@@ -735,7 +718,6 @@ namespace System.Net.Mail
             return false;
         }
 
-        [UnsupportedOSPlatform("browser")]
         public void SendAsyncCancel()
         {
             if (_disposed)
@@ -754,27 +736,23 @@ namespace System.Net.Mail
 
 
         //************* Task-based async public methods *************************
-        [UnsupportedOSPlatform("browser")]
         public Task SendMailAsync(string from, string recipients, string? subject, string? body)
         {
             var message = new MailMessage(from, recipients, subject, body);
             return SendMailAsync(message, cancellationToken: default);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public Task SendMailAsync(MailMessage message)
         {
             return SendMailAsync(message, cancellationToken: default);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public Task SendMailAsync(string from, string recipients, string? subject, string? body, CancellationToken cancellationToken)
         {
             var message = new MailMessage(from, recipients, subject, body);
             return SendMailAsync(message, cancellationToken);
         }
 
-        [UnsupportedOSPlatform("browser")]
         public Task SendMailAsync(MailMessage message, CancellationToken cancellationToken)
         {
             if (cancellationToken.IsCancellationRequested)
@@ -1039,14 +1017,12 @@ namespace System.Net.Mail
 
         private void Abort() => _transport.Abort();
 
-        [UnsupportedOSPlatform("browser")]
         public void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
         }
 
-        [UnsupportedOSPlatform("browser")]
         protected virtual void Dispose(bool disposing)
         {
             if (disposing && !_disposed)
