@@ -851,7 +851,11 @@ namespace System.Net.Http
             {
                 WriteBytes = writeBytes;
 
-                _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, cancellationToken) => ((WriteQueueEntry)s!).TrySetCanceled(cancellationToken), this);
+                _cancellationRegistration = cancellationToken.UnsafeRegister(static (s, cancellationToken) =>
+                {
+                    bool canceled = ((WriteQueueEntry)s!).TrySetCanceled(cancellationToken);
+                    Debug.Assert(canceled, "Callback should have been unregistered if the operation was completing successfully.");
+                }, this);
             }
 
             public int WriteBytes { get; }

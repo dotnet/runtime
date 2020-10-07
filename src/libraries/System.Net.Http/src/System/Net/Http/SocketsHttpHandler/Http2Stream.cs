@@ -1346,14 +1346,6 @@ namespace System.Net.Http
                     }
                 }, this);
 
-                // There's a race condition in UnsafeRegister above.  If cancellation is requested prior to UnsafeRegister,
-                // the delegate may be invoked synchronously as part of the UnsafeRegister call.  In that case, it will execute
-                // before _waitSourceCancellation has been set, which means UnsafeRegister will have set a cancellation
-                // exception into the wait source with a default token rather than the ideal one.  To handle that,
-                // we check for cancellation again, and throw here with the right token.  Worst case, if cancellation is
-                // requested prior to here, we end up allocating an extra OCE object.
-                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
-
                 return new ValueTask(this, _waitSource.Version);
             }
 
