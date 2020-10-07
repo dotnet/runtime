@@ -19,6 +19,7 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #if MEASURE_FATAL
 unsigned fatal_badCode;
 unsigned fatal_noWay;
+unsigned fatal_implLimitation;
 unsigned fatal_NOMEM;
 unsigned fatal_noWayAssertBody;
 #ifdef DEBUG
@@ -69,7 +70,7 @@ void DECLSPEC_NORETURN noWay()
 void DECLSPEC_NORETURN implLimitation()
 {
 #if MEASURE_FATAL
-    fatal_noWay += 1;
+    fatal_implLimitation += 1;
 #endif // MEASURE_FATAL
 
     fatal(CORJIT_IMPLLIMITATION);
