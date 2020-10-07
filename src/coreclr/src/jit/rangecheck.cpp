@@ -189,11 +189,23 @@ bool RangeCheck::BetweenBounds(Range& range, int lower, GenTree* upper)
 
 void RangeCheck::OptimizeRangeCheck(BasicBlock* block, Statement* stmt, GenTree* treeParent)
 {
+#ifdef DEBUG
+    // range check only expects bound check nodes under a comma,
+    // check that that's the case
+    if (treeParent->OperIsBoundsCheck())
+    {
+        GenTree* parent = treeParent->gtGetParent(nullptr);
+        assert((parent != nullptr) && parent->OperIs(GT_COMMA));
+    }
+#endif
+
     // Check if we are dealing with a bounds check node.
     if (treeParent->OperGet() != GT_COMMA)
     {
         return;
     }
+
+    assert(!treeParent->AsOp()->gtGetOp2()->OperIsBoundsCheck());
 
     // If we are not looking at array bounds check, bail.
     GenTree* tree = treeParent->AsOp()->gtOp1;

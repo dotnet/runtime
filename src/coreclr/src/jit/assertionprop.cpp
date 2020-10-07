@@ -4917,8 +4917,15 @@ GenTree* Compiler::optVNConstantPropOnJTrue(BasicBlock* block, GenTree* test)
         Statement* newStmt;
         if (sideEffList->OperGet() == GT_COMMA)
         {
-            newStmt     = fgNewStmtNearEnd(block, sideEffList->gtGetOp1());
-            sideEffList = sideEffList->gtGetOp2();
+            GenTree* op1      = sideEffList->gtGetOp1();
+            GenTree* nextNode = sideEffList->gtGetOp2();
+            if (op1->OperIsBoundsCheck())
+            {
+                op1                = sideEffList;
+                op1->AsOp()->gtOp2 = gtNewNothingNode();
+            }
+            newStmt     = fgNewStmtNearEnd(block, op1);
+            sideEffList = nextNode;
         }
         else
         {

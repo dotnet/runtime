@@ -16001,6 +16001,11 @@ void Compiler::gtExtractSideEffList(GenTree*  expr,
             {
                 if (m_compiler->gtNodeHasSideEffects(node, m_flags))
                 {
+                    if (node->OperIs(GT_ARR_BOUNDS_CHECK))
+                    {
+                        node = m_compiler->gtNewOperNode(GT_COMMA, TYP_VOID, node, m_compiler->gtNewNothingNode());
+                    }
+
                     m_sideEffects.Push(node);
                     if (node->OperIsBlk() && !node->OperIsStoreBlk())
                     {

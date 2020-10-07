@@ -14233,8 +14233,9 @@ DONE_MORPHING_CHILDREN:
                     return op2;
                 }
 
-                /* If the right operand is just a void nop node, throw it away */
-                if (op2->IsNothingNode() && op1->gtType == TYP_VOID)
+                // If the right operand is just a void nop node, throw it away
+                // unless it has a bounds check node, as we expect those as a parent of bounds checks
+                if (op2->IsNothingNode() && (op1->gtType == TYP_VOID) && !op1->OperIsBoundsCheck())
                 {
                     op1->gtFlags |= (tree->gtFlags & (GTF_DONT_CSE | GTF_LATE_ARG));
                     DEBUG_DESTROY_NODE(tree);
