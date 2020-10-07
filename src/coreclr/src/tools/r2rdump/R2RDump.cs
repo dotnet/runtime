@@ -542,11 +542,6 @@ namespace R2RDump
             return null;
         }
 
-        private static bool InputArchitectureSupported(Machine machine)
-        {
-            return machine != Machine.ArmThumb2; // CoreDisTools often fails to decode when disassembling ARM images (see https://github.com/dotnet/runtime/issues/10959)
-        }
-
         // TODO: Fix R2RDump issue where an R2R image cannot be dissassembled with the x86 CoreDisTools
         // For the short term, we want to error out with a decent message explaining the unexpected error
         // Issue https://github.com/dotnet/runtime/issues/10928
@@ -581,7 +576,7 @@ namespace R2RDump
 
                     if (_options.Disasm)
                     {
-                        if (InputArchitectureSupported(r2r.Machine) && DisassemblerArchitectureSupported())
+                        if (DisassemblerArchitectureSupported())
                         {
                             disassembler = new Disassembler(r2r, _options);
                         }

@@ -665,7 +665,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 else
                 {
-                    return XmlConvert.ToXPathString(argument);
+                    return XmlConvert.ToXPathString(argument)!;
                 }
             }
 
