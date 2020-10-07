@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
@@ -81,6 +80,19 @@ namespace System.Threading
             }
         }
 
+        /// <summary>
+        /// Opens a specified named semaphore, if it already exists, applying the desired access rights.
+        /// </summary>
+        /// <param name="name">The name of the semaphore to be opened. If it's prefixed by "Global", it refers to a machine-wide semaphore. If it's prefixed by "Local", or doesn't have a prefix, it refers to a session-wide semaphore. Both prefix and name are case-sensitive.</param>
+        /// <param name="rights">The desired access rights to apply to the returned semaphore.</param>
+        /// <returns>An existing named semaphore.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null" />.</exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is an empty string.</exception>
+        /// <exception cref="WaitHandleCannotBeOpenedException">The named semaphore does not exist or is invalid.</exception>
+        /// <exception cref="IOException">The path was not found.
+        /// -or-
+        /// A Win32 error occurred.</exception>
+        /// <exception cref="UnauthorizedAccessException">The named semaphore exists, but the user does not have the security access required to use it.</exception>
         public static Semaphore OpenExisting(string name, SemaphoreRights rights)
         {
             switch (OpenExistingWorker(name, rights, out Semaphore? result))
@@ -101,6 +113,17 @@ namespace System.Threading
             }
         }
 
+        /// <summary>
+        /// Tries to open a specified named semaphore, if it already exists, applying the desired access rights, and returns a value that indicates whether the operation succeeded.
+        /// </summary>
+        /// <param name="name">The name of the semaphore to be opened. If it's prefixed by "Global", it refers to a machine-wide semaphore. If it's prefixed by "Local", or doesn't have a prefix, it refers to a session-wide semaphore. Both prefix and name are case-sensitive.</param>
+        /// <param name="rights">The desired access rights to apply to the returned semaphore.</param>
+        /// <param name="result">When this method returns, contains an object that represents the named semaphore if the call succeeded, or <see langword="null" /> if the call failed. This parameter is treated as uninitialized.</param>
+        /// <returns><see langword="true" /> if the named semaphore was opened successfully; otherwise, <see langword="false" />.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null" /></exception>
+        /// <exception cref="ArgumentException"><paramref name="name"/> is an empty string.</exception>
+        /// <exception cref="IOException">A Win32 error occurred.</exception>
+        /// <exception cref="UnauthorizedAccessException">The named semaphore exists, but the user does not have the security access required to use it.</exception>
         public static bool TryOpenExisting(string name, SemaphoreRights rights, out Semaphore result) =>
             OpenExistingWorker(name, rights, out result!) == OpenExistingResult.Success;
 
