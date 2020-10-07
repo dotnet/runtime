@@ -67,6 +67,16 @@ namespace System.Threading
             }
         }
 
+        public static EventWaitHandle OpenExisting(string name, EventWaitHandleRights rights)
+        {
+            throw null;
+        }
+
+        public static bool TryOpenExisting(string name, EventWaitHandleRights rights, out EventWaitHandle result)
+        {
+            throw null;
+        }
+
         private static void ValidateHandle(SafeWaitHandle handle, string? name, out bool createdNew)
         {
             int errorCode = Marshal.GetLastWin32Error();

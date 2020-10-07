@@ -53,6 +53,16 @@ namespace System.Threading
             }
         }
 
+        public static Mutex OpenExisting(string name, MutexRights rights)
+        {
+            throw null;
+        }
+
+        public static bool TryOpenExisting(string name, MutexRights rights, out Mutex result)
+        {
+            throw null;
+        }
+
         private static void ValidateMutexHandle(SafeWaitHandle mutexHandle, string? name, out bool createdNew)
         {
             int errorCode = Marshal.GetLastWin32Error();

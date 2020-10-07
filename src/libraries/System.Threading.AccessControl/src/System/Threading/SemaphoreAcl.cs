@@ -72,6 +72,16 @@ namespace System.Threading
             }
         }
 
+        public static Semaphore OpenExisting(string name, SemaphoreRights rights)
+        {
+            throw null;
+        }
+
+        public static bool TryOpenExisting(string name, SemaphoreRights rights, out Semaphore result)
+        {
+            throw null;
+        }
+
         private static void ValidateHandle(SafeWaitHandle handle, string? name, out bool createdNew)
         {
             int errorCode = Marshal.GetLastWin32Error();
