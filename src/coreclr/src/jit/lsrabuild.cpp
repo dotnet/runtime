@@ -2180,15 +2180,24 @@ void LinearScan::buildIntervals()
 
         if (argDsc->lvPromotedStruct())
         {
-            noway_assert(argDsc->lvFieldCnt == 1); // We only handle one field here
-
-            unsigned fieldVarNum = argDsc->lvFieldLclStart;
-            argDsc               = &(compiler->lvaTable[fieldVarNum]);
+            for (unsigned fieldVarNum = argDsc->lvFieldLclStart;
+                 fieldVarNum < argDsc->lvFieldLclStart + argDsc->lvFieldCnt; ++fieldVarNum)
+            {
+                LclVarDsc* fieldVarDsc = compiler->lvaGetDesc(fieldVarNum);
+                noway_assert(fieldVarDsc->lvIsParam);
+                if (!fieldVarDsc->lvTracked && fieldVarDsc->lvIsRegArg)
+                {
+                    updateRegStateForArg(fieldVarDsc);
+                }
+            }
         }
-        noway_assert(argDsc->lvIsParam);
-        if (!argDsc->lvTracked && argDsc->lvIsRegArg)
+        else
         {
-            updateRegStateForArg(argDsc);
+            noway_assert(argDsc->lvIsParam);
+            if (!argDsc->lvTracked && argDsc->lvIsRegArg)
+            {
+                updateRegStateForArg(argDsc);
+            }
         }
     }
 
