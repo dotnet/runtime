@@ -2380,11 +2380,9 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
-        public async Task ConnectCallback_UseVirtualNetwork_Success(bool useSsl)
+        public async Task ConnectCallback_UseMemoryBuffer_Success(bool useSsl)
         {
-            var vn = new VirtualNetwork();
-            using var clientStream = new VirtualNetworkStream(vn, isServer: false, gracefulShutdown: true);
-            using var serverStream = new VirtualNetworkStream(vn, isServer: true, gracefulShutdown: true);
+            (Stream clientStream, Stream serverStream) = ConnectedStreams.CreateBidirectional();
 
             GenericLoopbackOptions options = new GenericLoopbackOptions() { UseSsl = useSsl };
 
