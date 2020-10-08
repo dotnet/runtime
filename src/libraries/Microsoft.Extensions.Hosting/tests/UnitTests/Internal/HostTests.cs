@@ -3,13 +3,16 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting.Fakes;
+using Microsoft.Extensions.Hosting.Tests;
 using Microsoft.Extensions.Hosting.Tests.Fakes;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -1215,6 +1218,46 @@ namespace Microsoft.Extensions.Hosting.Internal
             });
         }
 
+        /// <summary>
+        /// Tests when a BackgroundService throws an exception asynchronously
+        /// (after an await), the exception gets logged correctly.
+        /// </summary>
+        [Fact]
+        public void BackgroundServiceAsyncExceptionGetsLogged()
+        {
+            using TestEventListener listener = new TestEventListener();
+
+            using IHost host = CreateBuilder()
+                .ConfigureLogging(logging =>
+                {
+                    logging.AddEventSourceLogger();
+                })
+                .ConfigureServices((hostContext, services) =>
+                {
+                    services.AddHostedService<AsyncThrowingService>();
+                })
+                .Start();
+
+            // give the background service 5 seconds to log the failure
+            Task timeout = Task.Delay(new TimeSpan(0, 0, 5));
+
+            while (true)
+            {
+                EventWrittenEventArgs[] events = listener.EventData.ToArray();
+                if (events.Any(e =>
+                    e.EventSource.Name == "Microsoft-Extensions-Logging" &&
+                    e.Payload.OfType<string>().Any(p => p.Contains("BackgroundService failed"))))
+                {
+                    break;
+                }
+
+                if (timeout.IsCompleted)
+                {
+                    Assert.True(false, "'BackgroundService failed' did not get logged");
+                }
+            }
+        }
+
         private IHostBuilder CreateBuilder(IConfiguration config = null)
         {
             return new HostBuilder().ConfigureHostConfiguration(builder => builder.AddConfiguration(config ?? new ConfigurationBuilder().Build()));
@@ -1322,6 +1365,16 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 DisposeAsyncCalled = true;
                 return default;
+            }
+        }
+
+        private class AsyncThrowingService : BackgroundService
+        {
+            protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+            {
+                await Task.Delay(1);
+
+                throw new Exception("Background Exception");
             }
         }
     }

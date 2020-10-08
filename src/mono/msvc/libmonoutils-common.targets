@@ -47,7 +47,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-mmap-windows.c" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap-internals.h" />
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap-windows-internals.h" />
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-os-mutex.h" />
     <ClCompile Include="$(MonoSourceLocation)\mono\utils\mono-os-mutex.c">
       <ExcludedFromBuild>$(ExcludeFromWindowsBuild)</ExcludedFromBuild>

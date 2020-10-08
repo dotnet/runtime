@@ -5,7 +5,7 @@ parameters:
   archType: ''
   targetRid: ''
   crossrootfsDir: ''
-  framework: 'net5.0'
+  framework: 'net6.0'
   isOfficialBuild: false
   isOfficialAllConfigurations: false
   runtimeVariant: ''

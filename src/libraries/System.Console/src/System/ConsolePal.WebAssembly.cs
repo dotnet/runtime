@@ -6,6 +6,8 @@ using System.Text;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
+using JSObject = System.Runtime.InteropServices.JavaScript.JSObject;
+
 namespace System
 {
     internal sealed class WasmConsoleStream : ConsoleStream
@@ -74,6 +76,9 @@ namespace System
 
     internal static class ConsolePal
     {
+        private static volatile bool s_consoleInitialized;
+        private static JSObject? s_console;
+
         private static Encoding? s_outputEncoding;
 
         internal static void EnsureConsoleInitialized() { }
@@ -163,7 +168,16 @@ namespace System
             char sourceChar, ConsoleColor sourceForeColor,
             ConsoleColor sourceBackColor) => throw new PlatformNotSupportedException();
 
-        public static void Clear() => throw new PlatformNotSupportedException();
+        public static void Clear()
+        {
+            if (!s_consoleInitialized)
+            {
+                s_console = (JSObject)System.Runtime.InteropServices.JavaScript.Runtime.GetGlobalObject("console");
+                s_consoleInitialized = true;
+            }
+
+            s_console?.Invoke("clear");
+        }
 
         public static void SetCursorPosition(int left, int top) => throw new PlatformNotSupportedException();
 

@@ -1092,7 +1092,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_is_init_finished local_SSL_is_init_finished
 #define X509_CRL_get0_nextUpdate local_X509_CRL_get0_nextUpdate
 #define X509_NAME_get0_der local_X509_NAME_get0_der
-#define X509_new local_X509_new
 #define X509_PUBKEY_get0_param local_X509_PUBKEY_get0_param
 #define X509_STORE_CTX_get0_cert local_X509_STORE_CTX_get0_cert
 #define X509_STORE_CTX_get0_chain local_X509_STORE_CTX_get0_chain
