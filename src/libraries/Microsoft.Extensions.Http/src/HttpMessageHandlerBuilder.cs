@@ -33,6 +33,8 @@ namespace Microsoft.Extensions.Http
         /// </summary>
         public abstract HttpMessageHandler PrimaryHandler { get; set; }
 
+        internal virtual bool PrimaryHandlerExposed { get; }
+
         /// <summary>
         /// Gets a list of additional <see cref="DelegatingHandler"/> instances used to configure an
         /// <see cref="HttpClient"/> pipeline.
@@ -60,6 +62,21 @@ namespace Microsoft.Extensions.Http
         /// <see cref="AdditionalHandlers"/>.
         /// </returns>
         public abstract HttpMessageHandler Build();
+
+        internal HttpMessageHandler Build(HttpMessageHandler primaryHandler)
+        {
+            if (primaryHandler == null)
+            {
+                throw new NullReferenceException("Primary Handler is null");
+            }
+
+            if (PrimaryHandlerExposed)
+            {
+                throw new InvalidOperationException("Cannot supply primary handler because it was changed");
+            }
+
+            return CreateHandlerPipeline(primaryHandler, AdditionalHandlers);
+        }
 
         protected internal static HttpMessageHandler CreateHandlerPipeline(HttpMessageHandler primaryHandler, IEnumerable<DelegatingHandler> additionalHandlers)
         {

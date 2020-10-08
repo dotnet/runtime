@@ -30,7 +30,27 @@ namespace Microsoft.Extensions.Http
             }
         }
 
-        public override HttpMessageHandler PrimaryHandler { get; set; } = new HttpClientHandler();
+        private bool _primaryHandlerExposed;
+        internal override bool PrimaryHandlerExposed => _primaryHandlerExposed;
+
+        private HttpMessageHandler _primaryHandler;
+        public override HttpMessageHandler PrimaryHandler
+        {
+            get
+            {
+                if (_primaryHandler == null && !_primaryHandlerExposed)
+                {
+                    _primaryHandler = new HttpClientHandler(); // Backward-compatibility
+                }
+                _primaryHandlerExposed = true; // Someone accessed PrimaryHandler. Its properties might be changed.
+                return _primaryHandler;
+            }
+            set
+            {
+                _primaryHandler = value;
+                _primaryHandlerExposed = true;
+            }
+        }
 
         public override IList<DelegatingHandler> AdditionalHandlers { get; } = new List<DelegatingHandler>();
 

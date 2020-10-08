@@ -15,12 +15,19 @@ namespace Microsoft.Extensions.Http
         // IMPORTANT: don't cache a reference to `other` or `other.Handler` here.
         // We need to allow it to be GC'ed.
         public ExpiredHandlerTrackingEntry(ActiveHandlerTrackingEntry other)
+            : this(other.Name, other.Handler, other.Scope)
         {
-            Name = other.Name;
-            Scope = other.Scope;
+        }
 
-            _livenessTracker = new WeakReference(other.Handler);
-            InnerHandler = other.Handler.InnerHandler;
+        // IMPORTANT: don't cache a reference to `handler` here.
+        // We need to allow it to be GC'ed.
+        internal ExpiredHandlerTrackingEntry(string name, LifetimeTrackingHttpMessageHandler handler, IServiceScope scope)
+        {
+            Name = name;
+            Scope = scope;
+
+            _livenessTracker = new WeakReference(handler);
+            InnerHandler = handler.InnerHandler;
         }
 
         public bool CanDispose => !_livenessTracker.IsAlive;

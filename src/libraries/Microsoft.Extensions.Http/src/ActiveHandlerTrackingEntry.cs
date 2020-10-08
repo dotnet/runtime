@@ -22,6 +22,7 @@ namespace Microsoft.Extensions.Http
         public ActiveHandlerTrackingEntry(
             string name,
             LifetimeTrackingHttpMessageHandler handler,
+            bool isPrimary,
             IServiceScope scope,
             TimeSpan lifetime)
         {
@@ -29,6 +30,7 @@ namespace Microsoft.Extensions.Http
             Handler = handler;
             Scope = scope;
             Lifetime = lifetime;
+            IsPrimary = isPrimary;
 
             _lock = new object();
         }
@@ -40,6 +42,8 @@ namespace Microsoft.Extensions.Http
         public string Name { get; }
 
         public IServiceScope Scope { get; }
+
+        public bool IsPrimary { get; }
 
         public void StartExpiryTimer(TimerCallback callback)
         {

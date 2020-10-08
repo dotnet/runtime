@@ -48,6 +48,7 @@ namespace Microsoft.Extensions.Http
         //
         // internal for tests
         internal readonly ConcurrentDictionary<string, Lazy<ActiveHandlerTrackingEntry>> _activeHandlers;
+        internal readonly ConcurrentDictionary<(string, IServiceScope?), LifetimeTrackingHttpMessageHandler> _topHandlers;
 
         // Collection of 'expired' but not yet disposed handlers.
         //
@@ -98,7 +99,8 @@ namespace Microsoft.Extensions.Http
             _logger = loggerFactory.CreateLogger<DefaultHttpClientFactory>();
 
             // case-sensitive because named options is.
-            _activeHandlers = new ConcurrentDictionary<string, Lazy<ActiveHandlerTrackingEntry>>(StringComparer.Ordinal);
+            _activeHandlers = new ConcurrentDictionary<string, Lazy<ActiveHandlerTrackingEntry>>();
+            _topHandlers = new ConcurrentDictionary<(string, IServiceScope?), LifetimeTrackingHttpMessageHandler>();
             _entryFactory = (name) =>
             {
                 return new Lazy<ActiveHandlerTrackingEntry>(() =>
@@ -122,7 +124,7 @@ namespace Microsoft.Extensions.Http
             }
 
             HttpMessageHandler handler = CreateHandler(name);
-            var client = new HttpClient(handler, disposeHandler: false);
+            var client = new HttpClient(handler);
 
             HttpClientFactoryOptions options = _optionsMonitor.Get(name);
             for (int i = 0; i < options.HttpClientActions.Count; i++)
@@ -144,7 +146,51 @@ namespace Microsoft.Extensions.Http
 
             StartHandlerEntryTimer(entry);
 
-            return entry.Handler;
+            if (!entry.IsPrimary)
+            {
+                return entry.Handler;
+            }
+
+            if (!_topHandlers.TryRemove((name, entry.Scope), out var topHandler))
+            {
+                topHandler = BuildChain(name, entry.Handler, entry.Scope);
+            }
+
+            var expired = new ExpiredHandlerTrackingEntry(name, topHandler, null);
+            _expiredHandlers.Enqueue(expired); // TODO: we expire the top chain right away. it will be cleared after it gets GC'ed. is it OK?
+            return topHandler;
+        }
+
+        internal LifetimeTrackingHttpMessageHandler BuildChain(string name, HttpMessageHandler primaryHandler, IServiceScope? scope)
+        {
+            IServiceProvider services = scope?.ServiceProvider ?? _services;
+
+            HttpMessageHandlerBuilder builder = services.GetRequiredService<HttpMessageHandlerBuilder>();
+            builder.Name = name;
+
+            HttpClientFactoryOptions options = _optionsMonitor.Get(name);
+            Action<HttpMessageHandlerBuilder> configure = Configure;
+            for (int i = _filters.Length - 1; i >= 0; i--)
+            {
+                configure = _filters[i].Configure(configure);
+            }
+
+            configure(builder);
+
+            if (builder.PrimaryHandlerExposed)
+            {
+                throw new InvalidOperationException("primary handler exposed after first chain build");
+            }
+
+            return new LifetimeTrackingHttpMessageHandler(builder.Build(primaryHandler));
+
+            void Configure(HttpMessageHandlerBuilder b)
+            {
+                for (int i = 0; i < options.HttpMessageHandlerBuilderActions.Count; i++)
+                {
+                    options.HttpMessageHandlerBuilderActions[i](b);
+                }
+            }
         }
 
         // Internal for tests
@@ -175,8 +221,28 @@ namespace Microsoft.Extensions.Http
 
                 configure(builder);
 
-                // Wrap the handler so we can ensure the inner handler outlives the outer handler.
-                var handler = new LifetimeTrackingHttpMessageHandler(builder.Build());
+                LifetimeTrackingHttpMessageHandler handler;
+                bool isPrimary;
+
+                if (builder.PrimaryHandlerExposed)
+                {
+                    var topHandler = builder.Build();
+
+                    // Wrap the handler so we can ensure the inner handler outlives the outer handler.
+                    handler = new LifetimeTrackingHttpMessageHandler(topHandler);
+                    isPrimary = false;
+                }
+                else
+                {
+                    // to stop dispose on primary handler when the chain is disposed
+                    var primaryHandler = new LifetimeTrackingHttpMessageHandler(new HttpClientHandler());
+                    // Wrap the handler so we can ensure the inner handler outlives the outer handler.
+                    var topHandler = new LifetimeTrackingHttpMessageHandler(builder.Build(primaryHandler));
+
+                    handler = primaryHandler;
+                    isPrimary = true;
+                    _topHandlers.AddOrUpdate((name, scope), topHandler, (k, v) => topHandler);
+                }
 
                 // Note that we can't start the timer here. That would introduce a very very subtle race condition
                 // with very short expiry times. We need to wait until we've actually handed out the handler once
@@ -185,7 +251,7 @@ namespace Microsoft.Extensions.Http
                 // Otherwise it would be possible that we start the timer here, immediately expire it (very short
                 // timer) and then dispose it without ever creating a client. That would be bad. It's unlikely
                 // this would happen, but we want to be sure.
-                return new ActiveHandlerTrackingEntry(name, handler, scope, options.HandlerLifetime);
+                return new ActiveHandlerTrackingEntry(name, handler, isPrimary, scope, options.HandlerLifetime);
 
                 void Configure(HttpMessageHandlerBuilder b)
                 {
