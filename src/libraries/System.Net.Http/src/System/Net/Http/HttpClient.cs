@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -583,22 +584,26 @@ namespace System.Net.Http
 
         #region Advanced Send Overloads
 
+        [UnsupportedOSPlatform("browser")]
         public HttpResponseMessage Send(HttpRequestMessage request)
         {
             return Send(request, defaultCompletionOption, cancellationToken: default);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption)
         {
             return Send(request, completionOption, cancellationToken: default);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             return Send(request, defaultCompletionOption, cancellationToken);
         }
 
+        [UnsupportedOSPlatform("browser")]
         public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption,
             CancellationToken cancellationToken)
         {
