@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace DllImportGenerator.Test
+namespace DllImportGenerator.UnitTests
 {
     public class CompileFails
     {

@@ -9,7 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace DllImportGenerator.Test
+namespace DllImportGenerator.UnitTests
 {
     internal static class TestUtils
     {

@@ -15,7 +15,7 @@ namespace Demo
         public static partial void Sum(int a, ref int b);
     }
 
-    unsafe class Program
+    class Program
     {
         static void Main(string[] args)
         {
@@ -31,13 +31,6 @@ namespace Demo
             c = b;
             NativeExportsNE.Sum(a, ref c);
             Console.WriteLine($"{a} + {b} = {c}");
-
-            SafeHandleTests tests = new SafeHandleTests();
-
-            tests.ReturnValue_CreatesSafeHandle();
-            tests.ByValue_CorrectlyUnwrapsHandle();
-            tests.ByRefSameValue_UsesSameHandleInstance();
-            tests.ByRefDifferentValue_UsesNewHandleInstance();
         }
     }
 }

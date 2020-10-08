@@ -3,9 +3,9 @@ using System.Threading.Tasks;
 using Xunit;
 using static Microsoft.Interop.ManualTypeMarshallingAnalyzer;
 
-using VerifyCS = DllImportGenerator.Test.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.ManualTypeMarshallingAnalyzer>;
+using VerifyCS = DllImportGenerator.UnitTests.Verifiers.CSharpAnalyzerVerifier<Microsoft.Interop.ManualTypeMarshallingAnalyzer>;
 
-namespace DllImportGenerator.Test
+namespace DllImportGenerator.UnitTests
 {
     public class ManualTypeMarshallingAnalyzerTests
     {

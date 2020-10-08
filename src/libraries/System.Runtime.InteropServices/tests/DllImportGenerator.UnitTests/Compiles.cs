@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
 
-namespace DllImportGenerator.Test
+namespace DllImportGenerator.UnitTests
 {
     public class Compiles
     {

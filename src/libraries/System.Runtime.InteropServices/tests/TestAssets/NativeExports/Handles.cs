@@ -1,33 +1,23 @@
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
-
 namespace NativeExports
 {
     public static unsafe class Handles
     {
+        /// <summary>
+        /// Using <see cref="Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid"/> in tests.
+        /// </summary>
         private const nint InvalidHandle = -1;
 
         private static nint LastHandle = 0;
 
-        private static HashSet<nint> ActiveHandles = new HashSet<nint>();
+        private static readonly HashSet<nint> ActiveHandles = new HashSet<nint>();
 
         [UnmanagedCallersOnly(EntryPoint = "alloc_handle")]
         public static nint AllocateHandle()
         {
             return AllocateHandleCore();
-        }
-
-        private static nint AllocateHandleCore()
-        {
-            if (LastHandle == int.MaxValue)
-            {
-                return InvalidHandle;
-            }
-
-            nint newHandle = ++LastHandle;
-            ActiveHandles.Add(newHandle);
-            return newHandle;
         }
 
         [UnmanagedCallersOnly(EntryPoint = "release_handle")]
@@ -49,6 +39,18 @@ namespace NativeExports
             {
                 *handle = AllocateHandleCore();
             }
+        }
+
+        private static nint AllocateHandleCore()
+        {
+            if (LastHandle == int.MaxValue)
+            {
+                return InvalidHandle;
+            }
+
+            nint newHandle = ++LastHandle;
+            ActiveHandles.Add(newHandle);
+            return newHandle;
         }
     }
 }

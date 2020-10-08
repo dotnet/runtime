@@ -1,22 +1,22 @@
-
 using System.Runtime.InteropServices;
+
 using Microsoft.Win32.SafeHandles;
 using Xunit;
 
-namespace Demo
+namespace DllImportGenerator.IntegrationTests
 {
     partial class NativeExportsNE
     {
         public class NativeExportsSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
         {
-            private NativeExportsSafeHandle() : base(true)
-            {
-            }
+            private NativeExportsSafeHandle() : base(ownsHandle: true)
+            { }
 
             protected override bool ReleaseHandle()
             {
-                Assert.True(NativeExportsNE.ReleaseHandle(handle));
-                return true;
+                bool didRelease = NativeExportsNE.ReleaseHandle(handle);
+                Assert.True(didRelease);
+                return didRelease;
             }
         }
 
@@ -57,7 +57,7 @@ namespace Demo
         {
             using NativeExportsNE.NativeExportsSafeHandle handleToDispose = NativeExportsNE.AllocateHandle();
             NativeExportsNE.NativeExportsSafeHandle handle = handleToDispose;
-            NativeExportsNE.ModifyHandle(ref handle, false);
+            NativeExportsNE.ModifyHandle(ref handle, newHandle: false);
             Assert.Same(handleToDispose, handle);
         }
 
@@ -66,7 +66,7 @@ namespace Demo
         {
             using NativeExportsNE.NativeExportsSafeHandle handleToDispose = NativeExportsNE.AllocateHandle();
             NativeExportsNE.NativeExportsSafeHandle handle = handleToDispose;
-            NativeExportsNE.ModifyHandle(ref handle, true);
+            NativeExportsNE.ModifyHandle(ref handle, newHandle: true);
             Assert.NotSame(handleToDispose, handle);
             handle.Dispose();
         }

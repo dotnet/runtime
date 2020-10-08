@@ -1,6 +1,6 @@
 ﻿using System.Runtime.InteropServices;
 
-namespace DllImportGenerator.Test
+namespace DllImportGenerator.UnitTests
 {
     internal static class CodeSnippets
     {

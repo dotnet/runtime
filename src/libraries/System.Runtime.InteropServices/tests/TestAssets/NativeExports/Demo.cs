@@ -1,9 +1,8 @@
-﻿using System;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 
 namespace NativeExports
 {
-    public unsafe class ScalarOps
+    public static unsafe class Demo
     {
         [UnmanagedCallersOnly(EntryPoint = "sumi")]
         public static int Sum(int a, int b)

@@ -16,8 +16,4 @@
     <ProjectReference Include="..\TestAssets\NativeExports\NativeExports.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="xunit" Version="$(XunitVersion)" />
-  </ItemGroup>
-
 </Project>
