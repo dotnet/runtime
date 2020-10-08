@@ -59,10 +59,10 @@
     <MicrosoftDotNetRemoteExecutorVersion>5.0.0-beta.20474.4</MicrosoftDotNetRemoteExecutorVersion>
     <MicrosoftDotNetVersionToolsTasksVersion>5.0.0-beta.20474.4</MicrosoftDotNetVersionToolsTasksVersion>
     <!-- Installer dependencies -->
-    <MicrosoftNETCoreAppVersion>5.0.0-preview.4.20202.18</MicrosoftNETCoreAppVersion>
-    <MicrosoftNETCoreDotNetHostVersion>5.0.0-preview.4.20202.18</MicrosoftNETCoreDotNetHostVersion>
-    <MicrosoftNETCoreDotNetHostPolicyVersion>5.0.0-preview.4.20202.18</MicrosoftNETCoreDotNetHostPolicyVersion>
-    <MicrosoftExtensionsDependencyModelVersion>3.1.0</MicrosoftExtensionsDependencyModelVersion>
+    <MicrosoftNETCoreAppVersion>5.0.0-rc.1.20451.14</MicrosoftNETCoreAppVersion>
+    <MicrosoftNETCoreDotNetHostVersion>5.0.0-rc.1.20451.14</MicrosoftNETCoreDotNetHostVersion>
+    <MicrosoftNETCoreDotNetHostPolicyVersion>5.0.0-rc.1.20451.14</MicrosoftNETCoreDotNetHostPolicyVersion>
+    <MicrosoftExtensionsDependencyModelVersion>3.1.6</MicrosoftExtensionsDependencyModelVersion>
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>5.0.0-preview.8.20359.4</MicrosoftNETCoreILAsmVersion>
     <!-- Libraries dependencies -->
@@ -70,7 +70,7 @@
     <SystemCollectionsVersion>4.3.0</SystemCollectionsVersion>
     <SystemCollectionsConcurrentVersion>4.3.0</SystemCollectionsConcurrentVersion>
     <SystemComponentModelAnnotationsVersion>4.7.0</SystemComponentModelAnnotationsVersion>
-    <SystemDataSqlClientVersion>4.8.1</SystemDataSqlClientVersion>
+    <SystemDataSqlClientVersion>4.8.2</SystemDataSqlClientVersion>
     <SystemDiagnosticsContractsVersion>4.3.0</SystemDiagnosticsContractsVersion>
     <SystemDiagnosticsDebugVersion>4.3.0</SystemDiagnosticsDebugVersion>
     <SystemDiagnosticsTracingVersion>4.3.0</SystemDiagnosticsTracingVersion>
@@ -90,13 +90,13 @@
     <SystemSecurityCryptographyCngVersion>4.7.0</SystemSecurityCryptographyCngVersion>
     <SystemSecurityCryptographyPkcsVersion>4.7.0</SystemSecurityCryptographyPkcsVersion>
     <SystemSecurityCryptographyOpenSslVersion>4.7.0</SystemSecurityCryptographyOpenSslVersion>
-    <SystemTextJsonVersion>5.0.0-preview.4.20202.18</SystemTextJsonVersion>
+    <SystemTextJsonVersion>5.0.0-rc.1.20451.14</SystemTextJsonVersion>
     <SystemThreadingVersion>4.3.0</SystemThreadingVersion>
     <SystemThreadingTasksExtensionsVersion>4.5.4</SystemThreadingTasksExtensionsVersion>
     <SystemValueTupleVersion>4.5.0</SystemValueTupleVersion>
     <MicrosoftBclAsyncInterfacesVersion>1.1.1</MicrosoftBclAsyncInterfacesVersion>
     <MicrosoftWin32PrimitivesVersion>4.3.0</MicrosoftWin32PrimitivesVersion>
-    <runtimenativeSystemIOPortsVersion>5.0.0-alpha.1.19563.3</runtimenativeSystemIOPortsVersion>
+    <runtimenativeSystemIOPortsVersion>5.0.0-rc.1.20451.14</runtimenativeSystemIOPortsVersion>
     <!-- Runtime-Assets dependencies -->
     <SystemComponentModelTypeConverterTestDataVersion>5.0.0-beta.20377.1</SystemComponentModelTypeConverterTestDataVersion>
     <SystemDrawingCommonTestDataVersion>5.0.0-beta.20377.1</SystemDrawingCommonTestDataVersion>
