@@ -232,7 +232,7 @@ namespace System.Net.Quic.Tests
         public async Task LargeDataSentAndReceived()
         {
             byte[] data = Enumerable.Range(0, 64 * 1024).Select(x => (byte)x).ToArray();
-            const int NumberOfWrites = 1024;       // total sent = 64M
+            const int NumberOfWrites = 256;       // total sent = 16M
 
             using QuicListener listener = CreateQuicListener();
 
