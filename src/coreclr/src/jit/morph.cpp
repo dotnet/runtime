@@ -4214,6 +4214,10 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
                     {
                         structSize = argx->AsObj()->GetLayout()->GetSize();
                     }
+                    else if (varTypeIsSIMD(argx))
+                    {
+                        structSize = genTypeSize(argx);
+                    }
                     else
                     {
                         assert(argx->OperIs(GT_LCL_VAR));
@@ -10508,6 +10512,10 @@ GenTree* Compiler::fgMorphCopyBlock(GenTree* tree)
         assert(dest->OperGet() == GT_LCL_VAR);
         JITDUMP(" not morphing a multireg call return\n");
         return tree;
+    }
+    else if (dest->IsMultiRegLclVar() && !src->IsMultiRegNode())
+    {
+        dest->AsLclVar()->ClearMultiReg();
     }
 #endif // FEATURE_MULTIREG_RET
 
@@ -17582,6 +17590,11 @@ void Compiler::fgPromoteStructs()
     //
     lvaStructPromotionInfo structPromotionInfo;
     bool                   tooManyLocalsReported = false;
+
+    // Clear the structPromotionHelper, since it is used during inlining, at which point it
+    // may be conservative about looking up SIMD info.
+    // We don't want to preserve those conservative decisions for the actual struct promotion.
+    structPromotionHelper->Clear();
 
     for (unsigned lclNum = 0; lclNum < startLvaCount; lclNum++)
     {

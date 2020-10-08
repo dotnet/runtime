@@ -62,8 +62,8 @@ usage()
   echo "Libraries settings:"
   echo "  --allconfigurations        Build packages for all build configurations."
   echo "  --coverage                 Collect code coverage when testing."
-  echo "  --framework (-f)           Build framework: net5.0 or net48."
-  echo "                             [Default: net5.0]"
+  echo "  --framework (-f)           Build framework: net6.0 or net48."
+  echo "                             [Default: net6.0]"
   echo "  --testnobuild              Skip building tests when invoking -test."
   echo "  --testscope                Test scope, allowed values: innerloop, outerloop, all."
   echo ""
@@ -133,8 +133,8 @@ initDistroRid()
     local isCrossBuild="$3"
     local isPortableBuild="$4"
 
-    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified.
-    if (( isCrossBuild == 1 )); then
+    # Only pass ROOTFS_DIR if __DoCrossArchBuild is specified and the current platform is not OSX that doesn't use rootfs
+    if [[ $isCrossBuild == 1 && "$targetOs" != "OSX" ]]; then
         passedRootfsDir=${ROOTFS_DIR}
     fi
     initDistroRidGlobal ${targetOs} ${buildArch} ${isPortableBuild} ${passedRootfsDir}
@@ -152,6 +152,8 @@ crossBuild=0
 portableBuild=1
 
 source $scriptroot/native/init-os-and-arch.sh
+
+hostArch=$arch
 
 # Check if an action is passed in
 declare -a actions=("b" "build" "r" "restore" "rebuild" "testnobuild" "sign" "publish" "clean")
@@ -436,6 +438,6 @@ initDistroRid $os $arch $crossBuild $portableBuild
 # URL-encode space (%20) to avoid quoting issues until the msbuild call in /eng/common/tools.sh.
 # In *proj files (XML docs), URL-encoded string are rendered in their decoded form.
 cmakeargs="${cmakeargs// /%20}"
-arguments="$arguments /p:TargetArchitecture=$arch"
+arguments="$arguments /p:TargetArchitecture=$arch /p:BuildArchitecture=$hostArch"
 arguments="$arguments /p:CMakeArgs=\"$cmakeargs\" $extraargs"
 "$scriptroot/common/build.sh" $arguments
