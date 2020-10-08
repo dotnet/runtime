@@ -284,7 +284,7 @@ namespace Mono.Linker.Dataflow
 						return _multiValueEnumerator.MoveNext ();
 
 					_index++;
-					return (_index == 0);
+					return _index == 0;
 				}
 
 				public ValueNode Current {
