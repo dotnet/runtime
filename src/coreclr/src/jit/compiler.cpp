@@ -1056,7 +1056,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
                 // The cases of (structDesc.eightByteCount == 1) and (structDesc.eightByteCount == 0)
                 // should have already been handled
-                assert(structDesc.eightByteCount > 1)
+                assert(structDesc.eightByteCount > 1);
                 // setup wbPassType and useType indicate that this is returned by value in multiple registers
                 howToReturnStruct = SPK_ByValue;
                 useType           = TYP_STRUCT;
