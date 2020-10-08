@@ -74,7 +74,6 @@ stages:
         - script: eng\common\cibuild.cmd -projects $(Build.SourcesDirectory)\illink.sln
                   -configuration $(_BuildConfig) $(_BuildArgs) $(_PublishArgs)
                   -integrationTest
-                  -warnAsError "$false"
                   -nodeReuse "$false" # https://github.com/Microsoft/vstest/issues/1503
           env:
             # https://github.com/Microsoft/vstest/issues/1503#issuecomment-410732193
@@ -95,7 +94,6 @@ stages:
           - script: eng/common/cibuild.sh --projects $(Build.SourcesDirectory)/illink.sln
                     --configuration $(_BuildConfig) $(_BuildArgs)
                     --integrationTest
-                    --warnAsError false
                     --nodeReuse false # https://github.com/Microsoft/vstest/issues/1503
             env:
               # https://github.com/Microsoft/vstest/issues/1503#issuecomment-410732193
@@ -112,7 +110,6 @@ stages:
           - script: eng/common/cibuild.sh --projects $(Build.SourcesDirectory)/illink.sln
                     --configuration $(_BuildConfig) $(_BuildArgs)
                     --integrationTest
-                    --warnAsError false
                     --nodeReuse false # https://github.com/Microsoft/vstest/issues/1503
             env:
               # https://github.com/Microsoft/vstest/issues/1503#issuecomment-410732193
