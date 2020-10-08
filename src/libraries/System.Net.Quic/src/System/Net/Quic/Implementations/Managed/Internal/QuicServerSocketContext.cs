@@ -12,7 +12,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly ChannelWriter<ManagedQuicConnection> _newConnections;
         private readonly QuicListenerOptions _listenerOptions;
 
-        private ImmutableDictionary<IPEndPoint, ManagedQuicConnection> _connectionsByEndpoint;
+        private ImmutableDictionary<EndPoint, ManagedQuicConnection> _connectionsByEndpoint;
 
         private bool _acceptNewConnections;
 
@@ -23,12 +23,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _newConnections = newConnectionsWriter;
             _listenerOptions = listenerOptions;
 
-            _connectionsByEndpoint = ImmutableDictionary<IPEndPoint, ManagedQuicConnection>.Empty;
+            _connectionsByEndpoint = ImmutableDictionary<EndPoint, ManagedQuicConnection>.Empty;
 
             _acceptNewConnections = true;
         }
 
-        protected override ManagedQuicConnection? FindConnection(QuicReader reader, IPEndPoint remoteEp)
+        protected override ManagedQuicConnection? FindConnection(QuicReader reader, EndPoint remoteEp)
         {
             // TODO-RZ: dispatch needs more work, currently only one outbound connection per socket works
             if (!_connectionsByEndpoint.TryGetValue(remoteEp, out ManagedQuicConnection? connection))

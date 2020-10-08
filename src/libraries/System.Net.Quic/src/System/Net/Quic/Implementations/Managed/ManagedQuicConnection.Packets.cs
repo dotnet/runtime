@@ -18,7 +18,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         private bool _doKeyUpdate;
 
-        internal void ReceiveData(QuicReader reader, IPEndPoint sender, QuicSocketContext.RecvContext ctx)
+        internal void ReceiveData(QuicReader reader, EndPoint sender, QuicSocketContext.RecvContext ctx)
         {
             if (_isDraining)
             {
@@ -359,7 +359,7 @@ namespace System.Net.Quic.Implementations.Managed
             return result;
         }
 
-        internal void SendData(QuicWriter writer, out IPEndPoint? receiver, QuicSocketContext.SendContext ctx)
+        internal void SendData(QuicWriter writer, out EndPoint? receiver, QuicSocketContext.SendContext ctx)
         {
             receiver = _remoteEndpoint;
 

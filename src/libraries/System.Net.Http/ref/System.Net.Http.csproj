@@ -4,9 +4,7 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Net.Quic.cs" />
     <Compile Include="System.Net.Http.cs" />
-    <Compile Include="System.Net.Quic.Temporary.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />

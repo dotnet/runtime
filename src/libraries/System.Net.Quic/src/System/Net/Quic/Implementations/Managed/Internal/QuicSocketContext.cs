@@ -16,8 +16,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     {
         private static readonly Task _infiniteTimeoutTask = new TaskCompletionSource<int>().Task;
 
-        private readonly IPEndPoint? _localEndPoint;
-        private readonly IPEndPoint? _remoteEndPoint;
+        private readonly EndPoint? _localEndPoint;
+        private readonly EndPoint? _remoteEndPoint;
         private readonly bool _isServer;
         private readonly CancellationTokenSource _socketTaskCts;
 
@@ -42,7 +42,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         private readonly byte[] _sendBuffer = new byte[64 * 1024];
         private readonly byte[] _recvBuffer = new byte[64 * 1024];
 
-        protected QuicSocketContext(IPEndPoint? localEndPoint, IPEndPoint? remoteEndPoint, bool isServer)
+        protected QuicSocketContext(EndPoint? localEndPoint, EndPoint? remoteEndPoint, bool isServer)
         {
             _localEndPoint = localEndPoint;
             _remoteEndPoint = remoteEndPoint;
@@ -61,7 +61,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             SetupSocket(localEndPoint, remoteEndPoint);
         }
 
-        private void SetupSocket(IPEndPoint? localEndPoint, IPEndPoint? remoteEndPoint)
+        private void SetupSocket(EndPoint? localEndPoint, EndPoint? remoteEndPoint)
         {
             if (Socket.AddressFamily == AddressFamily.InterNetwork)
             {
@@ -167,9 +167,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _currentTimeout = Math.Min(_currentTimeout, timestamp);
         }
 
-        protected abstract ManagedQuicConnection? FindConnection(QuicReader reader, IPEndPoint sender);
+        protected abstract ManagedQuicConnection? FindConnection(QuicReader reader, EndPoint sender);
 
-        private void DoReceive(Memory<byte> datagram, IPEndPoint sender)
+        private void DoReceive(Memory<byte> datagram, EndPoint sender)
         {
             // process only datagrams big enough to contain valid QUIC packets
             if (datagram.Length < QuicConstants.MinimumPacketSize)
@@ -240,7 +240,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         protected abstract bool
             OnConnectionStateChanged(ManagedQuicConnection connection, QuicConnectionState newState);
 
-        private int ReceiveFrom(byte[] buffer, out IPEndPoint sender)
+        private int ReceiveFrom(byte[] buffer, out EndPoint sender)
         {
             if (_remoteEndPoint != null)
             {
@@ -250,14 +250,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
             else
             {
-                EndPoint ep = _localEndPoint!;
-                int received = Socket.ReceiveFrom(buffer, ref ep);
-                sender = (IPEndPoint)ep;
-                return received;
+                sender = _localEndPoint!;
+                return Socket.ReceiveFrom(buffer, ref sender);
             }
         }
 
-        private void SendTo(byte[] buffer, int size, IPEndPoint receiver)
+        private void SendTo(byte[] buffer, int size, EndPoint receiver)
         {
             if (_remoteEndPoint != null)
             {
@@ -354,7 +352,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                             }
 
                             var result = await socketReceiveTask.ConfigureAwait(false);
-                            DoReceive(_recvBuffer.AsMemory(0, result.ReceivedBytes), (IPEndPoint)result.RemoteEndPoint);
+                            DoReceive(_recvBuffer.AsMemory(0, result.ReceivedBytes), result.RemoteEndPoint);
                             lastAction = now;
                             // discard the completed task.
                             socketReceiveTask = null;

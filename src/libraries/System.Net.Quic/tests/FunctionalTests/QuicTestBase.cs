@@ -46,12 +46,18 @@ namespace System.Net.Quic.Tests
 
         internal QuicListener CreateQuicListener(IPEndPoint endpoint)
         {
-            QuicListener listener = new QuicListener(ImplementationProvider, endpoint, GetSslServerAuthenticationOptions());
+            QuicListener listener = new QuicListener(ImplementationProvider, new QuicListenerOptions()
+            {
+                ListenEndPoint = endpoint,
+                ServerAuthenticationOptions = GetSslServerAuthenticationOptions(),
+                CertificateFilePath = "Certs/cert.crt",
+                PrivateKeyFilePath = "Certs/cert.key"
+            });
             listener.Start();
             return listener;
         }
 
-        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int millisecondsTimeout = 10_000)
+        internal async Task RunClientServer(Func<QuicConnection, Task> clientFunction, Func<QuicConnection, Task> serverFunction, int millisecondsTimeout = 10_000_000)
         {
             using QuicListener listener = CreateQuicListener();
 
@@ -85,5 +91,10 @@ namespace System.Net.Quic.Tests
     public sealed class MockProviderFactory : IQuicImplProviderFactory
     {
         public QuicImplementationProvider GetProvider() => QuicImplementationProviders.Mock;
+    }
+
+    public sealed class ManagedProviderFactory : IQuicImplProviderFactory
+    {
+        public QuicImplementationProvider GetProvider() => QuicImplementationProviders.Managed;
     }
 }

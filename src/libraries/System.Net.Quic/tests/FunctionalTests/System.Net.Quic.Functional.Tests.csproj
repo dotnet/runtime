@@ -16,4 +16,14 @@
     <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs" Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs" Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="..\certs\cert.crt">
+      <Link>Certs\cert.crt</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\certs\cert.key">
+      <Link>Certs\cert.key</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

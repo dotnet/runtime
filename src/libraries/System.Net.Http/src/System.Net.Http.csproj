@@ -22,18 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Implementations\Managed\**\*.cs">
-      <link>Common\System\Net\Http\aspnetcore\Quic\Implementations\Managed\%(RecursiveDir)%(Filename)%(Extension)</link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\Interop.OpenSsl.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\Interop.OpenSsl.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\Interop\OpenSslQuicMethods.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\Interop\OpenSslQuicMethods.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Quic\NetEventSource.Quic.cs">
-      <Link>Common\System\Net\Http\aspnetcore\Quic\NetEventSource.Quic.cs</Link>
-    </Compile>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
     <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
     <Compile Include="System\Net\Http\CancellationHelper.cs" />

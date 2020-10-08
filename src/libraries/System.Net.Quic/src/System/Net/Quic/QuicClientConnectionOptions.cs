@@ -9,12 +9,7 @@ namespace System.Net.Quic
     /// <summary>
     /// Options to provide to the <see cref="QuicConnection"/> when connecting to a Listener.
     /// </summary>
-#if FEATURE_QUIC_PUBLIC
-    public
-#else
-    internal
-#endif
-    class QuicClientConnectionOptions
+    public class QuicClientConnectionOptions
     {
         /// <summary>
         /// Client authentication options to use when establishing a <see cref="QuicConnection"/>.

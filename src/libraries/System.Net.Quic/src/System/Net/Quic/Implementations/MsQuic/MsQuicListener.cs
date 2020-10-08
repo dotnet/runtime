@@ -186,7 +186,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private void StopAcceptingConnections()
         {
-            _acceptConnectionQueue.Writer.TryComplete();
+            _acceptConnectionQueue?.Writer.TryComplete();
         }
 
         private static uint NativeCallbackHandler(

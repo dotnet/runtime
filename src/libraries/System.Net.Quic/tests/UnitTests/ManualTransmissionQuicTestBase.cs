@@ -35,8 +35,11 @@ namespace System.Net.Quic.Tests
     ///         calls.
     /// </para>
     /// </remarks>
+    // [ConditionalClass(typeof(ManualTransmissionQuicTestBase), nameof(ManualTransmissionQuicTestBase.IsQuicSupported))]
     public class ManualTransmissionQuicTestBase
     {
+        public bool IsQuicSupported => QuicImplementationProviders.Managed.IsSupported;
+
         private const string CertificateFilePath = "Certs/cert.crt";
         private const string PrivateKeyFilePath = "Certs/cert.key";
 

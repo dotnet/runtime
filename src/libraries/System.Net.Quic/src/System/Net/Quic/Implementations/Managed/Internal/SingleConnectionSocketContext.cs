@@ -8,10 +8,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 {
     internal sealed class SingleConnectionSocketContext : QuicSocketContext
     {
-        private readonly IPEndPoint _remoteEndPoint;
+        private readonly EndPoint _remoteEndPoint;
         private readonly ManagedQuicConnection _connection;
 
-        internal SingleConnectionSocketContext(IPEndPoint? localEndpoint, IPEndPoint remoteEndPoint,
+        internal SingleConnectionSocketContext(EndPoint? localEndpoint, EndPoint remoteEndPoint,
             ManagedQuicConnection connection)
             : base(localEndpoint, remoteEndPoint, connection.IsServer)
         {
@@ -19,7 +19,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _connection = connection;
         }
 
-        protected override ManagedQuicConnection? FindConnection(QuicReader reader, IPEndPoint sender)
+        protected override ManagedQuicConnection? FindConnection(QuicReader reader, EndPoint sender)
         {
             return _connection;
         }

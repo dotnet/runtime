@@ -97,7 +97,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Remote endpoint address.
         /// </summary>
-        private readonly IPEndPoint _remoteEndpoint;
+        private readonly EndPoint _remoteEndpoint;
 
         /// <summary>
         ///     GCHandle for this object.
@@ -213,7 +213,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Unsafe access to the <see cref="RemoteEndPoint"/> field. Does not create a defensive copy!
         /// </summary>
-        internal IPEndPoint UnsafeRemoteEndPoint => _remoteEndpoint;
+        internal EndPoint UnsafeRemoteEndPoint => _remoteEndpoint;
 
         // client constructor
         public ManagedQuicConnection(QuicClientConnectionOptions options)
@@ -246,7 +246,7 @@ namespace System.Net.Quic.Implementations.Managed
 
         // server constructor
         public ManagedQuicConnection(QuicListenerOptions options, QuicServerSocketContext socketContext,
-            IPEndPoint remoteEndpoint)
+            EndPoint remoteEndpoint)
         {
             IsServer = true;
             _socketContext = socketContext;
@@ -616,7 +616,8 @@ namespace System.Net.Quic.Implementations.Managed
 
         internal override IPEndPoint LocalEndPoint => _socketContext.LocalEndPoint;
 
-        internal override IPEndPoint RemoteEndPoint => new IPEndPoint(_remoteEndpoint.Address, _remoteEndpoint.Port);
+        // TODO-RZ: create a defensive copy of the endpoint
+        internal override EndPoint RemoteEndPoint => _remoteEndpoint;
 
         internal override ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {

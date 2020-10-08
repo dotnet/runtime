@@ -24,6 +24,21 @@ internal static partial class Interop
         [DllImport("kernel32.dll")]
         private static extern IntPtr LoadLibrary(string filename);
 
+        public static bool IsSupported()
+        {
+            try
+            {
+                // try invoke arbitrary function from the dll;
+                TlsMethod();
+                return true;
+            }
+            catch (DllNotFoundException)
+            {
+                // nope
+                return false;
+            }
+        }
+
         static OpenSslQuic()
         {
             // manually load the platform dependent library to the process to that the relative name gets resolved correctly

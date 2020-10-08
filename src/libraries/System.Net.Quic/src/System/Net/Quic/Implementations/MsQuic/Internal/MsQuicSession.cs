@@ -148,7 +148,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                 return;
             }
 
-            MsQuicApi.Api.SessionCloseDelegate?.Invoke(_nativeObjPtr);
+            MsQuicApi.Api?.SessionCloseDelegate?.Invoke(_nativeObjPtr);
             _nativeObjPtr = IntPtr.Zero;
 
             _disposed = true;
