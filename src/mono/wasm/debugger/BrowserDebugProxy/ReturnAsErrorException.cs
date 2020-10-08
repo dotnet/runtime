@@ -9,6 +9,7 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class ReturnAsErrorException : Exception
     {
         public Result Error { get; }
+
         public ReturnAsErrorException(JObject error)
             => Error = Result.Err(error);
 
@@ -16,19 +17,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             => Error = Result.Err(message);
 
         // FIXME: remove classname=null stuff?
-        public static ReturnAsErrorException ErrorObject(string message, string className=null)
-        {
-            JObject obj = JObject.FromObject(new
+        public static ReturnAsErrorException ErrorObject(string message, string className)
+            => new ReturnAsErrorException(JObject.FromObject(new
             {
                 type = "object",
                 subtype = "error",
                 description = message,
-            });
-
-            if (className != null)
-                obj["className"] = className;
-
-            return new ReturnAsErrorException(obj);
-        }
+                className
+            }));
     }
 }
