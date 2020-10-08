@@ -365,7 +365,7 @@ jobs:
             parameters.liveRuntimeBuildConfig,
             parameters.globalBuildSuffix) }}
     - ${{ if eq(parameters.useOfficialAllConfigurations, true) }}:
-      - build_Windows_NT_x64_${{ parameters.liveLibrariesBuildConfig }}_All_Configurations
+      - build_Windows_NT_x64_${{ parameters.liveLibrariesBuildConfig }}_AllConfigurations
 
   steps:
 
