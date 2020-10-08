@@ -130,12 +130,17 @@ namespace System.Net.Http
             set => throw new PlatformNotSupportedException();
         }
 
-        public bool SupportsAutomaticDecompression => false;
-        public bool SupportsProxy => false;
-        public bool SupportsRedirectConfiguration => true;
+        public const bool SupportsAutomaticDecompression = false;
+        public const bool SupportsProxy = false;
+        public const bool SupportsRedirectConfiguration = true;
 
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
+
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            throw new PlatformNotSupportedException ();
+        }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {

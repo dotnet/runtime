@@ -371,12 +371,5 @@ namespace Microsoft.Diagnostics.Tools.Pgo
             EcmaAssembly ecmaAssembly = (EcmaAssembly)this.GetModuleForSimpleName(simpleName, false);
             return new StandaloneAssemblyMetadata(ecmaAssembly.PEReader);
         }
-        bool IAssemblyResolver.Naked => false;
-
-        bool IAssemblyResolver.SignatureBinary => false;
-
-        bool IAssemblyResolver.InlineSignatureBinary => false;
-
-
     }
 }

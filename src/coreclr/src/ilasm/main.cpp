@@ -66,7 +66,7 @@ void MakeProperSourceFileName(__in __nullterminated WCHAR* wzOrigName,
     {
         j--;
         if(wzProperName[j] == '.') break;
-        if((wzProperName[j] == '\\')||(j == 0))
+        if((wzProperName[j] == DIRECTORY_SEPARATOR_CHAR_A)||(j == 0))
         {
             wcscat_s(wzProperName,MAX_FILENAME_LENGTH,W(".il"));
             break;

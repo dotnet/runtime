@@ -1,25 +1,12 @@
 /**
- * SIMD Intrinsics support for netcore
+ * SIMD Intrinsics support for netcore.
+ * Only LLVM is supported as a backend.
  */
 
 #include <config.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/metadata/icall-decl.h>
 #include "mini.h"
-
-#if defined(DISABLE_JIT)
-
-void
-mono_simd_intrinsics_init (void)
-{
-}
-
-#else
-
-/*
- * Only LLVM is supported as a backend.
- */
-
 #include "mini-runtime.h"
 #include "ir-emit.h"
 #ifdef ENABLE_LLVM
@@ -31,6 +18,15 @@ mono_simd_intrinsics_init (void)
 #include <mono/utils/mono-hwcap.h>
 
 #if defined (MONO_ARCH_SIMD_INTRINSICS) && defined(ENABLE_NETCORE)
+
+#if defined(DISABLE_JIT)
+
+void
+mono_simd_intrinsics_init (void)
+{
+}
+
+#else
 
 #define MSGSTRFIELD(line) MSGSTRFIELD1(line)
 #define MSGSTRFIELD1(line) str##line
@@ -455,7 +451,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			one->inst_c0 = 1;
 			break;
 		}
-		one->dreg = alloc_dreg (cfg, one->type);
+		one->dreg = alloc_dreg (cfg, (MonoStackType)one->type);
 		MONO_ADD_INS (cfg->cbb, one);
 		return emit_simd_ins (cfg, klass, expand_opcode, one->dreg, -1);
 	}
@@ -2168,14 +2164,8 @@ mono_simd_simplify_indirection (MonoCompile *cfg)
 {
 }
 
-#else
-
-MONO_EMPTY_SOURCE_FILE (simd_intrinsics_netcore);
-
-#endif
-
 #endif /* DISABLE_JIT */
-
+#endif /* MONO_ARCH_SIMD_INTRINSICS */
 
 #if defined(ENABLE_NETCORE) && defined(TARGET_AMD64)
 void
@@ -2187,3 +2177,5 @@ ves_icall_System_Runtime_Intrinsics_X86_X86Base___cpuidex (int abcd[4], int func
 #endif
 }
 #endif
+
+MONO_EMPTY_SOURCE_FILE (simd_intrinsics_netcore);

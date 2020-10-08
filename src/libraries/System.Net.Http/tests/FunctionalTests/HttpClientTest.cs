@@ -415,6 +415,93 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
+        [OuterLoop("Incurs small timeout")]
+        [Theory]
+        [InlineData(0, 0)]
+        [InlineData(0, 1)]
+        [InlineData(0, 2)]
+        [InlineData(1, 0)]
+        [InlineData(1, 1)]
+        [InlineData(1, 2)]
+        public async Task GetAsync_ContentCanBeCanceled(int getMode, int cancelMode)
+        {
+            // cancelMode:
+            // 0: CancellationToken
+            // 1: CancelAllPending()
+            // 2: Timeout
+
+            var tcs = new TaskCompletionSource();
+            var cts = new CancellationTokenSource();
+            using HttpClient httpClient = CreateHttpClient();
+
+            // Give client time to read the headers.  There's a race condition here, but if it occurs and the client hasn't finished reading
+            // the headers by when we want it to, the test should still pass, it just won't be testing what we want it to.
+            // The same applies to the Task.Delay below.
+            httpClient.Timeout = cancelMode == 2 ?
+                TimeSpan.FromSeconds(1) :
+                Timeout.InfiniteTimeSpan;
+
+            await LoopbackServerFactory.CreateClientAndServerAsync(
+                async uri =>
+                {
+                    try
+                    {
+                        Exception e = await Assert.ThrowsAsync<TaskCanceledException>(async () =>
+                        {
+                            switch (getMode)
+                            {
+                                case 0:
+                                    await httpClient.GetStringAsync(uri, cts.Token);
+                                    break;
+
+                                case 1:
+                                    await httpClient.GetByteArrayAsync(uri, cts.Token);
+                                    break;
+                            }
+                        });
+
+                        if (cancelMode == 2)
+                        {
+                            Assert.IsType<TimeoutException>(e.InnerException);
+                        }
+                        else
+                        {
+                            Assert.IsNotType<TimeoutException>(e.InnerException);
+                        }
+                    }
+                    finally
+                    {
+                        tcs.SetResult();
+                    }
+                },
+                async server =>
+                {
+                    await server.AcceptConnectionAsync(async connection =>
+                    {
+                        await connection.ReadRequestDataAsync(readBody: false);
+                        await connection.SendResponseAsync(HttpStatusCode.OK, headers: new HttpHeaderData[] { new HttpHeaderData("Content-Length", "5") });
+                        await connection.SendResponseBodyAsync("he");
+
+                        switch (cancelMode)
+                        {
+                            case 0:
+                                await Task.Delay(100);
+                                cts.Cancel();
+                                break;
+
+                            case 1:
+                                await Task.Delay(100);
+                                httpClient.CancelPendingRequests();
+                                break;
+
+                            // case 2: timeout fires on its own
+                        }
+
+                        await tcs.Task;
+                    });
+                });
+        }
+
         [Fact]
         public async Task GetByteArrayAsync_Success()
         {
@@ -1017,7 +1104,7 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version11 : typeof(HttpRequestException) };
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version11 : typeof(HttpRequestException) };
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version20 : typeof(HttpRequestException) };
-                if (QuicConnection.IsQuicSupported)
+                if (QuicImplementationProviders.Default.IsSupported)
                 {
                     yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion30, useSsl, HttpVersion.Version11 };
                     yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion30, useSsl, HttpVersion.Version11 };
@@ -1030,14 +1117,14 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version20 : typeof(HttpRequestException) };
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, HttpVersion.Version20 };
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, HttpVersion.Version20 };
-                if (QuicConnection.IsQuicSupported)
+                if (QuicImplementationProviders.Default.IsSupported)
                 {
                     yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion30, useSsl, useSsl ? HttpVersion.Version20 : HttpVersion.Version11 };
                     yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion30, useSsl, HttpVersion.Version20 };
                     yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion30, useSsl, useSsl ? (object)HttpVersion30 : typeof(HttpRequestException) };
                 }
 
-                if (QuicConnection.IsQuicSupported)
+                if (QuicImplementationProviders.Default.IsSupported)
                 {
                     yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, useSsl ? HttpVersion30 : HttpVersion.Version11 };
                     yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };

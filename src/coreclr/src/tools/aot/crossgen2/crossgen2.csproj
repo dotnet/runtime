@@ -3,13 +3,13 @@
     <AssemblyName>crossgen2</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <OutputType>Exe</OutputType>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <NoWarn>8002,NU1701</NoWarn>
     <Platforms>x64;x86;arm64;arm</Platforms>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <AppendTargetFrameworkToOutputPath Condition="'$(BuildingInsideVisualStudio)' == 'true'">true</AppendTargetFrameworkToOutputPath>
-    <OutputPath>$(BinDir)/crossgen2</OutputPath>
+    <OutputPath>$(RuntimeBinDir)/crossgen2</OutputPath>
     <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <RuntimeIdentifiers>linux-x64;linux-musl-x64;win-x64</RuntimeIdentifiers>
@@ -61,13 +61,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="$(BinDir)\$(JitInterfaceLibraryName)"
+    <Content Include="$(RuntimeBinDir)\$(JitInterfaceLibraryName)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
      />
 
-    <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit_*_$(TargetArchitecture)$(LibraryNameExtension)"
+    <Content Include="$(RuntimeBinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit_*_$(TargetArchitecture)$(LibraryNameExtension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
@@ -77,7 +77,7 @@
   <!-- On windows we can re-use the clrjit.dll produced in the build for aot compilation. On Linux
        this works at runtime, but makes it difficult to debug the jit.-->
   <ItemGroup Condition="'$(TargetOS)' == 'Windows_NT'">
-    <Content Include="$(BinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+    <Content Include="$(RuntimeBinDir)\$(NativeArchFolder)$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="$(LibraryNamePrefix)clrjit_$(TargetSpec)$(LibraryNameExtension)"
@@ -87,13 +87,13 @@
   <Target Name="CreateCrossTargetingPackage" AfterTargets="Build" Condition="'$(CrossHostArch)' != ''">
 
     <PropertyGroup>
-      <CrossPackageFolder>$(BinDir)\$(CrossHostArch)\crossgen2</CrossPackageFolder>
+      <CrossPackageFolder>$(RuntimeBinDir)\$(CrossHostArch)\crossgen2</CrossPackageFolder>
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageFile Include="$(BinDir)\crossgen2\*"
-        Exclude="$(BinDir)\crossgen2\$(JitInterfaceLibraryName);$(BinDir)\crossgen2\$(LibraryNamePrefix)clrjit_*$(LibraryNameExtension)" />
-      <PackageFile Include="$(BinDir)\$(CrossHostArch)\$(LibraryNamePrefix)jitinterface_$(CrossHostArch)$(LibraryNameExtension)" />
+      <PackageFile Include="$(RuntimeBinDir)\crossgen2\*"
+        Exclude="$(RuntimeBinDir)\crossgen2\$(JitInterfaceLibraryName);$(RuntimeBinDir)\crossgen2\$(LibraryNamePrefix)clrjit_*$(LibraryNameExtension)" />
+      <PackageFile Include="$(RuntimeBinDir)\$(CrossHostArch)\$(LibraryNamePrefix)jitinterface_$(CrossHostArch)$(LibraryNameExtension)" />
     </ItemGroup>
 
     <MakeDir Directories="$(CrossPackageFolder)" />
@@ -105,13 +105,13 @@
 
     <Copy
       Condition="'$(TargetOS)' != 'Windows_NT'"
-      SourceFiles="$(BinDir)$(CrossHostArch)\$(LibraryNamePrefix)clrjit_$(CrossTargetSpec)$(LibraryNameExtension)"
+      SourceFiles="$(RuntimeBinDir)$(CrossHostArch)\$(LibraryNamePrefix)clrjit_$(CrossTargetSpec)$(LibraryNameExtension)"
       DestinationFolder="$(CrossPackageFolder)"
       UseHardLinksIfPossible="true"
       />
     <Copy
       Condition="'$(TargetOS)' == 'Windows_NT'"
-      SourceFiles="$(BinDir)$(CrossHostArch)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
+      SourceFiles="$(RuntimeBinDir)$(CrossHostArch)\$(LibraryNamePrefix)clrjit$(LibraryNameExtension)"
       DestinationFiles="$(CrossPackageFolder)\$(LibraryNamePrefix)clrjit_$(CrossTargetSpec)$(LibraryNameExtension)"
       UseHardLinksIfPossible="true"
       />

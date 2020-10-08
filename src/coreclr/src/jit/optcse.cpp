@@ -1417,7 +1417,7 @@ void Compiler::optValnumCSE_Availablity()
                     isUse = BitVecOps::IsMember(cseLivenessTraits, available_cses, CseAvailBit);
                     isDef = !isUse; // If is isn't a CSE use, it is a CSE def
 
-                    // Is this a "use", that we haven't yet marked as live accross a call
+                    // Is this a "use", that we haven't yet marked as live across a call
                     // and it is not available when we have calls that kill CSE's (cseAvailCrossCallBit)
                     // if the above is true then we will mark this the CSE as live across a call
                     //

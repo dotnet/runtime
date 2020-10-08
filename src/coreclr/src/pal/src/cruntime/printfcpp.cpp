@@ -59,6 +59,7 @@ static int Internal_Convertfwrite(CPalThread *pthrCurrent, const void *buffer, s
     clearerr (stream);
 #endif
 
+
     if(convert)
     {
         int nsize;
@@ -66,6 +67,8 @@ static int Internal_Convertfwrite(CPalThread *pthrCurrent, const void *buffer, s
         nsize = WideCharToMultiByte(CP_ACP, 0,(LPCWSTR)buffer, count, 0, 0, 0, 0);
         if (!nsize)
         {
+            if (count == 0)
+                return 0;
             ASSERT("WideCharToMultiByte failed.  Error is %d\n", GetLastError());
             return -1;
         }

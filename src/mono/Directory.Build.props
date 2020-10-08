@@ -17,7 +17,7 @@
   <PropertyGroup>
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
-    <BinDir>$(ArtifactsBinDir)mono\$(PlatformConfigPathPart)\</BinDir>
+    <RuntimeBinDir>$(ArtifactsBinDir)mono\$(PlatformConfigPathPart)\</RuntimeBinDir>
 
     <BaseIntermediateOutputPath>$(ArtifactsObjDir)mono\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
   </PropertyGroup>

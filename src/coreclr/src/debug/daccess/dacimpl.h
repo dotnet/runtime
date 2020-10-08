@@ -841,7 +841,8 @@ class ClrDataAccess
       public ISOSDacInterface6,
       public ISOSDacInterface7,
       public ISOSDacInterface8,
-      public ISOSDacInterface9
+      public ISOSDacInterface9,
+      public ISOSDacInterface10
 {
 public:
     ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget=0);
@@ -1209,6 +1210,12 @@ public:
     // ISOSDacInterface9
     virtual HRESULT STDMETHODCALLTYPE GetBreakingChangeVersion(int* pVersion);
 
+    // ISOSDacInterface10
+    virtual HRESULT STDMETHODCALLTYPE GetObjectComWrappersData(CLRDATA_ADDRESS objAddr, CLRDATA_ADDRESS *rcw, unsigned int count, CLRDATA_ADDRESS *mowList, unsigned int *pNeeded);
+    virtual HRESULT STDMETHODCALLTYPE IsComWrappersCCW(CLRDATA_ADDRESS ccw, BOOL *isComWrappersCCW);
+    virtual HRESULT STDMETHODCALLTYPE GetComWrappersCCWData(CLRDATA_ADDRESS ccw, CLRDATA_ADDRESS *managedObject, int *refCount);
+    virtual HRESULT STDMETHODCALLTYPE IsComWrappersRCW(CLRDATA_ADDRESS rcw, BOOL *isComWrappersRCW);
+    virtual HRESULT STDMETHODCALLTYPE GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRESS *identity);
     //
     // ClrDataAccess.
     //
@@ -1475,6 +1482,8 @@ private:
 #endif
 
 #ifdef FEATURE_COMWRAPPERS
+    BOOL DACIsComWrappersCCW(CLRDATA_ADDRESS ccwPtr);
+    TADDR DACGetManagedObjectWrapperFromCCW(CLRDATA_ADDRESS ccwPtr);
     HRESULT DACTryGetComWrappersObjectFromCCW(CLRDATA_ADDRESS ccwPtr, OBJECTREF* objRef);
 #endif
 
