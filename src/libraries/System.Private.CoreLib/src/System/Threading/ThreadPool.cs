@@ -449,7 +449,7 @@ namespace System.Threading
         {
             Debug.Assert((callback is IThreadPoolWorkItem) ^ (callback is Task));
 
-            if (FrameworkEventSource.Log.IsEnabled() && loggingEnabled)
+            if (loggingEnabled && FrameworkEventSource.Log.IsEnabled())
                 System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolEnqueueWorkObject(callback);
 
             ThreadPoolWorkQueueThreadLocals? tl = null;
