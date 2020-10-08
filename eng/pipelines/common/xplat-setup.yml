@@ -115,9 +115,7 @@ jobs:
           queue: BuildPool.Ubuntu.1604.Amd64
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool
-        ${{ if and(in(parameters.osGroup, 'OSX', 'iOS', 'tvOS'), ne(parameters.archType, 'arm64')) }}:
-          vmImage: 'macOS-10.14'
-        ${{ if and(in(parameters.osGroup, 'OSX', 'iOS', 'tvOS'), eq(parameters.archType, 'arm64')) }}:
+        ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
           vmImage: 'macOS-10.15'
 
         ${{ if eq(parameters.osGroup, 'Browser') }}:
