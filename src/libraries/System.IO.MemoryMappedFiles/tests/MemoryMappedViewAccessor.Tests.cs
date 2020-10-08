@@ -135,13 +135,18 @@ namespace System.IO.MemoryMappedFiles.Tests
         }
 
         /// <summary>
-        /// Test to verify the accessor's PointerOffset.
+        /// Test to verify the accessor's PointerOffset at the beginning of a view.
         /// </summary>
-        [Fact]
-        public void PointerOffsetMatchesViewStart()
+        [Theory]
+        [InlineData(1)] // smallest possible non-zero size
+        [InlineData(4095)] // just under typical page size
+        [InlineData(4096)] // typical page size
+        [InlineData(4099)] // just larger than typical page size
+        [InlineData(12290)] // just larger than a few typical page sizes
+        [InlineData(70_000)] // larger than typical Windows allocation granularity (64K)
+        public void PointerOffsetMatchesViewStart(int mapLength)
         {
-            const int MapLength = 4096;
-            foreach (MemoryMappedFile mmf in CreateSampleMaps(MapLength))
+            foreach (MemoryMappedFile mmf in CreateSampleMaps(mapLength))
             {
                 using (mmf)
                 {
@@ -150,27 +155,9 @@ namespace System.IO.MemoryMappedFiles.Tests
                         Assert.Equal(0, acc.PointerOffset);
                     }
 
-                    using (MemoryMappedViewAccessor acc = mmf.CreateViewAccessor(0, MapLength))
+                    using (MemoryMappedViewAccessor acc = mmf.CreateViewAccessor(0, mapLength))
                     {
                         Assert.Equal(0, acc.PointerOffset);
-                    }
-                    using (MemoryMappedViewAccessor acc = mmf.CreateViewAccessor(1, MapLength - 1))
-                    {
-                        Assert.Equal(1, acc.PointerOffset);
-                    }
-                    using (MemoryMappedViewAccessor acc = mmf.CreateViewAccessor(MapLength - 1, 1))
-                    {
-                        Assert.Equal(MapLength - 1, acc.PointerOffset);
-                    }
-
-                    // On Unix creating a view of size zero will result in an offset and capacity
-                    // of 0 due to mmap behavior, whereas on Windows it's possible to create a
-                    // zero-size view anywhere in the created file mapping.
-                    using (MemoryMappedViewAccessor acc = mmf.CreateViewAccessor(MapLength, 0))
-                    {
-                        Assert.Equal(
-                            OperatingSystem.IsWindows() ? MapLength : 0,
-                            acc.PointerOffset);
                     }
                 }
             }
@@ -180,26 +167,52 @@ namespace System.IO.MemoryMappedFiles.Tests
         /// Test all of the Read/Write accessor methods against a variety of maps and accessors.
         /// </summary>
         [Theory]
-        [InlineData(0, 8192)]
-        [InlineData(8100, 92)]
-        [InlineData(0, 20)]
-        [InlineData(1, 8191)]
-        [InlineData(17, 8175)]
-        [InlineData(17, 20)]
-        public void AllReadWriteMethods(long offset, long size)
+        [InlineData(8192, 0, 8192)]
+        [InlineData(8192, 8100, 92)]
+        [InlineData(8192, 0, 20)]
+        [InlineData(8192, 1, 8191)]
+        [InlineData(8192, 17, 8175)]
+        [InlineData(8192, 17, 20)]
+        [InlineData(70_000, 69_900, 16)]
+        public void AllReadWriteMethods(int mapSize, int offset, int size)
         {
-            foreach (MemoryMappedFile mmf in CreateSampleMaps(8192))
+            foreach (MemoryMappedFile mmf in CreateSampleMaps(mapSize))
             {
                 using (mmf)
                 using (MemoryMappedViewAccessor acc = mmf.CreateViewAccessor(offset, size))
                 {
+                    // Validate all of the read/write methods
                     AssertWritesReads(acc);
+
+                    // Make sure that the internal offsets used for reading/writing are correct.
+                    // This is the only meaningful way to validate PointerOffset, as its value's
+                    // correctness is based entirely on the address selected by the OS to start
+                    // the view and the distance from there to the user-supplied offset.
+                    PopulateWithRandomData(mmf);
+                    unsafe
+                    {
+                        byte* ptr = null;
+                        try
+                        {
+                            acc.SafeMemoryMappedViewHandle.AcquirePointer(ref ptr);
+                            for (int i = 0; i < size; i++)
+                            {
+                                Assert.Equal(acc.ReadByte(i), *(ptr + acc.PointerOffset + i));
+                                acc.Write(i, (byte)i);
+                                Assert.Equal((byte)i, acc.ReadByte(i));
+                            }
+                        }
+                        finally
+                        {
+                            acc.SafeMemoryMappedViewHandle.ReleasePointer();
+                        }
+                    }
                 }
             }
         }
 
         /// <summary>Performs many reads and writes of various data types against the accessor.</summary>
-        private static unsafe void AssertWritesReads(MemoryMappedViewAccessor acc) // TODO: unsafe can be removed once using C# 6 compiler
+        private static void AssertWritesReads(MemoryMappedViewAccessor acc)
         {
             // Successful reads and writes at the beginning for each data type
             AssertWriteRead<bool>(false, 0, (pos, value) => acc.Write(pos, value), pos => acc.ReadBoolean(pos));

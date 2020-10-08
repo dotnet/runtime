@@ -98,7 +98,6 @@ monoutils_sources = \
 	mono-mmap-wasm.c  		\
 	mono-mmap.h  		\
 	mono-mmap-internals.h	\
-	mono-mmap-windows-internals.h	\
 	mono-os-mutex.h		\
 	mono-os-mutex.c		\
 	mono-flight-recorder.h		\

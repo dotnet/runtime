@@ -495,7 +495,7 @@ log_process_info_event (EventPipeEventSource *event_source)
 	const ep_char8_t *cmd_line = ep_rt_managed_command_line_get ();
 
 	if (cmd_line == NULL)
-		cmd_line = ep_rt_command_line_get ();
+		cmd_line = ep_rt_os_command_line_get ();
 
 	// Log the process information event.
 	ep_event_source_send_process_info (event_source, cmd_line);
@@ -583,7 +583,7 @@ disable (EventPipeSessionID id)
 	ep_requires_lock_not_held ();
 
 	if (_ep_can_start_threads)
-		ep_rt_thread_setup ();
+		ep_rt_thread_setup (false);
 
 	if (id == 0)
 		return;
@@ -632,7 +632,7 @@ write_event (
 	ep_return_void_if_nok (ep_event_is_enabled (ep_event) == true);
 
 	// Get current thread.
-	EventPipeThread *const thread = ep_thread_get ();
+	EventPipeThread *const thread = ep_thread_get_or_create ();
 
 	// If the activity id isn't specified AND we are in a eventpipe thread, pull it from the current thread.
 	// If pThread is NULL (we aren't in writing from a managed thread) then pActivityId can be NULL
@@ -1288,7 +1288,7 @@ ep_finish_init (void)
 					ep_session_start_streaming ((EventPipeSession *)session_id);
 				ep_rt_session_id_array_iterator_next (&_ep_deferred_enable_session_ids, &deferred_session_ids_iterator);
 			}
-			ep_rt_session_id_array_clear (&_ep_deferred_enable_session_ids);
+			ep_rt_session_id_array_clear (&_ep_deferred_enable_session_ids, NULL);
 		}
 
 		ep_rt_sample_profiler_can_start_sampling ();
@@ -1306,7 +1306,7 @@ ep_finish_init (void)
 			disable (session_id);
 			ep_rt_session_id_array_iterator_next (&_ep_deferred_disable_session_ids, &deferred_session_ids_iterator);
 		}
-		ep_rt_session_id_array_clear (&_ep_deferred_disable_session_ids);
+		ep_rt_session_id_array_clear (&_ep_deferred_disable_session_ids, NULL);
 	}
 
 ep_on_exit:
@@ -1406,22 +1406,6 @@ ep_get_wait_handle (EventPipeSessionID session_id)
 }
 
 /*
- * EventPipePerf.
- */
-
-int64_t
-ep_perf_counter_query (void)
-{
-	return ep_rt_perf_counter_query ();
-}
-
-int64_t
-ep_perf_frequency_query (void)
-{
-	return ep_rt_perf_frequency_query ();
-}
-
-/*
  * EventPipeProviderCallbackDataQueue.
  */
 
@@ -1449,6 +1433,33 @@ ep_provider_callback_data_queue_try_dequeue (
 	ep_provider_callback_data_free (value);
 
 	return true;
+}
+
+/*
+ * EventPipeSystemTime.
+ */
+
+void
+ep_system_time_set (
+	EventPipeSystemTime *system_time,
+	uint16_t year,
+	uint16_t month,
+	uint16_t day_of_week,
+	uint16_t day,
+	uint16_t hour,
+	uint16_t minute,
+	uint16_t second,
+	uint16_t milliseconds)
+{
+	EP_ASSERT (system_time != NULL);
+	system_time->year = year;
+	system_time->month = month;
+	system_time->day_of_week = day_of_week;
+	system_time->day = day;
+	system_time->hour = hour;
+	system_time->minute = minute;
+	system_time->second = second;
+	system_time->milliseconds = milliseconds;
 }
 
 #endif /* ENABLE_PERFTRACING */

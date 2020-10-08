@@ -24,10 +24,8 @@ trigger:
     - eng/pipelines/libraries/*
     - eng/pipelines/runtime.yml
 
-
-pr: none
-
 jobs:
+
 #
 # Checkout repository
 #

@@ -94,6 +94,7 @@ jobs:
           runtimeFlavor: ${{ parameters.runtimeFlavor }}
           helixQueues: ${{ parameters.helixQueues }}
           targetRid: ${{ parameters.targetRid }}
+          nameSuffix: ${{ parameters.nameSuffix }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
     - task: PublishBuildArtifacts@1
