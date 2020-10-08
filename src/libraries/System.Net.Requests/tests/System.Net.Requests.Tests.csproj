@@ -2,7 +2,7 @@
   <PropertyGroup>
     <StringResourcesPath>../src/Resources/Strings.resx</StringResourcesPath>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)-Windows_NT;$(NetCoreAppCurrent)-Unix</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
     <DefineConstants>$(DefineConstants);NETSTANDARD</DefineConstants>
     <NoWarn>$(NoWarn);SYSLIB0014</NoWarn>
   </PropertyGroup>

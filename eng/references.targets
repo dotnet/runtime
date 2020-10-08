@@ -21,12 +21,35 @@
                       PrivateAssets="all" />
   </ItemGroup>
 
+  <!-- Annotate the CoreLib P2P with required attributes. -->
+  <ItemGroup>
+    <ProjectReference Update="$(CoreLibProject)">
+      <Private>false</Private>
+      <SetConfiguration Condition="'$(RuntimeFlavor)' == 'CoreCLR' and
+                                    '$(Configuration)' != '$(CoreCLRConfiguration)'">Configuration=$(CoreCLRConfiguration)</SetConfiguration>
+      <SetConfiguration Condition="'$(RuntimeFlavor)' == 'Mono' and
+                                    '$(Configuration)' != '$(MonoConfiguration)'">Configuration=$(MonoConfiguration)</SetConfiguration>
+      <!-- Don't flow TargetFramework and Platform to use same inputs and outputs as the CoreLib's build as part of the runtime. -->
+      <UndefineProperties>$(UndefineProperties);TargetFramework;Platform</UndefineProperties>
+    </ProjectReference>
+  </ItemGroup>
+
   <!-- Project references shouldn't be copied to the output for non test apps. -->
   <ItemDefinitionGroup Condition="'$(IsTestProject)' != 'true' and '$(IsTestSupportProject)' != 'true'">
     <ProjectReference>
       <Private>false</Private>
     </ProjectReference>
   </ItemDefinitionGroup>
+
+  <!-- Disable TargetArchitectureMismatch warning when we reference CoreLib which is platform specific. -->
+  <Target Name="SetAssemblyWarnOnErrorOnTargetArchitectureForCoreLib"
+          BeforeTargets="ResolveAssemblyReferences"
+          Condition="'@(ProjectReference)' != '' and
+                     @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)'))">
+    <PropertyGroup>
+      <ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>None</ResolveAssemblyWarnOrErrorOnTargetArchitectureMismatch>
+    </PropertyGroup>
+  </Target>
 
   <!-- Filter out transitive P2Ps which should be excluded. -->
   <Target Name="FilterTransitiveProjectReferences"
@@ -42,20 +65,23 @@
     </ItemGroup>
   </Target>
 
-  <!-- Make shared framework assemblies not app-local (non private) and don't reference them. -->
-  <Target Name="UpdateProjectReferencesWithPrivateAttribute"
-          AfterTargets="AssignProjectConfiguration"
-          BeforeTargets="PrepareProjectReferences"
+  <!--
+    Make shared framework assemblies not app-local (non private), don't reference them and flow
+    the TargetFramework-TargetOS touple to avoid tfm selection.
+  -->
+  <Target Name="UpdateSharedFrameworkProjectReferences"
+          BeforeTargets="ResolveP2PReferences;AssignProjectConfiguration"
           Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                      ('$(IsTestProject)' == 'true' or '$(IsTestSupportProject)' == 'true') and
-                     '@(ProjectReferenceWithConfiguration)' != ''">
+                     '@(ProjectReference)' != ''">
     <ItemGroup>
-      <ProjectReferenceWithConfiguration Condition="$(NetCoreAppLibrary.Contains('%(Filename);'))">
+      <ProjectReference Condition="$(NetCoreAppLibrary.Contains('%(Filename);'))">
         <PrivateAssets>all</PrivateAssets>
         <Private>false</Private>
         <ReferenceOutputAssembly Condition="!$(NetCoreAppLibraryNoReference.Contains('%(Filename);')) and
-                                            '%(ProjectReferenceWithConfiguration.SkipUseReferenceAssembly)' != 'true'">false</ReferenceOutputAssembly>
-      </ProjectReferenceWithConfiguration>
+                                            '%(ProjectReference.SkipUseReferenceAssembly)' != 'true'">false</ReferenceOutputAssembly>
+        <ReferringTargetFramework Condition="'$(TargetFrameworkSuffix)' == ''">$(TargetFramework)-$(TargetOS)</ReferringTargetFramework>
+      </ProjectReference>
     </ItemGroup>
   </Target>
 

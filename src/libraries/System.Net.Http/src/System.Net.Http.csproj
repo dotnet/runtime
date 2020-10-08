@@ -720,7 +720,7 @@
     <Reference Include="System.Security.Cryptography.Primitives" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Runtime.InteropServices.JavaScript\src\System.Private.Runtime.InteropServices.JavaScript.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="msquic.dll" Condition="Exists('msquic.dll')">

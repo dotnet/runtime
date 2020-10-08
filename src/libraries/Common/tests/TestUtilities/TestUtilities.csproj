@@ -71,8 +71,8 @@
   <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <!-- Upgrade the NetStandard.Library transitive xunit dependency to avoid 1.x NS dependencies. -->
     <PackageReference Include="NETStandard.Library" Version="$(NetStandardLibrary20Version)" />
-    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\ref\Microsoft.Win32.Registry.csproj" PrivateAssets="all" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" PrivateAssets="all" />
+    <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Win32.Registry\src\Microsoft.Win32.Registry.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFramework)' == 'net461'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
