@@ -22,6 +22,7 @@
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Speech\pkg\System.Speech.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.PerformanceCounter\pkg\System.Diagnostics.PerformanceCounter.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <ProjectReference Include="$(LibrariesProjectRoot)\System.Diagnostics.EventLog\pkg\System.Diagnostics.EventLog.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Drawing.Common\pkg\System.Drawing.Common.pkgproj" Condition="'$(BuildAllConfigurations)' == 'true'" />
     <ProjectReference Include="$(PkgDir)\Microsoft.NETCore.Platforms\Microsoft.NETCore.Platforms.proj" />
   </ItemGroup>
 
