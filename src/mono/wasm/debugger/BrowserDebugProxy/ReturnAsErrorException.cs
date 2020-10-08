@@ -16,14 +16,16 @@ namespace Microsoft.WebAssembly.Diagnostics
         public ReturnAsErrorException(string message)
             => Error = Result.Err(message);
 
-        // FIXME: remove classname=null stuff?
         public static ReturnAsErrorException ErrorObject(string message, string className)
             => new ReturnAsErrorException(JObject.FromObject(new
             {
-                type = "object",
-                subtype = "error",
-                description = message,
-                className
+                result = new
+                {
+                    type = "object",
+                    subtype = "error",
+                    description = message,
+                    className
+                }
             }));
     }
 }
