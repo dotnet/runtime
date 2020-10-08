@@ -4,9 +4,9 @@
       <Uri>https://github.com/dotnet/standard</Uri>
       <Sha>cfe95a23647c7de1fe1a349343115bd7720d6949</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-alpha.1.20505.1">
+    <Dependency Name="Microsoft.NETCore.Runtime.ICU.Transport" Version="6.0.0-alpha.1.20506.2">
       <Uri>https://github.com/dotnet/icu</Uri>
-      <Sha>1e583e53b0d7964d578e6fa2785a51d8d017a0ff</Sha>
+      <Sha>0b965227ab9c360bdd700c101c0d771846a1ca0a</Sha>
     </Dependency>
   </ProductDependencies>
   <ToolsetDependencies>
