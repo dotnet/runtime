@@ -66,6 +66,8 @@
     <!-- CoreClr dependencies -->
     <MicrosoftNETCoreILAsmVersion>5.0.0-preview.8.20359.4</MicrosoftNETCoreILAsmVersion>
     <!-- Libraries dependencies -->
+    <MicrosoftNETCorePlatformsPackageVersion>5.0.0</MicrosoftNETCorePlatformsPackageVersion>
+    <MicrosoftNETCoreTargetsPackageVersion>5.0.0</MicrosoftNETCoreTargetsPackageVersion>
     <SystemBuffersVersion>4.5.1</SystemBuffersVersion>
     <SystemCollectionsVersion>4.3.0</SystemCollectionsVersion>
     <SystemCollectionsConcurrentVersion>4.3.0</SystemCollectionsConcurrentVersion>
