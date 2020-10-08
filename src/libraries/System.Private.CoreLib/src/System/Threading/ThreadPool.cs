@@ -594,7 +594,7 @@ namespace System.Threading
                         return true;
                     }
 
-                    if (FrameworkEventSource.Log.IsEnabled() && workQueue.loggingEnabled)
+                    if (workQueue.loggingEnabled && FrameworkEventSource.Log.IsEnabled())
                         System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolDequeueWorkObject(workItem);
 
                     //
