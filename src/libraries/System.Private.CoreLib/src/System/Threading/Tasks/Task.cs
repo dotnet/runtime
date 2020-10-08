@@ -3201,7 +3201,8 @@ namespace System.Threading.Tasks
             Debug.Assert(continuationObject != null);
 
             TplEventSource log = TplEventSource.Log;
-            if (log.IsEnabled())
+            bool etwIsEnabled = log.IsEnabled();
+            if (etwIsEnabled)
                 log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.CompletionNotification);
 
             bool canInlineContinuations =
@@ -3248,8 +3249,6 @@ namespace System.Threading.Tasks
             // Wait for any concurrent adds or removes to be retired
             lock (continuations) { }
             int continuationCount = continuations.Count;
-
-            bool etwIsEnabled = log.IsEnabled();
 
             // Fire the asynchronous continuations first. However, if we're not able to run any continuations synchronously,
             // then we can skip this first pass, since the second pass that tries to run everything synchronously will instead
