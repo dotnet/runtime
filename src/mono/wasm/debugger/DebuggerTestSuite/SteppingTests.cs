@@ -1079,28 +1079,6 @@ namespace DebuggerTests
             });
         }
 
-        // [Fact]
-        // Issue: https://github.com/dotnet/runtime/issues/42704
-        async Task BreakpointOnHiddenLineShouldStopAtEarliestNextAvailableLine()
-        {
-            var insp = new Inspector();
-
-            //Collect events
-            var scripts = SubscribeToScripts(insp);
-
-            await Ready();
-            await insp.Ready(async (cli, token) =>
-            {
-                ctx = new DebugTestContext(cli, insp, token, scripts);
-
-                await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 539, 8);
-                await EvaluateAndCheck(
-                    "window.setTimeout(function() { invoke_static_method ('[debugger-test] HiddenSequencePointTest:StepOverHiddenSP'); }, 1);",
-                    "dotnet://debugger-test.dll/debugger-test.cs", 546, 4,
-                    "StepOverHiddenSP2");
-            });
-        }
-
         [Fact]
         public async Task BreakpointOnHiddenLineOfMethodWithNoNextVisibleLineShouldNotPause()
         {
