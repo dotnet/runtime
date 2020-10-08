@@ -462,7 +462,7 @@ jobs:
         cleanUnpackFolder: false
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-    - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+    - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }}
       displayName: Install Build Dependencies
 
     - script: |

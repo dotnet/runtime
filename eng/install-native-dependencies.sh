@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+if [ "$1" = "OSX" ] && [ "$2" = "arm64" ]; then
+    # Cross compilation for osx-arm64 requires xcode 12.2 or greater
+    sudo xcode-select -s /Applications/Xcode_12.2.app/Contents/Developer
+fi
+
 if [ "$1" = "Linux" ]; then
     sudo apt update
     if [ "$?" != "0" ]; then
