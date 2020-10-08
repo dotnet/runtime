@@ -69,7 +69,7 @@ else
     __CMakeArgs="-DFEATURE_DISTRO_AGNOSTIC_SSL=$__PortableBuild $__CMakeArgs"
     __CMakeArgs="-DCMAKE_STATIC_LIB_LINK=$__StaticLibLink $__CMakeArgs"
 
-    if [[ "$__BuildArch" != x86 && "$__BuildArch" != x64 ]]; then
+    if [[ "$__BuildArch" != x86 && "$__BuildArch" != x64 && "$__BuildArch" != "$__HostArch" ]]; then
         __CrossBuild=1
         echo "Set CrossBuild for $__BuildArch build"
     fi
@@ -157,4 +157,4 @@ setup_dirs
 check_prereqs
 
 # Build the corefx native components.
-build_native "$__BuildArch" "$__nativeroot" "$__nativeroot" "$__IntermediatesDir" "native libraries component"
+build_native "$__TargetOS" "$__BuildArch" "$__nativeroot" "$__nativeroot" "$__IntermediatesDir" "$__CMakeArgs" "native libraries component"
