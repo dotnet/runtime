@@ -265,6 +265,7 @@ namespace System.Net.Quic.Tests
 
                     await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
 
+                    await stream.ShutdownWriteCompleted();
                     await connection.CloseAsync(errorCode: 0);
                 });
 
