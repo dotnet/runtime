@@ -67,7 +67,8 @@ jobs:
       not(in(parameters.archType, 'x64', 'x86')),
       eq(parameters.runtimeFlavor, 'mono'),
       eq(parameters.isOfficialBuild, true),
-      ne(parameters.crossrootfsDir, '')) }}
+      ne(parameters.crossrootfsDir, ''),
+      and(eq(parameters.osGroup, 'OSX'), eq(parameters.archType, 'arm64'))) }}
 
   - name: BuildAction
     value: -test
@@ -215,7 +216,7 @@ jobs:
       value: >-
         -subset installer -ci
         $(BuildAction)
-        /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+        /p:CrossBuild=${{ or(ne(parameters.crossrootfsDir, ''), and(eq(parameters.osGroup, 'OSX'), eq(parameters.archType, 'arm64'))) }}
         /p:PortableBuild=$(_PortableBuild)
         /p:SkipTests=$(SkipTests)
         $(LiveOverridePathArgs)

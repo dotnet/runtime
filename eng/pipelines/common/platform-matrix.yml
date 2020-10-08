@@ -463,9 +463,6 @@ jobs:
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
           platforms: ${{ parameters.platforms }}
-        # osx-arm64 is a cross build, but it doesn't require a ROOT_FS
-        # Use an identifiable value instead of creating and passing a separate parameter
-        crossrootfsDir: ':CrossBuildNoRootFS:'
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 

@@ -41,7 +41,7 @@ jobs:
 
       # Do not rename as it clashes with MSBuild property in libraries/build-native.proj
       - name: _crossBuildPropertyArg
-        value: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+        value: /p:CrossBuild=${{ or(ne(parameters.crossrootfsDir, ''),  and(eq(parameters.osGroup, 'OSX'), eq(parameters.archType, 'arm64'))) }}
 
       - name: _cxx11Parameter
         ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.archType, 'arm64')) }}:
