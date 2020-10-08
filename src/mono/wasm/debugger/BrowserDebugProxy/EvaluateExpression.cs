@@ -163,7 +163,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     default:
                         return value.GetType().FullName;
                 }
-                throw new ReturnAsErrorException($"GetTypefullName: Evaluate of this datatype {type} not implemented yet", "Unsupported");
+                throw ReturnAsErrorException.ErrorObject($"GetTypefullName: Evaluate of this datatype {type} not implemented yet", "Unsupported");
             }
         }
 
@@ -188,7 +188,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 string memberAccessString = maes.ToString();
                 JObject value = await resolver.Resolve(memberAccessString, token);
                 if (value == null)
-                    throw new ReturnAsErrorException($"Failed to resolve member access for {memberAccessString}", "ReferenceError");
+                    throw ReturnAsErrorException.ErrorObject($"Failed to resolve member access for {memberAccessString}", "ReferenceError");
 
                 memberAccessValues.Add(value);
             }
@@ -203,7 +203,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 JObject value = await resolver.Resolve(var.Identifier.Text, token);
                 if (value == null)
-                    throw new ReturnAsErrorException($"The name {var.Identifier.Text} does not exist in the current context", "ReferenceError");
+                    throw ReturnAsErrorException.ErrorObject($"The name {var.Identifier.Text} does not exist in the current context", "ReferenceError");
 
                 values.Add(value);
             }
@@ -239,7 +239,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 string var_name = expressionTree.ToString();
                 JObject value = await resolver.Resolve(var_name, token);
                 if (value == null)
-                    throw new ReturnAsErrorException($"Cannot find member named '{var_name}'.", "ReferenceError");
+                    throw ReturnAsErrorException.ErrorObject($"Cannot find member named '{var_name}'.", "ReferenceError");
 
                 return value;
             }
@@ -283,7 +283,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     foreach (Diagnostic d in result.Diagnostics)
                         sb.Append(d.ToString());
 
-                    throw new ReturnAsErrorException(sb.ToString(), "CompilationError");
+                    throw ReturnAsErrorException.ErrorObject(sb.ToString(), "CompilationError");
                 }
 
                 ms.Seek(0, SeekOrigin.Begin);
@@ -327,26 +327,5 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-    }
-
-    internal class ReturnAsErrorException : Exception
-    {
-        public Result Error { get; }
-        public ReturnAsErrorException(JObject error)
-            => Error = Result.Err(error);
-
-        public ReturnAsErrorException(string message, string className)
-        {
-            Error = Result.Err(JObject.FromObject(new
-            {
-                result = new
-                {
-                    type = "object",
-                    subtype = "error",
-                    description = message,
-                    className
-                }
-            }));
-        }
     }
 }
