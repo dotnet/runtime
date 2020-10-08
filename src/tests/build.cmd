@@ -629,7 +629,7 @@ exit /b 1
 
 :PrecompileFX
 
-set __CrossgenCmd="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\R2RTest\R2RTest.dll" compile-framework -cr "%CORE_ROOT%" --output-directory "%CORE_ROOT%\crossgen.out"  --large-bubble --release --target-arch %__BuildArch% -dop %NUMBER_OF_PROCESSORS%
+set __CrossgenCmd="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\R2RTest\R2RTest.dll" compile-framework -cr "%CORE_ROOT%" --output-directory "%CORE_ROOT%\crossgen.out"  --large-bubble --release --nocleanup --target-arch %__BuildArch% -dop %NUMBER_OF_PROCESSORS%
 
 if defined __CompositeBuildMode (
     set __CrossgenCmd=%__CrossgenCmd% --composite
@@ -667,6 +667,5 @@ if %__exitCode% neq 0 (
 )
 
 move "%CORE_ROOT%\crossgen.out\*.dll" %CORE_ROOT% > nul
-del /q /s "%CORE_ROOT%\crossgen.out" > nul
 
 exit /b 0

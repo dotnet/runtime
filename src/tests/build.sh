@@ -170,7 +170,7 @@ precompile_coreroot_fx()
         __NumProc=$(nproc --all)
     fi
 
-    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$CORE_ROOT/crossgen.out\" --target-arch $__BuildArch -dop $__NumProc"
+    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$CORE_ROOT/crossgen.out\" --large-bubble --release --target-arch $__BuildArch -dop $__NumProc"
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
         crossgenCmd="$crossgenCmd --composite"
@@ -197,7 +197,6 @@ precompile_coreroot_fx()
     fi
 
     mv "$CORE_ROOT"/crossgen.out/*.dll "$CORE_ROOT"
-    rm -r "$CORE_ROOT/crossgen.out"
 
     return 0
 }
