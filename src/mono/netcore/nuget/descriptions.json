@@ -5,6 +5,11 @@
         "CommonTypes": [ ]
     },
     {
+        "Name": "Microsoft.NET.Runtime.Android.Sample.Mono",
+        "Description": "Internal package for sharing Android App Builder.",
+        "CommonTypes": [ ]
+    },
+    {
         "Name": "Microsoft.NETCore.BrowserDebugHost.Transport",
         "Description": "Internal package for sharing BrowserDebugHost.",
         "CommonTypes": [ ]
