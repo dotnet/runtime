@@ -707,6 +707,11 @@ Thread* SetupThread()
     }
 #endif
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    // Initialize new threads to JIT Write disabled
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(false);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     // Normally, HasStarted is called from the thread's entrypoint to introduce it to
     // the runtime.  But sometimes that thread is used for DLL_THREAD_ATTACH notifications
     // that call into managed code.  In that case, a call to SetupThread here must
@@ -1097,9 +1102,14 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
     return (PCODE)JIT_PatchedCodeStart + (controlPc - (PCODE)s_barrierCopy);
 }
 
-#endif // FEATURE_WRITEBARRIER_COPY
-
 extern "C" void *JIT_WriteBarrier_Loc;
+#ifdef TARGET_ARM64
+extern "C" void (*JIT_WriteBarrier_Table)();
+extern "C" void *JIT_WriteBarrier_Loc = 0;
+extern "C" void *JIT_WriteBarrier_Table_Loc = 0;
+#endif // TARGET_ARM64
+
+#endif // FEATURE_WRITEBARRIER_COPY
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -1137,6 +1147,10 @@ void InitThreadManager()
         COMPlusThrowWin32();
     }
 
+#if defined(HOST_OSX) && defined(HOST_ARM64)
+    auto jitWriteEnableHolder = PAL_JITWriteEnable(true);
+#endif // defined(HOST_OSX) && defined(HOST_ARM64)
+
     memcpy(s_barrierCopy, (BYTE*)JIT_PatchedCodeStart, (BYTE*)JIT_PatchedCodeLast - (BYTE*)JIT_PatchedCodeStart);
 
     // Store the JIT_WriteBarrier copy location to a global variable so that helpers
@@ -1144,6 +1158,12 @@ void InitThreadManager()
     JIT_WriteBarrier_Loc = GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier);
 
     SetJitHelperFunction(CORINFO_HELP_ASSIGN_REF, GetWriteBarrierCodeLocation((void*)JIT_WriteBarrier));
+
+#ifdef TARGET_ARM64
+    // Store the JIT_WriteBarrier_Table copy location to a global variable so that it can be updated.
+    JIT_WriteBarrier_Table_Loc = GetWriteBarrierCodeLocation((void*)&JIT_WriteBarrier_Table);
+#endif // TARGET_ARM64
+
 #else // FEATURE_WRITEBARRIER_COPY
 
     // I am using virtual protect to cover the entire range that this code falls in.

@@ -75,6 +75,11 @@ SET_DEFAULT_DEBUG_CHANNEL(EXCEPT);
 
 #define TRACE_VERBOSE
 
+#include "crosscomp.h"
+
+#define KNONVOLATILE_CONTEXT_POINTERS T_KNONVOLATILE_CONTEXT_POINTERS
+#define CONTEXT T_CONTEXT
+
 #else // HOST_UNIX
 
 #include <windows.h>
@@ -1296,6 +1301,7 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, const libunwindInfo* info, bool
     return false;
 }
 
+#if defined(TARGET_AMD64)
 static bool
 StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding)
 {
@@ -1364,10 +1370,143 @@ StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encodi
         compactEncoding, (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     return true;
 }
+#endif
+
+#if defined(TARGET_ARM64)
+inline static bool
+ReadCompactEncodingRegister(const libunwindInfo* info, unw_word_t* addr, DWORD64* reg)
+{
+    *addr -= sizeof(uint64_t);
+    if (!ReadValue64(info, addr, (uint64_t*)reg)) {
+        return false;
+    }
+    return true;
+}
+
+inline static bool
+ReadCompactEncodingRegisterPair(const libunwindInfo* info, unw_word_t* addr, DWORD64*second, DWORD64* first)
+{
+    // Registers are effectively pushed in pairs
+    //
+    // *addr -= 8
+    // **addr = *first
+    // *addr -= 8
+    // **addr = *second
+    if (!ReadCompactEncodingRegister(info, addr, first)) {
+        return false;
+    }
+    if (!ReadCompactEncodingRegister(info, addr, second)) {
+        return false;
+    }
+    return true;
+}
+
+inline static bool
+ReadCompactEncodingRegisterPair(const libunwindInfo* info, unw_word_t* addr, NEON128*second, NEON128* first)
+{
+    if (!ReadCompactEncodingRegisterPair(info, addr, &first->Low, &second->Low)) {
+        return false;
+    }
+    first->High = 0;
+    second->High = 0;
+    return true;
+}
+
+// Saved registers are pushed
+// + in pairs
+// + in register number order (after the option frame registers)
+// + after the callers SP
+//
+// Given C++ code that generates this prologue spill sequence
+//
+// sub     sp, sp, #128            ; =128
+// stp     d15, d14, [sp, #16]     ; 16-byte Folded Spill
+// stp     d13, d12, [sp, #32]     ; 16-byte Folded Spill
+// stp     d11, d10, [sp, #48]     ; 16-byte Folded Spill
+// stp     d9, d8, [sp, #64]       ; 16-byte Folded Spill
+// stp     x22, x21, [sp, #80]     ; 16-byte Folded Spill
+// stp     x20, x19, [sp, #96]     ; 16-byte Folded Spill
+// stp     x29, x30, [sp, #112]    ; 16-byte Folded Spill
+// add     x29, sp, #112           ; =112
+//
+// The compiler generates:
+//   compactEncoding = 0x04000f03;
+static bool
+StepWithCompactEncodingArm64(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding, bool hasFrame)
+{
+    CONTEXT* context = info->Context;
+
+    unw_word_t callerSp;
+
+    if (hasFrame) {
+        // caller Sp is callee Fp plus saved FP and LR
+        callerSp = context->Fp + 2 * sizeof(uint64_t);
+    } else {
+        // Get the leat significant bit in UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK
+        uint64_t stackSizeScale = UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK & ~(UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK - 1);
+        uint64_t stackSize = (compactEncoding & UNWIND_ARM64_FRAMELESS_STACK_SIZE_MASK) / stackSizeScale * 16;
+
+        callerSp = context->Sp + stackSize;
+    }
+
+    context->Sp = callerSp;
+
+    // return address is stored in Lr
+    context->Pc = context->Lr;
+
+    unw_word_t addr = callerSp;
+
+    if (hasFrame &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->Lr, &context->Fp)) {
+            return false;
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_X19_X20_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->X[19], &context->X[20])) {
+            return false;
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_X21_X22_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->X[21], &context->X[22])) {
+            return false;
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_X23_X24_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->X[23], &context->X[24])) {
+            return false;
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_X25_X26_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->X[25], &context->X[26])) {
+            return false;
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_X27_X28_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->X[27], &context->X[28])) {
+            return false;
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_D8_D9_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->V[8], &context->V[9])) {
+            return false;
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_D10_D11_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->V[10], &context->V[11])) {
+            return false;
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_D12_D13_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->V[12], &context->V[13])) {
+            return false;
+    }
+    if (compactEncoding & UNWIND_ARM64_FRAME_D14_D15_PAIR &&
+        !ReadCompactEncodingRegisterPair(info, &addr, &context->V[14], &context->V[15])) {
+            return false;
+    }
+
+    TRACE("SUCCESS: compact step encoding %08x pc %p sp %p fp %p lr %p\n",
+        compactEncoding, (void*)context->Pc, (void*)context->Sp, (void*)context->Fp, (void*)context->Lr);
+    return true;
+}
+#endif
 
 static bool
 StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding, unw_word_t functionStart)
 {
+#if defined(TARGET_AMD64)
     if (compactEncoding == 0)
     {
         TRACE("Compact unwind missing for %p\n", (void*)info->Context->Rip);
@@ -1381,8 +1520,30 @@ StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t com
         case UNWIND_X86_64_MODE_STACK_IMMD:
         case UNWIND_X86_64_MODE_STACK_IND:
             break;
-            
+
+        case UNWIND_X86_64_MODE_DWARF:
+            return false;
     }
+#elif defined(TARGET_ARM64)
+    if (compactEncoding == 0)
+    {
+        TRACE("Compact unwind missing for %p\n", (void*)info->Context->Pc);
+        return false;
+    }
+    switch (compactEncoding & UNWIND_ARM64_MODE_MASK)
+    {
+        case UNWIND_ARM64_MODE_FRAME:
+            return StepWithCompactEncodingArm64(info, compactEncoding, true);
+
+        case UNWIND_ARM64_MODE_FRAMELESS:
+            return StepWithCompactEncodingArm64(info, compactEncoding, false);
+
+        case UNWIND_ARM64_MODE_DWARF:
+            return false;
+    }
+#else
+#error unsupported architecture
+#endif
     ERROR("Invalid encoding %08x\n", compactEncoding);
     return false;
 }
@@ -1411,19 +1572,19 @@ static void GetContextPointer(unw_cursor_t *cursor, unw_context_t *unwContext, i
 
 static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)
 {
-#if (defined(HOST_UNIX) && defined(HOST_AMD64)) || (defined(HOST_WINDOWS) && defined(TARGET_AMD64))
+#if defined(TARGET_AMD64)
     GetContextPointer(cursor, unwContext, UNW_X86_64_RBP, &contextPointers->Rbp);
     GetContextPointer(cursor, unwContext, UNW_X86_64_RBX, &contextPointers->Rbx);
     GetContextPointer(cursor, unwContext, UNW_X86_64_R12, &contextPointers->R12);
     GetContextPointer(cursor, unwContext, UNW_X86_64_R13, &contextPointers->R13);
     GetContextPointer(cursor, unwContext, UNW_X86_64_R14, &contextPointers->R14);
     GetContextPointer(cursor, unwContext, UNW_X86_64_R15, &contextPointers->R15);
-#elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
+#elif defined(TARGET_X86)
     GetContextPointer(cursor, unwContext, UNW_X86_EBX, &contextPointers->Ebx);
     GetContextPointer(cursor, unwContext, UNW_X86_EBP, &contextPointers->Ebp);
     GetContextPointer(cursor, unwContext, UNW_X86_ESI, &contextPointers->Esi);
     GetContextPointer(cursor, unwContext, UNW_X86_EDI, &contextPointers->Edi);
-#elif (defined(HOST_UNIX) && defined(HOST_ARM)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM))
+#elif defined(TARGET_ARM)
     GetContextPointer(cursor, unwContext, UNW_ARM_R4, &contextPointers->R4);
     GetContextPointer(cursor, unwContext, UNW_ARM_R5, &contextPointers->R5);
     GetContextPointer(cursor, unwContext, UNW_ARM_R6, &contextPointers->R6);
@@ -1432,7 +1593,7 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
     GetContextPointer(cursor, unwContext, UNW_ARM_R9, &contextPointers->R9);
     GetContextPointer(cursor, unwContext, UNW_ARM_R10, &contextPointers->R10);
     GetContextPointer(cursor, unwContext, UNW_ARM_R11, &contextPointers->R11);
-#elif (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
+#elif defined(TARGET_ARM64)
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X19, &contextPointers->X19);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X20, &contextPointers->X20);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X21, &contextPointers->X21);
@@ -1451,7 +1612,7 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
 
 static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
 {
-#if (defined(HOST_UNIX) && defined(HOST_AMD64)) || (defined(HOST_WINDOWS) && defined(TARGET_AMD64))
+#if defined(TARGET_AMD64)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Rip);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Rsp);
     unw_get_reg(cursor, UNW_X86_64_RBP, (unw_word_t *) &winContext->Rbp);
@@ -1460,14 +1621,14 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_X86_64_R13, (unw_word_t *) &winContext->R13);
     unw_get_reg(cursor, UNW_X86_64_R14, (unw_word_t *) &winContext->R14);
     unw_get_reg(cursor, UNW_X86_64_R15, (unw_word_t *) &winContext->R15);
-#elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
+#elif defined(TARGET_X86)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Eip);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Esp);
     unw_get_reg(cursor, UNW_X86_EBP, (unw_word_t *) &winContext->Ebp);
     unw_get_reg(cursor, UNW_X86_EBX, (unw_word_t *) &winContext->Ebx);
     unw_get_reg(cursor, UNW_X86_ESI, (unw_word_t *) &winContext->Esi);
     unw_get_reg(cursor, UNW_X86_EDI, (unw_word_t *) &winContext->Edi);
-#elif (defined(HOST_UNIX) && defined(HOST_ARM)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM))
+#elif defined(TARGET_ARM)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_ARM_R4, (unw_word_t *) &winContext->R4);
@@ -1480,7 +1641,7 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_ARM_R11, (unw_word_t *) &winContext->R11);
     unw_get_reg(cursor, UNW_ARM_R14, (unw_word_t *) &winContext->Lr);
     TRACE("sp %p pc %p lr %p\n", winContext->Sp, winContext->Pc, winContext->Lr);
-#elif (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
+#elif defined(TARGET_ARM64)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
     unw_get_reg(cursor, UNW_AARCH64_X19, (unw_word_t *) &winContext->X19);
@@ -1541,7 +1702,7 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
 
     switch (regnum)
     {
-#if (defined(HOST_UNIX) && defined(HOST_AMD64)) || (defined(HOST_WINDOWS) && defined(TARGET_AMD64))
+#if defined(TARGET_AMD64)
     case UNW_REG_IP:       *valp = (unw_word_t)winContext->Rip; break;
     case UNW_REG_SP:       *valp = (unw_word_t)winContext->Rsp; break;
     case UNW_X86_64_RBP:   *valp = (unw_word_t)winContext->Rbp; break;
@@ -1550,14 +1711,14 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_X86_64_R13:   *valp = (unw_word_t)winContext->R13; break;
     case UNW_X86_64_R14:   *valp = (unw_word_t)winContext->R14; break;
     case UNW_X86_64_R15:   *valp = (unw_word_t)winContext->R15; break;
-#elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
+#elif defined(TARGET_X86)
     case UNW_REG_IP:       *valp = (unw_word_t)winContext->Eip; break;
     case UNW_REG_SP:       *valp = (unw_word_t)winContext->Esp; break;
     case UNW_X86_EBX:      *valp = (unw_word_t)winContext->Ebx; break;
     case UNW_X86_ESI:      *valp = (unw_word_t)winContext->Esi; break;
     case UNW_X86_EDI:      *valp = (unw_word_t)winContext->Edi; break;
     case UNW_X86_EBP:      *valp = (unw_word_t)winContext->Ebp; break;
-#elif (defined(HOST_UNIX) && defined(HOST_ARM)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM))
+#elif defined(TARGET_ARM)
     case UNW_ARM_R4:       *valp = (unw_word_t)winContext->R4; break;
     case UNW_ARM_R5:       *valp = (unw_word_t)winContext->R5; break;
     case UNW_ARM_R6:       *valp = (unw_word_t)winContext->R6; break;
@@ -1569,7 +1730,7 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_ARM_R13:      *valp = (unw_word_t)winContext->Sp; break;
     case UNW_ARM_R14:      *valp = (unw_word_t)winContext->Lr; break;
     case UNW_ARM_R15:      *valp = (unw_word_t)winContext->Pc; break;
-#elif (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
+#elif defined(TARGET_ARM64)
     case UNW_AARCH64_X19:  *valp = (unw_word_t)winContext->X19; break;
     case UNW_AARCH64_X20:  *valp = (unw_word_t)winContext->X20; break;
     case UNW_AARCH64_X21:  *valp = (unw_word_t)winContext->X21; break;
@@ -1853,10 +2014,17 @@ PAL_VirtualUnwindOutOfProc(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *cont
     info.ReadMemory = readMemoryCallback;
 
 #ifdef __APPLE__
-    TRACE("Unwind: rip %p rsp %p rbp %p\n", (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     unw_proc_info_t procInfo;
     bool step;
+#if defined(TARGET_AMD64)
+    TRACE("Unwind: rip %p rsp %p rbp %p\n", (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     result = GetProcInfo(context->Rip, &procInfo, &info, &step, false);
+#elif defined(TARGET_ARM64)
+    TRACE("Unwind: pc %p sp %p fp %p\n", (void*)context->Pc, (void*)context->Sp, (void*)context->Fp);
+    result = GetProcInfo(context->Pc, &procInfo, &info, &step, false);
+#else
+#error Unexpected architecture
+#endif
     if (!result)
     {
         goto exit;

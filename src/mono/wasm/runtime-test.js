@@ -47,6 +47,7 @@ if (is_browser) {
 if (typeof console === "undefined") {
 	var Console = function () {
 		this.log = function(msg){ print(msg) };
+		this.clear = function() { };
 	};
 	console = new Console();
 }

@@ -151,7 +151,7 @@ namespace System.Net.Sockets
             }
             else if (!pending)
             {
-                return DoConnectCallback(_internalArgs!);
+                return DoConnectCallback(_internalArgs!, sync);
             }
             else
             {
@@ -161,13 +161,13 @@ namespace System.Net.Sockets
 
         private void InternalConnectCallback(object? sender, SocketAsyncEventArgs args)
         {
-            DoConnectCallback(args);
+            DoConnectCallback(args, false);
         }
 
         // Callback which fires when an internal connection attempt completes.
         // If it failed and there are more addresses to try, do it.
         // Returns true if the operation is pending, false if it completed synchronously.
-        private bool DoConnectCallback(SocketAsyncEventArgs args)
+        private bool DoConnectCallback(SocketAsyncEventArgs args, bool sync)
         {
             Exception? exception = null;
 
@@ -243,16 +243,14 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (exception == null)
+            if (exception != null)
             {
-                Succeed();
+                return Fail(sync, exception);
             }
             else
             {
-                AsyncFail(exception);
+                return Succeed(sync);
             }
-
-            return false;
         }
 
         // Called to initiate a connection attempt to the next address in the list.
@@ -287,11 +285,21 @@ namespace System.Net.Sockets
 
         protected abstract void OnSucceed();
 
-        private void Succeed()
+        private bool Succeed(bool sync)
         {
             OnSucceed();
-            _userArgs!.FinishWrapperConnectSuccess(_internalArgs!.ConnectSocket, _internalArgs.BytesTransferred, _internalArgs.SocketFlags);
+
+            if (sync)
+            {
+                _userArgs!.FinishWrapperConnectSyncSuccess(_internalArgs!.ConnectSocket, _internalArgs.BytesTransferred, _internalArgs.SocketFlags);
+            }
+            else
+            {
+                _userArgs!.FinishWrapperConnectAsyncSuccess(_internalArgs!.ConnectSocket, _internalArgs.BytesTransferred, _internalArgs.SocketFlags);
+            }
+
             _internalArgs.Dispose();
+            return !sync;
         }
 
         protected abstract void OnFail(bool abortive);

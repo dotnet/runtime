@@ -4010,8 +4010,12 @@
       }
     },
     "System.Net.Quic": {
+      "StableVersions": [],
       "InboxOn": {
-        "netcoreapp3.0": "4.2.1.0"
+        "net5.0": "5.0.0.0"
+      },
+      "AssemblyVersionInPackageVersion": {
+        "5.0.0.0": "6.0.0"
       }
     },
     "System.Net.Requests": {

@@ -4600,6 +4600,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // Morph the trees in all the blocks of the method
     //
     auto morphGlobalPhase = [this]() {
+        unsigned prevBBCount = fgBBcount;
         fgMorphBlocks();
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
@@ -4624,6 +4625,12 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         compCurBB = nullptr;
 #endif // DEBUG
 
+        // If we needed to create any new BasicBlocks then renumber the blocks
+        if (fgBBcount > prevBBCount)
+        {
+            fgRenumberBlocks();
+        }
+
         // We can now enable all phase checking
         activePhaseChecks = PhaseChecks::CHECK_ALL;
     };
@@ -4632,6 +4639,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // GS security checks for unsafe buffers
     //
     auto gsPhase = [this]() {
+        unsigned prevBBCount = fgBBcount;
         if (getNeedsGSSecurityCookie())
         {
             gsGSChecksInitCookie();
@@ -4639,6 +4647,12 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
             if (compGSReorderStackLayout)
             {
                 gsCopyShadowParams();
+            }
+
+            // If we needed to create any new BasicBlocks then renumber the blocks
+            if (fgBBcount > prevBBCount)
+            {
+                fgRenumberBlocks();
             }
         }
         else
