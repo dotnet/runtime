@@ -76,7 +76,7 @@ jobs:
         - name: setScriptToEchoAndFailOnNonZero
           value: 'set -xe'
 
-      - ${{ if ne(parameters.jobParameters.crossrootfsDir, '') }}:
+      - ${{ if not(in(parameters.jobParameters.crossrootfsDir, '', ':CrossBuildNoRootFS:')) }}:
         # This is only required for cross builds.
         - name: ROOTFS_DIR
           value: ${{ parameters.jobParameters.crossrootfsDir }}
@@ -115,8 +115,10 @@ jobs:
           queue: BuildPool.Ubuntu.1604.Amd64
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool
-        ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
+        ${{ if and(in(parameters.osGroup, 'OSX', 'iOS', 'tvOS'), ne(parameters.archType, 'arm64')) }}:
           vmImage: 'macOS-10.14'
+        ${{ if and(in(parameters.osGroup, 'OSX', 'iOS', 'tvOS'), eq(parameters.archType, 'arm64')) }}:
+          vmImage: 'macOS-10.15'
 
         ${{ if eq(parameters.osGroup, 'Browser') }}:
           vmImage: 'ubuntu-latest'
