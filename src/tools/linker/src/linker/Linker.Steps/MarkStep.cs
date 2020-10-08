@@ -2354,11 +2354,10 @@ namespace Mono.Linker.Steps
 				break;
 			}
 
-			bool markedForCall = (
+			bool markedForCall =
 				reason.Kind == DependencyKind.DirectCall ||
 				reason.Kind == DependencyKind.VirtualCall ||
-				reason.Kind == DependencyKind.Newobj
-			);
+				reason.Kind == DependencyKind.Newobj;
 			if (markedForCall) {
 				// Record declaring type of a called method up-front as a special case so that we may
 				// track at least some method calls that trigger a cctor.
@@ -2942,7 +2941,7 @@ namespace Mono.Linker.Steps
 		//
 		// Extension point for reflection logic handling customization
 		//
-		internal protected virtual bool ProcessReflectionDependency (MethodBody body, Instruction instruction)
+		protected internal virtual bool ProcessReflectionDependency (MethodBody body, Instruction instruction)
 		{
 			return false;
 		}

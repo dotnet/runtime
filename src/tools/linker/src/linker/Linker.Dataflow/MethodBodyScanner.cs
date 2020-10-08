@@ -849,7 +849,7 @@ namespace Mono.Linker.Dataflow
 		{
 			MethodReference calledMethod = (MethodReference) operation.Operand;
 
-			bool isNewObj = (operation.OpCode.Code == Code.Newobj);
+			bool isNewObj = operation.OpCode.Code == Code.Newobj;
 
 			ValueNode newObjValue;
 			ValueNodeList methodParams = PopCallArguments (currentStack, calledMethod, callingMethodBody, isNewObj,

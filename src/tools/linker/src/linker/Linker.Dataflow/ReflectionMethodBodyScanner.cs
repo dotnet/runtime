@@ -987,10 +987,10 @@ namespace Mono.Linker.Dataflow
 				// GetProperty (string, Type, Type[], ParameterModifier[])
 				// GetProperty (string, BindingFlags, Binder, Type, Type[], ParameterModifier[])
 				//
-				case var fieldPropertyOrEvent when ((fieldPropertyOrEvent == IntrinsicId.Type_GetField || fieldPropertyOrEvent == IntrinsicId.Type_GetProperty || fieldPropertyOrEvent == IntrinsicId.Type_GetEvent)
+				case var fieldPropertyOrEvent when (fieldPropertyOrEvent == IntrinsicId.Type_GetField || fieldPropertyOrEvent == IntrinsicId.Type_GetProperty || fieldPropertyOrEvent == IntrinsicId.Type_GetEvent)
 					&& calledMethod.DeclaringType.Namespace == "System"
 					&& calledMethod.DeclaringType.Name == "Type"
-					&& calledMethod.Parameters[0].ParameterType.FullName == "System.String")
+					&& calledMethod.Parameters[0].ParameterType.FullName == "System.String"
 					&& calledMethod.HasThis: {
 
 						reflectionContext.AnalyzingPattern ();
@@ -1340,7 +1340,7 @@ namespace Mono.Linker.Dataflow
 								continue;
 							}
 
-							var resolvedType = (_context.TypeNameResolver.ResolveTypeName (resolvedAssembly, typeNameStringValue.Contents))?.Resolve ();
+							var resolvedType = _context.TypeNameResolver.ResolveTypeName (resolvedAssembly, typeNameStringValue.Contents)?.Resolve ();
 							if (resolvedType == null) {
 								// It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
 								// Note that we did find the assembly, so it's not a linker config problem, it's either intentional, or wrong versions of assemblies
