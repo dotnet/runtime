@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security.AccessControl;
@@ -115,14 +116,14 @@ namespace System.Threading
         /// </summary>
         /// <param name="name">The name of the event wait handle to be opened. If it's prefixed by "Global", it refers to a machine-wide event wait handle. If it's prefixed by "Local", or doesn't have a prefix, it refers to a session-wide event wait handle. Both prefix and name are case-sensitive.</param>
         /// <param name="rights">The desired access rights to apply to the returned event wait handle.</param>
-        /// <param name="result">When this method returns, contains an object that represents the named event wait handle if the call succeeded, or <see langword="null" /> if the call failed. This parameter is treated as uninitialized.</param>
+        /// <param name="result">When this method returns <see langword="true" />, contains an object that represents the named event wait handle if the call succeeded, or <see langword="null" /> otherwise. This parameter is treated as uninitialized.</param>
         /// <returns><see langword="true" /> if the named event wait handle was opened successfully; otherwise, <see langword="false" />.</returns>
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null" /></exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is an empty string.</exception>
         /// <exception cref="IOException">A Win32 error occurred.</exception>
         /// <exception cref="UnauthorizedAccessException">The named event wait handle exists, but the user does not have the security access required to use it.</exception>
-        public static bool TryOpenExisting(string name, EventWaitHandleRights rights, out EventWaitHandle? result) =>
-            OpenExistingWorker(name, rights, out result!) == OpenExistingResult.Success;
+        public static bool TryOpenExisting(string name, EventWaitHandleRights rights, [NotNullWhen(returnValue: true)] out EventWaitHandle? result) =>
+            OpenExistingWorker(name, rights, out result) == OpenExistingResult.Success;
 
         private static OpenExistingResult OpenExistingWorker(string name, EventWaitHandleRights rights, out EventWaitHandle? result)
         {
