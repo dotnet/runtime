@@ -117,10 +117,9 @@ public: // Lifetime
         /* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR * __RPC_FAR * ppvObject);
     ULONG AddRef(void);
     ULONG Release(void);
-
 };
 
-// These Sentinel and Identity are used by the DAC, any changes to the layout must be updated on the DAC side (request.cpp)
+// The Target and _refCount fields are used by the DAC, any changes to the layout must be updated on the DAC side (request.cpp)
 static constexpr size_t DACTargetOffset = 0;
 static_assert(offsetof(ManagedObjectWrapper, Target) == DACTargetOffset, "Keep in sync with DAC interfaces");
 static constexpr size_t DACRefCountOffset = (4 * sizeof(intptr_t)) + (2 * sizeof(int32_t));
