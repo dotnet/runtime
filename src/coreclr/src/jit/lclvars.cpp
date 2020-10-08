@@ -355,15 +355,23 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
 #if defined(TARGET_WINDOWS) && !defined(TARGET_ARM)
     if (compMethodIsNativeInstanceMethod(info.compMethodInfo))
     {
+        // If we are a native instance method, handle the first user arg
+        // (the unmanaged this parameter) and then handle the hidden
+        // return buffer parameter.
         assert(numUserArgs >= 1);
         lvaInitUserArgs(varDscInfo, 0, 1);
         numUserArgsToSkip++;
         numUserArgs--;
-    }
-#endif
 
-    /* If we have a hidden return-buffer parameter, that comes here */
-    lvaInitRetBuffArg(varDscInfo);
+        lvaInitRetBuffArg(varDscInfo, false);
+    }
+    else
+#endif
+    {
+        /* If we have a hidden return-buffer parameter, that comes here */
+        lvaInitRetBuffArg(varDscInfo, true);
+    }
+
 
 //======================================================================
 
@@ -495,7 +503,7 @@ void Compiler::lvaInitThisPtr(InitVarDscInfo* varDscInfo)
 }
 
 /*****************************************************************************/
-void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo)
+void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBufReg)
 {
     LclVarDsc* varDsc        = varDscInfo->varDsc;
     bool       hasRetBuffArg = impMethodInfo_hasRetBuffArg(info.compMethodInfo);
@@ -510,7 +518,7 @@ void Compiler::lvaInitRetBuffArg(InitVarDscInfo* varDscInfo)
         varDsc->lvIsParam   = 1;
         varDsc->lvIsRegArg  = 1;
 
-        if (hasFixedRetBuffReg())
+        if (useFixedRetBufReg && hasFixedRetBuffReg())
         {
             varDsc->SetArgReg(theFixedRetBuffReg());
         }

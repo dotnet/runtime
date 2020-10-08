@@ -3426,7 +3426,7 @@ public:
 
     void lvaInitArgs(InitVarDscInfo* varDscInfo);
     void lvaInitThisPtr(InitVarDscInfo* varDscInfo);
-    void lvaInitRetBuffArg(InitVarDscInfo* varDscInfo);
+    void lvaInitRetBuffArg(InitVarDscInfo* varDscInfo, bool useFixedRetBufReg);
     void lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, unsigned takeArgs);
     void lvaInitGenericsCtxt(InitVarDscInfo* varDscInfo);
     void lvaInitVarArgsHandle(InitVarDscInfo* varDscInfo);
@@ -9312,12 +9312,17 @@ public:
         //    methods with hidden RetBufArg in RAX. In such case GT_RETURN is of TYP_BYREF,
         //    returning the address of RetBuf.
         //
-        // 3. Windows 64-bit native calling convention also requires the address of RetBuff
+        // 3. Windows x64 native calling convention also requires the address of RetBuff
         //    to be returned in RAX.
+        // 4. Windows ARM64 native instance calling convention requires the address of RetBuff
+        //    to be returned in x0.
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef TARGET_AMD64
         return (info.compRetBuffArg != BAD_VAR_NUM);
+#elif defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        return (compMethodIsNativeInstanceMethod(info.compMethodInfo) ||
+            compIsProfilerHookNeeded()) && (info.compRetBuffArg != BAD_VAR_NUM);
 #else  // !TARGET_AMD64
         return (compIsProfilerHookNeeded()) && (info.compRetBuffArg != BAD_VAR_NUM);
 #endif // !TARGET_AMD64

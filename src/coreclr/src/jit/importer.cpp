@@ -17161,6 +17161,14 @@ bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
         {
             op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
         }
+#if defined(TARGET_WINDOWS) && defined(TARGET_ARM64)
+        // On ARM64, the native instance calling convention variant
+        // requires the implicit ByRef to be explicitly returned.
+        else if (compMethodIsNativeInstanceMethod(info.compMethodInfo))
+        {
+            op1 = gtNewOperNode(GT_RETURN, TYP_BYREF, gtNewLclvNode(info.compRetBuffArg, TYP_BYREF));
+        }
+#endif
         else
         {
             // return void
