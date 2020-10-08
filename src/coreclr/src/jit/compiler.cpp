@@ -951,6 +951,12 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
     {
         // Return classification is not always size based...
         canReturnInRegister = structDesc.passedInRegisters;
+        if (!canReturnInRegister)
+        {
+            assert(structDesc.eightByteCount == 0);
+            howToReturnStruct = SPK_ByReference;
+            useType           = TYP_UNKNOWN;
+        }
     }
 
 #endif // UNIX_AMD64_ABI
@@ -1048,24 +1054,13 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE     clsHnd,
 
 #ifdef UNIX_AMD64_ABI
 
-                // The case of (structDesc.eightByteCount == 1) should have already been handled
-                if (structDesc.eightByteCount > 1)
-                {
-                    // setup wbPassType and useType indicate that this is returned by value in multiple registers
-                    howToReturnStruct = SPK_ByValue;
-                    useType           = TYP_STRUCT;
-                    assert(structDesc.passedInRegisters == true);
-                }
-                else
-                {
-                    assert(structDesc.eightByteCount == 0);
-                    // Otherwise we return this struct using a return buffer
-                    // setup wbPassType and useType indicate that this is return using a return buffer register
-                    //  (reference to a return buffer)
-                    howToReturnStruct = SPK_ByReference;
-                    useType           = TYP_UNKNOWN;
-                    assert(structDesc.passedInRegisters == false);
-                }
+                // The cases of (structDesc.eightByteCount == 1) and (structDesc.eightByteCount == 0)
+                // should have already been handled
+                assert(structDesc.eightByteCount > 1)
+                // setup wbPassType and useType indicate that this is returned by value in multiple registers
+                howToReturnStruct = SPK_ByValue;
+                useType           = TYP_STRUCT;
+                assert(structDesc.passedInRegisters == true);
 
 #elif defined(TARGET_ARM64)
 
