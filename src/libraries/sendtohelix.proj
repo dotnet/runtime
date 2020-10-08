@@ -6,7 +6,7 @@
      is used to run the tests. If a set of comma-separated scenarios are specified in the `_Scenarios`
      property, then each test is run for each of the specified CoreCLR scenarios (e.g., COMPlus_JitStress=1;
      COMPlus_JitStressRegs=4; COMPlus_JitStress=2 + COMPlus_JitStressRegs=0x1000). The set of acceptable
-     scenario names is defined and interpreted by src\coreclr\tests\testenvironment.proj.
+     scenario names is defined and interpreted by src\tests\Common\testenvironment.proj.
 
     "RunInParallelForEachScenario" is the "root" target for this Project. It first creates the
     "correlation payload", which is the set of files used by all Helix submissions
@@ -105,7 +105,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <_ProjectsToBuild Include="$(RepoRoot)\src\coreclr\tests\testenvironment.proj">
+      <_ProjectsToBuild Include="$(RepoRoot)\src\tests\Common\testenvironment.proj">
         <Properties>Scenario=$(Scenario);TestEnvFileName=$(TestEnvFilePath);TargetsWindows=$(TargetsWindows)</Properties>
       </_ProjectsToBuild>
     </ItemGroup>
