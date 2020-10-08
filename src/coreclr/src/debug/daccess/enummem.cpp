@@ -1061,10 +1061,10 @@ HRESULT ClrDataAccess::EnumMemDumpAllThreadsStack(CLRDataEnumMemoryFlags flags)
 {
     SUPPORTS_DAC;
 
-#ifdef FEATURE_COMINTEROP
+#if defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
     // Dump the exception object stored in the WinRT stowed exception
     EnumMemStowedException(flags);
-#endif
+#endif // defined(FEATURE_COMINTEROP) || defined(FEATURE_COMWRAPPERS)
 
     HRESULT     status = S_OK;
     TSIZE_T     cbMemoryReported = m_cbMemoryReported;
@@ -1382,6 +1382,10 @@ HRESULT ClrDataAccess::EnumMemStowedException(CLRDataEnumMemoryFlags flags)
         return S_OK;
     }
 
+    // Make sure we include the whole stowed exception array so we can debug a stowed exception
+    // in a minidump
+    ReportMem(remoteStowedExceptionArray, stowedExceptionCount * sizeof(TADDR));
+
     for (ULONG i = 0; i < stowedExceptionCount; ++i)
     {
         // Read the i-th stowed exception
@@ -1394,6 +1398,8 @@ HRESULT ClrDataAccess::EnumMemStowedException(CLRDataEnumMemoryFlags flags)
             continue;
         }
 
+        ReportMem(remoteStowedException, sizeof(STOWED_EXCEPTION_INFORMATION_HEADER));
+
         // check if this is a v2 stowed exception
         STOWED_EXCEPTION_INFORMATION_V2 stowedException = { 0 };
         if (FAILED(m_pTarget->ReadVirtual(TO_CDADDR(remoteStowedException),
@@ -1403,6 +1409,8 @@ HRESULT ClrDataAccess::EnumMemStowedException(CLRDataEnumMemoryFlags flags)
         {
             continue;
         }
+
+        ReportMem(remoteStowedException, sizeof(STOWED_EXCEPTION_INFORMATION_V2));
 
         // Read the full v2 stowed exception and get the CCW pointer out of it
         if (FAILED(m_pTarget->ReadVirtual(TO_CDADDR(remoteStowedException),

@@ -5013,5 +5013,3 @@ HRESULT ClrDataAccess::GetComWrappersRCWData(CLRDATA_ADDRESS rcw, CLRDATA_ADDRES
     return E_NOTIMPL;
 #endif // FEATURE_COMWRAPPERS
 }
-
-#error You need to make !dumpobj on the stowedexception and !analyze in a minidump work!
