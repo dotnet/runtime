@@ -1448,7 +1448,7 @@ namespace Mono.Linker.Steps
 				MarkMulticastDelegate (type);
 			}
 
-			if (type.IsClass && type.BaseType == null && type.Name == "Object")
+			if (type.IsClass && type.BaseType == null && type.Name == "Object" && ShouldMarkSystemObjectFinalize)
 				MarkMethodIf (type.Methods, m => m.Name == "Finalize", new DependencyInfo (DependencyKind.MethodForSpecialType, type), type);
 
 			if (type.IsSerializable ())
@@ -1520,6 +1520,11 @@ namespace Mono.Linker.Steps
 
 			return type;
 		}
+
+		/// <summary>
+		/// Allow subclasses to disable marking of System.Object.Finalize()
+		/// </summary>
+		protected virtual bool ShouldMarkSystemObjectFinalize => true;
 
 		// Allow subclassers to mark additional things in the main processing loop
 		protected virtual void DoAdditionalProcessing ()
