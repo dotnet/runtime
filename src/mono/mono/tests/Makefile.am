@@ -628,6 +628,7 @@ TESTS_CS_SRC=		\
 	bug-29585.cs	\
 	priority.cs	\
 	abort-cctor.cs	\
+	abort-sort.cs	\
 	abort-try-holes.cs \
 	abort-tests.cs \
 	thread-native-exit.cs \
