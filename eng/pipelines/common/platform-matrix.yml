@@ -97,6 +97,31 @@ jobs:
         helixQueueGroup: ${{ parameters.helixQueueGroup }}
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Linux musl arm
+
+- ${{ if or(containsValue(parameters.platforms, 'Linux_musl_arm'), eq(parameters.platformGroup, 'all')) }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      osSubgroup: _musl
+      archType: arm
+      platform: Linux_musl_arm
+      container:
+        image: ubuntu-18.04-cross-arm-alpine-20200818211451-14441ae
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: ${{ parameters.runtimeFlavor }}
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        crossrootfsDir: '/crossrootfs/arm'
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Linux musl arm64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_musl_arm64'), eq(parameters.platformGroup, 'all')) }}:

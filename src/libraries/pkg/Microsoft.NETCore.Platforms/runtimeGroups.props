@@ -15,7 +15,7 @@
 
     <RuntimeGroup Include="alpine">
       <Parent>linux-musl</Parent>
-      <Architectures>x64;arm64</Architectures>
+      <Architectures>x64;arm;arm64</Architectures>
       <Versions>3.6;3.7;3.8;3.9;3.10;3.11;3.12</Versions>
     </RuntimeGroup>
 
