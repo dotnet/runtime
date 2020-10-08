@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
+    [SupportedOSPlatform("windows")]
     internal class ComEventsInfo
     {
         private ComEventsSink? _sinks;
@@ -23,7 +24,6 @@ namespace System.Runtime.InteropServices
 
         public static ComEventsInfo? Find(object rcw)
         {
-            Debug.Assert(OperatingSystem.IsWindows());
             return (ComEventsInfo?)Marshal.GetComObjectData(rcw, typeof(ComEventsInfo));
         }
 
@@ -34,7 +34,6 @@ namespace System.Runtime.InteropServices
             if (eventsInfo == null)
             {
                 eventsInfo = new ComEventsInfo(rcw);
-                Debug.Assert(OperatingSystem.IsWindows());
                 Marshal.SetComObjectData(rcw, typeof(ComEventsInfo), eventsInfo);
             }
             return eventsInfo;

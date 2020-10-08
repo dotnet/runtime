@@ -4,6 +4,7 @@
 #nullable enable
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
@@ -13,6 +14,7 @@ namespace System.Runtime.InteropServices
     /// to and from COM calls.
     /// </summary>
     [StructLayout(LayoutKind.Explicit)]
+    [SupportedOSPlatform("windows")]
     internal partial struct Variant
     {
 #if DEBUG
@@ -134,7 +136,6 @@ namespace System.Runtime.InteropServices
             if ((vt & VarEnum.VT_ARRAY) != 0)
             {
                 Variant vArray;
-                Debug.Assert(OperatingSystem.IsWindows());
                 Marshal.GetNativeVariantForObject(value, (IntPtr)(void*)&vArray);
                 *(IntPtr*)this._typeUnion._unionTypes._byref = vArray._typeUnion._unionTypes._byref;
                 return;
@@ -199,12 +200,10 @@ namespace System.Runtime.InteropServices
                     break;
 
                 case VarEnum.VT_UNKNOWN:
-                    Debug.Assert(OperatingSystem.IsWindows());
                     *(IntPtr*)this._typeUnion._unionTypes._byref = Marshal.GetIUnknownForObject(value);
                     break;
 
                 case VarEnum.VT_DISPATCH:
-                    Debug.Assert(OperatingSystem.IsWindows());
                     *(IntPtr*)this._typeUnion._unionTypes._byref = Marshal.GetComInterfaceForObject<object, IDispatch>(value);
                     break;
 
@@ -221,7 +220,6 @@ namespace System.Runtime.InteropServices
                     break;
 
                 case VarEnum.VT_VARIANT:
-                    Debug.Assert(OperatingSystem.IsWindows());
                     Marshal.GetNativeVariantForObject(value, this._typeUnion._unionTypes._byref);
                     break;
 
@@ -273,7 +271,6 @@ namespace System.Runtime.InteropServices
                     {
                         fixed (void* pThis = &this)
                         {
-                            Debug.Assert(OperatingSystem.IsWindows());
                             return Marshal.GetObjectForNativeVariant((System.IntPtr)pThis);
                         }
                     }
@@ -659,7 +656,6 @@ namespace System.Runtime.InteropServices
                 {
                     return null;
                 }
-                Debug.Assert(OperatingSystem.IsWindows());
                 return Marshal.GetObjectForIUnknown(_typeUnion._unionTypes._unknown);
             }
             set
@@ -672,7 +668,6 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    Debug.Assert(OperatingSystem.IsWindows());
                     _typeUnion._unionTypes._unknown = Marshal.GetIUnknownForObject(value);
                 }
             }
@@ -689,7 +684,6 @@ namespace System.Runtime.InteropServices
                 {
                     return null;
                 }
-                Debug.Assert(OperatingSystem.IsWindows());
                 return Marshal.GetObjectForIUnknown(_typeUnion._unionTypes._dispatch);
             }
             set
@@ -702,7 +696,6 @@ namespace System.Runtime.InteropServices
                 }
                 else
                 {
-                    Debug.Assert(OperatingSystem.IsWindows());
                     _typeUnion._unionTypes._dispatch = Marshal.GetComInterfaceForObject<object, IDispatch>(value);
                 }
             }

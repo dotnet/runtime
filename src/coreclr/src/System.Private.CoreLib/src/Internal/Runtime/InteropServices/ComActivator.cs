@@ -9,6 +9,7 @@ using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
+using System.Runtime.Versioning;
 
 //
 // Types in this file marked as 'public' are done so only to aid in
@@ -108,6 +109,7 @@ namespace Internal.Runtime.InteropServices
         }
     }
 
+    [SupportedOSPlatform("windows")]
     public static class ComActivator
     {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
@@ -267,7 +269,6 @@ $@"{nameof(GetClassFactoryForTypeInternal)} arguments:
             {
                 var cxt = ComActivationContext.Create(ref cxtInt);
                 object cf = GetClassFactoryForType(cxt);
-                Debug.Assert(OperatingSystem.IsWindows());
                 IntPtr nativeIUnknown = Marshal.GetIUnknownForObject(cf);
                 Marshal.WriteIntPtr(cxtInt.ClassFactoryDest, nativeIUnknown);
             }
@@ -497,7 +498,6 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             public static IntPtr GetObjectAsInterface(object obj, Type interfaceType)
             {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-                Debug.Assert(OperatingSystem.IsWindows());
                 // If the requested "interface type" is type object then return as IUnknown
                 if (interfaceType == typeof(object))
                 {
@@ -530,7 +530,6 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
                 Debug.Assert(pUnkOuter != null && comObject != null);
-                Debug.Assert(OperatingSystem.IsWindows());
                 IntPtr outerPtr = Marshal.GetIUnknownForObject(pUnkOuter);
 
                 try

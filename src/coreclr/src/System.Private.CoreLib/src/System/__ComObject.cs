@@ -4,7 +4,7 @@
 using System.Collections;
 using System.Runtime.InteropServices;
 using System.Reflection;
-using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System
 {
@@ -12,6 +12,7 @@ namespace System
     /// __ComObject is the root class for all COM wrappers. This class defines only
     /// the basics. This class is used for wrapping COM objects accessed from managed.
     /// </summary>
+    [SupportedOSPlatform("windows")]
     internal class __ComObject : MarshalByRefObject
     {
         private Hashtable? m_ObjectToDataMap; // Do not rename (runtime relies on this name).
@@ -88,7 +89,6 @@ namespace System
                         if (o is IDisposable DisposableObj)
                             DisposableObj.Dispose();
 
-                        Debug.Assert(OperatingSystem.IsWindows());
                         // If the object is a derived from __ComObject, then call Marshal.ReleaseComObject on it.
                         if (o is __ComObject ComObj)
                             Marshal.ReleaseComObject(ComObj);

@@ -4,6 +4,7 @@
 #nullable enable
 
 using System.Diagnostics;
+using System.Runtime.Versioning;
 
 namespace System.Runtime.InteropServices
 {
@@ -11,6 +12,7 @@ namespace System.Runtime.InteropServices
     /// Part of ComEventHelpers APIs which allow binding
     /// managed delegates to COM's connection point based events.
     /// </summary>
+    [SupportedOSPlatform("windows")]
     internal partial class ComEventsSink : IDispatch, ICustomQueryInterface
     {
         private Guid _iidSourceItf;
@@ -215,7 +217,6 @@ namespace System.Runtime.InteropServices
             // convert result to VARIANT
             if (pVarResult != IntPtr.Zero)
             {
-                Debug.Assert(OperatingSystem.IsWindows());
                 Marshal.GetNativeVariantForObject(result, pVarResult);
             }
 
@@ -238,7 +239,6 @@ namespace System.Runtime.InteropServices
             ppv = IntPtr.Zero;
             if (iid == _iidSourceItf || iid == typeof(IDispatch).GUID)
             {
-                Debug.Assert(OperatingSystem.IsWindows());
                 ppv = Marshal.GetComInterfaceForObject(this, typeof(IDispatch), CustomQueryInterfaceMode.Ignore);
                 return CustomQueryInterfaceResult.Handled;
             }
@@ -269,7 +269,6 @@ namespace System.Runtime.InteropServices
             try
             {
                 _connectionPoint.Unadvise(_cookie);
-                Debug.Assert(OperatingSystem.IsWindows());
                 Marshal.ReleaseComObject(_connectionPoint);
             }
             catch
