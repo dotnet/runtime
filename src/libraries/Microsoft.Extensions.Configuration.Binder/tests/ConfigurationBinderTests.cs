@@ -833,6 +833,24 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(bytes, options.MyByteArray);
         }
 
+        [Fact]
+        public void ExceptionWhenTryingToBindToByteArray()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                { "MyByteArray", "(not a valid base64 string)" }
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Get<ByteArrayOptions>());
+            Assert.Equal(
+                SR.Format(SR.Error_FailedBinding, "MyByteArray", typeof(byte[])),
+                exception.Message);
+        }
+
         private interface ISomeInterface
         {
         }
