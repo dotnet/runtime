@@ -894,7 +894,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
             else if (argit.HasValueTypeReturn())
             {
                 stubInfo.m_wFlags |= umtmlThisCallHiddenArg | umtmlEnregRetValToBuf;
-                // When the native signature hasa return buffer but the
+                // When the native signature has a return buffer but the
                 // managed one does not, we need to handle popping the
                 // the return buffer of the stack manually, which we do here.
                 m_cbRetPop += 4;
