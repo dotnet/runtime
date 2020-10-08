@@ -239,14 +239,23 @@ namespace Microsoft.WebAssembly.Diagnostics
                             return true;
                         }
 
-                        var start = SourceLocation.Parse(args?["start"] as JObject);
-                        //FIXME support variant where restrictToFunction=true and end is omitted
-                        var end = SourceLocation.Parse(args?["end"] as JObject);
-                        if (start != null && end != null && await GetPossibleBreakpoints(id, start, end, token))
-                            return true;
+                        try
+                        {
+                            var start = SourceLocation.Parse(args?["start"] as JObject);
+                            //FIXME support variant where restrictToFunction=true and end is omitted
+                            var end = SourceLocation.Parse(args?["end"] as JObject);
+                            if (start == null || end == null)
+                                throw new ReturnAsErrorException("Both start, and end need to be specified");
 
-                        SendResponse(id, resp, token);
-                        return true;
+                            Result result = await GetPossibleBreakpoints(id, start, end, token).ConfigureAwait(false);
+                            SendResponse(id, result, token);
+                            return true;
+                        }
+                        catch (ReturnAsErrorException ree)
+                        {
+                            SendResponse(id, ree.Error, token);
+                            return true;
+                        }
                     }
 
                 case "Debugger.setBreakpoint":
@@ -1103,17 +1112,13 @@ namespace Microsoft.WebAssembly.Diagnostics
             return;
         }
 
-        private async Task<bool> GetPossibleBreakpoints(MessageId msg, SourceLocation start, SourceLocation end, CancellationToken token)
+        private async Task<Result> GetPossibleBreakpoints(MessageId msg, SourceLocation start, SourceLocation end, CancellationToken token)
         {
             List<SourceLocation> bps = (await RuntimeReady(msg, token)).FindPossibleBreakpoints(start, end);
 
-            if (bps == null)
-                return false;
-
             var response = new { locations = bps.Select(b => b.AsLocation()) };
 
-            SendResponse(msg, Result.OkFromObject(response), token);
-            return true;
+            return Result.OkFromObject(response);
         }
 
         private void OnCompileDotnetScript(MessageId msg_id, CancellationToken token)

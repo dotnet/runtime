@@ -427,13 +427,13 @@ namespace DebuggerTests
             return l;
         }
 
-        internal async Task<Result> SendCommand(string method, JObject args)
+        internal async Task<Result> SendCommand(string method, JObject args, bool expect_ok=true)
         {
             var res = await ctx.cli.SendCommand(method, args, ctx.token);
-            if (!res.IsOk)
+            if (res.IsOk != expect_ok)
             {
-                Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
-                Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
+                Console.WriteLine($"{method} returned {res.IsOk} instead of {expect_ok}. Invoked with args: {args}\nresult: {res}");
+                AssertEqual(expect_ok, res.IsOk, $"{method} returned {res.IsOk} instead of {expect_ok}, with result: {res}");
             }
             return res;
         }
@@ -503,13 +503,7 @@ namespace DebuggerTests
         internal async Task<JObject> SendCommandAndCheck(JObject args, string method, string script_loc, int line, int column, string function_name,
             Func<JObject, Task> wait_for_event_fn = null, Action<JToken> locals_fn = null, string waitForEvent = Inspector.PAUSE)
         {
-            var res = await ctx.cli.SendCommand(method, args, ctx.token);
-            if (!res.IsOk)
-            {
-                Console.WriteLine($"Failed to run command {method} with args: {args?.ToString()}\nresult: {res.Error.ToString()}");
-                Assert.True(false, $"SendCommand for {method} failed with {res.Error.ToString()}");
-            }
-
+            var res = await SendCommand(method, args);
             var wait_res = await ctx.insp.WaitFor(waitForEvent);
             JToken top_frame = wait_res["callFrames"]?[0];
             if (function_name != null)
@@ -517,7 +511,6 @@ namespace DebuggerTests
                 AssertEqual(function_name, wait_res["callFrames"]?[0]?["functionName"]?.Value<string>(), top_frame?.ToString());
             }
 
-            Console.WriteLine (top_frame);
             if (script_loc != null && line >= 0)
                 CheckLocation(script_loc, line, column, ctx.scripts, top_frame["location"]);
 

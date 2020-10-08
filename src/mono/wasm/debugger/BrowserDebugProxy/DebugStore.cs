@@ -878,7 +878,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (start.Id != end.Id)
             {
                 logger.LogDebug($"FindPossibleBreakpoints: documents differ (start: {start.Id}) (end {end.Id}");
-                return null;
+                throw new ReturnAsErrorException($"FindPossibleBreakpoints: documents differ (start: {start.Id}) (end {end.Id}");
             }
 
             SourceId sourceId = start.Id;
@@ -889,7 +889,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (doc == null)
             {
                 logger.LogDebug($"Could not find document {sourceId}");
-                return res;
+                throw new ReturnAsErrorException($"Could not find document {sourceId}");
             }
 
             foreach (MethodInfo method in doc.Methods)
