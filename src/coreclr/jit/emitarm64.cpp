@@ -3627,6 +3627,23 @@ void emitter::emitIns(instruction ins)
 
 /*****************************************************************************
  *
+ *  Add a NOP instructions to pad the instruction stream by (size / 4) bytes.
+ */
+
+void emitter::emitIns_Nop(unsigned size)
+{
+    assert(size > 0);
+    // Max out at 28 bytes of nop...
+    // 32 is the largest method entry alignment we support.
+    size = size % 32; //TODO: should be different for arm64?
+    for (unsigned i = 0; i < size / 4; i++)
+    {
+        emitIns(INS_nop);
+    }
+}
+
+/*****************************************************************************
+ *
  *  Add an instruction with a single immediate value.
  */
 

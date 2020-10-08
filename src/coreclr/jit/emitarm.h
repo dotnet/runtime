@@ -215,6 +215,8 @@ static bool emitIns_valid_imm_for_vldst_offset(int imm);
 
 void emitIns(instruction ins);
 
+void emitIns_Nop(unsigned size);
+
 void emitIns_I(instruction ins, emitAttr attr, target_ssize_t imm);
 
 void emitIns_R(instruction ins, emitAttr attr, regNumber reg);

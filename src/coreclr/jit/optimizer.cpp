@@ -1653,7 +1653,7 @@ public:
 
         if (top->bbNum > bottom->bbNum) // is this a backward edge? (from BOTTOM to TOP)
         {
-            // Edge from BOTTOM to TOP is not a backward edge
+            // Edge from TOP to BOTTOM is not a backward edge
             return false;
         }
 
@@ -2541,6 +2541,10 @@ NO_MORE_LOOPS:
                 break;
             }
             assert(blk->bbNext != nullptr); // We should never reach nullptr.
+        }
+        if (optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP)
+        {
+            first->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
         }
     }
 

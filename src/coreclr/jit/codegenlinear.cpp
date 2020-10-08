@@ -427,6 +427,11 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // DEBUG
 
+        if (block->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP)
+        {
+            GetEmitter()->emitIns_Nop(10);
+        }
+
         IL_OFFSETX currentILOffset = BAD_IL_OFFSET;
         for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
         {
