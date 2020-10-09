@@ -292,15 +292,21 @@ namespace Microsoft.Extensions.Configuration
             string configValue = section?.Value;
             object convertedValue;
             Exception error;
-            if (configValue != null && TryConvertValue(type, configValue, section.Path, out convertedValue, out error))
-            {
-                if (error != null)
+            if (configValue != null) {
+                if (TryConvertValue(type, configValue, section.Path, out convertedValue, out error))
                 {
-                    throw error;
-                }
+                    if (error != null)
+                    {
+                        throw error;
+                    }
 
-                // Leaf nodes are always reinitialized
-                return convertedValue;
+                    // Leaf nodes are always reinitialized
+                    return convertedValue;
+                }
+                if (string.IsNullOrEmpty(configValue) && type != typeof(string))
+                {
+                    instance = CreateInstance(type);
+                }
             }
 
             if (config != null && config.GetChildren().Any())
