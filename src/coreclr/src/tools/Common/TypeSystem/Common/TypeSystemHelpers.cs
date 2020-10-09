@@ -453,14 +453,22 @@ namespace Internal.TypeSystem
             if (type.IsArray)
             {
                 var elementType = ((ArrayType)type).ElementType;
-                if ((elementType.IsValueType) && ((DefType)elementType).InstanceByteAlignment.AsInt > 4)
+                if (elementType.IsValueType)
+                {
+                    var alignment = ((DefType)elementType).InstanceByteAlignment;
+                    if (!alignment.IsIndeterminate && alignment.AsInt > 4)
+                    {
+                        return true;
+                    }
+                }
+            }
+            else if (type.IsDefType)
+            {
+                var alignment = ((DefType)type).InstanceByteAlignment;
+                if (!alignment.IsIndeterminate && alignment.AsInt > 4)
                 {
                     return true;
                 }
-            }
-            else if (type.IsDefType && ((DefType)type).InstanceByteAlignment.AsInt > 4)
-            {
-                return true;
             }
 
             return false;
