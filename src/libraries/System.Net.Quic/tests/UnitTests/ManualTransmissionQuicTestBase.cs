@@ -8,6 +8,7 @@ using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Tests.Harness;
+using System.Net.Security;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -73,12 +74,30 @@ namespace System.Net.Quic.Tests
 
         protected ManualTransmissionQuicTestBase(ITestOutputHelper output)
         {
-            ClientOptions = new QuicClientConnectionOptions();
+            ClientOptions = new QuicClientConnectionOptions()
+            {
+                ClientAuthenticationOptions = new SslClientAuthenticationOptions()
+                {
+                    ApplicationProtocols = new List<SslApplicationProtocol>()
+                    {
+                        new SslApplicationProtocol("quictest")
+                    }
+                }
+            };
+
             ListenerOptions = new QuicListenerOptions
             {
                 CertificateFilePath = CertificateFilePath,
-                PrivateKeyFilePath = PrivateKeyFilePath
+                PrivateKeyFilePath = PrivateKeyFilePath,
+                ServerAuthenticationOptions = new SslServerAuthenticationOptions()
+                {
+                    ApplicationProtocols = new List<SslApplicationProtocol>()
+                    {
+                        new SslApplicationProtocol("quictest")
+                    }
+                }
             };
+
             Client = CreateClient(ClientOptions);
             Server = CreateServer(ListenerOptions);
 

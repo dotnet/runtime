@@ -14,13 +14,17 @@ internal static partial class Interop
 {
     internal static unsafe class OpenSslQuic
     {
+        internal const int CRYPTO_EX_INDEX_SSL = 0;
+        internal const int SSL_TLSEXT_ERR_NOACK = 3;
+        internal const int SSL_TLSEXT_ERR_OK = 0;
+
         internal const string QuicNative = "QuicNative";
         internal const string Ssl = QuicNative;
         internal const string Crypto = QuicNative;
 
         private const string EntryPointPrefix = "QuicNative_";
 
-        public static bool IsSupported()
+        internal static bool IsSupported()
         {
             try
             {
@@ -63,19 +67,8 @@ internal static partial class Interop
             {
                 throw new DllNotFoundException($"Cannot find {QuicNative}");
             }
-
-            _globalSslCtx = SslCtxNew(TlsMethod());
         }
-
-        private static readonly IntPtr _globalSslCtx;
-#else
-        private static readonly IntPtr _globalSslCtx = SslCtxNew(TlsMethod());
 #endif
-
-        internal static IntPtr SslCreate()
-        {
-            return SslNew(_globalSslCtx);
-        }
 
         [DllImport(Ssl, EntryPoint = EntryPointPrefix + "TLS_method")]
         internal static extern IntPtr TlsMethod();
@@ -96,8 +89,6 @@ internal static partial class Interop
 
         [DllImport(Ssl, EntryPoint = EntryPointPrefix + "SSL_CTX_set_client_cert_cb")]
         internal static extern IntPtr SslCtxSetClientCertCb(IntPtr method);
-
-        internal const int CRYPTO_EX_INDEX_SSL = 0;
 
         [DllImport(Ssl, EntryPoint = EntryPointPrefix + "SSL_new")]
         internal static extern IntPtr SslNew(IntPtr ctx);
@@ -252,6 +243,12 @@ internal static partial class Interop
 
         [DllImport(Ssl, EntryPoint = EntryPointPrefix + "SSL_get0_alpn_selected")]
         internal static extern int SslGet0AlpnSelected(IntPtr ssl, out IntPtr data, out int len);
+
+        [DllImport(Ssl, EntryPoint = EntryPointPrefix + "SSL_CTX_set_alpn_select_cb")]
+        internal static extern int SslCtxSetAlpnSelectCb(IntPtr ctx, IntPtr cb, IntPtr arg);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        internal delegate int AlpnSelectCb(IntPtr ssl, ref byte* pOut, ref byte outLen, byte* pIn, int inLen, IntPtr arg);
 
         [DllImport(Ssl, EntryPoint = EntryPointPrefix + "SSL_get_peer_certificate")]
         internal static extern IntPtr SslGetPeerCertificate(IntPtr ssl);

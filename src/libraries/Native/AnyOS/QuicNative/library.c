@@ -153,6 +153,11 @@ QUIC_NATIVE_API int QuicNative_SSL_set_alpn_protos(void* ssl, const unsigned cha
     return SSL_set_alpn_protos(ssl, protos, len);
 }
 
+QUIC_NATIVE_API void QuicNative_SSL_CTX_set_alpn_select_cb(void* ctx, void* cb, void* arg)
+{
+    SSL_CTX_set_alpn_select_cb(ctx, cb, arg);
+}
+
 QUIC_NATIVE_API void QuicNative_SSL_get0_alpn_selected(const void* ssl, const unsigned char** data, unsigned int* len)
 {
     SSL_get0_alpn_selected(ssl, data, len);

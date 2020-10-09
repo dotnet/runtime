@@ -21,6 +21,8 @@ namespace System.Net.Quic.Implementations.Managed
     internal sealed class Tls : IDisposable
     {
         // keep static reference to the delegates passed to native code to prevent their deallocation
+        private static IntPtr _sslCtxGlobal = Interop.OpenSslQuic.SslCtxNew(Interop.OpenSslQuic.TlsMethod());
+        private static readonly unsafe Interop.OpenSslQuic.AlpnSelectCb AlpnSelectCbDelegate = AlpnSelectCbImpl;
         private static readonly unsafe OpenSslQuicMethods.AddHandshakeDataFunc AddHandshakeDelegate = AddHandshakeDataImpl;
         private static readonly unsafe OpenSslQuicMethods.SetEncryptionSecretsFunc SetEncryptionSecretsDelegate = SetEncryptionSecretsImpl;
         private static readonly OpenSslQuicMethods.FlushFlightFunc FlushFlightDelegate = FlushFlightImpl;
@@ -34,6 +36,8 @@ namespace System.Net.Quic.Implementations.Managed
         private readonly LocalCertificateSelectionCallback? _clientCertificateSelectionCallback;
         private readonly ServerCertificateSelectionCallback? _serverCertificateSelectionCallback;
         private readonly bool _isServer;
+
+        private readonly List<SslApplicationProtocol> _alpnProtocols;
 
         private static readonly int _managedInterfaceIndex =
             Interop.OpenSslQuic.CryptoGetExNewIndex(Interop.OpenSslQuic.CRYPTO_EX_INDEX_SSL, 0, IntPtr.Zero,
@@ -65,6 +69,9 @@ namespace System.Net.Quic.Implementations.Managed
                     Marshal.GetFunctionPointerForDelegate(FlushFlightDelegate),
                 sendAlert = Marshal.GetFunctionPointerForDelegate(SendAlertDelegate)
             };
+
+            Interop.OpenSslQuic.SslCtxSetAlpnSelectCb(_sslCtxGlobal,
+                Marshal.GetFunctionPointerForDelegate(AlpnSelectCbDelegate), IntPtr.Zero);
 
             // Interop.OpenSslQuic.SslCtxSetTlsExtServernameCallback(
             //     Interop.OpenSslQuic.__globalSslCtx,
@@ -126,7 +133,7 @@ namespace System.Net.Quic.Implementations.Managed
             _remoteCertificateValidationCallback = remoteCertificateValidationCallback;
             _isServer = isServer;
 
-            _ssl = Interop.OpenSslQuic.SslCreate();
+            _ssl = Interop.OpenSslQuic.SslNew(_sslCtxGlobal);
             Debug.Assert(handle.Target is ManagedQuicConnection);
             Interop.OpenSslQuic.SslSetQuicMethod(_ssl, _callbacksPtr);
 
@@ -150,10 +157,13 @@ namespace System.Net.Quic.Implementations.Managed
                 Interop.OpenSslQuic.SslSetQuicTransportParams(_ssl, pData, new IntPtr(writer.BytesWritten));
             }
 
-            if (applicationProtocols != null)
+            if (applicationProtocols == null)
             {
-                SetAlpn(applicationProtocols);
+                throw new ArgumentNullException(nameof(SslServerAuthenticationOptions.ApplicationProtocols));
             }
+
+            _alpnProtocols = applicationProtocols;
+            SetAlpn(applicationProtocols);
         }
 
         private unsafe void SetServerCertificate(X509Certificate serverCertificate)
@@ -330,12 +340,12 @@ namespace System.Net.Quic.Implementations.Managed
             return osslLevel;
         }
 
-        internal static ManagedQuicConnection GetCallbackInterface(IntPtr ssl)
+        private static ManagedQuicConnection GetQuicConnection(IntPtr ssl)
         {
             var addr = Interop.OpenSslQuic.SslGetExData(ssl, _managedInterfaceIndex);
-            var callback = (ManagedQuicConnection)GCHandle.FromIntPtr(addr).Target!;
+            var connection = (ManagedQuicConnection)GCHandle.FromIntPtr(addr).Target!;
 
-            return callback;
+            return connection;
         }
 
         internal SslError OnDataReceived(EncryptionLevel level, ReadOnlySpan<byte> data)
@@ -402,7 +412,7 @@ namespace System.Net.Quic.Implementations.Managed
         private static int TlsExtCallbackImpl(IntPtr ssl, ref int al, IntPtr arg)
         {
             var namePtr = Interop.OpenSslQuic.SslGetServername(ssl, 0);
-            var connection = Tls.GetCallbackInterface(ssl);
+            var connection = GetQuicConnection(ssl);
             string? name = Marshal.PtrToStringAnsi(namePtr);
             if (name != null && connection.Tls.ValidateClientHostname(name!))
             {
@@ -414,36 +424,74 @@ namespace System.Net.Quic.Implementations.Managed
         private static unsafe int SetEncryptionSecretsImpl(IntPtr ssl, OpenSslEncryptionLevel level, byte* readSecret,
             byte* writeSecret, UIntPtr secretLen)
         {
-            var callback = GetCallbackInterface(ssl);
+            var connection = GetQuicConnection(ssl);
 
             var readS = new ReadOnlySpan<byte>(readSecret, (int)secretLen.ToUInt32());
             var writeS = new ReadOnlySpan<byte>(writeSecret, (int)secretLen.ToUInt32());
 
-            return callback.HandleSetEncryptionSecrets(ToManagedEncryptionLevel(level), readS, writeS);
+            return connection.HandleSetEncryptionSecrets(ToManagedEncryptionLevel(level), readS, writeS);
         }
 
         private static unsafe int AddHandshakeDataImpl(IntPtr ssl, OpenSslEncryptionLevel level, byte* data,
             UIntPtr len)
         {
-            var callback = GetCallbackInterface(ssl);
+            var connection = GetQuicConnection(ssl);
 
             var span = new ReadOnlySpan<byte>(data, (int)len.ToUInt32());
 
-            return callback.HandleAddHandshakeData(ToManagedEncryptionLevel(level), span);
+            return connection.HandleAddHandshakeData(ToManagedEncryptionLevel(level), span);
         }
 
         private static int FlushFlightImpl(IntPtr ssl)
         {
-            var callback = GetCallbackInterface(ssl);
+            var connection = GetQuicConnection(ssl);
 
-            return callback.HandleFlush();
+            return connection.HandleFlush();
         }
 
         private static int SendAlertImpl(IntPtr ssl, OpenSslEncryptionLevel level, byte alert)
         {
-            var callback = GetCallbackInterface(ssl);
+            var connection = GetQuicConnection(ssl);
 
-            return callback.HandleSendAlert(ToManagedEncryptionLevel(level), (TlsAlert)alert);
+            return connection.HandleSendAlert(ToManagedEncryptionLevel(level), (TlsAlert)alert);
+        }
+
+        private static unsafe int AlpnSelectCbImpl(IntPtr ssl, ref byte* pOut, ref byte outLen, byte* pIn, int inLen, IntPtr arg)
+        {
+            var connection = GetQuicConnection(ssl);
+            var localProtocols = connection.Tls._alpnProtocols;
+
+            var remoteProtocolList = MemoryMarshal.CreateSpan(ref *pIn, inLen);
+
+            // remoteProtocols are length-prefixed, non-null-terminated byte strings
+            while (remoteProtocolList.Length > 0)
+            {
+                int length = remoteProtocolList[0];
+                if (length > remoteProtocolList.Length - 1)
+                {
+                    // this should not really happen, this means that the protocols are in wrong format
+                    return Interop.OpenSslQuic.SSL_TLSEXT_ERR_NOACK;
+                }
+
+                Span<byte> remoteProtocol = remoteProtocolList.Slice(1, length);
+
+                for (int i = 0; i < localProtocols.Count; i++)
+                {
+                    if (localProtocols[i].Protocol.Span.SequenceEqual(remoteProtocol))
+                    {
+                        // accept the protocol
+                        outLen = (byte) length;
+                        pOut = (byte*) Unsafe.AsPointer(ref MemoryMarshal.GetReference(remoteProtocol));
+
+                        return Interop.OpenSslQuic.SSL_TLSEXT_ERR_OK;
+                    }
+                }
+
+                remoteProtocolList = remoteProtocolList.Slice(length + 1);
+            }
+
+            // no protocol negotiated
+            return Interop.OpenSslQuic.SSL_TLSEXT_ERR_NOACK;
         }
     }
 }
