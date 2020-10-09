@@ -546,27 +546,13 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_FlushAsync_Propagated()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
-            var tcs = new TaskCompletionSource();
-            using (var stream = new DelegateDelegatingStream(stream1) { FlushAsyncFunc = async cancellationToken => { await tcs.Task.WithCancellation(cancellationToken); await stream1.FlushAsync(cancellationToken); } })
-            using (var sslStream = new SslStream(stream, false, AllowAnyServerCertificate))
-            using (stream2)
-            {
-                Task task = sslStream.FlushAsync();
-
-                Assert.False(task.IsCompleted);
-                tcs.SetResult();
-
-                await task;
-            }
-
             var ms = new MemoryStream();
             var tracking = new CallTrackingStream(ms);
             using (var sslStream = new SslStream(tracking, false, AllowAnyServerCertificate))
             {
-                Assert.Equal(0, tracking.TimesCalled(nameof(Stream.Flush)));
-                sslStream.Flush();
-                Assert.NotEqual(0, tracking.TimesCalled(nameof(Stream.Flush)));
+                Assert.Equal(0, tracking.TimesCalled(nameof(Stream.FlushAsync)));
+                await sslStream.FlushAsync();
+                Assert.NotEqual(0, tracking.TimesCalled(nameof(Stream.FlushAsync)));
             }
         }
 
