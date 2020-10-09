@@ -3,6 +3,5 @@
   <PropertyGroup>
     <StrongNameKeyId>Open</StrongNameKeyId>
     <IncludePlatformAttributes>true</IncludePlatformAttributes>
-    <UnsupportedOSPlatforms>browser</UnsupportedOSPlatforms>
   </PropertyGroup>
 </Project>
