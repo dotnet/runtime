@@ -395,6 +395,64 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <MSBuild Projects="$(MSBuildProjectFile)" Targets="CreateXunitWrapper;BuildXunitWrapper" Properties="_CMDDIR=%(TestDirectories.Identity)" />
   </Target>
 
+  <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
+
+  <Target Name="BuildAndroidApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+
+    <PropertyGroup>
+      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm64'">arm64-v8a</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)'=='arm'">armeabi-v7a</AndroidAbi>
+      <AndroidAbi Condition="'$(TargetArchitecture)'=='x64'">x86_64</AndroidAbi>
+      <AndroidAbi Condition="'$(AndroidAbi)'==''">$(TargetArchitecture)</AndroidAbi>
+      <CMDDIR>%(TestDirectories.Identity)</CMDDIR>
+      <CMDDIR_Parent>$([System.IO.Path]::GetDirectoryName($(CMDDIR)))</CMDDIR_Parent>
+      <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($(CMDDIR_Parent)))</CMDDIR_Grandparent>
+      <CategoryWithSlash>$([System.String]::Copy('$(CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
+      <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
+      <OutputDir>$(CMDDIR)\AndroidApp</OutputDir>
+      <ApkDir>$(OutputDir)\apk</ApkDir>
+      <StripDebugSymbols>False</StripDebugSymbols>
+      <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
+      <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
+    </PropertyGroup>
+
+    <Message Importance="High" Text="~~~CMDDIR: $(CMDDIR)" />
+    <Message Importance="High" Text="~~~OutputDir: $(OutputDir)" />
+
+    <MakeDir Directories="$(OutputDir)"/>
+
+    <ItemGroup>
+      <AllCMDsPresent Include="$(CMDDIR)\**\*.sh" />
+      <TestAssemblies Include="@(AllCMDsPresent->'%(RelativeDir)%(Filename).dll')" />
+      <TestAssemblyDirs Include="@(AllCMDsPresent->'%(RelativeDir)')" />
+      <AssemblySearchPaths Include="@(TestAssemblyDirs)"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
+      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/$(NetCoreAppCurrent)"/>
+    </ItemGroup>
+
+    <Message Importance="High" Text="~~~TestAssemblies: @(TestAssemblies)" />
+    <Message Importance="High" Text="~~~TestAssemblyDirs: @(TestAssemblyDirs)" />
+    <Message Importance="High" Text="~~~AssemblySearchPaths: @(AssemblySearchPaths)" />
+    <Message Importance="High" Text="~~~Category: $(Category)" />
+
+    <RemoveDir Directories="$(ApkDir)" />
+
+    <AndroidAppBuilderTask
+        ProjectName="$(Category)"
+        Abi="$(AndroidAbi)"
+        MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
+        MainLibraryFileName="@(TestAssemblies)"
+        AssemblySearchPaths="@(AssemblySearchPaths)"
+        StripDebugSymbols="$(StripDebugSymbols)"
+        SourceDir="$(OutputDir)"
+        OutputDir="$(ApkDir)">
+        <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
+        <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />
+    </AndroidAppBuilderTask>
+    <Message Importance="High" Text="Apk:       $(ApkBundlePath)"/>
+    <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
+  </Target>
+
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TargetOS)' == 'Windows_NT'" />
@@ -417,6 +475,10 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <!-- generate project.lock.json file corresponding to above json file -->
     <MSBuild Projects="$(RepoRoot)/src/tests/Common/test_dependencies/test_dependencies.csproj"
              Condition=" '$(BuildWrappers)'=='true' " />
+
+    <MSBuild Projects="$(MSBuildProjectFile)"
+             Targets="BuildAndroidApp"
+             Condition=" '$(RunWithAndroid)'=='true' " />
 
     <!-- Default for building -->
     <MSBuild Projects="$(MSBuildProjectFile)"
