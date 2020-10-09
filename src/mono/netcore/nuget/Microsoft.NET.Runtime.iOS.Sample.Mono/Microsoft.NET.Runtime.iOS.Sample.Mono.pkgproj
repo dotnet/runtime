@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <_iOSSampleFiles Include="$(ArtifactsDir)bin\AppleAppBuilder\$(Configuration)\net5.0\AppleAppBuilder.dll" />
+    <_iOSSampleFiles Include="$(ArtifactsDir)bin\AppleAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\AppleAppBuilder.dll" />
     <_iOSSampleFiles Include="$(RepoToolsLocalDir)tasks\mobile.tasks\AppleAppBuilder\Templates\runtime.m" />
     <_iOSSampleFiles Include="$(RepoToolsLocalDir)tasks\mobile.tasks\AppleAppBuilder\Templates\runtime.h" />
     <_iOSSampleFiles Include="$(RepoToolsLocalDir)tasks\mobile.tasks\AppleAppBuilder\Templates\main-simple.m" />
