@@ -32,6 +32,11 @@ namespace Mono.Linker.Tests.TestCases
 			return NUnitCasesBySuiteName ("Attributes.Debugger");
 		}
 
+		public static IEnumerable<TestCaseData> AttributesStructLayoutTests ()
+		{
+			return NUnitCasesBySuiteName ("Attributes.StructLayout");
+		}
+
 		public static IEnumerable<TestCaseData> GenericsTests ()
 		{
 			return NUnitCasesBySuiteName ("Generics");

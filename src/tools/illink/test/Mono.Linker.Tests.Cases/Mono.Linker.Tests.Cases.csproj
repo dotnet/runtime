@@ -55,7 +55,6 @@
     <None Include="TestFramework\Dependencies\ILAssemblySample.il" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Attributes.StructLayout\" />
     <Folder Include="Reflection\Dependencies\" />
     <Folder Include="BCLFeatures\" />
     <Folder Include="BCLFeatures\ETW\" />
