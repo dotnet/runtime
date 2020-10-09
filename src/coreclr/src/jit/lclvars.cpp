@@ -401,7 +401,7 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
        but it will be very difficult for fully interruptible code */
 
     if (compArgSize != (size_t)(unsigned short)compArgSize)
-        NO_WAY("Too many arguments for the \"ret\" instruction to pop");
+        IMPL_LIMITATION("Too many arguments for the \"ret\" instruction to pop");
 #endif
 }
 

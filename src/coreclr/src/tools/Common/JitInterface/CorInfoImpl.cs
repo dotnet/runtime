@@ -198,6 +198,14 @@ namespace Internal.JitInterface
             {
                 ThrowHelper.ThrowInvalidProgramException();
             }
+            if (result == CorJitResult.CORJIT_IMPLLIMITATION)
+            {
+#if READYTORUN
+                throw new RequiresRuntimeJitException("JIT implementation limitation");
+#else
+                ThrowHelper.ThrowInvalidProgramException();
+#endif
+            }
             if (result != CorJitResult.CORJIT_OK)
             {
 #if SUPPORT_JIT

@@ -1689,6 +1689,7 @@ void Compiler::compShutdown()
     fprintf(fout, "---------------------------------------------------\n");
     fprintf(fout, "   badCode:             %u\n", fatal_badCode);
     fprintf(fout, "   noWay:               %u\n", fatal_noWay);
+    fprintf(fout, "   implLimitation:      %u\n", fatal_implLimitation);
     fprintf(fout, "   NOMEM:               %u\n", fatal_NOMEM);
     fprintf(fout, "   noWayAssertBody:     %u\n", fatal_noWayAssertBody);
 #ifdef DEBUG
@@ -6822,7 +6823,9 @@ START:
 
         result = param.result;
 
-    if (!inlineInfo && (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR) && !jitFallbackCompile)
+    if (!inlineInfo &&
+        (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+        !jitFallbackCompile)
     {
         // If we failed the JIT, reattempt with debuggable code.
         jitFallbackCompile = true;
