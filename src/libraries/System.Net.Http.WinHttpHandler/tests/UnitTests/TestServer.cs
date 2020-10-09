@@ -160,7 +160,7 @@ namespace System.Net.Http.WinHttpHandlerUnitTests
             {
                 using (Stream compressedStream = useGZip ?
                     new GZipStream(memoryStream, CompressionMode.Compress) :
-                    new ZLibStream(memoryStream, CompressionMode.Compress))
+                    new DeflateStream(memoryStream, CompressionMode.Compress))
                 {
                     compressedStream.Write(bytes, 0, bytes.Length);
                 }

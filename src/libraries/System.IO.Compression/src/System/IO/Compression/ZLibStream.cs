@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace System.IO.Compression
 {
-    /// <summary>Provides methods and properties used to compress and decompress streams by using the ZLib data format specification.</summary>
+    /// <summary>Provides methods and properties used to compress and decompress streams by using the zlib data format specification.</summary>
     public sealed class ZLibStream : Stream
     {
         /// <summary>The underlying deflate stream.</summary>
@@ -52,7 +52,7 @@ namespace System.IO.Compression
         public override bool CanWrite => _deflateStream?.CanWrite ?? false;
 
         /// <summary>Gets a value indicating whether the stream supports seeking.</summary>
-        public override bool CanSeek => _deflateStream?.CanSeek ?? false;
+        public override bool CanSeek => false;
 
         /// <summary>This property is not supported and always throws a <see cref="NotSupportedException"/>.</summary>
         public override long Length => throw new NotSupportedException();
