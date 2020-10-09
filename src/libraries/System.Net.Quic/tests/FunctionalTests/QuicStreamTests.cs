@@ -229,6 +229,85 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
+        public async Task LargeDataSentAndReceived()
+        {
+            byte[] data = Enumerable.Range(0, 64 * 1024).Select(x => (byte)x).ToArray();
+            const int NumberOfWrites = 256;       // total sent = 16M
+
+            using QuicListener listener = CreateQuicListener();
+
+            for (int j = 0; j < 100; j++)
+            {
+                Task listenTask = Task.Run(async () =>
+                {
+                    using QuicConnection connection = await listener.AcceptConnectionAsync();
+                    await using QuicStream stream = await connection.AcceptStreamAsync();
+                    byte[] buffer = new byte[data.Length];
+
+                    for (int i = 0; i < NumberOfWrites; i++)
+                    {
+                        int totalBytesRead = 0;
+                        while (totalBytesRead < data.Length)
+                        {
+                            int bytesRead = await stream.ReadAsync(buffer.AsMemory().Slice(totalBytesRead));
+                            Assert.NotEqual(0, bytesRead);
+                            totalBytesRead += bytesRead;
+                        }
+
+                        Assert.Equal(data.Length, totalBytesRead);
+                        Assert.True(data.AsSpan().SequenceEqual(buffer));
+                    }
+
+                    for (int i = 0; i < NumberOfWrites; i++)
+                    {
+                        await stream.WriteAsync(data);
+                    }
+
+                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+
+                    await stream.ShutdownWriteCompleted();
+                    await connection.CloseAsync(errorCode: 0);
+                });
+
+                Task clientTask = Task.Run(async () =>
+                {
+                    using QuicConnection connection = CreateQuicConnection(listener.ListenEndPoint);
+                    await connection.ConnectAsync();
+                    await using QuicStream stream = connection.OpenBidirectionalStream();
+                    byte[] buffer = new byte[data.Length];
+
+                    for (int i = 0; i < NumberOfWrites; i++)
+                    {
+                        await stream.WriteAsync(data);
+                    }
+
+                    await stream.WriteAsync(Memory<byte>.Empty, endStream: true);
+
+                    for (int i = 0; i < NumberOfWrites; i++)
+                    {
+                        int totalBytesRead = 0;
+                        while (totalBytesRead < data.Length)
+                        {
+                            int bytesRead = await stream.ReadAsync(buffer.AsMemory().Slice(totalBytesRead));
+                            Assert.NotEqual(0, bytesRead);
+                            totalBytesRead += bytesRead;
+                        }
+
+                        Assert.Equal(data.Length, totalBytesRead);
+                        Assert.True(data.AsSpan().SequenceEqual(buffer));
+                    }
+
+                    await stream.ShutdownWriteCompleted();
+                    await connection.CloseAsync(errorCode: 0);
+                });
+
+                await (new[] { listenTask, clientTask }).WhenAllOrAnyFailed(millisecondsTimeout: 1000000);
+            }
+        }
+
+
+
+        [Fact]
         public async Task TestStreams()
         {
             using QuicListener listener = CreateQuicListener();
