@@ -57,7 +57,7 @@ namespace Microsoft.Extensions.Configuration.Json
 
             if (isEmpty && _currentPath != null)
             {
-                _data[_currentPath] = null;
+                _data[_currentPath] = string.Empty;
             }
         }
 
@@ -70,30 +70,55 @@ namespace Microsoft.Extensions.Configuration.Json
 
                 case JsonValueKind.Array:
                     int index = 0;
-                    foreach (JsonElement arrayElement in value.EnumerateArray()) {
-                        EnterContext(index.ToString());
-                        VisitValue(arrayElement);
-                        ExitContext();
-                        index++;
+                    var arrayElements = value.EnumerateArray();
+                    if (arrayElements.Any())
+                    {
+                        foreach (JsonElement arrayElement in value.EnumerateArray())
+                        {
+                            EnterContext(index.ToString());
+                            VisitValue(arrayElement);
+                            ExitContext();
+                            index++;
+                        }
                     }
+                    else
+                    {
+                        SetPath(string.Empty);
+                    }
+
                     break;
 
                 case JsonValueKind.Number:
                 case JsonValueKind.String:
                 case JsonValueKind.True:
                 case JsonValueKind.False:
-                case JsonValueKind.Null:
-                    string key = _currentPath;
-                    if (_data.ContainsKey(key))
-                    {
-                        throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key));
-                    }
-                    _data[key] = value.ToString();
+                    SetJsonPath(value);
                     break;
-
+                case JsonValueKind.Null:
+                    SetPath(null);
+                    break;
                 default:
                     throw new FormatException(SR.Format(SR.Error_UnsupportedJSONToken, value.ValueKind));
             }
+        }
+
+        private void SetPath(string value)
+        {
+            string key = _currentPath;
+            if (_data.ContainsKey(key))
+            {
+                throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key));
+            }
+            _data[key] = value;
+        }
+        private void SetJsonPath(JsonElement value)
+        {
+            string key = _currentPath;
+            if (_data.ContainsKey(key))
+            {
+                throw new FormatException(SR.Format(SR.Error_KeyIsDuplicated, key));
+            }
+            _data[key] = value.ToString();
         }
 
         private void EnterContext(string context)
