@@ -239,6 +239,10 @@ namespace R2RTest
 
             if (_options.Composite)
             {
+                const string FrameworkOutputFileName = "framework-r2r.dll";
+
+                File.Delete(Path.Combine(_options.CoreRootDirectory.FullName, FrameworkOutputFileName));
+
                 var processes = new ProcessInfo[(int)CompilerIndex.Count];
                 foreach (CompilerRunner runner in frameworkRunners)
                 {
@@ -259,7 +263,7 @@ namespace R2RTest
 
                     if (inputFrameworkDlls.Count > 0)
                     {
-                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, "framework-r2r.dll");
+                        string outputFileName = runner.GetOutputFileName(_options.CoreRootDirectory.FullName, FrameworkOutputFileName);
                         ProcessInfo compilationProcess = new ProcessInfo(new CompilationProcessConstructor(runner, outputFileName, inputFrameworkDlls));
                         compilationsToRun.Add(compilationProcess);
                         processes[(int)runner.Index] = compilationProcess;
