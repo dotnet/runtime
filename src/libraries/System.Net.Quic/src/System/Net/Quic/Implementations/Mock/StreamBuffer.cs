@@ -13,7 +13,7 @@ namespace System.IO
     internal sealed class StreamBuffer : IDisposable
     {
         private ArrayBuffer _buffer; // mutable struct, do not make this readonly
-        private readonly int _maxSize;
+        private readonly int _maxBufferSize;
         private bool _writeEnded;
         private bool _readAborted;
         private readonly ResettableValueTaskSource _readTaskSource;
@@ -23,10 +23,10 @@ namespace System.IO
         public const int DefaultInitialBufferSize = 4 * 1024;
         public const int DefaultMaxBufferSize = 32 * 1024;
 
-        public StreamBuffer(int initialSize = DefaultInitialBufferSize, int maxSize = DefaultMaxBufferSize)
+        public StreamBuffer(int initialBufferSize = DefaultInitialBufferSize, int maxBufferSize = DefaultMaxBufferSize)
         {
-            _buffer = new ArrayBuffer(initialSize, usePool: true);
-            _maxSize = maxSize;
+            _buffer = new ArrayBuffer(initialBufferSize, usePool: true);
+            _maxBufferSize = maxBufferSize;
             _readTaskSource = new ResettableValueTaskSource();
             _writeTaskSource = new ResettableValueTaskSource();
         }
@@ -86,7 +86,7 @@ namespace System.IO
                         throw new InvalidOperationException();
                     }
 
-                    return _maxSize - _buffer.ActiveLength;
+                    return _maxBufferSize - _buffer.ActiveLength;
                 }
             }
         }
@@ -108,7 +108,7 @@ namespace System.IO
                     return (false, buffer.Length);
                 }
 
-                _buffer.TryEnsureAvailableSpaceUpToLimit(buffer.Length, _maxSize);
+                _buffer.TryEnsureAvailableSpaceUpToLimit(buffer.Length, _maxBufferSize);
 
                 int bytesWritten = Math.Min(buffer.Length, _buffer.AvailableLength);
                 if (bytesWritten > 0)
@@ -299,7 +299,7 @@ namespace System.IO
             // and dispose/clear the cancellation registration in GetResult to guarantee it will not affect subsequent waiters.
             // The rest of the logic is deferred to ManualResetValueTaskSourceCore.
 
-            private ManualResetValueTaskSourceCore<bool> _waitSource = new ManualResetValueTaskSourceCore<bool> { RunContinuationsAsynchronously = true }; // mutable struct, do not make this readonly
+            private ManualResetValueTaskSourceCore<bool> _waitSource; // mutable struct, do not make this readonly
             private CancellationToken _waitSourceCancellationToken;
             private CancellationTokenRegistration _waitSourceCancellation;
             private int _hasWaiter;
@@ -340,7 +340,11 @@ namespace System.IO
 
             public void Reset()
             {
-                Debug.Assert(_hasWaiter == 0);
+                if (_hasWaiter != 0)
+                {
+                    Debug.Fail("Concurrent use is not supported");
+                    throw new InvalidOperationException("Concurrent use is not supported");
+                }
 
                 _waitSource.Reset();
                 Volatile.Write(ref _hasWaiter, 1);

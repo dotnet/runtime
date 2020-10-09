@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Runtime.Versioning;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -439,15 +440,19 @@ namespace System.Net.Http
 
         #region Advanced Send Overloads
 
+        [UnsupportedOSPlatform("browser")]
         public HttpResponseMessage Send(HttpRequestMessage request) =>
             Send(request, DefaultCompletionOption, cancellationToken: default);
 
+        [UnsupportedOSPlatform("browser")]
         public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption) =>
             Send(request, completionOption, cancellationToken: default);
 
+        [UnsupportedOSPlatform("browser")]
         public override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken) =>
             Send(request, DefaultCompletionOption, cancellationToken);
 
+        [UnsupportedOSPlatform("browser")]
         public HttpResponseMessage Send(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken)
         {
             // Called outside of async state machine to propagate certain exception even without awaiting the returned task.

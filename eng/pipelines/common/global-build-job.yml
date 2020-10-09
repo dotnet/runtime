@@ -11,6 +11,7 @@ parameters:
   targetRid: ''
   timeoutInMinutes: ''
   pool: ''
+  platform: ''
   condition: true
   isOfficialBuild: false
   runtimeFlavor: 'coreclr'
@@ -94,6 +95,8 @@ jobs:
           runtimeFlavor: ${{ parameters.runtimeFlavor }}
           helixQueues: ${{ parameters.helixQueues }}
           targetRid: ${{ parameters.targetRid }}
+          nameSuffix: ${{ parameters.nameSuffix }}
+          platform: ${{ parameters.platform }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
     - task: PublishBuildArtifacts@1
