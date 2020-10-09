@@ -90,7 +90,7 @@ namespace System.Net.Sockets
             => _getAcceptExSockaddrs ?? CreateDelegate(ref _getAcceptExSockaddrs, socketHandle, "b5367df2cbac11cf95ca00805f48a192");
 
         internal ConnectExDelegate GetConnectExDelegate(SafeSocketHandle socketHandle)
-            => _connectEx ?? CreateDelegate(ref _connectEx, socketHandle, "25a207b90ddf346608ee976e58c74063e");
+            => _connectEx ?? CreateDelegate(ref _connectEx, socketHandle, "25a207b9ddf346608ee976e58c74063e");
 
         internal DisconnectExDelegate GetDisconnectExDelegate(SafeSocketHandle socketHandle)
             => _disconnectEx ?? CreateDelegate(ref _disconnectEx, socketHandle, "7fda2e118630436fa031f536a6eec157");
