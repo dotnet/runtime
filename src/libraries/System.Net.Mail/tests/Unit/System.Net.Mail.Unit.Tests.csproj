@@ -18,7 +18,7 @@
     <Compile Include="MessageTests\MessageHeaderBehaviorTest.cs" />
     <Compile Include="MessageTests\ReplyToListTest.cs" />
     <Compile Include="QuotedPrintableStreamTest.cs" />
-    <Compile Include="SmtpConnectionTests\EhloParseExtensionsTest.cs" Condition="'$(TargetsBrowser)' != 'true'" />
+    <Compile Include="SmtpConnectionTests\EhloParseExtensionsTest.cs" />
     <Compile Include="SmtpDateTimeTest.cs" />
     <Compile Include="WriteStateInfoTest.cs" />
   </ItemGroup>
