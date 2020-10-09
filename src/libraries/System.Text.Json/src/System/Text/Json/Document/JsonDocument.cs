@@ -919,7 +919,8 @@ namespace System.Text.Json
         private static void Parse(
             ReadOnlySpan<byte> utf8JsonSpan,
             JsonReaderOptions readerOptions,
-            ref MetadataDb database)
+            ref MetadataDb database,
+            ref StackRowStack stack)
         {
             bool inArray = false;
             int arrayItemsCount = 0;
@@ -931,98 +932,120 @@ namespace System.Text.Json
                 isFinalBlock: true,
                 new JsonReaderState(options: readerOptions));
 
-            StackRowStack stack = default;
-            using (stack)
+            while (reader.Read())
             {
-                while (reader.Read())
+                JsonTokenType tokenType = reader.TokenType;
+
+                // Since the input payload is contained within a Span,
+                // token start index can never be larger than int.MaxValue (i.e. utf8JsonSpan.Length).
+                Debug.Assert(reader.TokenStartIndex <= int.MaxValue);
+                int tokenStart = (int)reader.TokenStartIndex;
+
+                if (tokenType == JsonTokenType.StartObject)
                 {
-                    JsonTokenType tokenType = reader.TokenType;
-
-                    // Since the input payload is contained within a Span,
-                    // token start index can never be larger than int.MaxValue (i.e. utf8JsonSpan.Length).
-                    Debug.Assert(reader.TokenStartIndex <= int.MaxValue);
-                    int tokenStart = (int)reader.TokenStartIndex;
-
-                    if (tokenType == JsonTokenType.StartObject)
+                    if (inArray)
                     {
-                        if (inArray)
-                        {
-                            arrayItemsCount++;
-                        }
-
-                        numberOfRowsForValues++;
-                        database.Append(tokenType, tokenStart, DbRow.UnknownSize);
-                        var row = new StackRow(numberOfRowsForMembers + 1);
-                        stack.Push(row);
-                        numberOfRowsForMembers = 0;
+                        arrayItemsCount++;
                     }
-                    else if (tokenType == JsonTokenType.EndObject)
+
+                    numberOfRowsForValues++;
+                    database.Append(tokenType, tokenStart, DbRow.UnknownSize);
+                    var row = new StackRow(numberOfRowsForMembers + 1);
+                    stack.Push(row);
+                    numberOfRowsForMembers = 0;
+                }
+                else if (tokenType == JsonTokenType.EndObject)
+                {
+                    int rowIndex = database.FindIndexOfFirstUnsetSizeOrLength(JsonTokenType.StartObject);
+
+                    numberOfRowsForValues++;
+                    numberOfRowsForMembers++;
+                    database.SetLength(rowIndex, numberOfRowsForMembers);
+
+                    int newRowIndex = database.Length;
+                    database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
+                    database.SetNumberOfRows(rowIndex, numberOfRowsForMembers);
+                    database.SetNumberOfRows(newRowIndex, numberOfRowsForMembers);
+
+                    StackRow row = stack.Pop();
+                    numberOfRowsForMembers += row.SizeOrLength;
+                }
+                else if (tokenType == JsonTokenType.StartArray)
+                {
+                    if (inArray)
                     {
-                        int rowIndex = database.FindIndexOfFirstUnsetSizeOrLength(JsonTokenType.StartObject);
-
-                        numberOfRowsForValues++;
-                        numberOfRowsForMembers++;
-                        database.SetLength(rowIndex, numberOfRowsForMembers);
-
-                        int newRowIndex = database.Length;
-                        database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
-                        database.SetNumberOfRows(rowIndex, numberOfRowsForMembers);
-                        database.SetNumberOfRows(newRowIndex, numberOfRowsForMembers);
-
-                        StackRow row = stack.Pop();
-                        numberOfRowsForMembers += row.SizeOrLength;
+                        arrayItemsCount++;
                     }
-                    else if (tokenType == JsonTokenType.StartArray)
-                    {
-                        if (inArray)
-                        {
-                            arrayItemsCount++;
-                        }
 
-                        numberOfRowsForMembers++;
-                        database.Append(tokenType, tokenStart, DbRow.UnknownSize);
-                        var row = new StackRow(arrayItemsCount, numberOfRowsForValues + 1);
-                        stack.Push(row);
-                        arrayItemsCount = 0;
-                        numberOfRowsForValues = 0;
+                    numberOfRowsForMembers++;
+                    database.Append(tokenType, tokenStart, DbRow.UnknownSize);
+                    var row = new StackRow(arrayItemsCount, numberOfRowsForValues + 1);
+                    stack.Push(row);
+                    arrayItemsCount = 0;
+                    numberOfRowsForValues = 0;
+                }
+                else if (tokenType == JsonTokenType.EndArray)
+                {
+                    int rowIndex = database.FindIndexOfFirstUnsetSizeOrLength(JsonTokenType.StartArray);
+
+                    numberOfRowsForValues++;
+                    numberOfRowsForMembers++;
+                    database.SetLength(rowIndex, arrayItemsCount);
+                    database.SetNumberOfRows(rowIndex, numberOfRowsForValues);
+
+                    // If the array item count is (e.g.) 12 and the number of rows is (e.g.) 13
+                    // then the extra row is just this EndArray item, so the array was made up
+                    // of simple values.
+                    //
+                    // If the off-by-one relationship does not hold, then one of the values was
+                    // more than one row, making it a complex object.
+                    //
+                    // This check is similar to tracking the start array and painting it when
+                    // StartObject or StartArray is encountered, but avoids the mixed state
+                    // where "UnknownSize" implies "has complex children".
+                    if (arrayItemsCount + 1 != numberOfRowsForValues)
+                    {
+                        database.SetHasComplexChildren(rowIndex);
                     }
-                    else if (tokenType == JsonTokenType.EndArray)
+
+                    int newRowIndex = database.Length;
+                    database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
+                    database.SetNumberOfRows(newRowIndex, numberOfRowsForValues);
+
+                    StackRow row = stack.Pop();
+                    arrayItemsCount = row.SizeOrLength;
+                    numberOfRowsForValues += row.NumberOfRows;
+                }
+                else if (tokenType == JsonTokenType.PropertyName)
+                {
+                    numberOfRowsForValues++;
+                    numberOfRowsForMembers++;
+
+                    // Adding 1 to skip the start quote will never overflow
+                    Debug.Assert(tokenStart < int.MaxValue);
+
+                    database.Append(tokenType, tokenStart + 1, reader.ValueSpan.Length);
+
+                    if (reader._stringHasEscaping)
                     {
-                        int rowIndex = database.FindIndexOfFirstUnsetSizeOrLength(JsonTokenType.StartArray);
-
-                        numberOfRowsForValues++;
-                        numberOfRowsForMembers++;
-                        database.SetLength(rowIndex, arrayItemsCount);
-                        database.SetNumberOfRows(rowIndex, numberOfRowsForValues);
-
-                        // If the array item count is (e.g.) 12 and the number of rows is (e.g.) 13
-                        // then the extra row is just this EndArray item, so the array was made up
-                        // of simple values.
-                        //
-                        // If the off-by-one relationship does not hold, then one of the values was
-                        // more than one row, making it a complex object.
-                        //
-                        // This check is similar to tracking the start array and painting it when
-                        // StartObject or StartArray is encountered, but avoids the mixed state
-                        // where "UnknownSize" implies "has complex children".
-                        if (arrayItemsCount + 1 != numberOfRowsForValues)
-                        {
-                            database.SetHasComplexChildren(rowIndex);
-                        }
-
-                        int newRowIndex = database.Length;
-                        database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
-                        database.SetNumberOfRows(newRowIndex, numberOfRowsForValues);
-
-                        StackRow row = stack.Pop();
-                        arrayItemsCount = row.SizeOrLength;
-                        numberOfRowsForValues += row.NumberOfRows;
+                        database.SetHasComplexChildren(database.Length - DbRow.Size);
                     }
-                    else if (tokenType == JsonTokenType.PropertyName)
-                    {
-                        numberOfRowsForValues++;
-                        numberOfRowsForMembers++;
 
+                    Debug.Assert(!inArray);
+                }
+                else
+                {
+                    Debug.Assert(tokenType >= JsonTokenType.String && tokenType <= JsonTokenType.Null);
+                    numberOfRowsForValues++;
+                    numberOfRowsForMembers++;
+
+                    if (inArray)
+                    {
+                        arrayItemsCount++;
+                    }
+
+                    if (tokenType == JsonTokenType.String)
+                    {
                         // Adding 1 to skip the start quote will never overflow
                         Debug.Assert(tokenStart < int.MaxValue);
 
@@ -1032,45 +1055,18 @@ namespace System.Text.Json
                         {
                             database.SetHasComplexChildren(database.Length - DbRow.Size);
                         }
-
-                        Debug.Assert(!inArray);
                     }
                     else
                     {
-                        Debug.Assert(tokenType >= JsonTokenType.String && tokenType <= JsonTokenType.Null);
-                        numberOfRowsForValues++;
-                        numberOfRowsForMembers++;
-
-                        if (inArray)
-                        {
-                            arrayItemsCount++;
-                        }
-
-                        if (tokenType == JsonTokenType.String)
-                        {
-                            // Adding 1 to skip the start quote will never overflow
-                            Debug.Assert(tokenStart < int.MaxValue);
-
-                            database.Append(tokenType, tokenStart + 1, reader.ValueSpan.Length);
-
-                            if (reader._stringHasEscaping)
-                            {
-                                database.SetHasComplexChildren(database.Length - DbRow.Size);
-                            }
-                        }
-                        else
-                        {
-                            database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
-                        }
+                        database.Append(tokenType, tokenStart, reader.ValueSpan.Length);
                     }
-
-                    inArray = reader.IsInArray;
                 }
 
-                Debug.Assert(reader.BytesConsumed == utf8JsonSpan.Length);
-
-                database.CompleteAllocations();
+                inArray = reader.IsInArray;
             }
+
+            Debug.Assert(reader.BytesConsumed == utf8JsonSpan.Length);
+            database.CompleteAllocations();
         }
 
         private void CheckNotDisposed()

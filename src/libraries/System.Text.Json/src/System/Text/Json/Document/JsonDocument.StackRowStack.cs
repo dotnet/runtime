@@ -11,21 +11,18 @@ namespace System.Text.Json
     {
         private struct StackRowStack : IDisposable
         {
-            private byte[]? _rentedBuffer;
+            private byte[] _rentedBuffer;
             private int _topOfStack;
 
-            public void Initialize(int initialSize)
+            public StackRowStack(int initialSize)
             {
                 _rentedBuffer = ArrayPool<byte>.Shared.Rent(initialSize);
                 _topOfStack = _rentedBuffer.Length;
-                Debug.Assert(IsInitialized);
             }
-
-            private bool IsInitialized { get { return _rentedBuffer != null; } }
 
             public void Dispose()
             {
-                byte[]? toReturn = _rentedBuffer;
+                byte[] toReturn = _rentedBuffer;
                 _rentedBuffer = null!;
                 _topOfStack = 0;
 
@@ -40,11 +37,6 @@ namespace System.Text.Json
 
             internal void Push(StackRow row)
             {
-                if (!IsInitialized)
-                {
-                    Initialize(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
-                }
-
                 if (_topOfStack < StackRow.Size)
                 {
                     Enlarge();
@@ -56,7 +48,7 @@ namespace System.Text.Json
 
             internal StackRow Pop()
             {
-                Debug.Assert(IsInitialized);
+                Debug.Assert(_rentedBuffer != null);
                 Debug.Assert(_topOfStack <= _rentedBuffer!.Length - StackRow.Size);
 
                 StackRow row = MemoryMarshal.Read<StackRow>(_rentedBuffer.AsSpan(_topOfStack));
@@ -66,7 +58,7 @@ namespace System.Text.Json
 
             private void Enlarge()
             {
-                byte[] toReturn = _rentedBuffer!;
+                byte[] toReturn = _rentedBuffer;
                 _rentedBuffer = ArrayPool<byte>.Shared.Rent(toReturn.Length * 2);
 
                 Buffer.BlockCopy(

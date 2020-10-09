@@ -616,15 +616,20 @@ namespace System.Text.Json
         {
             ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
             var database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: false);
+            var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
 
             try
             {
-                Parse(utf8JsonSpan, readerOptions, ref database);
+                Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
             }
             catch
             {
                 database.Dispose();
                 throw;
+            }
+            finally
+            {
+                stack.Dispose();
             }
 
             return new JsonDocument(utf8Json, database, extraRentedBytes);
@@ -644,18 +649,27 @@ namespace System.Text.Json
             ReadOnlySpan<byte> utf8JsonSpan = utf8Json.Span;
             MetadataDb database;
 
-            if (tokenType == JsonTokenType.String ||
-                tokenType == JsonTokenType.Number)
+            if (tokenType == JsonTokenType.String || tokenType == JsonTokenType.Number)
             {
-                // For primitive types, we can avoid renting.
+                // For primitive types, we can avoid renting MetadataDb and creating StackRowStack.
                 database = MetadataDb.CreateLocked(utf8Json.Length);
+                StackRowStack stack = default;
+                Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
             }
             else
             {
                 database = MetadataDb.CreateRented(utf8Json.Length, convertToAlloc: true);
+                var stack = new StackRowStack(JsonDocumentOptions.DefaultMaxDepth * StackRow.Size);
+                try
+                {
+                    Parse(utf8JsonSpan, readerOptions, ref database, ref stack);
+                }
+                finally
+                {
+                    stack.Dispose();
+                }
             }
 
-            Parse(utf8JsonSpan, readerOptions, ref database);
             return new JsonDocument(utf8Json, database, extraRentedBytes: null);
         }
 
