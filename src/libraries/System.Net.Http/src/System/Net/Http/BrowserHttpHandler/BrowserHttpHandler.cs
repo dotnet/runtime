@@ -132,7 +132,7 @@ namespace System.Net.Http
 
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            throw new PlatformNotSupportedException ();
+            throw new PlatformNotSupportedException();
         }
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
