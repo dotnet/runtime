@@ -1,4 +1,7 @@
-﻿namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+namespace System.Net.Quic.Implementations.Managed.Internal.OpenSsl
 {
     /// <summary>
     ///     TLS Alert codes, as defined in RFC 8446 (TLS 1.3), section 6.
