@@ -480,9 +480,7 @@ namespace System.Net.Sockets
                     if (socket.WSARecvMsgBlocking(
                         handle,
                         (IntPtr)(&wsaMsg),
-                        out bytesTransferred,
-                        IntPtr.Zero,
-                        IntPtr.Zero) == SocketError.SocketError)
+                        out bytesTransferred) == SocketError.SocketError)
                     {
                         return GetLastSocketError();
                     }
@@ -498,9 +496,7 @@ namespace System.Net.Sockets
                     if (socket.WSARecvMsgBlocking(
                         handle,
                         (IntPtr)(&wsaMsg),
-                        out bytesTransferred,
-                        IntPtr.Zero,
-                        IntPtr.Zero) == SocketError.SocketError)
+                        out bytesTransferred) == SocketError.SocketError)
                     {
                         return GetLastSocketError();
                     }
@@ -515,9 +511,7 @@ namespace System.Net.Sockets
                     if (socket.WSARecvMsgBlocking(
                         handle,
                         (IntPtr)(&wsaMsg),
-                        out bytesTransferred,
-                        IntPtr.Zero,
-                        IntPtr.Zero) == SocketError.SocketError)
+                        out bytesTransferred) == SocketError.SocketError)
                     {
                         return GetLastSocketError();
                     }
@@ -1372,7 +1366,7 @@ namespace System.Net.Sockets
             SocketError errorCode = SocketError.Success;
 
             // This can throw ObjectDisposedException (handle, and retrieving the delegate).
-            if (!socket.DisconnectExBlocking(handle, IntPtr.Zero, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
+            if (!socket.DisconnectExBlocking(handle, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
             {
                 errorCode = GetLastSocketError();
             }
