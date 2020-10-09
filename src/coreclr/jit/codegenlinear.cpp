@@ -427,11 +427,6 @@ void CodeGen::genCodeForBBlist()
         }
 #endif // DEBUG
 
-        if (block->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP)
-        {
-            GetEmitter()->emitIns_Nop(10);
-        }
-
         IL_OFFSETX currentILOffset = BAD_IL_OFFSET;
         for (GenTree* node : LIR::AsRange(block).NonPhiNodes())
         {
@@ -464,6 +459,11 @@ void CodeGen::genCodeForBBlist()
                 genConsumeReg(node);
             }
         } // end for each node in block
+
+        if (block->bbNext != nullptr && block->bbNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP)
+        {
+            GetEmitter()->emitIns_Nop(10);
+        }
 
 #ifdef DEBUG
         // The following set of register spill checks and GC pointer tracking checks used to be
