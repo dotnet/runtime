@@ -53,7 +53,7 @@ namespace System.Net.Sockets
             _protocolType = protocolType;
         }
 
-        private static T CreateDelegate<T>(ref T? cache, SafeSocketHandle socketHandle, string guidString) where T: Delegate
+        private static T CreateDelegate<T>([NotNull] ref T? cache, SafeSocketHandle socketHandle, string guidString) where T: Delegate
         {
             Guid guid = new Guid(guidString);
             IntPtr ptr = IntPtr.Zero;
