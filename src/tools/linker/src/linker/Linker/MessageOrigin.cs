@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Linq;
 using System.Text;
 using Mono.Cecil;
@@ -9,7 +10,7 @@ using Mono.Cecil.Cil;
 
 namespace Mono.Linker
 {
-	public readonly struct MessageOrigin
+	public readonly struct MessageOrigin : IComparable<MessageOrigin>, IEquatable<MessageOrigin>
 	{
 #nullable enable
 		public string? FileName { get; }
@@ -75,5 +76,23 @@ namespace Mono.Linker
 		public override int GetHashCode () => (FileName, MemberDefinition, SourceLine, SourceColumn).GetHashCode ();
 		public static bool operator == (MessageOrigin lhs, MessageOrigin rhs) => lhs.Equals (rhs);
 		public static bool operator != (MessageOrigin lhs, MessageOrigin rhs) => !lhs.Equals (rhs);
+
+		public int CompareTo (MessageOrigin other)
+		{
+			if (MemberDefinition != null && other.MemberDefinition != null) {
+				return (MemberDefinition.DeclaringType?.Module?.Assembly?.Name?.Name, MemberDefinition.DeclaringType?.Name, MemberDefinition?.Name).CompareTo
+					((other.MemberDefinition.DeclaringType?.Module?.Assembly?.Name?.Name, other.MemberDefinition.DeclaringType?.Name, other.MemberDefinition?.Name));
+			} else if (MemberDefinition == null && other.MemberDefinition == null) {
+				if (FileName != null && other.FileName != null) {
+					return string.Compare (FileName, other.FileName);
+				} else if (FileName == null && other.FileName == null) {
+					return (SourceLine, SourceColumn).CompareTo ((other.SourceLine, other.SourceColumn));
+				}
+
+				return (FileName == null) ? 1 : -1;
+			}
+
+			return (MemberDefinition == null) ? 1 : -1;
+		}
 	}
 }

@@ -4,15 +4,15 @@ using System.Linq.Expressions;
 using System.Text;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
-using Mono.Linker.Tests.Cases.Warnings.WarningSuppression.Dependencies;
+using Mono.Linker.Tests.Cases.Warnings.Dependencies;
 
-namespace Mono.Linker.Tests.Cases.Warnings.WarningSuppression
+namespace Mono.Linker.Tests.Cases.Warnings.Individual
 {
 #if !ILLINK
 	[Reference ("System.Core.dll")]
 #endif
 	[SetupLinkerCoreAction ("skip")]
-	[SetupCompileBefore ("library.dll", new[] { "Dependencies/TriggerWarnings_Lib.cs" })]
+	[SetupCompileBefore ("library.dll", new[] { "../Dependencies/TriggerWarnings_Lib.cs" })]
 	[KeptAssembly ("library.dll")]
 	[SetupLinkerAction ("link", "library.dll")]
 	[SetupLinkerArgument ("--verbose")]

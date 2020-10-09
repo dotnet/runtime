@@ -1,31 +1,34 @@
+using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
 
 namespace Mono.Linker.Tests.TestCasesRunner
 {
 	public class LinkerTestLogger : ILogger
 	{
-		public struct MessageRecord
+		StringWriter _stringWriter;
+		public List<MessageContainer> MessageContainers { get; private set; }
+
+		public LinkerTestLogger ()
 		{
-			public string Message;
-			public MessageCategory Category;
-			public MessageOrigin? Origin;
-			public int? Code;
-			public string Text;
-			public string OriginMemberDefinitionFullName;
+			MessageContainers = new List<MessageContainer> ();
+			StringBuilder sb = new StringBuilder ();
+			_stringWriter = new StringWriter (sb);
+			Console.SetOut (_stringWriter);
 		}
 
-		public List<MessageRecord> Messages { get; private set; } = new List<MessageRecord> ();
-
-		public void LogMessage (MessageContainer msBuildMessage)
+		public List<string> GetLoggedMessages ()
 		{
-			Messages.Add (new MessageRecord () {
-				Message = msBuildMessage.ToString (),
-				Category = msBuildMessage.Category,
-				Origin = msBuildMessage.Origin,
-				Code = msBuildMessage.Code,
-				Text = msBuildMessage.Text,
-				OriginMemberDefinitionFullName = msBuildMessage.Origin?.MemberDefinition?.FullName
-			});
+			string allWarningsAsOneString = _stringWriter.GetStringBuilder ().ToString ();
+			return allWarningsAsOneString.Split (Environment.NewLine.ToCharArray (), StringSplitOptions.RemoveEmptyEntries).ToList ();
+		}
+
+		public void LogMessage (MessageContainer message)
+		{
+			MessageContainers.Add (message);
+			Console.WriteLine (message.ToString ());
 		}
 	}
 }

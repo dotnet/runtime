@@ -605,6 +605,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 		void VerifyLoggedMessages (AssemblyDefinition original, LinkerTestLogger logger, bool checkRemainingErrors)
 		{
+			List<string> loggedMessages = logger.GetLoggedMessages ();
 			foreach (var testType in original.AllDefinedTypes ()) {
 				foreach (var attrProvider in testType.AllMembers ().Append (testType)) {
 					foreach (var attr in attrProvider.CustomAttributes) {
@@ -613,29 +614,29 @@ namespace Mono.Linker.Tests.TestCasesRunner
 						case nameof (LogContainsAttribute): {
 								var expectedMessage = (string) attr.ConstructorArguments[0].Value;
 
-								List<LinkerTestLogger.MessageRecord> matchedMessages;
+								List<string> matchedMessages;
 								if ((bool) attr.ConstructorArguments[1].Value)
-									matchedMessages = logger.Messages.Where (mc => Regex.IsMatch (mc.Message, expectedMessage)).ToList ();
+									matchedMessages = loggedMessages.Where (m => Regex.IsMatch (m, expectedMessage)).ToList ();
 								else
-									matchedMessages = logger.Messages.Where (mc => mc.Message.Contains (expectedMessage)).ToList (); ;
+									matchedMessages = loggedMessages.Where (m => m.Contains (expectedMessage)).ToList (); ;
 								Assert.IsTrue (
 									matchedMessages.Count > 0,
-									$"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{FormatMessages (logger.Messages)}");
+									$"Expected to find logged message matching `{expectedMessage}`, but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
 
 								foreach (var matchedMessage in matchedMessages)
-									logger.Messages.Remove (matchedMessage);
+									loggedMessages.Remove (matchedMessage);
 							}
 							break;
 
 						case nameof (LogDoesNotContainAttribute): {
 								var unexpectedMessage = (string) attr.ConstructorArguments[0].Value;
-								foreach (var loggedMessage in logger.Messages) {
+								foreach (var loggedMessage in loggedMessages) {
 									Assert.That (() => {
 										if ((bool) attr.ConstructorArguments[1].Value)
-											return !Regex.IsMatch (loggedMessage.Message, unexpectedMessage);
-										return !loggedMessage.Message.Contains (unexpectedMessage);
+											return !Regex.IsMatch (loggedMessage.ToString (), unexpectedMessage);
+										return !loggedMessage.ToString ().Contains (unexpectedMessage);
 									},
-									$"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage.Message}{Environment.NewLine}Logged messages:{Environment.NewLine}{FormatMessages (logger.Messages)}");
+									$"Expected to not find logged message matching `{unexpectedMessage}`, but found:{Environment.NewLine}{loggedMessage.ToString ()}{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
 								}
 							}
 							break;
@@ -654,7 +655,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 								var actualMethod = attrProvider as MethodDefinition;
 
 								Assert.IsTrue (
-									logger.Messages.Any (mc => {
+									logger.MessageContainers.Any (mc => {
 										if (mc.Category != MessageCategory.Warning || mc.Code != expectedWarningCodeNumber)
 											return false;
 
@@ -672,15 +673,22 @@ namespace Mono.Linker.Tests.TestCasesRunner
 
 											if (sourceColumn != null && mc.Origin?.SourceColumn != sourceColumn.Value)
 												return false;
-										} else if (mc.OriginMemberDefinitionFullName != attrProvider.FullName)
+										} else {
+											if (mc.Origin?.MemberDefinition?.FullName == attrProvider.FullName)
+												return true;
+
+											if (loggedMessages.Any (m => m.Contains (attrProvider.FullName)))
+												return true;
+
 											return false;
+										}
 
 										return true;
 									}),
 									$"Expected to find warning: {(fileName != null ? (fileName + (sourceLine != null ? $"({sourceLine},{sourceColumn})" : "")) + ": " : "")}" +
 									$"warning {expectedWarningCode}: {(fileName == null ? (actualMethod?.GetDisplayName () ?? attrProvider.FullName) + ": " : "")}" +
 									$"and message containing {string.Join (" ", expectedMessageContains.Select (m => "'" + m + "'"))}, " +
-									$"but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{FormatMessages (logger.Messages)}");
+									$"but no such message was found.{Environment.NewLine}Logged messages:{Environment.NewLine}{string.Join (Environment.NewLine, loggedMessages)}");
 							}
 							break;
 						}
@@ -689,13 +697,8 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			}
 
 			if (checkRemainingErrors) {
-				var remainingErrors = logger.Messages.Where (mc => mc.Category == MessageCategory.Error || mc.Category == MessageCategory.WarningAsError);
-				Assert.IsEmpty (remainingErrors, $"Found unexpected errors:{Environment.NewLine}{FormatMessages (remainingErrors)}");
-			}
-
-			string FormatMessages (IEnumerable<LinkerTestLogger.MessageRecord> messages)
-			{
-				return string.Join (Environment.NewLine, messages.Select (mc => mc.Message));
+				var remainingErrors = loggedMessages.Where (m => Regex.IsMatch (m, @".*(error | warning): \d{4}.*"));
+				Assert.IsEmpty (remainingErrors, $"Found unexpected errors:{Environment.NewLine}{string.Join (Environment.NewLine, remainingErrors)}");
 			}
 		}
 
