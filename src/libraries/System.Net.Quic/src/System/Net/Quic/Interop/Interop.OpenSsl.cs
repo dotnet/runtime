@@ -20,13 +20,6 @@ internal static partial class Interop
 
         private const string EntryPointPrefix = "QuicNative_";
 
-#if FEATURE_QUIC_STANDALONE
-        [DllImport("libdl.so")]
-        private static extern IntPtr dlopen(string filename, int flags);
-
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr LoadLibrary(string filename);
-
         public static bool IsSupported()
         {
             try
@@ -41,6 +34,13 @@ internal static partial class Interop
                 return false;
             }
         }
+
+#if FEATURE_QUIC_STANDALONE
+        [DllImport("libdl.so")]
+        private static extern IntPtr dlopen(string filename, int flags);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr LoadLibrary(string filename);
 
         static OpenSslQuic()
         {

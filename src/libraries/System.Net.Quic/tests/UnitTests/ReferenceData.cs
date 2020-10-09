@@ -3,6 +3,7 @@
 
 namespace System.Net.Quic.Tests
 {
+    // Reference data copied from QUIC specification
     internal static class ReferenceData
     {
         public const string DcidHex = "8394c8f03e515708";

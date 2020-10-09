@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace System.Net.Quic.Tests
 {
-    public class MsQuicTestBase : QuicTestBase
+    public class MsQuicTestBase : QuicTestBase<MsQuicProviderFactory>
     {
-        internal MsQuicTestBase() : base(QuicImplementationProviders.MsQuic)
+        internal MsQuicTestBase()
         {
         }
     }

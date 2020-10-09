@@ -61,7 +61,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         public bool Equals(ConnectionId? other)
         {
-            if (ReferenceEquals(null, other))
+            if (other is null)
             {
                 return false;
             }
@@ -76,7 +76,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         public override bool Equals(object? obj)
         {
-            if (ReferenceEquals(null, obj))
+            if (obj is null)
             {
                 return false;
             }
