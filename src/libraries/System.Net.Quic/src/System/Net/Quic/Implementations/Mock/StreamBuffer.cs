@@ -300,7 +300,6 @@ namespace System.IO
             // The rest of the logic is deferred to ManualResetValueTaskSourceCore.
 
             private ManualResetValueTaskSourceCore<bool> _waitSource; // mutable struct, do not make this readonly
-            private CancellationToken _waitSourceCancellationToken;
             private CancellationTokenRegistration _waitSourceCancellation;
             private int _hasWaiter;
 
@@ -315,7 +314,6 @@ namespace System.IO
                 // Clean up the registration.  This will wait for any in-flight cancellation to complete.
                 _waitSourceCancellation.Dispose();
                 _waitSourceCancellation = default;
-                _waitSourceCancellationToken = default;
 
                 // Propagate any exceptions if there were any.
                 _waitSource.GetResult(token);
@@ -329,12 +327,11 @@ namespace System.IO
                 }
             }
 
-            private void CancelWaiter()
+            private void CancelWaiter(CancellationToken cancellationToken)
             {
                 if (Interlocked.Exchange(ref _hasWaiter, 0) == 1)
                 {
-                    Debug.Assert(_waitSourceCancellationToken != default);
-                    _waitSource.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(_waitSourceCancellationToken)));
+                    _waitSource.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(new OperationCanceledException(cancellationToken)));
                 }
             }
 
@@ -360,8 +357,7 @@ namespace System.IO
             {
                 _waitSource.RunContinuationsAsynchronously = true;
 
-                _waitSourceCancellationToken = cancellationToken;
-                _waitSourceCancellation = cancellationToken.UnsafeRegister(static s => ((ResettableValueTaskSource)s!).CancelWaiter(), this);
+                _waitSourceCancellation = cancellationToken.UnsafeRegister(static (s, token) => ((ResettableValueTaskSource)s!).CancelWaiter(token), this);
 
                 return new ValueTask(this, _waitSource.Version);
             }
