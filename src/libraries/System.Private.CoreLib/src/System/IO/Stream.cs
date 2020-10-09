@@ -16,6 +16,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -105,7 +106,13 @@ namespace System.IO
 
         public virtual Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
+            if (!CanRead)
+            {
+                throw CanWrite ? (Exception)
+                    new NotSupportedException(SR.NotSupported_UnreadableStream) :
+                    new ObjectDisposedException(GetType().Name, SR.ObjectDisposed_StreamClosed);
+            }
 
             return CopyToAsyncInternal(destination, bufferSize, cancellationToken);
         }
@@ -140,7 +147,13 @@ namespace System.IO
 
         public virtual void CopyTo(Stream destination, int bufferSize)
         {
-            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+            ValidateCopyToArguments(destination, bufferSize);
+            if (!CanRead)
+            {
+                throw CanWrite ? (Exception)
+                    new NotSupportedException(SR.NotSupported_UnreadableStream) :
+                    new ObjectDisposedException(GetType().Name, SR.ObjectDisposed_StreamClosed);
+            }
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             try
@@ -845,6 +858,45 @@ namespace System.IO
             SynchronousAsyncResult.EndWrite(asyncResult);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        protected static void ValidateBufferArguments(byte[] buffer, int offset, int count)
+        {
+            if (buffer is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
+            }
+
+            if (offset < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.offset, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if ((uint)count > (uint)(buffer.Length - offset))
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.Argument_InvalidOffLen);
+            }
+        }
+
+        protected static void ValidateCopyToArguments(Stream destination, int bufferSize)
+        {
+            if (destination is null)
+            {
+                throw new ArgumentNullException(nameof(destination));
+            }
+
+            if (bufferSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(bufferSize), bufferSize, SR.ArgumentOutOfRange_NeedPosNum);
+            }
+
+            if (!destination.CanWrite)
+            {
+                throw destination.CanRead ? (Exception)
+                    new NotSupportedException(SR.NotSupported_UnwritableStream) :
+                    new ObjectDisposedException(destination.GetType().Name, SR.ObjectDisposed_StreamClosed);
+            }
+        }
+
         private sealed class NullStream : Stream
         {
             internal NullStream() { }
@@ -865,17 +917,10 @@ namespace System.IO
 
             public override void CopyTo(Stream destination, int bufferSize)
             {
-                StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
-
-                // After we validate arguments this is a nop.
             }
 
             public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                // Validate arguments here for compat, since previously this method
-                // was inherited from Stream (which did check its arguments).
-                StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
-
                 return cancellationToken.IsCancellationRequested ?
                     Task.FromCanceled(cancellationToken) :
                     Task.CompletedTask;

@@ -67,7 +67,7 @@ namespace System.Net.Connections
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null) return Task.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ArgumentNullException(nameof(buffer))));
+            if (buffer == null) throw new ArgumentNullException(nameof(buffer));
             return ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
         }
 

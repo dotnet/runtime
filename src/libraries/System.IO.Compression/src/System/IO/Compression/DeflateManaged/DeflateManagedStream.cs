@@ -96,7 +96,7 @@ namespace System.IO.Compression
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             EnsureNotDisposed();
 
             int bytesRead;
@@ -139,21 +139,6 @@ namespace System.IO.Compression
             return count - remainingCount;
         }
 
-        private void ValidateParameters(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer));
-
-            if (offset < 0)
-                throw new ArgumentOutOfRangeException(nameof(offset));
-
-            if (count < 0)
-                throw new ArgumentOutOfRangeException(nameof(count));
-
-            if (buffer.Length - offset < count)
-                throw new ArgumentException(SR.InvalidArgumentOffsetCount);
-        }
-
         private void EnsureNotDisposed()
         {
             if (_stream == null)
@@ -177,7 +162,7 @@ namespace System.IO.Compression
             if (_asyncOperations != 0)
                 throw new InvalidOperationException(SR.InvalidBeginCall);
 
-            ValidateParameters(buffer, offset, count);
+            ValidateBufferArguments(buffer, offset, count);
             EnsureNotDisposed();
 
             if (cancellationToken.IsCancellationRequested)

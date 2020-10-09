@@ -135,7 +135,7 @@ namespace System.IO
             public override int Read(byte[] buffer, int offset, int count)
             {
                 ThrowIfDisposed();
-                ValidateArgs(buffer, offset, count);
+                ValidateBufferArguments(buffer, offset, count);
                 ThrowIfReadingNotSupported();
 
                 return _buffer.Read(new Span<byte>(buffer, offset, count));
@@ -173,7 +173,7 @@ namespace System.IO
             public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ThrowIfDisposed();
-                ValidateArgs(buffer, offset, count);
+                ValidateBufferArguments(buffer, offset, count);
                 ThrowIfReadingNotSupported();
 
                 return _buffer.ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
@@ -190,7 +190,7 @@ namespace System.IO
             public override void Write(byte[] buffer, int offset, int count)
             {
                 ThrowIfDisposed();
-                ValidateArgs(buffer, offset, count);
+                ValidateBufferArguments(buffer, offset, count);
                 ThrowIfWritingNotSupported();
 
                 _buffer.Write(new ReadOnlySpan<byte>(buffer, offset, count));
@@ -215,7 +215,7 @@ namespace System.IO
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ThrowIfDisposed();
-                ValidateArgs(buffer, offset, count);
+                ValidateBufferArguments(buffer, offset, count);
                 ThrowIfWritingNotSupported();
 
                 return _buffer.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
@@ -244,24 +244,6 @@ namespace System.IO
             public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
             public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
             public override void SetLength(long value) => throw new NotSupportedException();
-
-            private void ValidateArgs(byte[] buffer, int offset, int count)
-            {
-                if (buffer is null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
-
-                if ((uint)offset > buffer.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offset));
-                }
-
-                if ((uint)count > buffer.Length || offset > buffer.Length - count)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
-            }
 
             private void ThrowIfDisposed()
             {
@@ -346,7 +328,7 @@ namespace System.IO
             public override int Read(byte[] buffer, int offset, int count)
             {
                 ThrowIfDisposed();
-                ValidateArgs(buffer, offset, count);
+                ValidateBufferArguments(buffer, offset, count);
 
                 return _readBuffer.Read(new Span<byte>(buffer, offset, count));
             }
@@ -378,7 +360,7 @@ namespace System.IO
             public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ThrowIfDisposed();
-                ValidateArgs(buffer, offset, count);
+                ValidateBufferArguments(buffer, offset, count);
                 return _readBuffer.ReadAsync(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();
             }
 
@@ -391,7 +373,7 @@ namespace System.IO
             public override void Write(byte[] buffer, int offset, int count)
             {
                 ThrowIfDisposed();
-                ValidateArgs(buffer, offset, count);
+                ValidateBufferArguments(buffer, offset, count);
                 _writeBuffer.Write(new ReadOnlySpan<byte>(buffer, offset, count));
             }
 
@@ -410,7 +392,7 @@ namespace System.IO
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ThrowIfDisposed();
-                ValidateArgs(buffer, offset, count);
+                ValidateBufferArguments(buffer, offset, count);
                 return _writeBuffer.WriteAsync(new ReadOnlyMemory<byte>(buffer, offset, count), cancellationToken).AsTask();
             }
 
@@ -434,7 +416,7 @@ namespace System.IO
             public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
             public override void SetLength(long value) => throw new NotSupportedException();
 
-            private void ValidateArgs(byte[] buffer, int offset, int count)
+            private void ValidateBufferArguments(byte[] buffer, int offset, int count)
             {
                 if (buffer is null)
                 {
