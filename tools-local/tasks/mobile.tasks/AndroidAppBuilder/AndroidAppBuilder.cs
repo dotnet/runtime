@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -18,6 +18,7 @@ public class AndroidAppBuilderTask : Task
     /// <summary>
     /// This library will be used as an entry-point (e.g. TestRunner.dll)
     /// </summary>
+
     public string MainLibraryFileName { get; set; } = ""!;
 
     [Required]
