@@ -149,22 +149,19 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Creates an array of bytes with a cryptographically strong random sequence of values.
         /// </summary>
-        /// <param name="byteCount">The number of bytes of random values to create.</param>
+        /// <param name="count">The number of bytes of random values to create.</param>
         /// <returns>
         /// An array populated with cryptographically strong random values.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// The <paramref name="byteCount" /> parameter is less than zero.
+        /// The <paramref name="count" /> parameter is less than zero.
         /// </exception>
-        public static byte[] GetBytes(int byteCount)
+        public static byte[] GetBytes(int count)
         {
-            if (byteCount == 0)
-                return Array.Empty<byte>();
+            if (count < 0)
+                throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
-            if (byteCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
-
-            byte[] ret = new byte[byteCount];
+            byte[] ret = new byte[count];
             RandomNumberGeneratorImplementation.FillSpan(ret);
             return ret;
         }

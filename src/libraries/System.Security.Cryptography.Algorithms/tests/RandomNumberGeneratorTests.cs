@@ -232,7 +232,7 @@ namespace System.Security.Cryptography.RNG.Tests
         [Fact]
         public static void GetBytes_Int_Negative()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("byteCount", () =>
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () =>
                 RandomNumberGenerator.GetBytes(-1));
         }
 
@@ -240,7 +240,7 @@ namespace System.Security.Cryptography.RNG.Tests
         public static void GetBytes_Int_Empty()
         {
             byte[] result = RandomNumberGenerator.GetBytes(0);
-            Assert.Same(Array.Empty<byte>(), result);
+            Assert.Empty(result);
         }
 
         [Fact]
