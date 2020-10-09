@@ -249,6 +249,10 @@ namespace System.Threading.Tests
             Assert.Equal(expectedValue, asyncLocalValue);
         }
 
+        [Fact]
+        public static void AsyncFlowControlImplementsIEquatableInterface() =>
+            Assert.True(typeof(IEquatable<AsyncFlowControl>).IsAssignableFrom(typeof(AsyncFlowControl)));
+
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void AsyncFlowControlTest()
         {
