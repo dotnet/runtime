@@ -1689,6 +1689,7 @@ void Compiler::compShutdown()
     fprintf(fout, "---------------------------------------------------\n");
     fprintf(fout, "   badCode:             %u\n", fatal_badCode);
     fprintf(fout, "   noWay:               %u\n", fatal_noWay);
+    fprintf(fout, "   implLimitation:      %u\n", fatal_implLimitation);
     fprintf(fout, "   NOMEM:               %u\n", fatal_NOMEM);
     fprintf(fout, "   noWayAssertBody:     %u\n", fatal_noWayAssertBody);
 #ifdef DEBUG
@@ -4600,6 +4601,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // Morph the trees in all the blocks of the method
     //
     auto morphGlobalPhase = [this]() {
+        unsigned prevBBCount = fgBBcount;
         fgMorphBlocks();
 
         // Fix any LclVar annotations on discarded struct promotion temps for implicit by-ref args
@@ -4624,6 +4626,12 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
         compCurBB = nullptr;
 #endif // DEBUG
 
+        // If we needed to create any new BasicBlocks then renumber the blocks
+        if (fgBBcount > prevBBCount)
+        {
+            fgRenumberBlocks();
+        }
+
         // We can now enable all phase checking
         activePhaseChecks = PhaseChecks::CHECK_ALL;
     };
@@ -4632,6 +4640,7 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
     // GS security checks for unsafe buffers
     //
     auto gsPhase = [this]() {
+        unsigned prevBBCount = fgBBcount;
         if (getNeedsGSSecurityCookie())
         {
             gsGSChecksInitCookie();
@@ -4639,6 +4648,12 @@ void Compiler::compCompile(void** methodCodePtr, ULONG* methodCodeSize, JitFlags
             if (compGSReorderStackLayout)
             {
                 gsCopyShadowParams();
+            }
+
+            // If we needed to create any new BasicBlocks then renumber the blocks
+            if (fgBBcount > prevBBCount)
+            {
+                fgRenumberBlocks();
             }
         }
         else
@@ -6808,7 +6823,9 @@ START:
 
         result = param.result;
 
-    if (!inlineInfo && (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR) && !jitFallbackCompile)
+    if (!inlineInfo &&
+        (result == CORJIT_INTERNALERROR || result == CORJIT_RECOVERABLEERROR || result == CORJIT_IMPLLIMITATION) &&
+        !jitFallbackCompile)
     {
         // If we failed the JIT, reattempt with debuggable code.
         jitFallbackCompile = true;

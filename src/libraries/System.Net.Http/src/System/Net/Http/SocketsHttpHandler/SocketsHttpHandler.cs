@@ -4,6 +4,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Runtime.Versioning;
 using System.Threading;
@@ -388,6 +390,21 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _settings._plaintextStreamFilter = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets the QUIC implementation to be used for HTTP3 requests.
+        /// </summary>
+        public QuicImplementationProvider? QuicImplementationProvider
+        {
+            // !!! NOTE !!!
+            // This is temporary and will not ship.
+            get => _settings._quicImplementationProvider;
+            set
+            {
+                CheckDisposedOrStarted();
+                _settings._quicImplementationProvider = value;
             }
         }
 

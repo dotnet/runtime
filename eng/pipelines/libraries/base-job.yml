@@ -4,7 +4,7 @@ parameters:
   archType: ''
   osSubgroup: ''
   crossrootfsDir: ''
-  framework: 'net5.0'
+  framework: 'net6.0'
   isOfficialAllConfigurations: false
   isSourceBuild: false
   liveRuntimeBuildConfig: ''
@@ -57,7 +57,11 @@ jobs:
           - _testScopeArg: -testscope ${{ parameters.testScope }}
 
         - ${{ if in(parameters.osGroup, 'Linux', 'FreeBSD') }}:
-          - _crossBuildPropertyArg: /p:CrossBuild=${{ ne(parameters.crossrootfsDir, '') }}
+          - _crossBuildPropertyArg: /p:CrossBuild=${{ or(ne(parameters.crossrootfsDir, ''), and(eq(parameters.osGroup, 'OSX'), eq(parameters.archType, 'arm64'))) }}
+
+        - ${{ if eq(parameters.osGroup, 'OSX') }}:
+          # OSX is currently building on x64, anything else is a cross build
+          - _crossBuildPropertyArg: /p:CrossBuild=${{ ne(parameters.archType, 'x64') }}
 
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
           - _runtimeOSArg: /p:RuntimeOS=linux-musl

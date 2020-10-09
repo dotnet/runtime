@@ -3,27 +3,35 @@
   <ItemGroup Label="monozlib">
     <ClCompile Include="$(MonoSourceLocation)\mono\zlib\adler32.c">
       <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4005;4131</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\zlib\crc32.c">
       <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4005;4131</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\zlib\deflate.c">
       <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4005;4131</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\zlib\inffast.c">
       <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4005;4131</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\zlib\inflate.c">
       <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4005;4131</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\zlib\inftrees.c">
       <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4005;4131</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\zlib\trees.c">
       <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4005;4131</DisableSpecificWarnings>
     </ClCompile>
     <ClCompile Include="$(MonoSourceLocation)\mono\zlib\zutil.c">
       <CompileAs>CompileAsC</CompileAs>
+      <DisableSpecificWarnings>4005;4131</DisableSpecificWarnings>
     </ClCompile>
     <ClInclude Include="$(MonoSourceLocation)\mono\zlib\crc32.h"/>
     <ClInclude Include="$(MonoSourceLocation)\mono\zlib\deflate.h"/>

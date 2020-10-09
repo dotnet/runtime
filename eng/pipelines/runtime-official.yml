@@ -49,6 +49,7 @@ stages:
       jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
       buildConfig: release
       platforms:
+      - OSX_arm64
       - OSX_x64
       - Linux_x64
       - Linux_arm
@@ -172,6 +173,7 @@ stages:
       jobTemplate: /eng/pipelines/libraries/build-job.yml
       buildConfig: Release
       platforms:
+      - OSX_arm64
       - OSX_x64
       - Linux_x64
       - Linux_arm
@@ -214,6 +216,7 @@ stages:
         useOfficialAllConfigurations: true
         buildFullPlatformManifest: true
       platforms:
+      - OSX_arm64
       - OSX_x64
       - Linux_x64
       - Linux_arm

@@ -342,6 +342,7 @@ TESTS_CS_SRC=		\
 	pinvoke11.cs		\
 	pinvoke13.cs		\
 	pinvoke17.cs		\
+	pinvoke-detach-1.cs	\
 	invoke.cs		\
 	invoke2.cs		\
 	runtime-invoke.cs		\

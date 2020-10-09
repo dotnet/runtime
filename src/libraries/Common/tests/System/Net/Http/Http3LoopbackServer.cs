@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Quic;
+using System.Net.Quic.Implementations;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
@@ -19,7 +20,7 @@ namespace System.Net.Test.Common
 
         public override Uri Address => new Uri($"https://{_listener.ListenEndPoint}/");
 
-        public Http3LoopbackServer(GenericLoopbackOptions options = null)
+        public Http3LoopbackServer(QuicImplementationProvider quicImplementationProvider = null, GenericLoopbackOptions options = null)
         {
             options ??= new GenericLoopbackOptions();
 
@@ -33,7 +34,7 @@ namespace System.Net.Test.Common
                 ClientCertificateRequired = false
             };
 
-            _listener = new QuicListener(new IPEndPoint(options.Address, 0), sslOpts);
+            _listener = new QuicListener(quicImplementationProvider ?? QuicImplementationProviders.Default, new IPEndPoint(options.Address, 0), sslOpts);
             _listener.Start();
         }
 
@@ -64,13 +65,20 @@ namespace System.Net.Test.Common
 
     public sealed class Http3LoopbackServerFactory : LoopbackServerFactory
     {
-        public static Http3LoopbackServerFactory Singleton { get; } = new Http3LoopbackServerFactory();
+        private QuicImplementationProvider _quicImplementationProvider;
+
+        public Http3LoopbackServerFactory(QuicImplementationProvider quicImplementationProvider)
+        {
+            _quicImplementationProvider = quicImplementationProvider;
+        }
+
+        public static Http3LoopbackServerFactory Singleton { get; } = new Http3LoopbackServerFactory(null);
 
         public override Version Version { get; } = new Version(3, 0);
 
         public override GenericLoopbackServer CreateServer(GenericLoopbackOptions options = null)
         {
-            return new Http3LoopbackServer(options);
+            return new Http3LoopbackServer(_quicImplementationProvider, options);
         }
 
         public override async Task CreateServerAsync(Func<GenericLoopbackServer, Uri, Task> funcAsync, int millisecondsTimeout = 60000, GenericLoopbackOptions options = null)

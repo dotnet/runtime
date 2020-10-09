@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TargetFramework>$(AspNetCoreAppCurrent)</TargetFramework>
     <NoWarn>$(NoWarn),CA2007</NoWarn>
   </PropertyGroup>
 

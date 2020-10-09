@@ -16,9 +16,6 @@
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gmodule-win32.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\win32</Filter>
     </ClCompile>
-    <ClInclude Include="$(MonoSourceLocation)\mono\eglib\gmodule-win32-internals.h">
-      <Filter>Header Files$(EGLibFilterSubFolder)\win32</Filter>
-    </ClInclude>
     <ClCompile Include="$(MonoSourceLocation)\mono\eglib\gtimer-win32.c">
       <Filter>Source Files$(EGLibFilterSubFolder)\win32</Filter>
     </ClCompile>

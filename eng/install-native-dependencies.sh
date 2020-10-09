@@ -1,5 +1,24 @@
 #!/usr/bin/env bash
 
+# This is a simple script primarily used for CI to install necessary dependencies
+#
+# For CI typical usage is
+#
+# ./install-native-dependencies.sh <OS> <arch> azDO
+#
+# For developer use it is not recommended to include the azDO final argument as that
+# makes installation and configuration setting only required for azDO
+#
+# So simple developer usage would currently be
+#
+# ./install-native-dependencies.sh <OS>
+
+if [ "$1" = "OSX" ] && [ "$2" = "arm64" ] && [ "$3" = "azDO" ]; then
+    # On AzDO macOS-10.15 build agents the Xcode currently defaults to Xcode 11.7
+    # Cross compilation for osx-arm64 requires xcode 12.2 or greater
+    sudo xcode-select -s /Applications/Xcode_12.2.app/Contents/Developer
+fi
+
 if [ "$1" = "Linux" ]; then
     sudo apt update
     if [ "$?" != "0" ]; then

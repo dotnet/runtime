@@ -2658,4 +2658,5 @@ on_exit:
 }
 
 #endif /* DISABLE_JIT */
+MONO_EMPTY_SOURCE_FILE (simd_intrinsics);
 #endif /* MONO_ARCH_SIMD_INTRINSICS */

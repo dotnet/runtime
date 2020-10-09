@@ -33,6 +33,7 @@ jobs:
           - Linux_arm64
           - Linux_musl_arm64
       - ${{ if eq(variables['includeOsxOuterloop'], true) }}:        
+        - OSX_arm64
         - OSX_x64
       jobParameters:
         testGroup: innerloop
@@ -56,6 +57,7 @@ jobs:
           - Linux_musl_x64
           - Linux_musl_arm64
       - ${{ if and(eq(variables['includeOsxOuterloop'], true), eq(variables['isFullMatrix'], true)) }}:
+        - OSX_arm64
         - OSX_x64
       helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
       jobParameters:
@@ -77,6 +79,7 @@ jobs:
           - Linux_x64
           - Linux_musl_x64
         - ${{ if eq(variables['includeOsxOuterloop'], true) }}:
+          - OSX_arm64
           - OSX_x64
         helixQueuesTemplate: /eng/pipelines/libraries/helix-queues-setup.yml
         jobParameters:

@@ -11003,6 +11003,7 @@ extern Histogram     genTreeNsizHist;
 #if MEASURE_FATAL
 extern unsigned fatal_badCode;
 extern unsigned fatal_noWay;
+extern unsigned fatal_implLimitation;
 extern unsigned fatal_NOMEM;
 extern unsigned fatal_noWayAssertBody;
 #ifdef DEBUG
