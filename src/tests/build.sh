@@ -669,7 +669,7 @@ echo "${__MsgPrefix}Test build successful."
 echo "${__MsgPrefix}Test binaries are available at ${__TestBinDir}"
 
 if [ "$__TargetOS" == "Android" ]; then
-    build_MSBuild_projects "Create_Android_App" "$__RepoRootDir/src/tests/run.proj" "Create Android Apps" "/t:BuildAndroidApp" "/p:RunWithAndroid=true"
+    build_MSBuild_projects "Create_Android_App" "$__RepoRootDir/src/tests/run.proj" "Create Android Apps" "/t:BuildAllAndroidApp" "/p:RunWithAndroid=true"
 fi
 
 __testNativeBinDir="$__IntermediatesDir"/tests

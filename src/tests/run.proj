@@ -180,12 +180,14 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
             internal static string reportBase%3B
             internal static string testBinaryBase%3B
             internal static string coreRoot%3B
+            internal static string nameSpace%3B
 
             static _Global()
             {
                 reportBase = System.Environment.GetEnvironmentVariable(%22XunitTestReportDirBase%22)%3B
                 testBinaryBase = System.IO.Path.GetDirectoryName(new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath)%3B
                 coreRoot = System.Environment.GetEnvironmentVariable(%22CORE_ROOT%22)%3B
+                nameSpace = "$([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").Replace("-","_"))"%3B
 
                 if (String.IsNullOrEmpty(reportBase)) {
                     reportBase = System.IO.Path.Combine(testBinaryBase, "Reports")%3B
@@ -278,7 +280,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
                   System.IO.Directory.CreateDirectory(_Global.reportBase + testSubfolder)%3B
 
-                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile)%3B
+                  ret = wrapper.RunTest(testExecutable, outputFile, errorFile, _Global.testBinaryBase, _Global.nameSpace)%3B
                 }
                 catch (Exception ex)
                 {
@@ -397,32 +399,31 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
 
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
 
-  <Target Name="BuildAndroidApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+  <Target Name="BuildAndroidApp">
 
     <PropertyGroup>
       <AndroidAbi Condition="'$(TargetArchitecture)'=='arm64'">arm64-v8a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)'=='arm'">armeabi-v7a</AndroidAbi>
       <AndroidAbi Condition="'$(TargetArchitecture)'=='x64'">x86_64</AndroidAbi>
       <AndroidAbi Condition="'$(AndroidAbi)'==''">$(TargetArchitecture)</AndroidAbi>
-      <CMDDIR>%(TestDirectories.Identity)</CMDDIR>
-      <CMDDIR_Parent>$([System.IO.Path]::GetDirectoryName($(CMDDIR)))</CMDDIR_Parent>
+      <CMDDIR_Parent>$([System.IO.Path]::GetDirectoryName($(_CMDDIR)))</CMDDIR_Parent>
       <CMDDIR_Grandparent>$([System.IO.Path]::GetDirectoryName($(CMDDIR_Parent)))</CMDDIR_Grandparent>
-      <CategoryWithSlash>$([System.String]::Copy('$(CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
+      <CategoryWithSlash>$([System.String]::Copy('$(_CMDDIR)').Replace("$(CMDDIR_Grandparent)/",""))</CategoryWithSlash>
       <Category>$([System.String]::Copy('$(CategoryWithSlash)').Replace('/','_'))</Category>
-      <OutputDir>$(CMDDIR)\AndroidApp</OutputDir>
+      <OutputDir>$(_CMDDIR)\AndroidApp</OutputDir>
       <ApkDir>$(OutputDir)\apk</ApkDir>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
 
-    <Message Importance="High" Text="~~~CMDDIR: $(CMDDIR)" />
+    <Message Importance="High" Text="~~~_CMDDIR: $(_CMDDIR)" />
     <Message Importance="High" Text="~~~OutputDir: $(OutputDir)" />
 
     <MakeDir Directories="$(OutputDir)"/>
 
     <ItemGroup>
-      <AllCMDsPresent Include="$(CMDDIR)\**\*.sh" />
+      <AllCMDsPresent Include="$(_CMDDIR)\**\*.sh" />
       <TestAssemblies Include="@(AllCMDsPresent->'%(RelativeDir)%(Filename).dll')" />
       <TestAssemblyDirs Include="@(AllCMDsPresent->'%(RelativeDir)')" />
       <AssemblySearchPaths Include="@(TestAssemblyDirs)"/>
@@ -453,6 +454,11 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
     <Message Importance="High" Text="PackageId: $(ApkPackageId)"/>
   </Target>
 
+  <Target Name="BuildAllAndroidApp" DependsOnTargets="GetListOfTestCmds;FindCmdDirectories">
+    <Message Importance="High" Text="!!!_CMDDIR: $(_CMDDIR)"/>
+    <MSBuild Projects="$(MSBuildProjectFile)" Targets="BuildAndroidApp" Properties="_CMDDIR=%(TestDirectories.Identity)" />
+  </Target>
+
   <Target Name="GetListOfTestCmds">
     <ItemGroup>
       <AllRunnableTestPaths Include="$(XunitTestBinBase)\**\*.cmd" Condition="'$(TargetOS)' == 'Windows_NT'" />
@@ -477,7 +483,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
              Condition=" '$(BuildWrappers)'=='true' " />
 
     <MSBuild Projects="$(MSBuildProjectFile)"
-             Targets="BuildAndroidApp"
+             Targets="BuildAllAndroidApp"
              Condition=" '$(RunWithAndroid)'=='true' " />
 
     <!-- Default for building -->

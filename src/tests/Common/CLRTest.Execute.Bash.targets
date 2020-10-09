@@ -279,21 +279,6 @@ $__Command msbuild $CORE_ROOT/wasm-test-runner/WasmTestRunner.proj /p:NetCoreApp
    ]]>
       </BashCLRTestPreCommands>
 
-      <BashCLRTestPreCommands Condition="'$(TargetOS)' == 'Android'">
-   <![CDATA[
-# Build Android app containing the test dll
-__Command=""
-if [ ! -z ${__TestDotNetCmd+x} ] %3B then
-  __Command+=" $__TestDotNetCmd"
-else
-  __Command+=" dotnet"
-fi
-
-$__Command build $CORE_ROOT/android-test-runner/AndroidTestRunner.proj -c $(Configuration) -r android-$(TargetArchitecture) /p:Platform=$(TargetArchitecture) /p:TargetArchitecture=$(TargetArchitecture) /p:NetCoreAppCurrent=$(NetCoreAppCurrent) /p:TestAssembly=`pwd`/$(MsBuildProjectName).dll /p:TestBinDir=`pwd`
-
-   ]]>
-      </BashCLRTestPreCommands>
-
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetArchitecture) != 'wasm' And '$(TargetOS)' != 'Android'">
     <![CDATA[
 $(BashLinkerTestLaunchCmds)
@@ -332,13 +317,13 @@ CLRTestExitCode=$?
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
       <![CDATA[
 # run Android app
-cd AndroidApp
+cd $TestBinaryBase/AndroidApp
 AdbTool=$ANDROID_SDK_ROOT/platform-tools/adb
 $AdbTool kill-server
 $AdbTool start-server
-$AdbTool uninstall net.dot.$(MsBuildProjectName) || true
-$AdbTool install apk/bin/$(MsBuildProjectName).apk
-CLRTestExitCode=%24%28$AdbTool shell am instrument -w net.dot.$(MsBuildProjectName)/net.dot.MonoRunner | grep "return-code" | cut -d "=" -f2%29
+$AdbTool uninstall net.dot.$NameSpace || true
+$AdbTool install apk/bin/$NameSpace.apk
+CLRTestExitCode=%24%28$AdbTool shell am instrument -w net.dot.$NameSpace/net.dot.MonoRunner | grep "return-code" | cut -d "=" -f2%29
       ]]>
       </BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[

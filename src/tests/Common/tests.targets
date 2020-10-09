@@ -43,7 +43,8 @@
     <PropertyGroup>
       <XunitConsoleRunner>$(CORE_ROOT)\xunit.console.dll</XunitConsoleRunner>
 
-      <XunitArgs>-parallel $(ParallelRun)</XunitArgs>
+      <XunitArgs Condition="'$(TargetOS)' == 'Android'">-parallel none</XunitArgs>
+      <XunitArgs Condition="'$(TargetOS)' != 'Android'">-parallel $(ParallelRun)</XunitArgs>
       <XunitArgs>$(XunitArgs) -html $(__TestRunHtmlLog)</XunitArgs>
       <XunitArgs>$(XunitArgs) -xml $(__TestRunXmlLog)</XunitArgs>
       <XunitArgs>$(XunitArgs) @(IncludeTraitsItems->'-trait %(Identity)', ' ')</XunitArgs>
