@@ -229,6 +229,35 @@ namespace System.Security.Cryptography.RNG.Tests
             }
         }
 
+        [Fact]
+        public static void GetBytes_Int_Negative()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("byteCount", () =>
+                RandomNumberGenerator.GetBytes(-1));
+        }
+
+        [Fact]
+        public static void GetBytes_Int_Empty()
+        {
+            byte[] result = RandomNumberGenerator.GetBytes(0);
+            Assert.Same(Array.Empty<byte>(), result);
+        }
+
+        [Fact]
+        public static void GetBytes_Int_RandomDistrobution()
+        {
+            byte[] result = RandomNumberGenerator.GetBytes(2048);
+            RandomDataGenerator.VerifyRandomDistribution(result);
+        }
+
+        [Fact]
+        public static void GetBytes_Int_NotSame()
+        {
+            byte[] result1 = RandomNumberGenerator.GetBytes(2048);
+            byte[] result2 = RandomNumberGenerator.GetBytes(2048);
+            Assert.NotEqual(result1, result2);
+        }
+
         [Theory]
         [InlineData(10)]
         [InlineData(256)]

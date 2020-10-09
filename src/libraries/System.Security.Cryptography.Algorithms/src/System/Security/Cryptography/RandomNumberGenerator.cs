@@ -146,6 +146,29 @@ namespace System.Security.Cryptography
             return GetInt32(0, toExclusive);
         }
 
+        /// <summary>
+        /// Creates an array of bytes with a cryptographically strong random sequence of values.
+        /// </summary>
+        /// <param name="byteCount">The number of bytes of random values to create.</param>
+        /// <returns>
+        /// An array populated with cryptographically strong random values.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// The <paramref name="byteCount" /> parameter is less than zero.
+        /// </exception>
+        public static byte[] GetBytes(int byteCount)
+        {
+            if (byteCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            if (byteCount == 0)
+                return Array.Empty<byte>();
+
+            byte[] ret = GC.AllocateUninitializedArray<byte>(byteCount);
+            RandomNumberGeneratorImplementation.FillSpan(ret);
+            return ret;
+        }
+
         internal void VerifyGetBytes(byte[] data, int offset, int count)
         {
             if (data == null)
