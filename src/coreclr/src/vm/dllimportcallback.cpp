@@ -165,13 +165,35 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
         {
             // exchange ecx ( "this") with the hidden structure return buffer
             //  xchg ecx, [esp]
-            pcpusl->X86EmitOp(0x87, kECX, (X86Reg)4 /*ESP*/);
+            pcpusl->X86EmitOp(0x87, kECX, (X86Reg)kESP_Unsafe);
         }
 
         // jam ecx (the "this" param onto stack. Now it looks like a normal stdcall.)
         pcpusl->X86EmitPushReg(kECX);
 
         // push edx - repush the return address
+        pcpusl->X86EmitPushReg(kEDX);
+    }
+    
+    // The native signature doesn't have a return buffer
+    // but the managed signature does.
+    // Set up the return buffer address here.
+    if (pInfo->m_wFlags & umtmlBufRetValToEnreg)
+    {
+        // Calculate the return buffer address
+        // lea edx [esp - ENREGISTERED_RETURNTYPE_MAXSIZE]
+        pcpusl->X86EmitEspOffset(0x8d, kEDX, -ENREGISTERED_RETURNTYPE_MAXSIZE);
+        
+        // exchange edx (which has the return buffer address)
+        // with the return address
+        // xchg edx, [esp]
+        pcpusl->X86EmitOp(0x87, kEDX, (X86Reg)kESP_Unsafe);
+        
+        // Make space for the inserted return buffer.
+        // sub esp ENREGISTERED_RETURNTYPE_MAXSIZE
+        pcpusl->X86EmitSubEsp(ENREGISTERED_RETURNTYPE_MAXSIZE);
+        
+        // push edx
         pcpusl->X86EmitPushReg(kEDX);
     }
 
@@ -253,6 +275,9 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     // push fs:[0]
     const static BYTE codeSEH1[] = { 0x64, 0xFF, 0x35, 0x0, 0x0, 0x0, 0x0};
     pcpusl->EmitBytes(codeSEH1, sizeof(codeSEH1));
+    // EmitBytes doesn't know to increase the stack size
+    // so we do so manually
+    pcpusl->SetStackSize(pcpusl->GetStackSize() + 4);
 
     // link in the exception frame
     // mov dword ptr fs:[0], esp
@@ -469,6 +494,29 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
         {
             pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0x8 /* skip saved EBP, EBX */, kEAX);
             pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0xc /* skip saved EBP, EBX, EAX */, kEDX);
+        }
+        else if (pInfo->m_wFlags & umtmlBufRetValToEnreg)
+        {
+            // We need to copy the return buffer into the outer EDX:EAX register pair.
+            
+            // Save EDI and EAX registers so we can use it for scratch.
+            pcpusl->X86EmitPushReg(kEDI); 
+            pcpusl->X86EmitPushReg(kEAX);
+
+            // mov edi, [ebx + retbufofs]
+            pcpusl->X86EmitIndexRegLoad(kEDI, kEBX, retbufofs);
+            // mov eax, [edi]
+            pcpusl->X86EmitIndexRegLoad(kEAX, kEDI, 0);
+            // mov [ebx - (offset to outer eax)] eax
+            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0x8 /* skip saved EBP, EBX */, kEAX);
+            // mov eax, [edi + 4]
+            pcpusl->X86EmitIndexRegLoad(kEAX, kEDI, 0x4 /* offset to second slot of return buffer */);
+            // mov [ebx - (offset to outer edx)] eax
+            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0xc /* skip saved EBP, EBX, EAX */, kEAX);
+            
+            // Restore scratch registers
+            pcpusl->X86EmitPopReg(kEAX); 
+            pcpusl->X86EmitPopReg(kEDI);
         }
         else
         {
@@ -781,6 +829,9 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     if (m_callConv == UINT16_MAX)
         m_callConv = static_cast<UINT16>(pSigInfo->GetCallConv());
 
+    UMThunkStubInfo stubInfo;
+    memset(&stubInfo, 0, sizeof(stubInfo));
+
     // process this
     if (!fIsStatic)
     {
@@ -791,16 +842,27 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
     // process the return buffer parameter
     if (argit.HasRetBuffArg() || (m_callConv == pmCallConvThiscall && argit.HasValueTypeReturn()))
     {
-        // Only copy the retbuf arg from the src call when the managed call will also
+        // Only copy the retbuf arg from the src call when both the managed call and native call
         // have a return buffer.
         if (argit.HasRetBuffArg())
         {
+            // managed has a return buffer
+            if (m_callConv != pmCallConvThiscall &&
+                argit.HasValueTypeReturn() &&
+                pMetaSig->GetReturnTypeSize() == ENREGISTERED_RETURNTYPE_MAXSIZE)
+            {
+                // Only managed has a return buffer.
+                // Native returns in registers.
+                // We add a flag so the stub correctly sets up the return buffer.
+                stubInfo.m_wFlags |= umtmlBufRetValToEnreg;
+                // Reserve space for the return buffer.
+                nOffset += ENREGISTERED_RETURNTYPE_MAXSIZE;
+            }
             numRegistersUsed++;
             _ASSERTE(numRegistersUsed - 1 < NUM_ARGUMENT_REGISTERS);
             psrcofsregs[NUM_ARGUMENT_REGISTERS - numRegistersUsed] = nOffset;
         }
         retbufofs = nOffset;
-
         nOffset += StackElemSize(sizeof(LPVOID));
     }
 
@@ -865,9 +927,6 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
 
     m_cbActualArgSize = cbActualArgSize;
 
-    UMThunkStubInfo stubInfo;
-    memset(&stubInfo, 0, sizeof(stubInfo));
-
     if (!FitsInU2(m_cbActualArgSize))
         COMPlusThrow(kMarshalDirectiveException, IDS_EE_SIGTOOCOMPLEX);
 
@@ -901,6 +960,13 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
             }
         }
     }
+
+    if (stubInfo.m_wFlags & umtmlBufRetValToEnreg)
+    {
+        // Pop off the return buffer we insert into the stub.
+        m_cbRetPop += ENREGISTERED_RETURNTYPE_MAXSIZE;
+    }
+
     stubInfo.m_cbRetPop = m_cbRetPop;
 
     if (fIsStatic) stubInfo.m_wFlags |= umtmlIsStatic;
