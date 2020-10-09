@@ -164,6 +164,10 @@
              Link="Common\Interop\Unix\System.Net.Security.Native\Interop.NetSecurityNative.IsNtlmInstalled.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteNegoContext.cs"
              Link="Common\System\Net\Security\Unix\SafeDeleteNegoContext.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeCredentials.cs"
+             Link="Common\System\Net\Security\Unix\SafeFreeCredentials.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
+             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\NegotiateStreamPal.Unix.cs"
              Link="Common\System\Net\Security\NegotiateStreamPal.Unix.cs" />
     <Compile Include="$(CommonPath)Microsoft\Win32\SafeHandles\GssSafeHandles.cs"
@@ -263,10 +267,6 @@
              Link="ProductionCode\SmtpNtlmAuthenticationModule.cs" />
     <Compile Include="$(CommonPath)System\Net\NTAuthentication.Common.cs"
              Link="Common\System\Net\NTAuthentication.Common.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeFreeCredentials.cs"
-             Link="Common\System\Net\Security\Unix\SafeFreeCredentials.cs" />
-    <Compile Include="$(CommonPath)System\Net\Security\Unix\SafeDeleteContext.cs"
-             Link="Common\System\Net\Security\Unix\SafeDeleteContext.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SSPIHandleCache.cs"
              Link="Common\System\Net\Security\SSPIHandleCache.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
