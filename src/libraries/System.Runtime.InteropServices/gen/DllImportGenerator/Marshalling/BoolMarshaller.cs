@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.InteropServices;
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -14,12 +13,14 @@ namespace Microsoft.Interop
         private readonly PredefinedTypeSyntax _nativeType;
         private readonly int _trueValue;
         private readonly int _falseValue;
+        private readonly bool _compareToTrue;
 
-        protected BoolMarshallerBase(PredefinedTypeSyntax nativeType, int trueValue, int falseValue)
+        protected BoolMarshallerBase(PredefinedTypeSyntax nativeType, int trueValue, int falseValue, bool compareToTrue)
         {
             _nativeType = nativeType;
             _trueValue = trueValue;
             _falseValue = falseValue;
+            _compareToTrue = compareToTrue;
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
@@ -83,15 +84,19 @@ namespace Microsoft.Interop
                 case StubCodeContext.Stage.Unmarshal:
                     if (info.IsManagedReturnPosition || (info.IsByRef && info.RefKind != RefKind.In))
                     {
-                        // <managedIdentifier> = <nativeIdentifier> != 0;
+                        // <managedIdentifier> = <nativeIdentifier> == _trueValue;
+                        //   or
+                        // <managedIdentifier> = <nativeIdentifier> != _falseValue;
+                        var (binaryOp, comparand) = _compareToTrue ? (SyntaxKind.EqualsExpression, _trueValue) : (SyntaxKind.NotEqualsExpression, _falseValue);
+
                         yield return ExpressionStatement(
                             AssignmentExpression(
                                 SyntaxKind.SimpleAssignmentExpression,
                                 IdentifierName(managedIdentifier),
                                 BinaryExpression(
-                                    SyntaxKind.NotEqualsExpression,
+                                    binaryOp,
                                     IdentifierName(nativeIdentifier),
-                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_falseValue)))));
+                                    LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(comparand)))));
                     }
                     break;
                 default:
@@ -102,28 +107,47 @@ namespace Microsoft.Interop
         public bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context) => true;
     }
 
-    internal class CBoolMarshaller : BoolMarshallerBase
+    /// <summary>
+    /// Marshals a boolean value as 1 byte.
+    /// </summary>
+    /// <remarks>
+    /// This boolean type is the natural size of a boolean in the CLR (<see href="https://www.ecma-international.org/publications/standards/Ecma-335.htm">ECMA-335 (III.1.1.2)</see>).
+    ///
+    /// This is typically compatible with <see href="https://en.cppreference.com/w/c/types/boolean">C99</see>
+    /// and <see href="https://en.cppreference.com/w/cpp/language/types">C++</see>, but those is implementation defined.
+    /// Consult your compiler specification.
+    /// </remarks>
+    internal class ByteBoolMarshaller : BoolMarshallerBase
     {
-        public CBoolMarshaller()
-            : base(PredefinedType(Token(SyntaxKind.ByteKeyword)), trueValue: 1, falseValue: 0)
+        public ByteBoolMarshaller()
+            : base(PredefinedType(Token(SyntaxKind.ByteKeyword)), trueValue: 1, falseValue: 0, compareToTrue: false)
         {
         }
     }
 
+    /// <summary>
+    /// Marshals a boolean value as a 4-byte integer.
+    /// </summary>
+    /// <remarks>
+    /// Corresponds to the definition of <see href="https://docs.microsoft.com/windows/win32/winprog/windows-data-types">BOOL</see>.
+    /// </remarks>
     internal class WinBoolMarshaller : BoolMarshallerBase
     {
         public WinBoolMarshaller()
-            : base(PredefinedType(Token(SyntaxKind.IntKeyword)), trueValue: 1, falseValue: 0)
+            : base(PredefinedType(Token(SyntaxKind.IntKeyword)), trueValue: 1, falseValue: 0, compareToTrue: false)
         {
         }
     }
-    
+
+    /// <summary>
+    /// Marshal a boolean value as a VARIANT_BOOL (Windows OLE/Automation type).
+    /// </summary>
     internal class VariantBoolMarshaller : BoolMarshallerBase
     {
         private const short VARIANT_TRUE = -1;
         private const short VARIANT_FALSE = 0;
         public VariantBoolMarshaller()
-            : base(PredefinedType(Token(SyntaxKind.ShortKeyword)), VARIANT_TRUE, VARIANT_FALSE)
+            : base(PredefinedType(Token(SyntaxKind.ShortKeyword)), trueValue: VARIANT_TRUE, falseValue: VARIANT_FALSE, compareToTrue: true)
         {
         }
     }

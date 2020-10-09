@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -8,7 +7,7 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    class SafeHandleMarshaller : IMarshallingGenerator
+    internal class SafeHandleMarshaller : IMarshallingGenerator
     {
         public TypeSyntax AsNativeType(TypePositionInfo info)
         {
