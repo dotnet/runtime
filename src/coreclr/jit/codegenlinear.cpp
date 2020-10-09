@@ -460,11 +460,6 @@ void CodeGen::genCodeForBBlist()
             }
         } // end for each node in block
 
-        if (block->bbNext != nullptr && block->bbNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP)
-        {
-            GetEmitter()->emitIns_Nop(10);
-        }
-
 #ifdef DEBUG
         // The following set of register spill checks and GC pointer tracking checks used to be
         // performed at statement boundaries. Now, with LIR, there are no statements, so they are
@@ -753,6 +748,15 @@ void CodeGen::genCodeForBBlist()
             default:
                 noway_assert(!"Unexpected bbJumpKind");
                 break;
+        }
+
+        if ((block != nullptr) && (block->bbNext != nullptr) && (block->bbNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP))
+        {
+            if (verbose)
+            {
+                printf("To align next block, add padding.\n");
+            }
+            GetEmitter()->emitIns_Nop(10);
         }
 
 #if defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)

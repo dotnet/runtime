@@ -41,6 +41,11 @@ CONFIG_INTEGER(JitDebugLogLoopCloning, W("JitDebugLogLoopCloning"), 0) // In deb
                                                                        // optimizations are performed on the fast path.
 CONFIG_INTEGER(JitDefaultFill, W("JitDefaultFill"), 0xdd) // In debug builds, initialize the memory allocated by the nra
                                                           // with this byte.
+CONFIG_INTEGER(JitAlignLoopMinBlockWeight, W("JitAlignLoopMinBlockWeight"), 0xffffffff) // Minimum weight needed of the first block of a loop to trigger its alignment.
+CONFIG_INTEGER(JitAlignLoopMaxCodeSize,
+               W("JitAlignLoopMaxCodeSize"),
+               0)  // Maximum code size (in bytes) of the loop after which the the code alignment for that loop will be disabled.
+
 CONFIG_INTEGER(JitDirectAlloc, W("JitDirectAlloc"), 0)
 CONFIG_INTEGER(JitDoubleAlign, W("JitDoubleAlign"), 1)
 CONFIG_INTEGER(JitDumpASCII, W("JitDumpASCII"), 1)         // Uses only ASCII characters in tree dumps

@@ -2234,6 +2234,17 @@ class Compiler
 public:
     hashBvGlobalData hbvGlobalData; // Used by the hashBv bitvector package.
 
+/*
+* Loop alignment heuristics
+* These are overriden by the COMPlus_ variables, but in future, 
+*/
+
+//#define ALIGN_LOOP_MIN_BB_WEIGHT 100 // Minimum average hits a block should get in order to be considered as hot for loop alignment.
+//#define ALIGN_LOOP_MAX_CODE_SIZE 20 // Maximum code size of a loop for which loop alignment will be done.
+
+    unsigned compJitAlignLoopMinBlockWeight;
+    unsigned compJitAlignLoopMaxCodeSize;
+
 #ifdef DEBUG
     bool verbose;
     bool verboseTrees;
