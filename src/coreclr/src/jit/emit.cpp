@@ -5096,12 +5096,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
                 printf("\nG_M%03u_IG%02u:", emitComp->compMethodID, ig->igNum);
                 if (!emitComp->opts.disDiffable)
                 {
-#ifdef TARGET_XARCH
                     printf("              ;; offset=%04XH", ig->igOffs);
-#elif defined(TARGET_ARM64)
-                    // Only display for arm64 because offset is already displayed by default for arm
-                    printf("            ;; offset=%04XH", ig->igOffs);
-#endif
                 }
                 printf("\n");
             }
