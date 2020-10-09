@@ -51,7 +51,7 @@ The build has a number of options that you can learn about using build -?.
 
 ### WebAssembly
 
-See the instructions for [Building WebAssembly](../../libraries/webassembly-instructions.md).
+See the instructions for [Building WebAssembly](../../building/libraries/webassembly-instructions.md).
 
 ### Android
 
