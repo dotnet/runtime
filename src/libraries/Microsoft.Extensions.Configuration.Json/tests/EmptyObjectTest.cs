@@ -9,7 +9,7 @@ namespace Microsoft.Extensions.Configuration.Json.Test
     public class EmptyObjectTest
     {
         [Fact]
-        public void EmptyObject_AddsAsNull()
+        public void EmptyObject_AddsEmptyString()
         {
             var json = @"{
                 ""key"": { },
@@ -18,11 +18,11 @@ namespace Microsoft.Extensions.Configuration.Json.Test
             var jsonConfigSource = new JsonConfigurationProvider(new JsonConfigurationSource());
             jsonConfigSource.Load(TestStreamHelpers.StringToStream(json));
 
-            Assert.Null(jsonConfigSource.Get("key"));
+            Assert.True(jsonConfigSource.TryGet("key", out _));
         }
 
         [Fact]
-        public void NullObject_AddsEmptyString()
+        public void NullObject_AddsAsNull()
         {
             var json = @"{
                 ""key"": null,
@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Configuration.Json.Test
             var jsonConfigSource = new JsonConfigurationProvider(new JsonConfigurationSource());
             jsonConfigSource.Load(TestStreamHelpers.StringToStream(json));
 
-            Assert.Equal("", jsonConfigSource.Get("key"));
+            Assert.Null(jsonConfigSource.Get("key"));
         }
 
         [Fact]
@@ -48,6 +48,37 @@ namespace Microsoft.Extensions.Configuration.Json.Test
 
             Assert.False(jsonConfigSource.TryGet("key", out _));
             Assert.Equal("value", jsonConfigSource.Get("key:nested"));
+        }
+
+        [Fact]
+        public void EmptyArray_AddsEmptyString()
+        {
+            var json = @"{
+                ""ip"": [ ]
+            }";
+
+            var jsonConfigSource = new JsonConfigurationProvider(new JsonConfigurationSource());
+            jsonConfigSource.Load(TestStreamHelpers.StringToStream(json));
+
+            Assert.Equal("", jsonConfigSource.Get("ip"));
+        }
+
+
+        [Fact]
+        public void NotEmptyArray_DoesNotAddParent()
+        {
+            var json = @"{
+                ""ip"": [
+                    ""1.2.3.4""
+                ]
+            }";
+
+            var jsonConfigSource = new JsonConfigurationProvider(new JsonConfigurationSource());
+            jsonConfigSource.Load(TestStreamHelpers.StringToStream(json));
+
+            Assert.False(jsonConfigSource.TryGet("ip", out _));
+            Assert.True(jsonConfigSource.TryGet("ip:0", out _));
+            Assert.Equal("1.2.3.4", jsonConfigSource.Get("ip:0"));
         }
     }
 }

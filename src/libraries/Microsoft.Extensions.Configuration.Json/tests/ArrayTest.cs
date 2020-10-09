@@ -254,5 +254,65 @@ namespace Microsoft.Extensions.Configuration.Json.Test
             Assert.Equal("9.10.11.12", jsonConfigSource.Get("ip:1:0"));
             Assert.Equal("13.14.15.16", jsonConfigSource.Get("ip:1:1"));
         }
+
+        [Fact]
+        public void ComplexCollection()
+        {
+            var json = ComplexJson();
+
+            var jsonConfigSource = new JsonConfigurationProvider(new JsonConfigurationSource());
+            jsonConfigSource.Load(TestStreamHelpers.StringToStream(json));
+
+            //first level
+            Assert.False(jsonConfigSource.TryGet("prop1", out _));
+            Assert.False(jsonConfigSource.TryGet("prop2", out _));
+            Assert.True(jsonConfigSource.TryGet("prop3", out _));
+            Assert.Equal(string.Empty, jsonConfigSource.Get("prop3"));
+
+            //second level
+            Assert.False(jsonConfigSource.TryGet("prop1:subprop1.1", out _));
+            Assert.True(jsonConfigSource.TryGet("prop1:subprop1.2", out _));
+            Assert.Equal("subvalue", jsonConfigSource.Get("prop1:subprop1.2"));
+
+            //third level (array)
+            Assert.True(jsonConfigSource.TryGet("prop1:subprop1.1:0:null", out _));
+            Assert.Null(jsonConfigSource.Get("prop1:subprop1.1:0:null"));
+            Assert.True(jsonConfigSource.TryGet("prop1:subprop1.1:0:empty", out _));
+            Assert.Equal(string.Empty, jsonConfigSource.Get("prop1:subprop1.1:0:empty"));
+            Assert.True(jsonConfigSource.TryGet("prop1:subprop1.1:0:empty", out _));
+            Assert.Equal(string.Empty, jsonConfigSource.Get("prop1:subprop1.1:0:emptyobj"));
+            Assert.True(jsonConfigSource.TryGet("prop1:subprop1.1:0:empty", out _));
+            Assert.Equal(string.Empty, jsonConfigSource.Get("prop1:subprop1.1:0:emptyarray"));
+
+            //fourth level
+            Assert.False(jsonConfigSource.TryGet("prop1:subprop1.1:0:array", out _));
+            Assert.True(jsonConfigSource.TryGet("prop1:subprop1.1:0:array:0", out _));
+            Assert.Equal("array0", jsonConfigSource.Get("prop1:subprop1.1:0:array:0"));
+
+        }
+
+        private string ComplexJson()
+        {
+            return @"{
+                ""prop1"": {
+                    ""subprop1.1"": [
+                        {
+                           ""null"" : null,
+                           ""empty"": """",
+                           ""emptyobj"" : {},
+                           ""emptyarray"": [],
+                           ""array"": [
+                               ""array0""
+                           ]
+                        }
+                    ],
+                    ""subprop1.2"": ""subvalue""
+                },
+                ""prop2"": {
+                    ""subprop2.1"": []
+                },
+                ""prop3"": []
+            }";
+        }
     }
 }

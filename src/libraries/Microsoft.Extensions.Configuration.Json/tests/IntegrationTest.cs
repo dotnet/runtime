@@ -53,10 +53,10 @@ namespace Microsoft.Extensions.Configuration.Json.Test
                         x => AssertSection(x, "d", "e"),
                     }),
                     x => AssertSection(x, "f", ""),
-                    x => AssertSection(x, "g", ""),
-                    x => AssertSection(x, "h", null),
+                    x => AssertSection(x, "g", null),
+                    x => AssertSection(x, "h", ""),
                     x => AssertSection(x, "i", null, new Action<IConfigurationSection>[] {
-                        x => AssertSection(x, "k", null),
+                        x => AssertSection(x, "k", ""),
                     }),
             });
         }
