@@ -8243,9 +8243,13 @@ void emitter::emitDispIns(
         doffs = true;
     }
 
+    /* Display the instruction address */
+
+    emitDispInsAddr(code);
+
     /* Display the instruction offset */
 
-    emitDispInsOffs(offset, doffs, code);
+    emitDispInsOffs(offset, doffs);
 
     if (code != nullptr)
     {

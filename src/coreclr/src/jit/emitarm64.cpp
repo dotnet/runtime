@@ -12112,9 +12112,13 @@ void emitter::emitDispIns(
         doffs = true;
     }
 
+    /* Display the instruction address */
+
+    emitDispInsAddr(pCode);
+
     /* Display the instruction offset */
 
-    emitDispInsOffs(offset, doffs, pCode);
+    emitDispInsOffs(offset, doffs);
 
     /* Display the instruction hex code */
 

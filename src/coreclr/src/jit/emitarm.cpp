@@ -6981,9 +6981,13 @@ void emitter::emitDispInsHelp(
         doffs = true;
     }
 
+    /* Display the instruction address */
+
+    emitDispInsAddr(code);
+
     /* Display the instruction offset */
 
-    emitDispInsOffs(offset, doffs, code);
+    emitDispInsOffs(offset, doffs);
 
     /* Display the instruction hex code */
 
