@@ -71,14 +71,8 @@
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).pdb" />
   </ItemGroup>
-
-  <Target Name="ExcludeAssembliesFromSingleFile"
-          DependsOnTargets="ComputeResolvedFilesToPublishList"
-          BeforeTargets="_ComputeFilesToBundle">
-    <ItemGroup>
-      <ResolvedFileToPublish Condition="'%(Filename)' == 'TestAssembly'">
-        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-      </ResolvedFileToPublish>
-    </ItemGroup>
-  </Target>
+  <ItemGroup>
+    <!-- Assemblies that should be excluded from the bundle -->
+    <__ExcludeFromBundle Include="TestAssembly.dll" />
+  </ItemGroup>
 </Project>
