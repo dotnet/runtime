@@ -13,133 +13,24 @@ namespace System.Text
     /// </summary>
     internal readonly struct StringOrCharArray : IEquatable<StringOrCharArray>
     {
-        public readonly string? String;
+        public readonly ReadOnlyMemory<char> Value;
 
-        public readonly char[]? CharArray;
-        public readonly int CharArrayOffset;
-        public readonly int CharArrayCount;
+        public StringOrCharArray(ReadOnlyMemory<char> value) =>
+            Value = value;
 
-        public StringOrCharArray(string s)
-        {
-            String = s;
+        public StringOrCharArray(char[] value, int start, int length) =>
+            Value = value.AsMemory(start, length);
 
-            CharArray = null;
-            CharArrayOffset = 0;
-            CharArrayCount = 0;
+        public static implicit operator StringOrCharArray(string value) =>
+            new StringOrCharArray(value.AsMemory());
 
-            DebugValidate();
-        }
+        public override bool Equals(object? obj) =>
+            obj is StringOrCharArray other && Equals(other);
 
-        public StringOrCharArray(char[] charArray, int charArrayIndex, int charArrayOffset)
-        {
-            String = null;
+        public bool Equals(StringOrCharArray other) =>
+            Value.Span.SequenceEqual(other.Value.Span);
 
-            CharArray = charArray;
-            CharArrayOffset = charArrayIndex;
-            CharArrayCount = charArrayOffset;
-
-            DebugValidate();
-        }
-
-        public static implicit operator StringOrCharArray(string value)
-        {
-            return new StringOrCharArray(value);
-        }
-
-        public int Length
-        {
-            get
-            {
-                DebugValidate();
-                return String != null ? String.Length : CharArrayCount;
-            }
-        }
-
-        public override bool Equals(object? obj)
-        {
-            return
-                obj is StringOrCharArray &&
-                Equals((StringOrCharArray)obj);
-        }
-
-        public unsafe bool Equals(StringOrCharArray other)
-        {
-            this.DebugValidate();
-            other.DebugValidate();
-
-            if (this.String != null)
-            {
-                // String vs String
-                if (other.String != null)
-                {
-                    return StringComparer.Ordinal.Equals(this.String, other.String);
-                }
-                Debug.Assert(other.CharArray != null);
-
-                // String vs CharArray
-                if (this.String.Length != other.CharArrayCount)
-                    return false;
-
-                for (int i = 0; i < this.String.Length; i++)
-                {
-                    if (this.String[i] != other.CharArray[other.CharArrayOffset + i])
-                        return false;
-                }
-
-                return true;
-            }
-            Debug.Assert(CharArray != null);
-
-            // CharArray vs CharArray
-            if (other.CharArray != null)
-            {
-                if (this.CharArrayCount != other.CharArrayCount)
-                    return false;
-
-                for (int i = 0; i < this.CharArrayCount; i++)
-                {
-                    if (this.CharArray[this.CharArrayOffset + i] != other.CharArray[other.CharArrayOffset + i])
-                        return false;
-                }
-
-                return true;
-            }
-            Debug.Assert(other.String != null);
-
-            // CharArray vs String
-            if (this.CharArrayCount != other.String.Length)
-                return false;
-
-            for (int i = 0; i < this.CharArrayCount; i++)
-            {
-                if (this.CharArray[this.CharArrayOffset + i] != other.String[i])
-                    return false;
-            }
-
-            return true;
-        }
-
-        public override unsafe int GetHashCode()
-        {
-            DebugValidate();
-
-            if (String != null)
-            {
-                fixed (char* s = String)
-                {
-                    return GetHashCode(s, String.Length);
-                }
-            }
-            else
-            {
-                fixed (char* s = CharArray)
-                {
-                    return GetHashCode(s + CharArrayOffset, CharArrayCount);
-                }
-            }
-        }
-
-        private static unsafe int GetHashCode(char* s, int count)
+        public override int GetHashCode()
         {
             // This hash code is a simplified version of some of the code in String,
             // when not using randomized hash codes.  We don't use string's GetHashCode
@@ -149,33 +40,19 @@ namespace System.Text
 
             int hash1 = (5381 << 16) + 5381;
             int hash2 = hash1;
+            var span = Value.Span;
 
-            for (int i = 0; i < count; ++i)
+            for (int i = 0; i < span.Length; ++i)
             {
-                int c = *s++;
-                hash1 = unchecked((hash1 << 5) + hash1) ^ c;
+                hash1 = unchecked((hash1 << 5) + hash1) ^ span[i];
 
-                if (++i >= count)
+                if (++i >= span.Length)
                     break;
 
-                c = *s++;
-                hash2 = unchecked((hash2 << 5) + hash2) ^ c;
+                hash2 = unchecked((hash2 << 5) + hash2) ^ span[i];
             }
 
             return unchecked(hash1 + (hash2 * 1566083941));
-        }
-
-        [Conditional("DEBUG")]
-        private void DebugValidate()
-        {
-            Debug.Assert((String != null) ^ (CharArray != null));
-
-            if (CharArray != null)
-            {
-                Debug.Assert(CharArrayCount >= 0);
-                Debug.Assert(CharArrayOffset >= 0);
-                Debug.Assert(CharArrayOffset <= CharArray.Length - CharArrayCount);
-            }
         }
     }
 }
