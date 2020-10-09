@@ -10501,7 +10501,7 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
 
 #if FEATURE_MULTIREG_RET
 //----------------------------------------------------------------------------------
-// gitDispRegCount: store multi-reg value to a local
+// gtDispRegCount: determine how many registers to print for a multi-reg node
 //
 // Arguments:
 //    tree  -  Gentree node whose registers we want to print
@@ -10523,14 +10523,14 @@ unsigned Compiler::gtDispRegCount(GenTree* tree)
         // but we want to print all positions, so we get the reg count for op1.
         return gtDispRegCount(tree->gtGetOp1());
     }
-    if (!tree->IsMultiRegNode())
+    else if (!tree->IsMultiRegNode())
     {
         // We can wind up here because IsMultiRegNode() always returns true for COPY or RELOAD,
         // even if its op1 is not multireg.
         // Note that this method won't be called for non-register-producing nodes.
         return 1;
     }
-    if (tree->IsMultiRegLclVar())
+    else if (tree->IsMultiRegLclVar())
     {
         return tree->AsLclVar()->GetFieldCount(this);
     }
