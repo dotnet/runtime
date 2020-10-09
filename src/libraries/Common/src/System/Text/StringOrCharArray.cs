@@ -24,6 +24,8 @@ namespace System.Text
         public static implicit operator StringOrCharArray(string value) =>
             new StringOrCharArray(value.AsMemory());
 
+        public int Length => Value.Length;
+
         public override bool Equals(object? obj) =>
             obj is StringOrCharArray other && Equals(other);
 
