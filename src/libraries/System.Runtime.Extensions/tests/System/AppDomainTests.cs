@@ -64,6 +64,7 @@ namespace System.Tests
         public void UnhandledException_Add_Remove()
         {
             RemoteExecutor.Invoke(() => {
+                Assert.True(false);
                 AppDomain.CurrentDomain.UnhandledException += new UnhandledExceptionEventHandler(MyHandler);
                 AppDomain.CurrentDomain.UnhandledException -= new UnhandledExceptionEventHandler(MyHandler);
             }).Dispose();
