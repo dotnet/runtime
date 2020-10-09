@@ -342,6 +342,7 @@ namespace System.Net.Quic.Tests
             Assert.True(s1.CanWrite);
 
             ValueTask writeTask = s1.WriteAsync(s_data);
+            s1.Flush();
 
             using QuicStream s2 = await c2.AcceptStreamAsync();
             await ReceiveDataAsync(s_data, s2);
@@ -357,6 +358,7 @@ namespace System.Net.Quic.Tests
             Assert.True(s1.CanWrite);
 
             ValueTask writeTask = s1.WriteAsync(s_data);
+            s1.Flush();
 
             using QuicStream s2 = await c2.AcceptStreamAsync();
             await ReceiveDataAsync(s_data, s2);
@@ -398,6 +400,7 @@ namespace System.Net.Quic.Tests
         private static async Task SendAndReceiveDataAsync(ReadOnlyMemory<byte> data, QuicStream s1, QuicStream s2)
         {
             await s1.WriteAsync(data);
+            await s1.FlushAsync();
             await ReceiveDataAsync(data, s2);
         }
 
@@ -501,6 +504,7 @@ namespace System.Net.Quic.Tests
 
                 await using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
                 await clientStream.WriteAsync(new byte[1]);
+                await clientStream.FlushAsync();
 
                 await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
                 await serverStream.ReadAsync(new byte[1]);
@@ -531,6 +535,7 @@ namespace System.Net.Quic.Tests
 
                 await using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
                 await clientStream.WriteAsync(new byte[1]);
+                await clientStream.FlushAsync();
 
                 await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
                 await serverStream.ReadAsync(new byte[1]);
