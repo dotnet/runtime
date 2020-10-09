@@ -153,7 +153,7 @@ namespace System.Net.Sockets
 
         private DynamicWinsockMethods GetDynamicWinsockMethods()
         {
-            return _dynamicWinsockMethods ?? (_dynamicWinsockMethods = DynamicWinsockMethods.GetMethods(_addressFamily, _socketType, _protocolType));
+            return _dynamicWinsockMethods ??= DynamicWinsockMethods.GetMethods(_addressFamily, _socketType, _protocolType);
         }
 
         internal unsafe bool AcceptEx(SafeSocketHandle listenSocketHandle,
