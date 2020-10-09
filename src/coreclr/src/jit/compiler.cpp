@@ -2963,7 +2963,7 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
         }
 
         // This one applies to both Ngen/Jit Disasm output: COMPlus_JitDasmWithAddress=1
-        if (JitConfig.DasmWithAddress() != 0)
+        if (JitConfig.JitDasmWithAddress() != 0)
         {
             opts.disAddr = true;
         }
