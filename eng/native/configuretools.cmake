@@ -43,7 +43,7 @@ if(NOT WIN32 AND NOT CLR_CMAKE_TARGET_BROWSER)
   locate_toolchain_exec(nm CMAKE_NM)
   locate_toolchain_exec(ranlib CMAKE_RANLIB)
 
-  if(NOT CMAKE_C_COMPILER_ID MATCHES "GNU")
+  if(CMAKE_C_COMPILER_ID MATCHES "Clang")
     locate_toolchain_exec(link CMAKE_LINKER)
   endif()
 
