@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <_AndroidSampleFiles Include="$(ArtifactsDir)bin\AppleAppBuilder\$(Configuration)\net5.0\AppleAppBuilder.dll" />
+    <_AndroidSampleFiles Include="$(ArtifactsDir)bin\AndroidAppBuilder\$(Configuration)\$(NetCoreAppCurrent)\AndroidAppBuilder.dll" />
 
     <PackageFile Include="@(_AndroidSampleFiles)" TargetPath="tools\$(NetCoreAppCurrent)\" />
   </ItemGroup>
