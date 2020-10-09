@@ -430,7 +430,7 @@ namespace ILCompiler
         }
 
         public bool IsLayoutFixedInCurrentVersionBubble(TypeDesc type) =>
-            _computedFixedLayoutTypes.GetOrAdd(type, (_) => IsLayoutFixedInCurrentVersionBubbleInternal(type));
+            _computedFixedLayoutTypes.GetOrAdd(type, (t) => IsLayoutFixedInCurrentVersionBubbleInternal(t));
 
         public bool IsInheritanceChainLayoutFixedInCurrentVersionBubble(TypeDesc type)
         {
