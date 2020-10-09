@@ -154,7 +154,7 @@ namespace System.Security.Cryptography
         /// An array populated with cryptographically strong random values.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// The <paramref name="count" /> parameter is less than zero.
+        /// <paramref name="count" /> is less than zero.
         /// </exception>
         public static byte[] GetBytes(int count)
         {
