@@ -185,7 +185,7 @@ namespace System.Net
                 ArrayPool<byte>.Shared.Return(oldBytes);
             }
 
-            Debug.Assert(byteCount <= AvailableLength);
+            Debug.Assert(byteCount <= AvailableLength || desiredSize == limit);
         }
 
         public void Grow()
