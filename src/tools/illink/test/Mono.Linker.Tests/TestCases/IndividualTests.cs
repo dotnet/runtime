@@ -9,7 +9,7 @@ using Mono.Linker.Tests.Cases.CommandLine.Mvid;
 using Mono.Linker.Tests.Cases.Interop.PInvoke.Individual;
 using Mono.Linker.Tests.Cases.References.Individual;
 using Mono.Linker.Tests.Cases.Tracing.Individual;
-using Mono.Linker.Tests.Cases.Warnings.WarningSuppression;
+using Mono.Linker.Tests.Cases.Warnings.Individual;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCasesRunner;
 using NUnit.Framework;
@@ -85,6 +85,19 @@ namespace Mono.Linker.Tests.TestCases
 
 			Assert.IsTrue (File.ReadAllLines (outputPath).SequenceEqual (
 				File.ReadAllLines (TestsDirectory.Combine ($"TestCases/Dependencies/WarningSuppressionExpectations3.xml"))));
+		}
+
+		[Test]
+		public void WarningsAreSorted ()
+		{
+			var testcase = CreateIndividualCase (typeof (WarningsAreSorted));
+			var result = Run (testcase);
+			var loggedMessages = result.Logger.MessageContainers
+				.Where (lm => lm.Category != MessageCategory.Info && lm.Category != MessageCategory.Diagnostic).ToList ();
+			loggedMessages.Sort ();
+
+			Assert.IsTrue (string.Join (Environment.NewLine, loggedMessages).SequenceEqual (
+				File.ReadAllText (TestsDirectory.Combine ($"TestCases/Dependencies/SortedWarnings.txt"))));
 		}
 
 		[Test]

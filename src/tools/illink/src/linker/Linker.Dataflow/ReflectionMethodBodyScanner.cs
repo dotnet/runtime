@@ -1376,28 +1376,28 @@ namespace Mono.Linker.Dataflow
 								2067,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method)}' " +
 								$"don't match those on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (ParameterDefinition sourceParameter, MethodReturnType targetMethodReturnType):
 							reflectionContext.RecordUnrecognizedPattern (
 								2068,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method)}' " +
 								$"don't match those on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (ParameterDefinition sourceParameter, FieldDefinition targetField):
 							reflectionContext.RecordUnrecognizedPattern (
 								2069,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method)}' " +
 								$"don't match those on the field '{targetField.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (ParameterDefinition sourceParameter, MethodDefinition targetMethod):
 							reflectionContext.RecordUnrecognizedPattern (
 								2070,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method)}' " +
 								$"don't match those on the implicit 'this' parameter of method '{targetMethod.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (ParameterDefinition sourceParameter, GenericParameter targetGenericParameter):
 							// Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
@@ -1405,7 +1405,7 @@ namespace Mono.Linker.Dataflow
 								2071,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (sourceParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceParameter.Method)}' " +
 								$"don't match those on the generic parameter '{targetGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 
 						case (MethodReturnType sourceMethodReturnType, ParameterDefinition targetParameter):
@@ -1413,28 +1413,28 @@ namespace Mono.Linker.Dataflow
 								2072,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method)}' " +
 								$"don't match those on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (MethodReturnType sourceMethodReturnType, MethodReturnType targetMethodReturnType):
 							reflectionContext.RecordUnrecognizedPattern (
 								2073,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method)}' " +
 								$"don't match those on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (MethodReturnType sourceMethodReturnType, FieldDefinition targetField):
 							reflectionContext.RecordUnrecognizedPattern (
 								2074,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method)}' " +
 								$"don't match those on the field '{targetField.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (MethodReturnType sourceMethodReturnType, MethodDefinition targetMethod):
 							reflectionContext.RecordUnrecognizedPattern (
 								2075,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method)}' " +
 								$"don't match those on the implicit 'this' parameter of method '{targetMethod.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (MethodReturnType sourceMethodReturnType, GenericParameter targetGenericParameter):
 							// Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
@@ -1442,7 +1442,7 @@ namespace Mono.Linker.Dataflow
 								2076,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (sourceMethodReturnType.Method)}' " +
 								$"don't match those on the generic parameter '{targetGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 
 						case (FieldDefinition sourceField, ParameterDefinition targetParameter):
@@ -1450,28 +1450,28 @@ namespace Mono.Linker.Dataflow
 								2077,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '{sourceField.GetDisplayName ()}' " +
 								$"don't match those on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (FieldDefinition sourceField, MethodReturnType targetMethodReturnType):
 							reflectionContext.RecordUnrecognizedPattern (
 								2078,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '{sourceField.GetDisplayName ()}' " +
 								$"don't match those on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (FieldDefinition sourceField, FieldDefinition targetField):
 							reflectionContext.RecordUnrecognizedPattern (
 								2079,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '{sourceField.GetDisplayName ()}' " +
 								$"don't match those on the field '{targetField.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (FieldDefinition sourceField, MethodDefinition targetMethod):
 							reflectionContext.RecordUnrecognizedPattern (
 								2080,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '{sourceField.GetDisplayName ()}' " +
 								$"don't match those on the implicit 'this' parameter of method '{targetMethod.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (FieldDefinition sourceField, GenericParameter targetGenericParameter):
 							// Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
@@ -1479,7 +1479,7 @@ namespace Mono.Linker.Dataflow
 								2081,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the field '{sourceField.GetDisplayName ()}' " +
 								$"don't match those on the generic parameter '{targetGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 
 						case (MethodDefinition sourceMethod, ParameterDefinition targetParameter):
@@ -1487,28 +1487,28 @@ namespace Mono.Linker.Dataflow
 								2082,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{sourceMethod.GetDisplayName ()}' " +
 								$"don't match those on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (MethodDefinition sourceMethod, MethodReturnType targetMethodReturnType):
 							reflectionContext.RecordUnrecognizedPattern (
 								2083,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{sourceMethod.GetDisplayName ()}' " +
 								$"don't match those on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (MethodDefinition sourceMethod, FieldDefinition targetField):
 							reflectionContext.RecordUnrecognizedPattern (
 								2084,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{sourceMethod.GetDisplayName ()}' " +
 								$"don't match those on the field '{targetField.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (MethodDefinition sourceMethod, MethodDefinition targetMethod):
 							reflectionContext.RecordUnrecognizedPattern (
 								2085,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{sourceMethod.GetDisplayName ()}' " +
 								$"don't match those on the implicit 'this' parameter of method '{targetMethod.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (MethodDefinition sourceMethod, GenericParameter targetGenericParameter):
 							// Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
@@ -1516,7 +1516,7 @@ namespace Mono.Linker.Dataflow
 								2086,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the implicit 'this' parameter of method '{sourceMethod.GetDisplayName ()}' " +
 								$"don't match those on the generic parameter '{targetGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 
 						case (GenericParameter sourceGenericParameter, ParameterDefinition targetParameter):
@@ -1524,21 +1524,21 @@ namespace Mono.Linker.Dataflow
 								2087,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter '{sourceGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter)}' " +
 								$"don't match those on the parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage (targetParameter)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetParameter.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (GenericParameter sourceGenericParameter, MethodReturnType targetMethodReturnType):
 							reflectionContext.RecordUnrecognizedPattern (
 								2088,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter '{sourceGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter)}' " +
 								$"don't match those on the return value of method '{DiagnosticUtilities.GetMethodSignatureDisplayName (targetMethodReturnType.Method)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (GenericParameter sourceGenericParameter, FieldDefinition targetField):
 							reflectionContext.RecordUnrecognizedPattern (
 								2089,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter '{sourceGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter)}' " +
 								$"don't match those on the field '{targetField.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (GenericParameter sourceGenericParameter, MethodDefinition targetMethod):
 							// Currently this is never generated, it might be possible one day if we try to validate annotations on results of reflection
@@ -1552,14 +1552,14 @@ namespace Mono.Linker.Dataflow
 								2090,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter '{sourceGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter)}' " +
 								$"don't match those on the implicit 'this' parameter of method '{targetMethod.GetDisplayName ()}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 						case (GenericParameter sourceGenericParameter, GenericParameter targetGenericParameter):
 							reflectionContext.RecordUnrecognizedPattern (
 								2091,
 								$"The requirements declared via the 'DynamicallyAccessedMembersAttribute' on the generic parameter '{sourceGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (sourceGenericParameter)}' " +
 								$"don't match those on the generic parameter '{targetGenericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName (targetGenericParameter)}'. " +
-								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to ");
+								$"The source value must declare at least the same requirements as those declared on the target location it's assigned to");
 							break;
 
 						default:

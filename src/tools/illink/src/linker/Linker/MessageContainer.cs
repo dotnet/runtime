@@ -8,7 +8,7 @@ using Mono.Cecil;
 
 namespace Mono.Linker
 {
-	public readonly struct MessageContainer
+	public readonly struct MessageContainer : IComparable<MessageContainer>, IEquatable<MessageContainer>
 	{
 		public static readonly MessageContainer Empty;
 
@@ -169,6 +169,18 @@ namespace Mono.Linker
 
 		public override bool Equals (object obj) => obj is MessageContainer messageContainer && Equals (messageContainer);
 		public override int GetHashCode () => (Category, Text, Code, SubCategory, Origin).GetHashCode ();
+
+		public int CompareTo (MessageContainer other)
+		{
+			if (Origin != null && other.Origin != null) {
+				return Origin.Value.CompareTo (other.Origin.Value);
+			} else if (Origin == null && other.Origin == null) {
+				return (Code < other.Code) ? -1 : 1;
+			}
+
+			return (Origin == null) ? 1 : -1;
+		}
+
 		public static bool operator == (MessageContainer lhs, MessageContainer rhs) => lhs.Equals (rhs);
 		public static bool operator != (MessageContainer lhs, MessageContainer rhs) => !lhs.Equals (rhs);
 	}

@@ -59,7 +59,7 @@
     <Folder Include="Reflection\Dependencies\" />
     <Folder Include="BCLFeatures\" />
     <Folder Include="BCLFeatures\ETW\" />
-    <Folder Include="Warnings\WarningSuppression\Dependencies\" />
+    <Folder Include="Warnings\Dependencies\" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="LinkXml\CanPreserveExcludedFeatureCom.xml" />

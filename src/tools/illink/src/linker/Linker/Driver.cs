@@ -718,6 +718,7 @@ namespace Mono.Linker
 			// RemoveUnreachableBlocksStep [optional]
 			// MarkStep
 			// ReflectionBlockedStep [optional]
+			// ProcessWarningsStep
 			// SweepStep
 			// AddBypassNGenStep [optional]
 			// CodeRewriterStep
@@ -767,6 +768,7 @@ namespace Mono.Linker
 				// The stack trace will go to stderr, and the MSBuild task will surface it with High importance.
 				throw;
 			} finally {
+				context.FlushCachedWarnings ();
 				context.Tracer.Finish ();
 			}
 
@@ -1206,6 +1208,7 @@ namespace Mono.Linker
 			p.AppendStep (new TypeMapStep ());
 			p.AppendStep (new MarkStep ());
 			p.AppendStep (new ValidateVirtualMethodAnnotationsStep ());
+			p.AppendStep (new ProcessWarningsStep ());
 			p.AppendStep (new SweepStep ());
 			p.AppendStep (new CodeRewriterStep ());
 			p.AppendStep (new CleanStep ());
