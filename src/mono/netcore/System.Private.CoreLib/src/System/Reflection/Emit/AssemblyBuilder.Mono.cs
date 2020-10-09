@@ -419,13 +419,13 @@ namespace System.Reflection.Emit
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
 
-        private Exception not_supported()
+        private static Exception not_supported()
         {
             // Strange message but this is what MS.NET prints...
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
 
-        private string create_assembly_version(string version)
+        private static string create_assembly_version(string version)
         {
             string[] parts = version.Split('.');
             int[] ver = new int[4] { 0, 0, 0, 0 };
@@ -467,13 +467,13 @@ namespace System.Reflection.Emit
             return ver[0] + "." + ver[1] + "." + ver[2] + "." + ver[3];
         }
 
-        private string GetCultureString(string str)
+        private static string GetCultureString(string str)
         {
             return (str == "neutral" ? string.Empty : str);
         }
 
         /*Warning, @typeArguments must be a mscorlib internal array. So make a copy before passing it in*/
-        internal Type MakeGenericType(Type gtd, Type[] typeArguments)
+        internal static Type MakeGenericType(Type gtd, Type[] typeArguments)
         {
             return new TypeBuilderInstantiation(gtd, typeArguments);
         }
