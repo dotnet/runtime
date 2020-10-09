@@ -22,8 +22,10 @@
     <MicrosoftBuildUtilitiesCoreVersion>15.4.8</MicrosoftBuildUtilitiesCoreVersion>
     <MicrosoftDotNetApiCompatVersion>5.0.0-beta.20506.7</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetCodeAnalysisVersion>5.0.0-beta.20471.1</MicrosoftDotNetCodeAnalysisVersion>
-    <!-- We depend on (and redistribute) the official Mono.Cecil NuGet package built from https://github.com/jbevain/cecil -->
-    <MonoCecilVersion>0.11.2</MonoCecilVersion>
+    <!-- This controls the version of the cecil package, or the version of cecil in the project graph
+         when we build the cecil submodule. The reference assembly package will depend on this version of cecil.
+         Keep this in sync with ProjectInfo.cs in the submodule. -->
+    <MonoCecilVersion>0.11.3</MonoCecilVersion>
     <UseVSTestRunner>true</UseVSTestRunner>
   </PropertyGroup>
 </Project>
