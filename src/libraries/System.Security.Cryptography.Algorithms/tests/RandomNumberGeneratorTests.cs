@@ -244,7 +244,7 @@ namespace System.Security.Cryptography.RNG.Tests
         }
 
         [Fact]
-        public static void GetBytes_Int_RandomDistrobution()
+        public static void GetBytes_Int_RandomDistribution()
         {
             byte[] result = RandomNumberGenerator.GetBytes(2048);
             RandomDataGenerator.VerifyRandomDistribution(result);

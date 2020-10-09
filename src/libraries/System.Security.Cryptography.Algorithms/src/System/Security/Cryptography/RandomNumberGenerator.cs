@@ -158,13 +158,13 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] GetBytes(int byteCount)
         {
-            if (byteCount < 0)
-                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
-
             if (byteCount == 0)
                 return Array.Empty<byte>();
 
-            byte[] ret = GC.AllocateUninitializedArray<byte>(byteCount);
+            if (byteCount < 0)
+                throw new ArgumentOutOfRangeException(nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
+
+            byte[] ret = new byte[byteCount];
             RandomNumberGeneratorImplementation.FillSpan(ret);
             return ret;
         }

@@ -65,7 +65,7 @@ namespace System.Security.Cryptography
 
         public override void GenerateKey()
         {
-            KeyValue = RandomNumberGenerator.GetyBytes(KeySizeValue / 8);
+            KeyValue = RandomNumberGenerator.GetBytes(KeySizeValue / 8);
         }
 
         public override void GenerateIV()
