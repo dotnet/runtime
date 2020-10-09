@@ -6587,9 +6587,7 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 
 #endif // TARGET_UNIX
 
-#ifndef TARGET_ARM64
 EXTERN_C void JIT_StackProbe_End();
-#endif // TARGET_ARM64
 
 #ifdef FEATURE_EH_FUNCLETS
 
@@ -6654,9 +6652,7 @@ bool IsIPInMarkedJitHelper(UINT_PTR uControlPc)
     CHECK_RANGE(JIT_WriteBarrier)
     CHECK_RANGE(JIT_CheckedWriteBarrier)
     CHECK_RANGE(JIT_ByRefWriteBarrier)
-#if !defined(TARGET_ARM64)
     CHECK_RANGE(JIT_StackProbe)
-#endif // !TARGET_ARM64
 #else
 #ifdef TARGET_UNIX
     CHECK_RANGE(JIT_WriteBarrierGroup)
