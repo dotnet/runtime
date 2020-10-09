@@ -180,7 +180,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void SignalingRegisteredWaitHandleCallsCalback()
+        public static void SignalingRegisteredWaitHandleCallsCallback()
         {
             var waitEvent = new AutoResetEvent(false);
             var waitCallbackInvoked = new AutoResetEvent(false);
@@ -356,7 +356,7 @@ namespace System.Threading.ThreadPools.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void StateIsPasssedThroughToCallback()
+        public static void StateIsPassedThroughToCallback()
         {
             object state = new object();
             var waitCallbackInvoked = new AutoResetEvent(false);

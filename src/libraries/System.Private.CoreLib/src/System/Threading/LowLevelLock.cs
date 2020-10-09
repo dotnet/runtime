@@ -13,7 +13,6 @@ namespace System.Threading
     /// </summary>
     internal sealed class LowLevelLock : IDisposable
     {
-        // TODO: Tune these values
         private const int SpinCount = 8;
         private const int SpinSleep0Threshold = 4;
 
