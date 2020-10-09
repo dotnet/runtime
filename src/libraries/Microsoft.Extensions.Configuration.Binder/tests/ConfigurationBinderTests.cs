@@ -834,6 +834,21 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
+        public void CanBindByteArrayWhenValueIsNull()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                { "MyByteArray", null }
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ByteArrayOptions>();
+            Assert.Equal(null, options.MyByteArray);
+        }
+
+        [Fact]
         public void ExceptionWhenTryingToBindToByteArray()
         {
             var dic = new Dictionary<string, string>
