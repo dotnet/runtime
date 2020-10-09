@@ -280,7 +280,7 @@ namespace System.Net.Security.Tests
             byte[] recvBuf = new byte[s_longMsg.Length];
             int bytesRead = 0;
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
             using (var client = new NegotiateStream(new DelayStream(stream1, delay)))
             using (var server = new NegotiateStream(new DelayStream(stream2, delay)))
             {

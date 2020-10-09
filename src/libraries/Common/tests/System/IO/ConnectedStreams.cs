@@ -17,13 +17,13 @@ namespace System.IO
         /// <summary>Creates a pair of streams that are connected for bidirectional communication.</summary>
         /// <remarks>Writing to one stream produces data readable by the either, and vice versa.</remarks>
         public static (Stream Stream1, Stream Stream2) CreateBidirectional() =>
-            CreateBidirectional(StreamBuffer.DefaultInitialBufferSize);
+            CreateBidirectional(StreamBuffer.DefaultInitialBufferSize, StreamBuffer.DefaultMaxBufferSize);
 
         /// <summary>Creates a pair of streams that are connected for bidirectional communication.</summary>
         /// <param name="initialBufferSize">The initial buffer size to use when storing data in the connection.</param>
         /// <remarks>Writing to one stream produces data readable by the either, and vice versa.</remarks>
         public static (Stream Stream1, Stream Stream2) CreateBidirectional(int initialBufferSize) =>
-            CreateBidirectional(initialBufferSize, int.MaxValue);
+            CreateBidirectional(initialBufferSize, StreamBuffer.DefaultMaxBufferSize);
 
         /// <summary>Creates a pair of streams that are connected for bidirectional communication.</summary>
         /// <param name="initialBufferSize">The initial buffer size to use when storing data in the connection.</param>
@@ -34,9 +34,15 @@ namespace System.IO
         /// <remarks>Writing to one stream produces data readable by the either, and vice versa.</remarks>
         public static (Stream Stream1, Stream Stream2) CreateBidirectional(int initialBufferSize, int maxBufferSize)
         {
+            // Each direction needs a buffer; one stream will use b1 for reading and b2 for writing,
+            // and the other stream will do the inverse.
             var b1 = new StreamBuffer(initialBufferSize, maxBufferSize);
             var b2 = new StreamBuffer(initialBufferSize, maxBufferSize);
-            StrongBox<int> refCount = new StrongBox<int>(2);
+
+            // Both StreamBuffers are shared between the streams: we don't want to dispose of the underlying storage
+            // in the stream buffer until both streams are done with them, so we ref count and only dispose
+            // when both streams have been disposed.  To share the same integer, it's put onto the heap.
+            var refCount = new StrongBox<int>(2);
 
             return (new StreamBufferStream(b1, b2, refCount), new StreamBufferStream(b2, b1, refCount));
         }

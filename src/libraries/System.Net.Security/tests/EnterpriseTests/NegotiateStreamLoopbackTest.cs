@@ -168,7 +168,7 @@ namespace System.Net.Security.Enterprise.Tests
             byte[] recvBuf = new byte[s_longMsg.Length];
             int bytesRead = 0;
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
@@ -193,7 +193,7 @@ namespace System.Net.Security.Enterprise.Tests
             byte[] recvBuf = new byte[s_longMsg.Length];
             int bytesRead = 0;
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional(4096, int.MaxValue);
             using (var client = new NegotiateStream(stream1))
             using (var server = new NegotiateStream(stream2))
             {
