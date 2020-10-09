@@ -1478,6 +1478,39 @@ __HelperNakedFuncName SETS "$helper":CC:"Naked"
 
 #endif
 
+;;-----------------------------------------------------------------------------
+;; The following helper will access ("probe") a word on each page of the stack
+;; starting with the page right beneath sp down to the one pointed to by x9.
+;; The procedure is needed to make sure that the "guard" page is pushed down below the allocated stack frame.
+;; The call to the helper will be emitted by JIT in the function/funclet prolog when large stack frame is required.
+;;-----------------------------------------------------------------------------
+; On entry:
+;   x9   - points to the lowest address on the stack frame being allocated (i.e. [InitialSp - FrameSize])
+;   sp   - points to some byte on the last probed page
+; On exit:
+;   x9   - is preserved
+;
+; NOTE: this helper will probe at least one page below the one pointed to by sp.
+#define PAGE_SIZE_LOG2 12
+
+    LEAF_ENTRY JIT_StackProbe
+        PROLOG_SAVE_REG_PAIR fp, lr, #-16!
+
+        add     x30, x9, #(PAGE_SIZE >> 12), lsl #12 ; x30 points to some byte on the page **immediately preceding** the last page to probe (i.e. pointed to by x9)
+        bfc     x30, #0, #(PAGE_SIZE_LOG2)           ; x30 points to the **lowest address** on that page
+
+ProbeLoop
+        sub     sp, sp, #(PAGE_SIZE >> 12), lsl #12  ; sp points to some byte on the **next page** to probe
+        ldr     wzr, [sp]                            ; sp points to some byte on the **last probed** page
+        cmp     sp, x30, lsl #0
+        bhs     ProbeLoop                            ; if (sp >= x30), then we need to probe at least one more page
+
+        mov     sp, fp
+        EPILOG_RESTORE_REG_PAIR fp, lr, 16!
+
+        ret     lr
+    LEAF_END_MARKED JIT_StackProbe
+
 #ifdef FEATURE_TIERED_COMPILATION
 
     IMPORT OnCallCountThresholdReached
