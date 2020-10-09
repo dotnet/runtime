@@ -181,18 +181,15 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     if (pInfo->m_wFlags & umtmlBufRetValToEnreg)
     {
         // Calculate the return buffer address
-        // lea edx [esp - ENREGISTERED_RETURNTYPE_MAXSIZE]
-        pcpusl->X86EmitEspOffset(0x8d, kEDX, -ENREGISTERED_RETURNTYPE_MAXSIZE);
+        // Calculate the offset to the return buffer we establish for EAX:EDX below.
+        // lea edx [esp - offset to EAX:EDX return buffer]
+        pcpusl->X86EmitEspOffset(0x8d, kEDX, -0xc /* skip return addr, EBP, EBX */ -0x8 /* point to start of EAX:EDX return buffer */ );
         
         // exchange edx (which has the return buffer address)
         // with the return address
         // xchg edx, [esp]
-        pcpusl->X86EmitOp(0x87, kEDX, (X86Reg)kESP_Unsafe);
-        
-        // Make space for the inserted return buffer.
-        // sub esp ENREGISTERED_RETURNTYPE_MAXSIZE
-        pcpusl->X86EmitSubEsp(ENREGISTERED_RETURNTYPE_MAXSIZE);
-        
+        pcpusl->X86EmitOp(0x87, kEDX, (X86Reg)kESP_Unsafe);   
+     
         // push edx
         pcpusl->X86EmitPushReg(kEDX);
     }
@@ -313,9 +310,9 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     //
     //            |                         |
     //            +-------------------------+
-    //   EBX - 20 | Saved Result: EDX/ST(0) |
+    //   EBX - 20 | Saved Result: EAX/ST(0) |
     //            +- - - - - - - - - - - - -+
-    //   EBX - 16 | Saved Result: EAX/ST(0) |
+    //   EBX - 16 | Saved Result: EDX/ST(0) |
     //            +-------------------------+
     //   EBX - 12 |      Caller's EBX       |
     //            +-------------------------+
@@ -492,33 +489,14 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
         // save EDX:EAX
         if (retbufofs == UNUSED_STACK_OFFSET)
         {
-            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0x8 /* skip saved EBP, EBX */, kEAX);
-            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0xc /* skip saved EBP, EBX, EAX */, kEDX);
+            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0xc /* skip saved EBP, EBX, EDX */, kEAX);
+            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0x8 /* skip saved EBP, EBX */, kEDX);
         }
-        else if (pInfo->m_wFlags & umtmlBufRetValToEnreg)
-        {
-            // We need to copy the return buffer into the outer EDX:EAX register pair.
-            
-            // Save EDI and EAX registers so we can use it for scratch.
-            pcpusl->X86EmitPushReg(kEDI); 
-            pcpusl->X86EmitPushReg(kEAX);
-
-            // mov edi, [ebx + retbufofs]
-            pcpusl->X86EmitIndexRegLoad(kEDI, kEBX, retbufofs);
-            // mov eax, [edi]
-            pcpusl->X86EmitIndexRegLoad(kEAX, kEDI, 0);
-            // mov [ebx - (offset to outer eax)] eax
-            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0x8 /* skip saved EBP, EBX */, kEAX);
-            // mov eax, [edi + 4]
-            pcpusl->X86EmitIndexRegLoad(kEAX, kEDI, 0x4 /* offset to second slot of return buffer */);
-            // mov [ebx - (offset to outer edx)] eax
-            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0xc /* skip saved EBP, EBX, EAX */, kEAX);
-            
-            // Restore scratch registers
-            pcpusl->X86EmitPopReg(kEAX); 
-            pcpusl->X86EmitPopReg(kEDI);
-        }
-        else
+        // In the umtmlBufRetValToEnreg case,
+        // we set up the return buffer to output 
+        // into the EDX:EAX buffer we set up for the register return case.
+        // So we don't need to do more work here.
+        else if ((pInfo->m_wFlags & umtmlBufRetValToEnreg) == 0)
         {
             if (pInfo->m_wFlags & umtmlEnregRetValToBuf)
             {
@@ -538,7 +516,7 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
             pcpusl->X86EmitIndexRegLoad(kEAX, kEBX, retbufofs);
 
             // save it as the return value
-            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0x8 /* skip saved EBP, EBX */, kEAX);
+            pcpusl->X86EmitIndexRegStore(kEBX, -0x8 /* to outer EBP */ -0xc /* skip saved EBP, EBX, EDX */, kEAX);
         }
     }
 
@@ -610,8 +588,8 @@ VOID UMEntryThunk::CompileUMThunkWorker(UMThunkStubInfo *pInfo,
     }
     else
     {
-        pcpusl->X86EmitPopReg(kEDX);
         pcpusl->X86EmitPopReg(kEAX);
+        pcpusl->X86EmitPopReg(kEDX);
     }
 
     // Restore EBX, which was saved in prolog
@@ -855,8 +833,6 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
                 // Native returns in registers.
                 // We add a flag so the stub correctly sets up the return buffer.
                 stubInfo.m_wFlags |= umtmlBufRetValToEnreg;
-                // Reserve space for the return buffer.
-                nOffset += ENREGISTERED_RETURNTYPE_MAXSIZE;
             }
             numRegistersUsed++;
             _ASSERTE(numRegistersUsed - 1 < NUM_ARGUMENT_REGISTERS);
@@ -959,12 +935,6 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
                 m_cbRetPop += 4;
             }
         }
-    }
-
-    if (stubInfo.m_wFlags & umtmlBufRetValToEnreg)
-    {
-        // Pop off the return buffer we insert into the stub.
-        m_cbRetPop += ENREGISTERED_RETURNTYPE_MAXSIZE;
     }
 
     stubInfo.m_cbRetPop = m_cbRetPop;
