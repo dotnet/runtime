@@ -473,7 +473,7 @@ namespace System.IO
 
                 this._context = ExecutionContext.Capture();
 
-                ParsedEvent ParseEvent(byte* nativeEventPath)
+                static ParsedEvent ParseEvent(byte* nativeEventPath)
                 {
                     int byteCount = 0;
                     Debug.Assert(nativeEventPath != null);

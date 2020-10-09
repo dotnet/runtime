@@ -64,6 +64,7 @@
       System.Net.NetworkInformation;
       System.Net.Ping;
       System.Net.Primitives;
+      System.Net.Quic;
       System.Net.Requests;
       System.Net.Security;
       System.Net.ServicePoint;

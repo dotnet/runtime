@@ -331,7 +331,7 @@ namespace System.Diagnostics
                 }
             }
 
-            string? GetUntruncatedNameFromArg(Span<byte> arg, string prefix)
+            static string? GetUntruncatedNameFromArg(Span<byte> arg, string prefix)
             {
                 // Strip directory names from arg.
                 int nameStart = arg.LastIndexOf((byte)'/') + 1;

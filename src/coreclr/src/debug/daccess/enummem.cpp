@@ -1424,21 +1424,21 @@ HRESULT ClrDataAccess::DumpStowedExceptionObject(CLRDataEnumMemoryFlags flags, C
 
     OBJECTREF managedExceptionObject = NULL;
 
-#ifdef FEATURE_COMINTEROP
-    // dump the managed exception object wrapped in CCW
-    // memory of the CCW object itself is dumped later by DacInstanceManager::DumpAllInstances
-    DacpCCWData ccwData;
-    GetCCWData(ccwPtr, &ccwData);   // this call collects some memory implicitly
-    managedExceptionObject = OBJECTREF(CLRDATA_ADDRESS_TO_TADDR(ccwData.managedObject));
-#endif
 #ifdef FEATURE_COMWRAPPERS
+    OBJECTREF wrappedObjAddress;
+    if (DACTryGetComWrappersObjectFromCCW(ccwPtr, &wrappedObjAddress) == S_OK)
+    {
+        managedExceptionObject = wrappedObjAddress;
+    }
+#endif
+#ifdef FEATURE_COMINTEROP
     if (managedExceptionObject == NULL)
     {
-        OBJECTREF wrappedObjAddress;
-        if (DACTryGetComWrappersObjectFromCCW(ccwPtr, &wrappedObjAddress) == S_OK)
-        {
-            managedExceptionObject = wrappedObjAddress;
-        }
+        // dump the managed exception object wrapped in CCW
+        // memory of the CCW object itself is dumped later by DacInstanceManager::DumpAllInstances
+        DacpCCWData ccwData;
+        GetCCWData(ccwPtr, &ccwData);   // this call collects some memory implicitly
+        managedExceptionObject = OBJECTREF(CLRDATA_ADDRESS_TO_TADDR(ccwData.managedObject));
     }
 #endif
     DumpManagedExcepObject(flags, managedExceptionObject);

@@ -634,6 +634,11 @@ namespace Internal.JitInterface
 
         private CorInfoType asCorInfoType(TypeDesc type)
         {
+            return asCorInfoType(type, out _);
+        }
+
+        private CorInfoType asCorInfoType(TypeDesc type, out TypeDesc typeIfNotPrimitive)
+        {
             if (type.IsEnum)
             {
                 type = type.UnderlyingType;
@@ -641,11 +646,14 @@ namespace Internal.JitInterface
 
             if (type.IsPrimitive)
             {
+                typeIfNotPrimitive = null;
                 Debug.Assert((CorInfoType)TypeFlags.Void == CorInfoType.CORINFO_TYPE_VOID);
                 Debug.Assert((CorInfoType)TypeFlags.Double == CorInfoType.CORINFO_TYPE_DOUBLE);
 
                 return (CorInfoType)type.Category;
             }
+
+            typeIfNotPrimitive = type;
 
             if (type.IsPointer || type.IsFunctionPointer)
             {
@@ -693,11 +701,8 @@ namespace Internal.JitInterface
 
         private CorInfoType asCorInfoType(TypeDesc type, CORINFO_CLASS_STRUCT_** structType)
         {
-            var corInfoType = asCorInfoType(type);
-            *structType = ((corInfoType == CorInfoType.CORINFO_TYPE_CLASS) ||
-                (corInfoType == CorInfoType.CORINFO_TYPE_VALUECLASS) ||
-                (corInfoType == CorInfoType.CORINFO_TYPE_BYREF) ||
-                (corInfoType == CorInfoType.CORINFO_TYPE_PTR)) ? ObjectToHandle(type) : null;
+            var corInfoType = asCorInfoType(type, out TypeDesc typeIfNotPrimitive);
+            *structType = (typeIfNotPrimitive != null) ? ObjectToHandle(typeIfNotPrimitive) : null;
             return corInfoType;
         }
 
