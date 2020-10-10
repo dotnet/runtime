@@ -71,7 +71,16 @@ namespace System.Runtime.InteropServices.JavaScript
             WeakReference? reference;
             lock (_boundObjects)
             {
-                if (!_boundObjects.TryGetValue(jsId, out reference))
+                if (_boundObjects.TryGetValue(jsId, out reference))
+                {
+                    if ((reference.Target == null) || ((reference.Target as JSObject)?.IsDisposed == true))
+                    {
+                        _boundObjects.Remove(jsId);
+                        reference = null;
+                    }
+                }
+
+                if (reference == null)
                 {
                     IntPtr jsIntPtr = (IntPtr)jsId;
                     reference = new WeakReference(mappedType > 0 ? BindJSType(jsIntPtr, ownsHandle, mappedType) : new JSObject(jsIntPtr, ownsHandle), true);
