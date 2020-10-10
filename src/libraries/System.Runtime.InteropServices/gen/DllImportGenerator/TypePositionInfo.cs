@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using DllImportGenerator;
+
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -29,7 +29,7 @@ namespace Microsoft.Interop
 
         public RefKind RefKind { get; private set; }
         public SyntaxKind RefKindSyntax { get; private set; }
-        
+
         public bool IsByRef => RefKind != RefKind.None;
 
         public bool IsManagedReturnPosition { get => this.ManagedIndex == ReturnIndex; }
@@ -41,9 +41,9 @@ namespace Microsoft.Interop
 
         public MarshallingInfo MarshallingAttributeInfo { get; private set; }
 
-        public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, Compilation compilation)
+        public static TypePositionInfo CreateForParameter(IParameterSymbol paramSymbol, Compilation compilation, GeneratorDiagnostics diagnostics)
         {
-            var marshallingInfo = GetMarshallingInfo(paramSymbol.Type, paramSymbol.GetAttributes(), compilation);
+            var marshallingInfo = GetMarshallingInfo(paramSymbol.Type, paramSymbol.GetAttributes(), compilation, diagnostics);
             var typeInfo = new TypePositionInfo()
             {
                 ManagedType = paramSymbol.Type,
@@ -56,9 +56,9 @@ namespace Microsoft.Interop
             return typeInfo;
         }
 
-        public static TypePositionInfo CreateForType(ITypeSymbol type, IEnumerable<AttributeData> attributes, Compilation compilation)
+        public static TypePositionInfo CreateForType(ITypeSymbol type, IEnumerable<AttributeData> attributes, Compilation compilation, GeneratorDiagnostics diagnostics)
         {
-            var marshallingInfo = GetMarshallingInfo(type, attributes, compilation);
+            var marshallingInfo = GetMarshallingInfo(type, attributes, compilation, diagnostics);
             var typeInfo = new TypePositionInfo()
             {
                 ManagedType = type,
@@ -72,7 +72,7 @@ namespace Microsoft.Interop
         }
 
 #nullable enable
-        private static MarshallingInfo? GetMarshallingInfo(ITypeSymbol type, IEnumerable<AttributeData> attributes, Compilation compilation)
+        private static MarshallingInfo? GetMarshallingInfo(ITypeSymbol type, IEnumerable<AttributeData> attributes, Compilation compilation, GeneratorDiagnostics diagnostics)
         {
             MarshallingInfo? marshallingInfo = null;
             // Look at attributes on the type.
@@ -87,7 +87,7 @@ namespace Microsoft.Interop
                         // TODO: diagnostic
                     }
                     // https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute
-                    marshallingInfo = CreateMarshalAsInfo(attrData);
+                    marshallingInfo = CreateMarshalAsInfo(attrData, diagnostics);
                 }
                 else if (SymbolEqualityComparer.Default.Equals(compilation.GetTypeByMetadataName(TypeNames.MarshalUsingAttribute), attributeClass))
                 {
@@ -141,12 +141,15 @@ namespace Microsoft.Interop
 
             return marshallingInfo;
 
-            static MarshalAsInfo CreateMarshalAsInfo(AttributeData attrData)
+            static MarshalAsInfo CreateMarshalAsInfo(AttributeData attrData, GeneratorDiagnostics diagnostics)
             {
-                UnmanagedType unmanagedType = (UnmanagedType)attrData.ConstructorArguments[0].Value!;
-                if (unmanagedType == 0)
+                object unmanagedTypeObj = attrData.ConstructorArguments[0].Value!;
+                UnmanagedType unmanagedType = unmanagedTypeObj is short
+                    ? (UnmanagedType)(short)unmanagedTypeObj
+                    : (UnmanagedType)unmanagedTypeObj;
+                if (!Enum.IsDefined(typeof(UnmanagedType), unmanagedType))
                 {
-                    // [TODO] diagnostic
+                    diagnostics.ReportConfigurationNotSupported(attrData, nameof(UnmanagedType), unmanagedType.ToString());
                 }
                 string? customMarshallerTypeName = null;
                 string? customMarshallerCookie = null;
@@ -165,7 +168,7 @@ namespace Microsoft.Interop
                         case nameof(MarshalAsAttribute.SafeArraySubType):
                         case nameof(MarshalAsAttribute.SafeArrayUserDefinedSubType):
                         case nameof(MarshalAsAttribute.IidParameterIndex):
-                            // [TODO] Report not supported
+                            diagnostics.ReportConfigurationNotSupported(attrData, $"{attrData.AttributeClass!.Name}{Type.Delimiter}{namedArg.Key}");
                             break;
                         case nameof(MarshalAsAttribute.MarshalTypeRef):
                         case nameof(MarshalAsAttribute.MarshalType):
@@ -185,9 +188,8 @@ namespace Microsoft.Interop
                             arraySizeParamIndex = (short)namedArg.Value.Value!;
                             break;
                     }
-
                 }
-                
+
                 return new MarshalAsInfo(
                     UnmanagedType: unmanagedType,
                     CustomMarshallerTypeName: customMarshallerTypeName,
@@ -197,7 +199,7 @@ namespace Microsoft.Interop
                     ArraySizeParamIndex: arraySizeParamIndex
                 );
             }
-        
+
             NativeMarshallingAttributeInfo CreateNativeMarshallingInfo(AttributeData attrData, bool allowGetPinnableReference)
             {
                 ITypeSymbol spanOfByte = compilation.GetTypeByMetadataName(TypeNames.System_Span)!.Construct(compilation.GetSpecialType(SpecialType.System_Byte));
@@ -239,11 +241,11 @@ namespace Microsoft.Interop
                     valueProperty?.Type,
                     methods);
             }
-        
+
             static MarshallingInfo? CreateTypeBasedMarshallingInfo(ITypeSymbol type, Compilation compilation)
             {
                 var conversion = compilation.ClassifyCommonConversion(type, compilation.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_SafeHandle)!);
-                if (conversion.Exists && 
+                if (conversion.Exists &&
                     conversion.IsImplicit &&
                     conversion.IsReference &&
                     !type.IsAbstract)

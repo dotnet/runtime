@@ -4,7 +4,7 @@ Work on this project can be tracked and discussed via the [official issue](https
 
 ## Example
 
-The [Demo project](./DllImportGenerator/Demo) is designed to be immediately consumable by everyone. It demonstrates a simple use case where the marshalling code is generated and a native function call with only [blittable types](https://docs.microsoft.com/dotnet/framework/interop/blittable-and-non-blittable-types) is made. A managed assembly with [native exports](./DllImportGenerator/TestAssets/NativeExports) is used in the P/Invoke scenario.
+The [Demo project](./DllImportGenerator/Demo) is designed to be immediately consumable by everyone. It demonstrates a simple use case where the marshalling code is generated and a native function call with only [blittable types](https://docs.microsoft.com/dotnet/framework/interop/blittable-and-non-blittable-types) is made. The project is configured to output the generated source to disk; the files can be found in the project's intermediate directory (`obj/<Configuration>/<TargetFramework>/generated`). A managed assembly with [native exports](./DllImportGenerator/TestAssets/NativeExports) is used in the P/Invoke scenario.
 
 ### Recommended scenarios:
 

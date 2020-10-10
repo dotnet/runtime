@@ -49,8 +49,6 @@ namespace Microsoft.Interop
 
         public MethodDeclarationSyntax DllImportDeclaration { get; private set; }
 
-        public IEnumerable<Diagnostic> Diagnostics { get; private set; }
-
         /// <summary>
         /// Flags used to indicate members on GeneratedDllImport attribute.
         /// </summary>
@@ -101,6 +99,7 @@ namespace Microsoft.Interop
             IMethodSymbol method,
             GeneratedDllImportData dllImportData,
             Compilation compilation,
+            GeneratorDiagnostics diagnostics,
             CancellationToken token = default)
         {
             // Cancel early if requested
@@ -137,13 +136,13 @@ namespace Microsoft.Interop
             for (int i = 0; i < method.Parameters.Length; i++)
             {
                 var param = method.Parameters[i];
-                var typeInfo = TypePositionInfo.CreateForParameter(param, compilation);
+                var typeInfo = TypePositionInfo.CreateForParameter(param, compilation, diagnostics);
                 typeInfo.ManagedIndex = i;
                 typeInfo.NativeIndex = paramsTypeInfo.Count;
                 paramsTypeInfo.Add(typeInfo);
             }
 
-            TypePositionInfo retTypeInfo = TypePositionInfo.CreateForType(method.ReturnType, method.GetReturnTypeAttributes(), compilation);
+            TypePositionInfo retTypeInfo = TypePositionInfo.CreateForType(method.ReturnType, method.GetReturnTypeAttributes(), compilation, diagnostics);
             retTypeInfo.ManagedIndex = TypePositionInfo.ReturnIndex;
             retTypeInfo.NativeIndex = TypePositionInfo.ReturnIndex;
             if (!dllImportData.PreserveSig)
@@ -162,7 +161,8 @@ namespace Microsoft.Interop
             }
 
             // Generate stub code
-            var (code, dllImport) = StubCodeGenerator.GenerateSyntax(method, paramsTypeInfo, retTypeInfo);
+            var stubGenerator = new StubCodeGenerator(method, paramsTypeInfo, retTypeInfo, diagnostics);
+            var (code, dllImport) = stubGenerator.GenerateSyntax();
 
             return new DllImportStub()
             {
@@ -172,7 +172,6 @@ namespace Microsoft.Interop
                 StubContainingTypes = containingTypes,
                 StubCode = code,
                 DllImportDeclaration = dllImport,
-                Diagnostics = Enumerable.Empty<Diagnostic>(),
             };
         }
     }

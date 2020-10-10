@@ -10,6 +10,11 @@ namespace Microsoft.Interop
         public enum Stage
         {
             /// <summary>
+            /// Invalid stage
+            /// </summary>
+            Invalid,
+
+            /// <summary>
             /// Perform any setup required
             /// </summary>
             Setup,
@@ -55,7 +60,7 @@ namespace Microsoft.Interop
             GuaranteedUnmarshal
         }
 
-        public Stage CurrentStage { get; protected set; }
+        public Stage CurrentStage { get; protected set; } = Stage.Invalid;
 
         public abstract bool PinningSupported { get; }
 

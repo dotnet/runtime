@@ -34,6 +34,8 @@ namespace Microsoft.Interop
             // this caching.
             var syntaxToModel = new Dictionary<SyntaxTree, SemanticModel>();
 
+            var generatorDiagnostics = new GeneratorDiagnostics(context);
+
             var generatedDllImports = new StringBuilder();
             foreach (SyntaxReference synRef in synRec.Methods)
             {
@@ -55,13 +57,7 @@ namespace Microsoft.Interop
                 Debug.Assert(!(dllImportAttr is null) && !(dllImportData is null));
 
                 // Create the stub.
-                var dllImportStub = DllImportStub.Create(methodSymbolInfo, dllImportData, context.Compilation, context.CancellationToken);
-
-                // Report any diagnostics from the stub generation step.
-                foreach (var diag in dllImportStub.Diagnostics)
-                {
-                    context.ReportDiagnostic(diag);
-                }
+                var dllImportStub = DllImportStub.Create(methodSymbolInfo, dllImportData, context.Compilation, generatorDiagnostics, context.CancellationToken);
 
                 PrintGeneratedSource(generatedDllImports, methodSyntax, dllImportStub, dllImportAttr);
             }

@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-namespace DllImportGenerator {
+namespace Microsoft.Interop {
     using System;
     
     
@@ -39,7 +39,7 @@ namespace DllImportGenerator {
         internal static global::System.Resources.ResourceManager ResourceManager {
             get {
                 if (object.ReferenceEquals(resourceMan, null)) {
-                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("DllImportGenerator.Resources", typeof(Resources).Assembly);
+                    global::System.Resources.ResourceManager temp = new global::System.Resources.ResourceManager("Microsoft.Interop.Resources", typeof(Resources).Assembly);
                     resourceMan = temp;
                 }
                 return resourceMan;
@@ -70,7 +70,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Type &apos;{0}&apos; is marked with &apos;BlittableTypeAttribute&apos; but is not blittable..
+        ///   Looks up a localized string similar to Type &apos;{0}&apos; is marked with &apos;BlittableTypeAttribute&apos; but is not blittable.
         /// </summary>
         internal static string BlittableTypeMustBeBlittableMessage {
             get {
@@ -97,6 +97,60 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Source-generated P/Invokes will ignore any configuration that is not supported..
+        /// </summary>
+        internal static string ConfigurationNotSupportedDescription {
+            get {
+                return ResourceManager.GetString("ConfigurationNotSupportedDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The &apos;{0}&apos; configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead..
+        /// </summary>
+        internal static string ConfigurationNotSupportedMessage {
+            get {
+                return ResourceManager.GetString("ConfigurationNotSupportedMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified &apos;{0}&apos; configuration for parameter &apos;{1}&apos; is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead..
+        /// </summary>
+        internal static string ConfigurationNotSupportedMessageParameter {
+            get {
+                return ResourceManager.GetString("ConfigurationNotSupportedMessageParameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified &apos;{0}&apos; configuration for the return value of method &apos;{1}&apos; is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead..
+        /// </summary>
+        internal static string ConfigurationNotSupportedMessageReturn {
+            get {
+                return ResourceManager.GetString("ConfigurationNotSupportedMessageReturn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The specified value &apos;{0}&apos; for &apos;{1}&apos; is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead..
+        /// </summary>
+        internal static string ConfigurationNotSupportedMessageValue {
+            get {
+                return ResourceManager.GetString("ConfigurationNotSupportedMessageValue", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Specified configuration is not supported by source-generated P/Invokes..
+        /// </summary>
+        internal static string ConfigurationNotSupportedTitle {
+            get {
+                return ResourceManager.GetString("ConfigurationNotSupportedTitle", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The return type of &apos;GetPinnableReference&apos; (after accounting for &apos;ref&apos;) must be blittable..
         /// </summary>
         internal static string GetPinnableReferenceReturnTypeBlittableDescription {
@@ -106,7 +160,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The dereferenced type of the return type of the &apos;GetPinnableReference&apos; method must be blittable..
+        ///   Looks up a localized string similar to The dereferenced type of the return type of the &apos;GetPinnableReference&apos; method must be blittable.
         /// </summary>
         internal static string GetPinnableReferenceReturnTypeBlittableMessage {
             get {
@@ -124,7 +178,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Type &apos;{0}&apos; has a &apos;GetPinnableReference&apos; method but its native type does not support marshalling in scenarios where pinning is impossible..
+        ///   Looks up a localized string similar to Type &apos;{0}&apos; has a &apos;GetPinnableReference&apos; method but its native type does not support marshalling in scenarios where pinning is impossible.
         /// </summary>
         internal static string GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage {
             get {
@@ -142,7 +196,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; for the type &apos;{1}&apos; is not blittable..
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; for the type &apos;{1}&apos; is not blittable.
         /// </summary>
         internal static string NativeTypeMustBeBlittableMessage {
             get {
@@ -160,7 +214,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type for the type &apos;{0}&apos; is null..
+        ///   Looks up a localized string similar to The native type for the type &apos;{0}&apos; is null.
         /// </summary>
         internal static string NativeTypeMustBeNonNullMessage {
             get {
@@ -178,7 +232,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be pointer sized because the managed type &apos;{1}&apos; has a &apos;GetPinnableReference&apos; method..
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be pointer sized because the managed type &apos;{1}&apos; has a &apos;GetPinnableReference&apos; method.
         /// </summary>
         internal static string NativeTypeMustBePointerSizedMessage {
             get {
@@ -196,7 +250,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a value type and have a constructor that takes one parameter of type &apos;{1}&apos; or a parameterless instance method named &apos;ToManaged&apos; that returns &apos;{1}&apos;..
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must be a value type and have a constructor that takes one parameter of type &apos;{1}&apos; or a parameterless instance method named &apos;ToManaged&apos; that returns &apos;{1}&apos;.
         /// </summary>
         internal static string NativeTypeMustHaveRequiredShapeMessage {
             get {
@@ -214,7 +268,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must have a &apos;public const int StackBufferSize&apos; field that specifies the size of the stack buffer because it has a constructor that takes a stack-allocated Span&lt;byte&gt;..
+        ///   Looks up a localized string similar to The native type &apos;{0}&apos; must have a &apos;public const int StackBufferSize&apos; field that specifies the size of the stack buffer because it has a constructor that takes a stack-allocated Span&lt;byte&gt;.
         /// </summary>
         internal static string StackallocConstructorMustHaveStackBufferSizeConstantMessage {
             get {
@@ -232,11 +286,47 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Native type &apos;{0}&apos; has a stack-allocating constructor does not support marshalling in scenarios where stack allocation is impossible..
+        ///   Looks up a localized string similar to Native type &apos;{0}&apos; has a stack-allocating constructor does not support marshalling in scenarios where stack allocation is impossible.
         /// </summary>
         internal static string StackallocMarshallingShouldSupportAllocatingMarshallingFallbackMessage {
             get {
                 return ResourceManager.GetString("StackallocMarshallingShouldSupportAllocatingMarshallingFallbackMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type..
+        /// </summary>
+        internal static string TypeNotSupportedDescription {
+            get {
+                return ResourceManager.GetString("TypeNotSupportedDescription", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter &apos;{1}&apos;..
+        /// </summary>
+        internal static string TypeNotSupportedMessageParameter {
+            get {
+                return ResourceManager.GetString("TypeNotSupportedMessageParameter", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The type &apos;{0}&apos; is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method &apos;{1}&apos;..
+        /// </summary>
+        internal static string TypeNotSupportedMessageReturn {
+            get {
+                return ResourceManager.GetString("TypeNotSupportedMessageReturn", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Specified type is not supported by source-generated P/Invokes.
+        /// </summary>
+        internal static string TypeNotSupportedTitle {
+            get {
+                return ResourceManager.GetString("TypeNotSupportedTitle", resourceCulture);
             }
         }
         
@@ -250,7 +340,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must have a getter..
+        ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must have a getter.
         /// </summary>
         internal static string ValuePropertyMustHaveGetterMessage {
             get {
@@ -268,7 +358,7 @@ namespace DllImportGenerator {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must have a setter..
+        ///   Looks up a localized string similar to The &apos;Value&apos; property on the native type &apos;{0}&apos; must have a setter.
         /// </summary>
         internal static string ValuePropertyMustHaveSetterMessage {
             get {

@@ -12,11 +12,6 @@ namespace Microsoft.Interop
 {
     internal sealed class StubCodeGenerator : StubCodeContext
     {
-        private StubCodeGenerator(Stage stage)
-        {
-            CurrentStage = stage;
-        }
-
         public override bool PinningSupported => true;
 
         public override bool StackSpaceUsable => true;
@@ -34,17 +29,55 @@ namespace Microsoft.Interop
 
         private const string InvokeReturnIdentifier = "__invokeRetVal";
 
-        /// <summary>
-        /// Generate an identifier for the native return value and update the context with the new value
-        /// </summary>
-        /// <returns>Identifier for the native return value</returns>
-        public void GenerateReturnNativeIdentifier()
+        private static readonly Stage[] Stages = new Stage[]
         {
-            if (CurrentStage != Stage.Setup)
-                throw new InvalidOperationException();
+            Stage.Setup,
+            Stage.Marshal,
+            Stage.Pin,
+            Stage.Invoke,
+            Stage.KeepAlive,
+            Stage.Unmarshal,
+            Stage.GuaranteedUnmarshal,
+            Stage.Cleanup
+        };
 
-            // Update the native identifier for the return value
-            ReturnNativeIdentifier = $"{ReturnIdentifier}{GeneratedNativeIdentifierSuffix}";
+        private readonly GeneratorDiagnostics diagnostics;
+
+        private readonly IMethodSymbol stubMethod;
+        private readonly List<(TypePositionInfo TypeInfo, IMarshallingGenerator Generator)> paramMarshallers;
+        private readonly (TypePositionInfo TypeInfo, IMarshallingGenerator Generator) retMarshaller;
+
+        public StubCodeGenerator(
+            IMethodSymbol stubMethod,
+            IEnumerable<TypePositionInfo> paramsTypeInfo,
+            TypePositionInfo retTypeInfo,
+            GeneratorDiagnostics generatorDiagnostics)
+        {
+            Debug.Assert(retTypeInfo.IsNativeReturnPosition);
+
+            this.stubMethod = stubMethod;
+            this.diagnostics = generatorDiagnostics;
+
+            // Get marshallers for parameters
+            this.paramMarshallers = paramsTypeInfo.Select(p =>
+            {
+                IMarshallingGenerator generator;
+                if (!MarshallingGenerators.TryCreate(p, this, out generator))
+                {
+                    this.diagnostics.ReportMarshallingNotSupported(this.stubMethod, p);
+                }
+
+                return (p, generator);
+            }).ToList();
+
+            // Get marshaller for return
+            IMarshallingGenerator retGenerator;
+            if (!MarshallingGenerators.TryCreate(retTypeInfo, this, out retGenerator))
+            {
+                this.diagnostics.ReportMarshallingNotSupported(this.stubMethod, retTypeInfo);
+            }
+
+            this.retMarshaller = (retTypeInfo, retGenerator);
         }
 
         public override (string managed, string native) GetIdentifiers(TypePositionInfo info)
@@ -70,24 +103,15 @@ namespace Microsoft.Interop
             }
         }
 
-        public static (BlockSyntax Code, MethodDeclarationSyntax DllImport) GenerateSyntax(
-            IMethodSymbol stubMethod,
-            IEnumerable<TypePositionInfo> paramsTypeInfo,
-            TypePositionInfo retTypeInfo)
+        public (BlockSyntax Code, MethodDeclarationSyntax DllImport) GenerateSyntax()
         {
-            Debug.Assert(retTypeInfo.IsNativeReturnPosition);
-            
-            var context = new StubCodeGenerator(Stage.Setup);
-
             string dllImportName = stubMethod.Name + "__PInvoke__";
-            var paramMarshallers = paramsTypeInfo.Select(p => GetMarshalInfo(p, context)).ToList();
-            var retMarshaller = GetMarshalInfo(retTypeInfo, context);
-
             var statements = new List<StatementSyntax>();
 
-            if (retMarshaller.Generator.UsesNativeIdentifier(retTypeInfo, context))
+            if (retMarshaller.Generator.UsesNativeIdentifier(retMarshaller.TypeInfo, this))
             {
-                context.GenerateReturnNativeIdentifier();
+                // Update the native identifier for the return value
+                ReturnNativeIdentifier = $"{ReturnIdentifier}{GeneratedNativeIdentifierSuffix}";
             }
 
             foreach (var marshaller in paramMarshallers)
@@ -106,21 +130,21 @@ namespace Microsoft.Interop
                             Token(SyntaxKind.DefaultKeyword)))));
             }
 
-            bool invokeReturnsVoid = retTypeInfo.ManagedType.SpecialType == SpecialType.System_Void;
+            bool invokeReturnsVoid = retMarshaller.TypeInfo.ManagedType.SpecialType == SpecialType.System_Void;
             bool stubReturnsVoid = stubMethod.ReturnsVoid;
 
             // Stub return is not the same as invoke return
-            if (!stubReturnsVoid && !retTypeInfo.IsManagedReturnPosition)
+            if (!stubReturnsVoid && !retMarshaller.TypeInfo.IsManagedReturnPosition)
             {
-                Debug.Assert(paramsTypeInfo.Any() && paramsTypeInfo.Last().IsManagedReturnPosition);
+                Debug.Assert(paramMarshallers.Any() && paramMarshallers.Last().TypeInfo.IsManagedReturnPosition);
 
                 // Declare variable for stub return value
-                TypePositionInfo info = paramsTypeInfo.Last();
+                TypePositionInfo info = paramMarshallers.Last().TypeInfo;
                 statements.Add(LocalDeclarationStatement(
                     VariableDeclaration(
                         info.ManagedType.AsTypeSyntax(),
                         SingletonSeparatedList(
-                            VariableDeclarator(context.GetIdentifiers(info).managed)))));
+                            VariableDeclarator(this.GetIdentifiers(info).managed)))));
             }
 
             if (!invokeReturnsVoid)
@@ -128,34 +152,22 @@ namespace Microsoft.Interop
                 // Declare variable for invoke return value
                 statements.Add(LocalDeclarationStatement(
                     VariableDeclaration(
-                        retTypeInfo.ManagedType.AsTypeSyntax(),
+                        retMarshaller.TypeInfo.ManagedType.AsTypeSyntax(),
                         SingletonSeparatedList(
-                            VariableDeclarator(context.GetIdentifiers(retTypeInfo).managed)))));
+                            VariableDeclarator(this.GetIdentifiers(retMarshaller.TypeInfo).managed)))));
             }
-
-            var stages = new Stage[]
-            {
-                Stage.Setup,
-                Stage.Marshal,
-                Stage.Pin,
-                Stage.Invoke,
-                Stage.KeepAlive,
-                Stage.Unmarshal,
-                Stage.GuaranteedUnmarshal,
-                Stage.Cleanup
-            };
 
             var invoke = InvocationExpression(IdentifierName(dllImportName));
             var fixedStatements = new List<FixedStatementSyntax>();
-            foreach (var stage in stages)
+            foreach (var stage in Stages)
             {
                 int initialCount = statements.Count;
-                context.CurrentStage = stage;
+                this.CurrentStage = stage;
 
                 if (!invokeReturnsVoid && (stage == Stage.Setup || stage == Stage.Unmarshal || stage == Stage.GuaranteedUnmarshal))
                 {
                     // Handle setup and unmarshalling for return
-                    var retStatements = retMarshaller.Generator.Generate(retMarshaller.TypeInfo, context);
+                    var retStatements = retMarshaller.Generator.Generate(retMarshaller.TypeInfo, this);
                     statements.AddRange(retStatements);
                 }
 
@@ -165,12 +177,12 @@ namespace Microsoft.Interop
                     if (stage == Stage.Invoke)
                     {
                         // Get arguments for invocation
-                        ArgumentSyntax argSyntax = marshaller.Generator.AsArgument(marshaller.TypeInfo, context);
+                        ArgumentSyntax argSyntax = marshaller.Generator.AsArgument(marshaller.TypeInfo, this);
                         invoke = invoke.AddArgumentListArguments(argSyntax);
                     }
                     else
                     {
-                        var generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, context);
+                        var generatedStatements = marshaller.Generator.Generate(marshaller.TypeInfo, this);
                         if (stage == Stage.Pin)
                         {
                             // Collect all the fixed statements. These will be used in the Invoke stage.
@@ -203,7 +215,7 @@ namespace Microsoft.Interop
                         invokeStatement = ExpressionStatement(
                             AssignmentExpression(
                                 SyntaxKind.SimpleAssignmentExpression,
-                                IdentifierName(context.GetIdentifiers(retMarshaller.TypeInfo).native),
+                                IdentifierName(this.GetIdentifiers(retMarshaller.TypeInfo).native),
                                 invoke));
                     }
 
@@ -256,17 +268,6 @@ namespace Microsoft.Interop
             }
 
             return (codeBlock, dllImport);
-        }
-
-        private static (TypePositionInfo TypeInfo, IMarshallingGenerator Generator) GetMarshalInfo(TypePositionInfo info, StubCodeContext context)
-        {
-            IMarshallingGenerator generator;
-            if (!MarshallingGenerators.TryCreate(info, context, out generator))
-            {
-                // [TODO] Report warning
-            }
-
-            return (info, generator);
         }
     }
 }

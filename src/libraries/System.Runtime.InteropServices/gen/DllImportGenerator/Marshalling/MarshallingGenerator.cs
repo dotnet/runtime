@@ -53,6 +53,9 @@ namespace Microsoft.Interop
         /// <param name="info">Object to marshal</param>
         /// <param name="context">Code generation context</param>
         /// <returns>If the marshaller uses an identifier for the native value, true; otherwise, false.</returns>
+        /// <remarks>
+        /// <see cref="StubCodeContext.CurrentStage" /> of <paramref name="context"/> may not be valid.
+        /// </remarks>
         bool UsesNativeIdentifier(TypePositionInfo info, StubCodeContext context);
     }
 
@@ -117,7 +120,7 @@ namespace Microsoft.Interop
                     generator = Blittable;
                     return true;
 
-                // Marshalling in new model    
+                // Marshalling in new model
                 case { MarshallingAttributeInfo: NativeMarshallingAttributeInfo marshalInfo }:
                     generator = Forwarder;
                     return false;
@@ -127,8 +130,12 @@ namespace Microsoft.Interop
                     generator = Forwarder;
                     return false;
 
-                case { MarshallingAttributeInfo: SafeHandleMarshallingInfo _}:  
+                case { MarshallingAttributeInfo: SafeHandleMarshallingInfo _}:
                     generator = SafeHandle;
+                    return true;
+
+                case { ManagedType: { SpecialType: SpecialType.System_Void } }:
+                    generator = Forwarder;
                     return true;
 
                 default:
