@@ -311,13 +311,6 @@ void CodeGen::genCodeForBBlist()
 
         genUpdateCurrentFunclet(block);
 
-#ifdef TARGET_XARCH
-        if (ShouldAlignLoops() && block->bbFlags & BBF_LOOP_HEAD)
-        {
-            GetEmitter()->emitLoopAlign();
-        }
-#endif
-
         genLogLabel(block);
 
         // Tell everyone which basic block we're working on
@@ -750,13 +743,17 @@ void CodeGen::genCodeForBBlist()
                 break;
         }
 
-        if ((block != nullptr) && (block->bbNext != nullptr) && (block->bbNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP))
+        if (ShouldAlignLoops())
         {
-            if (verbose)
+            if ((block->bbNext != nullptr) && (block->bbNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP))
             {
-                printf("To align next block, add padding.\n");
+                if (verbose)
+                {
+                    printf("To align next block, add padding.\n");
+                }
+                //GetEmitter()->emitIns_Nop(10);
+                GetEmitter()->emitLoopAlign();
             }
-            GetEmitter()->emitIns_Nop(10);
         }
 
 #if defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)
