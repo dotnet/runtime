@@ -4,6 +4,7 @@
 
   <PropertyGroup>
     <IsShipping>false</IsShipping>
+    <StableVersion></StableVersion>
   </PropertyGroup>
 
   <ItemGroup>
