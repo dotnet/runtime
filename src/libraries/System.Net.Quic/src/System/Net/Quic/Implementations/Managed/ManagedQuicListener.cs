@@ -69,7 +69,7 @@ namespace System.Net.Quic.Implementations.Managed
         public override void Dispose()
         {
             if (_disposed) return;
-            _socketContext.StopAcceptingConnections();
+            _socketContext.StopOrOrphan();
             _disposed = true;
         }
 

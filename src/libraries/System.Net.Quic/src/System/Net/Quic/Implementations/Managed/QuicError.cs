@@ -3,10 +3,12 @@
 
 #nullable enable
 
+using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
 
 namespace System.Net.Quic.Implementations.Managed
 {
+    [DebuggerDisplay("[$ErrorCode] $ReasonPhrase ($FrameType)")]
     internal class QuicError
     {
         internal TransportErrorCode ErrorCode { get; }

@@ -101,7 +101,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             Debug.Assert(connection.IsClosed);
             Debug.Assert(connection == _connection);
             // only one connection, so we can stop the background worker and free resources
-            Stop();
+            SignalStop();
         }
     }
 }

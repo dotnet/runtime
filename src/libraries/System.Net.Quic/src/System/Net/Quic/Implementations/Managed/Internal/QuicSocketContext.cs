@@ -111,7 +111,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             _backgroundWorkerTask = Task.Run(BackgroundWorker);
         }
 
-        protected void Stop()
+        protected void SignalStop()
         {
             _socketTaskCts.Cancel();
 
@@ -119,6 +119,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             if (!_started)
             {
                 Socket.Dispose();
+            }
+        }
+
+        protected void WaitUntilStop()
+        {
+            if (_started)
+            {
+                _backgroundWorkerTask.Wait();
             }
         }
 
@@ -247,9 +255,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             if (_remoteEndPoint != null)
             {
-                sender = _remoteEndPoint!;
                 // use method without explicit address because we use connected socket
+
+                sender = _remoteEndPoint!;
                 return Socket.Receive(buffer);
+                // return Socket.ReceiveFrom(buffer, SocketFlags.None, ref sender);
             }
             else
             {
@@ -262,8 +272,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         {
             if (_remoteEndPoint != null)
             {
-                Debug.Assert(Equals(receiver, _remoteEndPoint));
+                // Debug.Assert(Equals(receiver, _remoteEndPoint));
                 Socket.Send(buffer.AsSpan(0, size), SocketFlags.None, out _);
+                // Socket.SendTo(buffer, 0, size, SocketFlags.None, _remoteEndPoint);
             }
             else
             {
@@ -297,9 +308,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 // we are using connected sockets -> use Receive(...). We also have to set the expected
                 // receiver address so that the receiving code later uses it
 
-                Debug.Assert(Socket.Connected);
+                // Debug.Assert(Socket.Connected);
                 args.RemoteEndPoint = _remoteEndPoint!;
                 return Socket.ReceiveAsync(args);
+                // return Socket.ReceiveFromAsync(args);
             }
 
             Debug.Assert(_isServer);

@@ -44,7 +44,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
                 // TODO-RZ: handle connection failures when the initial packet is discarded (e.g. because connection id is
                 // too long). This likely will need moving header parsing from Connection to socket context.
-
                 connection = new ManagedQuicConnection(_listenerOptions, this, remoteEp);
                 ImmutableInterlocked.TryAdd(ref _connectionsByEndpoint, remoteEp, connection);
             }
@@ -55,15 +54,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         /// <summary>
         ///     Signals that the context should no longer accept new connections.
         /// </summary>
-        internal void StopAcceptingConnections()
+        internal void StopOrOrphan()
         {
             _acceptNewConnections = false;
             _newConnections.TryComplete();
             if (_connectionsByEndpoint.IsEmpty)
             {
+                SignalStop();
+
                 // awake the thread so that it exists
                 Ping();
-                Stop();
+                WaitUntilStop();
             }
         }
 
@@ -162,7 +163,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             if (_connectionsByEndpoint.IsEmpty && !_acceptNewConnections)
             {
                 Ping();
-                Stop();
+                SignalStop();
             }
             Debug.Assert(removed);
         }

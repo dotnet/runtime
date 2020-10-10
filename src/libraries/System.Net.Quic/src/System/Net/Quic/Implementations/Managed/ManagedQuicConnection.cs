@@ -591,7 +591,7 @@ namespace System.Net.Quic.Implementations.Managed
             // range reserved for CRYPTO_ERROR.  The resulting value is sent in a
             // QUIC CONNECTION_CLOSE frame.
 
-            _outboundError = new QuicError((TransportErrorCode) alert + 0x100, $"Tls alert - {alert}");
+            CloseConnection((TransportErrorCode)alert + 0x100, $"Tls alert - {alert}");
             return 1;
         }
 

@@ -19,7 +19,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         public static readonly Comparer<ConnectionId> SequenceNumberComparer = Comparer<ConnectionId>.Create((l, r) => l.SequenceNumber.CompareTo(r.SequenceNumber));
 
-        private static Random _random = new Random(41);
+        private static Random _random = new Random();
 
         internal const int DefaultCidSize = MaximumLength;
 
