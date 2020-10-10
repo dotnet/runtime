@@ -35,6 +35,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         internal const int MaxConnectionIdLength = 160/8;
 
+        internal const int LongHeaderDcidLengthOffset = 5;
+
         internal static bool IsLongHeader(byte firstByte)
         {
             return (firstByte & FormBitMask) != 0;
@@ -129,6 +131,26 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal static bool GetKeyPhase(byte firstByte)
         {
             return (firstByte & KeyPhaseBitMask) != 0;
+        }
+
+        internal static bool TryFindDestinationConnectionId(Span<byte> longPacket, out Span<byte> dcid)
+        {
+            Debug.Assert(longPacket.Length >= QuicConstants.MinimumPacketSize);
+            dcid = Span<byte>.Empty;
+
+            if (!IsLongHeader(longPacket[0]))
+            {
+                return false;
+            }
+
+            byte length = longPacket[LongHeaderDcidLengthOffset];
+            if (length + LongHeaderDcidLengthOffset > longPacket.Length)
+            {
+                return false;
+            }
+
+            dcid = longPacket.Slice(LongHeaderDcidLengthOffset + 1, length);
+            return true;
         }
     }
 }

@@ -42,9 +42,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     return null;
                 }
 
+                // new connection attempt
+                if (!HeaderHelpers.TryFindDestinationConnectionId(reader.Buffer.Span, out var dcid))
+                {
+                    // drop packet
+                    return null;
+                }
+
                 // TODO-RZ: handle connection failures when the initial packet is discarded (e.g. because connection id is
                 // too long). This likely will need moving header parsing from Connection to socket context.
-                connection = new ManagedQuicConnection(_listenerOptions, this, remoteEp);
+                connection = new ManagedQuicConnection(_listenerOptions, this, remoteEp, dcid);
                 ImmutableInterlocked.TryAdd(ref _connectionsByEndpoint, remoteEp, connection);
             }
 
@@ -165,6 +172,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 Ping();
                 SignalStop();
             }
+
+            connection.DoCleanup();
             Debug.Assert(removed);
         }
     }

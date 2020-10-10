@@ -123,7 +123,8 @@ namespace System.Net.Quic.Tests
 
         private static ManagedQuicConnection CreateServer(QuicListenerOptions options)
         {
-            return new ManagedQuicConnection(options, _dummySocketContext, _ipAnyEndpoint);
+            Span<byte> odcid = stackalloc byte[20];
+            return new ManagedQuicConnection(options, _dummySocketContext, _ipAnyEndpoint, odcid);
         }
 
         /// <summary>

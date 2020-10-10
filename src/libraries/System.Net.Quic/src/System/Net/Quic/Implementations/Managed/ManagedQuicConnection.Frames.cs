@@ -105,7 +105,7 @@ namespace System.Net.Quic.Implementations.Managed
                 ProcessPacketResult result = frameType switch
                 {
                     FrameType.Padding => DiscardPadding(reader),
-                    FrameType.Ping => DiscardFrameType(reader),
+                    FrameType.Ping => ProcessPingFrame(reader),
                     FrameType.Ack => ProcessAckFrame(reader, packetType, context),
                     FrameType.AckWithEcn => ProcessAckFrame(reader, packetType, context),
                     FrameType.ResetStream => ProcessResetStreamFrame(reader),
@@ -128,7 +128,7 @@ namespace System.Net.Quic.Implementations.Managed
                     FrameType.ConnectionCloseApplication => ProcessConnectionClose(reader, context),
                     FrameType.HandshakeDone => ProcessHandshakeDoneFrame(reader, context),
                     _ when (frameType & FrameType.StreamMask) == frameType => ProcessStreamFrame(reader),
-                    _ => CloseConnection(TransportErrorCode.FrameEncodingError, QuicError.UnknownFrameType, frameType)
+                    _ => ProcessUnknownFrame(reader)
                 };
 
                 switch (result)
@@ -136,9 +136,8 @@ namespace System.Net.Quic.Implementations.Managed
                     case ProcessPacketResult.Ok:
                         continue;
                     case ProcessPacketResult.Error when _outboundError == null:
-                        _outboundError = new QuicError(TransportErrorCode.FrameEncodingError,
+                        return CloseConnection(TransportErrorCode.FrameEncodingError,
                             QuicError.UnableToDeserialize, frameType);
-                        break;
                 }
 
                 return result;
@@ -171,16 +170,6 @@ namespace System.Net.Quic.Implementations.Managed
                 }
             }
 
-            // advance handshake to set encryption secrets (to be able to process coalesced packets)
-            if (context.HandshakeWanted && _outboundError == null)
-            {
-                DoHandshake();
-                if (_outboundError != null)
-                {
-                    return ProcessPacketResult.Error;
-                }
-            }
-
             return ProcessPacketResult.Ok;
         }
 
@@ -196,18 +185,30 @@ namespace System.Net.Quic.Implementations.Managed
             return CloseConnection(TransportErrorCode.InternalError, "Frame not supported", type);
         }
 
-        private ProcessPacketResult DiscardFrameType(QuicReader reader)
+        private ProcessPacketResult ProcessPingFrame(QuicReader reader)
         {
+            _trace?.OnPingFrame();
+
+            // just discard the frame
             reader.ReadFrameType();
             return ProcessPacketResult.Ok;
         }
 
         private ProcessPacketResult DiscardPadding(QuicReader reader)
         {
-            while (reader.BytesLeft > 0 && reader.Peek() == 0)
+            // scan until first nonzero packet
+            var span = reader.PeekSpan(reader.BytesLeft);
+            int paddingLength;
+            for (paddingLength = 0; paddingLength < span.Length; paddingLength++)
             {
-                reader.ReadUInt8();
+                if (span[paddingLength] != 0)
+                {
+                    break;
+                }
             }
+
+            reader.Advance(paddingLength);
+            _trace?.OnPaddingFrame(paddingLength);
 
             return ProcessPacketResult.Ok;
         }
@@ -216,6 +217,9 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!AckFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+
+            long ackDelay =
+                Timestamp.FromMicroseconds(frame.AckDelay * (1 << (int)_peerTransportParameters.AckDelayExponent));
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -229,38 +233,15 @@ namespace System.Net.Quic.Implementations.Managed
                 ? stackalloc RangeSet.Range[(int) frame.AckRangeCount + 1]
                 : new RangeSet.Range[frame.AckRangeCount + 1];
 
-            ranges[^1] = new RangeSet.Range(frame.LargestAcknowledged - frame.FirstAckRange, frame.LargestAcknowledged);
-
-            int read = 0;
-
-            long prevSmallestAcked = ranges[^1].Start;
-
-            // put ranges into the ranges[] in reverse order so that it is ascending.
-            for (int i = (int)frame.AckRangeCount - 1; i >= 0 ; i--)
+            if (!frame.TryDecodeAckRanges(ranges))
             {
-                read += QuicPrimitives.TryReadVarInt(frame.AckRangesRaw.Slice(read), out long gap);
-                read += QuicPrimitives.TryReadVarInt(frame.AckRangesRaw.Slice(read), out long acked);
-
-                // the numbers are always encoded as one lesser, meaning sending 0 in gap means actually 1,
-                // implying that     nextLargestAcked = prevSmallestAck - gap - 2
-
-                long nextLargestAcked = prevSmallestAcked - gap - 2;
-                long nextSmallestAcked = nextLargestAcked - acked;
-
-                if (nextLargestAcked < 0)
-                {
-                    return CloseConnection(TransportErrorCode.FrameEncodingError,
-                        QuicError.InvalidAckRange, frame.HasEcnCounts ? FrameType.AckWithEcn : FrameType.Ack);
-                }
-
-                ranges[i] = new RangeSet.Range(nextSmallestAcked, nextLargestAcked);
-                prevSmallestAcked = nextSmallestAcked;
+              return CloseConnection(TransportErrorCode.FrameEncodingError,
+                            QuicError.InvalidAckRange, frame.HasEcnCounts ? FrameType.AckWithEcn : FrameType.Ack);
             }
 
             var space = GetPacketSpace(packetType);
-            long ackDelay =
-                Timestamp.FromMicroseconds(frame.AckDelay * (1 << (int)_peerTransportParameters.AckDelayExponent));
             Recovery.OnAckReceived(space, ranges, ackDelay, frame, context.Timestamp, Tls.IsHandshakeComplete);
+            _trace?.OnAckFrame(frame, ackDelay);
 
             var ackedPackets = Recovery.GetPacketNumberSpace(space).AckedPackets;
             while (ackedPackets.TryDequeue(out var packet))
@@ -276,6 +257,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!ResetStreamFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnResetStreamFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -302,6 +284,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!StopSendingFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnStopSendingFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -336,14 +319,15 @@ namespace System.Net.Quic.Implementations.Managed
 
         private ProcessPacketResult ProcessCryptoFrame(QuicReader reader, PacketType packetType, QuicSocketContext.RecvContext context)
         {
-            if (!CryptoFrame.Read(reader, out var crypto)) return ProcessPacketResult.Error;
+            if (!CryptoFrame.Read(reader, out var frame)) return ProcessPacketResult.Error;
+            _trace?.OnCryptoFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
             EncryptionLevel level = GetEncryptionLevel(packetType);
             var stream = GetPacketNumberSpace(level).CryptoInboundBuffer;
 
-            stream.Receive(crypto.Offset, crypto.CryptoData);
+            stream.Receive(frame.Offset, frame.CryptoData);
 
             // process also buffered data received earlier
             if (stream.BytesAvailable > 0)
@@ -361,6 +345,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!NewTokenFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnNewTokenFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -372,6 +357,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!MaxDataFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnMaxDataFrame(frame);
 
             _peerLimits.UpdateMaxData(frame.MaximumData);
             return ProcessPacketResult.Ok;
@@ -381,6 +367,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!MaxStreamDataFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnMaxStreamDataFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -409,6 +396,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!MaxStreamsFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnMaxStreamsFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -424,6 +412,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!DataBlockedFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnDataBlockedFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -435,6 +424,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!StreamDataBlockedFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnStreamDataBlockedFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -451,6 +441,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!StreamsBlockedFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnStreamsBlockedFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -464,6 +455,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!NewConnectionIdFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnNewConnectionIdFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -510,6 +502,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!RetireConnectionIdFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnRetireConnectionIdFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -521,6 +514,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!PathChallengeFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnPathChallengeFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -532,6 +526,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!PathChallengeFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnPathChallengeFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -543,6 +538,7 @@ namespace System.Net.Quic.Implementations.Managed
         {
             if (!ConnectionCloseFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnConnectionCloseFrame(frame);
 
             // keep only the first error
             if (_inboundError == null)
@@ -583,6 +579,7 @@ namespace System.Net.Quic.Implementations.Managed
             var frameType = reader.PeekFrameType();
             if (!StreamFrame.Read(reader, out var frame))
                 return ProcessPacketResult.Error;
+            _trace?.OnStreamFrame(frame);
 
             if (IsClosing) return ProcessPacketResult.Ok;
 
@@ -650,6 +647,8 @@ namespace System.Net.Quic.Implementations.Managed
 
         private ProcessPacketResult ProcessHandshakeDoneFrame(QuicReader reader, QuicSocketContext.RecvContext context)
         {
+            _trace?.OnHandshakeDoneFrame();
+
             // frame not being allowed to be sent by client is handled in IsPacketAllowed
             Debug.Assert(!IsServer);
 
@@ -663,6 +662,14 @@ namespace System.Net.Quic.Implementations.Managed
             SignalConnected();
 
             return ProcessPacketResult.Ok;
+        }
+
+        private ProcessPacketResult ProcessUnknownFrame(QuicReader reader)
+        {
+            int length = reader.BytesLeft;
+            FrameType frameType = reader.ReadFrameType();
+            _trace?.OnUnknownFrame((long) frameType, length);
+            return CloseConnection(TransportErrorCode.FrameEncodingError, QuicError.UnknownFrameType, frameType);
         }
 
         private void WriteFrames(QuicWriter writer, PacketType packetType, EncryptionLevel level, QuicSocketContext.SendContext context)
@@ -682,6 +689,7 @@ namespace System.Net.Quic.Implementations.Managed
             if (writer.BytesAvailable > 0 && IsServer && !_handshakeDoneSent && packetType == PacketType.OneRtt &&
                 Tls.IsHandshakeComplete)
             {
+                _trace?.OnHandshakeDoneFrame();
                 writer.WriteFrameType(FrameType.HandshakeDone);
                 // no data
 
@@ -695,6 +703,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             if (writer.BytesAvailable > 0 && _pingWanted)
             {
+                _trace?.OnPingFrame();
                 writer.WriteFrameType(FrameType.Ping);
                 // no data
                 _pingWanted = false;
@@ -751,6 +760,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             ConnectionCloseFrame.Write(writer, frame);
+            _trace?.OnConnectionCloseFrame(frame);
             _lastConnectionCloseSentTimestamp = context.Timestamp;
 
             if (_inboundError != null)
@@ -761,7 +771,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
         }
 
-        private static void WriteCryptoFrames(QuicWriter writer, PacketNumberSpace pnSpace, QuicSocketContext.SendContext context)
+        private void WriteCryptoFrames(QuicWriter writer, PacketNumberSpace pnSpace, QuicSocketContext.SendContext context)
         {
             // assume 2 * 2 bytes for offset and length and 1 B for type
             const int minSize = 5;
@@ -773,7 +783,9 @@ namespace System.Net.Quic.Implementations.Managed
                 (long offset, long count) = pnSpace.CryptoOutboundStream.GetNextSendableRange();
 
                 count = Math.Min(count, (long)writer.BytesAvailable - minSize);
-                pnSpace.CryptoOutboundStream.CheckOut(CryptoFrame.ReservePayloadBuffer(writer, offset, count));
+                var destination = CryptoFrame.ReservePayloadBuffer(writer, offset, count);
+                pnSpace.CryptoOutboundStream.CheckOut(destination);
+                _trace?.OnCryptoFrame(new CryptoFrame(offset, destination));
 
                 context.SentPacket.StreamFrames.Add(
                     SentPacket.StreamFrameHeader.ForCryptoStream(offset, (int) count));
@@ -798,10 +810,11 @@ namespace System.Net.Quic.Implementations.Managed
             Debug.Assert(ranges.Count > 0); // implied by AckElicited
             Debug.Assert(pnSpace.LargestReceivedPacketTimestamp != 0);
 
-            long ackDelay = Timestamp.GetMicroseconds(context.Timestamp - pnSpace.LargestReceivedPacketTimestamp) >>
-                            (int)_localTransportParameters.AckDelayExponent;
+            long ackDelayMicroSeconds = Timestamp.GetMicroseconds(context.Timestamp - pnSpace.LargestReceivedPacketTimestamp);
             // sanity check
-            ackDelay = Math.Max(0, ackDelay);
+            ackDelayMicroSeconds = Math.Max(0, ackDelayMicroSeconds);
+
+            long ackDelay = ackDelayMicroSeconds >> (int)_localTransportParameters.AckDelayExponent;
 
             long largest = ranges.GetMax();
             var firstRange = ranges[^1];
@@ -852,10 +865,11 @@ namespace System.Net.Quic.Implementations.Managed
                 context.SentPacket.AckedRanges.Add(firstRange.Start, firstRange.End);
 
                 // TODO-RZ implement ECN counts
-                AckFrame.Write(writer,
-                    new AckFrame(largest, ackDelay, rangesSent,
-                        firstRange.Length - 1, ackRangesRaw.Slice(0, written),
-                        false, 0, 0, 0));
+                var frame = new AckFrame(largest, ackDelay, rangesSent,
+                    firstRange.Length - 1, ackRangesRaw.Slice(0, written),
+                    false, 0, 0, 0);
+                AckFrame.Write(writer, frame);
+                _trace?.OnAckFrame(frame, ackDelayMicroSeconds);
 
                 pnSpace.AckElicited = false;
             }
@@ -898,6 +912,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             MaxStreamDataFrame.Write(writer, frame);
+            _trace?.OnMaxStreamDataFrame(frame);
             context.SentPacket.MaxStreamDataFrames.Add(frame);
 
             return true;
@@ -922,6 +937,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             StopSendingFrame.Write(writer, frame);
+            _trace?.OnStopSendingFrame(frame);
             context.SentPacket.StreamsStopped.Add(frame.StreamId);
             buffer.OnStopSendingSent();
 
@@ -947,6 +963,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             ResetStreamFrame.Write(writer, frame);
+            _trace?.OnResetStreamFrame(frame);
             context.SentPacket.StreamsReset.Add(stream.StreamId);
             buffer.OnResetSent();
 
@@ -969,6 +986,7 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             MaxDataFrame.Write(writer, frame);
+            _trace?.OnMaxDataFrame(frame);
             context.SentPacket.MaxDataFrame = frame;
             MaxDataFrameSent = true;
         }
@@ -1002,6 +1020,7 @@ namespace System.Net.Quic.Implementations.Managed
                 if (count > 0 || fin && !buffer.FinAcked)
                 {
                     var payloadDestination = StreamFrame.ReservePayloadBuffer(writer, stream!.StreamId, offset, (int)count, fin);
+                    _trace?.OnStreamFrame(new StreamFrame(stream!.StreamId, offset, fin, payloadDestination));
 
                     // add the newly sent data to the flow control counter
                     SentData += Math.Max(0, offset + count - buffer.SentBytes);

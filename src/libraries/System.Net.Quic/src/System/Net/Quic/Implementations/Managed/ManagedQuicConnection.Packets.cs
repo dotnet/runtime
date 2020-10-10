@@ -26,10 +26,12 @@ namespace System.Net.Quic.Implementations.Managed
             if (_isDraining)
             {
                 // discard any incoming data
+                _trace?.OnDatagramDropped(reader.BytesLeft);
                 return;
             }
 
             var buffer = reader.Buffer;
+            _trace?.OnDatagramReceived(reader.BytesLeft);
 
             while (reader.BytesLeft > 0)
             {
@@ -63,6 +65,8 @@ namespace System.Net.Quic.Implementations.Managed
         private ProcessPacketResult ReceiveOne(QuicReader reader, QuicSocketContext.RecvContext context)
         {
             byte first = reader.Peek();
+
+            ProcessPacketResult result;
 
             if (HeaderHelpers.IsLongHeader(first))
             {
@@ -124,6 +128,7 @@ namespace System.Net.Quic.Implementations.Managed
                             // Note: reserved bits can be validated only if decryption succeeds
                             if (headerData.Length > reader.BytesLeft)
                             {
+                                _trace?.OnPacketDropped(header.PacketType, reader.Buffer.Length);
                                 return ProcessPacketResult.DropPacket;
                             }
 
@@ -131,7 +136,7 @@ namespace System.Net.Quic.Implementations.Managed
                             // Adjust the buffer to the range belonging to the current packet.
                             reader.Reset(reader.Buffer.Slice(0, reader.BytesRead + (int)headerData.Length),
                                 reader.BytesRead);
-                            ProcessPacketResult result = ReceiveCommon(reader, header, headerData, pnSpace, context);
+                            result = ReceiveLongHeader(reader, header, headerData, pnSpace, context);
 
                             if (result == ProcessPacketResult.Ok && IsServer && header.PacketType == PacketType.Handshake)
                             {
@@ -140,33 +145,31 @@ namespace System.Net.Quic.Implementations.Managed
                                 DropPacketNumberSpace(PacketSpace.Initial, context.SentPacketPool);
                             }
 
-                            return result;
+                            break;
 
                         // other types handled elsewhere
                         default:
                             throw new InvalidOperationException("Unreachable");
                     }
                 }
-
-                // clients SHOULD ignore fixed bit when receiving version negotiation
-                if (!header.FixedBit && IsServer && header.PacketType == PacketType.VersionNegotiation ||
-                    // TODO-RZ: following checks should be moved into SocketContext
-                    SourceConnectionId != null &&
-                    !header.DestinationConnectionId.SequenceEqual(SourceConnectionId!.Data) ||
-                    header.Version != QuicVersion.Draft27)
+                else
                 {
-                    return ProcessPacketResult.DropPacket;
-                }
+                    // clients SHOULD ignore fixed bit when receiving version negotiation
+                    if (!header.FixedBit && IsServer && header.PacketType == PacketType.VersionNegotiation ||
+                        // TODO-RZ: following checks should be moved into SocketContext
+                        SourceConnectionId != null &&
+                        !header.DestinationConnectionId.SequenceEqual(SourceConnectionId!.Data) ||
+                        header.Version != QuicVersion.Draft27)
+                    {
+                        return ProcessPacketResult.DropPacket;
+                    }
 
-                switch (header.PacketType)
-                {
-                    case PacketType.Retry:
-                        return ReceiveRetry(reader, header, context);
-                    case PacketType.VersionNegotiation:
-                        return ReceiveVersionNegotiation(reader, header, context);
-                    // other types handled elsewhere
-                    default:
-                        throw new InvalidOperationException("Unreachable");
+                    result = header.PacketType switch
+                    {
+                        PacketType.Retry => ReceiveRetry(reader, header, context),
+                        PacketType.VersionNegotiation => ReceiveVersionNegotiation(reader, header, context),
+                        _ => throw new InvalidOperationException("Unreachable")
+                    };
                 }
             }
             else // short header
@@ -240,9 +243,21 @@ namespace System.Net.Quic.Implementations.Managed
                         QuicError.InvalidReservedBits);
                 }
 
-                return ReceiveProtectedFrames(reader, pnSpace, pnOffset, header.PacketNumberLength, packetType, recvSeal,
+                result = ReceiveCore(reader, pnSpace, pnOffset, header.PacketNumberLength, packetType, recvSeal,
                     context);
             }
+
+            // advance handshake to set encryption secrets (to be able to process coalesced packets)
+            if (context.HandshakeWanted && _outboundError == null)
+            {
+                DoHandshake();
+                if (_outboundError != null)
+                {
+                    result = ProcessPacketResult.Error;
+                }
+            }
+
+            return result;
         }
 
         private bool UnprotectLongHeaderPacket(QuicReader reader, ref LongPacketHeader header, out SharedPacketData headerData, PacketNumberSpace pnSpace)
@@ -296,7 +311,7 @@ namespace System.Net.Quic.Implementations.Managed
             throw new NotImplementedException();
         }
 
-        private ProcessPacketResult ReceiveCommon(QuicReader reader, in LongPacketHeader header,
+        private ProcessPacketResult ReceiveLongHeader(QuicReader reader, in LongPacketHeader header,
             in SharedPacketData headerData, PacketNumberSpace pnSpace, QuicSocketContext.RecvContext context)
         {
             int pnOffset = reader.BytesRead;
@@ -308,6 +323,7 @@ namespace System.Net.Quic.Implementations.Managed
                 pnSpace.LargestReceivedPacketNumber))
             {
                 // decryption failed, drop the packet.
+                _trace?.OnPacketDropped(header.PacketType, reader.Buffer.Length);
                 reader.Advance(payloadLength);
                 return ProcessPacketResult.DropPacket;
             }
@@ -320,11 +336,11 @@ namespace System.Net.Quic.Implementations.Managed
                     QuicError.InvalidReservedBits);
             }
 
-            return ReceiveProtectedFrames(reader, pnSpace, pnOffset, header.PacketNumberLength, packetType, seal,
+            return ReceiveCore(reader, pnSpace, pnOffset, header.PacketNumberLength, packetType, seal,
                 context);
         }
 
-        private ProcessPacketResult ReceiveProtectedFrames(QuicReader reader, PacketNumberSpace pnSpace, int pnOffset,
+        private ProcessPacketResult ReceiveCore(QuicReader reader, PacketNumberSpace pnSpace, int pnOffset,
             int pnLength,
             PacketType packetType, CryptoSeal seal, QuicSocketContext.RecvContext context)
         {
@@ -338,6 +354,10 @@ namespace System.Net.Quic.Implementations.Managed
                 // in following packet.
                 return ProcessPacketResult.Ok;
             }
+
+            // TODO-RZ: use the actual Id's from the packet for tracing. This will be important once we start supporting
+            // multiple connection ids
+            _trace?.OnPacketReceiveStart(DestinationConnectionId!.Data, SourceConnectionId!.Data, packetType, packetNumber, reader.BytesLeft, reader.Buffer.Length);
 
             if (pnSpace.LargestReceivedPacketNumber < packetNumber)
             {
@@ -357,6 +377,7 @@ namespace System.Net.Quic.Implementations.Managed
             reader.Reset(originalSegment.Slice(originalBytesRead, length));
 
             var result = ProcessFrames(reader, packetType, context);
+            _trace?.OnPacketReceiveEnd();
 
             reader.Reset(originalSegment);
             return result;
@@ -414,6 +435,8 @@ namespace System.Net.Quic.Implementations.Managed
             }
 
             writer.Reset(origMemory, written);
+            if (written > 0)
+                _trace?.OnDatagramSent(written);
         }
 
         private bool SendOne(QuicWriter writer, EncryptionLevel level, QuicSocketContext.SendContext context)
@@ -468,7 +491,7 @@ namespace System.Net.Quic.Implementations.Managed
                 maxPacketLength = Math.Min(maxPacketLength, Recovery.GetAvailableCongestionWindowBytes());
             }
 
-            if (maxPacketLength <= seal.TagLength)
+            if (maxPacketLength <= seal.TagLength + 50)
             {
                 // unable to send any useful data anyway.
                 return false;
@@ -476,6 +499,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber(recoverySpace.LargestTransportedPacketNumber);
             WritePacketHeader(writer, packetType, pnLength);
+            _trace?.OnPacketSendStart();
 
             // for non 1-RTT packets, we reserve 2 bytes which we will overwrite once total payload length is known
             var payloadLengthSpan = writer.Buffer.Span.Slice(writer.BytesWritten - 2, 2);
@@ -490,16 +514,18 @@ namespace System.Net.Quic.Implementations.Managed
             WriteFrames(writer, packetType, level, context);
             writer.Reset(origBuffer, writer.BytesWritten);
 
-            if (writer.BytesWritten == written)
-            {
-                // no data to send
-                // TODO-RZ: we might be able to detect this sooner
-                writer.Reset(writer.Buffer);
-                Debug.Assert(!_pingWanted);
-                return false;
-            }
+            // If we still managed to write nothing, then there there is something wrong with the logic
+            Debug.Assert(writer.BytesWritten != written);
+            // if (writer.BytesWritten == written)
+            // {
+            //     // no data to send
+            //     // TODO-RZ: we might be able to detect this sooner
+            //     writer.Reset(writer.Buffer);
+            //     Debug.Assert(!_pingWanted);
+            //     return false;
+            // }
 
-            // after this point it is certain that the packet will be sent, commit pending key update
+            // by this point it is certain that the packet will be sent, commit pending key update
             if (_doKeyUpdate)
             {
                 pnSpace.SendCryptoSeal = _nextSendSeal;
@@ -554,6 +580,7 @@ namespace System.Net.Quic.Implementations.Managed
                 recoverySpace.RemainingLossProbes--;
             }
 
+            _trace?.OnPacketSendEnd(SourceConnectionId!.Data, DestinationConnectionId!.Data, packetType, pnSpace.NextPacketNumber, payloadLength, writer.Buffer.Length);
             Recovery.OnPacketSent(GetPacketSpace(packetType), context.SentPacket, Tls.IsHandshakeComplete);
             pnSpace.NextPacketNumber++;
             NetEventSource.PacketSent(this, context.SentPacket.BytesSent);

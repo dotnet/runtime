@@ -4,11 +4,13 @@
 #nullable enable
 
 using System.Diagnostics;
+using System.IO;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Buffers;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
 using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
+using System.Net.Quic.Implementations.Managed.Internal.Tracing;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
@@ -26,6 +28,11 @@ namespace System.Net.Quic.Implementations.Managed
         private readonly SingleEventValueTaskSource _closeTcs = new SingleEventValueTaskSource();
 
         /// <summary>
+        ///     Object for creating a trace of this connection.
+        /// </summary>
+        private readonly QuicTrace? _trace;
+
+        /// <summary>
         ///     Timestamp when last <see cref="ConnectionCloseFrame"/> was sent, or 0 if no such frame was sent yet.
         /// </summary>
         private long _lastConnectionCloseSentTimestamp;
@@ -38,7 +45,7 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     Recovery controller used for this connection.
         /// </summary>
-        private RecoveryController Recovery { get; } = new RecoveryController();
+        private RecoveryController Recovery { get; }
 
         /// <summary>
         ///     If true, the connection is in draining state. The connection MUST not send packets in such state. The
@@ -222,7 +229,6 @@ namespace System.Net.Quic.Implementations.Managed
         public ManagedQuicConnection(QuicClientConnectionOptions options)
         {
             IsServer = false;
-
             _remoteEndpoint = options.RemoteEndPoint!;
 
             _socketContext = new SingleConnectionSocketContext(options.LocalEndPoint, _remoteEndpoint, this);
@@ -233,6 +239,8 @@ namespace System.Net.Quic.Implementations.Managed
             // init random connection ids for the client
             SourceConnectionId = ConnectionId.Random(ConnectionId.DefaultCidSize);
             DestinationConnectionId = ConnectionId.Random(ConnectionId.DefaultCidSize);
+            _trace = InitTrace(IsServer, DestinationConnectionId.Data);
+            Recovery = new RecoveryController(_trace);
             _localConnectionIdCollection.Add(SourceConnectionId);
 
             // derive also clients initial secrets.
@@ -241,15 +249,12 @@ namespace System.Net.Quic.Implementations.Managed
             // generate first Crypto frames
             Tls.DoHandshake();
 
-            _localLimits.UpdateMaxData(_localTransportParameters.InitialMaxData);
-            _localLimits.UpdateMaxStreamsBidi(_localTransportParameters.InitialMaxStreamsBidi);
-            _localLimits.UpdateMaxStreamsUni(_localTransportParameters.InitialMaxStreamsUni);
-            _peerReceivedLocalLimits = _localLimits;
+            CoreInit();
         }
 
         // server constructor
         public ManagedQuicConnection(QuicListenerOptions options, QuicServerSocketContext socketContext,
-            EndPoint remoteEndpoint)
+            EndPoint remoteEndpoint, Span<byte> odcid)
         {
             IsServer = true;
             _socketContext = socketContext;
@@ -258,12 +263,33 @@ namespace System.Net.Quic.Implementations.Managed
 
             _gcHandle = GCHandle.Alloc(this);
             Tls = new Tls(_gcHandle, options, _localTransportParameters);
+            _trace = InitTrace(IsServer, odcid.ToArray());
+            Recovery = new RecoveryController(_trace);
+
+            CoreInit();
+        }
+
+        private static QuicTrace? InitTrace(bool isServer, byte[] odcid)
+        {
+            if (Environment.GetEnvironmentVariable("DOTNETQUIC_TRACE") != null)
+            {
+                string filename = $"{DateTime.Now:s}-{(isServer ? "server" : "client")}.qlog";
+                return new QuicTrace(File.Open(filename, FileMode.Create), odcid, isServer);
+            }
+
+            return null;
+        }
+
+        private void CoreInit()
+        {
+            _trace?.OnTransportParametersSet(_localTransportParameters);
 
             _localLimits.UpdateMaxData(_localTransportParameters.InitialMaxData);
             _localLimits.UpdateMaxStreamsBidi(_localTransportParameters.InitialMaxStreamsBidi);
             _localLimits.UpdateMaxStreamsUni(_localTransportParameters.InitialMaxStreamsUni);
             _peerReceivedLocalLimits = _localLimits;
         }
+
 
         /// <summary>
         ///     Connection ID used by this endpoint to identify packets for this connection.
@@ -379,19 +405,23 @@ namespace System.Net.Quic.Implementations.Managed
         /// <param name="dcid">Destination connection ID sent from client-sent packets.</param>
         private void DeriveInitialProtectionKeys(byte[] dcid)
         {
-            var client = KeyDerivation.DeriveClientInitialSecret(dcid);
-            var server = KeyDerivation.DeriveServerInitialSecret(dcid);
+            byte[] readSecret;
+            byte[] writeSecret;
 
             var algorithm = QuicConstants.InitialCipherSuite;
 
             if (IsServer)
             {
-                SetEncryptionSecrets(EncryptionLevel.Initial, algorithm, client, server);
+                readSecret = KeyDerivation.DeriveClientInitialSecret(dcid);
+                writeSecret = KeyDerivation.DeriveServerInitialSecret(dcid);
             }
             else
             {
-                SetEncryptionSecrets(EncryptionLevel.Initial, algorithm, server, client);
+                writeSecret = KeyDerivation.DeriveClientInitialSecret(dcid);
+                readSecret = KeyDerivation.DeriveServerInitialSecret(dcid);
             }
+
+            SetEncryptionSecrets(EncryptionLevel.Initial, algorithm, readSecret, writeSecret);
         }
 
         /// <summary>
@@ -451,7 +481,7 @@ namespace System.Net.Quic.Implementations.Managed
                     recoverySpace.LostPackets.Count > 0 ||
                     // send acknowledgement if needed, prefer sending acks in Initial and Handshake
                     // immediately since there is a great chance of coalescing with next level
-                    (i < 3 ? pnSpace.AckElicited : pnSpace.NextAckTimer <= timestamp))
+                    (i < 2 ? pnSpace.AckElicited : pnSpace.NextAckTimer <= timestamp))
                     return level;
             }
 
@@ -532,13 +562,12 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 return;
             }
-
-            await CloseAsync((long)TransportErrorCode.NoError).ConfigureAwait(false);
+            var task =  CloseAsync((long)TransportErrorCode.NoError);
+            _disposed = true;
+            await task.ConfigureAwait(false);
 
             Tls.Dispose();
             _gcHandle.Free();
-
-            _disposed = true;
         }
 
         public override void Dispose()
@@ -559,6 +588,9 @@ namespace System.Net.Quic.Implementations.Managed
 
             pnSpace.RecvCryptoSeal = CryptoSeal.Create(algorithm, readSecret);
             pnSpace.SendCryptoSeal = CryptoSeal.Create(algorithm, writeSecret);
+
+            _trace?.OnKeyUpdated(readSecret, level, !IsServer, KeyUpdateTrigger.Tls, null);
+            _trace?.OnKeyUpdated(writeSecret, level, IsServer, KeyUpdateTrigger.Tls, null);
         }
 
         internal int HandleSetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,
@@ -852,6 +884,14 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 stream.OnFatalException(e);
             }
+        }
+
+        /// <summary>
+        ///     Perform any cleanup that must be done from the socket thread
+        /// </summary>
+        internal void DoCleanup()
+        {
+            _trace?.Dispose();
         }
     }
 }

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Quic.Implementations.Managed.Internal.Tracing;
 
 namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
 {
@@ -51,11 +52,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
             {
                 // slow start
                 recovery.CongestionWindow += packet.BytesSent;
+                recovery.CongestionState = CongestionState.SlowStart;
             }
             else
             {
                 // congestion avoidance
                 recovery.CongestionWindow += RecoveryController.MaxDatagramSize * packet.BytesSent / recovery.CongestionWindow;
+                recovery.CongestionState = CongestionState.CongestionAvoidance;
             }
         }
 

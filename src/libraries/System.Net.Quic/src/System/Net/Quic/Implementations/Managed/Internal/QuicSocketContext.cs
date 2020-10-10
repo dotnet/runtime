@@ -3,6 +3,7 @@
 
 #nullable enable
 
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Sockets;
@@ -118,16 +119,13 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             // if never started also cleanup the socket, since the background worker will not do that
             if (!_started)
             {
-                Socket.Dispose();
+                Dispose();
             }
         }
 
         protected void WaitUntilStop()
         {
-            if (_started)
-            {
-                _backgroundWorkerTask.Wait();
-            }
+            _backgroundWorkerTask?.Wait();
         }
 
         /// <summary>
@@ -430,9 +428,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
 
             // cleanup everything
-
-            Socket.Close();
-            Socket.Dispose();
+            Dispose();
         }
 
         protected abstract void OnException(Exception e);
@@ -489,6 +485,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             public SendContext(ObjectPool<SentPacket> sentPacketPool) : base(sentPacketPool)
             {
             }
+        }
+
+        private void Dispose()
+        {
+            Socket.Dispose();
         }
     }
 }

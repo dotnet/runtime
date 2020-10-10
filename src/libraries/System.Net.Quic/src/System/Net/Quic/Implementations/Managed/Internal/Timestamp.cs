@@ -18,5 +18,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         public static long GetMilliseconds(long ticks) => ticks / TicksPerMillisecond;
         public static long GetMicroseconds(long ticks) => ticks * 1000 / TicksPerMillisecond;
+
+        public static double GetMicrosecondsDouble(long ticks) => ticks * 1000.0 / TicksPerMillisecond;
+
+        public static double GetMillisecondsDouble(long ticks) => ticks / (double) TicksPerMillisecond;
     }
 }

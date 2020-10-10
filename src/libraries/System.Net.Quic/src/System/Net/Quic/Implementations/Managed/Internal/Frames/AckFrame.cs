@@ -102,6 +102,42 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Frames
             CeCount = ceCount;
         }
 
+        internal bool TryDecodeAckRanges(Span<RangeSet.Range> ranges)
+        {
+            Debug.Assert(ranges.Length == AckRangeCount + 1);
+
+            ranges[^1] = new RangeSet.Range(LargestAcknowledged - FirstAckRange, LargestAcknowledged);
+
+            int read = 0;
+
+            long prevSmallestAcked = ranges[^1].Start;
+
+            // put ranges into the ranges[] in reverse order so that it is ascending.
+            for (int i = (int) AckRangeCount - 1; i >= 0; i--)
+            {
+                read += QuicPrimitives.TryReadVarInt(AckRangesRaw.Slice(read), out long gap);
+                read += QuicPrimitives.TryReadVarInt(AckRangesRaw.Slice(read), out long acked);
+
+                // the numbers are always encoded as one lesser, meaning sending 0 in gap means actually 1,
+                // implying that
+
+                // nextLargestAcked = prevSmallestAck - gap - 2
+
+                long nextLargestAcked = prevSmallestAcked - gap - 2;
+                long nextSmallestAcked = nextLargestAcked - acked;
+
+                if (nextLargestAcked < 0)
+                {
+                    return false;
+                }
+
+                ranges[i] = new RangeSet.Range(nextSmallestAcked, nextLargestAcked);
+                prevSmallestAcked = nextSmallestAcked;
+            }
+
+            return true;
+        }
+
         internal static bool Read(QuicReader reader, out AckFrame frame)
         {
             var type = reader.ReadFrameType();

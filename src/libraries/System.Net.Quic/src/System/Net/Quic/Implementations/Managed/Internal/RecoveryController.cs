@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
 using System.Net.Quic.Implementations.Managed.Internal.Recovery;
+using System.Net.Quic.Implementations.Managed.Internal.Tracing;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
@@ -16,11 +17,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     {
         internal const int MaxDatagramSize = 1452;
 
-        public RecoveryController()
+
+        public RecoveryController(QuicTrace? trace = null)
         {
+            Trace = trace;
             CongestionController = NewRenoCongestionController.Instance;
             Reset();
         }
+
+        /// <summary>
+        ///     Object for logging traces for the connection events.
+        /// </summary>
+        public QuicTrace? Trace { get; }
 
         /// <summary>
         ///     Maximum reordering in packets before packet threshold loss detection considers a packet lost.
@@ -67,6 +75,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
             internal static readonly Comparer<PacketNumberSpace> TimeOfLastAckElicitingPacketSentComparer = Comparer<PacketNumberSpace>.Create((l, r) =>
                 l.TimeOfLastAckElicitingPacketSent.CompareTo(r.TimeOfLastAckElicitingPacketSent));
+
+            public PacketNumberSpace(PacketType packetType)
+            {
+                PacketType = packetType;
+            }
+
+            /// <summary>
+            ///     Packet type sent in this packet number space.
+            /// </summary>
+            internal PacketType PacketType { get; }
 
             /// <summary>
             ///     The largest packet number sent by this endpoint which was acknowledged in the packet number space so far.
@@ -125,9 +143,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             }
         }
 
-        private readonly PacketNumberSpace[] _pnSpaces = new PacketNumberSpace[]
+        private readonly PacketNumberSpace[] _pnSpaces =
         {
-            new PacketNumberSpace(), new PacketNumberSpace(), new PacketNumberSpace()
+            new PacketNumberSpace(PacketType.Initial),
+            new PacketNumberSpace(PacketType.Handshake),
+            new PacketNumberSpace(PacketType.OneRtt)
         };
 
         internal PacketNumberSpace GetPacketNumberSpace(PacketSpace space) => _pnSpaces[(int)space];
@@ -208,6 +228,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal
         internal int SlowStartThreshold { get; set; }
 
         /// <summary>
+        ///     Current state of the congestion control algorithm. This is largely only for tracing purposes.
+        /// </summary>
+        public CongestionState CongestionState { get; set; }
+
+        /// <summary>
         ///     Resets the recovery controller to the initial state.
         /// </summary>
         internal void Reset()
@@ -226,6 +251,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             {
                 space.Reset();
             }
+
+            Trace?.OnRecoveryParametersSet(this);
         }
 
         /// <summary>
@@ -252,6 +279,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 // to deem this packet lost. The NextLossTime has to be set only when receiving ack or during the
                 // loss timer processing.
                 SetLossDetectionTimer(isHandshakeComplete);
+
+                Trace?.OnRecoveryMetricsUpdated(this);
             }
         }
 
@@ -369,7 +398,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return newlyAckedIncludeAckEliciting;
         }
 
-        internal void UpdateRtt(long ackDelay)
+        private void UpdateRtt(long ackDelay)
         {
             // First RTT sample
             if (SmoothedRtt == 0)
@@ -530,11 +559,21 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                     break;
                 }
 
-                if (packet.TimeSent <= lostSendTime ||
-                    largestAcked >= packet.PacketNumber + PacketReorderingThreshold)
+                PacketLossTrigger? trigger = null;
+                if (packet.TimeSent <= lostSendTime)
+                {
+                    trigger = PacketLossTrigger.TimeThreshold;
+                }
+                else if (largestAcked >= packet.PacketNumber + PacketReorderingThreshold)
+                {
+                    trigger = PacketLossTrigger.ReorderingThreshold;
+                }
+
+                if (trigger != null)
                 {
                     // Mark packet as lost
                     pnSpace.LostPackets.Enqueue(packet);
+                    Trace?.OnPacketLost(pnSpace.PacketType, packet.PacketNumber, trigger.Value);
 
                     if (packet.InFlight)
                     {
