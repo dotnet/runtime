@@ -1112,7 +1112,7 @@ var_types Compiler::getReturnTypeForStruct(CORINFO_CLASS_HANDLE clsHnd,
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// MEASURE_NOWAY: code to measure and rank dynamic occurences of noway_assert.
+// MEASURE_NOWAY: code to measure and rank dynamic occurrences of noway_assert.
 // (Just the appearances of noway_assert, whether the assert is true or false.)
 // This might help characterize the cost of noway_assert in non-DEBUG builds,
 // or determine which noway_assert should be simple DEBUG-only asserts.
@@ -3371,7 +3371,7 @@ bool Compiler::compStressCompile(compStressArea stressArea, unsigned weight)
 //------------------------------------------------------------------------
 // compStressCompileHelper: helper to determine if a stress mode should be enabled
 //
-// Argumemnts:
+// Arguments:
 //   stressArea - stress mode to possibly enable
 //   weight - percent of time this mode should be turned on
 //     (range 0 to 100); weight 0 effectively disables

@@ -524,9 +524,9 @@ namespace System.Security.Cryptography.RNG.Tests
                 }
             }
             const double tolerance = 0.07;
-            foreach ((_, int occurences) in observedNumbers)
+            foreach ((_, int occurrences) in observedNumbers)
             {
-                double percentage = occurences / (double)numbers.Length;
+                double percentage = occurrences / (double)numbers.Length;
                 double actual = Math.Abs(expected - percentage);
                 Assert.True(actual < tolerance, $"Occurred number of times within threshold. Actual: {actual}");
             }
