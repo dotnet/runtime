@@ -13,6 +13,12 @@ namespace System.Diagnostics.Tests
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         public void TestChangesInConsoleEncoding()
         {
+            // Returns a non existent encoding "Codepage - 0": https://github.com/dotnet/runtime/issues/42959
+            if (PlatformDetection.IsWindowsNanoServer)
+            {
+                return;
+            }
+
             const int ConsoleEncoding = 437;
 
             void RunWithExpectedCodePage(int expectedCodePage)
