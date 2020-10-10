@@ -6639,7 +6639,7 @@ bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
         if (wszFileExtension != 0)
         {
             LPWSTR  wszNextFileExtension = wszFileExtension;
-            // Find last occurence
+            // Find last occurrence
             do
             {
                 wszFileExtension = wszNextFileExtension;

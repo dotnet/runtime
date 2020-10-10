@@ -67,7 +67,8 @@ jobs:
       not(in(parameters.archType, 'x64', 'x86')),
       eq(parameters.runtimeFlavor, 'mono'),
       eq(parameters.isOfficialBuild, true),
-      ne(parameters.crossrootfsDir, '')) }}
+      ne(parameters.crossrootfsDir, ''),
+      and(eq(parameters.osGroup, 'OSX'), eq(parameters.archType, 'arm64'))) }}
 
   - name: BuildAction
     value: -test
@@ -130,6 +131,8 @@ jobs:
         /p:PortableBuild=true
         /p:SkipTests=$(SkipTests)
         /p:RuntimeFlavor=${{ parameters.runtimeFlavor }}
+        /p:TargetArchitecture=${{ parameters.archType }}
+        /p:CrossBuild=${{ eq(parameters.archType, 'arm64') }}
         $(llvmParameter)
 
     - name: BaseJobBuildCommand
@@ -137,6 +140,7 @@ jobs:
         $(Build.SourcesDirectory)/build.sh -ci
         $(BuildAction)
         -configuration $(_BuildConfig)
+        -arch ${{ parameters.archType }}
         $(LiveOverridePathArgs)
         $(CommonMSBuildArgs)
         $(OfficialBuildArg)
@@ -462,7 +466,7 @@ jobs:
         cleanUnpackFolder: false
 
   - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-    - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }}
+    - script: $(Build.SourcesDirectory)/eng/install-native-dependencies.sh ${{ parameters.osGroup }} ${{ parameters.archType }} azDO
       displayName: Install Build Dependencies
 
     - script: |

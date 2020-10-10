@@ -51,15 +51,15 @@ The build has a number of options that you can learn about using build -?.
 
 ### WebAssembly
 
-See the instructions in [../libraries/webassembly-instructions.md].
+See the instructions for [Building WebAssembly](../../building/libraries/webassembly-instructions.md).
 
 ### Android
 
 See the instructions for [Testing Android](../../testing/libraries/testing-android.md)
 
-### IOS
+### iOS
 
-See the instructions for [Testing IOS](../../testing/libraries/testing-apple.md)
+See the instructions for [Testing iOS](../../testing/libraries/testing-apple.md)
 
 ## Packages
 

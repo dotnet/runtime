@@ -1268,7 +1268,7 @@ public:
     void balance_heaps (alloc_context* acontext);
     PER_HEAP
     ptrdiff_t get_balance_heaps_uoh_effective_budget (int generation_num);
-    static 
+    static
     gc_heap* balance_heaps_uoh (alloc_context* acontext, size_t size, int generation_num);
     // Unlike balance_heaps_uoh, this may return nullptr if we failed to change heaps.
     static
@@ -1281,7 +1281,7 @@ public:
     // context - we don't actually use the ptr/limit from it so I am
     // making this explicit by not passing in the alloc_context.
     // Note: This are instance methods, but the heap instance is only used for
-    // lowest_address and highest_address, which are currently the same accross all heaps.
+    // lowest_address and highest_address, which are currently the same across all heaps.
     PER_HEAP
     CObjectHeader* allocate_uoh_object (size_t size, uint32_t flags, int gen_num, int64_t& alloc_bytes);
 
@@ -1596,7 +1596,7 @@ protected:
     PER_HEAP
     BOOL a_fit_free_list_uoh_p (size_t size,
                                   alloc_context* acontext,
-                                  uint32_t flags, 
+                                  uint32_t flags,
                                   int align_const,
                                   int gen_number);
 
@@ -1651,7 +1651,7 @@ protected:
                       BOOL* short_seg_end_p);
     PER_HEAP
     BOOL uoh_try_fit (int gen_number,
-                      size_t size, 
+                      size_t size,
                       alloc_context* acontext,
                       uint32_t flags,
                       int align_const,
@@ -3014,7 +3014,7 @@ protected:
     uint8_t* high_page (heap_segment* seg, BOOL concurrent_p);
 
     PER_HEAP
-    void revisit_written_page (uint8_t* page, uint8_t* end, 
+    void revisit_written_page (uint8_t* page, uint8_t* end,
                                BOOL concurrent_p, uint8_t*& last_page,
                                uint8_t*& last_object, BOOL large_objects_p,
                                size_t& num_marked_objects);
@@ -3408,7 +3408,7 @@ public:
     // because it's very short and by the time we are calling it
     // the settings may have changed and we'd have to do more work
     // to figure out the right GC to record info of.
-    // 
+    //
     // The complications are the GCs triggered without their own
     // SuspendEE, in which case we will record that GC's duration
     // as its pause duration and the rest toward the GC that
@@ -4085,7 +4085,7 @@ protected:
 #ifdef DOUBLY_LINKED_FL
     // For bucket 0 added list, we don't want to have to go through
     // it to count how many bytes it has so we keep a record here.
-    // If we need to sweep in gen1, we discard this added list and 
+    // If we need to sweep in gen1, we discard this added list and
     // need to deduct the size from free_list_space.
     // Note that we should really move this and the free_list_space
     // accounting into the alloc_list class.
@@ -4133,7 +4133,7 @@ protected:
 #endif //FEATURE_CARD_MARKING_STEALING
 
     PER_HEAP_ISOLATED
-    int generation_skip_ratio_threshold; 
+    int generation_skip_ratio_threshold;
 
     PER_HEAP
     BOOL gen0_bricks_cleared;
@@ -4804,7 +4804,7 @@ size_t& generation_allocated_since_last_pin (generation* inst)
 }
 #endif //FREE_USAGE_STATS
 
-inline 
+inline
 float generation_allocator_efficiency (generation* inst)
 {
     if ((generation_free_list_allocated (inst) + generation_free_obj_space (inst)) != 0)
@@ -4817,7 +4817,7 @@ float generation_allocator_efficiency (generation* inst)
 inline
 size_t generation_unusable_fragmentation (generation* inst)
 {
-    return (size_t)(generation_free_obj_space (inst) + 
+    return (size_t)(generation_free_obj_space (inst) +
                     (1.0f-generation_allocator_efficiency(inst))*generation_free_list_space (inst));
 }
 

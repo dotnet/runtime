@@ -163,8 +163,12 @@
              Link="Common\System\Net\Http\ThrowingContent.cs" />
     <Compile Include="ThrowingContent.netcore.cs" />
     <Compile Include="Watchdog.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetwork.cs" Link="Common\System\Net\VirtualNetwork\VirtualNetwork.cs" />
-    <Compile Include="$(CommonTestPath)System\Net\VirtualNetwork\VirtualNetworkStream.cs" Link="Common\System\Net\VirtualNetwork\VirtualNetworkStream.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\ConnectedStreams.cs"
+             Link="Common\System\IO\ConnectedStreams.cs" />
+    <Compile Include="$(CommonPath)System\Net\ArrayBuffer.cs"
+             Link="ProductionCode\Common\System\Net\ArrayBuffer.cs" />
+    <Compile Include="$(CommonPath)System\Net\StreamBuffer.cs"
+             Link="ProductionCode\Common\System\Net\StreamBuffer.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">

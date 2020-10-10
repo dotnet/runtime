@@ -91,12 +91,14 @@ jobs:
       - name: _HelixSource
         value: ci/dotnet/runtime/$(Build.SourceBranch)
 
+    - name: crossArg
+      value: ''
     - ${{ if ne(parameters.crossrootfsDir, '') }}:
       - name: crossArg
         value: '-cross'
-    - ${{ if eq(parameters.crossrootfsDir, '') }}:
+    - ${{ if and(eq(parameters.osGroup, 'OSX'), eq(parameters.archType, 'arm64')) }}:
       - name: crossArg
-        value: ''
+        value: '-cross'
 
     - ${{ each variable in parameters.variables }}:
       - ${{insert}}: ${{ variable }}
