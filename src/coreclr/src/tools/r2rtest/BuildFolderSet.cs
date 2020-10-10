@@ -15,6 +15,8 @@ namespace R2RTest
 {
     public class BuildFolderSet
     {
+        const string FrameworkOutputFileName = "framework-r2r.dll";
+
         private readonly IEnumerable<BuildFolder> _buildFolders;
 
         private readonly IEnumerable<CompilerRunner> _compilerRunners;
@@ -221,6 +223,9 @@ namespace R2RTest
             Stopwatch stopwatch = Stopwatch.StartNew();
 
             string coreRoot = _options.CoreRootDirectory.FullName;
+
+            File.Delete(Path.Combine(coreRoot, FrameworkOutputFileName));
+
             string[] frameworkFolderFiles = Directory.GetFiles(coreRoot);
 
             IEnumerable<CompilerRunner> frameworkRunners = _options.CompilerRunners(isFramework: true, overrideOutputPath: _options.OutputDirectory.FullName);
@@ -239,10 +244,6 @@ namespace R2RTest
 
             if (_options.Composite)
             {
-                const string FrameworkOutputFileName = "framework-r2r.dll";
-
-                File.Delete(Path.Combine(_options.CoreRootDirectory.FullName, FrameworkOutputFileName));
-
                 var processes = new ProcessInfo[(int)CompilerIndex.Count];
                 foreach (CompilerRunner runner in frameworkRunners)
                 {
