@@ -5,22 +5,20 @@
 #include <assert.h>
 #include <stdint.h>
 #include <string.h>
-#include <stdlib.h>
-#include <locale.h>
 
 #include "pal_locale_internal.h"
 #include "pal_locale.h"
 
-int32_t UErrorCodeToBool(UErrorCode status)
+int32_t UErrorCodeToBool(UErrorCode code)
 {
-    if (U_SUCCESS(status))
+    if (U_SUCCESS(code))
     {
         return TRUE;
     }
 
     // assert errors that should never occur
-    assert(status != U_BUFFER_OVERFLOW_ERROR);
-    assert(status != U_INTERNAL_PROGRAM_ERROR);
+    assert(code != U_BUFFER_OVERFLOW_ERROR);
+    assert(code != U_INTERNAL_PROGRAM_ERROR);
 
     // add possible SetLastError support here
 
@@ -44,17 +42,17 @@ int32_t GetLocale(const UChar* localeName,
     // Convert ourselves instead of doing u_UCharsToChars as that function considers '@' a variant and stops.
     for (int i = 0; i < ULOC_FULLNAME_CAPACITY - 1; i++)
     {
-        UChar c = localeName[i];
+        const UChar c = localeName[i];
 
-        if (c > (UChar)0x7F)
+        if (c > static_cast<UChar>(0x7F))
         {
             *err = U_ILLEGAL_ARGUMENT_ERROR;
             return ULOC_FULLNAME_CAPACITY;
         }
 
-        localeNameTemp[i] = (char)c;
+        localeNameTemp[i] = static_cast<char>(c);
 
-        if (c == (UChar)0x0)
+        if (c == static_cast<UChar>(0x0))
         {
             break;
         }
@@ -74,7 +72,7 @@ int32_t GetLocale(const UChar* localeName,
         // Make sure the "language" part of the locale is reasonable (i.e. we can fetch it and it is within range).
         // This mimics how the C++ ICU API determines if a locale is "bogus" or not.
 
-        char language[ULOC_LANG_CAPACITY];
+        char language[ULOC_LANG_CAPACITY]{};
         uloc_getLanguage(localeNameTemp, language, ULOC_LANG_CAPACITY, err);
 
         if (*err == U_BUFFER_OVERFLOW_ERROR || *err == U_STRING_NOT_TERMINATED_WARNING)
@@ -96,14 +94,14 @@ void u_charsToUChars_safe(const char* str, UChar* value, int32_t valueLength, UE
         return;
     }
 
-    size_t len = strlen(str);
-    if (len >= (size_t)valueLength)
+    const size_t len = strlen(str);
+    if (len >= static_cast<size_t>(valueLength))
     {
         *err = U_BUFFER_OVERFLOW_ERROR;
         return;
     }
 
-    u_charsToUChars(str, value, (int32_t)(len + 1));
+    u_charsToUChars(str, value, static_cast<int32_t>(len + 1));
 }
 
 int32_t FixupLocaleName(UChar* value, int32_t valueLength)
@@ -111,13 +109,14 @@ int32_t FixupLocaleName(UChar* value, int32_t valueLength)
     int32_t i = 0;
     for (; i < valueLength; i++)
     {
-        if (value[i] == (UChar)'\0')
+        if (value[i] == static_cast<UChar>('\0'))
         {
             break;
         }
-        else if (value[i] == (UChar)'_')
+
+        if (value[i] == static_cast<UChar>('_'))
         {
-            value[i] = (UChar)'-';
+            value[i] = static_cast<UChar>('-');
         }
     }
 
@@ -149,7 +148,7 @@ int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
 {
     int32_t totalLength = 0;
     int32_t index = 0;
-    int32_t localeCount = uloc_countAvailable();
+    const int32_t localeCount = uloc_countAvailable();
 
     if (localeCount <=  0)
         return -1; // failed
@@ -160,7 +159,7 @@ int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
         if (pLocaleName[0] == 0) // unexpected empty name
             return -2;
 
-        int32_t localeNameLength = (int32_t)strlen(pLocaleName);
+        const int32_t localeNameLength = static_cast<int32_t>(strlen(pLocaleName));
 
         totalLength += localeNameLength + 1; // add 1 for the name length
 
@@ -169,17 +168,17 @@ int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
             if (totalLength > valueLength)
                 return -3;
 
-            value[index++] = (UChar) localeNameLength;
+            value[index++] = static_cast<UChar>(localeNameLength);
 
             for (int j=0; j<localeNameLength; j++)
             {
                 if (pLocaleName[j] == '_') // fix the locale name
                 {
-                    value[index++] = (UChar) '-';
+                    value[index++] = static_cast<UChar>('-');
                 }
                 else
                 {
-                    value[index++] = (UChar) pLocaleName[j];
+                    value[index++] = static_cast<UChar>(pLocaleName[j]);
                 }
             }
         }
@@ -192,7 +191,7 @@ int32_t GlobalizationNative_GetLocaleName(const UChar* localeName, UChar* value,
 {
     UErrorCode status = U_ZERO_ERROR;
 
-    char localeNameBuffer[ULOC_FULLNAME_CAPACITY];
+    char localeNameBuffer[ULOC_FULLNAME_CAPACITY]{};
     GetLocale(localeName, localeNameBuffer, ULOC_FULLNAME_CAPACITY, TRUE, &status);
     u_charsToUChars_safe(localeNameBuffer, value, valueLength, &status);
 
@@ -216,10 +215,10 @@ int32_t GlobalizationNative_GetDefaultLocaleName(UChar* value, int32_t valueLeng
 
     if (U_SUCCESS(status))
     {
-        int localeNameLen = FixupLocaleName(value, valueLength);
+        const int localeNameLen = FixupLocaleName(value, valueLength);
 
         char collationValueTemp[ULOC_KEYWORDS_CAPACITY];
-        int32_t collationLen =
+        const int32_t collationLen =
             uloc_getKeywordValue(defaultLocale, "collation", collationValueTemp, ULOC_KEYWORDS_CAPACITY, &status);
 
         if (U_SUCCESS(status) && collationLen > 0)

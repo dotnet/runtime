@@ -95,24 +95,23 @@ static CalendarId GetCalendarId(const char* calendarName)
     if (strcasecmp(calendarName, GREGORIAN_NAME) == 0)
         // TODO: what about the other gregorian types?
         return GREGORIAN;
-    else if (strcasecmp(calendarName, JAPANESE_NAME) == 0)
+    if (strcasecmp(calendarName, JAPANESE_NAME) == 0)
         return JAPAN;
-    else if (strcasecmp(calendarName, BUDDHIST_NAME) == 0)
+    if (strcasecmp(calendarName, BUDDHIST_NAME) == 0)
         return THAI;
-    else if (strcasecmp(calendarName, HEBREW_NAME) == 0)
+    if (strcasecmp(calendarName, HEBREW_NAME) == 0)
         return HEBREW;
-    else if (strcasecmp(calendarName, DANGI_NAME) == 0)
+    if (strcasecmp(calendarName, DANGI_NAME) == 0)
         return KOREA;
-    else if (strcasecmp(calendarName, PERSIAN_NAME) == 0)
+    if (strcasecmp(calendarName, PERSIAN_NAME) == 0)
         return PERSIAN;
-    else if (strcasecmp(calendarName, ISLAMIC_NAME) == 0)
+    if (strcasecmp(calendarName, ISLAMIC_NAME) == 0)
         return HIJRI;
-    else if (strcasecmp(calendarName, ISLAMIC_UMALQURA_NAME) == 0)
+    if (strcasecmp(calendarName, ISLAMIC_UMALQURA_NAME) == 0)
         return UMALQURA;
-    else if (strcasecmp(calendarName, ROC_NAME) == 0)
+    if (strcasecmp(calendarName, ROC_NAME) == 0)
         return TAIWAN;
-    else
-        return UNINITIALIZED_VALUE;
+    return UNINITIALIZED_VALUE;
 }
 
 /*
@@ -128,7 +127,7 @@ int32_t GlobalizationNative_GetCalendars(
     char locale[ULOC_FULLNAME_CAPACITY];
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
     UEnumeration* pEnum = ucal_getKeywordValuesForLocale("calendar", locale, TRUE, &err);
-    int stringEnumeratorCount = uenum_count(pEnum, &err);
+    const int stringEnumeratorCount = uenum_count(pEnum, &err);
     int calendarsReturned = 0;
     for (int i = 0; i < stringEnumeratorCount && calendarsReturned < calendarsCapacity; i++)
     {
@@ -136,7 +135,7 @@ int32_t GlobalizationNative_GetCalendars(
         const char* calendarName = uenum_next(pEnum, &calendarNameLength, &err);
         if (U_SUCCESS(err))
         {
-            CalendarId calendarId = GetCalendarId(calendarName);
+            const CalendarId calendarId = GetCalendarId(calendarName);
             if (calendarId != UNINITIALIZED_VALUE)
             {
                 calendars[calendarsReturned] = calendarId;
@@ -196,7 +195,7 @@ ResultCode GlobalizationNative_GetCalendarInfo(
     const UChar* localeName, CalendarId calendarId, CalendarDataType dataType, UChar* result, int32_t resultCapacity)
 {
     UErrorCode err = U_ZERO_ERROR;
-    char locale[ULOC_FULLNAME_CAPACITY];
+    char locale[ULOC_FULLNAME_CAPACITY]{};
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
 
     if (U_FAILURE(err))
@@ -233,10 +232,10 @@ static int InvokeCallbackForDatePattern(const char* locale,
         return FALSE;
 
     UErrorCode ignore = U_ZERO_ERROR;
-    int32_t patternLen = udat_toPattern(pFormat, FALSE, NULL, 0, &ignore) + 1;
+    const int32_t patternLen = udat_toPattern(pFormat, FALSE, NULL, 0, &ignore) + 1;
 
     UChar* pattern = (UChar*)calloc((size_t)patternLen, sizeof(UChar));
-    if (pattern == NULL)
+    if (pattern == nullptr)
     {
         udat_close(pFormat);
         return FALSE;
@@ -273,10 +272,10 @@ static int InvokeCallbackForDateTimePattern(const char* locale,
         return FALSE;
 
     UErrorCode ignore = U_ZERO_ERROR;
-    int32_t patternLen = udatpg_getBestPattern(pGenerator, patternSkeleton, -1, NULL, 0, &ignore) + 1;
+    const int32_t patternLen = udatpg_getBestPattern(pGenerator, patternSkeleton, -1, NULL, 0, &ignore) + 1;
 
     UChar* bestPattern = (UChar*)calloc((size_t)patternLen, sizeof(UChar));
-    if (bestPattern == NULL)
+    if (bestPattern == nullptr)
     {
         udatpg_close(pGenerator);
         return FALSE;
@@ -314,8 +313,8 @@ static int32_t EnumSymbols(const char* locale,
     if (U_FAILURE(err))
         return FALSE;
 
-    char localeWithCalendarName[ULOC_FULLNAME_CAPACITY];
-    STRING_COPY(localeWithCalendarName, sizeof(localeWithCalendarName), locale);
+    char localeWithCalendarName[ULOC_FULLNAME_CAPACITY]{};
+    STRING_COPY(localeWithCalendarName, sizeof(localeWithCalendarName), locale)
 
     uloc_setKeywordValue("calendar", GetCalendarName(calendarId), localeWithCalendarName, ULOC_FULLNAME_CAPACITY, &err);
 
@@ -329,16 +328,16 @@ static int32_t EnumSymbols(const char* locale,
 
     udat_setCalendar(pFormat, pCalendar);
 
-    int32_t symbolCount = udat_countSymbols(pFormat, type);
-    UChar stackSymbolBuf[100];
+    const int32_t symbolCount = udat_countSymbols(pFormat, type);
+    UChar stackSymbolBuf[100]{};
     UChar* symbolBuf;
 
     for (int32_t i = startIndex; U_SUCCESS(err) && i < symbolCount; i++)
     {
         UErrorCode ignore = U_ZERO_ERROR;
-        int symbolLen = udat_getSymbols(pFormat, type, i, NULL, 0, &ignore) + 1;
+        const int symbolLen = udat_getSymbols(pFormat, type, i, NULL, 0, &ignore) + 1;
 
-        if ((size_t)symbolLen <= sizeof(stackSymbolBuf) / sizeof(stackSymbolBuf[0]))
+        if (static_cast<size_t>(symbolLen) <= sizeof(stackSymbolBuf) / sizeof(stackSymbolBuf[0]))
         {
             symbolBuf = stackSymbolBuf;
         }
@@ -374,12 +373,12 @@ static void EnumUResourceBundle(const UResourceBundle* bundle,
                                 EnumCalendarInfoCallback callback,
                                 const void* context)
 {
-    int32_t eraNameCount = ures_getSize(bundle);
+    const int32_t eraNameCount = ures_getSize(bundle);
 
     for (int i = 0; i < eraNameCount; i++)
     {
         UErrorCode status = U_ZERO_ERROR;
-        int32_t ignore; // We don't care about the length of the string as it is null terminated.
+        int32_t ignore = 0; // We don't care about the length of the string as it is null terminated.
         const UChar* eraName = ures_getStringByIndex(bundle, i, &ignore, &status);
 
         if (U_SUCCESS(status))
@@ -417,12 +416,12 @@ static int32_t EnumAbbrevEraNames(const char* locale,
     // The C-API for ICU provides no way to get at the abbreviated era names for a calendar (so we can't use EnumSymbols
     // here). Instead we will try to walk the ICU resource tables directly and fall back to regular era names if can't
     // find good data.
-    char localeNameBuf[ULOC_FULLNAME_CAPACITY];
-    char parentNameBuf[ULOC_FULLNAME_CAPACITY];
+    char localeNameBuf[ULOC_FULLNAME_CAPACITY]{};
+    char parentNameBuf[ULOC_FULLNAME_CAPACITY]{};
 
     char* localeNamePtr = localeNameBuf;
     char* parentNamePtr = parentNameBuf;
-    STRING_COPY(localeNamePtr, sizeof(localeNameBuf), locale);
+    STRING_COPY(localeNamePtr, sizeof(localeNameBuf), locale)
 
     while (TRUE)
     {
@@ -491,7 +490,7 @@ int32_t GlobalizationNative_EnumCalendarInfo(EnumCalendarInfoCallback callback,
                                              const void* context)
 {
     UErrorCode err = U_ZERO_ERROR;
-    char locale[ULOC_FULLNAME_CAPACITY];
+    char locale[ULOC_FULLNAME_CAPACITY]{};
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
 
     if (U_FAILURE(err))
@@ -556,7 +555,7 @@ int32_t GlobalizationNative_GetLatestJapaneseEra()
         return 0;
 
     ucal_set(pCal, UCAL_EXTENDED_YEAR, 9999);
-    int32_t ret = ucal_get(pCal, UCAL_ERA, &err);
+    const int32_t ret = ucal_get(pCal, UCAL_ERA, &err);
 
     ucal_close(pCal);
     return U_SUCCESS(err) ? ret : 0;

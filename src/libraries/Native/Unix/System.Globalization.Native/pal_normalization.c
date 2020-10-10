@@ -43,16 +43,14 @@ int32_t GlobalizationNative_IsNormalized(
 {
     UErrorCode err = U_ZERO_ERROR;
     const UNormalizer2* pNormalizer = GetNormalizerForForm(normalizationForm, &err);
-    UBool isNormalized = unorm2_isNormalized(pNormalizer, lpStr, cwStrLength, &err);
+    const UBool isNormalized = unorm2_isNormalized(pNormalizer, lpStr, cwStrLength, &err);
 
     if (U_SUCCESS(err))
     {
         return isNormalized == TRUE ? 1 : 0;
     }
-    else
-    {
-        return -1;
-    }
+
+    return -1;
 }
 
 /*
@@ -72,7 +70,7 @@ int32_t GlobalizationNative_NormalizeString(
 {
     UErrorCode err = U_ZERO_ERROR;
     const UNormalizer2* pNormalizer = GetNormalizerForForm(normalizationForm, &err);
-    int32_t normalizedLen = unorm2_normalize(pNormalizer, lpSrc, cwSrcLength, lpDst, cwDstLength, &err);
+    const int32_t normalizedLen = unorm2_normalize(pNormalizer, lpSrc, cwSrcLength, lpDst, cwDstLength, &err);
 
     return (U_SUCCESS(err) || (err == U_BUFFER_OVERFLOW_ERROR)) ? normalizedLen : 0;
 }

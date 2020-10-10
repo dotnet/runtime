@@ -20,7 +20,7 @@
 #define UCHAR_CLOSEPAREN ((UChar)0x0029) // ')'
 #define UCHAR_ZERO ((UChar)0x0030)       // '0'
 
-#define ARRAY_LENGTH(array) (sizeof(array) / sizeof(array[0]))
+#define ARRAY_LENGTH(array) (sizeof(array) / sizeof((array)[0]))
 
 /*
 Function:
@@ -63,7 +63,7 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
 
     for (int i = iStart; i <= iEnd; i++)
     {
-        UChar ch = srcPattern[i];
+        const UChar ch = srcPattern[i];
         switch (ch)
         {
             case UCHAR_MINUS:
@@ -81,23 +81,23 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
     // n is the number
     char* destPattern;
 
-    // if there is no negative subpattern, the ICU convention is to prefix the
+    // if there is no negative sub-pattern, the ICU convention is to prefix the
     // minus sign
     if (isNegative && !minusAdded)
     {
-        int length = (iEnd - iStart) + 2;
-        destPattern = (char*)calloc((size_t)length, sizeof(char));
+        const int length = iEnd - iStart + 2;
+        destPattern = static_cast<char*>(calloc(static_cast<size_t>(length), sizeof(char)));
         destPattern[index++] = '-';
     }
     else
     {
-        int length = (iEnd - iStart) + 1;
-        destPattern = (char*)calloc((size_t)length, sizeof(char));
+        const int length = iEnd - iStart + 1;
+        destPattern = static_cast<char*>(calloc(static_cast<size_t>(length), sizeof(char)));
     }
 
     for (int i = iStart; i <= iEnd; i++)
     {
-        UChar ch = srcPattern[i];
+        const UChar ch = srcPattern[i];
         switch (ch)
         {
             case UCHAR_DIGIT:
@@ -130,7 +130,7 @@ static char* NormalizeNumericPattern(const UChar* srcPattern, int isNegative)
             case UCHAR_OPENPAREN:
             case UCHAR_CLOSEPAREN:
                 minusAdded = TRUE;
-                destPattern[index++] = (char)ch;
+                destPattern[index++] = static_cast<char>(ch);
                 break;
 
             case UCHAR_PERCENT:
@@ -159,9 +159,9 @@ static int GetNumericPattern(const UNumberFormat* pNumberFormat,
     const int MAX_DOTNET_NUMERIC_PATTERN_LENGTH = 6; // example: "(C n)" plus terminator
 
     UErrorCode ignore = U_ZERO_ERROR;
-    int32_t icuPatternLength = unum_toPattern(pNumberFormat, FALSE, NULL, 0, &ignore) + 1;
+    const int32_t icuPatternLength = unum_toPattern(pNumberFormat, FALSE, NULL, 0, &ignore) + 1;
 
-    UChar* icuPattern = (UChar*)calloc((size_t)icuPatternLength, sizeof(UChar));
+    UChar* icuPattern = static_cast<UChar*>(calloc(static_cast<size_t>(icuPatternLength), sizeof(UChar)));
     if (icuPattern == NULL)
     {
         return U_MEMORY_ALLOCATION_ERROR;
@@ -177,7 +177,7 @@ static int GetNumericPattern(const UNumberFormat* pNumberFormat,
 
     free(icuPattern);
 
-    size_t normalizedPatternLength = strlen(normalizedPattern);
+    const size_t normalizedPatternLength = strlen(normalizedPattern);
 
     assert(normalizedPatternLength > 0);
     assert(normalizedPatternLength < MAX_DOTNET_NUMERIC_PATTERN_LENGTH);
@@ -238,7 +238,7 @@ static int GetCurrencyNegativePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), TRUE);
+        const int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), TRUE);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -269,7 +269,7 @@ static int GetCurrencyPositivePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), FALSE);
+        const int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), FALSE);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -300,7 +300,7 @@ static int GetNumberNegativePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), TRUE);
+        const int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), TRUE);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -332,7 +332,7 @@ static int GetPercentNegativePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), TRUE);
+        const int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), TRUE);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -363,7 +363,7 @@ static int GetPercentPositivePattern(const char* locale)
 
     if (U_SUCCESS(status))
     {
-        int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), FALSE);
+        const int value = GetNumericPattern(pFormat, Patterns, ARRAY_LENGTH(Patterns), FALSE);
         if (value >= 0)
         {
             unum_close(pFormat);
@@ -386,10 +386,10 @@ static UErrorCode GetMeasurementSystem(const char* locale, int32_t* value)
 {
     UErrorCode status = U_ZERO_ERROR;
 
-    UMeasurementSystem measurementSystem = ulocdata_getMeasurementSystem(locale, &status);
+    const UMeasurementSystem measurementSystem = ulocdata_getMeasurementSystem(locale, &status);
     if (U_SUCCESS(status))
     {
-        *value = (measurementSystem == UMS_US) ? 1 : 0;
+        *value = measurementSystem == UMS_US ? 1 : 0;
     }
 
     return status;
@@ -406,7 +406,7 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
     const UChar* localeName, LocaleNumberData localeNumberData, int32_t* value)
 {
     UErrorCode status = U_ZERO_ERROR;
-    char locale[ULOC_FULLNAME_CAPACITY];
+    char locale[ULOC_FULLNAME_CAPACITY]{};
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &status);
 
     if (U_FAILURE(status))
@@ -417,7 +417,7 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
     switch (localeNumberData)
     {
         case LocaleNumber_LanguageId:
-            *value = (int32_t)uloc_getLCID(locale);
+            *value = static_cast<int32_t>(uloc_getLCID(locale));
             break;
         case LocaleNumber_MeasurementSystem:
             status = GetMeasurementSystem(locale, value);
@@ -459,7 +459,7 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
             if (U_SUCCESS(status))
             {
                 // values correspond to LOCALE_IFIRSTWEEKOFYEAR
-                int minDaysInWeek = ucal_getAttribute(pCal, UCAL_MINIMAL_DAYS_IN_FIRST_WEEK);
+                const int minDaysInWeek = ucal_getAttribute(pCal, UCAL_MINIMAL_DAYS_IN_FIRST_WEEK);
                 if (minDaysInWeek == 1)
                 {
                     *value = WeekRule_FirstDay;
@@ -482,16 +482,16 @@ int32_t GlobalizationNative_GetLocaleInfoInt(
         }
         case LocaleNumber_ReadingLayout:
         {
-            // coresponds to values 0 and 1 in LOCALE_IREADINGLAYOUT (values 2 and 3 not
+            // corresponds to values 0 and 1 in LOCALE_IREADINGLAYOUT (values 2 and 3 not
             // used in coreclr)
             //  0 - Left to right (such as en-US)
             //  1 - Right to left (such as arabic locales)
-            ULayoutType orientation = uloc_getCharacterOrientation(locale, &status);
+            const ULayoutType orientation = uloc_getCharacterOrientation(locale, &status);
             // alternative implementation in ICU 54+ is uloc_isRightToLeft() which
             // also supports script tags in locale
             if (U_SUCCESS(status))
             {
-                *value = (orientation == ULOC_LAYOUT_RTL) ? 1 : 0;
+                *value = orientation == ULOC_LAYOUT_RTL ? 1 : 0;
             }
             break;
         }

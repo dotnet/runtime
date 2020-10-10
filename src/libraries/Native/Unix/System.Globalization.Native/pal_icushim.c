@@ -108,7 +108,7 @@ static int FindICULibs()
 
 static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbolName, char* symbolVersion, char* suffix)
 {
-    HMODULE lib = (HMODULE)libicuuc;
+    const HMODULE lib = static_cast<HMODULE>(libicuuc);
     // Find out the format of the version string added to each symbol
     // First try just the unversioned symbol
     if (GetProcAddress(lib, "u_strlen") == NULL)
@@ -368,7 +368,7 @@ static int FindICULibs(const char* versionPrefix, char* symbolName, char* symbol
 
 static void ValidateICUDataCanLoad()
 {
-    UVersionInfo version;
+    UVersionInfo version{};
     UErrorCode err = U_ZERO_ERROR;
     ulocdata_getCLDRVersion(version, &err);
 
@@ -427,11 +427,11 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     int minor = -1;
     int build = -1;
 
-    char symbolName[SYMBOL_NAME_SIZE];
+    char symbolName[SYMBOL_NAME_SIZE]{};
     char symbolVersion[MaxICUVersionStringWithSuffixLength + 1]="";
     char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
 
-    if (strlen(version) > (size_t)MaxICUVersionStringLength)
+    if (strlen(version) > static_cast<size_t>(MaxICUVersionStringLength))
     {
         fprintf(stderr, "The resolved version \"%s\" from System.Globalization.AppLocalIcu switch has to be < %zu chars long.\n", version, (size_t)MaxICUVersionStringLength);
         abort();
@@ -441,7 +441,7 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
 
     if (suffix != NULL)
     {
-        size_t suffixAllowedSize = SYMBOL_CUSTOM_SUFFIX_SIZE - 2; // SYMBOL_CUSTOM_SUFFIX_SIZE considers `_` and `\0`.
+        const size_t suffixAllowedSize = SYMBOL_CUSTOM_SUFFIX_SIZE - 2; // SYMBOL_CUSTOM_SUFFIX_SIZE considers `_` and `\0`.
         if (strlen(suffix) > suffixAllowedSize)
         {
             fprintf(stderr, "The resolved suffix \"%s\" from System.Globalization.AppLocalIcu switch has to be < %zu chars long.\n", suffix, suffixAllowedSize);
@@ -473,10 +473,10 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
 // return the current loaded ICU version
 int32_t GlobalizationNative_GetICUVersion()
 {
-    if (u_getVersion_ptr == NULL)
+    if (u_getVersion_ptr == nullptr)
         return 0;
     
-    UVersionInfo versionInfo;
+    UVersionInfo versionInfo{};
     u_getVersion(versionInfo);
 
     return (versionInfo[0] << 24) + (versionInfo[1] << 16) + (versionInfo[2] << 8) + versionInfo[3];

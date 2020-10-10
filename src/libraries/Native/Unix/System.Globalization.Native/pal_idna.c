@@ -62,14 +62,14 @@ int32_t GlobalizationNative_ToAscii(
 
     UIDNA* pIdna = uidna_openUTS46(GetOptions(flags, /* useToAsciiFlags */ 1), &err);
 
-    int32_t asciiStrLen = uidna_nameToASCII(pIdna, lpSrc, cwSrcLength, lpDst, cwDstLength, &info, &err);
+    const int32_t asciiStrLen = uidna_nameToASCII(pIdna, lpSrc, cwSrcLength, lpDst, cwDstLength, &info, &err);
 
     // To have a consistent behavior with Windows, we mask out the error when having 2 hyphens in the third and fourth place.
-    info.errors &= (uint32_t)~UIDNA_ERROR_HYPHEN_3_4;
+    info.errors &= static_cast<uint32_t>(~UIDNA_ERROR_HYPHEN_3_4);
 
     uidna_close(pIdna);
 
-    return ((U_SUCCESS(err) || (err == U_BUFFER_OVERFLOW_ERROR)) && (info.errors == 0)) ? asciiStrLen : 0;
+    return (U_SUCCESS(err) || err == U_BUFFER_OVERFLOW_ERROR) && info.errors == 0 ? asciiStrLen : 0;
 }
 
 /*
@@ -91,9 +91,9 @@ int32_t GlobalizationNative_ToUnicode(
 
     UIDNA* pIdna = uidna_openUTS46(GetOptions(flags, /* useToAsciiFlags */ 0), &err);
 
-    int32_t unicodeStrLen = uidna_nameToUnicode(pIdna, lpSrc, cwSrcLength, lpDst, cwDstLength, &info, &err);
+    const int32_t unicodeStrLen = uidna_nameToUnicode(pIdna, lpSrc, cwSrcLength, lpDst, cwDstLength, &info, &err);
 
     uidna_close(pIdna);
 
-    return ((U_SUCCESS(err) || (err == U_BUFFER_OVERFLOW_ERROR)) && (info.errors == 0)) ? unicodeStrLen : 0;
+    return (U_SUCCESS(err) || err == U_BUFFER_OVERFLOW_ERROR) && info.errors == 0 ? unicodeStrLen : 0;
 }

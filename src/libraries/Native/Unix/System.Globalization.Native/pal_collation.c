@@ -100,7 +100,7 @@ static const UChar g_HalfFullHigherChars[] = {
     0xffbe, 0xffc2, 0xffc3, 0xffc4, 0xffc5, 0xffc6, 0xffc7, 0xffca, 0xffcb, 0xffcc, 0xffcd, 0xffce, 0xffcf, 0xffd2, 0xffd3,
     0xffd4, 0xffd5, 0xffd6, 0xffd7, 0xffda, 0xffdb, 0xffdc
 };
-static const int32_t g_HalfFullCharsLength = (sizeof(g_HalfFullHigherChars) / sizeof(UChar));
+static const int32_t g_HalfFullCharsLength = sizeof g_HalfFullHigherChars / sizeof(UChar);
 
 /*
 ICU collation rules reserve any punctuation and whitespace characters for use in the syntax.
@@ -110,10 +110,10 @@ This rule was taken from http://www.unicode.org/reports/tr35/tr35-collation.html
 */
 static int NeedsEscape(UChar character)
 {
-    return ((0x21 <= character && character <= 0x2f)
-        || (0x3a <= character && character <= 0x40)
-        || (0x5b <= character && character <= 0x60)
-        || (0x7b <= character && character <= 0x7e));
+    return 0x21 <= character && character <= 0x2f
+           || 0x3a <= character && character <= 0x40
+           || 0x5b <= character && character <= 0x60
+           || 0x7b <= character && character <= 0x7e;
 }
 
 /*
@@ -128,8 +128,8 @@ with CompareOptions.IgnoreSymbols on Windows.
 */
 static int IsHalfFullHigherSymbol(UChar character)
 {
-    return (0xffe0 <= character && character <= 0xffe6)
-        || (0xff61 <= character && character <= 0xff65);
+    return 0xffe0 <= character && character <= 0xffe6
+        || 0xff61 <= character && character <= 0xff65;
 }
 
 /*
@@ -140,21 +140,21 @@ custom rules in order to support IgnoreKanaType and IgnoreWidth CompareOptions c
 */
 static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, int isIgnoreSymbols)
 {
-    int isIgnoreKanaType = (options & CompareOptionsIgnoreKanaType) == CompareOptionsIgnoreKanaType;
-    int isIgnoreWidth = (options & CompareOptionsIgnoreWidth) == CompareOptionsIgnoreWidth;
+    const int isIgnoreKanaType = (options & CompareOptionsIgnoreKanaType) == CompareOptionsIgnoreKanaType;
+    const int isIgnoreWidth = (options & CompareOptionsIgnoreWidth) == CompareOptionsIgnoreWidth;
 
     // kana differs at the tertiary level
-    int needsIgnoreKanaTypeCustomRule = isIgnoreKanaType && strength >= UCOL_TERTIARY;
-    int needsNotIgnoreKanaTypeCustomRule = !isIgnoreKanaType && strength < UCOL_TERTIARY;
+    const int needsIgnoreKanaTypeCustomRule = isIgnoreKanaType && strength >= UCOL_TERTIARY;
+    const int needsNotIgnoreKanaTypeCustomRule = !isIgnoreKanaType && strength < UCOL_TERTIARY;
 
     // character width differs at the tertiary level
-    int needsIgnoreWidthCustomRule = isIgnoreWidth && strength >= UCOL_TERTIARY;
-    int needsNotIgnoreWidthCustomRule = !isIgnoreWidth && strength < UCOL_TERTIARY;
+    const int needsIgnoreWidthCustomRule = isIgnoreWidth && strength >= UCOL_TERTIARY;
+    const int needsNotIgnoreWidthCustomRule = !isIgnoreWidth && strength < UCOL_TERTIARY;
 
     if (!(needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule || needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule))
         return NULL;
 
-    UCharList* customRules = (UCharList*)malloc(sizeof(UCharList));
+    UCharList* customRules = static_cast<UCharList*>(malloc(sizeof(UCharList)));
     if (customRules == NULL)
     {
         return NULL;
@@ -162,21 +162,21 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
 
     // If we need to create customRules, the KanaType custom rule will be 88 kana characters * 4 = 352 chars long
     // and the Width custom rule will be at most 212 halfwidth characters * 5 = 1060 chars long.
-    int capacity =
-        ((needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule) ? 4 * (hiraganaEnd - hiraganaStart + 1) : 0) +
-        ((needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule) ? 5 * g_HalfFullCharsLength : 0);
+    const int capacity =
+        (needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule ? 4 * (hiraganaEnd - hiraganaStart + 1) : 0) +
+        (needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule ? 5 * g_HalfFullCharsLength : 0);
 
     UChar* items;
-    customRules->items = items = (UChar*)malloc((size_t)capacity * sizeof(UChar));
-    if (customRules->items == NULL)
+    customRules->items = items = static_cast<UChar*>(malloc(static_cast<size_t>(capacity) * sizeof(UChar)));
+    if (customRules->items == nullptr)
     {
         free(customRules);
-        return NULL;
+        return nullptr;
     }
 
     if (needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule)
     {
-        UChar compareChar = needsIgnoreKanaTypeCustomRule ? '=' : '<';
+        const UChar compareChar = needsIgnoreKanaTypeCustomRule ? '=' : '<';
 
         for (UChar hiraganaChar = hiraganaStart; hiraganaChar <= hiraganaEnd; hiraganaChar++)
         {
@@ -184,17 +184,17 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
             if (hiraganaChar <= 0x3096 || hiraganaChar >= 0x309D) // characters between 3096 and 309D are not mapped to katakana
             {
                 assert(items - customRules->items <= capacity - 4);
-                *(items++) = '&';
-                *(items++) = hiraganaChar;
-                *(items++) = compareChar;
-                *(items++) = hiraganaChar + hiraganaToKatakanaOffset;
+                *items++ = '&';
+                *items++ = hiraganaChar;
+                *items++ = compareChar;
+                *items++ = hiraganaChar + hiraganaToKatakanaOffset;
             }
         }
     }
 
     if (needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule)
     {
-        UChar compareChar = needsIgnoreWidthCustomRule ? '=' : '<';
+        const UChar compareChar = needsIgnoreWidthCustomRule ? '=' : '<';
 
         UChar lowerChar;
         UChar higherChar;
@@ -211,19 +211,19 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
             if (!(isIgnoreSymbols && needsNotIgnoreWidthCustomRule && (needsEscape || IsHalfFullHigherSymbol(higherChar))))
             {
                 assert(items - customRules->items <= capacity - 5);
-                *(items++) = '&';
+                *items++ = '&';
                 if (needsEscape)
                 {
-                    *(items++) = '\\';
+                    *items++ = '\\';
                 }
-                *(items++) = lowerChar;
-                *(items++) = compareChar;
-                *(items++) = higherChar;
+                *items++ = lowerChar;
+                *items++ = compareChar;
+                *items++ = higherChar;
             }
         }
     }
 
-    customRules->size = (size_t)(items - customRules->items);
+    customRules->size = static_cast<size_t>(items - customRules->items);
 
     return customRules;
 }
@@ -238,9 +238,9 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
 {
     UColAttributeValue strength = ucol_getStrength(pCollator);
 
-    int isIgnoreCase = (options & CompareOptionsIgnoreCase) == CompareOptionsIgnoreCase;
-    int isIgnoreNonSpace = (options & CompareOptionsIgnoreNonSpace) == CompareOptionsIgnoreNonSpace;
-    int isIgnoreSymbols = (options & CompareOptionsIgnoreSymbols) == CompareOptionsIgnoreSymbols;
+    const int isIgnoreCase = (options & CompareOptionsIgnoreCase) == CompareOptionsIgnoreCase;
+    const int isIgnoreNonSpace = (options & CompareOptionsIgnoreNonSpace) == CompareOptionsIgnoreNonSpace;
+    const int isIgnoreSymbols = (options & CompareOptionsIgnoreSymbols) == CompareOptionsIgnoreSymbols;
 
     if (isIgnoreCase)
     {
@@ -254,19 +254,19 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
 
     UCollator* pClonedCollator;
     UCharList* customRules = GetCustomRules(options, strength, isIgnoreSymbols);
-    if (customRules == NULL || customRules->size == 0)
+    if (customRules == nullptr || customRules->size == 0)
     {
         pClonedCollator = ucol_safeClone(pCollator, NULL, NULL, pErr);
     }
     else
     {
-        int32_t customRuleLength = (int32_t)customRules->size;
+        const int32_t customRuleLength = static_cast<int32_t>(customRules->size);
 
         int32_t localeRulesLength;
         const UChar* localeRules = ucol_getRules(pCollator, &localeRulesLength);
-        int32_t completeRulesLength = localeRulesLength + customRuleLength + 1;
+        const int32_t completeRulesLength = localeRulesLength + customRuleLength + 1;
 
-        UChar* completeRules = (UChar*)calloc((size_t)completeRulesLength, sizeof(UChar));
+        UChar* completeRules = static_cast<UChar*>(calloc(static_cast<size_t>(completeRulesLength), sizeof(UChar)));
 
         for (int i = 0; i < localeRulesLength; i++)
         {
@@ -320,7 +320,7 @@ static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lp
 
     if (U_SUCCESS(err))
     {
-        int32_t curCollElem = UCOL_NULLORDER;
+        int32_t curCollElem;
         while ((curCollElem = ucol_next(pCollElem, &err)) != UCOL_NULLORDER)
         {
             if (curCollElem != UCOL_IGNORABLE)
@@ -338,8 +338,8 @@ static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lp
 
 static void CreateSortHandle(SortHandle** ppSortHandle)
 {
-    *ppSortHandle = (SortHandle*)malloc(sizeof(SortHandle));
-    if ((*ppSortHandle) == NULL)
+    *ppSortHandle = static_cast<SortHandle*>(malloc(sizeof(SortHandle)));
+    if (*ppSortHandle == nullptr)
     {
         return;
     }
@@ -352,7 +352,7 @@ ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandl
     assert(ppSortHandle != NULL);
 
     CreateSortHandle(ppSortHandle);
-    if ((*ppSortHandle) == NULL)
+    if (*ppSortHandle == nullptr)
     {
         return GetResultCode(U_MEMORY_ALLOCATION_ERROR);
     }
@@ -364,7 +364,7 @@ ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandl
     if (U_FAILURE(err))
     {
         free(*ppSortHandle);
-        (*ppSortHandle) = NULL;
+        *ppSortHandle = nullptr;
     }
 
     return GetResultCode(err);
@@ -374,10 +374,10 @@ void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
 {
     for (int i = 0; i <= CompareOptionsMask; i++)
     {
-        if (pSortHandle->collatorsPerOption[i] != NULL)
+        if (pSortHandle->collatorsPerOption[i] != nullptr)
         {
             ucol_close(pSortHandle->collatorsPerOption[i]);
-            pSortHandle->collatorsPerOption[i] = NULL;
+            pSortHandle->collatorsPerOption[i] = nullptr;
         }
     }
 
@@ -390,27 +390,25 @@ static const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32
     {
         return pSortHandle->collatorsPerOption[0];
     }
-    else
+
+    options &= CompareOptionsMask;
+    UCollator* pCollator = pSortHandle->collatorsPerOption[options];
+    if (pCollator != nullptr)
     {
-        options &= CompareOptionsMask;
-        UCollator* pCollator = pSortHandle->collatorsPerOption[options];
-        if (pCollator != NULL)
-        {
-            return pCollator;
-        }
-
-        pCollator = CloneCollatorWithOptions(pSortHandle->collatorsPerOption[0], options, pErr);
-        UCollator* pNull = NULL;
-
-        if (!pal_atomic_cas_ptr((void* volatile*)&pSortHandle->collatorsPerOption[options], pCollator, pNull))
-        {
-            ucol_close(pCollator);
-            pCollator = pSortHandle->collatorsPerOption[options];
-            assert(pCollator != NULL && "pCollator not expected to be null here.");
-        }
-
         return pCollator;
     }
+
+    pCollator = CloneCollatorWithOptions(pSortHandle->collatorsPerOption[0], options, pErr);
+    UCollator* pNull = nullptr;
+
+    if (!pal_atomic_cas_ptr(reinterpret_cast<void* volatile*>(&pSortHandle->collatorsPerOption[options]), pCollator, pNull))
+    {
+        ucol_close(pCollator);
+        pCollator = pSortHandle->collatorsPerOption[options];
+        assert(pCollator != NULL && "pCollator not expected to be null here.");
+    }
+
+    return pCollator;
 }
 
 int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
@@ -421,7 +419,7 @@ int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
 
     if (U_SUCCESS(err))
     {
-        ucol_getVersion(pColl, (uint8_t *) &result);
+        ucol_getVersion(pColl, reinterpret_cast<uint8_t*>(&result));
     }
     else
     {
@@ -495,7 +493,7 @@ int32_t GlobalizationNative_IndexOf(
             *pMatchedLength = cwSourceLength;
         }
 
-        return (result == UCOL_EQUAL) ? 0 : -1;
+        return result == UCOL_EQUAL ? 0 : -1;
     }
 
     UErrorCode err = U_ZERO_ERROR;
@@ -554,7 +552,7 @@ int32_t GlobalizationNative_LastIndexOf(
             *pMatchedLength = cwSourceLength;
         }
 
-        return (result == UCOL_EQUAL) ? 0 : -1;
+        return result == UCOL_EQUAL ? 0 : -1;
     }
 
     UErrorCode err = U_ZERO_ERROR;
@@ -619,7 +617,7 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
     int32_t patternElement = UCOL_IGNORABLE, sourceElement = UCOL_IGNORABLE;
     int32_t capturedOffset = 0;
 
-    int32_t collationElementMask = GetCollationElementMask(strength);
+    const int32_t collationElementMask = GetCollationElementMask(strength);
 
     while (TRUE)
     {
@@ -643,20 +641,18 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
             {
                 goto ReturnTrue; // source is equal to pattern, we have reached both ends|beginnings at the same time
             }
-            else if (sourceElement == UCOL_IGNORABLE)
+            if (sourceElement == UCOL_IGNORABLE)
             {
                 goto ReturnTrue; // the next|previous character in source is an ignorable character, an example: "o\u0000".StartsWith("o")
             }
-            else if (forwardSearch && ((sourceElement & UCOL_PRIMARYORDERMASK) == 0) && (sourceElement & UCOL_SECONDARYORDERMASK) != 0)
+            if (forwardSearch && (sourceElement & UCOL_PRIMARYORDERMASK) == 0 && (sourceElement & UCOL_SECONDARYORDERMASK) != 0)
             {
                 return FALSE; // the next character in source text is a combining character, an example: "o\u0308".StartsWith("o")
             }
-            else
-            {
-                goto ReturnTrue;
-            }
+
+            goto ReturnTrue;
         }
-        else if (patternElement == UCOL_IGNORABLE)
+        if (patternElement == UCOL_IGNORABLE)
         {
             moveSource = FALSE;
         }
@@ -671,7 +667,7 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
     }
 
 ReturnTrue:
-    if (pCapturedOffset != NULL)
+    if (pCapturedOffset != nullptr)
     {
         *pCapturedOffset = capturedOffset;
     }
@@ -688,16 +684,16 @@ static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, c
         UCollationElements* pSourceIterator = ucol_openElements(pCollator, pText, textLength, pErrorCode);
         if (U_SUCCESS(*pErrorCode))
         {
-            UColAttributeValue strength = ucol_getStrength(pCollator);
+            const UColAttributeValue strength = ucol_getStrength(pCollator);
 
             int32_t capturedOffset = 0;
-            result = SimpleAffix_Iterators(pPatternIterator, pSourceIterator, strength, forwardSearch, (pMatchedLength != NULL) ? &capturedOffset : NULL);
+            result = SimpleAffix_Iterators(pPatternIterator, pSourceIterator, strength, forwardSearch, pMatchedLength != nullptr ? &capturedOffset : nullptr);
 
             if (result && pMatchedLength != NULL)
             {
                 // depending on whether we're searching forward or backward, the matching substring
                 // is [start of source string .. curIdx] or [curIdx .. end of source string]
-                *pMatchedLength = (forwardSearch) ? capturedOffset : (textLength - capturedOffset);
+                *pMatchedLength = forwardSearch ? capturedOffset : textLength - capturedOffset;
             }
 
             ucol_closeElements(pSourceIterator);
@@ -716,7 +712,7 @@ static int32_t ComplexStartsWith(const UCollator* pCollator, UErrorCode* pErrorC
     UStringSearch* pSearch = usearch_openFromCollator(pPattern, patternLength, pText, textLength, pCollator, NULL, pErrorCode);
     if (U_SUCCESS(*pErrorCode))
     {
-        int32_t idx = usearch_first(pSearch, pErrorCode);
+        const int32_t idx = usearch_first(pSearch, pErrorCode);
         if (idx != USEARCH_DONE)
         {
             if (idx == 0)
@@ -760,14 +756,12 @@ int32_t GlobalizationNative_StartsWith(
     {
         return FALSE;
     }
-    else if (options > CompareOptionsIgnoreCase)
+    if (options > CompareOptionsIgnoreCase)
     {
         return ComplexStartsWith(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, pMatchedLength);
     }
-    else
-    {
-        return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, TRUE, pMatchedLength);
-    }
+
+    return SimpleAffix(pCollator, &err, lpTarget, cwTargetLength, lpSource, cwSourceLength, TRUE, pMatchedLength);
 }
 
 static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCode, const UChar* pPattern, int32_t patternLength, const UChar* pText, int32_t textLength, int32_t* pMatchedLength)
@@ -777,10 +771,10 @@ static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCod
     UStringSearch* pSearch = usearch_openFromCollator(pPattern, patternLength, pText, textLength, pCollator, NULL, pErrorCode);
     if (U_SUCCESS(*pErrorCode))
     {
-        int32_t idx = usearch_last(pSearch, pErrorCode);
+        const int32_t idx = usearch_last(pSearch, pErrorCode);
         if (idx != USEARCH_DONE)
         {
-            int32_t matchEnd = idx + usearch_getMatchedLength(pSearch);
+            const int32_t matchEnd = idx + usearch_getMatchedLength(pSearch);
             assert(matchEnd <= textLength);
 
             if (matchEnd == textLength)
@@ -789,12 +783,12 @@ static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCod
             }
             else
             {
-                int32_t remainingStringLength = textLength - matchEnd;
+                const int32_t remainingStringLength = textLength - matchEnd;
 
                 result = CanIgnoreAllCollationElements(pCollator, pText + matchEnd, remainingStringLength);
             }
 
-            if (result && pMatchedLength != NULL)
+            if (result && pMatchedLength != nullptr)
             {
                 // adjust matched length to account for all the elements we implicitly consumed at end of string
                 *pMatchedLength = textLength - idx;

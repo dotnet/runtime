@@ -21,7 +21,7 @@ ResultCode GlobalizationNative_GetTimeZoneDisplayName(const UChar* localeName,
     char locale[ULOC_FULLNAME_CAPACITY];
     GetLocale(localeName, locale, ULOC_FULLNAME_CAPACITY, FALSE, &err);
 
-    int32_t timeZoneIdLength = -1; // timeZoneId is NULL-terminated
+    const int32_t timeZoneIdLength = -1; // timeZoneId is NULL-terminated
     UCalendar* calendar = ucal_open(timeZoneId, timeZoneIdLength, locale, UCAL_DEFAULT, &err);
 
     // TODO (https://github.com/dotnet/runtime/issues/16232): need to support Generic names, but ICU "C" api
