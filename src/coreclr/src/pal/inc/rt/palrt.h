@@ -753,7 +753,7 @@ inline int __cdecl _vscprintf_unsafe(const char *_Format, va_list _ArgList)
 {
     int guess = 10;
 
-    for (;;)
+    while (true)
     {
         char *buf = (char *)malloc(guess * sizeof(char));
         if(buf == nullptr)
