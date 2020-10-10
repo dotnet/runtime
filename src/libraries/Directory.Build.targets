@@ -288,4 +288,10 @@
     </When>
   </Choose>
 
+  <ItemGroup>
+    <!-- Workaround arcade default validate framework list which includes 6.0
+    as it was added to arcade before it branched off to a 5.0 only branch -->
+    <DefaultValidateFramework Remove="net6.0" />
+  </ItemGroup>
+
 </Project>
