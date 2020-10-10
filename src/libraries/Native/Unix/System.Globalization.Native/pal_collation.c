@@ -42,10 +42,10 @@ c_static_assert_msg(USEARCH_DONE == -1, "managed side requires -1 for not found"
 
 typedef struct { int32_t key; UCollator* UCollator; } TCollatorMap;
 
-typedef struct SEARCHNODE
+typedef struct SearchIteratorNode
 {
     UStringSearch* searchIterator;
-    struct SEARCHNODE* next;
+    struct SearchIteratorNode* next;
 } SearchIteratorNode;
 
 /*
