@@ -170,7 +170,8 @@ precompile_coreroot_fx()
         __NumProc=$(nproc --all)
     fi
 
-    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$CORE_ROOT/crossgen.out\" --target-arch $__BuildArch -dop $__NumProc"
+    local outputDir="$__TestIntermediatesDir/crossgen.out"
+    local crossgenCmd="\"$__DotNetCli\" \"$CORE_ROOT/R2RTest/R2RTest.dll\" compile-framework -cr \"$CORE_ROOT\" --output-directory \"$outputDir\" --large-bubble --release --nocleanup --target-arch $__BuildArch -dop $__NumProc"
 
     if [[ "$__CompositeBuildMode" != 0 ]]; then
         crossgenCmd="$crossgenCmd --composite"
@@ -196,8 +197,7 @@ precompile_coreroot_fx()
         return 1
     fi
 
-    mv "$CORE_ROOT"/crossgen.out/*.dll "$CORE_ROOT"
-    rm -r "$CORE_ROOT/crossgen.out"
+    mv "$outputDir"/*.dll "$CORE_ROOT"
 
     return 0
 }
@@ -626,13 +626,14 @@ __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
-__BinDir="$__RootBinDir/bin/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
+__OSPlatformConfig="$__TargetOS.$__BuildArch.$__BuildType"
+__BinDir="$__RootBinDir/bin/coreclr/$__OSPlatformConfig"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__RepoRootDir/src/tests"
 __TryRunDir="$__RepoRootDir/src/coreclr"
-__TestWorkingDir="$__RootBinDir/tests/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
-__IntermediatesDir="$__RootBinDir/obj/coreclr/$__TargetOS.$__BuildArch.$__BuildType"
-__TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__TargetOS.$__BuildArch.$__BuildType"
+__TestWorkingDir="$__RootBinDir/tests/coreclr/$__OSPlatformConfig"
+__IntermediatesDir="$__RootBinDir/obj/coreclr/$__OSPlatformConfig"
+__TestIntermediatesDir="$__RootBinDir/tests/coreclr/obj/$__OSPlatformConfig"
 __CrossComponentBinDir="$__BinDir"
 __CrossCompIntermediatesDir="$__IntermediatesDir/crossgen"
 

@@ -154,9 +154,11 @@ set __msbuildArgs=/p:TargetOS=%__TargetOS% /p:Configuration=%__BuildType% /p:Tar
 
 echo %__MsgPrefix%Commencing CoreCLR test build
 
-set "__BinDir=%__RootBinDir%\bin\coreclr\%__TargetOS%.%__BuildArch%.%__BuildType%"
+set "__OSPlatformConfig=%__TargetOS%.%__BuildArch%.%__BuildType%"
+set "__BinDir=%__RootBinDir%\bin\coreclr\%__OSPlatformConfig%"
 set "__TestRootDir=%__RootBinDir%\tests\coreclr"
-set "__TestBinDir=%__TestRootDir%\%__TargetOS%.%__BuildArch%.%__BuildType%"
+set "__TestBinDir=%__TestRootDir%\%__OSPlatformConfig%"
+set "__TestIntermediatesDir=%__TestRootDir%\obj\%__OSPlatformConfig%"
 
 if not defined XunitTestBinBase set XunitTestBinBase=%__TestBinDir%\
 set "CORE_ROOT=%XunitTestBinBase%\Tests\Core_Root"
@@ -629,10 +631,14 @@ exit /b 1
 
 :PrecompileFX
 
-set __CrossgenCmd="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\R2RTest\R2RTest.dll" compile-framework -cr "%CORE_ROOT%" --output-directory "%CORE_ROOT%\crossgen.out"  --large-bubble --release --target-arch %__BuildArch% -dop %NUMBER_OF_PROCESSORS%
+set "__CrossgenOutputDir=%__TestIntermediatesDir%\crossgen.out"
+
+set __CrossgenCmd="%__RepoRootDir%\dotnet.cmd" "%CORE_ROOT%\R2RTest\R2RTest.dll" compile-framework -cr "%CORE_ROOT%" --output-directory "%__CrossgenOutputDir%" --release --nocleanup --target-arch %__BuildArch% -dop %NUMBER_OF_PROCESSORS%
 
 if defined __CompositeBuildMode (
     set __CrossgenCmd=%__CrossgenCmd% --composite
+) else (
+    set __CrossgenCmd=%__CrossgenCmd% --large-bubble
 )
 
 set __CrossgenDir=%__BinDir%
@@ -666,7 +672,6 @@ if %__exitCode% neq 0 (
     exit /b 1
 )
 
-move "%CORE_ROOT%\crossgen.out\*.dll" %CORE_ROOT% > nul
-del /q /s "%CORE_ROOT%\crossgen.out" > nul
+move "%__CrossgenOutputDir%\*.dll" %CORE_ROOT% > nul
 
 exit /b 0
