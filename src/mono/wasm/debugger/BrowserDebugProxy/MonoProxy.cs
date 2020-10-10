@@ -130,10 +130,20 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         //TODO figure out how to stich out more frames and, in particular what happens when real wasm is on the stack
                         string top_func = args?["callFrames"]?[0]?["functionName"]?.Value<string>();
-
-                        if (top_func == "mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_bp" || top_func == "_mono_wasm_fire_exception")
-                        {
-                            return await OnPause(sessionId, args, token);
+                        switch (top_func) {
+                            case "mono_wasm_runtime_ready":
+                            case "_mono_wasm_runtime_ready":
+                                {
+                                    await RuntimeReady(sessionId, token);
+                                    await SendCommand(sessionId, "Debugger.resume", new JObject(), token);
+                                    return true;
+                                }
+                            case "mono_wasm_fire_bp":
+                            case "_mono_wasm_fire_bp":
+                            case "_mono_wasm_fire_exception":
+                                {
+                                    return await OnPause(sessionId, args, token);
+                                }
                         }
                         break;
                     }
@@ -1167,9 +1177,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             // see https://github.com/mono/mono/issues/19549 for background
             if (hideWebDriver && sessions.Add(sessionId))
             {
+                await SendMonoCommand(sessionId, new MonoCommands("globalThis.dotnetDebugger = true"), token);
                 Result res = await SendCommand(sessionId,
                     "Page.addScriptToEvaluateOnNewDocument",
-                    JObject.FromObject(new { source = "delete navigator.constructor.prototype.webdriver" }),
+                    JObject.FromObject(new { source = "globalThis.dotnetDebugger = true; delete navigator.constructor.prototype.webdriver" }),
                     token);
 
                 if (sessionId != SessionId.Null && !res.IsOk)
