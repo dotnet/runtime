@@ -2313,29 +2313,18 @@ var MonoSupportLib = {
 
 	schedule_background_exec: function () {
 		++MONO.pump_count;
-		if (ENVIRONMENT_IS_WEB) {
-			window.setTimeout (MONO.pump_message, 0);
-		} else if (ENVIRONMENT_IS_WORKER) {
-			self.setTimeout (MONO.pump_message, 0);
-		} else if (ENVIRONMENT_IS_NODE) {
-			global.setTimeout (MONO.pump_message, 0);
+		if (typeof globalThis.setTimeout === 'function') {
+			globalThis.setTimeout (MONO.pump_message, 0);
 		}
 	},
 
 	mono_set_timeout: function (timeout, id) {
 		if (!this.mono_set_timeout_exec)
 			this.mono_set_timeout_exec = Module.cwrap ("mono_set_timeout_exec", null, [ 'number' ]);
-		if (ENVIRONMENT_IS_WEB) {
-			window.setTimeout (function () {
+
+		if (typeof globalThis.setTimeout === 'function') {
+			globalThis.setTimeout (function () {
 				this.mono_set_timeout_exec (id);
-			}, timeout);
-		} else if (ENVIRONMENT_IS_WORKER) {
-			self.setTimeout (function () {
-				this.mono_set_timeout_exec (id);
-			}, timeout);
-		} else if (ENVIRONMENT_IS_NODE) {
-			global.setTimeout (function () {
-				global.mono_set_timeout_exec (id);
 			}, timeout);
 		} else {
 			++MONO.pump_count;
