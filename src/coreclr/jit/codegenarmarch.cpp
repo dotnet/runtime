@@ -3665,23 +3665,10 @@ void CodeGen::genSIMDSplitReturn(GenTree* src, ReturnTypeDesc* retTypeDesc)
 #if defined(TARGET_ARM64)
 void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroed)
 #else
-void          CodeGen::genPushCalleeSavedRegisters()
+void CodeGen::genPushCalleeSavedRegisters()
 #endif
 {
     assert(compiler->compGeneratingProlog);
-
-#ifdef TARGET_ARM64
-    // Probe large frames now, if necessary, since genPushCalleeSavedRegisters() will allocate the frame. Note that
-    // for arm64, genAllocLclFrame only probes the frame; it does not actually allocate it (it does not change SP).
-    // For arm64, we are probing the frame before the callee-saved registers are saved. The 'initReg' might have
-    // been calculated to be one of the callee-saved registers (say, if all the integer argument registers are
-    // in use, and perhaps with other conditions being satisfied). This is ok in other cases, after the callee-saved
-    // registers have been saved. So instead of letting genAllocLclFrame use initReg as a temporary register,
-    // always use REG_SCRATCH. We don't care if it trashes it, so ignore the initRegZeroed output argument.
-    bool ignoreInitRegZeroed = false;
-    genAllocLclFrame(compiler->compLclFrameSize, REG_SCRATCH, &ignoreInitRegZeroed,
-                     intRegState.rsCalleeRegArgMaskLiveIn);
-#endif
 
     regMaskTP rsPushRegs = regSet.rsGetModifiedRegsMask() & RBM_CALLEE_SAVED;
 
@@ -3833,6 +3820,49 @@ void          CodeGen::genPushCalleeSavedRegisters()
     //
 
     int totalFrameSize = genTotalFrameSize();
+
+    // Probe large frames now, if necessary, since genPushCalleeSavedRegisters() will allocate the frame. Note that
+    // for arm64, genAllocLclFrame only probes the frame; it does not actually allocate it (it does not change SP).
+    // For arm64, we are probing the frame before the callee-saved registers are saved. The 'initReg' might have
+    // been calculated to be one of the callee-saved registers (say, if all the integer argument registers are
+    // in use, and perhaps with other conditions being satisfied). This is ok in other cases, after the callee-saved
+    // registers have been saved. So instead of letting genAllocLclFrame use initReg as a temporary register,
+    // always use REG_SCRATCH. We don't care if it trashes it, so ignore the initRegZeroed output argument.
+
+    bool      stackProbeViaHelper = false;
+    const int pageSize            = (int)compiler->eeGetPageSize();
+
+    int finalSpToLastTouchDelta = totalFrameSize;
+
+    if (finalSpToLastTouchDelta < pageSize)
+    {
+        if (finalSpToLastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
+        {
+            GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SCRATCH, REG_SPBASE, totalFrameSize);
+            GetEmitter()->emitIns_R_R(INS_ldr, EA_4BYTE, REG_ZR, REG_SCRATCH);
+            regSet.verifyRegUsed(REG_SCRATCH);
+        }
+    }
+    else if (totalFrameSize < compiler->getVeryLargeFrameSize())
+    {
+        int tempRegToLastTouchDelta = roundDn((unsigned)finalSpToLastTouchDelta, (unsigned)pageSize);
+
+        GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SCRATCH, REG_SPBASE, tempRegToLastTouchDelta);
+
+        while (finalSpToLastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
+        {
+            tempRegToLastTouchDelta = tempRegToLastTouchDelta - min(pageSize, finalSpToLastTouchDelta);
+            finalSpToLastTouchDelta = max(finalSpToLastTouchDelta - pageSize, 0);
+
+            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SCRATCH, tempRegToLastTouchDelta);
+        }
+
+        regSet.verifyRegUsed(REG_SCRATCH);
+    }
+    else
+    {
+        stackProbeViaHelper = true;
+    }
 
     int offset; // This will be the starting place for saving the callee-saved registers, in increasing order.
 
@@ -4199,16 +4229,36 @@ void          CodeGen::genPushCalleeSavedRegisters()
 
         // We just established the frame pointer chain; don't do it again.
         establishFramePointer = false;
+        int remainingFrameSz  = totalFrameSize - calleeSaveSPDelta;
 
-        int remainingFrameSz = totalFrameSize - calleeSaveSPDelta;
         assert(remainingFrameSz > 0);
         assert((remainingFrameSz % 16) == 0); // this is guaranteed to be 16-byte aligned because each component --
                                               // totalFrameSize and calleeSaveSPDelta -- is 16-byte aligned.
 
         JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
-        // We've already established the frame pointer, so no need to report the stack pointer change to unwind info.
-        genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed, /* reportUnwindData */ false);
+        // We've already established the frame pointer, so no need to report the unwind info at this point.
+        const bool reportUnwindData = false;
+
+        if (stackProbeViaHelper)
+        {
+            genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, remainingFrameSz,
+                                 REG_STACK_PROBE_HELPER_ARG, reportUnwindData);
+            regSet.verifyRegUsed(REG_STACK_PROBE_HELPER_ARG);
+            genEmitHelperCall(CORINFO_HELP_STACK_PROBE, 0, EA_UNKNOWN, REG_STACK_PROBE_HELPER_CALL_TARGET);
+            GetEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_SPBASE, REG_STACK_PROBE_HELPER_ARG);
+
+            if ((genRegMask(initReg) & (RBM_STACK_PROBE_HELPER_ARG | RBM_STACK_PROBE_HELPER_CALL_TARGET |
+                                        RBM_STACK_PROBE_HELPER_TRASH)) != RBM_NONE)
+            {
+                *pInitRegZeroed = false;
+            }
+        }
+        else
+        {
+            genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed, reportUnwindData);
+        }
+
         offset += remainingFrameSz;
     }
     else

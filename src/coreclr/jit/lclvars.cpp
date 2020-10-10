@@ -5997,6 +5997,12 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     {
         codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true); // Force using new frames
     }
+
+    if (compLclFrameSize >= getVeryLargeFrameSize())
+    {
+        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters(true);
+    }
+
 #endif // TARGET_ARM64
 
 #ifdef TARGET_XARCH
