@@ -876,7 +876,8 @@ jobs:
     runtimeFlavor: mono
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Windows_NT_x64
+    # Reenable when https://github.com/dotnet/runtime/issues/34582 is fixed.
+    # - Windows_NT_x64
     - OSX_x64
     - Linux_arm64
     - Linux_x64
