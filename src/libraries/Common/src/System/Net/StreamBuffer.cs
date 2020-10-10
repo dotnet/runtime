@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
 using System.Diagnostics;
 using System.Net;
 using System.Runtime.ExceptionServices;
@@ -18,7 +19,6 @@ namespace System.IO
         private bool _readAborted;
         private readonly ResettableValueTaskSource _readTaskSource;
         private readonly ResettableValueTaskSource _writeTaskSource;
-        private readonly object _syncObject = new object();
 
         public const int DefaultInitialBufferSize = 4 * 1024;
         public const int DefaultMaxBufferSize = 32 * 1024;
@@ -31,7 +31,7 @@ namespace System.IO
             _writeTaskSource = new ResettableValueTaskSource();
         }
 
-        private object SyncObject => _syncObject;
+        private object SyncObject => _readTaskSource;
 
         public bool IsComplete
         {
@@ -154,6 +154,8 @@ namespace System.IO
 
         public async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (buffer.Length == 0)
             {
                 return;
@@ -243,6 +245,8 @@ namespace System.IO
 
         public async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             if (buffer.Length == 0)
             {
                 return 0;
