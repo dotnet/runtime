@@ -1326,7 +1326,7 @@ namespace System.Net.Http
                 // However, this could still be non-cancelable if HttpMessageInvoker was used, at which point this will only be
                 // cancelable if the caller's token was cancelable.
 
-                _waitSourceCancellation = cancellationToken.UnsafeRegister(static s =>
+                _waitSourceCancellation = cancellationToken.UnsafeRegister(static (s, cancellationToken) =>
                 {
                     var thisRef = (Http2Stream)s!;
 
@@ -1342,17 +1342,9 @@ namespace System.Net.Http
                     {
                         // Wake up the wait.  It will then immediately check whether cancellation was requested and throw if it was.
                         thisRef._waitSource.SetException(ExceptionDispatchInfo.SetCurrentStackTrace(
-                            CancellationHelper.CreateOperationCanceledException(null, thisRef._waitSourceCancellation.Token)));
+                            CancellationHelper.CreateOperationCanceledException(null, cancellationToken)));
                     }
                 }, this);
-
-                // There's a race condition in UnsafeRegister above.  If cancellation is requested prior to UnsafeRegister,
-                // the delegate may be invoked synchronously as part of the UnsafeRegister call.  In that case, it will execute
-                // before _waitSourceCancellation has been set, which means UnsafeRegister will have set a cancellation
-                // exception into the wait source with a default token rather than the ideal one.  To handle that,
-                // we check for cancellation again, and throw here with the right token.  Worst case, if cancellation is
-                // requested prior to here, we end up allocating an extra OCE object.
-                CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                 return new ValueTask(this, _waitSource.Version);
             }

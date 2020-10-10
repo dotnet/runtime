@@ -480,9 +480,7 @@ namespace System.Net.Sockets
                     if (socket.WSARecvMsgBlocking(
                         handle,
                         (IntPtr)(&wsaMsg),
-                        out bytesTransferred,
-                        IntPtr.Zero,
-                        IntPtr.Zero) == SocketError.SocketError)
+                        out bytesTransferred) == SocketError.SocketError)
                     {
                         return GetLastSocketError();
                     }
@@ -498,9 +496,7 @@ namespace System.Net.Sockets
                     if (socket.WSARecvMsgBlocking(
                         handle,
                         (IntPtr)(&wsaMsg),
-                        out bytesTransferred,
-                        IntPtr.Zero,
-                        IntPtr.Zero) == SocketError.SocketError)
+                        out bytesTransferred) == SocketError.SocketError)
                     {
                         return GetLastSocketError();
                     }
@@ -515,9 +511,7 @@ namespace System.Net.Sockets
                     if (socket.WSARecvMsgBlocking(
                         handle,
                         (IntPtr)(&wsaMsg),
-                        out bytesTransferred,
-                        IntPtr.Zero,
-                        IntPtr.Zero) == SocketError.SocketError)
+                        out bytesTransferred) == SocketError.SocketError)
                     {
                         return GetLastSocketError();
                     }
@@ -920,7 +914,7 @@ namespace System.Net.Sockets
         public static unsafe SocketError Select(IList? checkRead, IList? checkWrite, IList? checkError, int microseconds)
         {
             const int StackThreshold = 64; // arbitrary limit to avoid too much space on stack
-            bool ShouldStackAlloc(IList? list, ref IntPtr[]? lease, out Span<IntPtr> span)
+            static bool ShouldStackAlloc(IList? list, ref IntPtr[]? lease, out Span<IntPtr> span)
             {
                 int count;
                 if (list == null || (count = list.Count) == 0)
@@ -1372,7 +1366,7 @@ namespace System.Net.Sockets
             SocketError errorCode = SocketError.Success;
 
             // This can throw ObjectDisposedException (handle, and retrieving the delegate).
-            if (!socket.DisconnectExBlocking(handle, IntPtr.Zero, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
+            if (!socket.DisconnectExBlocking(handle, (int)(reuseSocket ? TransmitFileOptions.ReuseSocket : 0), 0))
             {
                 errorCode = GetLastSocketError();
             }

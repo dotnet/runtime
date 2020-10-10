@@ -475,9 +475,10 @@ namespace System.Threading
         /// callback will have been run by the time this method returns.
         /// </summary>
         internal CancellationTokenRegistration InternalRegister(
-            Action<object?> callback, object? stateForCallback, SynchronizationContext? syncContext, ExecutionContext? executionContext)
+            Delegate callback, object? stateForCallback, SynchronizationContext? syncContext, ExecutionContext? executionContext)
         {
             Debug.Assert(this != s_neverCanceledSource, "This source should never be exposed via a CancellationToken.");
+            Debug.Assert(callback is Action<object?> || callback is Action<object?, CancellationToken>);
 
             // If not canceled, register the handler; if canceled already, run the callback synchronously.
             // This also ensures that during ExecuteCallbackHandlers() there will be no mutation of the _callbackPartitions.
@@ -571,7 +572,7 @@ namespace System.Threading
             }
 
             // Cancellation already occurred.  Run the callback on this thread and return an empty registration.
-            callback(stateForCallback);
+            Invoke(callback, stateForCallback, this);
             return default;
         }
 
@@ -1012,7 +1013,7 @@ namespace System.Threading
             public CallbackNode? Next;
 
             public long Id;
-            public Action<object?>? Callback;
+            public Delegate? Callback; // Action<object> or Action<object,CancellationToken>
             public object? CallbackState;
             public ExecutionContext? ExecutionContext;
             public SynchronizationContext? SynchronizationContext;
@@ -1026,22 +1027,35 @@ namespace System.Threading
             public void ExecuteCallback()
             {
                 ExecutionContext? context = ExecutionContext;
-                if (context != null)
+                if (context is null)
                 {
-                    ExecutionContext.RunInternal(context, static s =>
-                    {
-                        Debug.Assert(s is CallbackNode, $"Expected {typeof(CallbackNode)}, got {s}");
-                        CallbackNode n = (CallbackNode)s;
-
-                        Debug.Assert(n.Callback != null);
-                        n.Callback(n.CallbackState);
-                    }, this);
+                    Debug.Assert(Callback != null);
+                    Invoke(Callback, CallbackState, Partition.Source);
                 }
                 else
                 {
-                    Debug.Assert(Callback != null);
-                    Callback(CallbackState);
+                    ExecutionContext.RunInternal(context, static s =>
+                    {
+                        var node = (CallbackNode)s!;
+                        Debug.Assert(node.Callback != null);
+                        Invoke(node.Callback, node.CallbackState, node.Partition.Source);
+                    }, this);
+
                 }
+            }
+        }
+
+        private static void Invoke(Delegate d, object? state, CancellationTokenSource source)
+        {
+            Debug.Assert(d is Action<object?> || d is Action<object?, CancellationToken>);
+
+            if (d is Action<object?> actionWithState)
+            {
+                actionWithState(state);
+            }
+            else
+            {
+                ((Action<object?, CancellationToken>)d)(state, new CancellationToken(source));
             }
         }
     }

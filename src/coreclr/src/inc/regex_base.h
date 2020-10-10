@@ -550,7 +550,7 @@ public:
 //     *?  matches zero or more occurrences of the previous item conservatively
 //     +   matches 1 or more occurrences of the previous item eagerly
 //     +?  matches 1 or more occurrences of the previous item conservatively
-//     ?   matches 0 or 1 occurences of the previous item
+//     ?   matches 0 or 1 occurrences of the previous item
 //     (   starts a grouping
 //     )   ends a grouping
 //

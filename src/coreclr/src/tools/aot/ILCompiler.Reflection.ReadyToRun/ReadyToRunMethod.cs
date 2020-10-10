@@ -465,6 +465,12 @@ namespace ILCompiler.Reflection.ReadyToRun
             for (int i = 0; i < RuntimeFunctionCount; i++)
             {
                 int startRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                if (_readyToRunReader.Machine == Machine.ArmThumb2)
+                {
+                    // The low bit of this address is set since the function contains thumb code.
+                    // Clear this bit in order to get the "real" RVA of the start of the function.
+                    startRva = (int)(startRva & ~1);
+                }
                 int endRva = -1;
                 if (_readyToRunReader.Machine == Machine.Amd64)
                 {

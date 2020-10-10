@@ -169,9 +169,6 @@
 
   <Target Name="UpdateProjectReferencesWithAttributes" Condition="'@(ProjectReference)' != ''">
     <ItemGroup>
-      <ProjectReference>
-        <SkipGetTargetFrameworkProperties>true</SkipGetTargetFrameworkProperties>
-      </ProjectReference>
       <ProjectReference Condition="'%(Filename)' == 'System.Private.CoreLib'">
         <!-- Don't flow TargetFramework and Platform to use same inputs and outputs as the CoreLib's build as part of the runtime. -->
         <UndefineProperties>$(UndefineProperties);TargetFramework;Platform</UndefineProperties>

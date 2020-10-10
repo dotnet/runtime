@@ -101,7 +101,7 @@ namespace System.Net.Sockets
                 return WaitForConnectWithCancellation(saea, connectTask, cancellationToken);
             }
 
-            async ValueTask WaitForConnectWithCancellation(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
+            static async ValueTask WaitForConnectWithCancellation(AwaitableSocketAsyncEventArgs saea, ValueTask connectTask, CancellationToken cancellationToken)
             {
                 Debug.Assert(cancellationToken.CanBeCanceled);
                 try
