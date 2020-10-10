@@ -57,17 +57,6 @@ namespace System.Reflection.Emit
         internal int len;
         internal int filter_offset;
 #endregion
-
-#if FALSE
-        internal void Debug()
-        {
-			System.Console.Write ("\ttype="+type.ToString()+" start="+start.ToString()+" len="+len.ToString());
-			if (extype != null)
-				System.Console.WriteLine (" extype="+extype.ToString());
-			else
-				System.Console.WriteLine (String.Empty);
-        }
-#endif
     }
 
     internal struct ILExceptionInfo
@@ -153,15 +142,6 @@ namespace System.Reflection.Emit
                 handlers[handlers.Length - 1].type = ILExceptionBlock.FILTER;
             }
         }
-
-#if FALSE
-        internal void Debug(int b)
-        {
-			System.Console.WriteLine ("Handler {0} at {1}, len: {2}", b, start, len);
-			for (int i = 0; i < handlers.Length; ++i)
-				handlers [i].Debug ();
-        }
-#endif
 
         private void add_block(int offset)
         {
@@ -948,15 +928,9 @@ namespace System.Reflection.Emit
             InternalEndClause();
             MarkLabel(ex_handlers[cur_block].end);
             ex_handlers[cur_block].End(code_len);
-#if FALSE
-            ex_handlers[cur_block].Debug(cur_block);
-#endif
-            //System.Console.WriteLine ("End Block {0} (handlers: {1})", cur_block, ex_handlers [cur_block].NumHandlers ());
             open_blocks.Pop();
             if (open_blocks.Count > 0)
                 cur_block = (int)open_blocks.Peek()!;
-            //Console.WriteLine ("curblock restored to {0}", cur_block);
-            //throw new NotImplementedException ();
         }
 
         public virtual void EndScope()

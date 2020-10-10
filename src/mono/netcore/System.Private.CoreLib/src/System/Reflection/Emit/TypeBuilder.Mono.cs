@@ -1121,7 +1121,7 @@ namespace System.Reflection.Emit
             return created!.GetMembers(bindingAttr);
         }
 
-        private MethodInfo[] GetMethodsByName(string? name, BindingFlags bindingAttr, bool ignoreCase, Type reflected_type)
+        private MethodInfo[] GetMethodsByName(string? name, BindingFlags bindingAttr, bool ignoreCase)
         {
             MethodInfo[]? candidates;
             bool match;
@@ -1221,7 +1221,7 @@ namespace System.Reflection.Emit
         {
             check_created();
 
-            return GetMethodsByName(null, bindingAttr, false, this);
+            return GetMethodsByName(null, bindingAttr, false);
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]

@@ -422,20 +422,20 @@ namespace System
             RuntimeMethodInfo method, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             // Optimization: Pre-Calculate the method binding flags to avoid casting.
-            return FilterApplyMethodBase(method, 0, bindingFlags, callConv, argumentTypes);
+            return FilterApplyMethodBase(method, bindingFlags, callConv, argumentTypes);
         }
 
         private static bool FilterApplyConstructorInfo(
             RuntimeConstructorInfo constructor, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             // Optimization: Pre-Calculate the method binding flags to avoid casting.
-            return FilterApplyMethodBase(constructor, 0, bindingFlags, callConv, argumentTypes);
+            return FilterApplyMethodBase(constructor, bindingFlags, callConv, argumentTypes);
         }
 
         // Used by GetMethodCandidates/GetConstructorCandidates, InvokeMember, and CreateInstanceImpl to perform the necessary filtering.
         // Should only be called by FilterApplyMethodInfo and FilterApplyConstructorInfo.
         private static bool FilterApplyMethodBase(
-            MethodBase methodBase, BindingFlags methodFlags, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
+            MethodBase methodBase, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
             Debug.Assert(methodBase != null);
 
@@ -670,7 +670,7 @@ namespace System
             MemberListType listType;
             FilterHelper(bindingAttr, ref name, allowPrefixLookup, out prefixLookup, out ignoreCase, out listType);
 
-            RuntimeEventInfo[] cache = GetEvents_internal(name, bindingAttr, listType, this);
+            RuntimeEventInfo[] cache = GetEvents_internal(name, listType, this);
             bindingAttr ^= BindingFlags.DeclaredOnly;
 
             ListBuilder<EventInfo> candidates = new ListBuilder<EventInfo>(cache.Length);
@@ -927,7 +927,7 @@ namespace System
             MemberListType listType;
             FilterHelper(bindingAttr, ref name!, out ignoreCase, out listType);
 
-            RuntimeEventInfo[] cache = GetEvents_internal(name, bindingAttr, listType, this);
+            RuntimeEventInfo[] cache = GetEvents_internal(name, listType, this);
             EventInfo? match = null;
 
             bindingAttr ^= BindingFlags.DeclaredOnly;
@@ -2438,7 +2438,7 @@ namespace System
             }
         }
 
-        private RuntimeEventInfo[] GetEvents_internal(string? name, BindingFlags bindingAttr, MemberListType listType, RuntimeType reflectedType)
+        private RuntimeEventInfo[] GetEvents_internal(string? name, MemberListType listType, RuntimeType reflectedType)
         {
             var refh = new RuntimeTypeHandle(reflectedType);
             using (var namePtr = new Mono.SafeStringMarshal(name))
