@@ -522,10 +522,6 @@ namespace Microsoft.Extensions.Configuration
 
             if (type == typeof(byte[]))
             {
-                if (value is null)
-                {
-                    return true;
-                }
                 try
                 {
                     result = Convert.FromBase64String(value);
