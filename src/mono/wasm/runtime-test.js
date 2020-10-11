@@ -293,7 +293,7 @@ var App = {
 		var obj_array_set = Module.cwrap ('mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']);
 		var wasm_set_main_args = Module.cwrap ('mono_wasm_set_main_args', 'void', ['number', 'number']);
 		var wasm_strdup = Module.cwrap ('mono_wasm_strdup', 'number', ['string']);
-		var unbox_int = Module.cwrap ('mono_unbox_int', 'number', ['number']);
+		var unbox_number = Module.cwrap ('mono_unbox_number', 'number', ['number']);
 
 		Module.wasm_exit = Module.cwrap ('mono_wasm_exit', 'void', ['number']);
 
@@ -377,7 +377,7 @@ var App = {
 					test_exit (1);
 					return;
 				}
-				var exit_code = unbox_int (res);
+				var exit_code = unbox_number (res);
 				test_exit (exit_code);
 			} catch (ex) {
 				print ("JS exception: " + ex);

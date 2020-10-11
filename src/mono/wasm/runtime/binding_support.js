@@ -54,14 +54,12 @@ var BindingSupportLib = {
 			this.mono_string_get_utf8 = Module.cwrap ('mono_wasm_string_get_utf8', 'number', ['number']);
 			this.mono_wasm_string_from_utf16 = Module.cwrap ('mono_wasm_string_from_utf16', 'number', ['number', 'number']);
 			this.mono_get_obj_type = Module.cwrap ('mono_wasm_get_obj_type', 'number', ['number']);
-			this.mono_unbox_int = Module.cwrap ('mono_unbox_int', 'number', ['number']);
-			this.mono_unbox_float = Module.cwrap ('mono_wasm_unbox_float', 'number', ['number']);
+			this.mono_unbox_number = Module.cwrap ('mono_unbox_number', 'number', ['number']);
 			this.mono_array_length = Module.cwrap ('mono_wasm_array_length', 'number', ['number']);
 			this.mono_array_get = Module.cwrap ('mono_wasm_array_get', 'number', ['number', 'number']);
 			this.mono_obj_array_new = Module.cwrap ('mono_wasm_obj_array_new', 'number', ['number']);
 			this.mono_obj_array_set = Module.cwrap ('mono_wasm_obj_array_set', 'void', ['number', 'number', 'number']);
 			this.mono_wasm_register_bundled_satellite_assemblies = Module.cwrap ('mono_wasm_register_bundled_satellite_assemblies', 'void', [ ]);
-			this.mono_unbox_enum = Module.cwrap ('mono_wasm_unbox_enum', 'number', ['number']);
 			this.assembly_get_entry_point = Module.cwrap ('mono_wasm_assembly_get_entry_point', 'number', ['number']);
 
 			// receives a byteoffset into allocated Heap with a size.
@@ -229,9 +227,8 @@ var BindingSupportLib = {
 			//See MARSHAL_TYPE_ defines in driver.c
 			switch (type) {
 			case 1: // int
-				return this.mono_unbox_int (mono_obj);
 			case 2: // float
-				return this.mono_unbox_float (mono_obj);
+				return this.mono_unbox_number (mono_obj);
 			case 3: //string
 				return this.conv_string (mono_obj);
 			case 4: //vts
@@ -268,13 +265,13 @@ var BindingSupportLib = {
 				return this.extract_js_obj (mono_obj);
 
 			case 8: // bool
-				return this.mono_unbox_int (mono_obj) != 0;
+				return this.mono_unbox_number (mono_obj) != 0;
 
 			case 9: // enum
 
 				if(this.mono_wasm_marshal_enum_as_int)
 				{
-					return this.mono_unbox_enum (mono_obj);
+					return this.mono_unbox_number (mono_obj);
 				}
 				else
 				{
@@ -570,7 +567,7 @@ var BindingSupportLib = {
 				// Check enum contract
 				monoEnum = MONO.mono_wasm_new_root (this.call_method (this.object_to_enum, null, "iimm", [ method, parmIdx, monoObj.value ]))
 				// return the unboxed enum value.
-				return this.mono_unbox_enum (monoEnum.value);
+				return this.mono_unbox_number (monoEnum.value);
 			} finally {
 				MONO.mono_wasm_release_roots (monoObj, monoEnum);
 			}

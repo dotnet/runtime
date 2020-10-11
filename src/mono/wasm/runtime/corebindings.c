@@ -144,34 +144,4 @@ mono_wasm_typed_array_new (char *arr, int length, int size, int type)
 	return buffer;
 }
 
-EMSCRIPTEN_KEEPALIVE int
-mono_wasm_unbox_enum (MonoObject *obj)
-{
-	if (!obj)
-		return 0;
-	
-	MonoType *type = mono_class_get_type (mono_object_get_class(obj));
-
-	void *ptr = mono_object_unbox (obj);
-	switch (mono_type_get_type(mono_type_get_underlying_type (type))) {
-	case MONO_TYPE_I1:
-	case MONO_TYPE_U1:
-		return *(unsigned char*)ptr;
-	case MONO_TYPE_I2:
-		return *(short*)ptr;
-	case MONO_TYPE_U2:
-		return *(unsigned short*)ptr;
-	case MONO_TYPE_I4:
-		return *(int*)ptr;
-	case MONO_TYPE_U4:
-		return *(unsigned int*)ptr;
-	// WASM doesn't support returning longs to JS
-	// case MONO_TYPE_I8:
-	// case MONO_TYPE_U8:
-	default:
-		printf ("Invalid type %d to mono_unbox_enum\n", mono_type_get_type(mono_type_get_underlying_type (type)));
-		return 0;
-	}
-}
-
 
