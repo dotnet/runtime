@@ -18,48 +18,49 @@ namespace System.Diagnostics
     {
         public static IntPtr GetMainWindowHandle(int processId)
         {
-            return new MainWindowFinder().FindMainWindow(processId);
+            return MainWindowFinder.FindMainWindow(processId);
         }
     }
 
-    internal sealed class MainWindowFinder
+    internal struct MainWindowFinder
     {
         private const int GW_OWNER = 4;
         private IntPtr _bestHandle;
         private int _processId;
 
-        public IntPtr FindMainWindow(int processId)
+        public static unsafe IntPtr FindMainWindow(int processId)
         {
-            _bestHandle = IntPtr.Zero;
-            _processId = processId;
+            MainWindowFinder instance;
 
-            Interop.User32.EnumWindows(EnumWindowsCallback, IntPtr.Zero);
+            instance._bestHandle = IntPtr.Zero;
+            instance._processId = processId;
 
-            return _bestHandle;
+            Interop.User32.EnumWindows(&EnumWindowsCallback, (IntPtr)(void*)&instance);
+
+            return instance._bestHandle;
         }
 
-        private bool IsMainWindow(IntPtr handle)
+        private static bool IsMainWindow(IntPtr handle)
         {
-            if (Interop.User32.GetWindow(handle, GW_OWNER) != IntPtr.Zero || !Interop.User32.IsWindowVisible(handle))
-                return false;
-
-            return true;
+            return (Interop.User32.GetWindow(handle, GW_OWNER) == IntPtr.Zero) && Interop.User32.IsWindowVisible(handle);
         }
 
-        private bool EnumWindowsCallback(IntPtr handle, IntPtr extraParameter)
+        [UnmanagedCallersOnly]
+        private static unsafe Interop.BOOL EnumWindowsCallback(IntPtr handle, IntPtr extraParameter)
         {
-            int processId;
-            Interop.User32.GetWindowThreadProcessId(handle, out processId);
+            ref MainWindowFinder instance = ref *(MainWindowFinder*)extraParameter;
 
-            if (processId == _processId)
+            Interop.User32.GetWindowThreadProcessId(handle, out int processId);
+
+            if (processId == instance._processId)
             {
                 if (IsMainWindow(handle))
                 {
-                    _bestHandle = handle;
-                    return false;
+                    instance._bestHandle = handle;
+                    return Interop.BOOL.FALSE;
                 }
             }
-            return true;
+            return Interop.BOOL.TRUE;
         }
     }
 
