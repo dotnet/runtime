@@ -9,4 +9,5 @@
 void SystemNative_Log(uint8_t* buffer, int32_t length)
 {
     fwrite(buffer, 1, (size_t)length, stdout);
+    fflush(stdout);
 }
