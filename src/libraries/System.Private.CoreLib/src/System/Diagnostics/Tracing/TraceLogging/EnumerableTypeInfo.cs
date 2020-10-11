@@ -38,7 +38,7 @@ namespace System.Diagnostics.Tracing
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            int bookmark = collector.BeginBufferedArray();
+            int bookmark = TraceLoggingDataCollector.BeginBufferedArray();
 
             int count = 0;
             IEnumerable? enumerable = (IEnumerable?)value.ReferenceValue;
@@ -51,7 +51,7 @@ namespace System.Diagnostics.Tracing
                 }
             }
 
-            collector.EndBufferedArray(bookmark, count);
+            TraceLoggingDataCollector.EndBufferedArray(bookmark, count);
         }
 
         public override object? GetData(object? value)

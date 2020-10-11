@@ -452,7 +452,7 @@ namespace System.Diagnostics.Tracing
         /// for the current process ID, calling 'action' for each session, and passing it the
         /// ETW session and the 'AllKeywords' the session enabled for the current provider.
         /// </summary>
-        private unsafe void GetSessionInfo(SessionInfoCallback action, ref List<SessionInfo>? sessionList)
+        private static unsafe void GetSessionInfo(SessionInfoCallback action, ref List<SessionInfo>? sessionList)
         {
             // We wish the EventSource package to be legal for Windows Store applications.
             // Currently EnumerateTraceGuidsEx is not an allowed API, so we avoid its use here
@@ -600,7 +600,7 @@ namespace System.Diagnostics.Tracing
         /// returns an array of bytes representing the data, the index into that byte array where the data
         /// starts, and the command being issued associated with that data.
         /// </summary>
-        private unsafe bool GetDataFromController(int etwSessionId,
+        private static unsafe bool GetDataFromController(int etwSessionId,
             Interop.Advapi32.EVENT_FILTER_DESCRIPTOR* filterData, out ControllerCommand command, out byte[]? data, out int dataStart)
         {
             data = null;

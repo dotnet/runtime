@@ -7,6 +7,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Internal.Runtime.CompilerServices;
 
+#pragma warning disable CA1822 // Workaround for analyzer bug
+
 namespace System.Collections.Generic
 {
     #region ArraySortHelper for single arrays

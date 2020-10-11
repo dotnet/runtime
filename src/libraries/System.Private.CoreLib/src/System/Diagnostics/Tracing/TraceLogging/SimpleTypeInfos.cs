@@ -65,7 +65,7 @@ namespace System.Diagnostics.Tracing
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            collector.AddScalar(value);
+            TraceLoggingDataCollector.AddScalar(value);
         }
 
         public static TraceLoggingTypeInfo Boolean() { return new ScalarTypeInfo(typeof(bool), Statics.Format8, TraceLoggingDataType.Boolean8); }
@@ -114,7 +114,7 @@ namespace System.Diagnostics.Tracing
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            collector.AddArray(value, elementSize);
+            TraceLoggingDataCollector.AddArray(value, elementSize);
         }
 
         public static TraceLoggingTypeInfo Boolean() { return new ScalarArrayTypeInfo(typeof(bool[]), Statics.Format8, TraceLoggingDataType.Boolean8, sizeof(bool)); }
@@ -155,7 +155,7 @@ namespace System.Diagnostics.Tracing
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            collector.AddNullTerminatedString((string?)value.ReferenceValue);
+            TraceLoggingDataCollector.AddNullTerminatedString((string?)value.ReferenceValue);
         }
 
         public override object GetData(object? value)
@@ -193,7 +193,7 @@ namespace System.Diagnostics.Tracing
             // To avoid getting an ArgumentOutOfRangeException we compare with 1/1/1601 DateTime ticks
             if (dateTime.Ticks > UTCMinTicks)
                 dateTimeTicks = dateTime.ToFileTimeUtc();
-            collector.AddScalar(dateTimeTicks);
+            TraceLoggingDataCollector.AddScalar(dateTimeTicks);
         }
     }
 
@@ -215,8 +215,8 @@ namespace System.Diagnostics.Tracing
         {
             DateTimeOffset dateTimeOffset = value.ScalarValue.AsDateTimeOffset;
             long ticks = dateTimeOffset.Ticks;
-            collector.AddScalar(ticks < 504911232000000000 ? 0 : ticks - 504911232000000000);
-            collector.AddScalar(dateTimeOffset.Offset.Ticks);
+            TraceLoggingDataCollector.AddScalar(ticks < 504911232000000000 ? 0 : ticks - 504911232000000000);
+            TraceLoggingDataCollector.AddScalar(dateTimeOffset.Offset.Ticks);
         }
     }
 
@@ -237,7 +237,7 @@ namespace System.Diagnostics.Tracing
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            collector.AddScalar(value.ScalarValue.AsTimeSpan.Ticks);
+            TraceLoggingDataCollector.AddScalar(value.ScalarValue.AsTimeSpan.Ticks);
         }
     }
 
@@ -258,7 +258,7 @@ namespace System.Diagnostics.Tracing
 
         public override void WriteData(TraceLoggingDataCollector collector, PropertyValue value)
         {
-            collector.AddScalar((double)value.ScalarValue.AsDecimal);
+            TraceLoggingDataCollector.AddScalar((double)value.ScalarValue.AsDecimal);
         }
     }
 
@@ -294,7 +294,7 @@ namespace System.Diagnostics.Tracing
             // It's not currently possible to get the HasValue property of a nullable type through reflection when the
             // value is null. Instead, we simply check that the nullable is not null.
             bool hasValue = value.ReferenceValue != null;
-            collector.AddScalar(hasValue);
+            TraceLoggingDataCollector.AddScalar(hasValue);
             PropertyValue val = hasValue ? valueGetter(value) : valueInfo.PropertyValueFactory(Activator.CreateInstance(valueInfo.DataType));
             this.valueInfo.WriteData(collector, val);
         }
