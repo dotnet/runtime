@@ -100,7 +100,7 @@ static const UChar g_HalfFullHigherChars[] = {
     0xffbe, 0xffc2, 0xffc3, 0xffc4, 0xffc5, 0xffc6, 0xffc7, 0xffca, 0xffcb, 0xffcc, 0xffcd, 0xffce, 0xffcf, 0xffd2, 0xffd3,
     0xffd4, 0xffd5, 0xffd6, 0xffd7, 0xffda, 0xffdb, 0xffdc
 };
-static const int32_t g_HalfFullCharsLength = sizeof g_HalfFullHigherChars / sizeof(UChar);
+static const int32_t g_HalfFullCharsLength = (sizeof(g_HalfFullHigherChars) / sizeof(UChar));
 
 /*
 ICU collation rules reserve any punctuation and whitespace characters for use in the syntax.
@@ -154,7 +154,7 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
     if (!(needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule || needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule))
         return NULL;
 
-    UCharList* customRules = static_cast<UCharList*>(malloc(sizeof(UCharList)));
+    UCharList* customRules = (UCharList*)malloc(sizeof(UCharList));
     if (customRules == NULL)
     {
         return NULL;
@@ -167,11 +167,11 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
         (needsIgnoreWidthCustomRule || needsNotIgnoreWidthCustomRule ? 5 * g_HalfFullCharsLength : 0);
 
     UChar* items;
-    customRules->items = items = static_cast<UChar*>(malloc(static_cast<size_t>(capacity) * sizeof(UChar)));
-    if (customRules->items == nullptr)
+    customRules->items = items = (UChar*)malloc((size_t)capacity * sizeof(UChar));
+    if (customRules->items == NULL)
     {
         free(customRules);
-        return nullptr;
+        return NULL;
     }
 
     if (needsIgnoreKanaTypeCustomRule || needsNotIgnoreKanaTypeCustomRule)
@@ -223,7 +223,7 @@ static UCharList* GetCustomRules(int32_t options, UColAttributeValue strength, i
         }
     }
 
-    customRules->size = static_cast<size_t>(items - customRules->items);
+    customRules->size = (size_t)(items - customRules->items);
 
     return customRules;
 }
@@ -254,19 +254,19 @@ static UCollator* CloneCollatorWithOptions(const UCollator* pCollator, int32_t o
 
     UCollator* pClonedCollator;
     UCharList* customRules = GetCustomRules(options, strength, isIgnoreSymbols);
-    if (customRules == nullptr || customRules->size == 0)
+    if (customRules == NULL || customRules->size == 0)
     {
         pClonedCollator = ucol_safeClone(pCollator, NULL, NULL, pErr);
     }
     else
     {
-        const int32_t customRuleLength = static_cast<int32_t>(customRules->size);
+        int32_t customRuleLength = (int32_t)customRules->size;
 
         int32_t localeRulesLength;
         const UChar* localeRules = ucol_getRules(pCollator, &localeRulesLength);
         const int32_t completeRulesLength = localeRulesLength + customRuleLength + 1;
 
-        UChar* completeRules = static_cast<UChar*>(calloc(static_cast<size_t>(completeRulesLength), sizeof(UChar)));
+        UChar* completeRules = (UChar*)calloc((size_t)completeRulesLength, sizeof(UChar));
 
         for (int i = 0; i < localeRulesLength; i++)
         {
@@ -338,8 +338,8 @@ static int CanIgnoreAllCollationElements(const UCollator* pColl, const UChar* lp
 
 static void CreateSortHandle(SortHandle** ppSortHandle)
 {
-    *ppSortHandle = static_cast<SortHandle*>(malloc(sizeof(SortHandle)));
-    if (*ppSortHandle == nullptr)
+    *ppSortHandle = (SortHandle*)malloc(sizeof(SortHandle));
+    if ((*ppSortHandle) == NULL)
     {
         return;
     }
@@ -352,7 +352,7 @@ ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandl
     assert(ppSortHandle != NULL);
 
     CreateSortHandle(ppSortHandle);
-    if (*ppSortHandle == nullptr)
+    if ((*ppSortHandle) == NULL)
     {
         return GetResultCode(U_MEMORY_ALLOCATION_ERROR);
     }
@@ -364,7 +364,7 @@ ResultCode GlobalizationNative_GetSortHandle(const char* lpLocaleName, SortHandl
     if (U_FAILURE(err))
     {
         free(*ppSortHandle);
-        *ppSortHandle = nullptr;
+        (*ppSortHandle) = NULL;
     }
 
     return GetResultCode(err);
@@ -374,10 +374,10 @@ void GlobalizationNative_CloseSortHandle(SortHandle* pSortHandle)
 {
     for (int i = 0; i <= CompareOptionsMask; i++)
     {
-        if (pSortHandle->collatorsPerOption[i] != nullptr)
+        if (pSortHandle->collatorsPerOption[i] != NULL)
         {
             ucol_close(pSortHandle->collatorsPerOption[i]);
-            pSortHandle->collatorsPerOption[i] = nullptr;
+            pSortHandle->collatorsPerOption[i] = NULL;
         }
     }
 
@@ -393,15 +393,15 @@ static const UCollator* GetCollatorFromSortHandle(SortHandle* pSortHandle, int32
 
     options &= CompareOptionsMask;
     UCollator* pCollator = pSortHandle->collatorsPerOption[options];
-    if (pCollator != nullptr)
+    if (pCollator != NULL)
     {
         return pCollator;
     }
 
     pCollator = CloneCollatorWithOptions(pSortHandle->collatorsPerOption[0], options, pErr);
-    UCollator* pNull = nullptr;
+    UCollator* pNull = NULL;
 
-    if (!pal_atomic_cas_ptr(reinterpret_cast<void* volatile*>(&pSortHandle->collatorsPerOption[options]), pCollator, pNull))
+    if (!pal_atomic_cas_ptr((void* volatile*)&pSortHandle->collatorsPerOption[options], pCollator, pNull))
     {
         ucol_close(pCollator);
         pCollator = pSortHandle->collatorsPerOption[options];
@@ -419,7 +419,7 @@ int32_t GlobalizationNative_GetSortVersion(SortHandle* pSortHandle)
 
     if (U_SUCCESS(err))
     {
-        ucol_getVersion(pColl, reinterpret_cast<uint8_t*>(&result));
+        ucol_getVersion(pColl, (uint8_t *) &result);
     }
     else
     {
@@ -667,7 +667,7 @@ static int32_t inline SimpleAffix_Iterators(UCollationElements* pPatternIterator
     }
 
 ReturnTrue:
-    if (pCapturedOffset != nullptr)
+    if (pCapturedOffset != NULL)
     {
         *pCapturedOffset = capturedOffset;
     }
@@ -788,7 +788,7 @@ static int32_t ComplexEndsWith(const UCollator* pCollator, UErrorCode* pErrorCod
                 result = CanIgnoreAllCollationElements(pCollator, pText + matchEnd, remainingStringLength);
             }
 
-            if (result && pMatchedLength != nullptr)
+            if (result && pMatchedLength != NULL)
             {
                 // adjust matched length to account for all the elements we implicitly consumed at end of string
                 *pMatchedLength = textLength - idx;

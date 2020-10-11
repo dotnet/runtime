@@ -65,7 +65,7 @@ int32_t GlobalizationNative_ToAscii(
     const int32_t asciiStrLen = uidna_nameToASCII(pIdna, lpSrc, cwSrcLength, lpDst, cwDstLength, &info, &err);
 
     // To have a consistent behavior with Windows, we mask out the error when having 2 hyphens in the third and fourth place.
-    info.errors &= static_cast<uint32_t>(~UIDNA_ERROR_HYPHEN_3_4);
+    info.errors &= (uint32_t)~UIDNA_ERROR_HYPHEN_3_4;
 
     uidna_close(pIdna);
 

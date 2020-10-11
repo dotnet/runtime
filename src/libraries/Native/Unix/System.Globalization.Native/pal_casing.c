@@ -87,7 +87,7 @@ void GlobalizationNative_ChangeCaseInvariant(
             // capitalizes to itself, whereas with ICU it capitalizes to LATIN CAPITAL LETTER I (U+0049).
             // We special case it to match the Windows invariant behavior.
             U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint)
-            dstCodepoint = srcCodepoint == static_cast<UChar32>(0x0131) ? static_cast<UChar32>(0x0131) : u_toupper(srcCodepoint);
+            dstCodepoint = ((srcCodepoint == (UChar32)0x0131) ? (UChar32)0x0131 : u_toupper(srcCodepoint));
             U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError)
             assert(isError == FALSE && srcIdx == dstIdx);
         }
@@ -100,7 +100,7 @@ void GlobalizationNative_ChangeCaseInvariant(
             // lower cases to itself, whereas with ICU it lower cases to LATIN SMALL LETTER I (U+0069).
             // We special case it to match the Windows invariant behavior.
             U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint)
-            dstCodepoint = srcCodepoint == static_cast<UChar32>(0x0130) ? static_cast<UChar32>(0x0130) : u_tolower(srcCodepoint);
+            dstCodepoint = ((srcCodepoint == (UChar32)0x0130) ? (UChar32)0x0130 : u_tolower(srcCodepoint));
             U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError)
             assert(isError == FALSE && srcIdx == dstIdx);
         }
@@ -131,7 +131,7 @@ void GlobalizationNative_ChangeCaseTurkish(
             // In turkish casing, LATIN SMALL LETTER I (U+0069) upper cases to LATIN
             // CAPITAL LETTER I WITH DOT ABOVE (U+0130).
             U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint)
-            dstCodepoint = srcCodepoint == static_cast<UChar32>(0x0069) ? static_cast<UChar32>(0x0130) : u_toupper(srcCodepoint);
+            dstCodepoint = ((srcCodepoint == (UChar32)0x0069) ? (UChar32)0x0130 : u_toupper(srcCodepoint));
             U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError)
             assert(isError == FALSE && srcIdx == dstIdx);
         }
@@ -143,7 +143,7 @@ void GlobalizationNative_ChangeCaseTurkish(
             // In turkish casing, LATIN CAPITAL LETTER I (U+0049) lower cases to
             // LATIN SMALL LETTER DOTLESS I (U+0131).
             U16_NEXT(lpSrc, srcIdx, cwSrcLength, srcCodepoint)
-            dstCodepoint = srcCodepoint == static_cast<UChar32>(0x0049) ? static_cast<UChar32>(0x0131) : u_tolower(srcCodepoint);
+            dstCodepoint = ((srcCodepoint == (UChar32)0x0049) ? (UChar32)0x0131 : u_tolower(srcCodepoint));
             U16_APPEND(lpDst, dstIdx, cwDstLength, dstCodepoint, isError)
             assert(isError == FALSE && srcIdx == dstIdx);
         }
@@ -157,14 +157,14 @@ void GlobalizationNative_InitOrdinalCasingPage(int32_t pageNumber, UChar* pTarge
     {
         // Unfortunately, to ensure one-to-one simple mapping we have to call u_toupper on every character.
         // Using string casing ICU APIs cannot give such results even when using NULL locale to force root behavior.
-        pTarget[i] = static_cast<UChar>(u_toupper(static_cast<UChar32>(pageNumber + i)));
+        pTarget[i] = (UChar) u_toupper((UChar32)(pageNumber + i));
     }
 
     if (pageNumber == 0x0100)
     {
         // Disable Turkish I behavior on Ordinal operations
-        pTarget[0x31] = static_cast<UChar>(0x0131); // Turkish lowercase i
-        pTarget[0x7F] = static_cast<UChar>(0x017F); // // 017F;LATIN SMALL LETTER LONG S
+        pTarget[0x31] = (UChar)0x0131;  // Turkish lowercase i
+        pTarget[0x7F] = (UChar)0x017F;  // // 017F;LATIN SMALL LETTER LONG S
     }
 }
 

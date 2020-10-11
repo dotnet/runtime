@@ -235,7 +235,7 @@ static int InvokeCallbackForDatePattern(const char* locale,
     const int32_t patternLen = udat_toPattern(pFormat, FALSE, NULL, 0, &ignore) + 1;
 
     UChar* pattern = (UChar*)calloc((size_t)patternLen, sizeof(UChar));
-    if (pattern == nullptr)
+    if (pattern == NULL)
     {
         udat_close(pFormat);
         return FALSE;
@@ -275,7 +275,7 @@ static int InvokeCallbackForDateTimePattern(const char* locale,
     const int32_t patternLen = udatpg_getBestPattern(pGenerator, patternSkeleton, -1, NULL, 0, &ignore) + 1;
 
     UChar* bestPattern = (UChar*)calloc((size_t)patternLen, sizeof(UChar));
-    if (bestPattern == nullptr)
+    if (bestPattern == NULL)
     {
         udatpg_close(pGenerator);
         return FALSE;
@@ -314,7 +314,7 @@ static int32_t EnumSymbols(const char* locale,
         return FALSE;
 
     char localeWithCalendarName[ULOC_FULLNAME_CAPACITY]{};
-    STRING_COPY(localeWithCalendarName, sizeof(localeWithCalendarName), locale)
+    STRING_COPY(localeWithCalendarName, sizeof(localeWithCalendarName), locale);
 
     uloc_setKeywordValue("calendar", GetCalendarName(calendarId), localeWithCalendarName, ULOC_FULLNAME_CAPACITY, &err);
 
@@ -337,7 +337,7 @@ static int32_t EnumSymbols(const char* locale,
         UErrorCode ignore = U_ZERO_ERROR;
         const int symbolLen = udat_getSymbols(pFormat, type, i, NULL, 0, &ignore) + 1;
 
-        if (static_cast<size_t>(symbolLen) <= sizeof(stackSymbolBuf) / sizeof(stackSymbolBuf[0]))
+        if ((size_t)symbolLen <= sizeof(stackSymbolBuf) / sizeof(stackSymbolBuf[0]))
         {
             symbolBuf = stackSymbolBuf;
         }

@@ -108,7 +108,7 @@ static int FindICULibs()
 
 static int FindSymbolVersion(int majorVer, int minorVer, int subVer, char* symbolName, char* symbolVersion, char* suffix)
 {
-    const HMODULE lib = static_cast<HMODULE>(libicuuc);
+    HMODULE lib = (HMODULE)libicuuc;
     // Find out the format of the version string added to each symbol
     // First try just the unversioned symbol
     if (GetProcAddress(lib, "u_strlen") == NULL)
@@ -431,7 +431,7 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
     char symbolVersion[MaxICUVersionStringWithSuffixLength + 1]="";
     char symbolSuffix[SYMBOL_CUSTOM_SUFFIX_SIZE]="";
 
-    if (strlen(version) > static_cast<size_t>(MaxICUVersionStringLength))
+    if (strlen(version) > (size_t)MaxICUVersionStringLength)
     {
         fprintf(stderr, "The resolved version \"%s\" from System.Globalization.AppLocalIcu switch has to be < %zu chars long.\n", version, (size_t)MaxICUVersionStringLength);
         abort();
@@ -473,7 +473,7 @@ void GlobalizationNative_InitICUFunctions(void* icuuc, void* icuin, const char* 
 // return the current loaded ICU version
 int32_t GlobalizationNative_GetICUVersion()
 {
-    if (u_getVersion_ptr == nullptr)
+    if (u_getVersion_ptr == NULL)
         return 0;
     
     UVersionInfo versionInfo{};

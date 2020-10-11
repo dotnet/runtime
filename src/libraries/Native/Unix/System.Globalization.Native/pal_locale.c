@@ -44,15 +44,15 @@ int32_t GetLocale(const UChar* localeName,
     {
         const UChar c = localeName[i];
 
-        if (c > static_cast<UChar>(0x7F))
+        if (c > (UChar)0x7F)
         {
             *err = U_ILLEGAL_ARGUMENT_ERROR;
             return ULOC_FULLNAME_CAPACITY;
         }
 
-        localeNameTemp[i] = static_cast<char>(c);
+        localeNameTemp[i] = (char)c;
 
-        if (c == static_cast<UChar>(0x0))
+        if (c == (UChar)0x0)
         {
             break;
         }
@@ -95,13 +95,13 @@ void u_charsToUChars_safe(const char* str, UChar* value, int32_t valueLength, UE
     }
 
     const size_t len = strlen(str);
-    if (len >= static_cast<size_t>(valueLength))
+    if (len >= (size_t)valueLength)
     {
         *err = U_BUFFER_OVERFLOW_ERROR;
         return;
     }
 
-    u_charsToUChars(str, value, static_cast<int32_t>(len + 1));
+    u_charsToUChars(str, value, (int32_t)(len + 1));
 }
 
 int32_t FixupLocaleName(UChar* value, int32_t valueLength)
@@ -109,14 +109,13 @@ int32_t FixupLocaleName(UChar* value, int32_t valueLength)
     int32_t i = 0;
     for (; i < valueLength; i++)
     {
-        if (value[i] == static_cast<UChar>('\0'))
+        if (value[i] == (UChar)'\0')
         {
             break;
         }
-
-        if (value[i] == static_cast<UChar>('_'))
+        else if (value[i] == (UChar)'_')
         {
-            value[i] = static_cast<UChar>('-');
+            value[i] = (UChar)'-';
         }
     }
 
@@ -159,7 +158,7 @@ int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
         if (pLocaleName[0] == 0) // unexpected empty name
             return -2;
 
-        const int32_t localeNameLength = static_cast<int32_t>(strlen(pLocaleName));
+        int32_t localeNameLength = (int32_t)strlen(pLocaleName);
 
         totalLength += localeNameLength + 1; // add 1 for the name length
 
@@ -168,17 +167,17 @@ int32_t GlobalizationNative_GetLocales(UChar *value, int32_t valueLength)
             if (totalLength > valueLength)
                 return -3;
 
-            value[index++] = static_cast<UChar>(localeNameLength);
+            value[index++] = (UChar) localeNameLength;
 
             for (int j=0; j<localeNameLength; j++)
             {
                 if (pLocaleName[j] == '_') // fix the locale name
                 {
-                    value[index++] = static_cast<UChar>('-');
+                    value[index++] = (UChar) '-';
                 }
                 else
                 {
-                    value[index++] = static_cast<UChar>(pLocaleName[j]);
+                    value[index++] = (UChar) pLocaleName[j];
                 }
             }
         }

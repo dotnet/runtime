@@ -77,7 +77,7 @@ static UErrorCode GetLocaleIso639LanguageTwoLetterName(const char* locale, UChar
     UErrorCode status = U_ZERO_ERROR, ignore = U_ZERO_ERROR;
     const int32_t length = uloc_getLanguage(locale, NULL, 0, &ignore) + 1;
 
-    char* buf = static_cast<char*>(calloc(static_cast<size_t>(length), sizeof(char)));
+    char* buf = (char*)calloc((size_t)length, sizeof(char));
     if (buf == NULL)
     {
         return U_MEMORY_ALLOCATION_ERROR;
@@ -120,7 +120,7 @@ static UErrorCode GetLocaleIso3166CountryName(const char* locale, UChar* value, 
     UErrorCode status = U_ZERO_ERROR, ignore = U_ZERO_ERROR;
     const int32_t length = uloc_getCountry(locale, NULL, 0, &ignore) + 1;
 
-    char* buf = static_cast<char*>(calloc(static_cast<size_t>(length), sizeof(char)));
+    char* buf = (char*)calloc((size_t)length, sizeof(char));
     if (buf == NULL)
     {
         return U_MEMORY_ALLOCATION_ERROR;
@@ -258,7 +258,7 @@ int32_t GlobalizationNative_GetLocaleInfoString(const UChar* localeName,
             {
                 const int charIndex = symbol - UNUM_ONE_DIGIT_SYMBOL + 1;
                 status = GetDigitSymbol(
-                    locale, status, static_cast<UNumberFormatSymbol>(symbol), charIndex, value, valueLength);
+                    locale, status, (UNumberFormatSymbol)symbol, charIndex, value, valueLength);
             }
             break;
         case LocaleString_MonetarySymbol:
