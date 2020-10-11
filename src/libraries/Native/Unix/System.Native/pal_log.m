@@ -39,8 +39,3 @@ void SystemNative_Log (uint8_t* buffer, int32_t length)
     }
     [msg release];
 }
-
-int32_t SystemNative_InitializeTerminalAndSignalHandling(void)
-{
-    return 0;
-}
