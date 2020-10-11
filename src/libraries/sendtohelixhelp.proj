@@ -99,17 +99,23 @@
         <HelixCommand Condition="'$(TargetOS)' != 'Browser'">$(HelixCommand) $(TargetArchitecture)</HelixCommand>
       </PropertyGroup>
     </When>
-    <When Condition="$(BuildTargetFramework.StartsWith('net4'))">
-      <PropertyGroup>
-        <HelixCommand>dotnet test %HELIX_WORKITEM_FRIENDLYNAME%.dll --settings .runsettings --platform $(TargetArchitecture)</HelixCommand>
-      </PropertyGroup>
-    </When>
     <Otherwise>
+      <!-- Using VSTest for anything non mobile and for non packaging testing. -->
       <PropertyGroup>
+        <_workItemTimeoutInSeconds>$([System.TimeSpan]::Parse($(_workItemTimeout)).TotalSeconds)</_workItemTimeoutInSeconds>
+        <_vstestBlameOption>CollectDump;CollectAlways=true;DumpType=Full;CollectHangDump;HangDumpType=Full;TestTimeout=$(_workItemTimeoutInSeconds)s</_vstestBlameOption>
+        <!-- Increase the total work item timeout by 10min to prevent helix killing the work item before VSTest collected the hang dump. -->
+        <_workItemTimeout>$([MSBuild]::Add($(_workItemTimeoutInSeconds), 600))</_workItemTimeout>
+      </PropertyGroup>
+      <PropertyGroup Condition="$(BuildTargetFramework.StartsWith('net4'))">
+        <HelixCommand>dotnet test %HELIX_WORKITEM_FRIENDLYNAME%.dll --settings .runsettings --platform $(TargetArchitecture) --blame "$(_vstestBlameOption)"</HelixCommand>
+      </PropertyGroup>
+      <PropertyGroup Condition="!$(BuildTargetFramework.StartsWith('net4'))">
         <HelixCommand Condition="'$(TargetsWindows)' == 'true'">%HELIX_CORRELATION_PAYLOAD%\dotnet.exe %HELIX_CORRELATION_PAYLOAD%\sdk\$(ProductVersion)\vstest.console.dll %HELIX_WORKITEM_FRIENDLYNAME%.dll --Settings:.runsettings</HelixCommand>
         <HelixCommand Condition="'$(TargetsWindows)' != 'true'">$HELIX_CORRELATION_PAYLOAD/dotnet $HELIX_CORRELATION_PAYLOAD/sdk/$(ProductVersion)/vstest.console.dll $HELIX_WORKITEM_FRIENDLYNAME.dll --Settings:.runsettings</HelixCommand>
         <!-- arm64 as an explicit arch is currently not supported by vstest: https://github.com/microsoft/vstest/issues/2566. -->
         <HelixCommand Condition="'$(TargetArchitecture)' != 'arm64'">$(HelixCommand) --Platform:$(TargetArchitecture)</HelixCommand>
+        <HelixCommand>$(HelixCommand) --Blame:"$(_vstestBlameOption)"</HelixCommand>
         <!-- Include the payload and link to our custom dotnet host. -->
         <HelixCommand Condition="'$(TargetsWindows)' == 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="%HELIX_CORRELATION_PAYLOAD%\dotnet.exe"</HelixCommand>
         <HelixCommand Condition="'$(TargetsWindows)' != 'true' and '$(IncludeHelixCorrelationPayload)' == 'true'">$(HelixCommand) -- RunConfiguration.DotNetHostPath="$HELIX_CORRELATION_PAYLOAD/dotnet"</HelixCommand>
