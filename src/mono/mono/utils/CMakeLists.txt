@@ -51,7 +51,6 @@ set(utils_common_sources
     mono-mmap-windows.c
     mono-mmap.h
     mono-mmap-internals.h
-    mono-mmap-windows-internals.h
     mono-os-mutex.h
     mono-os-mutex.c
     mono-flight-recorder.h
