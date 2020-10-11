@@ -1209,55 +1209,21 @@ namespace System.Diagnostics
                 throw new InvalidOperationException(SR.FileNameMissing);
             }
 
-            try
+            if (startInfo.StandardInputEncoding != null && !startInfo.RedirectStandardInput)
             {
-                if (startInfo.StandardInputEncoding != null && !startInfo.RedirectStandardInput)
-                {
-                    throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
-                }
-                if (startInfo.StandardOutputEncoding != null && !startInfo.RedirectStandardOutput)
-                {
-                    throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
-                }
-                if (startInfo.StandardErrorEncoding != null && !startInfo.RedirectStandardError)
-                {
-                    throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
-                }
-                if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.ArgumentList.Count > 0)
-                {
-                    throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
-                }
-
-                //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
-                if (_disposed)
-                {
-                    throw new ObjectDisposedException(GetType().Name);
-                }
-
-                SerializationGuard.ThrowIfDeserializationInProgress("AllowProcessCreation", ref s_cachedSerializationSwitch);
-
-                return StartCore(startInfo);
+                throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
             }
-            catch (Exception exception)
+            if (startInfo.StandardOutputEncoding != null && !startInfo.RedirectStandardOutput)
             {
-                string workingDirectory = !string.IsNullOrWhiteSpace(startInfo.WorkingDirectory) ? startInfo.WorkingDirectory : Directory.GetCurrentDirectory();
-                string msg = SR.Format(SR.FailedToStartFileDirectory, startInfo.FileName, workingDirectory);
-                throw new ProcessStartException(msg, startInfo, exception);
+                throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
             }
-        }
-
-        [Serializable]
-        public class ProcessStartException : Exception
-        {
-            public ProcessStartException() { }
-
-            public ProcessStartException(string message) 
-                : base(message) { }
-
-            public ProcessStartException(string message, ProcessStartInfo startInfo) 
-                : base(message) 
-            { 
-                this.StartInfo = startInfo;
+            if (startInfo.StandardErrorEncoding != null && !startInfo.RedirectStandardError)
+            {
+                throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
+            }
+            if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.ArgumentList.Count > 0)
+            {
+                throw new InvalidOperationException(SR.ArgumentAndArgumentListInitialized);
             }
             if (!string.IsNullOrEmpty(startInfo.Arguments) && startInfo.HasArgumentList)
             {
@@ -1267,12 +1233,7 @@ namespace System.Diagnostics
             //Cannot start a new process and store its handle if the object has been disposed, since finalization has been suppressed.
             CheckDisposed();
 
-            protected ProcessStartException(SerializationInfo info, StreamingContext context) 
-                : base(info, context) 
-            { }
-
-            [NonSerialized]
-            public ProcessStartInfo StartInfo { get; private set; }
+            return StartCore(startInfo);
         }
 
         /// <devdoc>
