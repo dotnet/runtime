@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Cng.Tests
         [Fact]
         public static void VerifyDefaults()
         {
-            TripleDES tdes = new TripleDESCng();
+            using TripleDES tdes = new TripleDESCng();
             Assert.Equal(64, tdes.BlockSize);
             Assert.Equal(192, tdes.KeySize);
             Assert.Equal(CipherMode.CBC, tdes.Mode);
