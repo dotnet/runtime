@@ -110,10 +110,10 @@ This rule was taken from http://www.unicode.org/reports/tr35/tr35-collation.html
 */
 static int NeedsEscape(UChar character)
 {
-    return 0x21 <= character && character <= 0x2f
-           || 0x3a <= character && character <= 0x40
-           || 0x5b <= character && character <= 0x60
-           || 0x7b <= character && character <= 0x7e;
+    return ((0x21 <= character && character <= 0x2f)
+        || (0x3a <= character && character <= 0x40)
+        || (0x5b <= character && character <= 0x60)
+        || (0x7b <= character && character <= 0x7e));
 }
 
 /*
@@ -687,7 +687,7 @@ static int32_t SimpleAffix(const UCollator* pCollator, UErrorCode* pErrorCode, c
             const UColAttributeValue strength = ucol_getStrength(pCollator);
 
             int32_t capturedOffset = 0;
-            result = SimpleAffix_Iterators(pPatternIterator, pSourceIterator, strength, forwardSearch, pMatchedLength != nullptr ? &capturedOffset : nullptr);
+            result = SimpleAffix_Iterators(pPatternIterator, pSourceIterator, strength, forwardSearch, (pMatchedLength != NULL) ? &capturedOffset : NULL);
 
             if (result && pMatchedLength != NULL)
             {

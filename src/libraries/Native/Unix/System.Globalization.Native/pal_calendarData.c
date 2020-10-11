@@ -421,7 +421,7 @@ static int32_t EnumAbbrevEraNames(const char* locale,
 
     char* localeNamePtr = localeNameBuf;
     char* parentNamePtr = parentNameBuf;
-    STRING_COPY(localeNamePtr, sizeof(localeNameBuf), locale)
+    STRING_COPY(localeNamePtr, sizeof(localeNameBuf), locale);
 
     while (TRUE)
     {
