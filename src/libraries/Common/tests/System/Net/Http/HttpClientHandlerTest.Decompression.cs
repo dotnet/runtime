@@ -46,6 +46,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("deflate", true)]
         [InlineData("br", false)]
         [InlineData("br", true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task DecompressedResponse_MethodSpecified_DecompressedContentReturned(string encodingName, bool all)
         {
             Func<Stream, Stream> compress;
@@ -135,6 +136,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(DecompressedResponse_MethodNotSpecified_OriginalContentReturned_MemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task DecompressedResponse_MethodNotSpecified_OriginalContentReturned(
             string encodingName, Func<Stream, Stream> compress, DecompressionMethods methods)
         {
@@ -254,6 +256,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(DecompressionMethods.Deflate, "deflate", "gzip")]
         [InlineData(DecompressionMethods.Deflate, "deflate", "br")]
         [InlineData(DecompressionMethods.GZip | DecompressionMethods.Deflate, "gzip, deflate", "gzip, deflate")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task GetAsync_SetAutomaticDecompression_AcceptEncodingHeaderSentWithNoDuplicates(
             DecompressionMethods methods,
             string encodings,
