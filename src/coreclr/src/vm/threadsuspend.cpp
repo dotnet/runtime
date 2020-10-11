@@ -3497,7 +3497,7 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
     // we do not on uniprocessor though (spin-checking is pointless on uniprocessor)
     bool observeOnly = false;
 
-    _ASSERTE(!pCurThread->HasThreadState(Thread::TS_GCSuspendPending));
+    _ASSERTE(!pCurThread->HasThreadState(Thread::TS_GCSuspendFlags));
 #ifdef _DEBUG
     DWORD dbgStartTimeout = GetTickCount();
 #endif
@@ -3519,11 +3519,11 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
                 // ::FlushProcessWriteBuffers above guarantees that the state that we see here
                 // is after the trap flag is visible to the other thread.
                 //
-                // In short: any threads seen in preemptive mode are no longer interesting to us.
+                // In other words: any threads seen in preemptive mode are no longer interesting to us.
                 // if they try switch to cooperative, they would see the flag set. 
                 if (!thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
                 {
-                    _ASSERTE(!thread->HasThreadState(Thread::TS_GCSuspendPending));
+                    _ASSERTE(!thread->HasThreadState(Thread::TS_GCSuspendFlags));
                     continue;
                 }
                 else
@@ -3559,8 +3559,9 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 
             if (!thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
             {
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread %x went preemptive it is at a GC safe point\n", thread);
                 countThreads--;
-                thread->ResetThreadState(Thread::TS_GCSuspendPending);
+                thread->ResetThreadState(Thread::TS_GCSuspendFlags);
                 continue;
             }
 
@@ -3590,6 +3591,13 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 #endif // FEATURE_HIJACK && TARGET_UNIX
 
 #else // DISABLE_THREADSUSPEND
+
+            if (thread->HasThreadStateOpportunistic(Thread::TS_GCSuspendRedirected))
+            {
+                // We have seen this thead before and have redirected it.
+                // No point in suspending it again. It will not run hijackable code until it parks itself. 
+                continue;
+            }
 
             // We can not allocate memory after we suspend a thread.
             // Otherwise, we may deadlock the process, because the thread we just suspended
@@ -3642,8 +3650,9 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
             if (!thread->m_fPreemptiveGCDisabled.LoadWithoutBarrier())
             {
                 // actually, we are done with this one
+                STRESS_LOG1(LF_SYNC, LL_INFO1000, "    Thread %x went preemptive while suspending it is at a GC safe point\n", thread);
                 countThreads--;
-                thread->ResetThreadState(Thread::TS_GCSuspendPending);
+                thread->ResetThreadState(Thread::TS_GCSuspendFlags);
                 thread->ResumeThread();
                 continue;
             }
@@ -3678,6 +3687,7 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
 #ifdef TIME_SUSPEND
                         g_SuspendStatistics.cntRedirections++;
 #endif
+                        thread->SetThreadState(Thread::TS_GCSuspendRedirected);
                         STRESS_LOG1(LF_SYNC, LL_INFO1000, "Thread::SuspendRuntime() -   Thread %p redirected().\n", thread);
                     }
                 }
@@ -3699,7 +3709,7 @@ HRESULT ThreadSuspend::SuspendRuntime(ThreadSuspend::SUSPEND_REASON reason)
         previousCount = countThreads;
 
         // If we have just updated hijacks/redirects, then do a pass while only observing.
-        // Repeat as long as we see progress. Most threads react to hijack/redirect very fast and
+        // Repeat observing only as long as we see progress. Most threads react to hijack/redirect very fast and
         // typically we can avoid waiting on an event. (except on uniporocessor where we do not spin)
         //
         // Otherwise redo hijacks, but check g_pGCSuspendEvent event on the way.
