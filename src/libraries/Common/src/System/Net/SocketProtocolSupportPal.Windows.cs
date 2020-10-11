@@ -15,8 +15,18 @@ namespace System.Net
         public static bool OSSupportsIPv4 { get; } = IsSupported(AddressFamily.InterNetwork);
         public static bool OSSupportsUnixDomainSockets { get; } = IsSupported(AddressFamily.Unix);
 
+        private static bool s_initialized;
+
         private static bool IsSupported(AddressFamily af)
         {
+            // Ensure that WSAStartup has been called once per process.
+            // The System.Net.NameResolution contract is responsible for the initialization.
+            if (!s_initialized)
+            {
+                Dns.GetHostName();
+                s_initialized = true;
+            }
+
             IntPtr INVALID_SOCKET = (IntPtr)(-1);
             IntPtr socket = INVALID_SOCKET;
             try

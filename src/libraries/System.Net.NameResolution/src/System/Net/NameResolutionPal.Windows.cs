@@ -16,10 +16,9 @@ namespace System.Net
         private static volatile bool s_initialized;
         private static readonly object s_initializedLock = new object();
 
-        private static readonly unsafe Interop.Winsock.LPLOOKUPSERVICE_COMPLETION_ROUTINE s_getAddrInfoExCallback = GetAddressInfoExCallback;
         private static bool s_getAddrInfoExSupported;
 
-        public static void EnsureSocketsAreInitialized()
+        private static void EnsureInitialized()
         {
             if (!s_initialized)
             {
@@ -50,13 +49,15 @@ namespace System.Net
         {
             get
             {
-                EnsureSocketsAreInitialized();
+                EnsureInitialized();
                 return s_getAddrInfoExSupported;
             }
         }
 
         public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
         {
+            EnsureInitialized();
+
             aliases = Array.Empty<string>();
 
             var hints = new Interop.Winsock.AddressInfo { ai_family = AddressFamily.Unspecified }; // Gets all address families
@@ -92,6 +93,8 @@ namespace System.Net
 
         public static unsafe string? TryGetNameInfo(IPAddress addr, out SocketError errorCode, out int nativeErrorCode)
         {
+            EnsureInitialized();
+
             SocketAddress address = new IPEndPoint(addr, 0).Serialize();
             Span<byte> addressBuffer = address.Size <= 64 ? stackalloc byte[64] : new byte[address.Size];
             for (int i = 0; i < address.Size; i++)
@@ -126,6 +129,8 @@ namespace System.Net
 
         public static unsafe string GetHostName()
         {
+            EnsureInitialized();
+
             // We do not cache the result in case the hostname changes.
 
             const int HostNameBufferLength = 256;
@@ -143,6 +148,8 @@ namespace System.Net
 
         public static unsafe Task GetAddrInfoAsync(string hostName, bool justAddresses)
         {
+            EnsureInitialized();
+
             GetAddrInfoExContext* context = GetAddrInfoExContext.AllocateContext();
 
             GetAddrInfoExState state;
@@ -164,7 +171,7 @@ namespace System.Net
             }
 
             SocketError errorCode = (SocketError)Interop.Winsock.GetAddrInfoExW(
-                hostName, null, Interop.Winsock.NS_ALL, IntPtr.Zero, &hints, &context->Result, IntPtr.Zero, &context->Overlapped, s_getAddrInfoExCallback, &context->CancelHandle);
+                hostName, null, Interop.Winsock.NS_ALL, IntPtr.Zero, &hints, &context->Result, IntPtr.Zero, &context->Overlapped, &GetAddressInfoExCallback, &context->CancelHandle);
 
             if (errorCode != SocketError.IOPending)
             {
@@ -174,6 +181,7 @@ namespace System.Net
             return state.Task;
         }
 
+        [UnmanagedCallersOnly]
         private static unsafe void GetAddressInfoExCallback(int error, int bytes, NativeOverlapped* overlapped)
         {
             // Can be casted directly to GetAddrInfoExContext* because the overlapped is its first field
