@@ -20,8 +20,6 @@ namespace System.Net.Sockets
         [SupportedOSPlatform("windows")]
         public Socket(SocketInformation socketInformation)
         {
-            InitializeSockets();
-
             SocketError errorCode = SocketPal.CreateSocket(socketInformation, out _handle,
                 ref _addressFamily, ref _socketType, ref _protocolType);
 

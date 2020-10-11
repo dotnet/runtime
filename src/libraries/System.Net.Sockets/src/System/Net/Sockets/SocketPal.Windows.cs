@@ -18,19 +18,20 @@ namespace System.Net.Sockets
         public const bool SupportsMultipleConnectAttempts = true;
         public static readonly int MaximumAddressSize = UnixDomainSocketEndPoint.MaxAddressSize;
 
+        [ModuleInitializer]
+        internal static void Initialize()
+        {
+            // Ensure that WSAStartup has been called once per process.
+            // The System.Net.NameResolution contract is responsible for the initialization.
+            Dns.GetHostName();
+        }
+
         private static void MicrosecondsToTimeValue(long microseconds, ref Interop.Winsock.TimeValue socketTime)
         {
             const int microcnv = 1000000;
 
             socketTime.Seconds = (int)(microseconds / microcnv);
             socketTime.Microseconds = (int)(microseconds % microcnv);
-        }
-
-        public static void Initialize()
-        {
-            // Ensure that WSAStartup has been called once per process.
-            // The System.Net.NameResolution contract is responsible for the initialization.
-            Dns.GetHostName();
         }
 
         public static SocketError GetLastSocketError()
