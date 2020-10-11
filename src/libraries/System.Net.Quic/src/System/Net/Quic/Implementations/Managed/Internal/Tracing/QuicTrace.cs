@@ -50,8 +50,6 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
                 [KeyUpdateTrigger.RemoteUpdate] = GetBytesHelper("remote_update"),
             };
 
-        private static readonly Dictionary<FrameType, byte[]> _frameTypeNames = new Dictionary<FrameType, byte[]> { };
-
         private static byte[] GetBytesHelper(string s) => Encoding.UTF8.GetBytes(s);
 
         private static class Category
@@ -205,13 +203,19 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             internal static readonly byte[] client_1rtt_secret = GetBytesHelper("client_1rtt_secret");
         }
 
+        // switches for verbosity logging
+        // TODO-RZ: it might be good idea to make this configurable somehow
+        private bool _logDatagrams = false;
+        private bool _logRecovery = true;
+        private bool _logSecurity = true;
+        private bool _logTransport = true;
+
         private readonly Utf8JsonWriter _writer;
         private readonly Stream _stream;
         private readonly byte[] _groupId;
 
         private readonly bool _isServer;
 
-        private long _referenceTimeTicks;
         private bool _inEvent;
         private bool _disposed;
 
@@ -236,17 +240,17 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             //   "traces": [
             //     {
             //       "vantage_point": {
-            //         "type": "server"
+            //         "type": <server|client>
             //       },
             //       "configuration": {
-            //         "reference_time": <unix timestamp>
+            //         "time_units": "us"
             //       },
             //       "common_fields": {
-            //         "group_id": "6c7a62687cfa0f32",
+            //         "group_id": <Original connection id>,
             //         "protocol_type": "QUIC_HTTP3"
             //       },
             //       "event_fields": [
-            //         "relative_time",
+            //         "time",
             //         "category",
             //         "event",
             //         "trigger",
@@ -346,6 +350,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
         internal void OnKeyUpdated(ReadOnlySpan<byte> secret, EncryptionLevel level, bool isServer,
             KeyUpdateTrigger trigger, int? generation)
         {
+            if (!_logSecurity)
+                return;
+
             WriteEventProlog(Category.Security, Event.key_updated);
 
             var keyType = (level, isServer) switch
@@ -367,6 +374,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnDatagramReceived(int length)
         {
+            if (!_logDatagrams)
+                return;
+
             WriteEventProlog(Category.Transport, Event.datagrams_received);
 
             _writer.WriteNumber(Field.byte_length, length);
@@ -376,6 +386,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnDatagramSent(int length)
         {
+            if (!_logDatagrams)
+                return;
+
             WriteEventProlog(Category.Transport, Event.datagrams_sent);
 
             _writer.WriteNumber(Field.byte_length, length);
@@ -385,6 +398,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnDatagramDropped(int length)
         {
+            if (!_logDatagrams)
+                return;
+
             WriteEventProlog(Category.Transport, Event.datagrams_dropped);
 
             _writer.WriteNumber(Field.byte_length, length);
@@ -400,6 +416,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
         internal void OnPacketReceiveStart(ReadOnlySpan<byte> scid, ReadOnlySpan<byte> dcid, PacketType packetType,
             long packetNumber, long payloadLength, long packetSize)
         {
+            if (!_logTransport)
+                return;
+
             WriteEventProlog(Category.Transport, Event.packet_received);
             _writer.WriteString(Field.packet_type, _packetTypeNames[packetType]);
 
@@ -410,6 +429,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnPacketReceiveEnd()
         {
+            if (!_logTransport)
+                return;
+
             // end frames array
             _writer.WriteEndArray();
 
@@ -418,6 +440,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnPacketSendStart()
         {
+            if (!_logTransport)
+                return;
+
             WriteEventProlog(Category.Transport, Event.packet_sent);
 
             _writer.WriteStartArray(Field.frames);
@@ -426,6 +451,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
         internal void OnPacketSendEnd(ReadOnlySpan<byte> scid, ReadOnlySpan<byte> dcid,
             PacketType packetType, long packetNumber, long payloadLength, long packetSize)
         {
+            if (!_logTransport)
+                return;
+
             // end frames array
             _writer.WriteEndArray();
 
@@ -456,6 +484,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnPacketDropped(PacketType? type, int packetSize)
         {
+            if (!_logTransport)
+                return;
+
             WriteEventProlog(Category.Transport, Event.packet_dropped);
 
             if (type != null)
@@ -469,18 +500,27 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnPaddingFrame(int length)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.Padding);
             WriteFrameEpilog();
         }
 
         internal void OnPingFrame()
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.Ping);
             WriteFrameEpilog();
         }
 
         internal void OnAckFrame(in AckFrame frame, long ackDelayMicroseconds)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.Ack);
 
             _writer.WriteNumber(Field.ack_delay, ackDelayMicroseconds / 1000.0);
@@ -516,18 +556,27 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnResetStreamFrame(in ResetStreamFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.ResetStream);
             WriteFrameEpilog();
         }
 
         internal void OnStopSendingFrame(in StopSendingFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.StopSending);
             WriteFrameEpilog();
         }
 
         internal void OnCryptoFrame(in CryptoFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.Crypto);
 
             _writer.WriteNumber(Field.offset, frame.Offset);
@@ -538,12 +587,18 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnNewTokenFrame(in NewTokenFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.NewToken);
             WriteFrameEpilog();
         }
 
         internal void OnStreamFrame(in StreamFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.Stream);
 
             _writer.WriteNumber(Field.stream_id, frame.StreamId);
@@ -558,72 +613,108 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnMaxDataFrame(in MaxDataFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.MaxData);
             WriteFrameEpilog();
         }
 
         internal void OnMaxStreamDataFrame(in MaxStreamDataFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.MaxStreamData);
             WriteFrameEpilog();
         }
 
         internal void OnMaxStreamsFrame(in MaxStreamsFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.MaxStreams);
             WriteFrameEpilog();
         }
 
         internal void OnDataBlockedFrame(in DataBlockedFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.DataBlocked);
             WriteFrameEpilog();
         }
 
         internal void OnStreamDataBlockedFrame(in StreamDataBlockedFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.StreamDataBlocked);
             WriteFrameEpilog();
         }
 
         internal void OnStreamsBlockedFrame(in StreamsBlockedFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.StreamsBlocked);
             WriteFrameEpilog();
         }
 
         internal void OnNewConnectionIdFrame(in NewConnectionIdFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.NewConnectionId);
             WriteFrameEpilog();
         }
 
         internal void OnRetireConnectionIdFrame(in RetireConnectionIdFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.RetireConnectionId);
             WriteFrameEpilog();
         }
 
         internal void OnPathChallengeFrame(in PathChallengeFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(frame.IsChallenge ? Frame.PathChallenge : Frame.PathResponse);
             WriteFrameEpilog();
         }
 
         internal void OnConnectionCloseFrame(in ConnectionCloseFrame frame)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.ConnectionClose);
             WriteFrameEpilog();
         }
 
         internal void OnHandshakeDoneFrame()
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.HandshakeDone);
             WriteFrameEpilog();
         }
 
         internal void OnUnknownFrame(long frameType, int length)
         {
+            if (!_logTransport)
+                return;
+
             WriteFrameProlog(Frame.Unknown);
 
             _writer.WriteNumber(Field.raw_frame_type, frameType);
@@ -645,6 +736,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnPacketLost(PacketType packetType, long packetNumber, PacketLossTrigger trigger)
         {
+            if (!_logRecovery)
+                return;
+
             WriteEventProlog(Category.Recovery, Event.packet_lost);
 
             _writer.WriteString(Field.packet_type, _packetTypeNames[packetType]);
@@ -666,6 +760,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnRecoveryMetricsUpdated(RecoveryController recovery)
         {
+            if (!_logRecovery)
+                return;
+
             WriteEventProlog(Category.Recovery, Event.metrics_updated);
 
             if (_minRtt != recovery.MinimumRtt)
@@ -706,6 +803,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnCongestionStateUpdated(CongestionState state)
         {
+            if (!_logRecovery)
+                return;
+
             if (_previousCongestionState == state)
                 return;
             _previousCongestionState = state;
@@ -719,6 +819,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnLossTimerUpdated()
         {
+            if (!_logRecovery)
+                return;
+
             // TODO
             // WriteEventProlog(Category.Recovery, Events.loss_timer_updated);
             // WriteEventEpilog();
@@ -726,6 +829,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
         internal void OnRecoveryParametersSet(RecoveryController recovery)
         {
+            if (!_logRecovery)
+                return;
+
             WriteEventProlog(Category.Recovery, Event.parameters_set);
 
             _writer.WriteNumber(Field.reordering_threshold, RecoveryController.PacketReorderingThreshold);

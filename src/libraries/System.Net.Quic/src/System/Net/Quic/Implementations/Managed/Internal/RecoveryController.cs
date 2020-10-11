@@ -115,7 +115,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             /// <summary>
             ///     Queue of packets deemed lost.
             /// </summary>
-            internal Queue<SentPacket> LostPackets { get; } = new Queue<SentPacket>();
+            internal Queue<(SentPacket packet, PacketLossTrigger trigger)> LostPackets { get; } = new Queue<(SentPacket packet, PacketLossTrigger trigger)>();
 
             /// <summary>
             ///     Queue of packets newly acked by the peer.
@@ -281,6 +281,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 SetLossDetectionTimer(isHandshakeComplete);
 
                 Trace?.OnRecoveryMetricsUpdated(this);
+                Trace?.OnCongestionStateUpdated(CongestionState);
             }
         }
 
@@ -572,8 +573,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 if (trigger != null)
                 {
                     // Mark packet as lost
-                    pnSpace.LostPackets.Enqueue(packet);
-                    Trace?.OnPacketLost(pnSpace.PacketType, packet.PacketNumber, trigger.Value);
+                    pnSpace.LostPackets.Enqueue((packet, trigger.Value));
 
                     if (packet.InFlight)
                     {
@@ -627,9 +627,9 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 sentPacketPool.Return(packet);
             }
 
-            while (pnSpace.LostPackets.TryDequeue(out var packet))
+            while (pnSpace.LostPackets.TryDequeue(out var i))
             {
-                sentPacketPool.Return(packet);
+                sentPacketPool.Return(i.packet);
             }
 
             pnSpace.Reset();

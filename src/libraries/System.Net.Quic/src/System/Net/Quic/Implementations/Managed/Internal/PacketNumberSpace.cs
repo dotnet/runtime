@@ -13,6 +13,16 @@ namespace System.Net.Quic.Implementations.Managed.Internal
     /// </summary>
     internal class PacketNumberSpace
     {
+        public PacketNumberSpace(PacketType packetType)
+        {
+            PacketType = packetType;
+        }
+
+        /// <summary>
+        ///     Type of the packets belonging to this connection.
+        /// </summary>
+        internal PacketType PacketType { get; }
+
         /// <summary>
         ///     Largest packet number received from the peer.
         /// </summary>

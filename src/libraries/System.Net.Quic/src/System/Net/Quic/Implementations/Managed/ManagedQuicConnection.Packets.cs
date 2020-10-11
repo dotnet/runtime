@@ -456,10 +456,11 @@ namespace System.Net.Quic.Implementations.Managed
 
             // process lost packets
             var lostPackets = recoverySpace.LostPackets;
-            while (lostPackets.TryDequeue(out var lostPacket))
+            while (lostPackets.TryDequeue(out var i))
             {
-                OnPacketLost(lostPacket, pnSpace);
-                context.ReturnPacket(lostPacket);
+                _trace?.OnPacketLost(pnSpace.PacketType, i.packet.PacketNumber, i.trigger);
+                OnPacketLost(i.packet, pnSpace);
+                context.ReturnPacket(i.packet);
             }
 
             int maxPacketLength = (int)(Tls.IsHandshakeComplete
@@ -580,7 +581,7 @@ namespace System.Net.Quic.Implementations.Managed
                 recoverySpace.RemainingLossProbes--;
             }
 
-            _trace?.OnPacketSendEnd(SourceConnectionId!.Data, DestinationConnectionId!.Data, packetType, pnSpace.NextPacketNumber, payloadLength, writer.Buffer.Length);
+            _trace?.OnPacketSendEnd(SourceConnectionId!.Data, DestinationConnectionId!.Data, packetType, pnSpace.NextPacketNumber, payloadLength, writer.BytesWritten);
             Recovery.OnPacketSent(GetPacketSpace(packetType), context.SentPacket, Tls.IsHandshakeComplete);
             pnSpace.NextPacketNumber++;
             NetEventSource.PacketSent(this, context.SentPacket.BytesSent);

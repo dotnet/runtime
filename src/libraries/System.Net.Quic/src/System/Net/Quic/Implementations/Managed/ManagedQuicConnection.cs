@@ -37,9 +37,14 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private long _lastConnectionCloseSentTimestamp;
 
+        /// <summary>
+        ///     Packet number spaces for the three main packet types.
+        /// </summary>
         private readonly PacketNumberSpace[] _pnSpaces = new PacketNumberSpace[3]
         {
-            new PacketNumberSpace(), new PacketNumberSpace(), new PacketNumberSpace()
+            new PacketNumberSpace(PacketType.Initial),
+            new PacketNumberSpace(PacketType.Handshake),
+            new PacketNumberSpace(PacketType.OneRtt)
         };
 
         /// <summary>

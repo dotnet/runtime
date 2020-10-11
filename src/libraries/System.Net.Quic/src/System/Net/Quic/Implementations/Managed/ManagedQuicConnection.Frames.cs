@@ -1043,6 +1043,11 @@ namespace System.Net.Quic.Implementations.Managed
                     break;
                 }
             }
+
+            if (_streams.HasFlushableStreams)
+            {
+                _socketContext.Ping(); // make sure we get another go on sending
+            }
         }
     }
 }

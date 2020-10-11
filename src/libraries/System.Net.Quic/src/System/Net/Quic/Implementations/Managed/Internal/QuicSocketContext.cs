@@ -218,6 +218,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal
 
         private void DoSignal()
         {
+            // clear first, cause update may trigger another signal request
             _signalWanted = false;
             OnSignal();
         }
