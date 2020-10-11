@@ -1057,7 +1057,7 @@ mono_w32process_module_get_name (gpointer handle, gpointer module, gunichar2 **s
 }
 
 gboolean
-mono_w32process_module_get_information (gpointer handle, gpointer module, MODULEINFO *modinfo, guint32 size)
+mono_w32process_module_get_information (gpointer handle, gpointer module, gpointer modinfo, guint32 size)
 {
 	MonoW32Handle *handle_data;
 	MonoW32HandleProcess *process_handle;
@@ -1107,9 +1107,9 @@ mono_w32process_module_get_information (gpointer handle, gpointer module, MODULE
 			if (ret == FALSE &&
 				((module == NULL && match_procname_to_modulename (pname, found_module->filename)) ||
 				 (module != NULL && found_module->address_start == module))) {
-				modinfo->lpBaseOfDll = found_module->address_start;
-				modinfo->SizeOfImage = (gsize)(found_module->address_end) - (gsize)(found_module->address_start);
-				modinfo->EntryPoint = found_module->address_offset;
+				((MODULEINFO *)modinfo)->lpBaseOfDll = found_module->address_start;
+				((MODULEINFO *)modinfo)->SizeOfImage = (gsize)(found_module->address_end) - (gsize)(found_module->address_start);
+				((MODULEINFO *)modinfo)->EntryPoint = found_module->address_offset;
 				ret = TRUE;
 			}
 
@@ -3525,7 +3525,7 @@ mono_w32process_get_fileversion_info (const gunichar2 *filename, gpointer *data)
 }
 
 gboolean
-mono_w32process_module_get_information (gpointer handle, gpointer module, MODULEINFO *modinfo, guint32 size)
+mono_w32process_module_get_information (gpointer handle, gpointer module, gpointer modinfo, guint32 size)
 {
 	return FALSE;
 }

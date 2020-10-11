@@ -349,6 +349,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task GetStringAsync_Success()
         {
             string content = Guid.NewGuid().ToString();
@@ -368,6 +369,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task GetStringAsync_CanBeCanceled_AlreadyCanceledCts()
         {
             var onClientFinished = new SemaphoreSlim(0, 1);
@@ -390,6 +392,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task GetStringAsync_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -503,6 +506,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task GetByteArrayAsync_Success()
         {
             string content = Guid.NewGuid().ToString();
@@ -523,6 +527,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task GetByteArrayAsync_CanBeCanceled_AlreadyCanceledCts()
         {
             var onClientFinished = new SemaphoreSlim(0, 1);
@@ -545,6 +550,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task GetByteArrayAsync_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -571,6 +577,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task GetStreamAsync_Success()
         {
             string content = Guid.NewGuid().ToString();
@@ -594,6 +601,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task GetStreamAsync_CanBeCanceled_AlreadyCanceledCts()
         {
             var onClientFinished = new SemaphoreSlim(0, 1);
@@ -616,6 +624,7 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task GetStreamAsync_CanBeCanceled()
         {
             var cts = new CancellationTokenSource();
@@ -664,6 +673,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
         public void CancelAllPending_AllPendingOperationsCanceled(bool withInfiniteTimeout)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -681,6 +691,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
         public void Timeout_TooShort_AllPendingOperationsCanceled(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -716,6 +727,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        [SkipOnMono("System.Net.Sockets is not supported on this platform", TestPlatforms.Browser)]
         public void Timeout_CallerCanceledTokenBeforeTimeout_TimeoutIsNotDetected(HttpCompletionOption completionOption)
         {
             using (var client = new HttpClient(new CustomResponseHandler((r, c) => WhenCanceled<HttpResponseMessage>(c))))
@@ -867,6 +879,7 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(HttpCompletionOption.ResponseContentRead)]
         [InlineData(HttpCompletionOption.ResponseHeadersRead)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task Send_SingleThread_Loopback_Succeeds(HttpCompletionOption completionOption)
         {
             string content = "Test content";
@@ -1104,7 +1117,7 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version11 : typeof(HttpRequestException) };
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version11 : typeof(HttpRequestException) };
                 yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version20 : typeof(HttpRequestException) };
-                if (QuicConnection.IsQuicSupported)
+                if (QuicImplementationProviders.Default.IsSupported)
                 {
                     yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionOrLower, HttpVersion30, useSsl, HttpVersion.Version11 };
                     yield return new object[] { HttpVersion.Version11, HttpVersionPolicy.RequestVersionExact, HttpVersion30, useSsl, HttpVersion.Version11 };
@@ -1117,14 +1130,14 @@ namespace System.Net.Http.Functional.Tests
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version20, useSsl, useSsl ? (object)HttpVersion.Version20 : typeof(HttpRequestException) };
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version20, useSsl, HttpVersion.Version20 };
                 yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion.Version20, useSsl, HttpVersion.Version20 };
-                if (QuicConnection.IsQuicSupported)
+                if (QuicImplementationProviders.Default.IsSupported)
                 {
                     yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrLower, HttpVersion30, useSsl, useSsl ? HttpVersion.Version20 : HttpVersion.Version11 };
                     yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionExact, HttpVersion30, useSsl, HttpVersion.Version20 };
                     yield return new object[] { HttpVersion.Version20, HttpVersionPolicy.RequestVersionOrHigher, HttpVersion30, useSsl, useSsl ? (object)HttpVersion30 : typeof(HttpRequestException) };
                 }
 
-                if (QuicConnection.IsQuicSupported)
+                if (QuicImplementationProviders.Default.IsSupported)
                 {
                     yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionOrLower, HttpVersion.Version11, useSsl, useSsl ? HttpVersion30 : HttpVersion.Version11 };
                     yield return new object[] { HttpVersion30, HttpVersionPolicy.RequestVersionExact, HttpVersion.Version11, useSsl, typeof(HttpRequestException) };
@@ -1141,6 +1154,7 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [MemberData(nameof(VersionSelectionMemberData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/39187", TestPlatforms.Browser)]
         public async Task SendAsync_CorrectVersionSelected_LoopbackServer(Version requestVersion, HttpVersionPolicy versionPolicy, Version serverVersion, bool useSsl, object expectedResult)
         {
             await HttpAgnosticLoopbackServer.CreateClientAndServerAsync(

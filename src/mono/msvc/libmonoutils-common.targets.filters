@@ -94,9 +94,6 @@
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap-internals.h">
       <Filter>Header Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClInclude>
-    <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-mmap-windows-internals.h">
-      <Filter>Header Files$(MonoUtilsFilterSubFolder)\common</Filter>
-    </ClInclude>
     <ClInclude Include="$(MonoSourceLocation)\mono\utils\mono-os-mutex.h">
       <Filter>Header Files$(MonoUtilsFilterSubFolder)\common</Filter>
     </ClInclude>

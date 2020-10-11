@@ -1806,7 +1806,7 @@ EEClass::CheckForHFA()
 }
 
 #ifdef FEATURE_64BIT_ALIGNMENT
-// Returns true iff the native view of this type requires 64-bit aligment.
+// Returns true iff the native view of this type requires 64-bit alignment.
 bool MethodTable::NativeRequiresAlign8()
 {
     LIMITED_METHOD_CONTRACT;

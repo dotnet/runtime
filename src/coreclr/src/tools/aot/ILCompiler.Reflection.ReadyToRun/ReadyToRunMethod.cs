@@ -22,25 +22,25 @@ namespace ILCompiler.Reflection.ReadyToRun
     /// </summary>
     public struct FixupCell
     {
-        public int Index { get; set; }
+        public int Index { get; }
 
         /// <summary>
         /// Zero-based index of the import table within the import tables section.
         /// </summary>
-        public uint TableIndex;
+        public uint TableIndex { get; }
 
         /// <summary>
         /// Zero-based offset of the entry in the import table; it must be a multiple
         /// of the target architecture pointer size.
         /// </summary>
-        public uint CellOffset;
+        public uint CellOffset { get; }
 
         /// <summary>
-        /// Fixup cell signature (textual representation of the typesystem object).
+        /// Fixup cell signature
         /// </summary>
-        public string Signature;
+        public ReadyToRunSignature Signature { get; }
 
-        public FixupCell(int index, uint tableIndex, uint cellOffset, string signature)
+        public FixupCell(int index, uint tableIndex, uint cellOffset, ReadyToRunSignature signature)
         {
             Index = index;
             TableIndex = tableIndex;
@@ -465,6 +465,12 @@ namespace ILCompiler.Reflection.ReadyToRun
             for (int i = 0; i < RuntimeFunctionCount; i++)
             {
                 int startRva = NativeReader.ReadInt32(_readyToRunReader.Image, ref curOffset);
+                if (_readyToRunReader.Machine == Machine.ArmThumb2)
+                {
+                    // The low bit of this address is set since the function contains thumb code.
+                    // Clear this bit in order to get the "real" RVA of the start of the function.
+                    startRva = (int)(startRva & ~1);
+                }
                 int endRva = -1;
                 if (_readyToRunReader.Machine == Machine.Amd64)
                 {

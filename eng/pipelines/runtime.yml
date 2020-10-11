@@ -143,6 +143,7 @@ jobs:
     - Linux_musl_arm
     - Linux_musl_arm64
     - Linux_musl_x64
+    - OSX_arm64
     - Windows_NT_x86
     - Windows_NT_x64
     - Windows_NT_arm
@@ -201,6 +202,7 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
     buildConfig: release
     platforms:
+    - OSX_arm64
     - OSX_x64
     - Linux_x64
     - Linux_arm
@@ -226,7 +228,7 @@ jobs:
     jobTemplate: /eng/pipelines/coreclr/templates/format-job.yml
     platforms:
     - Linux_x64
-    # Isssue: https://github.com/dotnet/runtime/issues/40034
+    # Issue: https://github.com/dotnet/runtime/issues/40034
     #- Windows_NT_x64
     jobParameters:
       condition: >-
@@ -619,6 +621,7 @@ jobs:
     - Linux_arm64
     - Linux_musl_x64
     - Linux_x64
+    - OSX_arm64
     - OSX_x64
     - Windows_NT_x64
     - FreeBSD_x64
@@ -705,6 +708,7 @@ jobs:
   parameters:
     buildConfig: Release
     platforms:
+      - OSX_arm64
       - OSX_x64
       - Linux_x64
       - Linux_arm64
@@ -986,6 +990,7 @@ jobs:
     platforms:
     # - Windows_NT_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
     - Linux_arm
+    - Linux_musl_arm
     - Linux_musl_arm64
     - Windows_NT_x86
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml

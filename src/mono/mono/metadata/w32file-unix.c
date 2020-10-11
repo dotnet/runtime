@@ -3834,7 +3834,7 @@ mono_w32file_create_pipe (gpointer *readpipe, gpointer *writepipe, guint32 size)
 #ifdef HAVE_GETFSSTAT
 /* Darwin has getfsstat */
 gint32
-mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
+mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf, MonoError *error)
 {
 	struct statfs *stats;
 	gint size, n, i;
@@ -3875,7 +3875,7 @@ mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
 }
 #elif _AIX
 gint32
-mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
+mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf, MonoError *error)
 {
 	struct vmount *mounts;
 	// ret will first be the errno cond, then no of structs
@@ -3976,7 +3976,7 @@ static void append_to_mountpoint (LinuxMountInfoParseState *state);
 static gboolean add_drive_string (guint32 len, gunichar2 *buf, LinuxMountInfoParseState *state);
 
 gint32
-mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
+mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf, MonoError *error)
 {
 	gint fd;
 	gint32 ret = 0;
@@ -4248,7 +4248,7 @@ add_drive_string (guint32 len, gunichar2 *buf, LinuxMountInfoParseState *state)
 }
 #else
 gint32
-mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf)
+mono_w32file_get_logical_drive (guint32 len, gunichar2 *buf, MonoError *error)
 {
 	return GetLogicalDriveStrings_Mtab (len, buf);
 }
@@ -4728,7 +4728,7 @@ GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 
 #ifndef ENABLE_NETCORE
 guint32
-ves_icall_System_IO_DriveInfo_GetDriveType (const gunichar2 *root_path_name, gint32 root_path_name_length, MonoError *error)
+mono_w32file_get_drive_type (const gunichar2 *root_path_name, gint32 root_path_name_length, MonoError *error)
 {
 	// FIXME Check for embedded nuls here or in managed.
 

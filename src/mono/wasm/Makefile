@@ -13,7 +13,7 @@ BINDIR?=$(TOP)/artifacts/bin
 OBJDIR?=$(TOP)/artifacts/obj
 PINVOKE_TABLE?=$(TOP)/artifacts/obj/wasm/pinvoke-table.h
 MONO_BIN_DIR?=$(BINDIR)/mono/Browser.wasm.$(CONFIG)
-NATIVE_BIN_DIR?=$(BINDIR)/native/net5.0-Browser-$(CONFIG)-wasm
+NATIVE_BIN_DIR?=$(BINDIR)/native/net6.0-Browser-$(CONFIG)-wasm
 ICU_LIBDIR?=
 SYSTEM_NATIVE_LIBDIR?=$(TOP)/src/libraries/Native/Unix/System.Native
 ENABLE_ES6?=false
@@ -150,27 +150,15 @@ run-tests-jsc-%:
 run-tests-%:
 	PATH="$(JSVU):$(PATH)" $(DOTNET) build $(TOP)/src/libraries/$*/tests/ /t:Test /p:TargetOS=Browser /p:TargetArchitecture=wasm /p:Configuration=$(CONFIG) $(MSBUILD_ARGS)
 
-build-debugger-test-app:
-	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests/debugger-test
-	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test
-	$(DOTNET) build --configuration debug --nologo /p:TargetArchitecture=wasm /p:TargetOS=Browser /p:Configuration=Debug /p:RuntimeConfiguration=$(CONFIG) $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test-embedded
-	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/debugger-driver.html $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
-	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/other.js $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
-	cp $(TOP)/src/mono/wasm/debugger/tests/debugger-test/runtime-debugger.js $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
-	cp $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test/bin/Debug/publish/managed/* $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
-	cp $(TOP)/src/mono/wasm/debugger/tests/lazy-debugger-test-embedded/bin/Debug/publish/managed/* $(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish
-
-run-debugger-tests: build-debugger-test-app build-dbg-testsuite
+run-debugger-tests:
 	if [ ! -z "$(TEST_FILTER)" ]; then \
-		export TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish; \
 		export LC_ALL=en_US.UTF-8; \
 		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite --filter FullyQualifiedName~$(TEST_FILTER); \
-		unset TEST_SUITE_PATH LC_ALL; \
+		unset LC_ALL; \
 	else \
-		export TEST_SUITE_PATH=$(TOP)/src/mono/wasm/debugger/tests/debugger-test/bin/Debug/publish; \
 		export LC_ALL=en_US.UTF-8; \
 		$(DOTNET) test  $(TOP)/src/mono/wasm/debugger/DebuggerTestSuite $(TEST_ARGS); \
-		unset TEST_SUITE_PATH LC_ALL; \
+		unset LC_ALL; \
 	fi
 
 build-dbg-proxy:

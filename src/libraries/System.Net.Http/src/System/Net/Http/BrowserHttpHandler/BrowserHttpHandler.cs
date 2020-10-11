@@ -137,6 +137,11 @@ namespace System.Net.Http
         private Dictionary<string, object?>? _properties;
         public IDictionary<string, object?> Properties => _properties ??= new Dictionary<string, object?>();
 
+        protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            throw new PlatformNotSupportedException ();
+        }
+
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             try

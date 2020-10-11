@@ -104,7 +104,6 @@
 
   <!-- Sources -->
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\Internal\Console.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\ComponentActivator.cs" />
     <Compile Include="$(BclSourcesRoot)\Internal\Runtime\InteropServices\IsolatedComponentLoadContext.cs" />
     <Compile Include="$(BclSourcesRoot)\System\__Canon.cs" />
@@ -244,12 +243,6 @@
     <Compile Include="$(BclSourcesRoot)\System\ValueType.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\WeakReference.T.CoreCLR.cs" />
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.GetStdHandle.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.GetStdHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.HandleTypes.cs">
-      <Link>Common\Interop\Windows\Kernel32\Interop.HandleTypes.cs</Link>
-    </Compile>
   </ItemGroup>
   <!-- These classes are only used for FeatureCominterop, but they are referenced by tests
        in order to allow tests to be built on all platforms, these classes are included for all

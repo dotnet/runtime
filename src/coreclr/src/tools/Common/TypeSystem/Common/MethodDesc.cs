@@ -419,7 +419,7 @@ namespace Internal.TypeSystem
         public override bool Equals(object o)
         {
             // Its only valid to compare two MethodDescs in the same context
-            Debug.Assert(object.ReferenceEquals(o, null) || !(o is MethodDesc) || object.ReferenceEquals(((MethodDesc)o).Context, this.Context));
+            Debug.Assert(o is not MethodDesc || object.ReferenceEquals(((MethodDesc)o).Context, this.Context));
             return object.ReferenceEquals(this, o);
         }
 
