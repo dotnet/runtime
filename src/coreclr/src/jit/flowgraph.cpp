@@ -22743,7 +22743,11 @@ void Compiler::fgAttachStructInlineeToAsg(GenTree* tree, GenTree* child, CORINFO
 //    If the return type is a struct type and we're on a platform
 //    where structs can be returned in multiple registers, ensure the
 //    call has a suitable parent.
-
+//
+//    If the original call type and the substitution type are different
+//    the functions makes necessary updates. It could happen if there was
+//    an implicit conversion in the inlinee body.
+//
 Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTree** pTree, fgWalkData* data)
 {
     // All the operations here and in the corresponding postorder
@@ -22798,6 +22802,29 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         }
 #endif // DEBUG
 
+        var_types newType = inlineCandidate->TypeGet();
+
+        // If we end up swapping type we may need to retype the tree:
+        if (retType != newType)
+        {
+            if ((retType == TYP_BYREF) && (tree->OperGet() == GT_IND))
+            {
+                // - in an RVA static if we've reinterpreted it as a byref;
+                assert(newType == TYP_I_IMPL);
+                JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
+                inlineCandidate->gtType = TYP_BYREF;
+            }
+            else
+            {
+                // - under a call if we changed size of the argument.
+                GenTree* putArgType = comp->fgCheckCallArgUpdate(data->parent, inlineCandidate, retType);
+                if (putArgType != nullptr)
+                {
+                    inlineCandidate = putArgType;
+                }
+            }
+        }
+
         tree->ReplaceWith(inlineCandidate, comp);
         comp->compCurBB->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
 
@@ -22809,17 +22836,6 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
             printf("\n");
         }
 #endif // DEBUG
-
-        var_types newType = tree->TypeGet();
-
-        // If we end up swapping in an RVA static we may need to retype it here,
-        // if we've reinterpreted it as a byref.
-        if ((retType != newType) && (retType == TYP_BYREF) && (tree->OperGet() == GT_IND))
-        {
-            assert(newType == TYP_I_IMPL);
-            JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
-            tree->gtType = TYP_BYREF;
-        }
     }
 
     // If an inline was rejected and the call returns a struct, we may
@@ -23101,8 +23117,16 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
     }
     else
     {
-        GenTree* foldedTree = comp->gtFoldExpr(tree);
-        *pTree              = foldedTree;
+        const var_types retType    = tree->TypeGet();
+        GenTree*        foldedTree = comp->gtFoldExpr(tree);
+        const var_types newType    = foldedTree->TypeGet();
+
+        GenTree* putArgType = comp->fgCheckCallArgUpdate(data->parent, foldedTree, retType);
+        if (putArgType != nullptr)
+        {
+            foldedTree = putArgType;
+        }
+        *pTree = foldedTree;
     }
 
     return WALK_CONTINUE;
@@ -23799,8 +23823,12 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         {
             const InlArgInfo& argInfo        = inlArgInfo[argNum];
             const bool        argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
-            GenTree* const    argNode        = inlArgInfo[argNum].argNode;
-            unsigned __int64  bbFlags        = inlArgInfo[argNum].bbFlags;
+            GenTree*          argNode        = inlArgInfo[argNum].argNode;
+            const bool        argHasPutArg   = argNode->OperIs(GT_PUTARG_TYPE);
+
+            unsigned __int64 bbFlags = 0;
+            argNode                  = argNode->gtSkipPutArgType();
+            argNode                  = argNode->gtRetExprVal(&bbFlags);
 
             if (argInfo.argHasTmp)
             {
@@ -23820,7 +23848,11 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                 GenTree* argSingleUseNode = argInfo.argBashTmpNode;
 
-                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef)
+                // argHasPutArg disqualifies the arg from a direct substitution because we don't have information about
+                // its user. For example: replace `LCL_VAR short` with `PUTARG_TYPE short->LCL_VAR int`,
+                // we should keep `PUTARG_TYPE` iff the user is a call that needs `short` and delete it otherwise.
+                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef &&
+                    !argHasPutArg)
                 {
                     // Change the temp in-place to the actual argument.
                     // We currently do not support this for struct arguments, so it must not be a GT_OBJ.
@@ -26499,6 +26531,44 @@ void Compiler::fgTailMergeThrowsJumpToHelper(BasicBlock* predBlock,
 
     // Note there is now a jump to the canonical block
     canonicalBlock->bbFlags |= (BBF_JMP_TARGET | BBF_HAS_LABEL);
+}
+
+//------------------------------------------------------------------------
+// fgCheckCallArgUpdate: check if we are replacing a call argument and add GT_PUTARG_TYPE if necessary.
+//
+// Arguments:
+//    parent   - the parent that could be a call;
+//    child    - the new child node;
+//    origType - the original child type;
+//
+// Returns:
+//   PUT_ARG_TYPE node if it is needed, nullptr otherwise.
+//
+GenTree* Compiler::fgCheckCallArgUpdate(GenTree* parent, GenTree* child, var_types origType)
+{
+    if ((parent == nullptr) || !parent->IsCall())
+    {
+        return nullptr;
+    }
+    const var_types newType = child->TypeGet();
+    if (newType == origType)
+    {
+        return nullptr;
+    }
+    if (varTypeIsStruct(origType) || (genTypeSize(origType) == genTypeSize(newType)))
+    {
+        assert(!varTypeIsStruct(newType));
+        return nullptr;
+    }
+    GenTree* putArgType = gtNewOperNode(GT_PUTARG_TYPE, origType, child);
+#if defined(DEBUG)
+    if (verbose)
+    {
+        printf("For call [%06d] the new argument's type [%06d]", dspTreeID(parent), dspTreeID(child));
+        printf(" does not match the original type size, add a GT_PUTARG_TYPE [%06d]\n", dspTreeID(parent));
+    }
+#endif
+    return putArgType;
 }
 
 #ifdef DEBUG

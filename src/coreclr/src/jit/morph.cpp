@@ -2883,9 +2883,60 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
 #endif // UNIX_AMD64_ABI
 
+#if defined(DEBUG)
+    // Check that we have valid information about call's argument types.
+    // For example:
+    // load byte; call(int) -> CALL(PUTARG_TYPE byte(IND byte));
+    // load int; call(byte) -> CALL(PUTARG_TYPE int (IND int));
+    // etc.
+    if (call->callSig != nullptr)
+    {
+        CORINFO_SIG_INFO* sig          = call->callSig;
+        const unsigned    sigArgsCount = sig->numArgs;
+
+        GenTreeCall::Use* nodeArgs = call->gtCallArgs;
+        // It could include many arguments not included in `sig->numArgs`, for example, `this`, runtime lookup, cookie
+        // etc.
+        unsigned nodeArgsCount = call->NumChildren();
+
+        if (call->gtCallThisArg != nullptr)
+        {
+            // Handle the most common argument not in the `sig->numArgs`.
+            // so the following check works on more methods.
+            nodeArgsCount--;
+        }
+
+        assert(nodeArgsCount >= sigArgsCount);
+        if ((nodeArgsCount == sigArgsCount) &&
+            ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (nodeArgsCount == 1)))
+        {
+            CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
+            for (unsigned i = 0; i < sig->numArgs; ++i)
+            {
+                CORINFO_CLASS_HANDLE argClass;
+                const CorInfoType    corType = strip(info.compCompHnd->getArgType(sig, sigArg, &argClass));
+                const var_types      sigType = JITtype2varType(corType);
+
+                assert(nodeArgs != nullptr);
+                const GenTree* nodeArg = nodeArgs->GetNode();
+                assert(nodeArg != nullptr);
+                const var_types nodeType = nodeArg->TypeGet();
+
+                assert((nodeType == sigType) || varTypeIsStruct(sigType) ||
+                       genTypeSize(nodeType) == genTypeSize(sigType));
+
+                sigArg   = info.compCompHnd->getArgNext(sigArg);
+                nodeArgs = nodeArgs->GetNext();
+            }
+            assert(nodeArgs == nullptr);
+        }
+    }
+#endif // DEBUG
+
     for (args = call->gtCallArgs; args != nullptr; args = args->GetNext(), argIndex++)
     {
-        argx                    = args->GetNode();
+        argx = args->GetNode()->gtSkipPutArgType();
+
         fgArgTabEntry* argEntry = nullptr;
 
         // Change the node to TYP_I_IMPL so we don't report GC info
@@ -3148,6 +3199,12 @@ void Compiler::fgInitArgInfo(GenTreeCall* call)
             {
                 size = 1;
             }
+        }
+
+        if (args->GetNode()->OperIs(GT_PUTARG_TYPE))
+        {
+            const GenTreeUnOp* putArgType = args->GetNode()->AsUnOp();
+            byteSize                      = genTypeSize(putArgType->TypeGet());
         }
 
         // The 'size' value has now must have been set. (the original value of zero is an invalid value)
@@ -12234,7 +12291,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                         LclVarDsc* varDsc = lvaGetDesc(lclVar);
                         if (varDsc->CanBeReplacedWithItsField(this))
                         {
-                            // We can replace the struct with its only field and allow copy propogation to replace
+                            // We can replace the struct with its only field and allow copy propagation to replace
                             // return value that was written as a field.
                             unsigned   fieldLclNum = varDsc->lvFieldLclStart;
                             LclVarDsc* fieldDsc    = lvaGetDesc(fieldLclNum);
@@ -12313,6 +12370,9 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         case GT_LIST:
             // Special handling for the arg list.
             return fgMorphArgList(tree->AsArgList(), mac);
+
+        case GT_PUTARG_TYPE:
+            return fgMorphTree(tree->AsUnOp()->gtGetOp1());
 
         default:
             break;
@@ -18345,14 +18405,15 @@ bool Compiler::fgMorphImplicitByRefArgs(GenTree* tree)
     {
         for (GenTree** pTree : tree->UseEdges())
         {
-            GenTree* childTree = *pTree;
+            GenTree** pTreeCopy = pTree;
+            GenTree*  childTree = *pTree;
             if (childTree->gtOper == GT_LCL_VAR)
             {
                 GenTree* newChildTree = fgMorphImplicitByRefArgs(childTree, false);
                 if (newChildTree != nullptr)
                 {
-                    changed = true;
-                    *pTree  = newChildTree;
+                    changed    = true;
+                    *pTreeCopy = newChildTree;
                 }
             }
         }

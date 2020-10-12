@@ -360,7 +360,7 @@ unsigned Compiler::eeGetArgSize(CORINFO_ARG_LIST_HANDLE list, CORINFO_SIG_INFO* 
     if (varTypeIsStruct(argType))
     {
         unsigned structSize = info.compCompHnd->getClassSize(argClass);
-        return structSize; // TODO: roundUp() needed here?
+        return roundUp(structSize, TARGET_POINTER_SIZE);
     }
 #endif // UNIX_AMD64_ABI
     return TARGET_POINTER_SIZE;
