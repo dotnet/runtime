@@ -1310,7 +1310,7 @@ namespace System.IO.Compression
 
         [Theory]
         [MemberData(nameof(UncompressedTestFiles))]
-        public async Task CompressionLevel_SizeInOder(string testFile)
+        public async Task CompressionLevel_SizeInOrder(string testFile)
         {
             using var uncompressedStream = await LocalMemoryStream.readAppFileAsync(testFile);
 
