@@ -1184,7 +1184,7 @@ var BindingSupportLib = {
 
 		var js_name = BINDING.conv_string (global_name);
 
-		var globalObj = BINDING.mono_wasm_get_global();
+		var globalObj = BINDING.mono_wasm_get_global ();
 
 		if (!js_name) {
 			globalObj = globalThis;
@@ -1199,9 +1199,6 @@ var BindingSupportLib = {
 		}
 
 		var result = BINDING.js_to_mono_obj (globalObj);
-		// FIXME
-		if (result === 0)
-			console.log("BINDING.js_to_mono_obj(", globalObj, ") result for", global_name, "was 0");
 		return result;
 	},
 	mono_wasm_release_handle: function(js_handle, is_exception) {
