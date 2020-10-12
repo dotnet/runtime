@@ -82,14 +82,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     Total number of bytes written into this stream.
         /// </summary>
         /// <remarks>
-        ///     This property is updated by the user-code thread.
+        ///     This property is updated only by the user-code thread.
         /// </remarks>
         internal long WrittenBytes { get; private set; }
 
         /// <summary>
         ///     Number of bytes present in <see cref="_toSendChannel" />
         /// </summary>
-        private long BytesInChannel => WrittenBytes - _dequedBytes;
+        private long _bytesInChannel;
 
         /// <summary>
         ///     Total number of bytes allowed to transport in this stream.
@@ -115,7 +115,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         ///     Returns true if buffer contains any sendable data below <see cref="MaxData" /> limit.
         /// </summary>
         internal bool IsFlushable => _pending.Count > 0 && _pending[0].Start < MaxData ||
-                                     _dequedBytes < MaxData && BytesInChannel > 0;
+                                     _dequedBytes < MaxData && _bytesInChannel > 0;
 
         /// <summary>
         ///     Requests that the outbound stream be aborted with given error code.
@@ -202,6 +202,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             _toBeQueuedChunk = new StreamChunk(WrittenBytes, Memory<byte>.Empty, buffer);
 
             _toSendChannel.Writer.TryWrite(tmp);
+            Interlocked.Add(ref _bytesInChannel, tmp.Length);
         }
 
         /// <summary>
@@ -221,6 +222,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
             _toBeQueuedChunk = new StreamChunk(WrittenBytes, Memory<byte>.Empty, buffer);
 
             _toSendChannel.Writer.TryWrite(tmp);
+            Interlocked.Add(ref _bytesInChannel, tmp.Length);
         }
 
         /// <summary>
@@ -228,7 +230,12 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         /// </summary>
         internal void ForceFlushPartialChunk()
         {
+            if (_toBeQueuedChunk.Length == 0)
+                return;
+
             _toSendChannel.Writer.TryWrite(_toBeQueuedChunk);
+            Interlocked.Add(ref _bytesInChannel, _toBeQueuedChunk.Length);
+
             var buffer = QuicBufferPool.Rent();
             _toBeQueuedChunk = new StreamChunk(WrittenBytes, Memory<byte>.Empty, buffer);
         }
@@ -291,12 +298,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         private void DrainIncomingChunks()
         {
             var reader = _toSendChannel.Reader;
+
             while (reader.TryRead(out var chunk))
             {
                 Debug.Assert(_dequedBytes == chunk.StreamOffset);
                 _pending.Add(chunk.StreamOffset, chunk.StreamOffset + chunk.Length - 1);
                 _chunks.Add(chunk);
                 _dequedBytes += chunk.Length;
+                Interlocked.Add(ref _bytesInChannel, -chunk.Length);
             }
         }
 

@@ -21,7 +21,8 @@ namespace System.Net.Quic.Implementations.Managed
 {
     internal sealed partial class ManagedQuicConnection : QuicConnectionProvider
     {
-        private const int RequiredCongestionWindowSizeForSending = 50;
+        // This limit should ensure that if we can fit at least an ack frame into the packet,
+        private const int RequiredCongestionWindowSizeForSending = 2 * ConnectionId.MaximumLength + 10;
 
         private readonly SingleEventValueTaskSource _connectTcs = new SingleEventValueTaskSource();
 
@@ -611,12 +612,16 @@ namespace System.Net.Quic.Implementations.Managed
         {
             OutboundBuffer cryptoOutboundStream = GetPacketNumberSpace(level).CryptoOutboundStream;
             cryptoOutboundStream.Enqueue(data);
-            cryptoOutboundStream.ForceFlushPartialChunk();
             return 1;
         }
 
         internal int HandleFlush()
         {
+            for (int i = 0; i < 3; i++)
+            {
+                OutboundBuffer cryptoOutboundStream = GetPacketNumberSpace((EncryptionLevel)i).CryptoOutboundStream;
+                cryptoOutboundStream.ForceFlushPartialChunk();
+            }
             return 1;
         }
 

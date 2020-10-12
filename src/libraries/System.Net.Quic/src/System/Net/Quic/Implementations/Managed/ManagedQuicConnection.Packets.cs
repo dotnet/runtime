@@ -492,11 +492,8 @@ namespace System.Net.Quic.Implementations.Managed
                 maxPacketLength = Math.Min(maxPacketLength, Recovery.GetAvailableCongestionWindowBytes());
             }
 
-            if (maxPacketLength <= seal.TagLength + 50)
-            {
-                // unable to send any useful data anyway.
-                return false;
-            }
+            // ensuring that we can even send something should be handled by GetWriteLevel function
+            Debug.Assert(maxPacketLength > seal.TagLength);
 
             (int truncatedPn, int pnLength) = pnSpace.GetNextPacketNumber(recoverySpace.LargestTransportedPacketNumber);
             WritePacketHeader(writer, packetType, pnLength);
@@ -517,14 +514,6 @@ namespace System.Net.Quic.Implementations.Managed
 
             // If we still managed to write nothing, then there there is something wrong with the logic
             Debug.Assert(writer.BytesWritten != written);
-            // if (writer.BytesWritten == written)
-            // {
-            //     // no data to send
-            //     // TODO-RZ: we might be able to detect this sooner
-            //     writer.Reset(writer.Buffer);
-            //     Debug.Assert(!_pingWanted);
-            //     return false;
-            // }
 
             // by this point it is certain that the packet will be sent, commit pending key update
             if (_doKeyUpdate)
