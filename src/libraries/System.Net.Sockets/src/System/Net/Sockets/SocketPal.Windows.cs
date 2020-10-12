@@ -18,19 +18,6 @@ namespace System.Net.Sockets
         public const bool SupportsMultipleConnectAttempts = true;
         public static readonly int MaximumAddressSize = UnixDomainSocketEndPoint.MaxAddressSize;
 
-        private static bool s_initialized;
-
-        internal static void EnsureInitialized()
-        {
-            if (!s_initialized)
-            {
-                // Ensure that WSAStartup has been called once per process.
-                // The System.Net.NameResolution contract is responsible for the initialization.
-                Dns.GetHostName();
-                s_initialized = true;
-            }
-        }
-
         private static void MicrosecondsToTimeValue(long microseconds, ref Interop.Winsock.TimeValue socketTime)
         {
             const int microcnv = 1000000;
@@ -48,7 +35,7 @@ namespace System.Net.Sockets
 
         public static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
         {
-            EnsureInitialized();
+            Interop.Winsock.EnsureInitialized();
 
             IntPtr handle = Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
                                                                                                                 Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
@@ -78,7 +65,7 @@ namespace System.Net.Sockets
                 throw new ArgumentException(SR.net_sockets_invalid_socketinformation, nameof(socketInformation));
             }
 
-            EnsureInitialized();
+            Interop.Winsock.EnsureInitialized();
 
             fixed (byte* protocolInfoBytes = socketInformation.ProtocolInformation)
             {

@@ -83,7 +83,7 @@ namespace System.Net.Sockets
         {
             // This can be called without winsock initialized. The handle is not going to be a valid socket handle in that case and the code will throw exception anyway.
             // Initializing winsock will ensure the error SocketError.NotSocket as opposed to SocketError.NotInitialized.
-            SocketPal.EnsureInitialized();
+            Interop.Winsock.EnsureInitialized();
 
             Interop.Winsock.WSAPROTOCOL_INFOW info = default;
             int optionLength = sizeof(Interop.Winsock.WSAPROTOCOL_INFOW);

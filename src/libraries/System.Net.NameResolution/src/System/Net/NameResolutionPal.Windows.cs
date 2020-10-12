@@ -13,50 +13,33 @@ namespace System.Net
 {
     internal static partial class NameResolutionPal
     {
-        private static volatile bool s_initialized;
-        private static readonly object s_initializedLock = new object();
-
-        private static bool s_getAddrInfoExSupported;
-
-        private static void EnsureInitialized()
-        {
-            if (!s_initialized)
-            {
-                InitializeSockets();
-            }
-
-            static void InitializeSockets()
-            {
-                lock (s_initializedLock)
-                {
-                    if (!s_initialized)
-                    {
-                        SocketError errorCode = Interop.Winsock.WSAStartup();
-                        if (errorCode != SocketError.Success)
-                        {
-                            // WSAStartup does not set LastWin32Error
-                            throw new SocketException((int)errorCode);
-                        }
-
-                        s_getAddrInfoExSupported = GetAddrInfoExSupportsOverlapped();
-                        s_initialized = true;
-                    }
-                }
-            }
-        }
+        private static volatile int s_getAddrInfoExSupported;
 
         public static bool SupportsGetAddrInfoAsync
         {
             get
             {
-                EnsureInitialized();
-                return s_getAddrInfoExSupported;
+                if (s_getAddrInfoExSupported == 0)
+                    Initialize();
+                return s_getAddrInfoExSupported == 1;
+
+                static void Initialize()
+                {
+                    Interop.Winsock.EnsureInitialized();
+
+                    IntPtr libHandle = NativeLibrary.Load(Interop.Libraries.Ws2_32, typeof(NameResolutionPal).Assembly, null);
+
+                    // We can't just check that 'GetAddrInfoEx' exists, because it existed before supporting overlapped.
+                    // The existence of 'GetAddrInfoExCancel' indicates that overlapped is supported.
+                    bool supported = NativeLibrary.TryGetExport(libHandle, Interop.Winsock.GetAddrInfoExCancelFunctionName, out _);
+                    Interlocked.CompareExchange(ref s_getAddrInfoExSupported, supported ? 1 : -1, 0);
+                }
             }
         }
 
         public static unsafe SocketError TryGetAddrInfo(string name, bool justAddresses, out string? hostName, out string[] aliases, out IPAddress[] addresses, out int nativeErrorCode)
         {
-            EnsureInitialized();
+            Interop.Winsock.EnsureInitialized();
 
             aliases = Array.Empty<string>();
 
@@ -93,7 +76,7 @@ namespace System.Net
 
         public static unsafe string? TryGetNameInfo(IPAddress addr, out SocketError errorCode, out int nativeErrorCode)
         {
-            EnsureInitialized();
+            Interop.Winsock.EnsureInitialized();
 
             SocketAddress address = new IPEndPoint(addr, 0).Serialize();
             Span<byte> addressBuffer = address.Size <= 64 ? stackalloc byte[64] : new byte[address.Size];
@@ -129,7 +112,7 @@ namespace System.Net
 
         public static unsafe string GetHostName()
         {
-            EnsureInitialized();
+            Interop.Winsock.EnsureInitialized();
 
             // We do not cache the result in case the hostname changes.
 
@@ -148,7 +131,7 @@ namespace System.Net
 
         public static unsafe Task GetAddrInfoAsync(string hostName, bool justAddresses)
         {
-            EnsureInitialized();
+            Interop.Winsock.EnsureInitialized();
 
             GetAddrInfoExContext* context = GetAddrInfoExContext.AllocateContext();
 
