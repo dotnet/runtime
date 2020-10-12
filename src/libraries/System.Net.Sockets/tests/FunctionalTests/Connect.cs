@@ -122,12 +122,12 @@ namespace System.Net.Sockets.Tests
 
         public static readonly TheoryData<IPAddress> ConnectGetsCanceledByDispose_Data = new TheoryData<IPAddress>
         {
-            { IPAddress.Parse("1.1.1.1") },
-            { IPAddress.Parse("fd11:1:1:1:1:1:1:1") },
-            { IPAddress.Parse("1.1.1.1").MapToIPv6() },
+            { IPAddress.Loopback },
+            { IPAddress.IPv6Loopback },
+            { IPAddress.Loopback.MapToIPv6() },
         };
 
-        [Theory]
+        [Theory(Timeout = 30000)]
         [MemberData(nameof(ConnectGetsCanceledByDispose_Data))]
         [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Not supported on BSD like OSes.
         public async Task ConnectGetsCanceledByDispose(IPAddress address)
@@ -140,8 +140,8 @@ namespace System.Net.Sockets.Tests
             {
                 var client = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
                 if (address.IsIPv4MappedToIPv6) client.DualMode = true;
-
-                Task connectTask = ConnectAsync(client, new IPEndPoint(address, 23));
+                int port = SocketTestExtensions.GetUnusedPort(address.AddressFamily, ProtocolType.Tcp);
+                Task connectTask = ConnectAsync(client, new IPEndPoint(address, port));
 
                 // Wait a little so the operation is started.
                 await Task.Delay(msDelay);
