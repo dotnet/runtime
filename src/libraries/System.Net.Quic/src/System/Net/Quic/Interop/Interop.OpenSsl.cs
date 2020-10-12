@@ -5,7 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Quic.Implementations.Managed.Internal;
-using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
+using System.Net.Quic.Implementations.Managed.Internal.Tls.OpenSsl;
 using System.Net.Security;
 using System.Reflection;
 using System.Runtime.InteropServices;

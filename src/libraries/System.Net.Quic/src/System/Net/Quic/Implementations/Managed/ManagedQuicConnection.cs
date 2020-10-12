@@ -6,14 +6,14 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Quic.Implementations.Managed.Internal;
-using System.Net.Quic.Implementations.Managed.Internal.Buffers;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
-using System.Net.Quic.Implementations.Managed.Internal.OpenSsl;
+using System.Net.Quic.Implementations.Managed.Internal.Headers;
+using System.Net.Quic.Implementations.Managed.Internal.Recovery;
+using System.Net.Quic.Implementations.Managed.Internal.Streams;
 using System.Net.Quic.Implementations.Managed.Internal.Tracing;
+using System.Net.Quic.Implementations.Managed.Internal.Tls;
 using System.Net.Security;
-using System.Net.Sockets;
-using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -108,17 +108,12 @@ namespace System.Net.Quic.Implementations.Managed
         /// <summary>
         ///     The TLS handshake module.
         /// </summary>
-        internal Tls Tls { get; }
+        internal ITls Tls { get; }
 
         /// <summary>
         ///     Remote endpoint address.
         /// </summary>
         private readonly EndPoint _remoteEndpoint;
-
-        /// <summary>
-        ///     GCHandle for this object.
-        /// </summary>
-        private GCHandle _gcHandle;
 
         /// <summary>
         ///     Context of the socket serving this connection.
@@ -239,8 +234,7 @@ namespace System.Net.Quic.Implementations.Managed
 
             _socketContext = new SingleConnectionSocketContext(options.LocalEndPoint, _remoteEndpoint, this);
             _localTransportParameters = TransportParameters.FromClientConnectionOptions(options);
-            _gcHandle = GCHandle.Alloc(this);
-            Tls = new Tls(_gcHandle, options, _localTransportParameters);
+            Tls = TlsFactory.Instance.CreateClient(this, options, _localTransportParameters);
 
             // init random connection ids for the client
             SourceConnectionId = ConnectionId.Random(ConnectionId.DefaultCidSize);
@@ -253,7 +247,7 @@ namespace System.Net.Quic.Implementations.Managed
             DeriveInitialProtectionKeys(DestinationConnectionId.Data);
 
             // generate first Crypto frames
-            Tls.DoHandshake();
+            Tls.TryAdvanceHandshake();
 
             CoreInit();
         }
@@ -267,8 +261,7 @@ namespace System.Net.Quic.Implementations.Managed
             _remoteEndpoint = remoteEndpoint;
             _localTransportParameters = TransportParameters.FromListenerOptions(options);
 
-            _gcHandle = GCHandle.Alloc(this);
-            Tls = new Tls(_gcHandle, options, _localTransportParameters);
+            Tls = TlsFactory.Instance.CreateServer(this, options, _localTransportParameters);
             _trace = InitTrace(IsServer, odcid.ToArray());
             Recovery = new RecoveryController(_trace);
 
@@ -374,35 +367,35 @@ namespace System.Net.Quic.Implementations.Managed
         /// </summary>
         private void DoHandshake()
         {
-            var status = Tls.DoHandshake();
-
-            if (status == SslError.Ssl && _outboundError == null)
+            if (!Tls.TryAdvanceHandshake() && _outboundError == null)
             {
                 CloseConnection(TransportErrorCode.InternalError, "SSL error");
                 return;
             }
 
-            if (ReferenceEquals(_peerTransportParameters, TransportParameters.Default))
+            if (!ReferenceEquals(_peerTransportParameters, TransportParameters.Default))
             {
-                var param = Tls.GetPeerTransportParameters(IsServer);
-
-                if (param == null)
-                {
-                    // failed to retrieve transport parameters.
-                    CloseConnection(TransportErrorCode.TransportParameterError);
-                    return;
-                }
-
-                ref ConnectionFlowControlLimits limits = ref _peerLimits;
-
-                limits.UpdateMaxData(param.InitialMaxData);
-                limits.UpdateMaxStreamsBidi(param.InitialMaxStreamsBidi);
-                limits.UpdateMaxStreamsUni(param.InitialMaxStreamsUni);
-
-                Recovery.MaxAckDelay = Timestamp.FromMilliseconds(param.MaxAckDelay);
-
-                _peerTransportParameters = param;
+                return;
             }
+
+            var param = Tls.GetPeerTransportParameters(IsServer);
+
+            if (param == null)
+            {
+                // failed to retrieve transport parameters.
+                CloseConnection(TransportErrorCode.TransportParameterError);
+                return;
+            }
+
+            ref ConnectionFlowControlLimits limits = ref _peerLimits;
+
+            limits.UpdateMaxData(param.InitialMaxData);
+            limits.UpdateMaxStreamsBidi(param.InitialMaxStreamsBidi);
+            limits.UpdateMaxStreamsUni(param.InitialMaxStreamsUni);
+
+            Recovery.MaxAckDelay = Timestamp.FromMilliseconds(param.MaxAckDelay);
+
+            _peerTransportParameters = param;
         }
 
         /// <summary>
@@ -573,7 +566,6 @@ namespace System.Net.Quic.Implementations.Managed
             await task.ConfigureAwait(false);
 
             Tls.Dispose();
-            _gcHandle.Free();
         }
 
         public override void Dispose()
@@ -599,7 +591,7 @@ namespace System.Net.Quic.Implementations.Managed
             _trace?.OnKeyUpdated(writeSecret, level, IsServer, KeyUpdateTrigger.Tls, null);
         }
 
-        internal int HandleSetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,
+        internal int SetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,
             ReadOnlySpan<byte> writeSecret)
         {
             var alg = Tls.GetNegotiatedCipher();
@@ -608,14 +600,14 @@ namespace System.Net.Quic.Implementations.Managed
             return 1;
         }
 
-        internal int HandleAddHandshakeData(EncryptionLevel level, ReadOnlySpan<byte> data)
+        internal int AddHandshakeData(EncryptionLevel level, ReadOnlySpan<byte> data)
         {
             OutboundBuffer cryptoOutboundStream = GetPacketNumberSpace(level).CryptoOutboundStream;
             cryptoOutboundStream.Enqueue(data);
             return 1;
         }
 
-        internal int HandleFlush()
+        internal int FlushHandshakeData()
         {
             for (int i = 0; i < 3; i++)
             {
@@ -625,7 +617,7 @@ namespace System.Net.Quic.Implementations.Managed
             return 1;
         }
 
-        internal int HandleSendAlert(EncryptionLevel level, TlsAlert alert)
+        internal int SendTlsAlert(EncryptionLevel level, int alert)
         {
             // RFC: A TLS alert is turned into a QUIC connection error by converting the
             // one-byte alert description into a QUIC error code.  The alert
@@ -725,7 +717,7 @@ namespace System.Net.Quic.Implementations.Managed
             get
             {
                 ThrowIfDisposed();
-                return Tls.GetAlpnProtocol();
+                return Tls.GetNegotiatedProtocol();
             }
         }
 
