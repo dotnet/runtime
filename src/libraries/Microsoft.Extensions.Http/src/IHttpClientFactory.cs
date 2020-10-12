@@ -34,5 +34,7 @@ namespace System.Net.Http
         /// </para>
         /// </remarks>
         HttpClient CreateClient(string name);
+
+        HttpClient CreateClient(string name, IServiceProvider services);
     }
 }

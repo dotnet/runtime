@@ -338,7 +338,7 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.AddTransient<TClient>(s =>
             {
                 IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                HttpClient httpClient = httpClientFactory.CreateClient(builder.Name);
+                HttpClient httpClient = httpClientFactory.CreateClient(builder.Name, s); // TODO: check for opt-in/opt-out
 
                 ITypedHttpClientFactory<TClient> typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TClient>>();
                 return typedClientFactory.CreateClient(httpClient);

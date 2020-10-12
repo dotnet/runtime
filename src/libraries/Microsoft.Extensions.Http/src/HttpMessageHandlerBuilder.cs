@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Http
         /// </summary>
         public abstract HttpMessageHandler PrimaryHandler { get; set; }
 
-        internal virtual bool PrimaryHandlerExposed { get; }
+        internal virtual bool PrimaryHandlerExposed { get; } // TODO: api compat wouldn't allow abstract here
 
         /// <summary>
         /// Gets a list of additional <see cref="DelegatingHandler"/> instances used to configure an

@@ -23,7 +23,6 @@ namespace Microsoft.Extensions.Http
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IOptionsMonitor<HttpClientFactoryOptions> _optionsMonitor;
         private readonly IHttpMessageHandlerBuilderFilter[] _filters;
-        private readonly Func<string, Lazy<ActiveHandlerTrackingEntry>> _entryFactory;
 
         // Default time of 10s for cleanup seems reasonable.
         // Quick math:
@@ -48,7 +47,7 @@ namespace Microsoft.Extensions.Http
         //
         // internal for tests
         internal readonly ConcurrentDictionary<string, Lazy<ActiveHandlerTrackingEntry>> _activeHandlers;
-        internal readonly ConcurrentDictionary<(string, IServiceScope?), LifetimeTrackingHttpMessageHandler> _topHandlers;
+        internal readonly ConcurrentDictionary<(string, IServiceProvider?), LifetimeTrackingHttpMessageHandler> _topHandlers;
 
         // Collection of 'expired' but not yet disposed handlers.
         //
@@ -100,14 +99,7 @@ namespace Microsoft.Extensions.Http
 
             // case-sensitive because named options is.
             _activeHandlers = new ConcurrentDictionary<string, Lazy<ActiveHandlerTrackingEntry>>();
-            _topHandlers = new ConcurrentDictionary<(string, IServiceScope?), LifetimeTrackingHttpMessageHandler>();
-            _entryFactory = (name) =>
-            {
-                return new Lazy<ActiveHandlerTrackingEntry>(() =>
-                {
-                    return CreateHandlerEntry(name);
-                }, LazyThreadSafetyMode.ExecutionAndPublication);
-            };
+            _topHandlers = new ConcurrentDictionary<(string, IServiceProvider?), LifetimeTrackingHttpMessageHandler>();
 
             _expiredHandlers = new ConcurrentQueue<ExpiredHandlerTrackingEntry>();
             _expiryCallback = ExpiryTimer_Tick;
@@ -118,12 +110,17 @@ namespace Microsoft.Extensions.Http
 
         public HttpClient CreateClient(string name)
         {
+            return CreateClient(name, null);
+        }
+
+        public HttpClient CreateClient(string name, IServiceProvider services)
+        {
             if (name == null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            HttpMessageHandler handler = CreateHandler(name);
+            HttpMessageHandler handler = CreateHandler(name, services);
             var client = new HttpClient(handler);
 
             HttpClientFactoryOptions options = _optionsMonitor.Get(name);
@@ -137,12 +134,26 @@ namespace Microsoft.Extensions.Http
 
         public HttpMessageHandler CreateHandler(string name)
         {
+            return CreateHandler(name, null);
+        }
+
+        public HttpMessageHandler CreateHandler(string name, IServiceProvider services)
+        {
             if (name == null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            ActiveHandlerTrackingEntry entry = _activeHandlers.GetOrAdd(name, _entryFactory).Value;
+            ActiveHandlerTrackingEntry entry = _activeHandlers.GetOrAdd(
+                name,
+                (name) =>
+                {
+                    return new Lazy<ActiveHandlerTrackingEntry>(() =>
+                    {
+                        return CreateHandlerEntry(name, services);
+                    }, LazyThreadSafetyMode.ExecutionAndPublication);
+                }
+            ).Value;
 
             StartHandlerEntryTimer(entry);
 
@@ -151,9 +162,14 @@ namespace Microsoft.Extensions.Http
                 return entry.Handler;
             }
 
-            if (!_topHandlers.TryRemove((name, entry.Scope), out var topHandler))
+            if (services == null) // created in manual scope
             {
-                topHandler = BuildChain(name, entry.Handler, entry.Scope);
+                services = entry.Scope?.ServiceProvider;
+            }
+
+            if (!_topHandlers.TryRemove((name, services), out var topHandler))
+            {
+                topHandler = BuildChain(name, entry.Handler, services);
             }
 
             var expired = new ExpiredHandlerTrackingEntry(name, topHandler, null);
@@ -161,9 +177,101 @@ namespace Microsoft.Extensions.Http
             return topHandler;
         }
 
-        internal LifetimeTrackingHttpMessageHandler BuildChain(string name, HttpMessageHandler primaryHandler, IServiceScope? scope)
+        internal ActiveHandlerTrackingEntry CreateHandlerEntry(string name, IServiceProvider? scopedServices)
         {
-            IServiceProvider services = scope?.ServiceProvider ?? _services;
+            HttpClientFactoryOptions options = _optionsMonitor.Get(name);
+            if (options.SuppressHandlerScope || scopedServices == null)
+            {
+                return CreateHandlerEntryInManualScope(name);
+            }
+
+            return CreateHandlerEntryInternal(name, scopedServices, null, options);
+        }
+
+        // Internal for tests
+        internal ActiveHandlerTrackingEntry CreateHandlerEntryInManualScope(string name)
+        {
+            IServiceProvider services = _services;
+            var scope = (IServiceScope)null;
+
+            HttpClientFactoryOptions options = _optionsMonitor.Get(name);
+            if (!options.SuppressHandlerScope)
+            {
+                scope = _scopeFactory.CreateScope();
+                services = scope.ServiceProvider;
+            }
+
+            try
+            {
+                return CreateHandlerEntryInternal(name, services, scope, options);
+            }
+            catch
+            {
+                // If something fails while creating the handler, dispose the services.
+                scope?.Dispose();
+                throw;
+            }
+        }
+
+        private ActiveHandlerTrackingEntry CreateHandlerEntryInternal(string name, IServiceProvider services, IServiceScope? scope, HttpClientFactoryOptions options)
+        {
+            HttpMessageHandlerBuilder builder = services.GetRequiredService<HttpMessageHandlerBuilder>();
+            builder.Name = name;
+
+            // This is similar to the initialization pattern in:
+            // https://github.com/aspnet/Hosting/blob/e892ed8bbdcd25a0dafc1850033398dc57f65fe1/src/Microsoft.AspNetCore.Hosting/Internal/WebHost.cs#L188
+            Action<HttpMessageHandlerBuilder> configure = Configure;
+            for (int i = _filters.Length - 1; i >= 0; i--)
+            {
+                configure = _filters[i].Configure(configure);
+            }
+
+            configure(builder);
+
+            LifetimeTrackingHttpMessageHandler handler;
+            bool isPrimary;
+
+            if (builder.PrimaryHandlerExposed)
+            {
+                var topHandler = builder.Build();
+
+                // Wrap the handler so we can ensure the inner handler outlives the outer handler.
+                handler = new LifetimeTrackingHttpMessageHandler(topHandler);
+                isPrimary = false;
+            }
+            else
+            {
+                // to stop dispose on primary handler when the chain is disposed
+                var primaryHandler = new LifetimeTrackingHttpMessageHandler(new HttpClientHandler());
+                // Wrap the handler so we can ensure the inner handler outlives the outer handler.
+                var topHandler = new LifetimeTrackingHttpMessageHandler(builder.Build(primaryHandler));
+
+                handler = primaryHandler;
+                isPrimary = true;
+                _topHandlers.AddOrUpdate((name, services), topHandler, (k, v) => topHandler); // TODO: should be ok as we're inside Lazy's synchonized init?
+            }
+
+            // Note that we can't start the timer here. That would introduce a very very subtle race condition
+            // with very short expiry times. We need to wait until we've actually handed out the handler once
+            // to start the timer.
+            //
+            // Otherwise it would be possible that we start the timer here, immediately expire it (very short
+            // timer) and then dispose it without ever creating a client. That would be bad. It's unlikely
+            // this would happen, but we want to be sure.
+            return new ActiveHandlerTrackingEntry(name, handler, isPrimary, scope, options.HandlerLifetime);
+
+            void Configure(HttpMessageHandlerBuilder b)
+            {
+                for (int i = 0; i < options.HttpMessageHandlerBuilderActions.Count; i++)
+                {
+                    options.HttpMessageHandlerBuilderActions[i](b);
+                }
+            }
+        }
+
+        internal LifetimeTrackingHttpMessageHandler BuildChain(string name, HttpMessageHandler primaryHandler, IServiceProvider? scopedServices)
+        {
+            IServiceProvider services = scopedServices ?? _services;
 
             HttpMessageHandlerBuilder builder = services.GetRequiredService<HttpMessageHandlerBuilder>();
             builder.Name = name;
@@ -190,82 +298,6 @@ namespace Microsoft.Extensions.Http
                 {
                     options.HttpMessageHandlerBuilderActions[i](b);
                 }
-            }
-        }
-
-        // Internal for tests
-        internal ActiveHandlerTrackingEntry CreateHandlerEntry(string name)
-        {
-            IServiceProvider services = _services;
-            var scope = (IServiceScope)null;
-
-            HttpClientFactoryOptions options = _optionsMonitor.Get(name);
-            if (!options.SuppressHandlerScope)
-            {
-                scope = _scopeFactory.CreateScope();
-                services = scope.ServiceProvider;
-            }
-
-            try
-            {
-                HttpMessageHandlerBuilder builder = services.GetRequiredService<HttpMessageHandlerBuilder>();
-                builder.Name = name;
-
-                // This is similar to the initialization pattern in:
-                // https://github.com/aspnet/Hosting/blob/e892ed8bbdcd25a0dafc1850033398dc57f65fe1/src/Microsoft.AspNetCore.Hosting/Internal/WebHost.cs#L188
-                Action<HttpMessageHandlerBuilder> configure = Configure;
-                for (int i = _filters.Length - 1; i >= 0; i--)
-                {
-                    configure = _filters[i].Configure(configure);
-                }
-
-                configure(builder);
-
-                LifetimeTrackingHttpMessageHandler handler;
-                bool isPrimary;
-
-                if (builder.PrimaryHandlerExposed)
-                {
-                    var topHandler = builder.Build();
-
-                    // Wrap the handler so we can ensure the inner handler outlives the outer handler.
-                    handler = new LifetimeTrackingHttpMessageHandler(topHandler);
-                    isPrimary = false;
-                }
-                else
-                {
-                    // to stop dispose on primary handler when the chain is disposed
-                    var primaryHandler = new LifetimeTrackingHttpMessageHandler(new HttpClientHandler());
-                    // Wrap the handler so we can ensure the inner handler outlives the outer handler.
-                    var topHandler = new LifetimeTrackingHttpMessageHandler(builder.Build(primaryHandler));
-
-                    handler = primaryHandler;
-                    isPrimary = true;
-                    _topHandlers.AddOrUpdate((name, scope), topHandler, (k, v) => topHandler);
-                }
-
-                // Note that we can't start the timer here. That would introduce a very very subtle race condition
-                // with very short expiry times. We need to wait until we've actually handed out the handler once
-                // to start the timer.
-                //
-                // Otherwise it would be possible that we start the timer here, immediately expire it (very short
-                // timer) and then dispose it without ever creating a client. That would be bad. It's unlikely
-                // this would happen, but we want to be sure.
-                return new ActiveHandlerTrackingEntry(name, handler, isPrimary, scope, options.HandlerLifetime);
-
-                void Configure(HttpMessageHandlerBuilder b)
-                {
-                    for (int i = 0; i < options.HttpMessageHandlerBuilderActions.Count; i++)
-                    {
-                        options.HttpMessageHandlerBuilderActions[i](b);
-                    }
-                }
-            }
-            catch
-            {
-                // If something fails while creating the handler, dispose the services.
-                scope?.Dispose();
-                throw;
             }
         }
 

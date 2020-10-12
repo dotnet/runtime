@@ -232,7 +232,7 @@ namespace Microsoft.Extensions.Http
             });
 
             // Act
-            var handler = (HttpMessageHandler)factory.CreateHandlerEntry("github").Handler;
+            var handler = (HttpMessageHandler)factory.CreateHandlerEntryInManualScope("github").Handler;
 
             // Assert
             //

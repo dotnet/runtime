@@ -111,6 +111,7 @@ namespace System.Net.Http
     public partial interface IHttpClientFactory
     {
         System.Net.Http.HttpClient CreateClient(string name);
+        System.Net.Http.HttpClient CreateClient(string name, System.IServiceProvider services); // TODO: :(
     }
     public partial interface IHttpMessageHandlerFactory
     {

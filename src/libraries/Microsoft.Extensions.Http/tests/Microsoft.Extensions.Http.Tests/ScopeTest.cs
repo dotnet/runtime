@@ -76,7 +76,139 @@ namespace Microsoft.Extensions.Http
         }
 
         [Fact]
+        public void TestNamedScoped()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddScoped<ScopedService>();
+            serviceCollection.AddTransient<MessageHandlerWithScopedService>();
+
+            string name = "test";
+
+            serviceCollection.AddHttpClient(name)
+                .AddHttpMessageHandler<MessageHandlerWithScopedService>()
+                .SetHandlerLifetime(TimeSpan.FromSeconds(10));
+
+            // ---
+
+            var services = serviceCollection.BuildServiceProvider();
+
+            var factory = (DefaultHttpClientFactory)services.GetRequiredService<IHttpClientFactory>();
+
+            // ---
+
+            using (var scope = services.CreateScope())
+            {
+                var scopeServices = scope.ServiceProvider;
+
+                Assert.Same(scopeServices, scopeServices.GetRequiredService<IServiceProvider>());
+
+                var scopedServiceFromContainer = scopeServices.GetRequiredService<ScopedService>();
+
+                var client = factory.CreateClient(name, scopeServices);
+
+                var (topHandler, primaryHandler) = GetTopAndPrimaryHandlers(name, client, factory);
+                var scopedServiceFromHandler = ((MessageHandlerWithScopedService)topHandler).ScopedService;
+
+                var client2 = factory.CreateClient(name, scopeServices);
+
+                var (topHandler2, primaryHandler2) = GetTopAndPrimaryHandlers(name, client2, factory);
+                var scopedServiceFromHandler2 = ((MessageHandlerWithScopedService)topHandler2).ScopedService;
+
+                Thread.Sleep(20 * 1000);
+
+                var client3 = factory.CreateClient(name, scopeServices);
+
+                var (topHandler3, primaryHandler3) = GetTopAndPrimaryHandlers(name, client3, factory);
+                var scopedServiceFromHandler3 = ((MessageHandlerWithScopedService)topHandler3).ScopedService;
+
+                Assert.Same(scopedServiceFromContainer, scopedServiceFromHandler);
+                Assert.Same(scopedServiceFromContainer, scopedServiceFromHandler3);
+                Assert.Same(scopedServiceFromHandler, scopedServiceFromHandler2);
+                Assert.Same(scopedServiceFromHandler, scopedServiceFromHandler3);
+
+                Assert.NotSame(topHandler, topHandler2);
+                Assert.NotSame(topHandler2, topHandler3);
+
+                Assert.Same(primaryHandler, primaryHandler2);
+                Assert.NotSame(primaryHandler, primaryHandler3);
+            }
+        }
+
+        [Fact]
         public void TestTyped()
+        {
+            var serviceCollection = new ServiceCollection();
+
+            serviceCollection.AddScoped<ScopedService>();
+            serviceCollection.AddTransient<MessageHandlerWithScopedService>();
+
+            serviceCollection.AddHttpClient<TypedClient>()
+                .AddHttpMessageHandler<MessageHandlerWithScopedService>()
+                .SetHandlerLifetime(TimeSpan.FromSeconds(10));
+
+            string name = "TypedClient";
+
+            // ---
+
+            var services = serviceCollection.BuildServiceProvider();
+
+            var factory = (DefaultHttpClientFactory)services.GetRequiredService<IHttpClientFactory>();
+
+            // ---
+
+            using (var scope = services.CreateScope())
+            {
+                var scopeServices = scope.ServiceProvider;
+
+                Assert.Same(scopeServices, scopeServices.GetRequiredService<IServiceProvider>());
+
+                var scopedServiceFromContainer = scopeServices.GetRequiredService<ScopedService>();
+
+                var typedClient = services.GetRequiredService<TypedClient>();
+                var scopedServiceFromTypedClient = typedClient.ScopedService;
+
+                var (topHandler, primaryHandler) = GetTopAndPrimaryHandlers(name, typedClient.HttpClient, factory);
+                var scopedServiceFromHandler = ((MessageHandlerWithScopedService)topHandler).ScopedService;
+
+                var typedClient2 = services.GetRequiredService<TypedClient>();
+                var scopedServiceFromTypedClient2 = typedClient2.ScopedService;
+
+                var (topHandler2, primaryHandler2) = GetTopAndPrimaryHandlers(name, typedClient2.HttpClient, factory);
+                var scopedServiceFromHandler2 = ((MessageHandlerWithScopedService)topHandler2).ScopedService;
+
+                Thread.Sleep(20 * 1000);
+
+                var typedClient3 = services.GetRequiredService<TypedClient>();
+                var scopedServiceFromTypedClient3 = typedClient3.ScopedService;
+
+                var (topHandler3, primaryHandler3) = GetTopAndPrimaryHandlers(name, typedClient3.HttpClient, factory);
+                var scopedServiceFromHandler3 = ((MessageHandlerWithScopedService)topHandler3).ScopedService;
+
+                Assert.NotSame(scopedServiceFromContainer, scopedServiceFromHandler);
+                Assert.NotSame(scopedServiceFromContainer, scopedServiceFromHandler3);
+                Assert.Same(scopedServiceFromHandler, scopedServiceFromHandler2);
+                Assert.Same(scopedServiceFromHandler, scopedServiceFromHandler3);
+
+                Assert.NotSame(typedClient, typedClient2);
+                Assert.NotSame(typedClient2, typedClient3);
+                Assert.NotSame(scopedServiceFromContainer, scopedServiceFromTypedClient);
+                Assert.Same(scopedServiceFromTypedClient, scopedServiceFromTypedClient2);
+                Assert.Same(scopedServiceFromTypedClient2, scopedServiceFromTypedClient3);
+                Assert.Same(scopedServiceFromTypedClient, scopedServiceFromHandler);
+                Assert.Same(scopedServiceFromTypedClient2, scopedServiceFromHandler2);
+                Assert.Same(scopedServiceFromTypedClient3, scopedServiceFromHandler3);
+
+                Assert.NotSame(topHandler, topHandler2);
+                Assert.NotSame(topHandler2, topHandler3);
+
+                Assert.Same(primaryHandler, primaryHandler2);
+                Assert.NotSame(primaryHandler, primaryHandler3);
+            }
+        }
+
+        [Fact]
+        public void TestTypedScoped()
         {
             var serviceCollection = new ServiceCollection();
 
@@ -125,19 +257,19 @@ namespace Microsoft.Extensions.Http
                 var (topHandler3, primaryHandler3) = GetTopAndPrimaryHandlers(name, typedClient3.HttpClient, factory);
                 var scopedServiceFromHandler3 = ((MessageHandlerWithScopedService)topHandler3).ScopedService;
 
-                Assert.NotSame(scopedServiceFromContainer, scopedServiceFromHandler);
-                Assert.NotSame(scopedServiceFromContainer, scopedServiceFromHandler3);
+                Assert.Same(scopedServiceFromContainer, scopedServiceFromHandler);
+                Assert.Same(scopedServiceFromContainer, scopedServiceFromHandler3);
                 Assert.Same(scopedServiceFromHandler, scopedServiceFromHandler2);
-                Assert.NotSame(scopedServiceFromHandler, scopedServiceFromHandler3);
+                Assert.Same(scopedServiceFromHandler, scopedServiceFromHandler3);
 
                 Assert.NotSame(typedClient, typedClient2);
                 Assert.NotSame(typedClient2, typedClient3);
                 Assert.Same(scopedServiceFromContainer, scopedServiceFromTypedClient);
                 Assert.Same(scopedServiceFromTypedClient, scopedServiceFromTypedClient2);
                 Assert.Same(scopedServiceFromTypedClient2, scopedServiceFromTypedClient3);
-                Assert.NotSame(scopedServiceFromTypedClient, scopedServiceFromHandler);
-                Assert.NotSame(scopedServiceFromTypedClient2, scopedServiceFromHandler2);
-                Assert.NotSame(scopedServiceFromTypedClient3, scopedServiceFromHandler3);
+                Assert.Same(scopedServiceFromTypedClient, scopedServiceFromHandler);
+                Assert.Same(scopedServiceFromTypedClient2, scopedServiceFromHandler2);
+                Assert.Same(scopedServiceFromTypedClient3, scopedServiceFromHandler3);
 
                 Assert.NotSame(topHandler, topHandler2);
                 Assert.NotSame(topHandler2, topHandler3);
