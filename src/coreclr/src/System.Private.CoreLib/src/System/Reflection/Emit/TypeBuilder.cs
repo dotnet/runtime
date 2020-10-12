@@ -728,7 +728,7 @@ namespace System.Reflection.Emit
 
         public override bool IsByRefLike => false;
 
-        internal int MetadataTokenInternal => m_tdType.Token;
+        public override int MetadataToken => m_tdType.Token;
 
         #endregion
 
@@ -1921,7 +1921,7 @@ namespace System.Reflection.Emit
                 if (m_ca != null)
                 {
                     foreach (CustAttr ca in m_ca)
-                        ca.Bake(m_module, MetadataTokenInternal);
+                        ca.Bake(m_module, MetadataToken);
                 }
 
                 m_hasBeenCreated = true;

@@ -64,7 +64,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
-        internal int MetadataTokenInternal => m_fieldTok;
+        public override int MetadataToken => m_fieldTok;
 
         public override Module Module => m_typeBuilder.Module;
 

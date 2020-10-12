@@ -270,7 +270,7 @@ namespace System.Reflection.Emit
                 if (usingRef) throw new InvalidOperationException();
 
                 tr = GetTypeTokenInternal(con.DeclaringType!).Token;
-                mr = GetMemberRef(con.DeclaringType!.Module, tr, conOnTypeBuilderInst.MetadataTokenInternal);
+                mr = GetMemberRef(con.DeclaringType!.Module, tr, conOnTypeBuilderInst.MetadataToken);
             }
             else if (con is RuntimeConstructorInfo rtCon && !con.ReflectedType!.IsArray)
             {
@@ -1132,7 +1132,7 @@ namespace System.Reflection.Emit
                 }
                 else if (type is GenericTypeParameterBuilder paramBuilder)
                 {
-                    return new TypeToken(paramBuilder.MetadataTokenInternal);
+                    return new TypeToken(paramBuilder.MetadataToken);
                 }
 
                 return new TypeToken(GetTypeRefNested(type, this, string.Empty));
@@ -1206,7 +1206,7 @@ namespace System.Reflection.Emit
 
             if (method is MethodBuilder methBuilder)
             {
-                int methodToken = methBuilder.MetadataTokenInternal;
+                int methodToken = methBuilder.MetadataToken;
                 if (method.Module.Equals(this))
                 {
                     return new MethodToken(methodToken);
@@ -1501,7 +1501,7 @@ namespace System.Reflection.Emit
                 FieldInfo fb = fOnTB.FieldInfo;
                 byte[] sig = SignatureHelper.GetTypeSigToken(this, field.DeclaringType!).InternalGetSignature(out int length);
                 tr = GetTokenFromTypeSpec(sig, length);
-                mr = GetMemberRef(fb.ReflectedType!.Module, tr, fOnTB.MetadataTokenInternal);
+                mr = GetMemberRef(fb.ReflectedType!.Module, tr, fOnTB.MetadataToken);
             }
             else
             {

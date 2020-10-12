@@ -60,7 +60,7 @@ namespace System.Reflection.Emit
         #endregion
 
         #region MemberInfo Overrides
-        internal int MetadataTokenInternal => m_methodBuilder.MetadataTokenInternal;
+        public override int MetadataToken => m_methodBuilder.MetadataToken;
 
         public override Module Module => m_methodBuilder.Module;
 

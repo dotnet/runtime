@@ -232,7 +232,7 @@ namespace System.Reflection.Emit
                 // set the debugging information such as scope and line number
                 // if it is in a debug module
                 //
-                SymbolToken tk = new SymbolToken(MetadataTokenInternal);
+                SymbolToken tk = new SymbolToken(MetadataToken);
                 ISymbolWriter symWriter = dynMod.GetSymWriter()!;
 
                 // call OpenMethod to make this method the current method
@@ -435,7 +435,7 @@ namespace System.Reflection.Emit
         #region MemberInfo Overrides
         public override string Name => m_strName;
 
-        internal int MetadataTokenInternal => GetToken().Token;
+        public override int MetadataToken => GetToken().Token;
 
         public override Module Module => m_containingType.Module;
 
@@ -633,7 +633,7 @@ namespace System.Reflection.Emit
             byte[] sigBytes = GetMethodSignature().InternalGetSignature(out int sigLength);
             ModuleBuilder module = m_module;
 
-            int token = TypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataTokenInternal, m_strName, sigBytes, sigLength, Attributes);
+            int token = TypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataToken, m_strName, sigBytes, sigLength, Attributes);
             m_tkMethod = new MethodToken(token);
 
             if (m_inst != null)
@@ -718,7 +718,7 @@ namespace System.Reflection.Emit
             m_canBeRuntimeImpl = true;
 
             ModuleBuilder module = m_module;
-            TypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataTokenInternal, attributes);
+            TypeBuilder.SetMethodImpl(new QCallModule(ref module), MetadataToken, attributes);
         }
 
         public ILGenerator GetILGenerator()
@@ -773,7 +773,7 @@ namespace System.Reflection.Emit
 
             ThrowIfGeneric();
 
-            TypeBuilder.DefineCustomAttribute(m_module, MetadataTokenInternal,
+            TypeBuilder.DefineCustomAttribute(m_module, MetadataToken,
                 ((ModuleBuilder)m_module).GetConstructorToken(con).Token,
                 binaryAttribute,
                 false, false);
@@ -789,7 +789,7 @@ namespace System.Reflection.Emit
 
             ThrowIfGeneric();
 
-            customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, MetadataTokenInternal);
+            customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, MetadataToken);
 
             if (IsKnownCA(customBuilder.m_con))
                 ParseCA(customBuilder.m_con);
