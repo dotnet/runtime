@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Diagnostics;
 using System.Net.Security;
 using System.Security.Cryptography;
@@ -14,7 +17,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
 
         public NullCryptoSealAlgorithm(byte[] key)
         {
+// method uses a broken cryptographic algorithm HMACMD5
+// this class is not really intended to provide super security, so we are fine ignoring the warning
+#pragma warning disable CA5351
             _hmac = new HMACMD5(key);
+#pragma warning restore CA5351
             _hmac.Initialize();
 
             Debug.Assert(_hmac.HashSize / 8 == TagLength);

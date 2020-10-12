@@ -1,3 +1,6 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -203,12 +206,15 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
             internal static readonly byte[] client_1rtt_secret = GetBytesHelper("client_1rtt_secret");
         }
 
+        // member is explicitly initialized to its default value
+        #pragma warning disable CA1805
         // switches for verbosity logging
         // TODO-RZ: it might be good idea to make this configurable somehow
         private bool _logDatagrams = false;
         private bool _logRecovery = true;
         private bool _logSecurity = true;
         private bool _logTransport = true;
+        #pragma warning restore CA1805
 
         private readonly Utf8JsonWriter _writer;
         private readonly Stream _stream;
@@ -368,6 +374,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tracing
 
             _writer.WriteString(Field.key_type, keyType);
             _writer.WriteHexBytesString(Field.@new, secret);
+            _writer.WriteString(Field.trigger, _keyUpdateTriggerNames[trigger]);
 
             WriteEventEpilog();
         }
