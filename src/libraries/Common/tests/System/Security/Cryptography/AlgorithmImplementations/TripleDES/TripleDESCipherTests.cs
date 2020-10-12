@@ -832,7 +832,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
         public static void VerifyNetFxCompat_CFB8_PKCS7Padding()
         {
             // .NET Framework would always pad to the nearest block
-            // with CFB8 and PKCS7 padding even though the shorting possible
+            // with CFB8 and PKCS7 padding even though the shortest possible
             // padding is always 1 byte. This ensures we can continue to decrypt
             // .NET Framework encrypted data with the excessive padding.
 
