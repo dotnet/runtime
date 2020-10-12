@@ -288,7 +288,8 @@ namespace System.Net.Sockets.Tests
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
             // see a SocketException either.
             int msDelay = 100;
-            await RetryHelper.ExecuteAsync(async () =>
+            int retries = 10;
+            while (true)
             {
                 (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (socket2)
@@ -328,34 +329,48 @@ namespace System.Net.Sockets.Tests
                     }
                     catch (ObjectDisposedException)
                     { }
-                    Assert.Equal(SocketError.ConnectionAborted, localSocketError);
 
-                    // On OSX, we're unable to unblock the on-going socket operations and
-                    // perform an abortive close.
-                    if (!PlatformDetection.IsOSXLike)
+                    try
                     {
-                        SocketError? peerSocketError = null;
-                        var receiveBuffer = new byte[4096];
-                        while (true)
+                        Assert.Equal(SocketError.ConnectionAborted, localSocketError);
+
+                        // On OSX, we're unable to unblock the on-going socket operations and
+                        // perform an abortive close.
+                        if (!PlatformDetection.IsOSXLike)
                         {
-                            try
+                            SocketError? peerSocketError = null;
+                            var receiveBuffer = new byte[4096];
+                            while (true)
                             {
-                                int received = socket2.Receive(receiveBuffer);
-                                if (received == 0)
+                                try
                                 {
+                                    int received = socket2.Receive(receiveBuffer);
+                                    if (received == 0)
+                                    {
+                                        break;
+                                    }
+                                }
+                                catch (SocketException se)
+                                {
+                                    peerSocketError = se.SocketErrorCode;
                                     break;
                                 }
                             }
-                            catch (SocketException se)
-                            {
-                                peerSocketError = se.SocketErrorCode;
-                                break;
-                            }
+                            Assert.Equal(SocketError.ConnectionReset, peerSocketError);
                         }
-                        Assert.Equal(SocketError.ConnectionReset, peerSocketError);
+                        break;
+                    }
+                    catch
+                    {
+                        if (retries-- > 0)
+                        {
+                            continue;
+                        }
+
+                        throw;
                     }
                 }
-            }, maxAttempts: 10);
+            }
         }
 
         [OuterLoop]

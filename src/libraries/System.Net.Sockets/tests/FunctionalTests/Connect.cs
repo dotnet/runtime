@@ -127,7 +127,8 @@ namespace System.Net.Sockets.Tests
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
-            await RetryHelper.ExecuteAsync(async () =>
+            int retries = 10;
+            while (true)
             {
                 var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
 
@@ -153,9 +154,6 @@ namespace System.Net.Sockets.Tests
                 }
                 catch (SocketException se)
                 {
-                    // On connection timeout, retry.
-                    Assert.NotEqual(SocketError.TimedOut, se.SocketErrorCode);
-
                     localSocketError = se.SocketErrorCode;
                 }
                 catch (ObjectDisposedException)
@@ -163,20 +161,36 @@ namespace System.Net.Sockets.Tests
                     disposedException = true;
                 }
 
-                if (UsesApm)
+                try
                 {
-                    Assert.Null(localSocketError);
-                    Assert.True(disposedException);
+                    // On connection timeout, retry.
+                    Assert.NotEqual(SocketError.TimedOut, localSocketError);
+
+                    if (UsesApm)
+                    {
+                        Assert.Null(localSocketError);
+                        Assert.True(disposedException);
+                    }
+                    else if (UsesSync)
+                    {
+                        Assert.Equal(SocketError.NotSocket, localSocketError);
+                    }
+                    else
+                    {
+                        Assert.Equal(SocketError.OperationAborted, localSocketError);
+                    }
+                    break;
                 }
-                else if (UsesSync)
+                catch
                 {
-                    Assert.Equal(SocketError.NotSocket, localSocketError);
+                    if (retries-- > 0)
+                    {
+                        continue;
+                    }
+
+                    throw;
                 }
-                else
-                {
-                    Assert.Equal(SocketError.OperationAborted, localSocketError);
-                }
-            }, maxAttempts: 10);
+            }
         }
     }
 

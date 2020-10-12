@@ -944,7 +944,8 @@ namespace System.Net.Sockets.Tests
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
             int msDelay = 100;
-            await RetryHelper.ExecuteAsync(async () =>
+            int retries = 10;
+            while (true)
             {
                 var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                 socket.BindToAnonymousPort(IPAddress.Loopback);
@@ -978,20 +979,33 @@ namespace System.Net.Sockets.Tests
                     disposedException = true;
                 }
 
-                if (UsesApm)
+                try
                 {
-                    Assert.Null(localSocketError);
-                    Assert.True(disposedException);
+                    if (UsesApm)
+                    {
+                        Assert.Null(localSocketError);
+                        Assert.True(disposedException);
+                    }
+                    else if (UsesSync)
+                    {
+                        Assert.Equal(SocketError.Interrupted, localSocketError);
+                    }
+                    else
+                    {
+                        Assert.Equal(SocketError.OperationAborted, localSocketError);
+                    }
+                    break;
                 }
-                else if (UsesSync)
+                catch
                 {
-                    Assert.Equal(SocketError.Interrupted, localSocketError);
+                    if (retries-- > 0)
+                    {
+                        continue;
+                    }
+
+                    throw;
                 }
-                else
-                {
-                    Assert.Equal(SocketError.OperationAborted, localSocketError);
-                }
-            }, maxAttempts: 10);
+            }
         }
 
         [Theory]
@@ -1003,7 +1017,8 @@ namespace System.Net.Sockets.Tests
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
             // see a SocketException either.
             int msDelay = 100;
-            await RetryHelper.ExecuteAsync(async () =>
+            int retries = 10;
+            while (true)
             {
                 (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
                 using (socket2)
@@ -1052,46 +1067,59 @@ namespace System.Net.Sockets.Tests
                         disposedException = true;
                     }
 
-                    if (UsesApm)
+                    try
                     {
-                        Assert.Null(localSocketError);
-                        Assert.True(disposedException);
-                    }
-                    else if (UsesSync)
-                    {
-                        Assert.Equal(SocketError.ConnectionAborted, localSocketError);
-                    }
-                    else
-                    {
-                        Assert.Equal(SocketError.OperationAborted, localSocketError);
-                    }
-
-                    // On OSX, we're unable to unblock the on-going socket operations and
-                    // perform an abortive close.
-                    if (!(UsesSync && PlatformDetection.IsOSXLike))
-                    {
-                        SocketError? peerSocketError = null;
-                        var receiveBuffer = new ArraySegment<byte>(new byte[4096]);
-                        while (true)
+                        if (UsesApm)
                         {
-                            try
+                            Assert.Null(localSocketError);
+                            Assert.True(disposedException);
+                        }
+                        else if (UsesSync)
+                        {
+                            Assert.Equal(SocketError.ConnectionAborted, localSocketError);
+                        }
+                        else
+                        {
+                            Assert.Equal(SocketError.OperationAborted, localSocketError);
+                        }
+
+                        // On OSX, we're unable to unblock the on-going socket operations and
+                        // perform an abortive close.
+                        if (!(UsesSync && PlatformDetection.IsOSXLike))
+                        {
+                            SocketError? peerSocketError = null;
+                            var receiveBuffer = new ArraySegment<byte>(new byte[4096]);
+                            while (true)
                             {
-                                int received = await ReceiveAsync(socket2, receiveBuffer);
-                                if (received == 0)
+                                try
                                 {
+                                    int received = await ReceiveAsync(socket2, receiveBuffer);
+                                    if (received == 0)
+                                    {
+                                        break;
+                                    }
+                                }
+                                catch (SocketException se)
+                                {
+                                    peerSocketError = se.SocketErrorCode;
                                     break;
                                 }
                             }
-                            catch (SocketException se)
-                            {
-                                peerSocketError = se.SocketErrorCode;
-                                break;
-                            }
+                            Assert.Equal(SocketError.ConnectionReset, peerSocketError);
                         }
-                        Assert.Equal(SocketError.ConnectionReset, peerSocketError);
+                        break;
+                    }
+                    catch
+                    {
+                        if (retries-- > 0)
+                        {
+                            continue;
+                        }
+
+                        throw;
                     }
                 }
-            }, maxAttempts: 10);
+            }
         }
 
         [Fact]
