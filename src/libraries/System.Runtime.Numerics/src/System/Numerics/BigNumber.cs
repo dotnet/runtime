@@ -512,7 +512,7 @@ namespace System.Numerics
             {
                 // [FF..F8] drop the high F as the two's complement negative number remains clear
                 // [F7..08] retain the high bits as the two's complement number is wrong without it
-                // [07..00] drop the high 0 as the two's complement positive number remains clear
+                // [09..00] drop the high 0 as the two's complement positive number remains clear
                 bool clearHighF = false;
                 byte head = bits[cur];
 
@@ -522,7 +522,7 @@ namespace System.Numerics
                     clearHighF = true;
                 }
 
-                if (head < 0x08 || clearHighF)
+                if (head < 0x08 || clearHighF || (head < 0x10 && cur == 0))
                 {
                     // {0xF8-0xFF} print as {8-F}
                     // {0x00-0x07} print as {0-7}

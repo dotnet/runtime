@@ -12,11 +12,12 @@ namespace System.Numerics.Tests
 {
     public class ToStringTest
     {
-        private static bool s_noZeroOut = true;
-
         public delegate string StringFormatter(string input, int precision, NumberFormatInfo nfi);
-        private static int s_samples = 1;
-        private static Random s_random = new Random(100);
+
+        private static readonly bool s_noZeroOut = true;
+        private static readonly int s_samples = 1;
+        private static readonly Random s_random = new Random(100);
+        private static readonly string[] s_constantValues = new string[] { "1", "2", "5", "7", "8", "9", "10", "14", "15", "16", "17", "18" };
 
         [Fact]
         public static void RunSimpleToStringTests()
@@ -52,7 +53,12 @@ namespace System.Numerics.Tests
             }
 
             // Scenario 5: Constant values
-            VerifyToString(CultureInfo.CurrentCulture.NumberFormat.NegativeSign + "1", CultureInfo.CurrentCulture.NumberFormat.NegativeSign + "1");
+            foreach (var constant in s_constantValues)
+            {
+                VerifyToString(constant, constant);
+                VerifyToString(CultureInfo.CurrentCulture.NumberFormat.NegativeSign + constant, CultureInfo.CurrentCulture.NumberFormat.NegativeSign + constant);
+            }
+
             VerifyToString("0", "0");
             VerifyToString(Int16.MinValue.ToString(), Int16.MinValue.ToString());
             VerifyToString(Int32.MinValue.ToString(), Int32.MinValue.ToString());
@@ -432,6 +438,12 @@ namespace System.Numerics.Tests
             }
 
             // Scenario 5: Constant values
+            foreach (var constant in s_constantValues)
+            {
+                VerifyToString(constant, format, provider, false, formatter(constant, precision, provider));
+                VerifyToString(provider.NegativeSign + constant, format, provider, false, formatter(provider.NegativeSign + constant, precision, provider));
+            }
+
             VerifyToString(provider.NegativeSign + "1", format, provider, false, formatter(provider.NegativeSign + "1", precision, provider));
             VerifyToString(provider.NegativeSign + "0", format, provider, false, formatter("0", precision, provider));
             VerifyToString("0", format, provider, false, formatter("0", precision, provider));
@@ -476,7 +488,12 @@ namespace System.Numerics.Tests
             }
 
             // Scenario 5: Constant values
-            VerifyToString(negativeSign + "1", format, formatter(negativeSign + "1", precision, CultureInfo.CurrentCulture.NumberFormat));
+            foreach (var constant in s_constantValues)
+            {
+                VerifyToString(constant, format, formatter(constant, precision, CultureInfo.CurrentCulture.NumberFormat));
+                VerifyToString(negativeSign + constant, format, formatter(negativeSign + constant, precision, CultureInfo.CurrentCulture.NumberFormat));
+            }
+
             VerifyToString(negativeSign + "0", format, formatter("0", precision, CultureInfo.CurrentCulture.NumberFormat));
             VerifyToString("0", format, formatter("0", precision, CultureInfo.CurrentCulture.NumberFormat));
             VerifyToString(Int16.MinValue.ToString(), format, formatter(Int16.MinValue.ToString(), precision, CultureInfo.CurrentCulture.NumberFormat));
@@ -522,7 +539,12 @@ namespace System.Numerics.Tests
             }
 
             // Scenario 5: Constant values
-            VerifyToString(negativeSign + "1", format, formatter(negativeSign + "1", precision, CultureInfo.CurrentCulture.NumberFormat));
+            foreach (var constant in s_constantValues)
+            {
+                VerifyToString(constant, format, formatter(constant, precision, CultureInfo.CurrentCulture.NumberFormat));
+                VerifyToString(negativeSign + constant, format, formatter(negativeSign + constant, precision, CultureInfo.CurrentCulture.NumberFormat));
+            }
+
             VerifyToString(negativeSign + "0", format, formatter("0", precision, CultureInfo.CurrentCulture.NumberFormat));
             VerifyToString("0", format, formatter("0", precision, CultureInfo.CurrentCulture.NumberFormat));
             VerifyToString(Int16.MinValue.ToString(), format, formatter(Int16.MinValue.ToString(), precision, CultureInfo.CurrentCulture.NumberFormat));
@@ -915,7 +937,8 @@ namespace System.Numerics.Tests
                 precision = -precision;
                 upper = false;
             }
-            string output = ConvertDecimalToHex(input, upper, nfi);
+
+            string output = ConvertDecimalToHex(input, upper, nfi, precision);
             int typeChar = int.Parse(output.Substring(0, 1), NumberStyles.AllowHexSpecifier);
 
             if (typeChar >= 8)
@@ -1614,7 +1637,7 @@ namespace System.Numerics.Tests
             return y2;
         }
 
-        private static string ConvertDecimalToHex(string input, bool upper, NumberFormatInfo nfi)
+        private static string ConvertDecimalToHex(string input, bool upper, NumberFormatInfo nfi, int precision)
         {
             string output = string.Empty;
             BigInteger bi = BigInteger.Parse(input, nfi);
@@ -1628,10 +1651,12 @@ namespace System.Numerics.Tests
 
             int start = chars.Length - 1;
             if (((chars[chars.Length - 1] == 0) && (chars[chars.Length - 2] < 8)) ||
-                ((chars[chars.Length - 1] == 15) && (chars[chars.Length - 2] > 7)))
+                ((chars[chars.Length - 1] == 15) && (chars[chars.Length - 2] > 7)) ||
+                (precision < 2 && chars.Length == 2 && chars[1] == 0))
             {
                 start--;
             }
+
             for (; start >= 0; start--)
             {
                 if (upper)
