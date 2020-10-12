@@ -80,6 +80,7 @@ SET_DEFAULT_DEBUG_CHANNEL(PROCESS); // some headers have code with asserts, so d
 #endif
 
 #ifdef __APPLE__
+#include <libproc.h>
 #include <sys/sysctl.h>
 #include <sys/posix_sem.h>
 #endif
@@ -2851,64 +2852,62 @@ CreateProcessModules(
 
     // NOTE: the module path can have spaces in the name
     // __TEXT                 0000000196220000-00000001965b4000 [ 3664K  2340K     0K     0K] r-x/rwx SM=COW          /Volumes/Builds/builds/devmain/rawproduct/debug/build/out/Applications/Microsoft Excel.app/Contents/SharedSupport/PowerQuery/libcoreclr.dylib
-    char *line = NULL;
-    size_t lineLen = 0;
+
+    // NOTE: Sometimes vmmap hides full paths to some process modules (.dylibs in non-system folders), causing debugger not to work.
+    // __TEXT                 000000010d8bd000-000000010ddce000 [ 5188K  5188K     0K     0K] r-x/rwx SM=COW          /Users/USER/*/libcoreclr.dylib
+    // So now we get modules information by iterating over regions using proc_pidinfo().  See dotnet/runtime#42888.
     int count = 0;
-    ssize_t read;
 
-    char vmmapCommand[100];
-    int chars = snprintf(vmmapCommand, sizeof(vmmapCommand), "/usr/bin/vmmap -interleaved %d -wide", dwProcessId);
-    _ASSERTE(chars > 0 && chars <= sizeof(vmmapCommand));
-
-    FILE *vmmapFile = popen(vmmapCommand, "r");
-    if (vmmapFile == NULL)
+    uint64_t addr = 0;
+    while (true)
     {
-        goto exit;
-    }
-
-    // Reading maps file line by line
-    while ((read = getline(&line, &lineLen, vmmapFile)) != -1)
-    {
-        void *startAddress, *endAddress;
-        char moduleName[PATH_MAX];
-
-        if (sscanf_s(line, "__TEXT %p-%p [ %*[0-9K ]] %*[-/rwxsp] SM=%*[A-Z] %[^\n]", &startAddress, &endAddress, moduleName, _countof(moduleName)) == 3)
+        struct proc_regionwithpathinfo rwpi;
+        int sz = proc_pidinfo(dwProcessId, PROC_PIDREGIONPATHINFO, addr, &rwpi, sizeof rwpi);
+        if (sz != sizeof rwpi)
         {
-            bool dup = false;
-            for (ProcessModules *entry = listHead; entry != NULL; entry = entry->Next)
-            {
-                if (strcmp(moduleName, entry->Name) == 0)
-                {
-                    dup = true;
-                    break;
-                }
-            }
+            if (sz == 0 && errno == EINVAL)
+                break; // ok
 
-            if (!dup)
+            DestroyProcessModules(listHead);
+            listHead = NULL;
+            count = 0;
+            break; // unknown error
+        }
+
+        const char *moduleName = rwpi.prp_vip.vip_path;
+
+        bool dup = false;
+        for (ProcessModules *entry = listHead; entry != NULL; entry = entry->Next)
+        {
+            if (strcmp(moduleName, entry->Name) == 0)
             {
-                int cbModuleName = strlen(moduleName) + 1;
-                ProcessModules *entry = (ProcessModules *)InternalMalloc(sizeof(ProcessModules) + cbModuleName);
-                if (entry == NULL)
-                {
-                    DestroyProcessModules(listHead);
-                    listHead = NULL;
-                    count = 0;
-                    break;
-                }
-                strcpy_s(entry->Name, cbModuleName, moduleName);
-                entry->BaseAddress = startAddress;
-                entry->Next = listHead;
-                listHead = entry;
-                count++;
+                dup = true;
+                break;
             }
         }
+
+        if (!dup)
+        {
+            int cbModuleName = strlen(moduleName) + 1;
+            ProcessModules *entry = (ProcessModules *)InternalMalloc(sizeof(ProcessModules) + cbModuleName);
+            if (entry == NULL)
+            {
+                DestroyProcessModules(listHead);
+                listHead = NULL;
+                count = 0;
+                break; // no memory
+            }
+            memcpy_s(entry->Name, cbModuleName, moduleName, cbModuleName);
+            entry->BaseAddress = (void *)rwpi.prp_prinfo.pri_address;
+            entry->Next = listHead;
+            listHead = entry;
+            count++;
+        }
+
+        addr = rwpi.prp_prinfo.pri_address + rwpi.prp_prinfo.pri_size;
     }
 
     *lpCount = count;
-
-    free(line); // We didn't allocate line, but as per contract of getline we should free it
-    pclose(vmmapFile);
-exit:
 
 #elif HAVE_PROCFS_MAPS
 
