@@ -10,7 +10,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
     /// <summary>
     ///     Adapter for using AEAD_AES_128_GCM and AEAD_AES_256_GCM for header protection.
     /// </summary>
-    internal class CryptoSealAesGcm : CryptoSealAesBase
+    internal sealed class CryptoSealAesGcm : CryptoSealAesBase
     {
         internal const int IntegrityTagLength = 16;
         // AES-128 and AES-256 implementation for actual packet payload protection

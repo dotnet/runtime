@@ -9,6 +9,11 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
     {
         internal static CryptoSealAlgorithm Create(TlsCipherSuite alg, byte[] key, byte[] headerKey)
         {
+            if (Environment.GetEnvironmentVariable("DOTNETQUIC_NOENCRYPT") != null)
+            {
+                return new NullCryptoSealAlgorithm(key);
+            }
+
             switch (alg)
             {
                 case TlsCipherSuite.TLS_AES_128_GCM_SHA256:

@@ -10,7 +10,7 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Crypto
     /// <summary>
     ///     Adapter for using AEAD_AES_128_CCM
     /// </summary>
-    internal class CryptoSealAesCcm : CryptoSealAesBase
+    internal sealed class CryptoSealAesCcm : CryptoSealAesBase
     {
         // AES-128 and AES-256 implementation for actual packet payload protection
         private readonly AesCcm _aesCcm;
