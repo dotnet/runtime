@@ -4,6 +4,7 @@
 #nullable enable
 
 using System.Diagnostics;
+using System.Net.Quic.Implementations.Managed.Internal.Headers;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {

@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace System.Net.Quic.Implementations.Managed.Internal
+namespace System.Net.Quic.Implementations.Managed.Internal.Streams
 {
     /// <summary>
     ///     Holds data from a particular contiguous segment of a stream.

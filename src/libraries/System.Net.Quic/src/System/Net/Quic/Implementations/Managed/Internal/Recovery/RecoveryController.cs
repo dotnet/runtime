@@ -5,10 +5,9 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
-using System.Net.Quic.Implementations.Managed.Internal.Recovery;
 using System.Net.Quic.Implementations.Managed.Internal.Tracing;
 
-namespace System.Net.Quic.Implementations.Managed.Internal
+namespace System.Net.Quic.Implementations.Managed.Internal.Recovery
 {
     /// <summary>
     ///     Class encapsulating logic on packet loss recovery.

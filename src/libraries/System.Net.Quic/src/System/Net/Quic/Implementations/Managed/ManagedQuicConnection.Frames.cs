@@ -6,6 +6,8 @@
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
+using System.Net.Quic.Implementations.Managed.Internal.Recovery;
+using System.Net.Quic.Implementations.Managed.Internal.Streams;
 
 namespace System.Net.Quic.Implementations.Managed
 {
@@ -334,7 +336,7 @@ namespace System.Net.Quic.Implementations.Managed
             {
                 // define a copy of level variable with smaller scope to prevent allocations in common case
                 EncryptionLevel level2 = level;
-                stream.Deliver(segment => { Tls.OnDataReceived(level2, segment.Span); });
+                stream.Deliver(segment => { Tls.OnHandshakeDataReceived(level2, segment.Span); });
                 context.HandshakeWanted = true;
             }
 
@@ -1032,7 +1034,7 @@ namespace System.Net.Quic.Implementations.Managed
                 }
 
                 // if there is more data to sent, put the stream back to queue
-                if (buffer.IsFlushable)
+                if (buffer.HasBytesToSend)
                 {
                     _streams.MarkFlushable(stream!);
                 }

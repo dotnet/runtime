@@ -5,9 +5,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Implementations.Managed.Internal.Frames;
+using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Net.Quic.Tests.Harness;
 using Xunit;
 using Xunit.Abstractions;
+using AckFrame = System.Net.Quic.Tests.Harness.AckFrame;
+using CryptoFrame = System.Net.Quic.Tests.Harness.CryptoFrame;
 
 namespace System.Net.Quic.Tests
 {

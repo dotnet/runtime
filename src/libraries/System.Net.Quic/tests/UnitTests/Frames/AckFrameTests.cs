@@ -6,9 +6,12 @@
 using System.Linq;
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Implementations.Managed.Internal.Frames;
 using System.Net.Quic.Tests.Harness;
 using Xunit;
 using Xunit.Abstractions;
+using AckFrame = System.Net.Quic.Tests.Harness.AckFrame;
+using StreamFrame = System.Net.Quic.Tests.Harness.StreamFrame;
 
 namespace System.Net.Quic.Tests.Frames
 {

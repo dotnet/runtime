@@ -5,8 +5,10 @@
 
 using System.Linq;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Implementations.Managed.Internal.Frames;
 using System.Net.Quic.Tests.Harness;
 using Xunit;
+using ConnectionCloseFrame = System.Net.Quic.Tests.Harness.ConnectionCloseFrame;
 
 namespace System.Net.Quic.Tests
 {

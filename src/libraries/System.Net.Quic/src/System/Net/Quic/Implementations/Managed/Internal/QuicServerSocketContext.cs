@@ -3,6 +3,7 @@
 
 using System.Collections.Immutable;
 using System.Diagnostics;
+using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Channels;

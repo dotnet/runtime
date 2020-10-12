@@ -3,9 +3,11 @@
 
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
-using System.Net.Quic.Tests.Harness;
+using System.Net.Quic.Implementations.Managed.Internal.Frames;
+using System.Net.Quic.Implementations.Managed.Internal.Streams;
 using Xunit;
 using Xunit.Abstractions;
+using ResetStreamFrame = System.Net.Quic.Tests.Harness.ResetStreamFrame;
 
 namespace System.Net.Quic.Tests.Frames
 {

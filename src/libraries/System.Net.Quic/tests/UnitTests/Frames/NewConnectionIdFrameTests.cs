@@ -3,9 +3,11 @@
 
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
-using System.Net.Quic.Tests.Harness;
+using System.Net.Quic.Implementations.Managed.Internal.Frames;
 using Xunit;
 using Xunit.Abstractions;
+using ConnectionCloseFrame = System.Net.Quic.Tests.Harness.ConnectionCloseFrame;
+using NewConnectionIdFrame = System.Net.Quic.Tests.Harness.NewConnectionIdFrame;
 
 namespace System.Net.Quic.Tests.Frames
 {

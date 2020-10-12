@@ -2,9 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Buffers;
-using System.Collections.Concurrent;
 
-namespace System.Net.Quic.Implementations.Managed.Internal
+namespace System.Net.Quic.Implementations.Managed.Internal.Streams
 {
     internal static class QuicBufferPool
     {

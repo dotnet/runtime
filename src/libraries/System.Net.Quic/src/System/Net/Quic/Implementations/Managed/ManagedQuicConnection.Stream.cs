@@ -4,6 +4,7 @@
 using System.Collections.Immutable;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
+using System.Net.Quic.Implementations.Managed.Internal.Streams;
 using System.Threading;
 
 namespace System.Net.Quic.Implementations.Managed

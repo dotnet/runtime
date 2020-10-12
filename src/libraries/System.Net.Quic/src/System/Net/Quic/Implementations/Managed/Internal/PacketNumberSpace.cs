@@ -3,8 +3,8 @@
 
 #nullable enable
 
-using System.Net.Quic.Implementations.Managed.Internal.Buffers;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
+using System.Net.Quic.Implementations.Managed.Internal.Streams;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {

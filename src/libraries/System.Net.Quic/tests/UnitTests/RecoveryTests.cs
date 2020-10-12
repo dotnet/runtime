@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Frames;
+using System.Net.Quic.Implementations.Managed.Internal.Recovery;
 using Xunit;
 
 namespace System.Net.Quic.Tests

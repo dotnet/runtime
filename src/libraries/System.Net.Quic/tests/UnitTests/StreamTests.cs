@@ -4,11 +4,18 @@
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed;
 using System.Net.Quic.Implementations.Managed.Internal;
-using System.Net.Quic.Tests.Harness;
+using System.Net.Quic.Implementations.Managed.Internal.Frames;
+using System.Net.Quic.Implementations.Managed.Internal.Recovery;
+using System.Net.Quic.Implementations.Managed.Internal.Streams;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 using Xunit.Abstractions;
+using AckFrame = System.Net.Quic.Tests.Harness.AckFrame;
+using ConnectionCloseFrame = System.Net.Quic.Tests.Harness.ConnectionCloseFrame;
+using MaxStreamDataFrame = System.Net.Quic.Tests.Harness.MaxStreamDataFrame;
+using StopSendingFrame = System.Net.Quic.Tests.Harness.StopSendingFrame;
+using StreamFrame = System.Net.Quic.Tests.Harness.StreamFrame;
 
 namespace System.Net.Quic.Tests
 {
@@ -89,6 +96,12 @@ namespace System.Net.Quic.Tests
             {
                 Assert.Empty(frame.StreamData);
                 Assert.True(frame.Fin);
+            });
+
+            // don't repeat the frame
+            InterceptFlight(Client, Server, flight =>
+            {
+                Assert.Empty(flight.Packets);
             });
         }
 

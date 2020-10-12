@@ -5,6 +5,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using System.Net.Quic.Implementations.MsQuic.Internal;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;

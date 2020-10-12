@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
+namespace System.Net.Quic.Implementations.Managed.Internal.Streams
 {
     /// <summary>
     ///     Structure for containing outbound stream data, represents sending direction of the stream.
@@ -112,9 +112,14 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
         internal bool SizeKnown { get; private set; }
 
         /// <summary>
+        ///     Returns true if buffer has anything to send, be it data or just a fin bit.
+        /// </summary>
+        internal bool IsFlushable => HasBytesToSend || SizeKnown && !FinAcked;
+
+        /// <summary>
         ///     Returns true if buffer contains any sendable data below <see cref="MaxData" /> limit.
         /// </summary>
-        internal bool IsFlushable => _pending.Count > 0 && _pending[0].Start < MaxData ||
+        internal bool HasBytesToSend => _pending.Count > 0 && _pending[0].Start < MaxData ||
                                      _dequedBytes < MaxData && _bytesInChannel > 0;
 
         /// <summary>

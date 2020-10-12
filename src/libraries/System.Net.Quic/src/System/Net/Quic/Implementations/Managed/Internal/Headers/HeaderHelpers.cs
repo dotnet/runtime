@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Net.Security;
 
-namespace System.Net.Quic.Implementations.Managed.Internal
+namespace System.Net.Quic.Implementations.Managed.Internal.Headers
 {
     internal static class QuicConstants
     {

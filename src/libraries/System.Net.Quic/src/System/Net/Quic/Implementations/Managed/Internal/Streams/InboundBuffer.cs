@@ -7,7 +7,7 @@ using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 
-namespace System.Net.Quic.Implementations.Managed.Internal.Buffers
+namespace System.Net.Quic.Implementations.Managed.Internal.Streams
 {
     /// <summary>
     ///     Class for receiving and buffering inbound stream data.

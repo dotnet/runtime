@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net.Quic.Implementations.Managed.Internal;
-using System.Net.Quic.Implementations.Managed.Internal.Buffers;
+using System.Net.Quic.Implementations.Managed.Internal.Streams;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;

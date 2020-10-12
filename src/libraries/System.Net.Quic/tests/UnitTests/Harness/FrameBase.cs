@@ -3,6 +3,7 @@
 
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
+using System.Net.Quic.Implementations.Managed.Internal.Frames;
 using Newtonsoft.Json.Serialization;
 using Xunit;
 

@@ -7,7 +7,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
-using System.Net.Quic.Implementations.Managed.Internal.Buffers;
+using System.Net.Quic.Implementations.Managed.Internal.Streams;
 using System.Threading;
 using System.Threading.Tasks;
 

@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal;
 using System.Net.Quic.Implementations.Managed.Internal.Crypto;
+using System.Net.Quic.Implementations.Managed.Internal.Headers;
 using Xunit;
 
 namespace System.Net.Quic.Tests.Harness
