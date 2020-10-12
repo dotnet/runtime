@@ -937,9 +937,17 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
+        public static readonly TheoryData<IPAddress> UdpReceiveGetsCanceledByDispose_Data = new TheoryData<IPAddress>
+        {
+            { IPAddress.Loopback },
+            { IPAddress.IPv6Loopback },
+            { IPAddress.Loopback.MapToIPv6() }
+        };
+
+        [Theory]
+        [MemberData(nameof(UdpReceiveGetsCanceledByDispose_Data))]
         [PlatformSpecific(~TestPlatforms.OSX)] // Not supported on OSX.
-        public async Task UdpReceiveGetsCanceledByDispose()
+        public async Task UdpReceiveGetsCanceledByDispose(IPAddress address)
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
@@ -947,8 +955,9 @@ namespace System.Net.Sockets.Tests
             int retries = 10;
             while (true)
             {
-                var socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                socket.BindToAnonymousPort(IPAddress.Loopback);
+                var socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+                if (address.IsIPv4MappedToIPv6) socket.DualMode = true;
+                socket.BindToAnonymousPort(address);
 
                 Task receiveTask = ReceiveAsync(socket, new ArraySegment<byte>(new byte[1]));
 
@@ -1008,10 +1017,19 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        public static readonly TheoryData<bool, IPAddress, bool> TcpReceiveSendGetsCanceledByDispose_Data = new TheoryData<bool, IPAddress, bool>
+        {
+            { true, IPAddress.Loopback, false },
+            { true, IPAddress.Loopback, true },
+            { true, IPAddress.IPv6Loopback, false },
+            { false, IPAddress.Loopback, false },
+            { false, IPAddress.Loopback, true },
+            { false, IPAddress.IPv6Loopback, false },
+        };
+
         [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend)
+        [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
+        public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, IPAddress serverAddress, bool dualModeClient)
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, the peer won't see a ConnectionReset SocketException and we won't
@@ -1020,7 +1038,7 @@ namespace System.Net.Sockets.Tests
             int retries = 10;
             while (true)
             {
-                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair();
+                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair(serverAddress, dualModeClient);
                 using (socket2)
                 {
                     Task socketOperation;

@@ -289,8 +289,16 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        [Fact]
-        public async Task AcceptGetsCanceledByDispose()
+        public static readonly TheoryData<IPAddress> AcceptGetsCanceledByDispose_Data = new TheoryData<IPAddress>
+        {
+            { IPAddress.Loopback },
+            { IPAddress.IPv6Loopback },
+            { IPAddress.Loopback.MapToIPv6() }
+        };
+
+        [Theory]
+        [MemberData(nameof(AcceptGetsCanceledByDispose_Data))]
+        public async Task AcceptGetsCanceledByDispose(IPAddress loopback)
         {
             // We try this a couple of times to deal with a timing race: if the Dispose happens
             // before the operation is started, we won't see a SocketException.
@@ -298,8 +306,9 @@ namespace System.Net.Sockets.Tests
             int retries = 10;
             while (true)
             {
-                var listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+                var listener = new Socket(loopback.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+                if (loopback.IsIPv4MappedToIPv6) listener.DualMode = true;
+                listener.Bind(new IPEndPoint(loopback, 0));
                 listener.Listen(1);
 
                 Task acceptTask = AcceptAsync(listener);

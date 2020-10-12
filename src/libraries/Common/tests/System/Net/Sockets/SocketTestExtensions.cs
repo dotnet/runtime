@@ -38,14 +38,21 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        public static (Socket, Socket) CreateConnectedSocketPair()
+        public static (Socket, Socket) CreateConnectedSocketPair() => CreateConnectedSocketPair(IPAddress.Loopback, false);
+
+        public static (Socket, Socket) CreateConnectedSocketPair(IPAddress serverAddress, bool dualModeClient)
         {
-            using Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            listener.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+            using Socket listener = new Socket(serverAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            listener.Bind(new IPEndPoint(serverAddress, 0));
             listener.Listen(1);
 
-            Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            client.Connect(listener.LocalEndPoint);
+            IPEndPoint connectTo = (IPEndPoint)listener.LocalEndPoint;
+            if (dualModeClient) connectTo = new IPEndPoint(connectTo.Address.MapToIPv6(), connectTo.Port);
+
+
+            Socket client = new Socket(connectTo.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            if (dualModeClient) client.DualMode = true;
+            client.Connect(connectTo);
             Socket server = listener.Accept();
 
             return (client, server);
