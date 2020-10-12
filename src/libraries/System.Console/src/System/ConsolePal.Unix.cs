@@ -880,7 +880,7 @@ namespace System
 
                 for (int i = maxRange; i >= minRange; i--)
                 {
-                    var currentString = new StringOrCharArray(givenChars, startIndex, i);
+                    var currentString = new ReadOnlyMemory<char>(givenChars, startIndex, i);
 
                     // Check if the string prefix matches.
                     if (TerminalFormatStrings.Instance.KeyFormatToConsoleKey.TryGetValue(currentString, out key))
@@ -1024,7 +1024,8 @@ namespace System
             /// The dictionary of keystring to ConsoleKeyInfo.
             /// Only some members of the ConsoleKeyInfo are used; in particular, the actual char is ignored.
             /// </summary>
-            public readonly Dictionary<StringOrCharArray, ConsoleKeyInfo> KeyFormatToConsoleKey = new Dictionary<StringOrCharArray, ConsoleKeyInfo>();
+            public readonly Dictionary<ReadOnlyMemory<char>, ConsoleKeyInfo> KeyFormatToConsoleKey =
+                new Dictionary<ReadOnlyMemory<char>, ConsoleKeyInfo>(new ReadOnlyMemoryContentComparer());
             /// <summary> Max key length </summary>
             public readonly int MaxKeyFormatLength;
             /// <summary> Min key length </summary>
@@ -1128,7 +1129,7 @@ namespace System
                     MaxKeyFormatLength = int.MinValue;
                     MinKeyFormatLength = int.MaxValue;
 
-                    foreach (KeyValuePair<StringOrCharArray, ConsoleKeyInfo> entry in KeyFormatToConsoleKey)
+                    foreach (KeyValuePair<ReadOnlyMemory<char>, ConsoleKeyInfo> entry in KeyFormatToConsoleKey)
                     {
                         if (entry.Key.Length > MaxKeyFormatLength)
                         {
@@ -1189,8 +1190,8 @@ namespace System
 
             private void AddKey(TermInfo.Database db, TermInfo.WellKnownStrings keyId, ConsoleKey key, bool shift, bool alt, bool control)
             {
-                string? keyFormat = db.GetString(keyId);
-                if (!string.IsNullOrEmpty(keyFormat))
+                var keyFormat = db.GetString(keyId).AsMemory();
+                if (!keyFormat.IsEmpty)
                     KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
             }
 
@@ -1205,8 +1206,8 @@ namespace System
 
             private void AddKey(TermInfo.Database db, string extendedName, ConsoleKey key, bool shift, bool alt, bool control)
             {
-                string? keyFormat = db.GetExtendedString(extendedName);
-                if (!string.IsNullOrEmpty(keyFormat))
+                var keyFormat = db.GetExtendedString(extendedName).AsMemory();
+                if (!keyFormat.IsEmpty)
                     KeyFormatToConsoleKey[keyFormat] = new ConsoleKeyInfo('\0', key, shift, alt, control);
             }
         }
@@ -1511,6 +1512,37 @@ namespace System
                 {
                     Interop.Sys.RestoreAndHandleCtrl(ctrlCode);
                 }
+            }
+        }
+
+        public sealed class ReadOnlyMemoryContentComparer : IEqualityComparer<ReadOnlyMemory<char>>
+        {
+            public bool Equals(ReadOnlyMemory<char> x, ReadOnlyMemory<char> y) =>
+                x.Span.SequenceEqual(y.Span);
+
+            public int GetHashCode(ReadOnlyMemory<char> obj)
+            {
+                // This hash code is a simplified version of some of the code in String,
+                // when not using randomized hash codes.  We don't use string's GetHashCode
+                // because we need to be able to use the exact same algorithms on a char[].
+                // As such, this should not be used anywhere there are concerns around
+                // hash-based attacks that would require a better code.
+
+                int hash1 = (5381 << 16) + 5381;
+                int hash2 = hash1;
+                var span = obj.Span;
+
+                for (int i = 0; i < span.Length; ++i)
+                {
+                    hash1 = unchecked((hash1 << 5) + hash1) ^ span[i];
+
+                    if (++i >= span.Length)
+                        break;
+
+                    hash2 = unchecked((hash2 << 5) + hash2) ^ span[i];
+                }
+
+                return unchecked(hash1 + (hash2 * 1566083941));
             }
         }
     }
