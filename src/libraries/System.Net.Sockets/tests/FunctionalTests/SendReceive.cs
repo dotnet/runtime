@@ -1027,7 +1027,7 @@ namespace System.Net.Sockets.Tests
             { false, IPAddress.IPv6Loopback, false },
         };
 
-        [Theory]
+        [Theory(Timeout = 30000)]
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
         public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, IPAddress serverAddress, bool dualModeClient)
         {
@@ -1064,7 +1064,7 @@ namespace System.Net.Sockets.Tests
                     Task disposeTask = Task.Run(() => socket1.Dispose());
 
                     var cts = new CancellationTokenSource();
-                    Task timeoutTask = Task.Delay(30000, cts.Token);
+                    Task timeoutTask = Task.Delay(15000, cts.Token);
                     Assert.NotSame(timeoutTask, await Task.WhenAny(disposeTask, socketOperation, timeoutTask));
                     cts.Cancel();
 
