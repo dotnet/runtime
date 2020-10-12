@@ -105,7 +105,8 @@
         <_workItemTimeoutInSeconds>$([System.TimeSpan]::Parse($(_workItemTimeout)).TotalSeconds)</_workItemTimeoutInSeconds>
         <_vstestBlameOption>CollectDump;CollectAlways=true;DumpType=Full;CollectHangDump;HangDumpType=Full;TestTimeout=$(_workItemTimeoutInSeconds)s</_vstestBlameOption>
         <!-- Increase the total work item timeout by 10min to prevent helix killing the work item before VSTest collected the hang dump. -->
-        <_workItemTimeout>$([MSBuild]::Add($(_workItemTimeoutInSeconds), 600))</_workItemTimeout>
+        <_newWorkItemTimeoutInSeconds>$([MSBuild]::Add($(_workItemTimeoutInSeconds), 600))</_newWorkItemTimeoutInSeconds>
+        <_workItemTimeout>$([System.TimeSpan]::FromSeconds($(_newWorkItemTimeoutInSeconds)).ToString('hh\:mm\:ss'))</_workItemTimeout>
       </PropertyGroup>
       <PropertyGroup Condition="$(BuildTargetFramework.StartsWith('net4'))">
         <HelixCommand>dotnet test %HELIX_WORKITEM_FRIENDLYNAME%.dll --settings .runsettings --platform $(TargetArchitecture) --blame "$(_vstestBlameOption)"</HelixCommand>
