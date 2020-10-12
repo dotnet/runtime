@@ -8937,7 +8937,6 @@ public:
         bool dspEHTable;               // Display the EH table reported to the VM
         bool dspDebugInfo;             // Display the Debug info reported to the VM
         bool dspInstrs;                // Display the IL instructions intermixed with the native code output
-        bool dspEmit;                  // Display emitter output
         bool dspLines;                 // Display source-code lines intermixed with native code output
         bool dmpHex;                   // Display raw bytes in hex of native code output
         bool varNames;                 // Display variables names in native code output
@@ -8945,6 +8944,7 @@ public:
         bool disAsmSpilled;            // Display native code when any register spilling occurs
         bool disasmWithGC;             // Display GC info interleaved with disassembly.
         bool disDiffable;              // Makes the Disassembly code 'diff-able'
+        bool disAddr;                  // Display process address next to each instruction in disassembly code
         bool disAsm2;                  // Display native code after it is generated using external disassembler
         bool dspOrder;                 // Display names of each of the methods that we ngen/jit
         bool dspUnwind;                // Display the unwind info output
