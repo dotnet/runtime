@@ -19,9 +19,13 @@ namespace System.Net
         {
             get
             {
-                if (s_getAddrInfoExSupported == 0)
+                int supported = s_getAddrInfoExSupported;
+                if (supported == 0)
+                {
                     Initialize();
-                return s_getAddrInfoExSupported == 1;
+                    supported = s_getAddrInfoExSupported;
+                }
+                return supported == 1;
 
                 static void Initialize()
                 {

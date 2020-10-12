@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Net.Sockets;
 using System.Threading;
@@ -13,6 +14,7 @@ internal static partial class Interop
 
         internal static void EnsureInitialized()
         {
+            // No volatile needed here. Reading stale information is just going to cause a harmless extra startup.
             if (s_initialized == 0)
                 Initialize();
 
@@ -30,7 +32,9 @@ internal static partial class Interop
                 if (Interlocked.CompareExchange(ref s_initialized, 1, 0) != 0)
                 {
                     // Keep the winsock initialization count balanced if other thread beats us to finish the initialization.
-                    WSACleanup();
+                    // This cleanup is just for good hygiene. A few extra startups would not matter.
+                    errorCode = WSACleanup();
+                    Debug.Assert(errorCode == SocketError.Success);
                 }
             }
         }
