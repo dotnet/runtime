@@ -123,7 +123,7 @@ namespace System.Net.Sockets.Tests
         public static readonly TheoryData<IPAddress> ConnectGetsCanceledByDispose_Data = new TheoryData<IPAddress>
         {
             { IPAddress.Parse("1.1.1.1") },
-            { IPAddress.Parse("fd11:1:1:1:1:1:1:1") },
+            // TODO: Figure out how to test this with vanilla IPV6
             { IPAddress.Parse("1.1.1.1").MapToIPv6() },
         };
 
