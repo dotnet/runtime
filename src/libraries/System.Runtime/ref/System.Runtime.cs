@@ -352,6 +352,7 @@ namespace System
         public int GetLength(int dimension) { throw null; }
         public long GetLongLength(int dimension) { throw null; }
         public int GetLowerBound(int dimension) { throw null; }
+        public static int GetMaxLength<T>() { throw null; }
         public int GetUpperBound(int dimension) { throw null; }
         public object? GetValue(int index) { throw null; }
         public object? GetValue(int index1, int index2) { throw null; }

@@ -49,12 +49,6 @@ namespace System.Collections.Generic
                         {
                             if (count == arr.Length)
                             {
-                                // MaxArrayLength is defined in Array.MaxArrayLength and in gchelpers in CoreCLR.
-                                // It represents the maximum number of elements that can be in an array where
-                                // the size of the element is greater than one byte; a separate, slightly larger constant,
-                                // is used when the size of the element is one.
-                                const int MaxArrayLength = 0x7FEFFFFF;
-
                                 // This is the same growth logic as in List<T>:
                                 // If the array is currently empty, we make it a default size.  Otherwise, we attempt to
                                 // double the size of the array.  Doubling will overflow once the size of the array reaches
@@ -67,9 +61,9 @@ namespace System.Collections.Generic
                                 // the desired capacity.  This does mean that in the very rare case where we've grown to such a
                                 // large size, each new element added after MaxArrayLength will end up doing a resize.
                                 int newLength = count << 1;
-                                if ((uint)newLength > MaxArrayLength)
+                                if ((uint)newLength > Array.GetMaxLength<T>())
                                 {
-                                    newLength = MaxArrayLength <= count ? count + 1 : MaxArrayLength;
+                                    newLength = Array.GetMaxLength<T>() <= count ? count + 1 : Array.GetMaxLength<T>();
                                 }
 
                                 Array.Resize(ref arr, newLength);

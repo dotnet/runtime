@@ -20,11 +20,12 @@ namespace System
     {
         // We impose limits on maximum array length in each dimension to allow efficient
         // implementation of advanced range check elimination in future.
-        // Keep in sync with vm\gcscan.cpp and HashHelpers.MaxPrimeArrayLength.
-        // The constants are defined in this method: inline SIZE_T MaxArrayLength(SIZE_T componentSize) from gcscan
+        // Keep in sync with vm\gchelpers.cpp and HashHelpers.MaxPrimeArrayLength.
+        // The constants are defined in this method: inline SIZE_T MaxArrayLength(SIZE_T componentSize) from gchelpers
         // We have different max sizes for arrays with elements of size 1 for backwards compatibility
-        internal const int MaxArrayLength = 0X7FEFFFFF;
-        internal const int MaxByteArrayLength = 0x7FFFFFC7;
+        // Wrapped by GetMaxLength<T>()
+        private const int MaxArrayLength = 0X7FEFFFFF;
+        private const int MaxByteArrayLength = 0x7FFFFFC7;
 
         // This is the threshold where Introspective sort switches to Insertion sort.
         // Empirically, 16 seems to speed up most cases without slowing down others, at least for integers.
@@ -1871,6 +1872,20 @@ namespace System
             }
             return true;
         }
+
+        /// <summary>
+        /// Gets the maximum number of elements that may be contained in an array of the specified type.
+        /// </summary>
+        /// <typeparam name="T">The type of array element.</typeparam>
+        /// <returns>The maximum count of elements allowed of array of the given type.</returns>
+        /// <remarks>
+        /// This methods returns runtime limitation.
+        /// The limitation is counted in elements, not bytes.
+        /// There's no guarantee that allocation under the size would succeed.
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static int GetMaxLength<T>() =>
+            Unsafe.SizeOf<T>() == 1 ? MaxByteArrayLength : MaxArrayLength;
 
         // Private value type used by the Sort methods.
         private readonly struct SorterObjectArray
