@@ -322,7 +322,7 @@ mono_gc_make_descr_for_object (gpointer klass, gsize *bitmap, int numbits, size_
 	mono_gc_descr_union gc_descr;
 	gc_descr.struct_gc_descr.m_componentSize = 0; // not array or string
 	gc_descr.struct_gc_descr.m_flags = 0;
-	if (casted_class->has_finalize)
+	if (mono_class_has_finalizer(casted_class))
 		gc_descr.struct_gc_descr.m_flags |= MTFlag_HasFinalizer;
 	gc_descr.struct_gc_descr.m_baseSize = obj_size;
 	if (gc_descr.struct_gc_descr.m_baseSize < MIN_OBJECT_SIZE)
@@ -592,7 +592,7 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 	size += sizeof (gpointer);
 	if (size < MIN_OBJECT_SIZE)
 		size = MIN_OBJECT_SIZE;
-	if (vtable->klass->has_finalize)
+	if (mono_class_has_finalizer(vtable->klass))
 		flags |= GC_ALLOC_FINALIZE;
 	if (size < 85000) {
 		CoreGCThreadInfo *info = (CoreGCThreadInfo*) mono_thread_info_current ();

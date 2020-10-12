@@ -539,12 +539,13 @@ mono_class_contextbound_bit_offset (int* byte_offset_out, guint8* mask_out) {
  * LOCKING: Acquires the loader lock.
  */
 gboolean
-mono_class_publish_gc_descriptor (MonoClass *klass, MonoGCDescriptor gc_descr)
+mono_class_publish_gc_descriptor (MonoClass *klass, MonoGCDescriptor gc_descr, GPtrArray *gc_descr_full)
 {
 	gboolean ret;
 	mono_loader_lock ();
 	ret = klass->gc_descr_inited;
 	klass->gc_descr = gc_descr;
+	klass->gc_descr_full = gc_descr_full;
 	mono_memory_barrier ();
 	klass->gc_descr_inited = TRUE;
 	mono_loader_unlock ();

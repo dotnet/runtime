@@ -1144,6 +1144,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 	gsize *bitmap;
 	gsize default_bitmap [4] = {0};
 	MonoGCDescriptor gc_descr;
+	GPtrArray *gc_descr_full = NULL;
 
 	if (!m_class_is_inited (klass))
 		mono_class_init_internal (klass);
@@ -1153,19 +1154,19 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 
 	bitmap = default_bitmap;
 	if (klass == mono_defaults.string_class) {
-		gc_descr = mono_gc_make_descr_for_string (bitmap, 2);
+		gc_descr = mono_gc_make_descr_for_string (bitmap, 2, &gc_descr_full);
 	} else if (m_class_get_rank (klass)) {
 		MonoClass *klass_element_class = m_class_get_element_class (klass);
 		mono_class_compute_gc_descriptor (klass_element_class);
 		if (MONO_TYPE_IS_REFERENCE (m_class_get_byval_arg (klass_element_class))) {
 			gsize abm = 1;
-			gc_descr = mono_gc_make_descr_for_array (m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY, &abm, 1, sizeof (gpointer));
+			gc_descr = mono_gc_make_descr_for_array (m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY, &abm, 1, sizeof (gpointer), &gc_descr_full);
 			/*printf ("new array descriptor: 0x%x for %s.%s\n", class->gc_descr,
 				class->name_space, class->name);*/
 		} else {
 			/* remove the object header */
 			bitmap = mono_class_compute_bitmap (klass_element_class, default_bitmap, sizeof (default_bitmap) * 8, - (int)(MONO_OBJECT_HEADER_BITS), &max_set, FALSE);
-			gc_descr = mono_gc_make_descr_for_array (m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY, bitmap, mono_array_element_size (klass) / sizeof (gpointer), mono_array_element_size (klass));
+			gc_descr = mono_gc_make_descr_for_array (m_class_get_byval_arg (klass)->type == MONO_TYPE_SZARRAY, bitmap, mono_array_element_size (klass) / sizeof (gpointer), mono_array_element_size (klass), &gc_descr_full);
 			/*printf ("new vt array descriptor: 0x%x for %s.%s\n", class->gc_descr,
 				class->name_space, class->name);*/
 		}
@@ -1217,14 +1218,14 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 			mono_loader_unlock ();
 		}
 
-		gc_descr = mono_gc_make_descr_for_object (bitmap, max_set + 1, m_class_get_instance_size (klass));
+		gc_descr = mono_gc_make_descr_for_object (klass, bitmap, max_set + 1, m_class_get_instance_size (klass), &gc_descr_full);
 	}
 
 	if (bitmap != default_bitmap)
 		g_free (bitmap);
 
 	/* Publish the data */
-	mono_class_publish_gc_descriptor (klass, gc_descr);
+	mono_class_publish_gc_descriptor (klass, gc_descr, gc_descr_full);
 }
 
 /**

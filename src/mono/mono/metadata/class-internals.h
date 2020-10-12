@@ -1538,7 +1538,7 @@ void
 mono_class_set_nonblittable (MonoClass *klass);
 
 gboolean
-mono_class_publish_gc_descriptor (MonoClass *klass, MonoGCDescriptor gc_descr);
+mono_class_publish_gc_descriptor (MonoClass *klass, MonoGCDescriptor gc_descr, GPtrArray *gc_descr_full) ;
 
 void
 mono_class_compute_gc_descriptor (MonoClass *klass);

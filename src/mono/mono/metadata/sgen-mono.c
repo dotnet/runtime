@@ -367,7 +367,7 @@ get_array_fill_vtable (void)
 
 		vtable->klass = klass;
 		bmap = 0;
-		vtable->gc_descr = mono_gc_make_descr_for_array (TRUE, &bmap, 0, 8);
+		vtable->gc_descr = mono_gc_make_descr_for_array (TRUE, &bmap, 0, 8, NULL);
 		vtable->rank = 1;
 
 		array_fill_vtable = vtable;
@@ -2655,7 +2655,7 @@ mono_gc_make_root_descr_user (MonoGCRootMarkFunc marker)
 }
 
 MonoGCDescriptor
-mono_gc_make_descr_for_string (gsize *bitmap, int numbits)
+mono_gc_make_descr_for_string (gsize *bitmap, int numbits, GPtrArray **gc_descr_full)
 {
 	return SGEN_DESC_STRING;
 }

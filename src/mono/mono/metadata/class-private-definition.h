@@ -120,6 +120,7 @@ struct _MonoClass {
 	MonoType _byval_arg;
 
 	MonoGCDescriptor gc_descr;
+	GPtrArray *gc_descr_full;
 
 	MonoClassRuntimeInfo *runtime_info;
 
