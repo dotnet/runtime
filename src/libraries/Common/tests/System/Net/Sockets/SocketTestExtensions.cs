@@ -58,13 +58,6 @@ namespace System.Net.Sockets.Tests
             return (client, server);
         }
 
-        public static int GetUnusedPort(AddressFamily addressFamily, ProtocolType protocolType)
-        {
-            using Socket temp = new Socket(addressFamily, protocolType == ProtocolType.Tcp ? SocketType.Stream : SocketType.Dgram, protocolType);
-            IPAddress address = addressFamily == AddressFamily.InterNetwork ? IPAddress.Loopback : IPAddress.IPv6Loopback;
-            return temp.BindToAnonymousPort(address);
-        }
-
         // Tries to connect within the provided timeout interval
         // Useful to speed up "can not connect" assertions on Windows
         public static bool TryConnect(this Socket socket, EndPoint remoteEndpoint, int millisecondsTimeout)
