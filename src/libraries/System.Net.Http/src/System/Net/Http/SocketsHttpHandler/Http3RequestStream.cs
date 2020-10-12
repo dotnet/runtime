@@ -753,10 +753,13 @@ namespace System.Net.Http
                     case Http3FrameType.Headers:
                     case Http3FrameType.Data:
                         return ((Http3FrameType)frameType, payloadLength);
-                    case Http3FrameType.Settings:
+                    case Http3FrameType.Settings: // These frames should only be received on a control stream, not a response stream.
                     case Http3FrameType.GoAway:
                     case Http3FrameType.MaxPushId:
-                        // These frames should only be received on a control stream, not a response stream.
+                    case Http3FrameType.ReservedHttp2Priority: // These frames are explicitly reserved and must never be sent.
+                    case Http3FrameType.ReservedHttp2Ping:
+                    case Http3FrameType.ReservedHttp2WindowUpdate:
+                    case Http3FrameType.ReservedHttp2Continuation:
                         throw new Http3ConnectionException(Http3ErrorCode.UnexpectedFrame);
                     case Http3FrameType.DuplicatePush:
                     case Http3FrameType.PushPromise:
