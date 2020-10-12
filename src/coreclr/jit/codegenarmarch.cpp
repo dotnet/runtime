@@ -3821,47 +3821,65 @@ void CodeGen::genPushCalleeSavedRegisters()
 
     int totalFrameSize = genTotalFrameSize();
 
-    // Probe large frames now, if necessary, since genPushCalleeSavedRegisters() will allocate the frame. Note that
-    // for arm64, genAllocLclFrame only probes the frame; it does not actually allocate it (it does not change SP).
-    // For arm64, we are probing the frame before the callee-saved registers are saved. The 'initReg' might have
-    // been calculated to be one of the callee-saved registers (say, if all the integer argument registers are
-    // in use, and perhaps with other conditions being satisfied). This is ok in other cases, after the callee-saved
-    // registers have been saved. So instead of letting genAllocLclFrame use initReg as a temporary register,
-    // always use REG_SCRATCH. We don't care if it trashes it, so ignore the initRegZeroed output argument.
-
-    bool      stackProbeViaHelper = false;
+    bool      useStackProbeHelper = false;
     const int pageSize            = (int)compiler->eeGetPageSize();
 
-    int finalSpToLastTouchDelta = totalFrameSize;
+    const int currentSpToFinalSp = compiler->compLclFrameSize;
 
-    if (finalSpToLastTouchDelta < pageSize)
+    if (currentSpToFinalSp < compiler->getVeryLargeFrameSize())
     {
-        if (finalSpToLastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
+        const regNumber tempReg = REG_SCRATCH;
+        assert(tempReg != initReg);
+
+        constexpr int ldrLargestPositiveImmByteOffset = 0x8000;
+        const bool    useLdrUnsignedImmediate         = (pageSize < ldrLargestPositiveImmByteOffset / 2);
+
+        int currentSpToLastProbedLoc = 0;
+
+        if (useLdrUnsignedImmediate)
         {
-            GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SCRATCH, REG_SPBASE, totalFrameSize);
-            GetEmitter()->emitIns_R_R(INS_ldr, EA_4BYTE, REG_ZR, REG_SCRATCH);
-            regSet.verifyRegUsed(REG_SCRATCH);
+            for (int currentSpToTempReg = 0;
+                 currentSpToFinalSp + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES - currentSpToLastProbedLoc > pageSize;)
+            {
+                const int currentSpToProbeLoc = min(currentSpToLastProbedLoc + pageSize, currentSpToFinalSp);
+
+                if (currentSpToProbeLoc > currentSpToTempReg)
+                {
+                    if (currentSpToFinalSp + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES - currentSpToProbeLoc > pageSize)
+                    {
+                        // At least one more probing beside the one at [sp, #currentSpToProbeLoc] are needed,
+                        // so it is worthwhile to advance tempReg and emit two or more ldr xzr, [tempReg, #imm].
+                        currentSpToTempReg = currentSpToTempReg + ldrLargestPositiveImmByteOffset;
+                        GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, tempReg, REG_SPBASE, currentSpToTempReg);
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+
+                const int probeLocToTempReg = currentSpToTempReg - currentSpToProbeLoc;
+                GetEmitter()->emitIns_R_R_I(INS_ldr, EA_8BYTE, REG_ZR, tempReg, probeLocToTempReg);
+                currentSpToLastProbedLoc = currentSpToProbeLoc;
+            }
         }
-    }
-    else if (totalFrameSize < compiler->getVeryLargeFrameSize())
-    {
-        int tempRegToLastTouchDelta = roundDn((unsigned)finalSpToLastTouchDelta, (unsigned)pageSize);
 
-        GetEmitter()->emitIns_R_R_I(INS_sub, EA_PTRSIZE, REG_SCRATCH, REG_SPBASE, tempRegToLastTouchDelta);
-
-        while (finalSpToLastTouchDelta + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES > pageSize)
+        while (currentSpToFinalSp + STACK_PROBE_BOUNDARY_THRESHOLD_BYTES - currentSpToLastProbedLoc > pageSize)
         {
-            tempRegToLastTouchDelta = tempRegToLastTouchDelta - min(pageSize, finalSpToLastTouchDelta);
-            finalSpToLastTouchDelta = max(finalSpToLastTouchDelta - pageSize, 0);
+            const int currentSpToProbeLoc = min(currentSpToLastProbedLoc + pageSize, currentSpToFinalSp);
 
-            GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, REG_ZR, REG_SCRATCH, tempRegToLastTouchDelta);
+            // Emit mov tempReg, #imm followed by ldr wzr, [sp, tempReg].
+            genSetRegToIcon(tempReg, -currentSpToProbeLoc, TYP_I_IMPL);
+            GetEmitter()->emitIns_R_R_R(INS_ldr, EA_4BYTE, REG_ZR, REG_SPBASE, tempReg);
+            currentSpToLastProbedLoc = currentSpToProbeLoc;
         }
 
-        regSet.verifyRegUsed(REG_SCRATCH);
+        regSet.verifyRegUsed(tempReg);
+        compiler->unwindPadding();
     }
     else
     {
-        stackProbeViaHelper = true;
+        useStackProbeHelper = true;
     }
 
     int offset; // This will be the starting place for saving the callee-saved registers, in increasing order.
@@ -4240,7 +4258,7 @@ void CodeGen::genPushCalleeSavedRegisters()
         // We've already established the frame pointer, so no need to report the unwind info at this point.
         const bool reportUnwindData = false;
 
-        if (stackProbeViaHelper)
+        if (useStackProbeHelper)
         {
             genInstrWithConstant(INS_sub, EA_PTRSIZE, REG_STACK_PROBE_HELPER_ARG, REG_SPBASE, remainingFrameSz,
                                  REG_STACK_PROBE_HELPER_ARG, reportUnwindData);
