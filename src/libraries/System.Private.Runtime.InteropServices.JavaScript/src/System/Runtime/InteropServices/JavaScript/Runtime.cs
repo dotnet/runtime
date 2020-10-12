@@ -229,13 +229,14 @@ namespace System.Runtime.InteropServices.JavaScript
                 js.GetWrappedObject() ?? h.Target : h.Target;
         }
 
-        private static object BoxInt(int i)
+        private static object BoxNumber(double d)
         {
-            return i;
-        }
-
-        private static object BoxDouble(double d)
-        {
+            if ((d % 1) == 0) {
+                if (d >= int.MinValue && d <= int.MaxValue)
+                    return (int)d;
+                else if (d >= uint.MinValue && d <= uint.MaxValue)
+                    return (uint)d;
+            }
             return d;
         }
 

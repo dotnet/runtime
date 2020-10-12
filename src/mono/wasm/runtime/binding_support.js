@@ -100,8 +100,7 @@ var BindingSupportLib = {
 			this.get_js_id = get_method ("GetJSObjectId");
 			this.get_raw_mono_obj = get_method ("GetDotNetObject");
 
-			this.box_js_int = get_method ("BoxInt");
-			this.box_js_double = get_method ("BoxDouble");
+			this.box_js_number = get_method ("BoxNumber");
 			this.box_js_bool = get_method ("BoxBool");
 			this.is_simple_array = get_method ("IsSimpleArray");
 			this.setup_js_cont = get_method ("SetupJSContinuation");
@@ -366,9 +365,7 @@ var BindingSupportLib = {
 				case typeof js_obj === "undefined":
 					return 0;
 				case typeof js_obj === "number":
-					if (parseInt(js_obj) == js_obj)
-						return this.call_method (this.box_js_int, null, "im", [ js_obj ]);
-					return this.call_method (this.box_js_double, null, "dm", [ js_obj ]);
+					return this.call_method (this.box_js_number, null, "dm", [ js_obj ]);
 				case typeof js_obj === "string":
 					return this.js_string_to_mono_string (js_obj);
 				case typeof js_obj === "boolean":
