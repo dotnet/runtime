@@ -6469,6 +6469,7 @@ protected:
         ValueNum csdConstDefVN;    // When we CSE similar constants, this is the ValueNumber that we use for the LclVar
                                    // assignment
         unsigned csdIndex;         // 1..optCSECandidateCount
+        bool     csdIsSharedConst; 
         bool     csdLiveAcrossCall;
 
         unsigned short csdDefCount; // definition   count
@@ -6555,9 +6556,17 @@ protected:
         return ((key & TARGET_SIGN_BIT) != 0);
     }
 
-    static size_t Decode_Shared_Const_CSE_Value(size_t key)
+    // returns the encoded key
+    static size_t Encode_Shared_Const_CSE_Value(size_t key)
     {
-        return (key & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
+        return TARGET_SIGN_BIT | (key >> CSE_CONST_SHARED_LOW_BITS);
+    }
+
+    // returns the orginal key
+    static size_t Decode_Shared_Const_CSE_Value(size_t enckey)
+    {
+        assert(Is_Shared_Const_CSE(enckey));
+        return (enckey & ~TARGET_SIGN_BIT) << CSE_CONST_SHARED_LOW_BITS;
     }
 
 #endif // FEATURE_ANYCSE
