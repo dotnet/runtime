@@ -70,7 +70,7 @@ namespace System.Net.Security.Tests
                 return true;
             });
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (SslStream server = new SslStream(stream1, false, null, selectionCallback),
                              client = new SslStream(stream2, leaveInnerStreamOpen: false, validationCallback))
             {
@@ -115,7 +115,7 @@ namespace System.Net.Security.Tests
                 return true;
             });
 
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (SslStream server = new SslStream(stream1, false, null, selectionCallback),
                              client = new SslStream(stream2, leaveInnerStreamOpen: false, validationCallback))
             {
