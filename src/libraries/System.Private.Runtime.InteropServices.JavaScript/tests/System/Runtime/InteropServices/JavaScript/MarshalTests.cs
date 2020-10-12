@@ -126,6 +126,73 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Same(HelperMarshal._object1, HelperMarshal._object2);
         }
 
+        [Theory]
+        [InlineData(byte.MinValue)]
+        [InlineData(byte.MaxValue)]
+        [InlineData(SByte.MinValue)]
+        [InlineData(SByte.MaxValue)]
+        [InlineData(uint.MaxValue)]
+        [InlineData(uint.MinValue)]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        [InlineData(double.MaxValue)]
+        [InlineData(double.MinValue)]
+        public static void InvokeUnboxNumberString(object o)
+        {
+            HelperMarshal._marshalledObject = o;
+            HelperMarshal._object1 = HelperMarshal._object2 = null;
+            var value = Runtime.InvokeJS(@"
+                var obj = App.call_test_method (""InvokeReturnMarshalObj"");
+                var res = App.call_test_method (""InvokeObj1"", [ obj.toString() ]);
+            ");
+
+            Assert.Equal(o.ToString().ToLower(), HelperMarshal._object1);
+        }
+
+        [Theory]
+        [InlineData(byte.MinValue, 0)]
+        [InlineData(byte.MaxValue, 255)]
+        [InlineData(SByte.MinValue, -128)]
+        [InlineData(SByte.MaxValue, 127)]
+        [InlineData(uint.MaxValue)]
+        [InlineData(uint.MinValue, 0)]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        [InlineData(double.MaxValue)]
+        [InlineData(double.MinValue)]
+        public static void InvokeUnboxNumber(object o, object expected = null)
+        {
+            HelperMarshal._marshalledObject = o;
+            HelperMarshal._object1 = HelperMarshal._object2 = null;
+            Runtime.InvokeJS(@"
+                var obj = App.call_test_method (""InvokeReturnMarshalObj"");
+                var res = App.call_test_method (""InvokeObj1"", [ obj ]);
+            ");
+
+            Assert.Equal(expected ?? o, HelperMarshal._object1);
+        }
+
+        [Theory]
+        [InlineData(byte.MinValue, 0)]
+        [InlineData(byte.MaxValue, 255)]
+        [InlineData(SByte.MinValue, -128)]
+        [InlineData(SByte.MaxValue, 127)]
+        [InlineData(uint.MaxValue)]
+        [InlineData(uint.MinValue, 0)]
+        [InlineData(int.MaxValue)]
+        [InlineData(int.MinValue)]
+        [InlineData(double.MaxValue)]
+        [InlineData(double.MinValue)]
+        public static void InvokeUnboxStringNumber(object o, object expected = null)
+        {
+            HelperMarshal._marshalledObject = HelperMarshal._object1 = HelperMarshal._object2 = null;
+            Runtime.InvokeJS(String.Format (@"
+                var res = App.call_test_method (""InvokeObj1"", [ {0} ]);
+            ", o));
+
+            Assert.Equal (expected ?? o, HelperMarshal._object1);
+        }
+
         [Fact]
         public static void JSInvokeInt()
         {
