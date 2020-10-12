@@ -55,6 +55,7 @@ namespace Mono.Linker.Steps
 
 #if DEBUG
 		static readonly DependencyKind[] _entireTypeReasons = new DependencyKind[] {
+			DependencyKind.Unspecified,
 			DependencyKind.NestedType,
 #if !FEATURE_ILLINK
 			DependencyKind.PreservedDependency,
@@ -66,6 +67,7 @@ namespace Mono.Linker.Steps
 		};
 
 		static readonly DependencyKind[] _fieldReasons = new DependencyKind[] {
+			DependencyKind.Unspecified,
 			DependencyKind.AccessedViaReflection,
 			DependencyKind.AlreadyMarked,
 			DependencyKind.Custom,
@@ -85,6 +87,7 @@ namespace Mono.Linker.Steps
 		};
 
 		static readonly DependencyKind[] _typeReasons = new DependencyKind[] {
+			DependencyKind.Unspecified,
 			DependencyKind.AccessedViaReflection,
 			DependencyKind.AlreadyMarked,
 			DependencyKind.AttributeType,
@@ -115,6 +118,7 @@ namespace Mono.Linker.Steps
 		};
 
 		static readonly DependencyKind[] _methodReasons = new DependencyKind[] {
+			DependencyKind.Unspecified,
 			DependencyKind.AccessedViaReflection,
 			DependencyKind.AlreadyMarked,
 			DependencyKind.AttributeConstructor,

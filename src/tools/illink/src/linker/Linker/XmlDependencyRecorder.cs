@@ -91,6 +91,9 @@ namespace Mono.Linker
 
 		public void RecordDependency (object target, in DependencyInfo reason, bool marked)
 		{
+			if (reason.Kind == DependencyKind.Unspecified)
+				return;
+
 			// For now, just report a dependency from source to target without noting the DependencyKind.
 			RecordDependency (reason.Source, target, marked);
 		}
