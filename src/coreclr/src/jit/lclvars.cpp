@@ -372,7 +372,6 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
         lvaInitRetBuffArg(varDscInfo, true);
     }
 
-
 //======================================================================
 
 #if USER_ARGS_COME_LAST
