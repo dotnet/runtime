@@ -1198,8 +1198,7 @@ var BindingSupportLib = {
 			return BINDING.js_string_to_mono_string ("Global object '" + js_name + "' not found.");
 		}
 
-		var result = BINDING.js_to_mono_obj (globalObj);
-		return result;
+		return BINDING.js_to_mono_obj (globalObj);
 	},
 	mono_wasm_release_handle: function(js_handle, is_exception) {
 		BINDING.bindings_lazy_init ();
