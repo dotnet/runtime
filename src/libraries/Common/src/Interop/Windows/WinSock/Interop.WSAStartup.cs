@@ -29,7 +29,7 @@ internal static partial class Interop
 
                 if (Interlocked.CompareExchange(ref s_initialized, 1, 0) != 0)
                 {
-                    // Keep the winsock initialization count ballanced if other thread beats us to finish the initialization.
+                    // Keep the winsock initialization count balanced if other thread beats us to finish the initialization.
                     WSACleanup();
                 }
             }
