@@ -3085,6 +3085,11 @@ int32_t SystemNative_Disconnect(intptr_t socket)
     addr.sa_family = AF_UNSPEC;
 
     err = connect(fd, &addr, sizeof(addr));
+    if (err != 0) 
+    {
+        // On some older kernels connect(AF_UNSPEC) may fail. Fall back to shutdown in these cases:
+        err = shutdown(fd, SHUT_RDWR);
+    } 
 #elif HAVE_DISCONNECTX
     // disconnectx causes a FIN close on OSX. It's the best we can do.
     err = disconnectx(fd, SAE_ASSOCID_ANY, SAE_CONNID_ANY);
