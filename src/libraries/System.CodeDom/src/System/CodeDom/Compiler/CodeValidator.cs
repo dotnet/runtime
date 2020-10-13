@@ -53,7 +53,7 @@ namespace System.CodeDom.Compiler
             {
                 ValidateCodeDirective((CodeDirective)e);
             }
-            else if (e == null)
+            else if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -68,7 +68,7 @@ namespace System.CodeDom.Compiler
             ValidateCommentStatements(e.Comments);
             ValidateCodeDirectives(e.StartDirectives);
             ValidateCodeDirectives(e.EndDirectives);
-            if (e.LinePragma != null) ValidateLinePragmaStart(e.LinePragma);
+            if (e.LinePragma is not null) ValidateLinePragmaStart(e.LinePragma);
 
             if (e is CodeMemberEvent)
             {
@@ -118,7 +118,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateSnippetCompileUnit(CodeSnippetCompileUnit e)
         {
-            if (e.LinePragma != null) ValidateLinePragmaStart(e.LinePragma);
+            if (e.LinePragma is not null) ValidateLinePragmaStart(e.LinePragma);
         }
 
         private void ValidateCompileUnitStart(CodeCompileUnit e)
@@ -162,7 +162,7 @@ namespace System.CodeDom.Compiler
         {
             foreach (CodeNamespaceImport imp in e.Imports)
             {
-                if (imp.LinePragma != null)
+                if (imp.LinePragma is not null)
                 {
                     ValidateLinePragmaStart(imp.LinePragma);
                 }
@@ -259,7 +259,7 @@ namespace System.CodeDom.Compiler
                 ValidateTypeReference(e.Type);
             }
 
-            if (e.InitExpression != null)
+            if (e.InitExpression is not null)
             {
                 ValidateExpression(e.InitExpression);
             }
@@ -300,7 +300,7 @@ namespace System.CodeDom.Compiler
             ValidateTypeReference(e.Type);
             ValidateTypeReferences(e.ImplementationTypes);
 
-            if (e.PrivateImplementationType != null && !IsCurrentInterface)
+            if (e.PrivateImplementationType is not null && !IsCurrentInterface)
             {
                 ValidateTypeReference(e.PrivateImplementationType);
             }
@@ -334,7 +334,7 @@ namespace System.CodeDom.Compiler
         private void ValidateMemberMethod(CodeMemberMethod e)
         {
             ValidateCommentStatements(e.Comments);
-            if (e.LinePragma != null) ValidateLinePragmaStart(e.LinePragma);
+            if (e.LinePragma is not null) ValidateLinePragmaStart(e.LinePragma);
 
             ValidateTypeParameters(e.TypeParameters);
             ValidateTypeReferences(e.ImplementationTypes);
@@ -374,7 +374,7 @@ namespace System.CodeDom.Compiler
             }
 
             ValidateTypeReference(e.ReturnType);
-            if (e.PrivateImplementationType != null)
+            if (e.PrivateImplementationType is not null)
             {
                 ValidateTypeReference(e.PrivateImplementationType);
             }
@@ -435,7 +435,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateStatement(CodeStatement e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -528,7 +528,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateThrowExceptionStatement(CodeThrowExceptionStatement e)
         {
-            if (e.ToThrow != null)
+            if (e.ToThrow is not null)
             {
                 ValidateExpression(e.ToThrow);
             }
@@ -536,7 +536,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateMethodReturnStatement(CodeMethodReturnStatement e)
         {
-            if (e.Expression != null)
+            if (e.Expression is not null)
             {
                 ValidateExpression(e.Expression);
             }
@@ -601,7 +601,7 @@ namespace System.CodeDom.Compiler
         private void ValidateLabeledStatement(CodeLabeledStatement e)
         {
             ValidateIdentifier(e, nameof(e.Label), e.Label);
-            if (e.Statement != null)
+            if (e.Statement is not null)
             {
                 ValidateStatement(e.Statement);
             }
@@ -611,7 +611,7 @@ namespace System.CodeDom.Compiler
         {
             ValidateTypeReference(e.Type);
             ValidateIdentifier(e, nameof(e.Name), e.Name);
-            if (e.InitExpression != null)
+            if (e.InitExpression is not null)
             {
                 ValidateExpression(e.InitExpression);
             }
@@ -627,7 +627,7 @@ namespace System.CodeDom.Compiler
             {
                 ValidateAttributes(e.CustomAttributes);
             }
-            if (e.PrivateImplementationType != null)
+            if (e.PrivateImplementationType is not null)
             {
                 ValidateTypeReference(e.Type);
                 ValidateIdentifier(e, nameof(e.Name), e.Name);
@@ -821,7 +821,7 @@ namespace System.CodeDom.Compiler
             }
             else
             {
-                if (e == null)
+                if (e is null)
                 {
                     throw new ArgumentNullException(nameof(e));
                 }
@@ -842,7 +842,7 @@ namespace System.CodeDom.Compiler
             }
             else
             {
-                if (e.SizeExpression != null)
+                if (e.SizeExpression is not null)
                 {
                     ValidateExpression(e.SizeExpression);
                 }
@@ -879,7 +879,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateFieldReferenceExpression(CodeFieldReferenceExpression e)
         {
-            if (e.TargetObject != null)
+            if (e.TargetObject is not null)
             {
                 ValidateExpression(e.TargetObject);
             }
@@ -926,7 +926,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateMethodReferenceExpression(CodeMethodReferenceExpression e)
         {
-            if (e.TargetObject != null)
+            if (e.TargetObject is not null)
             {
                 ValidateExpression(e.TargetObject);
             }
@@ -936,7 +936,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateEventReferenceExpression(CodeEventReferenceExpression e)
         {
-            if (e.TargetObject != null)
+            if (e.TargetObject is not null)
             {
                 ValidateExpression(e.TargetObject);
             }
@@ -945,7 +945,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidateDelegateInvokeExpression(CodeDelegateInvokeExpression e)
         {
-            if (e.TargetObject != null)
+            if (e.TargetObject is not null)
             {
                 ValidateExpression(e.TargetObject);
             }
@@ -980,7 +980,7 @@ namespace System.CodeDom.Compiler
 
         private void ValidatePropertyReferenceExpression(CodePropertyReferenceExpression e)
         {
-            if (e.TargetObject != null)
+            if (e.TargetObject is not null)
             {
                 ValidateExpression(e.TargetObject);
             }
@@ -1034,8 +1034,8 @@ namespace System.CodeDom.Compiler
                 throw new ArgumentException(SR.Format(SR.InvalidRegion, e.RegionText), nameof(e));
         }
 
-        private bool IsCurrentInterface => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsInterface : false;
+        private bool IsCurrentInterface => _currentClass is not null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsInterface : false;
 
-        private bool IsCurrentEnum => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsEnum : false;
+        private bool IsCurrentEnum => _currentClass is not null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsEnum : false;
     }
 }

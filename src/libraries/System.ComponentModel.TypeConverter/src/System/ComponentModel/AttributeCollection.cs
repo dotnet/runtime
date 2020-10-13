@@ -44,7 +44,7 @@ namespace System.ComponentModel
 
             for (int idx = 0; idx < _attributes.Length; idx++)
             {
-                if (_attributes[idx] == null)
+                if (_attributes[idx] is null)
                 {
                     throw new ArgumentNullException(nameof(attributes));
                 }
@@ -60,12 +60,12 @@ namespace System.ComponentModel
         /// </summary>
         public static AttributeCollection FromExisting(AttributeCollection existing, params Attribute[] newAttributes)
         {
-            if (existing == null)
+            if (existing is null)
             {
                 throw new ArgumentNullException(nameof(existing));
             }
 
-            if (newAttributes == null)
+            if (newAttributes is null)
             {
                 newAttributes = Array.Empty<Attribute>();
             }
@@ -76,7 +76,7 @@ namespace System.ComponentModel
 
             for (int idx = 0; idx < newAttributes.Length; idx++)
             {
-                if (newAttributes[idx] == null)
+                if (newAttributes[idx] is null)
                 {
                     throw new ArgumentNullException(nameof(newAttributes));
                 }
@@ -150,7 +150,7 @@ namespace System.ComponentModel
                     // a relatively expensive call and we try to avoid it
                     // since we rarely encounter derived attribute types
                     // and this list is usually short.
-                    if (_foundAttributeTypes == null)
+                    if (_foundAttributeTypes is null)
                     {
                         _foundAttributeTypes = new AttributeEntry[FoundTypesLimit];
                     }
@@ -171,7 +171,7 @@ namespace System.ComponentModel
                                 return GetDefaultAttribute(attributeType);
                             }
                         }
-                        if (_foundAttributeTypes[ind].type == null)
+                        if (_foundAttributeTypes[ind].type is null)
                             break;
                     }
 
@@ -224,7 +224,7 @@ namespace System.ComponentModel
             }
 
             Attribute attr = this[attribute.GetType()];
-            return attr != null && attr.Equals(attribute);
+            return attr is not null && attr.Equals(attribute);
         }
 
         /// <summary>
@@ -233,7 +233,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Contains(Attribute[] attributes)
         {
-            if (attributes == null)
+            if (attributes is null)
             {
                 return true;
             }
@@ -262,7 +262,7 @@ namespace System.ComponentModel
 
             lock (s_internalSyncObject)
             {
-                if (s_defaultAttributes == null)
+                if (s_defaultAttributes is null)
                 {
                     s_defaultAttributes = new Hashtable();
                 }
@@ -279,14 +279,14 @@ namespace System.ComponentModel
                 Type reflect = TypeDescriptor.GetReflectionType(attributeType);
                 FieldInfo field = reflect.GetField("Default", BindingFlags.Public | BindingFlags.Static | BindingFlags.GetField);
 
-                if (field != null && field.IsStatic)
+                if (field is not null && field.IsStatic)
                 {
                     attr = (Attribute)field.GetValue(null);
                 }
                 else
                 {
                     ConstructorInfo ci = reflect.UnderlyingSystemType.GetConstructor(Array.Empty<Type>());
-                    if (ci != null)
+                    if (ci is not null)
                     {
                         attr = (Attribute)ci.Invoke(Array.Empty<object>());
 

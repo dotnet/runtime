@@ -13,7 +13,7 @@ namespace System.Net.Security
         {
             using (X509Certificate2? cert = CertificateValidationPal.GetRemoteCertificate(securityContext))
             {
-                if (cert == null)
+                if (cert is null)
                     return null;
 
                 SafeChannelBindingHandle bindingHandle = new SafeChannelBindingHandle(ChannelBindingKind.Endpoint);

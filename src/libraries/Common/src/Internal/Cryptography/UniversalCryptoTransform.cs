@@ -67,7 +67,7 @@ namespace Internal.Cryptography
 
         public int TransformBlock(byte[] inputBuffer, int inputOffset, int inputCount, byte[] outputBuffer, int outputOffset)
         {
-            if (inputBuffer == null)
+            if (inputBuffer is null)
                 throw new ArgumentNullException(nameof(inputBuffer));
             if (inputOffset < 0)
                 throw new ArgumentOutOfRangeException(nameof(inputOffset));
@@ -79,7 +79,7 @@ namespace Internal.Cryptography
                 throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_MustTransformWholeBlock);
             if (inputCount > inputBuffer.Length - inputOffset)
                 throw new ArgumentOutOfRangeException(nameof(inputCount), SR.Cryptography_TransformBeyondEndOfBuffer);
-            if (outputBuffer == null)
+            if (outputBuffer is null)
                 throw new ArgumentNullException(nameof(outputBuffer));
             if (outputOffset > outputBuffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(outputOffset));
@@ -93,7 +93,7 @@ namespace Internal.Cryptography
 
         public byte[] TransformFinalBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            if (inputBuffer == null)
+            if (inputBuffer is null)
                 throw new ArgumentNullException(nameof(inputBuffer));
             if (inputOffset < 0)
                 throw new ArgumentOutOfRangeException(nameof(inputOffset));

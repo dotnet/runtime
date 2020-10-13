@@ -17,7 +17,7 @@ namespace System.Reflection.Metadata
 
         internal AssemblyReference(MetadataReader reader, uint treatmentAndRowId)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(treatmentAndRowId != 0);
 
             // only virtual bit can be set in highest byte:

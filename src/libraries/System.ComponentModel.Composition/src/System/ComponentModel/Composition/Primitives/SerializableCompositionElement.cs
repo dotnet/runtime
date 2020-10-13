@@ -30,7 +30,7 @@ namespace System.ComponentModel.Composition.Primitives
         [return: NotNullIfNotNull("element")]
         public static ICompositionElement? FromICompositionElement(ICompositionElement? element)
         {
-            if (element == null)
+            if (element is null)
             {
                 return null;
             }

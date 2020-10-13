@@ -289,7 +289,7 @@ namespace System.Xml.Xsl.Runtime
         public override bool MoveTo(XPathNavigator other)
         {
             RtfTreeNavigator that = other as RtfTreeNavigator;
-            if (that != null)
+            if (that is not null)
             {
                 _events = that._events;
                 _constr = that._constr;
@@ -400,7 +400,7 @@ namespace System.Xml.Xsl.Runtime
         public override bool MoveTo(XPathNavigator other)
         {
             RtfTextNavigator that = other as RtfTextNavigator;
-            if (that != null)
+            if (that is not null)
             {
                 _text = that._text;
                 _baseUri = that._baseUri;
@@ -427,7 +427,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XPathNavigator GetNavigator(XmlEventCache events, XmlNameTable nameTable)
         {
-            if (_cache == null)
+            if (_cache is null)
             {
                 // Create XPathDocument from event cache
                 XPathDocument doc = new XPathDocument(nameTable);
@@ -449,7 +449,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XPathNavigator GetNavigator(string text, string baseUri, XmlNameTable nameTable)
         {
-            if (_cache == null)
+            if (_cache is null)
             {
                 // Create XPathDocument
                 XPathDocument doc = new XPathDocument(nameTable);

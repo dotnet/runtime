@@ -65,7 +65,7 @@ namespace System.Reflection.Context.Custom
             if (!getDeclaredOnly)
             {
                 CustomType baseType = BaseType as CustomType;
-                while (baseType != null)
+                while (baseType is not null)
                 {
                     IEnumerable<PropertyInfo> newProperties = baseType.NewProperties;
 
@@ -97,11 +97,11 @@ namespace System.Reflection.Context.Custom
                 return property;
 
             // Adding indexer properties is currently not supported.
-            if (types != null && types.Length > 0)
+            if (types is not null && types.Length > 0)
                 return property;
 
             List<PropertyInfo> matchingProperties = new List<PropertyInfo>();
-            if (property != null)
+            if (property is not null)
                 matchingProperties.Add(property);
 
             // If the ReflectionContext adds two or more properties with the same name and type,
@@ -120,7 +120,7 @@ namespace System.Reflection.Context.Custom
 
             if (!getDeclaredOnly)
             {
-                while ((type = type.BaseType as CustomType) != null)
+                while ((type = type.BaseType as CustomType) is not null)
                 {
                     foreach (PropertyInfo newBaseProperty in type.NewProperties)
                     {
@@ -133,7 +133,7 @@ namespace System.Reflection.Context.Custom
             if (matchingProperties.Count == 0)
                 return null;
 
-            if (binder == null)
+            if (binder is null)
                 binder = Type.DefaultBinder;
 
             return binder.SelectProperty(bindingAttr, matchingProperties.ToArray(), returnType, types, modifiers);
@@ -164,7 +164,7 @@ namespace System.Reflection.Context.Custom
             if (!getDeclaredOnly)
             {
                 CustomType baseType = BaseType as CustomType;
-                while (baseType != null)
+                while (baseType is not null)
                 {
                     // We shouldn't add a base type method directly on a subtype.
                     // A new method with a different ReflectedType should be used.
@@ -204,10 +204,10 @@ namespace System.Reflection.Context.Custom
             if (name.Length > 4)
             {
                 // Right now we don't support adding fabricated indexers on types
-                getPropertyGetter = (types == null || types.Length == 0) && name.StartsWith("get_", comparison);
+                getPropertyGetter = (types is null || types.Length == 0) && name.StartsWith("get_", comparison);
 
                 if (!getPropertyGetter)
-                    getPropertySetter = (types == null || types.Length == 1) && name.StartsWith("set_", comparison);
+                    getPropertySetter = (types is null || types.Length == 1) && name.StartsWith("set_", comparison);
             }
 
             // not a property getter or setter
@@ -218,7 +218,7 @@ namespace System.Reflection.Context.Custom
             string targetPropertyName = name.Substring(4);
 
             List<MethodInfo> matchingMethods = new List<MethodInfo>();
-            if (method != null)
+            if (method is not null)
                 matchingMethods.Add(method);
 
             // in runtime reflection hidden methods are always returned in GetMethods
@@ -227,7 +227,7 @@ namespace System.Reflection.Context.Custom
                 if (string.Equals(newDeclaredProperty.Name, targetPropertyName, comparison))
                 {
                     MethodInfo accessor = getPropertyGetter ? newDeclaredProperty.GetGetMethod() : newDeclaredProperty.GetSetMethod();
-                    if (accessor != null)
+                    if (accessor is not null)
                         matchingMethods.Add(accessor);
                 }
             }
@@ -237,7 +237,7 @@ namespace System.Reflection.Context.Custom
             {
                 CustomType baseType = BaseType as CustomType;
 
-                while (baseType != null)
+                while (baseType is not null)
                 {
                     // We shouldn't add a base type method directly on a subtype.
                     // A new method with a different ReflectedType should be used.
@@ -248,7 +248,7 @@ namespace System.Reflection.Context.Custom
                             PropertyInfo inheritedProperty = new InheritedPropertyInfo(newBaseProperty, this);
 
                             MethodInfo accessor = getPropertyGetter ? inheritedProperty.GetGetMethod() : inheritedProperty.GetSetMethod();
-                            if (accessor != null)
+                            if (accessor is not null)
                                 matchingMethods.Add(accessor);
                         }
                     }
@@ -261,9 +261,9 @@ namespace System.Reflection.Context.Custom
             if (matchingMethods.Count == 0)
                 return null;
 
-            if (types == null || getPropertyGetter)
+            if (types is null || getPropertyGetter)
             {
-                Debug.Assert(types == null || types.Length == 0);
+                Debug.Assert(types is null || types.Length == 0);
 
                 // matches any signature
                 if (matchingMethods.Count == 1)
@@ -273,9 +273,9 @@ namespace System.Reflection.Context.Custom
             }
             else
             {
-                Debug.Assert(getPropertySetter && types != null && types.Length == 1);
+                Debug.Assert(getPropertySetter && types is not null && types.Length == 1);
 
-                if (binder == null)
+                if (binder is null)
                     binder = Type.DefaultBinder;
 
                 return (MethodInfo)binder.SelectMethod(bindingAttr, matchingMethods.ToArray(), types, modifiers);
@@ -286,7 +286,7 @@ namespace System.Reflection.Context.Custom
         {
             get
             {
-                if (_newProperties == null)
+                if (_newProperties is null)
                 {
                     _newProperties = ReflectionContext.GetNewPropertiesForType(this);
                 }

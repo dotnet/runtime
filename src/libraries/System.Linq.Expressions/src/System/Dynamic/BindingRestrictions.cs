@@ -74,8 +74,8 @@ namespace System.Dynamic
         /// </summary>
         internal static BindingRestrictions GetTypeRestriction(DynamicMetaObject obj)
         {
-            Debug.Assert(obj != null);
-            if (obj.Value == null && obj.HasValue)
+            Debug.Assert(obj is not null);
+            if (obj.Value is null && obj.HasValue)
             {
                 return GetInstanceRestriction(obj.Expression, null);
             }
@@ -122,11 +122,11 @@ namespace System.Dynamic
         public static BindingRestrictions Combine(IList<DynamicMetaObject>? contributingObjects)
         {
             BindingRestrictions res = Empty;
-            if (contributingObjects != null)
+            if (contributingObjects is not null)
             {
                 foreach (DynamicMetaObject mo in contributingObjects)
                 {
-                    if (mo != null)
+                    if (mo is not null)
                     {
                         res = res.Merge(mo.Restrictions);
                     }
@@ -238,7 +238,7 @@ namespace System.Dynamic
 
             internal CustomRestriction(Expression expression)
             {
-                Debug.Assert(expression != null);
+                Debug.Assert(expression is not null);
                 _expression = expression;
             }
 
@@ -259,8 +259,8 @@ namespace System.Dynamic
 
             internal TypeRestriction(Expression parameter, Type type)
             {
-                Debug.Assert(parameter != null);
-                Debug.Assert(type != null);
+                Debug.Assert(parameter is not null);
+                Debug.Assert(type is not null);
                 _expression = parameter;
                 _type = type;
             }
@@ -282,7 +282,7 @@ namespace System.Dynamic
 
             internal InstanceRestriction(Expression parameter, object? instance)
             {
-                Debug.Assert(parameter != null);
+                Debug.Assert(parameter is not null);
                 _expression = parameter;
                 _instance = instance;
             }
@@ -297,7 +297,7 @@ namespace System.Dynamic
 
             internal override Expression GetExpression()
             {
-                if (_instance == null)
+                if (_instance is null)
                 {
                     return Expression.Equal(
                         Expression.Convert(_expression, typeof(object)),

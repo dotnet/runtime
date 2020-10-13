@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Xml
 
         public static T CreateFromName<T>(string name) where T : class
         {
-            if (name == null || name.IndexOfAny(_invalidChars) >= 0)
+            if (name is null || name.IndexOfAny(_invalidChars) >= 0)
             {
                 return null;
             }

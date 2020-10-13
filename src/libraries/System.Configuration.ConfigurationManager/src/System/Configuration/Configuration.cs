@@ -93,7 +93,7 @@ namespace System.Configuration
         {
             get
             {
-                if (_rootSectionGroup == null)
+                if (_rootSectionGroup is null)
                 {
                     _rootSectionGroup = new ConfigurationSectionGroup();
                     _rootSectionGroup.RootAttachToConfigurationRecord(_configRecord);
@@ -124,7 +124,7 @@ namespace System.Configuration
             {
                 if (_typeStringTransformer != value)
                 {
-                    TypeStringTransformerIsSet = value != null;
+                    TypeStringTransformerIsSet = value is not null;
                     _typeStringTransformer = value;
                 }
             }
@@ -137,7 +137,7 @@ namespace System.Configuration
             {
                 if (_assemblyStringTransformer != value)
                 {
-                    AssemblyStringTransformerIsSet = value != null;
+                    AssemblyStringTransformerIsSet = value is not null;
                     _assemblyStringTransformer = value;
                 }
             }

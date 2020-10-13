@@ -20,16 +20,16 @@ namespace System
 
             object[] fields;
             bool res = InternalEquals(o1, o2, out fields);
-            if (fields == null)
+            if (fields is null)
                 return res;
 
             for (int i = 0; i < fields.Length; i += 2)
             {
                 object meVal = fields[i];
                 object youVal = fields[i + 1];
-                if (meVal == null)
+                if (meVal is null)
                 {
-                    if (youVal == null)
+                    if (youVal is null)
                         continue;
 
                     return false;
@@ -44,7 +44,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            if (obj == null)
+            if (obj is null)
                 return false;
 
             return DefaultEquals(this, obj);
@@ -54,9 +54,9 @@ namespace System
         {
             int result = InternalGetHashCode(this, out object[]? fields);
 
-            if (fields != null)
+            if (fields is not null)
                 for (int i = 0; i < fields.Length; ++i)
-                    if (fields[i] != null)
+                    if (fields[i] is not null)
                         result ^= fields[i].GetHashCode();
 
             return result;

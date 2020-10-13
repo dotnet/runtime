@@ -189,11 +189,11 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static void Invoke(ParallelOptions parallelOptions, params Action[] actions)
         {
-            if (actions == null)
+            if (actions is null)
             {
                 throw new ArgumentNullException(nameof(actions));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -212,7 +212,7 @@ namespace System.Threading.Tasks
             for (int i = 0; i < actionsCopy.Length; i++)
             {
                 actionsCopy[i] = actions[i];
-                if (actionsCopy[i] == null)
+                if (actionsCopy[i] is null)
                 {
                     throw new ArgumentException(SR.Parallel_Invoke_ActionNull);
                 }
@@ -318,7 +318,7 @@ namespace System.Threading.Tasks
                     }
 
                     // If we have encountered any exceptions, then throw.
-                    if ((exceptionQ != null) && (!exceptionQ.IsEmpty))
+                    if ((exceptionQ is not null) && (!exceptionQ.IsEmpty))
                     {
                         ThrowSingleCancellationExceptionOrOtherException(exceptionQ, parallelOptions.CancellationToken,
                                                                          new AggregateException(exceptionQ));
@@ -383,7 +383,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(int fromInclusive, int toExclusive, Action<int> body)
         {
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
@@ -412,7 +412,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(long fromInclusive, long toExclusive, Action<long> body)
         {
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
@@ -451,11 +451,11 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(int fromInclusive, int toExclusive, ParallelOptions parallelOptions, Action<int> body)
         {
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -494,11 +494,11 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(long fromInclusive, long toExclusive, ParallelOptions parallelOptions, Action<long> body)
         {
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -550,7 +550,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(int fromInclusive, int toExclusive, Action<int, ParallelLoopState> body)
         {
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
@@ -580,7 +580,7 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(long fromInclusive, long toExclusive, Action<long, ParallelLoopState> body)
         {
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
@@ -621,11 +621,11 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult For(int fromInclusive, int toExclusive, ParallelOptions parallelOptions, Action<int, ParallelLoopState> body)
         {
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -667,11 +667,11 @@ namespace System.Threading.Tasks
         public static ParallelLoopResult For(long fromInclusive, long toExclusive, ParallelOptions parallelOptions,
             Action<long, ParallelLoopState> body)
         {
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -725,15 +725,15 @@ namespace System.Threading.Tasks
             Func<int, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (localInit == null)
+            if (localInit is null)
             {
                 throw new ArgumentNullException(nameof(localInit));
             }
-            if (localFinally == null)
+            if (localFinally is null)
             {
                 throw new ArgumentNullException(nameof(localFinally));
             }
@@ -787,15 +787,15 @@ namespace System.Threading.Tasks
             Func<long, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (localInit == null)
+            if (localInit is null)
             {
                 throw new ArgumentNullException(nameof(localInit));
             }
-            if (localFinally == null)
+            if (localFinally is null)
             {
                 throw new ArgumentNullException(nameof(localFinally));
             }
@@ -860,19 +860,19 @@ namespace System.Threading.Tasks
             Func<int, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (localInit == null)
+            if (localInit is null)
             {
                 throw new ArgumentNullException(nameof(localInit));
             }
-            if (localFinally == null)
+            if (localFinally is null)
             {
                 throw new ArgumentNullException(nameof(localFinally));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -937,19 +937,19 @@ namespace System.Threading.Tasks
             Func<long, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (localInit == null)
+            if (localInit is null)
             {
                 throw new ArgumentNullException(nameof(localInit));
             }
-            if (localFinally == null)
+            if (localFinally is null)
             {
                 throw new ArgumentNullException(nameof(localFinally));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -1014,9 +1014,9 @@ namespace System.Threading.Tasks
             Func<int, ParallelLoopState, TLocal, TLocal>? bodyWithLocal,
             Func<TLocal>? localInit, Action<TLocal>? localFinally)
         {
-            Debug.Assert(((body == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) + (bodyWithLocal == null ? 0 : 1)) == 1,
+            Debug.Assert(((body is null ? 0 : 1) + (bodyWithState is null ? 0 : 1) + (bodyWithLocal is null ? 0 : 1)) == 1,
                 "expected exactly one body function to be supplied");
-            Debug.Assert(bodyWithLocal != null || (localInit == null && localFinally == null),
+            Debug.Assert(bodyWithLocal is not null || (localInit is null && localFinally is null),
                 "thread local functions should only be supplied for loops w/ thread local bodies");
 
             // Instantiate our result.  Specifics will be filled in later.
@@ -1110,16 +1110,16 @@ namespace System.Threading.Tasks
                                 // If needed, it will contain a new instance of thread-local state by invoking the selector.
                                 ParallelLoopState32? state = null;
 
-                                if (bodyWithState != null)
+                                if (bodyWithState is not null)
                                 {
-                                    Debug.Assert(sharedPStateFlags != null);
+                                    Debug.Assert(sharedPStateFlags is not null);
                                     state = new ParallelLoopState32(sharedPStateFlags);
                                 }
-                                else if (bodyWithLocal != null)
+                                else if (bodyWithLocal is not null)
                                 {
-                                    Debug.Assert(sharedPStateFlags != null);
+                                    Debug.Assert(sharedPStateFlags is not null);
                                     state = new ParallelLoopState32(sharedPStateFlags);
-                                    if (localInit != null)
+                                    if (localInit is not null)
                                     {
                                         localValue = localInit();
                                         bLocalValueInitialized = true;
@@ -1132,7 +1132,7 @@ namespace System.Threading.Tasks
                                 // Now perform the loop itself.
                                 do
                                 {
-                                    if (body != null)
+                                    if (body is not null)
                                     {
                                         for (int j = nFromInclusiveLocal;
                                              j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone  // fast path check as SEL() doesn't inline
@@ -1142,7 +1142,7 @@ namespace System.Threading.Tasks
                                             body(j);
                                         }
                                     }
-                                    else if (bodyWithState != null)
+                                    else if (bodyWithState is not null)
                                     {
                                         for (int j = nFromInclusiveLocal;
                                             j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone  // fast path check as SEL() doesn't inline
@@ -1188,7 +1188,7 @@ namespace System.Threading.Tasks
                             {
                                 // If a cleanup function was specified, call it. Otherwise, if the type is
                                 // IDisposable, we will invoke Dispose on behalf of the user.
-                                if (localFinally != null && bLocalValueInitialized)
+                                if (localFinally is not null && bLocalValueInitialized)
                                 {
                                     localFinally(localValue);
                                 }
@@ -1212,7 +1212,7 @@ namespace System.Threading.Tasks
 
                 // If we got through that with no exceptions, and we were canceled, then
                 // throw our cancellation exception
-                if (oce != null) throw oce;
+                if (oce is not null) throw oce;
             }
             catch (AggregateException aggExp)
             {
@@ -1275,9 +1275,9 @@ namespace System.Threading.Tasks
             Func<long, ParallelLoopState, TLocal, TLocal>? bodyWithLocal,
             Func<TLocal>? localInit, Action<TLocal>? localFinally)
         {
-            Debug.Assert(((body == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) + (bodyWithLocal == null ? 0 : 1)) == 1,
+            Debug.Assert(((body is null ? 0 : 1) + (bodyWithState is null ? 0 : 1) + (bodyWithLocal is null ? 0 : 1)) == 1,
                 "expected exactly one body function to be supplied");
-            Debug.Assert(bodyWithLocal != null || (localInit == null && localFinally == null),
+            Debug.Assert(bodyWithLocal is not null || (localInit is null && localFinally is null),
                 "thread local functions should only be supplied for loops w/ thread local bodies");
 
             // Instantiate our result.  Specifics will be filled in later.
@@ -1373,18 +1373,18 @@ namespace System.Threading.Tasks
                                 // If needed, it will contain a new instance of thread-local state by invoking the selector.
                                 ParallelLoopState64? state = null;
 
-                                if (bodyWithState != null)
+                                if (bodyWithState is not null)
                                 {
-                                    Debug.Assert(sharedPStateFlags != null);
+                                    Debug.Assert(sharedPStateFlags is not null);
                                     state = new ParallelLoopState64(sharedPStateFlags);
                                 }
-                                else if (bodyWithLocal != null)
+                                else if (bodyWithLocal is not null)
                                 {
-                                    Debug.Assert(sharedPStateFlags != null);
+                                    Debug.Assert(sharedPStateFlags is not null);
                                     state = new ParallelLoopState64(sharedPStateFlags);
 
                                     // If a thread-local selector was supplied, invoke it. Otherwise, use the default.
-                                    if (localInit != null)
+                                    if (localInit is not null)
                                     {
                                         localValue = localInit();
                                         bLocalValueInitialized = true;
@@ -1397,7 +1397,7 @@ namespace System.Threading.Tasks
                                 // Now perform the loop itself.
                                 do
                                 {
-                                    if (body != null)
+                                    if (body is not null)
                                     {
                                         for (long j = nFromInclusiveLocal;
                                              j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone  // fast path check as SEL() doesn't inline
@@ -1407,7 +1407,7 @@ namespace System.Threading.Tasks
                                             body(j);
                                         }
                                     }
-                                    else if (bodyWithState != null)
+                                    else if (bodyWithState is not null)
                                     {
                                         for (long j = nFromInclusiveLocal;
                                              j < nToExclusiveLocal && (sharedPStateFlags.LoopStateFlags == ParallelLoopStateFlags.ParallelLoopStateNone  // fast path check as SEL() doesn't inline
@@ -1453,7 +1453,7 @@ namespace System.Threading.Tasks
                             {
                                 // If a cleanup function was specified, call it. Otherwise, if the type is
                                 // IDisposable, we will invoke Dispose on behalf of the user.
-                                if (localFinally != null && bLocalValueInitialized)
+                                if (localFinally is not null && bLocalValueInitialized)
                                 {
                                     localFinally(localValue);
                                 }
@@ -1477,7 +1477,7 @@ namespace System.Threading.Tasks
 
                 // If we got through that with no exceptions, and we were canceled, then
                 // throw our cancellation exception
-                if (oce != null) throw oce;
+                if (oce is not null) throw oce;
             }
             catch (AggregateException aggExp)
             {
@@ -1535,11 +1535,11 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult ForEach<TSource>(IEnumerable<TSource> source, Action<TSource> body)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
@@ -1580,15 +1580,15 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult ForEach<TSource>(IEnumerable<TSource> source, ParallelOptions parallelOptions, Action<TSource> body)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -1620,11 +1620,11 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult ForEach<TSource>(IEnumerable<TSource> source, Action<TSource, ParallelLoopState> body)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
@@ -1667,15 +1667,15 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult ForEach<TSource>(IEnumerable<TSource> source, ParallelOptions parallelOptions, Action<TSource, ParallelLoopState> body)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -1707,11 +1707,11 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult ForEach<TSource>(IEnumerable<TSource> source, Action<TSource, ParallelLoopState, long> body)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
@@ -1754,15 +1754,15 @@ namespace System.Threading.Tasks
         /// </remarks>
         public static ParallelLoopResult ForEach<TSource>(IEnumerable<TSource> source, ParallelOptions parallelOptions, Action<TSource, ParallelLoopState, long> body)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -1815,19 +1815,19 @@ namespace System.Threading.Tasks
         public static ParallelLoopResult ForEach<TSource, TLocal>(IEnumerable<TSource> source, Func<TLocal> localInit,
             Func<TSource, ParallelLoopState, TLocal, TLocal> body, Action<TLocal> localFinally)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (localInit == null)
+            if (localInit is null)
             {
                 throw new ArgumentNullException(nameof(localInit));
             }
-            if (localFinally == null)
+            if (localFinally is null)
             {
                 throw new ArgumentNullException(nameof(localFinally));
             }
@@ -1892,23 +1892,23 @@ namespace System.Threading.Tasks
             ParallelOptions parallelOptions, Func<TLocal> localInit,
             Func<TSource, ParallelLoopState, TLocal, TLocal> body, Action<TLocal> localFinally)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (localInit == null)
+            if (localInit is null)
             {
                 throw new ArgumentNullException(nameof(localInit));
             }
-            if (localFinally == null)
+            if (localFinally is null)
             {
                 throw new ArgumentNullException(nameof(localFinally));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -1961,19 +1961,19 @@ namespace System.Threading.Tasks
         public static ParallelLoopResult ForEach<TSource, TLocal>(IEnumerable<TSource> source, Func<TLocal> localInit,
             Func<TSource, ParallelLoopState, long, TLocal, TLocal> body, Action<TLocal> localFinally)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (localInit == null)
+            if (localInit is null)
             {
                 throw new ArgumentNullException(nameof(localInit));
             }
-            if (localFinally == null)
+            if (localFinally is null)
             {
                 throw new ArgumentNullException(nameof(localFinally));
             }
@@ -2037,23 +2037,23 @@ namespace System.Threading.Tasks
         public static ParallelLoopResult ForEach<TSource, TLocal>(IEnumerable<TSource> source, ParallelOptions parallelOptions, Func<TLocal> localInit,
             Func<TSource, ParallelLoopState, long, TLocal, TLocal> body, Action<TLocal> localFinally)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (localInit == null)
+            if (localInit is null)
             {
                 throw new ArgumentNullException(nameof(localInit));
             }
-            if (localFinally == null)
+            if (localFinally is null)
             {
                 throw new ArgumentNullException(nameof(localFinally));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -2095,10 +2095,10 @@ namespace System.Threading.Tasks
             Func<TSource, ParallelLoopState, long, TLocal, TLocal>? bodyWithEverything,
             Func<TLocal>? localInit, Action<TLocal>? localFinally)
         {
-            Debug.Assert(((body == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) +
-                (bodyWithStateAndIndex == null ? 0 : 1) + (bodyWithStateAndLocal == null ? 0 : 1) + (bodyWithEverything == null ? 0 : 1)) == 1,
+            Debug.Assert(((body is null ? 0 : 1) + (bodyWithState is null ? 0 : 1) +
+                (bodyWithStateAndIndex is null ? 0 : 1) + (bodyWithStateAndLocal is null ? 0 : 1) + (bodyWithEverything is null ? 0 : 1)) == 1,
                 "expected exactly one body function to be supplied");
-            Debug.Assert((bodyWithStateAndLocal != null) || (bodyWithEverything != null) || (localInit == null && localFinally == null),
+            Debug.Assert((bodyWithStateAndLocal is not null) || (bodyWithEverything is not null) || (localInit is null && localFinally is null),
                 "thread local functions should only be supplied for loops w/ thread local bodies");
 
             // Before getting started, do a quick peek to see if we have been canceled already
@@ -2153,28 +2153,28 @@ namespace System.Threading.Tasks
             Func<TSource, ParallelLoopState, long, TLocal, TLocal>? bodyWithEverything,
             Func<TLocal>? localInit, Action<TLocal>? localFinally)
         {
-            Debug.Assert(array != null);
-            Debug.Assert(parallelOptions != null, "ForEachWorker(array): parallelOptions is null");
+            Debug.Assert(array is not null);
+            Debug.Assert(parallelOptions is not null, "ForEachWorker(array): parallelOptions is null");
 
             int from = array.GetLowerBound(0);
             int to = array.GetUpperBound(0) + 1;
 
-            if (body != null)
+            if (body is not null)
             {
                 return ForWorker<object>(
                     from, to, parallelOptions, (i) => body(array[i]), null, null, null, null);
             }
-            else if (bodyWithState != null)
+            else if (bodyWithState is not null)
             {
                 return ForWorker<object>(
                     from, to, parallelOptions, null, (i, state) => bodyWithState(array[i], state), null, null, null);
             }
-            else if (bodyWithStateAndIndex != null)
+            else if (bodyWithStateAndIndex is not null)
             {
                 return ForWorker<object>(
                     from, to, parallelOptions, null, (i, state) => bodyWithStateAndIndex(array[i], state, i), null, null, null);
             }
-            else if (bodyWithStateAndLocal != null)
+            else if (bodyWithStateAndLocal is not null)
             {
                 return ForWorker<TLocal>(
                     from, to, parallelOptions, null, null, (i, state, local) => bodyWithStateAndLocal(array[i], state, local), localInit, localFinally);
@@ -2212,25 +2212,25 @@ namespace System.Threading.Tasks
             Func<TSource, ParallelLoopState, long, TLocal, TLocal>? bodyWithEverything,
             Func<TLocal>? localInit, Action<TLocal>? localFinally)
         {
-            Debug.Assert(list != null);
-            Debug.Assert(parallelOptions != null, "ForEachWorker(list): parallelOptions is null");
+            Debug.Assert(list is not null);
+            Debug.Assert(parallelOptions is not null, "ForEachWorker(list): parallelOptions is null");
 
-            if (body != null)
+            if (body is not null)
             {
                 return ForWorker<object>(
                     0, list.Count, parallelOptions, (i) => body(list[i]), null, null, null, null);
             }
-            else if (bodyWithState != null)
+            else if (bodyWithState is not null)
             {
                 return ForWorker<object>(
                     0, list.Count, parallelOptions, null, (i, state) => bodyWithState(list[i], state), null, null, null);
             }
-            else if (bodyWithStateAndIndex != null)
+            else if (bodyWithStateAndIndex is not null)
             {
                 return ForWorker<object>(
                     0, list.Count, parallelOptions, null, (i, state) => bodyWithStateAndIndex(list[i], state, i), null, null, null);
             }
-            else if (bodyWithStateAndLocal != null)
+            else if (bodyWithStateAndLocal is not null)
             {
                 return ForWorker<TLocal>(
                     0, list.Count, parallelOptions, null, null, (i, state, local) => bodyWithStateAndLocal(list[i], state, local), localInit, localFinally);
@@ -2289,11 +2289,11 @@ namespace System.Threading.Tasks
             Partitioner<TSource> source,
             Action<TSource> body)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
@@ -2348,11 +2348,11 @@ namespace System.Threading.Tasks
             Partitioner<TSource> source,
             Action<TSource, ParallelLoopState> body)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
@@ -2410,11 +2410,11 @@ namespace System.Threading.Tasks
             OrderablePartitioner<TSource> source,
             Action<TSource, ParallelLoopState, long> body)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
@@ -2494,19 +2494,19 @@ namespace System.Threading.Tasks
             Func<TSource, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (localInit == null)
+            if (localInit is null)
             {
                 throw new ArgumentNullException(nameof(localInit));
             }
-            if (localFinally == null)
+            if (localFinally is null)
             {
                 throw new ArgumentNullException(nameof(localFinally));
             }
@@ -2584,19 +2584,19 @@ namespace System.Threading.Tasks
             Func<TSource, ParallelLoopState, long, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (localInit == null)
+            if (localInit is null)
             {
                 throw new ArgumentNullException(nameof(localInit));
             }
-            if (localFinally == null)
+            if (localFinally is null)
             {
                 throw new ArgumentNullException(nameof(localFinally));
             }
@@ -2666,15 +2666,15 @@ namespace System.Threading.Tasks
             ParallelOptions parallelOptions,
             Action<TSource> body)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -2741,15 +2741,15 @@ namespace System.Threading.Tasks
             ParallelOptions parallelOptions,
             Action<TSource, ParallelLoopState> body)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -2819,15 +2819,15 @@ namespace System.Threading.Tasks
             ParallelOptions parallelOptions,
             Action<TSource, ParallelLoopState, long> body)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -2919,23 +2919,23 @@ namespace System.Threading.Tasks
             Func<TSource, ParallelLoopState, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (localInit == null)
+            if (localInit is null)
             {
                 throw new ArgumentNullException(nameof(localInit));
             }
-            if (localFinally == null)
+            if (localFinally is null)
             {
                 throw new ArgumentNullException(nameof(localFinally));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -3025,23 +3025,23 @@ namespace System.Threading.Tasks
             Func<TSource, ParallelLoopState, long, TLocal, TLocal> body,
             Action<TLocal> localFinally)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (body == null)
+            if (body is null)
             {
                 throw new ArgumentNullException(nameof(body));
             }
-            if (localInit == null)
+            if (localInit is null)
             {
                 throw new ArgumentNullException(nameof(localInit));
             }
-            if (localFinally == null)
+            if (localFinally is null)
             {
                 throw new ArgumentNullException(nameof(localFinally));
             }
-            if (parallelOptions == null)
+            if (parallelOptions is null)
             {
                 throw new ArgumentNullException(nameof(parallelOptions));
             }
@@ -3066,14 +3066,14 @@ namespace System.Threading.Tasks
             Func<TLocal>? localInit,
             Action<TLocal>? localFinally)
         {
-            Debug.Assert(((simpleBody == null ? 0 : 1) + (bodyWithState == null ? 0 : 1) +
-                (bodyWithStateAndIndex == null ? 0 : 1) + (bodyWithStateAndLocal == null ? 0 : 1) + (bodyWithEverything == null ? 0 : 1)) == 1,
+            Debug.Assert(((simpleBody is null ? 0 : 1) + (bodyWithState is null ? 0 : 1) +
+                (bodyWithStateAndIndex is null ? 0 : 1) + (bodyWithStateAndLocal is null ? 0 : 1) + (bodyWithEverything is null ? 0 : 1)) == 1,
                 "PartitionForEach: expected exactly one body function to be supplied");
-            Debug.Assert((bodyWithStateAndLocal != null) || (bodyWithEverything != null) || (localInit == null && localFinally == null),
+            Debug.Assert((bodyWithStateAndLocal is not null) || (bodyWithEverything is not null) || (localInit is null && localFinally is null),
                 "PartitionForEach: thread local functions should only be supplied for loops w/ thread local bodies");
 
             OrderablePartitioner<TSource>? orderedSource = source as OrderablePartitioner<TSource>;
-            Debug.Assert((orderedSource != null) || (bodyWithStateAndIndex == null && bodyWithEverything == null),
+            Debug.Assert((orderedSource is not null) || (bodyWithStateAndIndex is null && bodyWithEverything is null),
                 "PartitionForEach: bodies with indices are only allowable for OrderablePartitioner");
 
             if (!source.SupportsDynamicPartitions)
@@ -3120,10 +3120,10 @@ namespace System.Threading.Tasks
             // Also, do some error checking.
             IEnumerable<TSource>? partitionerSource = null;
             IEnumerable<KeyValuePair<long, TSource>>? orderablePartitionerSource = null;
-            if (orderedSource != null)
+            if (orderedSource is not null)
             {
                 orderablePartitionerSource = orderedSource.GetOrderableDynamicPartitions();
-                if (orderablePartitionerSource == null)
+                if (orderablePartitionerSource is null)
                 {
                     throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerReturnedNull);
                 }
@@ -3131,7 +3131,7 @@ namespace System.Threading.Tasks
             else
             {
                 partitionerSource = source.GetDynamicPartitions();
-                if (partitionerSource == null)
+                if (partitionerSource is null)
                 {
                     throw new InvalidOperationException(SR.Parallel_ForEach_PartitionerReturnedNull);
                 }
@@ -3162,15 +3162,15 @@ namespace System.Threading.Tasks
                                 // If needed, it will contain a new instance of thread-local state by invoking the selector.
                                 ParallelLoopState64? state = null;
 
-                                if (bodyWithState != null || bodyWithStateAndIndex != null)
+                                if (bodyWithState is not null || bodyWithStateAndIndex is not null)
                                 {
                                     state = new ParallelLoopState64(sharedPStateFlags);
                                 }
-                                else if (bodyWithStateAndLocal != null || bodyWithEverything != null)
+                                else if (bodyWithStateAndLocal is not null || bodyWithEverything is not null)
                                 {
                                     state = new ParallelLoopState64(sharedPStateFlags);
                                     // If a thread-local selector was supplied, invoke it. Otherwise, stick with the default.
-                                    if (localInit != null)
+                                    if (localInit is not null)
                                     {
                                         localValue = localInit();
                                         bLocalValueInitialized = true;
@@ -3180,18 +3180,18 @@ namespace System.Threading.Tasks
                                 // initialize a loop timer which will help us decide whether we should exit early
                                 int loopTimeout = ComputeTimeoutPoint(timeout);
 
-                                if (orderedSource != null)  // Use this path for OrderablePartitioner:
+                                if (orderedSource is not null)  // Use this path for OrderablePartitioner:
                                 {
                                     // first check if there's saved state from a previous replica that we might be replacing.
                                     // the only state to be passed down in such a transition is the enumerator
                                     IEnumerator<KeyValuePair<long, TSource>>? myPartition = partitionState as IEnumerator<KeyValuePair<long, TSource>>;
-                                    if (myPartition == null)
+                                    if (myPartition is null)
                                     {
                                         myPartition = orderablePartitionerSource!.GetEnumerator();
                                         partitionState = myPartition;
                                     }
 
-                                    if (myPartition == null)
+                                    if (myPartition is null)
                                         throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
 
                                     while (myPartition.MoveNext())
@@ -3201,15 +3201,15 @@ namespace System.Threading.Tasks
                                         TSource value = kvp.Value;
 
                                         // Update our iteration index
-                                        if (state != null) state.CurrentIteration = index;
+                                        if (state is not null) state.CurrentIteration = index;
 
-                                        if (simpleBody != null)
+                                        if (simpleBody is not null)
                                             simpleBody(value);
-                                        else if (bodyWithState != null)
+                                        else if (bodyWithState is not null)
                                             bodyWithState(value, state!);
-                                        else if (bodyWithStateAndIndex != null)
+                                        else if (bodyWithStateAndIndex is not null)
                                             bodyWithStateAndIndex(value, state!, index);
-                                        else if (bodyWithStateAndLocal != null)
+                                        else if (bodyWithStateAndLocal is not null)
                                             localValue = bodyWithStateAndLocal(value, state!, localValue);
                                         else
                                             localValue = bodyWithEverything!(value, state!, index, localValue);
@@ -3231,28 +3231,28 @@ namespace System.Threading.Tasks
                                     // first check if there's saved state from a previous replica that we might be replacing.
                                     // the only state to be passed down in such a transition is the enumerator
                                     IEnumerator<TSource>? myPartition = partitionState as IEnumerator<TSource>;
-                                    if (myPartition == null)
+                                    if (myPartition is null)
                                     {
                                         myPartition = partitionerSource!.GetEnumerator();
                                         partitionState = myPartition;
                                     }
 
-                                    if (myPartition == null)
+                                    if (myPartition is null)
                                         throw new InvalidOperationException(SR.Parallel_ForEach_NullEnumerator);
 
                                     // I'm not going to try to maintain this
-                                    if (state != null)
+                                    if (state is not null)
                                         state.CurrentIteration = 0;
 
                                     while (myPartition.MoveNext())
                                     {
                                         TSource t = myPartition.Current;
 
-                                        if (simpleBody != null)
+                                        if (simpleBody is not null)
                                             simpleBody(t);
-                                        else if (bodyWithState != null)
+                                        else if (bodyWithState is not null)
                                             bodyWithState(t, state!);
-                                        else if (bodyWithStateAndLocal != null)
+                                        else if (bodyWithStateAndLocal is not null)
                                             localValue = bodyWithStateAndLocal(t, state!, localValue);
                                         else
                                             Debug.Fail("PartitionerForEach: illegal body type in Partitioner handler");
@@ -3282,7 +3282,7 @@ namespace System.Threading.Tasks
                             }
                             finally
                             {
-                                if (localFinally != null && bLocalValueInitialized)
+                                if (localFinally is not null && bLocalValueInitialized)
                                 {
                                     localFinally(localValue);
                                 }
@@ -3312,7 +3312,7 @@ namespace System.Threading.Tasks
 
                 // If we got through that with no exceptions, and we were canceled, then
                 // throw our cancellation exception
-                if (oce != null) throw oce;
+                if (oce is not null) throw oce;
             }
             catch (AggregateException aggExp)
             {
@@ -3330,7 +3330,7 @@ namespace System.Threading.Tasks
 
                 //dispose the partitioner source if it implements IDisposable
                 IDisposable? d = null;
-                if (orderablePartitionerSource != null)
+                if (orderablePartitionerSource is not null)
                 {
                     d = orderablePartitionerSource as IDisposable;
                 }
@@ -3339,7 +3339,7 @@ namespace System.Threading.Tasks
                     d = partitionerSource as IDisposable;
                 }
 
-                if (d != null)
+                if (d is not null)
                 {
                     d.Dispose();
                 }
@@ -3362,7 +3362,7 @@ namespace System.Threading.Tasks
                                                                                       CancellationToken cancelToken)
         {
             // If collection is empty - no match:
-            if (exceptions == null || exceptions.Count == 0)
+            if (exceptions is null || exceptions.Count == 0)
                 return null;
 
             // If token is not cancelled, it can not be part of an exception:
@@ -3376,12 +3376,12 @@ namespace System.Threading.Tasks
                 Debug.Assert(exObj is Exception);
                 Exception ex = (Exception)exObj;
 
-                if (first == null)
+                if (first is null)
                     first = ex;
 
                 // If mismatch found, fail-fast:
                 OperationCanceledException? ocEx = ex as OperationCanceledException;
-                if (ocEx == null || !cancelToken.Equals(ocEx.CancellationToken))
+                if (ocEx is null || !cancelToken.Equals(ocEx.CancellationToken))
                     return null;
             }
 

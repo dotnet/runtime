@@ -24,7 +24,7 @@ namespace Internal.Cryptography
         {
             if (cipherMode.UsesIv())
             {
-                if (iv == null)
+                if (iv is null)
                 {
                     throw new CryptographicException(SR.Cryptography_MissingIV);
                 }
@@ -51,7 +51,7 @@ namespace Internal.Cryptography
         //
         public static byte[]? MapZeroLengthArrayToNonNullPointer(this byte[]? src)
         {
-            if (src != null && src.Length == 0)
+            if (src is not null && src.Length == 0)
                 return new byte[1];
             return src;
         }
@@ -106,7 +106,7 @@ namespace Internal.Cryptography
         public static string? GetPropertyAsString(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {
             byte[]? value = ncryptHandle.GetProperty(propertyName, options);
-            if (value == null)
+            if (value is null)
                 return null;   // .NET Framework compat: return null if key not present.
             if (value.Length == 0)
                 return string.Empty; // .NET Framework compat: return empty if property value is 0-length.
@@ -127,7 +127,7 @@ namespace Internal.Cryptography
         public static int GetPropertyAsDword(this SafeNCryptHandle ncryptHandle, string propertyName, CngPropertyOptions options)
         {
             byte[]? value = ncryptHandle.GetProperty(propertyName, options);
-            if (value == null)
+            if (value is null)
                 return 0;   // .NET Framework compat: return 0 if key not present.
             return BitConverter.ToInt32(value, 0);
         }

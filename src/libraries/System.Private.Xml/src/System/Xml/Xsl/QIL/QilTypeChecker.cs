@@ -196,7 +196,7 @@ namespace System.Xml.Xsl.Qil
             foreach (QilNode child in node)
             {
                 CheckClassAndNodeType(child, typeof(QilParameter), QilNodeType.Parameter);
-                Check(((QilParameter)child).Name != null, child, "Global parameter's name is null");
+                Check(((QilParameter)child).Name is not null, child, "Global parameter's name is null");
             }
             return node.XmlType;
         }
@@ -283,7 +283,7 @@ namespace System.Xml.Xsl.Qil
 
         public XmlQueryType CheckParameter(QilParameter node)
         {
-            Check(node.Binding == null || node.Binding.XmlType!.IsSubtypeOf(node.XmlType!), node, "Parameter binding's xml type must be a subtype of the parameter's type");
+            Check(node.Binding is null || node.Binding.XmlType!.IsSubtypeOf(node.XmlType!), node, "Parameter binding's xml type must be a subtype of the parameter's type");
             return node.XmlType!;
         }
 
@@ -354,7 +354,7 @@ namespace System.Xml.Xsl.Qil
 
         public XmlQueryType CheckLiteralObject(QilLiteral node)
         {
-            Check(node.Value != null, node, "Literal value is null");
+            Check(node.Value is not null, node, "Literal value is null");
             return XmlQueryTypeFactory.ItemS;
         }
 
@@ -614,7 +614,7 @@ namespace System.Xml.Xsl.Qil
 
             // Attempt to restrict filter's type by checking condition
             XmlQueryType? filterType = FindFilterType(node.Variable, node.Body);
-            if (filterType != null)
+            if (filterType is not null)
                 return filterType;
 
             return XmlQueryTypeFactory.AtMost(node.Variable.Binding!.XmlType!, node.Variable.Binding.XmlType!.Cardinality);
@@ -1084,7 +1084,7 @@ namespace System.Xml.Xsl.Qil
                 case QilNodeType.And:
                     // Both And conditions can be used to restrict filter's type
                     leftType = FindFilterType(variable, ((QilBinary)body).Left);
-                    if (leftType != null)
+                    if (leftType is not null)
                         return leftType;
 
                     return FindFilterType(variable, ((QilBinary)body).Right);

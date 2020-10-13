@@ -32,7 +32,7 @@ namespace System.ServiceProcess
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || !(obj is SessionChangeDescription))
+            if (obj is null || !(obj is SessionChangeDescription))
             {
                 return false;
             }

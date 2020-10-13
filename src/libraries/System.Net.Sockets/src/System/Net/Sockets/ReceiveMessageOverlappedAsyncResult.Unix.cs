@@ -16,8 +16,8 @@ namespace System.Net.Sockets
 
         public void CompletionCallback(int numBytes, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, IPPacketInformation ipPacketInformation, SocketError errorCode)
         {
-            Debug.Assert(_socketAddress != null, "_socketAddress was null");
-            Debug.Assert(socketAddress == null || _socketAddress.Buffer == socketAddress, $"Unexpected socketAddress: {socketAddress}");
+            Debug.Assert(_socketAddress is not null, "_socketAddress was null");
+            Debug.Assert(socketAddress is null || _socketAddress.Buffer == socketAddress, $"Unexpected socketAddress: {socketAddress}");
 
             _socketAddressSize = socketAddressSize;
             _socketFlags = receivedFlags;

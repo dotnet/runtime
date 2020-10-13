@@ -209,7 +209,7 @@ namespace System.Reflection.Metadata.Ecma335
             EntityHandle catchType = default(EntityHandle),
             int filterOffset = 0)
         {
-            if (Builder == null)
+            if (Builder is null)
             {
                 Throw.InvalidOperation(SR.MethodHasNoExceptionRegions);
             }

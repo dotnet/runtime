@@ -42,7 +42,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (_remainingStack == null || _remainingStack.IsEmpty)
+                    if (_remainingStack is null || _remainingStack.IsEmpty)
                     {
                         throw new InvalidOperationException();
                     }
@@ -59,7 +59,7 @@ namespace System.Collections.Immutable
             /// <returns>A value indicating whether there are any more elements.</returns>
             public bool MoveNext()
             {
-                if (_remainingStack == null)
+                if (_remainingStack is null)
                 {
                     // initial move
                     _remainingStack = _originalStack;
@@ -111,7 +111,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     this.ThrowIfDisposed();
-                    if (_remainingStack == null || _remainingStack.IsEmpty)
+                    if (_remainingStack is null || _remainingStack.IsEmpty)
                     {
                         throw new InvalidOperationException();
                     }
@@ -138,7 +138,7 @@ namespace System.Collections.Immutable
             {
                 this.ThrowIfDisposed();
 
-                if (_remainingStack == null)
+                if (_remainingStack is null)
                 {
                     // initial move
                     _remainingStack = _originalStack;

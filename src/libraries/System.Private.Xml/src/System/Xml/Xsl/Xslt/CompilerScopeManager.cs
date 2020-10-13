@@ -104,14 +104,14 @@ namespace System.Xml.Xsl.Xslt
 
             bool hasNamespaces = false;
             bool excludeAll = false;
-            for (; nsDecl != null; nsDecl = nsDecl.Prev)
+            for (; nsDecl is not null; nsDecl = nsDecl.Prev)
             {
-                if (nsDecl.NsUri == null)
+                if (nsDecl.NsUri is null)
                 {
-                    Debug.Assert(nsDecl.Prefix == null, "NS may be null only when prefix is null where it is used for extension-element-prefixes='#all'");
+                    Debug.Assert(nsDecl.Prefix is null, "NS may be null only when prefix is null where it is used for extension-element-prefixes='#all'");
                     excludeAll = true;
                 }
-                else if (nsDecl.Prefix == null)
+                else if (nsDecl.Prefix is null)
                 {
                     AddExNamespace(nsDecl.NsUri);
                 }
@@ -147,7 +147,7 @@ namespace System.Xml.Xsl.Xslt
         private void AddRecord(ScopeFlags flag, string? ncName, string? uri, [AllowNull] V value)
         {
             Debug.Assert(flag == (flag & ScopeFlags.ExclusiveFlags) && (flag & (flag - 1)) == 0 && flag != 0, "One exclusive flag");
-            Debug.Assert(uri != null || ncName == null, "null, null means exclude '#all'");
+            Debug.Assert(uri is not null || ncName is null, "null, null means exclude '#all'");
 
             ScopeFlags flags = _records[_lastRecord].flags;
             bool canReuseLastRecord = (_lastScopes == 0) && (flags & ScopeFlags.ExclusiveFlags) == 0;
@@ -198,7 +198,7 @@ namespace System.Xml.Xsl.Xslt
         // Add variable to the current scope.  Returns false in case of duplicates.
         public void AddVariable(QilName varName, V value)
         {
-            Debug.Assert(varName.LocalName != null && varName.NamespaceUri != null);
+            Debug.Assert(varName.LocalName is not null && varName.NamespaceUri is not null);
             AddRecord(ScopeFlags.Variable, varName.LocalName, varName.NamespaceUri, value);
         }
 
@@ -206,7 +206,7 @@ namespace System.Xml.Xsl.Xslt
         // If interval is empty (from < to), the function returns null.
         private string? LookupNamespace(string prefix, int from, int to)
         {
-            Debug.Assert(prefix != null);
+            Debug.Assert(prefix is not null);
             for (int record = from; to <= record; --record)
             {
                 string? recPrefix, recNsUri;
@@ -246,7 +246,7 @@ namespace System.Xml.Xsl.Xslt
 
         public bool IsExNamespace(string nsUri)
         {
-            Debug.Assert(nsUri != null);
+            Debug.Assert(nsUri is not null);
             int exAll = 0;
             for (int record = _lastRecord; 0 <= record; record--)
             {
@@ -254,12 +254,12 @@ namespace System.Xml.Xsl.Xslt
                 ScopeFlags flags = GetName(ref _records[record], out recPrefix, out recNsUri);
                 if ((flags & ScopeFlags.NsExcl) != 0)
                 {
-                    Debug.Assert(recPrefix == null);
+                    Debug.Assert(recPrefix is null);
                     if (recNsUri == nsUri)
                     {
                         return true;               // This namespace is excluded
                     }
-                    if (recNsUri == null)
+                    if (recNsUri is null)
                     {
                         exAll = record;            // #all namespaces below are excluded
                     }
@@ -298,7 +298,7 @@ namespace System.Xml.Xsl.Xslt
 
         private int SearchVariable(string localName, string uri)
         {
-            Debug.Assert(localName != null);
+            Debug.Assert(localName is not null);
             for (int record = _lastRecord; 0 <= record; --record)
             {
                 string? recLocal, recNsUri;
@@ -362,7 +362,7 @@ namespace System.Xml.Xsl.Xslt
                 if (_records[currentRecord].IsNamespace)
                 {
                     // This is a namespace declaration
-                    if (LookupNamespace(_records[currentRecord].ncName!, _lastRecord, currentRecord + 1) != null)
+                    if (LookupNamespace(_records[currentRecord].ncName!, _lastRecord, currentRecord + 1) is not null)
                     {
                         continue;
                     }
@@ -397,7 +397,7 @@ namespace System.Xml.Xsl.Xslt
                     if (_scope._records[_currentRecord].IsNamespace)
                     {
                         // This is a namespace declaration
-                        if (_scope.LookupNamespace(_scope._records[_currentRecord].ncName!, _lastRecord, _currentRecord + 1) == null)
+                        if (_scope.LookupNamespace(_scope._records[_currentRecord].ncName!, _lastRecord, _currentRecord + 1) is null)
                         {
                             // Its prefix has not been redefined later in [currentRecord + 1, lastRecord]
                             return true;

@@ -81,9 +81,9 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             else
             {
-                if (((this.oMObjectClass != null) && (syntax.oMObjectClass == null))
-                    || ((this.oMObjectClass == null) && (syntax.oMObjectClass != null))
-                    || ((this.oMObjectClass != null) && (syntax.oMObjectClass != null) && (!this.oMObjectClass.Equals(syntax.oMObjectClass))))
+                if (((this.oMObjectClass is not null) && (syntax.oMObjectClass is null))
+                    || ((this.oMObjectClass is null) && (syntax.oMObjectClass is not null))
+                    || ((this.oMObjectClass is not null) && (syntax.oMObjectClass is not null) && (!this.oMObjectClass.Equals(syntax.oMObjectClass))))
                 {
                     result = false;
                 }

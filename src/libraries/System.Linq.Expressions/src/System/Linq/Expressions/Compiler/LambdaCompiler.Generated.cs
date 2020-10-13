@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Compiler
                 return;
             }
 
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
 
             bool emitStart = (flags & CompilationFlags.EmitExpressionStartMask) == CompilationFlags.EmitExpressionStart;
 

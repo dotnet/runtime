@@ -104,12 +104,12 @@ namespace System.Security.Cryptography.Pkcs
                 return;
             }
 
-            if (Certificate == null)
+            if (Certificate is null)
             {
                 throw new PlatformNotSupportedException(SR.Cryptography_Cms_NoSignerCert);
             }
 
-            if (PrivateKey == null && !Certificate.HasPrivateKey)
+            if (PrivateKey is null && !Certificate.HasPrivateKey)
             {
                 throw new CryptographicException(SR.Cryptography_Cms_Signing_RequiresPrivateKey);
             }
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Pkcs
                         AttrValues = new[] { new ReadOnlyMemory<byte>(writer.Encode()) },
                     });
 
-                if (contentTypeOid != null)
+                if (contentTypeOid is not null)
                 {
                     writer.Reset();
                     writer.WriteObjectIdentifierForCrypto(contentTypeOid);
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography.Pkcs
                     throw new CryptographicException();
             }
 
-            if (UnsignedAttributes != null && UnsignedAttributes.Count > 0)
+            if (UnsignedAttributes is not null && UnsignedAttributes.Count > 0)
             {
                 List<AttributeAsn> attrs = BuildAttributes(UnsignedAttributes);
 
@@ -304,7 +304,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             List<AttributeAsn> signedAttrs = new List<AttributeAsn>();
 
-            if (attributes == null || attributes.Count == 0)
+            if (attributes is null || attributes.Count == 0)
             {
                 return signedAttrs;
             }

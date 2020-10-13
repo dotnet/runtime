@@ -38,7 +38,7 @@ namespace System.Configuration
         internal static ConfigurationErrorsException WrapAsConfigException(string outerMessage, Exception e,
             IConfigErrorInfo errorInfo)
         {
-            return errorInfo != null
+            return errorInfo is not null
                 ? WrapAsConfigException(outerMessage, e, errorInfo.Filename, errorInfo.LineNumber)
                 : WrapAsConfigException(outerMessage, e, null, 0);
         }
@@ -48,11 +48,11 @@ namespace System.Configuration
         {
             // Preserve ConfigurationErrorsException
             ConfigurationErrorsException ce = e as ConfigurationErrorsException;
-            if (ce != null) return ce;
+            if (ce is not null) return ce;
 
             // Promote deprecated ConfigurationException to ConfigurationErrorsException
             ConfigurationException deprecatedException = e as ConfigurationException;
-            if (deprecatedException != null)
+            if (deprecatedException is not null)
                 return new ConfigurationErrorsException(
                     deprecatedException.BareMessage,
                     deprecatedException.InnerException,
@@ -61,7 +61,7 @@ namespace System.Configuration
 
             // For XML exceptions, preserve the text of the exception in the outer message.
             XmlException xe = e as XmlException;
-            if (xe != null)
+            if (xe is not null)
             {
                 if (xe.LineNumber != 0) line = xe.LineNumber;
 
@@ -69,7 +69,7 @@ namespace System.Configuration
             }
 
             // Wrap other exceptions in an inner exception, and give as much info as possible
-            if (e != null)
+            if (e is not null)
             {
                 return new ConfigurationErrorsException(
                     SR.Format(SR.Wrapped_exception_message, outerMessage, e.Message),

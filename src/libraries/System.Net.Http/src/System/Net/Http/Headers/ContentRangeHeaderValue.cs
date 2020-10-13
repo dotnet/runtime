@@ -43,12 +43,12 @@ namespace System.Net.Http.Headers
 
         public bool HasLength // e.g. "Content-Range: bytes 12-34/*"
         {
-            get { return _length != null; }
+            get { return _length is not null; }
         }
 
         public bool HasRange // e.g. "Content-Range: bytes */1234"
         {
-            get { return _from != null; }
+            get { return _from is not null; }
         }
 
         public ContentRangeHeaderValue(long from, long to, long length)
@@ -111,7 +111,7 @@ namespace System.Net.Http.Headers
 
         private ContentRangeHeaderValue(ContentRangeHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _from = source._from;
             _to = source._to;
@@ -123,7 +123,7 @@ namespace System.Net.Http.Headers
         {
             ContentRangeHeaderValue? other = obj as ContentRangeHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }

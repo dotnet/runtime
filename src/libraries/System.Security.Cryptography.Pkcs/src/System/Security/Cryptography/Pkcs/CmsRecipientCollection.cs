@@ -24,7 +24,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public CmsRecipientCollection(SubjectIdentifierType recipientIdentifierType, X509Certificate2Collection certificates)
         {
-            if (certificates == null)
+            if (certificates is null)
                 throw new NullReferenceException(); //Desktop compat: this is the wrong exception to throw but it is the compatible one.
 
             _recipients = new List<CmsRecipient>(certificates.Count);
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public int Add(CmsRecipient recipient)
         {
-            if (recipient == null)
+            if (recipient is null)
                 throw new ArgumentNullException(nameof(recipient));
 
             int indexOfNewItem = _recipients.Count;
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void Remove(CmsRecipient recipient)
         {
-            if (recipient == null)
+            if (recipient is null)
                 throw new ArgumentNullException(nameof(recipient));
 
             _recipients.Remove(recipient);
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void CopyTo(CmsRecipient[] array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);

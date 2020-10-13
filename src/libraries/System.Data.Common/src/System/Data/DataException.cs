@@ -289,7 +289,7 @@ namespace System.Data
         private static void TraceException(string trace, Exception e)
         {
             Debug.Assert(null != e, "TraceException: null Exception");
-            if (e != null)
+            if (e is not null)
             {
                 DataCommonEventSource.Log.Trace(trace, e);
             }

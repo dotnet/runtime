@@ -72,7 +72,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static ConfigurationSet GetConfigurationSet(DirectoryContext context)
         {
             // check that the argument is not null
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
             // target should ConfigurationSet or DirectoryServer
@@ -161,7 +161,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (partitionName == null)
+            if (partitionName is null)
             {
                 throw new ArgumentNullException(nameof(partitionName));
             }
@@ -177,7 +177,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // null partitionName would signify that we don't care about the partition
             //
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -196,7 +196,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (partitionName == null)
+            if (partitionName is null)
             {
                 throw new ArgumentNullException(nameof(partitionName));
             }
@@ -212,7 +212,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // null partitionName would signify that we don't care about the partition
             //
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -280,7 +280,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSites == null)
+                if (_cachedSites is null)
                 {
                     _cachedSites = new ReadOnlySiteCollection(GetSites());
                 }
@@ -293,7 +293,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedADAMInstances == null)
+                if (_cachedADAMInstances is null)
                 {
                     _cachedADAMInstances = FindAllAdamInstances();
                 }
@@ -306,7 +306,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedApplicationPartitions == null)
+                if (_cachedApplicationPartitions is null)
                 {
                     _cachedApplicationPartitions = new ApplicationPartitionCollection(GetApplicationPartitions());
                 }
@@ -319,7 +319,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSchema == null)
+                if (_cachedSchema is null)
                 {
                     try
                     {
@@ -339,7 +339,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSchemaRoleOwner == null)
+                if (_cachedSchemaRoleOwner is null)
                 {
                     _cachedSchemaRoleOwner = GetRoleOwner(AdamRole.SchemaRole);
                 }
@@ -352,7 +352,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedNamingRoleOwner == null)
+                if (_cachedNamingRoleOwner is null)
                 {
                     _cachedNamingRoleOwner = GetRoleOwner(AdamRole.NamingRole);
                 }
@@ -508,12 +508,12 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static AdamInstance FindOneAdamInstance(string configSetName, DirectoryContext context, string partitionName, string siteName)
         {
             // can expect valid context (non-null)
-            if (partitionName != null && partitionName.Length == 0)
+            if (partitionName is not null && partitionName.Length == 0)
             {
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(partitionName));
             }
 
-            if (siteName != null && siteName.Length == 0)
+            if (siteName is not null && siteName.Length == 0)
             {
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
@@ -531,12 +531,12 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static AdamInstanceCollection FindAdamInstances(DirectoryContext context, string partitionName, string siteName)
         {
             // can expect valid context (non-null)
-            if (partitionName != null && partitionName.Length == 0)
+            if (partitionName is not null && partitionName.Length == 0)
             {
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(partitionName));
             }
 
-            if (siteName != null && siteName.Length == 0)
+            if (siteName is not null && siteName.Length == 0)
             {
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
@@ -589,7 +589,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     {
                         // if we are passed the timeout period, we should throw, else do nothing
                         if (DateTime.UtcNow.Subtract(startTime) > s_locationTimeout)
-                            throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet, (configSetName != null) ? configSetName : context.Name), typeof(AdamInstance), null);
+                            throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet, (configSetName is not null) ? configSetName : context.Name), typeof(AdamInstance), null);
                     }
                     else
                         throw ExceptionHelper.GetExceptionFromCOMException(context, e);
@@ -602,7 +602,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // if we reach here, we haven't found an adam instance
-            throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet, (configSetName != null) ? configSetName : context.Name), typeof(AdamInstance), null);
+            throw new ActiveDirectoryObjectNotFoundException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet, (configSetName is not null) ? configSetName : context.Name), typeof(AdamInstance), null);
         }
 
         /// <returns>Returns a DomainController object for the DC that holds the specified FSMO role</returns>
@@ -641,7 +641,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (entry != null)
+                if (entry is not null)
                 {
                     entry.Dispose();
                 }
@@ -686,7 +686,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
+                if (resCol is not null)
                 {
                     // call dispose on search result collection
                     resCol.Dispose();
@@ -759,7 +759,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
+                if (resCol is not null)
                 {
                     // call dispose on search result collection
                     resCol.Dispose();

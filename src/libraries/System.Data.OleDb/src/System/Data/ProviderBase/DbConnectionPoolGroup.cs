@@ -137,12 +137,12 @@ namespace System.Data.ProviderBase
             }
 
             // Then, if a new collection was created, release the pools from the old collection
-            if (oldPoolCollection != null)
+            if (oldPoolCollection is not null)
             {
                 foreach (var entry in oldPoolCollection)
                 {
                     DbConnectionPool pool = entry.Value;
-                    if (pool != null)
+                    if (pool is not null)
                     {
                         //  Pruning a pool while a connection is currently attempting to connect
                         //  will cause the pool to be prematurely abandoned. The only known effect so
@@ -273,7 +273,7 @@ namespace System.Data.ProviderBase
                     foreach (var entry in _poolCollection)
                     {
                         DbConnectionPool pool = entry.Value;
-                        if (pool != null)
+                        if (pool is not null)
                         {
                             //  Pruning a pool while a connection is currently attempting to connect
                             //  will cause the pool to be prematurely abandoned. The only known effect so

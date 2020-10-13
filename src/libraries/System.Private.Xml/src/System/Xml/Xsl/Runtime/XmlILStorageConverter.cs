@@ -86,7 +86,7 @@ namespace System.Xml.Xsl.Runtime
         {
             // Check to see if the navigator cache implements IList<XPathItem>
             IList<XPathItem> listItems = listNavigators as IList<XPathItem>;
-            if (listItems != null)
+            if (listItems is not null)
                 return listItems;
 
             // Create XmlQueryNodeSequence, which does implement IList<XPathItem>
@@ -97,7 +97,7 @@ namespace System.Xml.Xsl.Runtime
         {
             // Check to see if the navigator cache implements IList<XPathNavigator>
             IList<XPathNavigator> listNavs = listItems as IList<XPathNavigator>;
-            if (listNavs != null)
+            if (listNavs is not null)
                 return listNavs;
 
             // Create XmlQueryNodeSequence, which does implement IList<XPathNavigator>

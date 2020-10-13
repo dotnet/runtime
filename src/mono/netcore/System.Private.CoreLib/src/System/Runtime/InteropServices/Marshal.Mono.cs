@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
 
         internal static bool IsPinnable(object? obj)
         {
-            if (obj == null || obj is string)
+            if (obj is null || obj is string)
                 return true;
             return IsPinnableType(obj.GetType());
             //Type type = obj.GetType ();
@@ -284,7 +284,7 @@ namespace System.Runtime.InteropServices
 
         private static void PtrToStructureHelper(IntPtr ptr, object? structure, bool allowValueClasses)
         {
-            if (structure == null)
+            if (structure is null)
                 throw new ArgumentNullException(nameof(structure));
             PtrToStructureInternal(ptr, structure, allowValueClasses);
         }
@@ -361,7 +361,7 @@ namespace System.Runtime.InteropServices
                     throw new ApplicationException($"Custom marshaler '{type.FullName}' implements multiple static GetInstance methods that take a single string parameter.");
                 }
 
-                if ((getInstanceMethod == null) ||
+                if ((getInstanceMethod is null) ||
                     (getInstanceMethod.ReturnType != typeof(ICustomMarshaler)))
                 {
                     throw new ApplicationException($"Custom marshaler '{type.FullName}' does not implement a static GetInstance method that takes a single string parameter and returns an ICustomMarshaler.");
@@ -380,13 +380,13 @@ namespace System.Runtime.InteropServices
                     result = null;
                 }
 
-                if (exc != null)
+                if (exc is not null)
                 {
                     var edi = System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(exc);
                     edi.Throw();
                 }
 
-                if (result == null)
+                if (result is null)
                     throw new ApplicationException($"A call to GetInstance() for custom marshaler '{type.FullName}' returned null, which is not allowed.");
 
                 lock (MarshalerInstanceCache)

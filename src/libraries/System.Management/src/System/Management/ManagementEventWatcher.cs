@@ -504,7 +504,7 @@ namespace System.Management
 
                 if (status < 0)
                 {
-                    if (sink != null)
+                    if (sink is not null)
                     {
                         sink.ReleaseStub();
                         sink = null;

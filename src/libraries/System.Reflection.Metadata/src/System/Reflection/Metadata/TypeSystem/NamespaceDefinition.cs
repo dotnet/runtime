@@ -13,7 +13,7 @@ namespace System.Reflection.Metadata
 
         internal NamespaceDefinition(NamespaceData data)
         {
-            Debug.Assert(data != null);
+            Debug.Assert(data is not null);
             _data = data;
         }
 

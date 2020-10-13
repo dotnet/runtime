@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Compiler
         // boxed value)
         private void EmitAddress(Expression node, Type type, CompilationFlags flags)
         {
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
             bool emitStart = (flags & CompilationFlags.EmitExpressionStartMask) == CompilationFlags.EmitExpressionStart;
             CompilationFlags startEmitted = emitStart ? EmitExpressionStart(node) : CompilationFlags.EmitNoExpressionStart;
 
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void AddressOf(BinaryExpression node, Type type)
         {
-            Debug.Assert(node.NodeType == ExpressionType.ArrayIndex && node.Method == null);
+            Debug.Assert(node.NodeType == ExpressionType.ArrayIndex && node.Method is null);
 
             if (TypeUtils.AreEquivalent(type, node.Type))
             {
@@ -115,7 +115,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 // emit "this", if any
                 Type? objectType = null;
-                if (node.Expression != null)
+                if (node.Expression is not null)
                 {
                     EmitInstance(node.Expression, out objectType);
                 }
@@ -186,7 +186,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void AddressOf(IndexExpression node, Type type)
         {
-            if (!TypeUtils.AreEquivalent(type, node.Type) || node.Indexer != null)
+            if (!TypeUtils.AreEquivalent(type, node.Type) || node.Indexer is not null)
             {
                 EmitExpressionAddress(node, type);
                 return;
@@ -247,7 +247,7 @@ namespace System.Linq.Expressions.Compiler
                         break;
                 }
             }
-            if (result == null)
+            if (result is null)
             {
                 EmitAddress(node, type, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitNoExpressionStart);
             }
@@ -273,7 +273,7 @@ namespace System.Linq.Expressions.Compiler
             // emit instance, if any
             LocalBuilder? instanceLocal = null;
             Type? instanceType = null;
-            if (node.Expression != null)
+            if (node.Expression is not null)
             {
                 EmitInstance(node.Expression, out instanceType);
 
@@ -296,7 +296,7 @@ namespace System.Linq.Expressions.Compiler
             // don't re-evaluate anything
             return @this =>
             {
-                if (instanceLocal != null)
+                if (instanceLocal is not null)
                 {
                     @this._ilg.Emit(OpCodes.Ldloc, instanceLocal);
                     @this.FreeLocal(instanceLocal);
@@ -309,7 +309,7 @@ namespace System.Linq.Expressions.Compiler
 
         private WriteBack? AddressOfWriteBack(IndexExpression node)
         {
-            if (node.Indexer == null || !node.Indexer.CanWrite)
+            if (node.Indexer is null || !node.Indexer.CanWrite)
             {
                 return null;
             }
@@ -322,7 +322,7 @@ namespace System.Linq.Expressions.Compiler
             // emit instance, if any
             LocalBuilder? instanceLocal = null;
             Type? instanceType = null;
-            if (node.Object != null)
+            if (node.Object is not null)
             {
                 EmitInstance(node.Object, out instanceType);
 
@@ -358,7 +358,7 @@ namespace System.Linq.Expressions.Compiler
             // don't re-evaluate anything
             return @this =>
             {
-                if (instanceLocal != null)
+                if (instanceLocal is not null)
                 {
                     @this._ilg.Emit(OpCodes.Ldloc, instanceLocal);
                     @this.FreeLocal(instanceLocal);

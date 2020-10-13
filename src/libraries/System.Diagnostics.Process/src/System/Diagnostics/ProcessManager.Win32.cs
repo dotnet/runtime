@@ -267,7 +267,7 @@ namespace System.Diagnostics
             {
                 while (true)
                 {
-                    if (buffer == null)
+                    if (buffer is null)
                     {
                         // Allocate buffer of longs since some platforms require the buffer to be 64-bit aligned.
                         buffer = new long[(bufferSize + 7) / 8];
@@ -357,7 +357,7 @@ namespace System.Diagnostics
 
                 // Process ID shouldn't overflow. OS API GetCurrentProcessID returns DWORD.
                 int processInfoProcessId = pi.UniqueProcessId.ToInt32();
-                if (processIdFilter == null || processIdFilter(processInfoProcessId))
+                if (processIdFilter is null || processIdFilter(processInfoProcessId))
                 {
                     // get information for a process
                     ProcessInfo processInfo = new ProcessInfo((int)pi.NumberOfThreads)

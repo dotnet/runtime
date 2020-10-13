@@ -337,7 +337,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                return caps != null && !caps.TryGetValue(i, out i) ? string.Empty :
+                return caps is not null && !caps.TryGetValue(i, out i) ? string.Empty :
                     (uint)i < (uint)capslist.Length ? capslist[i] :
                     string.Empty;
             }
@@ -353,7 +353,7 @@ namespace System.Text.RegularExpressions
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.name);
             }
 
-            if (capnames != null)
+            if (capnames is not null)
             {
                 // Look up name if we have a hashtable of names.
                 return capnames.TryGetValue(name, out int result) ? result : -1;
@@ -422,7 +422,7 @@ namespace System.Text.RegularExpressions
         [MethodImpl(MethodImplOptions.AggressiveInlining)] // factored out to be used by only two call sites
         private RegexRunner RentRunner() =>
             Interlocked.Exchange(ref _runner, null) ?? // use a cached runner if there is one
-            (factory != null ? factory.CreateInstance() : // use the compiled RegexRunner factory if there is one
+            (factory is not null ? factory.CreateInstance() : // use the compiled RegexRunner factory if there is one
             new RegexInterpreter(_code!, UseOptionInvariant() ? CultureInfo.InvariantCulture : CultureInfo.CurrentCulture));
 
         /// <summary>Release the runner back to the cache.</summary>

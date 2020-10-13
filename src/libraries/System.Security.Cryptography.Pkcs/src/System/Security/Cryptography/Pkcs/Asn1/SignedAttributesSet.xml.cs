@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             bool wroteValue = false;
 
-            if (SignedAttributes != null)
+            if (SignedAttributes is not null)
             {
                 if (wroteValue)
                     throw new CryptographicException();

@@ -71,7 +71,7 @@ namespace System.Configuration
 
         internal static bool IsNullOrNullProperty(object value)
         {
-            return value == null || value == s_nullPropertyValue;
+            return value is null || value == s_nullPropertyValue;
         }
 
         internal bool DataToWriteInternal { get; set; }
@@ -120,14 +120,14 @@ namespace System.Configuration
             get
             {
                 object o = Values[prop.Name];
-                if (o == null)
+                if (o is null)
                 {
                     if (prop.IsConfigurationElementType)
                     {
                         lock (Values.SyncRoot)
                         {
                             o = Values[prop.Name];
-                            if (o == null)
+                            if (o is null)
                             {
                                 ConfigurationElement childElement = CreateElement(prop.Type);
 
@@ -137,11 +137,11 @@ namespace System.Configuration
                                 {
                                     ConfigurationElementCollection childElementCollection =
                                         childElement as ConfigurationElementCollection;
-                                    if (prop.AddElementName != null)
+                                    if (prop.AddElementName is not null)
                                         childElementCollection.AddElementName = prop.AddElementName;
-                                    if (prop.RemoveElementName != null)
+                                    if (prop.RemoveElementName is not null)
                                         childElementCollection.RemoveElementName = prop.RemoveElementName;
-                                    if (prop.ClearElementName != null)
+                                    if (prop.ClearElementName is not null)
                                         childElementCollection.ClearElementName = prop.ClearElementName;
                                 }
 
@@ -174,7 +174,7 @@ namespace System.Configuration
             get
             {
                 ConfigurationProperty prop = Properties[propertyName];
-                if (prop == null)
+                if (prop is null)
                 {
                     prop = Properties[DefaultCollectionPropertyName];
                     if (prop.ProvidedName != propertyName) return null;
@@ -209,9 +209,9 @@ namespace System.Configuration
         {
             get
             {
-                if (_evalContext == null)
+                if (_evalContext is null)
                 {
-                    if (_configRecord == null)
+                    if (_configRecord is null)
                     {
                         // This is not associated with a context, so throw failure
                         throw new ConfigurationErrorsException(SR.Config_element_no_context);
@@ -226,7 +226,7 @@ namespace System.Configuration
 
         protected internal virtual ConfigurationElementProperty ElementProperty => _elementProperty;
 
-        protected bool HasContext => _configRecord != null;
+        protected bool HasContext => _configRecord is not null;
 
         public Configuration CurrentConfiguration => _configRecord?.CurrentConfiguration;
 
@@ -257,16 +257,16 @@ namespace System.Configuration
 
         internal void MergeLocks(ConfigurationElement source)
         {
-            if (source == null) return;
+            if (source is null) return;
 
             _itemLockedFlag = (source._itemLockedFlag & ConfigurationValueFlags.Locked) != 0
                 ? ConfigurationValueFlags.Inherited | source._itemLockedFlag
                 : _itemLockedFlag;
 
-            if (source._lockedAttributesList != null)
+            if (source._lockedAttributesList is not null)
             {
                 // Mark entry as from the parent - read only
-                if (_lockedAttributesList == null)
+                if (_lockedAttributesList is null)
                 {
                     _lockedAttributesList = new ConfigurationLockCollection(this,
                         ConfigurationLockCollectionType.LockedAttributes);
@@ -276,9 +276,9 @@ namespace System.Configuration
                     _lockedAttributesList.Add(key, ConfigurationValueFlags.Inherited);
             }
 
-            if (source._lockedAllExceptAttributesList != null)
+            if (source._lockedAllExceptAttributesList is not null)
             {
-                if (_lockedAllExceptAttributesList == null)
+                if (_lockedAllExceptAttributesList is null)
                 {
                     _lockedAllExceptAttributesList = new ConfigurationLockCollection(this,
                         ConfigurationLockCollectionType.LockedExceptionList, string.Empty,
@@ -293,25 +293,25 @@ namespace System.Configuration
                     _lockedAllExceptAttributesList.Add(key, ConfigurationValueFlags.Default);
             }
 
-            if (source._lockedElementsList != null)
+            if (source._lockedElementsList is not null)
             {
-                if (_lockedElementsList == null)
+                if (_lockedElementsList is null)
                 {
                     _lockedElementsList = new ConfigurationLockCollection(this,
                         ConfigurationLockCollectionType.LockedElements);
                 }
 
                 ConfigurationElementCollection collection = null;
-                if (Properties.DefaultCollectionProperty != null)
+                if (Properties.DefaultCollectionProperty is not null)
                 {
                     // this is not a collection but it may contain a default collection
                     collection = this[Properties.DefaultCollectionProperty] as ConfigurationElementCollection;
-                    if (collection != null)
+                    if (collection is not null)
                     {
                         // Default collections don't know their tag name
                         collection.InternalElementTagName = source.ElementTagName;
                         //point to the same instance of the collection from parent
-                        if (collection._lockedElementsList == null)
+                        if (collection._lockedElementsList is null)
                             collection._lockedElementsList = _lockedElementsList;
                     }
                 }
@@ -325,9 +325,9 @@ namespace System.Configuration
                 }
             }
 
-            if (source._lockedAllExceptElementsList != null)
+            if (source._lockedAllExceptElementsList is not null)
             {
-                if ((_lockedAllExceptElementsList == null) || (_lockedAllExceptElementsList.Count == 0))
+                if ((_lockedAllExceptElementsList is null) || (_lockedAllExceptElementsList.Count == 0))
                 {
                     _lockedAllExceptElementsList = new ConfigurationLockCollection(this,
                         ConfigurationLockCollectionType.LockedElementsExceptionList, source.ElementTagName,
@@ -337,11 +337,11 @@ namespace System.Configuration
                 StringCollection intersectionCollection = IntersectLockCollections(_lockedAllExceptElementsList,
                     source._lockedAllExceptElementsList);
 
-                if (Properties.DefaultCollectionProperty != null)
+                if (Properties.DefaultCollectionProperty is not null)
                 {
                     // this is not a collection but it may contain a default collection
                     ConfigurationElementCollection collection = this[Properties.DefaultCollectionProperty] as ConfigurationElementCollection;
-                    if ((collection != null) && (collection._lockedAllExceptElementsList == null))
+                    if ((collection is not null) && (collection._lockedAllExceptElementsList is null))
                     {
                         // point default collection to the parent collection
                         collection._lockedAllExceptElementsList = _lockedAllExceptElementsList;
@@ -367,14 +367,14 @@ namespace System.Configuration
         internal void HandleLockedAttributes(ConfigurationElement source)
         {
             // if there are locked attributes on this collection element
-            if (source == null || (source._lockedAttributesList == null && source._lockedAllExceptAttributesList == null)) return;
+            if (source is null || (source._lockedAttributesList is null && source._lockedAllExceptAttributesList is null)) return;
 
             // enumerate the possible locked properties
             foreach (PropertyInformation propInfo in source.ElementInformation.Properties)
-                if (((source._lockedAttributesList != null) &&
+                if (((source._lockedAttributesList is not null) &&
                     (source._lockedAttributesList.Contains(propInfo.Name) ||
                     source._lockedAttributesList.Contains(LockAll))) ||
-                    ((source._lockedAllExceptAttributesList != null) &&
+                    ((source._lockedAllExceptAttributesList is not null) &&
                     !source._lockedAllExceptAttributesList.Contains(propInfo.Name))
                     )
                 {
@@ -382,7 +382,7 @@ namespace System.Configuration
 
                     // if the attribute has been locked in the source then check to see
                     // if the local config is trying to override it
-                    if (ElementInformation.Properties[propInfo.Name] == null)
+                    if (ElementInformation.Properties[propInfo.Name] is null)
                     {
                         // locked items are not defined
 
@@ -426,10 +426,10 @@ namespace System.Configuration
         protected internal virtual bool IsModified()
         {
             if (_modified
-                || ((_lockedAttributesList != null) && _lockedAttributesList.IsModified)
-                || ((_lockedAllExceptAttributesList != null) && _lockedAllExceptAttributesList.IsModified)
-                || ((_lockedElementsList != null) && _lockedElementsList.IsModified)
-                || ((_lockedAllExceptElementsList != null) && _lockedAllExceptElementsList.IsModified)
+                || ((_lockedAttributesList is not null) && _lockedAttributesList.IsModified)
+                || ((_lockedAllExceptAttributesList is not null) && _lockedAllExceptAttributesList.IsModified)
+                || ((_lockedElementsList is not null) && _lockedElementsList.IsModified)
+                || ((_lockedAllExceptElementsList is not null) && _lockedAllExceptElementsList.IsModified)
                 || ((_itemLockedFlag & ConfigurationValueFlags.Modified) != 0))
                 return true;
 
@@ -468,12 +468,12 @@ namespace System.Configuration
             foreach (ConfigurationProperty prop in Properties)
             {
                 ConfigurationElement elem = this[prop] as ConfigurationElement;
-                if (elem != null)
+                if (elem is not null)
                 {
                     if (elem.GetType() != GetType()) elem.SetLocked();
 
                     ConfigurationElementCollection collection = this[prop] as ConfigurationElementCollection;
-                    if (collection != null)
+                    if (collection is not null)
                     {
                         foreach (object obj in collection)
                         {
@@ -513,7 +513,7 @@ namespace System.Configuration
             {
                 elem.ListErrors(errorList);
                 ConfigurationElementCollection collection = elem as ConfigurationElementCollection;
-                if (collection != null) foreach (ConfigurationElement item in collection) item.ListErrors(errorList);
+                if (collection is not null) foreach (ConfigurationElement item in collection) item.ListErrors(errorList);
             }
         }
 
@@ -522,13 +522,13 @@ namespace System.Configuration
         internal void CheckLockedElement(string elementName, XmlReader reader)
         {
             // have to check if clear was locked!
-            if (elementName != null)
+            if (elementName is not null)
             {
-                bool lockedInParent = (_lockedElementsList != null) &&
+                bool lockedInParent = (_lockedElementsList is not null) &&
                     (_lockedElementsList.DefinedInParent(LockAll) || _lockedElementsList.DefinedInParent(elementName));
 
                 if (lockedInParent ||
-                    ((_lockedAllExceptElementsList != null) && (_lockedAllExceptElementsList.Count != 0) &&
+                    ((_lockedAllExceptElementsList is not null) && (_lockedAllExceptElementsList.Count != 0) &&
                     _lockedAllExceptElementsList.HasParentElements &&
                     !_lockedAllExceptElementsList.DefinedInParent(elementName)) ||
                     ((_itemLockedFlag & ConfigurationValueFlags.Inherited) != 0)
@@ -555,13 +555,13 @@ namespace System.Configuration
             _lockedElementsList = null;
             _lockedAllExceptElementsList = null;
 
-            if (parentElement == null) return;
+            if (parentElement is null) return;
 
             _itemLockedFlag = (parentElement._itemLockedFlag & ConfigurationValueFlags.Locked) != 0
                 ? ConfigurationValueFlags.Inherited | parentElement._itemLockedFlag
                 : ConfigurationValueFlags.Default;
 
-            if (parentElement._lockedAttributesList != null)
+            if (parentElement._lockedAttributesList is not null)
             {
                 // Mark entry as from the parent - read only
                 _lockedAttributesList = new ConfigurationLockCollection(this,
@@ -570,27 +570,27 @@ namespace System.Configuration
                     _lockedAttributesList.Add(key, ConfigurationValueFlags.Inherited);
             }
 
-            if (parentElement._lockedAllExceptAttributesList != null)
+            if (parentElement._lockedAllExceptAttributesList is not null)
             {
                 _lockedAllExceptAttributesList = new ConfigurationLockCollection(this,
                     ConfigurationLockCollectionType.LockedExceptionList, string.Empty,
                     parentElement._lockedAllExceptAttributesList);
             }
 
-            if (parentElement._lockedElementsList != null)
+            if (parentElement._lockedElementsList is not null)
             {
                 _lockedElementsList = new ConfigurationLockCollection(this,
                     ConfigurationLockCollectionType.LockedElements);
 
-                if (Properties.DefaultCollectionProperty != null)
+                if (Properties.DefaultCollectionProperty is not null)
                 {
                     // this is not a collection but it may contain a default collection
                     ConfigurationElementCollection collection = this[Properties.DefaultCollectionProperty] as ConfigurationElementCollection;
-                    if (collection != null)
+                    if (collection is not null)
                     {
                         collection.InternalElementTagName = parentElement.ElementTagName;
                         // Default collections don't know there tag name
-                        if (collection._lockedElementsList == null)
+                        if (collection._lockedElementsList is null)
                             collection._lockedElementsList = _lockedElementsList;
                     }
                 }
@@ -600,17 +600,17 @@ namespace System.Configuration
                     _lockedElementsList.Add(key, ConfigurationValueFlags.Inherited);
             }
 
-            if (parentElement._lockedAllExceptElementsList != null)
+            if (parentElement._lockedAllExceptElementsList is not null)
             {
                 _lockedAllExceptElementsList = new ConfigurationLockCollection(this,
                     ConfigurationLockCollectionType.LockedElementsExceptionList, parentElement.ElementTagName,
                     parentElement._lockedAllExceptElementsList);
 
-                if (Properties.DefaultCollectionProperty != null)
+                if (Properties.DefaultCollectionProperty is not null)
                 {
                     // this is not a collection but it may contain a default collection
                     ConfigurationElementCollection collection = this[Properties.DefaultCollectionProperty] as ConfigurationElementCollection;
-                    if ((collection != null) && (collection._lockedAllExceptElementsList == null))
+                    if ((collection is not null) && (collection._lockedAllExceptElementsList is null))
                         collection._lockedAllExceptElementsList = _lockedAllExceptElementsList;
                 }
             }
@@ -622,7 +622,7 @@ namespace System.Configuration
             ResetLockLists(parentElement);
             ConfigurationPropertyCollection props = Properties; // Force the bag to be up to date
             ElementPresent = false;
-            if (parentElement == null) InitializeDefault();
+            if (parentElement is null) InitializeDefault();
             else
             {
                 bool hasAnyChildElements = false;
@@ -637,16 +637,16 @@ namespace System.Configuration
                     PropertySourceInfo sourceInfo = configValue?.SourceInfo;
 
                     ConfigurationProperty prop = parentElement.Properties[key];
-                    if ((prop == null) || ((collectionKeys != null) && !collectionKeys.Contains(prop.Name))) continue;
+                    if ((prop is null) || ((collectionKeys is not null) && !collectionKeys.Contains(prop.Name))) continue;
 
                     if (prop.IsConfigurationElementType) hasAnyChildElements = true;
                     else
                     {
                         ConfigurationValueFlags flags = ConfigurationValueFlags.Inherited |
-                            (((_lockedAttributesList != null) &&
+                            (((_lockedAttributesList is not null) &&
                             (_lockedAttributesList.Contains(key) ||
                             _lockedAttributesList.Contains(LockAll))) ||
-                            ((_lockedAllExceptAttributesList != null) &&
+                            ((_lockedAllExceptAttributesList is not null) &&
                             !_lockedAllExceptAttributesList.Contains(key))
                                 ? ConfigurationValueFlags.Locked
                                 : ConfigurationValueFlags.Default);
@@ -673,7 +673,7 @@ namespace System.Configuration
                         object value = parentElement.Values[index];
 
                         ConfigurationProperty prop = parentElement.Properties[key];
-                        if ((prop != null) && prop.IsConfigurationElementType)
+                        if ((prop is not null) && prop.IsConfigurationElementType)
                         {
                             //((ConfigurationElement)value).SerializeToXmlElement(writer, prop.Name);
                             ConfigurationElement childElement = (ConfigurationElement)this[prop];
@@ -688,7 +688,7 @@ namespace System.Configuration
         {
             ConfigurationElement otherElement = compareTo as ConfigurationElement;
 
-            if ((otherElement == null) ||
+            if ((otherElement is null) ||
                 (compareTo.GetType() != GetType()) ||
                 (otherElement.Properties.Count != Properties.Count))
                 return false;
@@ -716,7 +716,7 @@ namespace System.Configuration
             foreach (ConfigurationProperty configProperty in Properties)
             {
                 object o = this[configProperty];
-                if (o != null) hHashCode ^= this[configProperty].GetHashCode();
+                if (o is not null) hHashCode ^= this[configProperty].GetHashCode();
             }
             return hHashCode;
         }
@@ -725,12 +725,12 @@ namespace System.Configuration
         {
             ConfigurationPropertyCollection properties = (ConfigurationPropertyCollection)s_propertyBags[type];
             bool firstTimeInit = false;
-            if (properties == null)
+            if (properties is null)
             {
                 lock (s_propertyBags.SyncRoot)
                 {
                     properties = (ConfigurationPropertyCollection)s_propertyBags[type];
-                    if (properties == null)
+                    if (properties is null)
                     {
                         properties = CreatePropertyBagFromType(type);
                         s_propertyBags[type] = properties;
@@ -744,7 +744,7 @@ namespace System.Configuration
 
         private static ConfigurationPropertyCollection CreatePropertyBagFromType(Type type)
         {
-            Debug.Assert(type != null, "type != null");
+            Debug.Assert(type is not null, "type is not null");
 
             // For ConfigurationElement derived classes - get the per-type validator
             if (typeof(ConfigurationElement).IsAssignableFrom(type))
@@ -753,11 +753,11 @@ namespace System.Configuration
                     Attribute.GetCustomAttribute(type, typeof(ConfigurationValidatorAttribute)) as
                         ConfigurationValidatorAttribute;
 
-                if (validatorAttribute != null)
+                if (validatorAttribute is not null)
                 {
                     validatorAttribute.SetDeclaringType(type);
                     ConfigurationValidatorBase validator = validatorAttribute.ValidatorInstance;
-                    if (validator != null) CachePerTypeValidator(type, validator);
+                    if (validator is not null) CachePerTypeValidator(type, validator);
                 }
             }
 
@@ -766,7 +766,7 @@ namespace System.Configuration
             foreach (PropertyInfo propertyInformation in type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
             {
                 ConfigurationProperty property = CreateConfigurationPropertyFromAttributes(propertyInformation);
-                if (property != null) properties.Add(property);
+                if (property is not null) properties.Add(property);
             }
 
             return properties;
@@ -774,7 +774,7 @@ namespace System.Configuration
 
         private static ConfigurationProperty CreateConfigurationPropertyFromAttributes(PropertyInfo propertyInformation)
         {
-            Debug.Assert(propertyInformation != null, "propertyInformation != null");
+            Debug.Assert(propertyInformation is not null, "propertyInformation is not null");
 
             ConfigurationProperty result = null;
 
@@ -783,11 +783,11 @@ namespace System.Configuration
                     typeof(ConfigurationPropertyAttribute)) as ConfigurationPropertyAttribute;
 
             // If there is no ConfigurationPropertyAttribute - this is not considered a property
-            if (attribProperty != null)
+            if (attribProperty is not null)
                 result = new ConfigurationProperty(propertyInformation);
 
             // Handle some special cases of property types
-            if ((result != null) && typeof(ConfigurationElement).IsAssignableFrom(result.Type))
+            if ((result is not null) && typeof(ConfigurationElement).IsAssignableFrom(result.Type))
             {
                 ConfigurationPropertyCollection unused;
                 PropertiesFromType(result.Type, out unused);
@@ -798,7 +798,7 @@ namespace System.Configuration
 
         private static void CachePerTypeValidator(Type type, ConfigurationValidatorBase validator)
         {
-            Debug.Assert((type != null) && (validator != null));
+            Debug.Assert((type is not null) && (validator is not null));
             Debug.Assert(typeof(ConfigurationElement).IsAssignableFrom(type));
 
             // Use the same lock as the property bag lock since in the current implementation
@@ -806,7 +806,7 @@ namespace System.Configuration
 
             // NOTE[ Thread Safety ]: Non-guarded access to static variable - since this code is called only from CreatePropertyBagFromType
             // which in turn is done onle once per type and is guarded by the s_propertyBag.SyncRoot then this call is thread safe as well
-            if (s_perTypeValidators == null) s_perTypeValidators = new Dictionary<Type, ConfigurationValidatorBase>();
+            if (s_perTypeValidators is null) s_perTypeValidators = new Dictionary<Type, ConfigurationValidatorBase>();
 
             // A type validator should be cached only once. If it isn't then attribute parsing is done more then once which should be avoided
             Debug.Assert(!s_perTypeValidators.ContainsKey(type));
@@ -823,7 +823,7 @@ namespace System.Configuration
 
         private static void ApplyValidatorsRecursive(ConfigurationElement root)
         {
-            Debug.Assert(root != null);
+            Debug.Assert(root is not null);
 
             // Apply the validator on 'root'
             ApplyValidator(root);
@@ -834,9 +834,9 @@ namespace System.Configuration
 
         private static void ApplyValidator(ConfigurationElement elem)
         {
-            Debug.Assert(elem != null);
+            Debug.Assert(elem is not null);
 
-            if ((s_perTypeValidators != null) && s_perTypeValidators.ContainsKey(elem.GetType()))
+            if ((s_perTypeValidators is not null) && s_perTypeValidators.ContainsKey(elem.GetType()))
                 elem._elementProperty = new ConfigurationElementProperty(s_perTypeValidators[elem.GetType()]);
         }
 
@@ -845,9 +845,9 @@ namespace System.Configuration
             if (IsReadOnly()) throw new ConfigurationErrorsException(SR.Config_base_read_only);
 
             if ((ignoreLocks == false) &&
-                (((_lockedAllExceptAttributesList != null) && _lockedAllExceptAttributesList.HasParentElements &&
+                (((_lockedAllExceptAttributesList is not null) && _lockedAllExceptAttributesList.HasParentElements &&
                 !_lockedAllExceptAttributesList.DefinedInParent(prop.Name)) ||
-                ((_lockedAttributesList != null) &&
+                ((_lockedAttributesList is not null) &&
                 (_lockedAttributesList.DefinedInParent(prop.Name) || _lockedAttributesList.DefinedInParent(LockAll))) ||
                 (((_itemLockedFlag & ConfigurationValueFlags.Locked) != 0) &&
                 ((_itemLockedFlag & ConfigurationValueFlags.Inherited) != 0))))
@@ -856,7 +856,7 @@ namespace System.Configuration
             _modified = true;
 
             // Run the new value through the validator to make sure its ok to store it
-            if (value != null) prop.Validate(value);
+            if (value is not null) prop.Validate(value);
 
             Values[prop.Name] = value ?? s_nullPropertyValue;
         }
@@ -870,7 +870,7 @@ namespace System.Configuration
         {
             // Get the filename of the parent if prop is not there
             PropertySourceInfo p = PropertyInfoInternal(propertyName) ?? PropertyInfoInternal(string.Empty);
-            return p == null ? string.Empty : p.FileName;
+            return p is null ? string.Empty : p.FileName;
         }
 
         internal int PropertyLineNumber(string propertyName)
@@ -891,7 +891,7 @@ namespace System.Configuration
             ConfigurationElement parentElement,
             ConfigurationSaveMode saveMode)
         {
-            if (sourceElement == null) return;
+            if (sourceElement is null) return;
             bool hasAnyChildElements = false;
 
             _lockedAllExceptAttributesList = sourceElement._lockedAllExceptAttributesList;
@@ -901,24 +901,24 @@ namespace System.Configuration
             _lockedElementsList = sourceElement._lockedElementsList;
             AssociateContext(sourceElement._configRecord);
 
-            if (parentElement != null)
+            if (parentElement is not null)
             {
-                if (parentElement._lockedAttributesList != null)
+                if (parentElement._lockedAttributesList is not null)
                 {
                     _lockedAttributesList = UnMergeLockList(sourceElement._lockedAttributesList,
                         parentElement._lockedAttributesList, saveMode);
                 }
-                if (parentElement._lockedElementsList != null)
+                if (parentElement._lockedElementsList is not null)
                 {
                     _lockedElementsList = UnMergeLockList(sourceElement._lockedElementsList,
                         parentElement._lockedElementsList, saveMode);
                 }
-                if (parentElement._lockedAllExceptAttributesList != null)
+                if (parentElement._lockedAllExceptAttributesList is not null)
                 {
                     _lockedAllExceptAttributesList = UnMergeLockList(sourceElement._lockedAllExceptAttributesList,
                         parentElement._lockedAllExceptAttributesList, saveMode);
                 }
-                if (parentElement._lockedAllExceptElementsList != null)
+                if (parentElement._lockedAllExceptElementsList is not null)
                 {
                     _lockedAllExceptElementsList = UnMergeLockList(sourceElement._lockedAllExceptElementsList,
                         parentElement._lockedAllExceptElementsList, saveMode);
@@ -934,7 +934,7 @@ namespace System.Configuration
                 string key = sourceElement.Values.GetKey(index);
                 object value = sourceElement.Values[index];
                 ConfigurationProperty prop = sourceElement.Properties[key];
-                if ((prop == null) || ((collectionKeys != null) && !collectionKeys.Contains(prop.Name)))
+                if ((prop is null) || ((collectionKeys is not null) && !collectionKeys.Contains(prop.Name)))
                     continue;
 
                 if (prop.IsConfigurationElementType)
@@ -954,7 +954,7 @@ namespace System.Configuration
 
             foreach (ConfigurationProperty prop in Properties)
             {
-                if ((prop == null) || ((collectionKeys != null) && !collectionKeys.Contains(prop.Name))) continue;
+                if ((prop is null) || ((collectionKeys is not null) && !collectionKeys.Contains(prop.Name))) continue;
                 if (prop.IsConfigurationElementType) hasAnyChildElements = true;
                 else
                 {
@@ -968,7 +968,7 @@ namespace System.Configuration
 
                         // Note: 'null' should be used as default for non-empty strings instead
                         // of the current practice to use String.Epmty
-                        if (prop.DefaultValue != null)
+                        if (prop.DefaultValue is not null)
                             value = prop.DefaultValue; // need to make sure required properties are persisted
                     }
 
@@ -992,7 +992,7 @@ namespace System.Configuration
                             // Also update properties that ARE inherited when we are resetting the object
                             // as long as the property is not the same as the default value for the property
                             if (prop.IsRequired || modified || !inherited ||
-                                ((parentElement == null) && inherited && !Equals(value, value2)))
+                                ((parentElement is null) && inherited && !Equals(value, value2)))
                                 Values[prop.Name] = value;
                             break;
                         case ConfigurationSaveMode.Full:
@@ -1013,7 +1013,7 @@ namespace System.Configuration
                         ConfigurationElement pElem =
                             (ConfigurationElement)parentElement?[prop];
                         ConfigurationElement childElement = (ConfigurationElement)this[prop];
-                        if ((ConfigurationElement)sourceElement[prop] != null)
+                        if ((ConfigurationElement)sourceElement[prop] is not null)
                         {
                             childElement.Unmerge((ConfigurationElement)sourceElement[prop],
                                 pElem, saveMode);
@@ -1024,12 +1024,12 @@ namespace System.Configuration
 
         protected internal virtual bool SerializeToXmlElement(XmlWriter writer, string elementName)
         {
-            if ((_configRecord != null) && (_configRecord.TargetFramework != null))
+            if ((_configRecord is not null) && (_configRecord.TargetFramework is not null))
             {
                 ConfigurationSection section = null;
                 if (_configRecord.SectionsStack.Count > 0)
                     section = _configRecord.SectionsStack.Peek() as ConfigurationSection;
-                if ((section != null) &&
+                if ((section is not null) &&
                     !section.ShouldSerializeElementInTargetVersion(this, elementName, _configRecord.TargetFramework))
                     return false;
             }
@@ -1037,8 +1037,8 @@ namespace System.Configuration
             bool dataToWrite = DataToWriteInternal;
 
             //  Don't write elements that are locked in the parent
-            if (((_lockedElementsList != null) && _lockedElementsList.DefinedInParent(elementName)) ||
-                ((_lockedAllExceptElementsList != null) && _lockedAllExceptElementsList.HasParentElements &&
+            if (((_lockedElementsList is not null) && _lockedElementsList.DefinedInParent(elementName)) ||
+                ((_lockedAllExceptElementsList is not null) && _lockedAllExceptElementsList.HasParentElements &&
                 !_lockedAllExceptElementsList.DefinedInParent(elementName)))
                 return dataToWrite;
 
@@ -1067,15 +1067,15 @@ namespace System.Configuration
                 object value = Values[index];
 
                 ConfigurationProperty prop = props[key];
-                if ((prop == null) || ((collectionKeys != null) && !collectionKeys.Contains(prop.Name))) continue;
+                if ((prop is null) || ((collectionKeys is not null) && !collectionKeys.Contains(prop.Name))) continue;
 
-                if (prop.IsVersionCheckRequired && (_configRecord != null) && (_configRecord.TargetFramework != null))
+                if (prop.IsVersionCheckRequired && (_configRecord is not null) && (_configRecord.TargetFramework is not null))
                 {
                     ConfigurationSection section = null;
                     if (_configRecord.SectionsStack.Count > 0)
                         section = _configRecord.SectionsStack.Peek() as ConfigurationSection;
 
-                    if ((section != null) &&
+                    if ((section is not null) &&
                         !section.ShouldSerializePropertyInTargetVersion(prop, prop.Name, _configRecord.TargetFramework,
                             this))
                         continue;
@@ -1088,9 +1088,9 @@ namespace System.Configuration
                 }
                 else
                 {
-                    if (((_lockedAllExceptAttributesList != null) && _lockedAllExceptAttributesList.HasParentElements &&
+                    if (((_lockedAllExceptAttributesList is not null) && _lockedAllExceptAttributesList.HasParentElements &&
                         !_lockedAllExceptAttributesList.DefinedInParent(prop.Name)) ||
-                        ((_lockedAttributesList != null) && _lockedAttributesList.DefinedInParent(prop.Name)))
+                        ((_lockedAttributesList is not null) && _lockedAttributesList.DefinedInParent(prop.Name)))
                     {
                         if (prop.IsRequired)
                         {
@@ -1112,7 +1112,7 @@ namespace System.Configuration
                         xmlValue = prop.ConvertToString(value);
                     }
 
-                    if ((xmlValue != null) && (writer != null))
+                    if ((xmlValue is not null) && (writer is not null))
                     {
                         if (prop.IsTypeStringTransformationRequired)
                             xmlValue = GetTransformedTypeString(xmlValue);
@@ -1122,7 +1122,7 @@ namespace System.Configuration
                         writer.WriteAttributeString(prop.Name, xmlValue);
                     }
 
-                    dataToWrite = dataToWrite || (xmlValue != null);
+                    dataToWrite = dataToWrite || (xmlValue is not null);
                 }
             }
 
@@ -1154,8 +1154,8 @@ namespace System.Configuration
                     if ((serializeCollectionKey && !prop.IsKey) || !(value is ConfigurationElement))
                         continue;
 
-                    if (((_lockedElementsList != null) && _lockedElementsList.DefinedInParent(key)) ||
-                        ((_lockedAllExceptElementsList != null) &&
+                    if (((_lockedElementsList is not null) && _lockedElementsList.DefinedInParent(key)) ||
+                        ((_lockedAllExceptElementsList is not null) &&
                         _lockedAllExceptElementsList.HasParentElements &&
                         !_lockedAllExceptElementsList.DefinedInParent(key)))
                         continue;
@@ -1197,7 +1197,7 @@ namespace System.Configuration
         {
             StringBuilder sb = new StringBuilder();
 
-            if (list != null)
+            if (list is not null)
             {
                 foreach (string key in list)
                     if (!list.DefinedInParent(key))
@@ -1208,7 +1208,7 @@ namespace System.Configuration
                     }
             }
 
-            if ((writer != null) && (sb.Length != 0))
+            if ((writer is not null) && (sb.Length != 0))
                 writer.WriteAttributeString(elementKey, sb.ToString());
             return sb.Length != 0;
         }
@@ -1269,14 +1269,14 @@ namespace System.Configuration
             if ((lockedType == ConfigurationLockCollectionType.LockedElements) ||
                 (lockedType == ConfigurationLockCollectionType.LockedElementsExceptionList))
             {
-                format = value != null ? SR.Config_base_invalid_element_to_lock : SR.Config_base_invalid_element_to_lock_by_add;
+                format = value is not null ? SR.Config_base_invalid_element_to_lock : SR.Config_base_invalid_element_to_lock_by_add;
             }
             else
             {
-                format = value != null ? SR.Config_base_invalid_attribute_to_lock : SR.Config_base_invalid_attribute_to_lock_by_add;
+                format = value is not null ? SR.Config_base_invalid_attribute_to_lock : SR.Config_base_invalid_attribute_to_lock_by_add;
             }
 
-            if (value != null)
+            if (value is not null)
             {
                 throw new ConfigurationErrorsException(
                     SR.Format(format, attribToLockTrim, sb),
@@ -1328,7 +1328,7 @@ namespace System.Configuration
                     {
                         ConfigurationProperty propToLock = Properties[attribToLockTrim];
 
-                        if ((propToLock == null) || // if the prop does not exist
+                        if ((propToLock is null) || // if the prop does not exist
                             (attribToLockTrim == LockAttributesKey) || // or it is the lockattributes keyword
                             (attribToLockTrim == LockAllAttributesExceptKey) || // or it is the lockattributes keyword
                             (attribToLockTrim == LockElementsKey) || // or it is the lockelements keyword
@@ -1345,13 +1345,13 @@ namespace System.Configuration
                             // check to see if this is a collection and we are locking a collection element
 
                             ConfigurationElementCollection collection = this as ConfigurationElementCollection;
-                            if ((collection == null) && (Properties.DefaultCollectionProperty != null))
+                            if ((collection is null) && (Properties.DefaultCollectionProperty is not null))
                             // this is not a collection but it may contain a default collection
                             {
                                 collection =
                                     this[Properties.DefaultCollectionProperty] as ConfigurationElementCollection;
                             }
-                            if ((collection == null) ||
+                            if ((collection is null) ||
                                 (lockType == ConfigurationLockCollectionType.LockedAttributes) ||
                                 // If the collection type is not element then the lock is bogus
                                 (lockType == ConfigurationLockCollectionType.LockedExceptionList))
@@ -1363,7 +1363,7 @@ namespace System.Configuration
                             }
                         }
 
-                        if ((propToLock != null) && propToLock.IsRequired)
+                        if ((propToLock is not null) && propToLock.IsRequired)
                         {
                             throw new ConfigurationErrorsException(
                                 SR.Format(SR.Config_base_required_attribute_lock_attempt, propToLock.Name));
@@ -1409,7 +1409,7 @@ namespace System.Configuration
 
             ConfigurationElement defaultCollection = null;
             ConfigurationProperty defaultCollectionProperty = props?.DefaultCollectionProperty;
-            if (defaultCollectionProperty != null)
+            if (defaultCollectionProperty is not null)
                 defaultCollection = (ConfigurationElement)this[defaultCollectionProperty];
 
             // Process attributes
@@ -1419,9 +1419,9 @@ namespace System.Configuration
             Values.SetValue(DefaultCollectionPropertyName, defaultCollection, ConfigurationValueFlags.Modified,
                 rootInfo);
 
-            if (((_lockedElementsList != null) && (_lockedElementsList.Contains(reader.Name) ||
+            if (((_lockedElementsList is not null) && (_lockedElementsList.Contains(reader.Name) ||
                 (_lockedElementsList.Contains(LockAll) && (reader.Name != ElementTagName)))) ||
-                ((_lockedAllExceptElementsList != null) && (_lockedAllExceptElementsList.Count != 0) &&
+                ((_lockedAllExceptElementsList is not null) && (_lockedAllExceptElementsList.Count != 0) &&
                 !_lockedAllExceptElementsList.Contains(reader.Name)) ||
                 (((_itemLockedFlag & ConfigurationValueFlags.Locked) != 0) &&
                 ((_itemLockedFlag & ConfigurationValueFlags.Inherited) != 0))
@@ -1434,9 +1434,9 @@ namespace System.Configuration
                 while (reader.MoveToNextAttribute())
                 {
                     string propertyName = reader.Name;
-                    if (((_lockedAttributesList != null) &&
+                    if (((_lockedAttributesList is not null) &&
                         (_lockedAttributesList.Contains(propertyName) || _lockedAttributesList.Contains(LockAll))) ||
-                        ((_lockedAllExceptAttributesList != null) &&
+                        ((_lockedAllExceptAttributesList is not null) &&
                         !_lockedAllExceptAttributesList.Contains(propertyName))
                         )
                     {
@@ -1448,7 +1448,7 @@ namespace System.Configuration
                     }
 
                     ConfigurationProperty prop = props?[propertyName];
-                    if (prop != null)
+                    if (prop is not null)
                     {
                         if (serializeCollectionKey && !prop.IsKey)
                         {
@@ -1523,7 +1523,7 @@ namespace System.Configuration
                             CheckLockedElement(propertyName, null);
 
                             ConfigurationProperty prop = props?[propertyName];
-                            if (prop != null)
+                            if (prop is not null)
                             {
                                 if (prop.IsConfigurationElementType)
                                 {
@@ -1555,7 +1555,7 @@ namespace System.Configuration
                                 if (!OnDeserializeUnrecognizedElement(propertyName, reader))
                                 {
                                     // Let the default collection, if there is one, handle this node.
-                                    if ((defaultCollection == null) ||
+                                    if ((defaultCollection is null) ||
                                         !defaultCollection.OnDeserializeUnrecognizedElement(propertyName, reader))
                                     {
                                         throw new ConfigurationErrorsException(
@@ -1584,7 +1584,7 @@ namespace System.Configuration
             catch (ConfigurationException e)
             {
                 // Catch the generic message from deserialization and include line info if necessary
-                if ((e.Filename == null) || (e.Filename.Length == 0))
+                if ((e.Filename is null) || (e.Filename.Length == 0))
                     throw new ConfigurationErrorsException(e.Message, reader); // give it some info
 
                 throw;
@@ -1596,9 +1596,9 @@ namespace System.Configuration
                 _itemLockedFlag = ConfigurationValueFlags.Locked;
             }
 
-            if (lockedAttributesList != null)
+            if (lockedAttributesList is not null)
             {
-                if (_lockedAttributesList == null)
+                if (_lockedAttributesList is null)
                 {
                     _lockedAttributesList = new ConfigurationLockCollection(this,
                         ConfigurationLockCollectionType.LockedAttributes);
@@ -1615,11 +1615,11 @@ namespace System.Configuration
                     }
             }
 
-            if (lockedAllExceptList != null)
+            if (lockedAllExceptList is not null)
             {
                 ConfigurationLockCollection newCollection = ParseLockedAttributes(lockedAllExceptList,
                     ConfigurationLockCollectionType.LockedExceptionList);
-                if (_lockedAllExceptAttributesList == null)
+                if (_lockedAllExceptAttributesList is null)
                 {
                     // Prevent the list from thinking this was set by a parent.
                     _lockedAllExceptAttributesList = new ConfigurationLockCollection(this,
@@ -1635,9 +1635,9 @@ namespace System.Configuration
                     _lockedAllExceptAttributesList.Add(key, ConfigurationValueFlags.Default);
             }
 
-            if (lockedElementList != null)
+            if (lockedElementList is not null)
             {
-                if (_lockedElementsList == null)
+                if (_lockedElementsList is null)
                 {
                     _lockedElementsList = new ConfigurationLockCollection(this,
                         ConfigurationLockCollectionType.LockedElements);
@@ -1646,11 +1646,11 @@ namespace System.Configuration
                 ConfigurationLockCollection localLockedElementList = ParseLockedAttributes(lockedElementList,
                     ConfigurationLockCollectionType.LockedElements);
 
-                if (props.DefaultCollectionProperty != null)
+                if (props.DefaultCollectionProperty is not null)
                 // this is not a collection but it may contain a default collection
                 {
                     ConfigurationElementCollection collection = this[props.DefaultCollectionProperty] as ConfigurationElementCollection;
-                    if ((collection != null) && (collection._lockedElementsList == null))
+                    if ((collection is not null) && (collection._lockedElementsList is null))
                         collection._lockedElementsList = _lockedElementsList;
                 }
 
@@ -1660,7 +1660,7 @@ namespace System.Configuration
                         _lockedElementsList.Add(key, ConfigurationValueFlags.Default); // add the local copy
 
                         ConfigurationProperty propToLock = Properties[key];
-                        if ((propToLock != null) && typeof(ConfigurationElement).IsAssignableFrom(propToLock.Type))
+                        if ((propToLock is not null) && typeof(ConfigurationElement).IsAssignableFrom(propToLock.Type))
                             ((ConfigurationElement)this[key]).SetLocked();
                         if (key == LockAll)
                         {
@@ -1672,11 +1672,11 @@ namespace System.Configuration
                     }
             }
 
-            if (lockedAllElementsExceptList != null)
+            if (lockedAllElementsExceptList is not null)
             {
                 ConfigurationLockCollection newCollection = ParseLockedAttributes(lockedAllElementsExceptList,
                     ConfigurationLockCollectionType.LockedElementsExceptionList);
-                if (_lockedAllExceptElementsList == null)
+                if (_lockedAllExceptElementsList is null)
                 {
                     _lockedAllExceptElementsList = new ConfigurationLockCollection(this,
                         ConfigurationLockCollectionType.LockedElementsExceptionList, ElementTagName, newCollection);
@@ -1686,11 +1686,11 @@ namespace System.Configuration
                 StringCollection intersectionCollection = IntersectLockCollections(_lockedAllExceptElementsList,
                     newCollection);
 
-                if (props.DefaultCollectionProperty != null)
+                if (props.DefaultCollectionProperty is not null)
                 {
                     // this is not a collection but it may contain a default collection
                     ConfigurationElementCollection collection = this[props.DefaultCollectionProperty] as ConfigurationElementCollection;
-                    if ((collection != null) && (collection._lockedAllExceptElementsList == null))
+                    if ((collection is not null) && (collection._lockedAllExceptElementsList is null))
                         collection._lockedAllExceptElementsList = _lockedAllExceptElementsList;
                 }
 
@@ -1706,16 +1706,16 @@ namespace System.Configuration
             }
 
             // Make sure default collections use the same lock element lists
-            if (defaultCollectionProperty != null)
+            if (defaultCollectionProperty is not null)
             {
                 defaultCollection = (ConfigurationElement)this[defaultCollectionProperty];
-                if (_lockedElementsList == null)
+                if (_lockedElementsList is null)
                 {
                     _lockedElementsList = new ConfigurationLockCollection(this,
                         ConfigurationLockCollectionType.LockedElements);
                 }
                 defaultCollection._lockedElementsList = _lockedElementsList;
-                if (_lockedAllExceptElementsList == null)
+                if (_lockedAllExceptElementsList is null)
                 {
                     _lockedAllExceptElementsList = new ConfigurationLockCollection(this,
                         ConfigurationLockCollectionType.LockedElementsExceptionList, reader.Name);
@@ -1730,8 +1730,8 @@ namespace System.Configuration
 
         private object DeserializePropertyValue(ConfigurationProperty prop, XmlReader reader)
         {
-            Debug.Assert(prop != null, "prop != null");
-            Debug.Assert(reader != null, "reader != null");
+            Debug.Assert(prop is not null, "prop is not null");
+            Debug.Assert(reader is not null, "reader is not null");
 
             // By default we try to load (i.e. parse/validate ) all properties
             // If a property value is invalid ( cannot be parsed or is not valid ) we will keep the value
@@ -1775,14 +1775,14 @@ namespace System.Configuration
 
             ConfigurationValidatorBase validator = propValidator;
 
-            if ((validator == null) && // Not a property - use the per-type validator
-                (elem.ElementProperty != null))
+            if ((validator is null) && // Not a property - use the per-type validator
+                (elem.ElementProperty is not null))
             {
                 validator = elem.ElementProperty.Validator;
 
                 // Since ElementProperty can be overriden by derived classes we need to make sure that
                 // the validator supports the type of elem every time
-                if ((validator != null) && !validator.CanValidate(elem.GetType()))
+                if ((validator is not null) && !validator.CanValidate(elem.GetType()))
                 {
                     throw new ConfigurationErrorsException(SR.Format(SR.Validator_does_not_support_elem_type,
                         elem.GetType().Name));
@@ -1822,7 +1822,7 @@ namespace System.Configuration
                 {
                     ConfigurationElement value = elem.Values[index] as ConfigurationElement;
 
-                    if (value != null)
+                    if (value is not null)
                     {
                         // Run the per-type validator on the child element and proceed with validation in subelements
                         // Note we dont run the per-property validator here since we run those when the property value is set
@@ -1837,7 +1837,7 @@ namespace System.Configuration
             ConfigurationPropertyCollection props = Properties;
 
             // Make sure all required properties are here
-            if (props != null)
+            if (props is not null)
             {
                 foreach (ConfigurationProperty prop in props)
                     if (prop.IsRequired && !Values.Contains(prop.Name))
@@ -1880,7 +1880,7 @@ namespace System.Configuration
 
         protected virtual string GetTransformedTypeString(string typeName)
         {
-            if ((typeName == null) || (_configRecord == null) || !_configRecord.TypeStringTransformerIsSet)
+            if ((typeName is null) || (_configRecord is null) || !_configRecord.TypeStringTransformerIsSet)
                 return typeName;
 
             return _configRecord.TypeStringTransformer(typeName);
@@ -1888,7 +1888,7 @@ namespace System.Configuration
 
         protected virtual string GetTransformedAssemblyString(string assemblyName)
         {
-            if ((assemblyName == null) || (_configRecord == null) || !_configRecord.AssemblyStringTransformerIsSet)
+            if ((assemblyName is null) || (_configRecord is null) || !_configRecord.AssemblyStringTransformerIsSet)
                 return assemblyName;
 
             return _configRecord.AssemblyStringTransformer(assemblyName);

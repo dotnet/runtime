@@ -16,7 +16,7 @@ namespace System.IO
 
         public static SyncTextReader GetSynchronizedTextReader(TextReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             return reader as SyncTextReader ??
                 new SyncTextReader(reader);
         }
@@ -102,7 +102,7 @@ namespace System.IO
 
         public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -114,7 +114,7 @@ namespace System.IO
 
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);

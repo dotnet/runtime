@@ -26,7 +26,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 CheckDisposed();
 
-                if (_beforeStart == true || _endReached == true || _resultSet == null)
+                if (_beforeStart == true || _endReached == true || _resultSet is null)
                 {
                     // Either we're before the beginning or after the end of the collection.
                     GlobalDebug.WriteLineIf(
@@ -73,7 +73,7 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             // No ResultSet, so we've already reached the end
-            if (_resultSet == null)
+            if (_resultSet is null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "FindResultEnumerator", "MoveNext: no resultSet");
                 return false;

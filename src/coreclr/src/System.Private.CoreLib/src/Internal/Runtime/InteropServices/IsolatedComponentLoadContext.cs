@@ -24,7 +24,7 @@ namespace Internal.Runtime.InteropServices
         protected override Assembly? Load(AssemblyName assemblyName)
         {
             string? assemblyPath = _resolver.ResolveAssemblyToPath(assemblyName);
-            if (assemblyPath != null)
+            if (assemblyPath is not null)
             {
                 return LoadFromAssemblyPath(assemblyPath);
             }
@@ -35,7 +35,7 @@ namespace Internal.Runtime.InteropServices
         protected override IntPtr LoadUnmanagedDll(string unmanagedDllName)
         {
             string? libraryPath = _resolver.ResolveUnmanagedDllToPath(unmanagedDllName);
-            if (libraryPath != null)
+            if (libraryPath is not null)
             {
                 return LoadUnmanagedDllFromPath(libraryPath);
             }

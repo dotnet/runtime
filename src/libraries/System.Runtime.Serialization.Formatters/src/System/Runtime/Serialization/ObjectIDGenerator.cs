@@ -39,7 +39,7 @@ namespace System.Runtime.Serialization
                 int pos = ((hashcode & 0x7FFFFFFF) % _currentSize) * NumBins;
                 for (int i = pos; i < pos + NumBins; i++)
                 {
-                    if (_objs[i] == null)
+                    if (_objs[i] is null)
                     {
                         found = false;
                         return i;
@@ -63,7 +63,7 @@ namespace System.Runtime.Serialization
         // is set to true if this is the first time that we have seen this object.
         public virtual long GetId(object obj, out bool firstTime)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
@@ -98,7 +98,7 @@ namespace System.Runtime.Serialization
         // we return that id, otherwise we return 0.
         public virtual long HasId(object obj, out bool firstTime)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
@@ -140,7 +140,7 @@ namespace System.Runtime.Serialization
 
             for (int j = 0; j < oldObjs.Length; j++)
             {
-                if (oldObjs[j] != null)
+                if (oldObjs[j] is not null)
                 {
                     int pos = FindElement(oldObjs[j], out _);
                     _objs[pos] = oldObjs[j];

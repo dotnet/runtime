@@ -49,7 +49,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public PreAllocatedOverlapped(IOCompletionCallback callback, object? state, object? pinData)
         {
-            if (callback == null)
+            if (callback is null)
                 throw new ArgumentNullException(nameof(callback));
 
             _overlapped = new ThreadPoolBoundHandleOverlapped(callback, state, pinData, this);
@@ -81,7 +81,7 @@ namespace System.Threading
 
         unsafe void IDeferredDisposable.OnFinalRelease(bool disposed)
         {
-            if (_overlapped != null) // protect against ctor throwing exception and leaving field uninitialized
+            if (_overlapped is not null) // protect against ctor throwing exception and leaving field uninitialized
             {
                 if (disposed)
                 {

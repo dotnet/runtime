@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Pkcs
 
             protected override bool VerifyKeyType(AsymmetricAlgorithm key)
             {
-                return (key as DSA) != null;
+                return (key as DSA) is not null;
             }
 
             internal override bool VerifySignature(
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 DSA? dsa = certificate.GetDSAPublicKey();
 
-                if (dsa == null)
+                if (dsa is null)
                 {
                     return false;
                 }
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography.Pkcs
                     PkcsPal.Instance.GetPrivateKeyForSigning<DSA>(certificate, silent) ??
                     certificate.GetDSAPublicKey();
 
-                if (dsa == null)
+                if (dsa is null)
                 {
                     signatureAlgorithm = null;
                     signatureValue = null;
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.Pkcs
                     hashAlgorithmName == HashAlgorithmName.SHA512 ? Oids.DsaWithSha512 :
                     null;
 
-                if (oidValue == null)
+                if (oidValue is null)
                 {
                     signatureAlgorithm = null;
                     signatureValue = null;
@@ -144,7 +144,7 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         var signature = new ReadOnlySpan<byte>(rented, 0, bytesWritten);
 
-                        if (key != null && !certificate.GetDSAPublicKey()!.VerifySignature(dataHash, signature))
+                        if (key is not null && !certificate.GetDSAPublicKey()!.VerifySignature(dataHash, signature))
                         {
                             // key did not match certificate
                             signatureValue = null;

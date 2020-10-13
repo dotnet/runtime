@@ -22,7 +22,7 @@ namespace System.ComponentModel.DataAnnotations
 
         public override bool IsValid(object? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 return true;
             }

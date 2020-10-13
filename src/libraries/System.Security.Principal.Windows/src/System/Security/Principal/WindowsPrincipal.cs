@@ -46,7 +46,7 @@ namespace System.Security.Principal
 
         public override bool IsInRole(string role)
         {
-            if (role == null || role.Length == 0)
+            if (role is null || role.Length == 0)
                 return false;
 
             NTAccount ntAccount = new NTAccount(role);
@@ -138,7 +138,7 @@ namespace System.Security.Principal
 
         public virtual bool IsInRole(SecurityIdentifier sid)
         {
-            if (sid == null)
+            if (sid is null)
                 throw new ArgumentNullException(nameof(sid));
 
             // special case the anonymous identity.

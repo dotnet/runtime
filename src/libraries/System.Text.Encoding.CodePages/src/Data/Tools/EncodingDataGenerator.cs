@@ -20,7 +20,7 @@ namespace EncodingDataGenerator
             try
             {
                 EncodingDataGenerator edg = new EncodingDataGenerator();
-                if (!edg.ParseParams(args) || edg.IanaMappings == null || edg.PreferredIANANames == null || edg.OutputDataTable == null)
+                if (!edg.ParseParams(args) || edg.IanaMappings is null || edg.PreferredIANANames is null || edg.OutputDataTable is null)
                 {
                     edg.Usage();
                     return;
@@ -277,7 +277,7 @@ namespace EncodingDataGenerator
                 int lineNumber = 1;
                 string line;
 
-                for (; (line = input.ReadLine()) != null; ++lineNumber)
+                for (; (line = input.ReadLine()) is not null; ++lineNumber)
                 {
                     if (line.StartsWith(CommentIndicator) || string.IsNullOrWhiteSpace(line))
                     {

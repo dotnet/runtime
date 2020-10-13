@@ -55,7 +55,7 @@ namespace System.Text
                 else
                 {
                     result = GetEncodingRare(codepage);
-                    if (result == null)
+                    if (result is null)
                         return null;
                 }
 

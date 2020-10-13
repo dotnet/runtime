@@ -12,7 +12,7 @@ namespace System.IO.MemoryMappedFiles
         {
             fileSize = -1;
 
-            if (fileStream != null)
+            if (fileStream is not null)
             {
                 Interop.Sys.FileStatus status;
 
@@ -59,7 +59,7 @@ namespace System.IO.MemoryMappedFiles
         {
             VerifyMemoryMappedFileAccess(access, capacity, fileStream, out long fileSize);
 
-            if (mapName != null)
+            if (mapName is not null)
             {
                 // Named maps are not supported in our Unix implementation.  We could support named maps on Linux using
                 // shared memory segments (shmget/shmat/shmdt/shmctl/etc.), but that doesn't work on OSX by default due
@@ -74,7 +74,7 @@ namespace System.IO.MemoryMappedFiles
             }
 
             bool ownsFileStream = false;
-            if (fileStream != null)
+            if (fileStream is not null)
             {
                 if (fileSize >= 0 && capacity > fileSize)
                 {
@@ -123,7 +123,7 @@ namespace System.IO.MemoryMappedFiles
             HandleInheritability inheritability, MemoryMappedFileAccess access,
             MemoryMappedFileOptions options, long capacity)
         {
-            // Since we don't support mapName != null, CreateOrOpenCore can't
+            // Since we don't support mapName is not null, CreateOrOpenCore can't
             // be used to Open an existing map, and thus is identical to CreateCore.
             return CreateCore(null, mapName, inheritability, access, options, capacity);
         }

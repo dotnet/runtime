@@ -128,7 +128,7 @@ namespace System.Net.Sockets
 
         internal ValueTask ConnectAsync(IPAddress[] addresses, int port, CancellationToken cancellationToken)
         {
-            if (addresses == null)
+            if (addresses is null)
             {
                 throw new ArgumentNullException(nameof(addresses));
             }
@@ -156,7 +156,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            Debug.Assert(lastException != null);
+            Debug.Assert(lastException is not null);
             ExceptionDispatchInfo.Throw(lastException);
         }
 
@@ -164,7 +164,7 @@ namespace System.Net.Sockets
 
         internal ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
-            if (host == null)
+            if (host is null)
             {
                 throw new ArgumentNullException(nameof(host));
             }
@@ -192,7 +192,7 @@ namespace System.Net.Sockets
                 Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null) ??
                 new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: true);
 
-            Debug.Assert(saea.BufferList == null);
+            Debug.Assert(saea.BufferList is null);
             saea.SetBuffer(buffer);
             saea.SocketFlags = socketFlags;
             saea.WrapExceptionsForNetworkStream = fromNetworkStream;
@@ -275,7 +275,7 @@ namespace System.Net.Sockets
                 Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
                 new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
 
-            Debug.Assert(saea.BufferList == null);
+            Debug.Assert(saea.BufferList is null);
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
             saea.WrapExceptionsForNetworkStream = false;
@@ -293,7 +293,7 @@ namespace System.Net.Sockets
                 Interlocked.Exchange(ref _singleBufferSendEventArgs, null) ??
                 new AwaitableSocketAsyncEventArgs(this, isReceiveForCaching: false);
 
-            Debug.Assert(saea.BufferList == null);
+            Debug.Assert(saea.BufferList is null);
             saea.SetBuffer(MemoryMarshal.AsMemory(buffer));
             saea.SocketFlags = socketFlags;
             saea.WrapExceptionsForNetworkStream = true;
@@ -331,7 +331,7 @@ namespace System.Net.Sockets
         /// <summary>Validates the supplied array segment, throwing if its array or indices are null or out-of-bounds, respectively.</summary>
         private static void ValidateBuffer(ArraySegment<byte> buffer)
         {
-            if (buffer.Array == null)
+            if (buffer.Array is null)
             {
                 throw new ArgumentNullException(nameof(buffer.Array));
             }
@@ -348,7 +348,7 @@ namespace System.Net.Sockets
         /// <summary>Validates the supplied buffer list, throwing if it's null or empty.</summary>
         private static void ValidateBuffersList(IList<ArraySegment<byte>> buffers)
         {
-            if (buffers == null)
+            if (buffers is null)
             {
                 throw new ArgumentNullException(nameof(buffers));
             }
@@ -497,7 +497,7 @@ namespace System.Net.Sockets
 
             // Write this instance back as a cached instance, only if there isn't currently one cached.
             ref TaskSocketAsyncEventArgs<int>? cache = ref isReceive ? ref _multiBufferReceiveEventArgs : ref _multiBufferSendEventArgs;
-            if (Interlocked.CompareExchange(ref cache, saea, null) != null)
+            if (Interlocked.CompareExchange(ref cache, saea, null) is not null)
             {
                 saea.Dispose();
             }
@@ -515,7 +515,7 @@ namespace System.Net.Sockets
             saea._builder = default;
 
             // Write this instance back as a cached instance, only if there isn't currently one cached.
-            if (Interlocked.CompareExchange(ref _acceptEventArgs, saea, null) != null)
+            if (Interlocked.CompareExchange(ref _acceptEventArgs, saea, null) is not null)
             {
                 // Couldn't return it, so dispose it.
                 saea.Dispose();
@@ -627,7 +627,7 @@ namespace System.Net.Sockets
                 _continuation = null;
 
                 ref AwaitableSocketAsyncEventArgs? cache = ref _isReadForCaching ? ref _owner._singleBufferReceiveEventArgs : ref _owner._singleBufferSendEventArgs;
-                if (Interlocked.CompareExchange(ref cache, this, null) != null)
+                if (Interlocked.CompareExchange(ref cache, this, null) is not null)
                 {
                     Dispose();
                 }
@@ -638,7 +638,7 @@ namespace System.Net.Sockets
                 // When the operation completes, see if OnCompleted was already called to hook up a continuation.
                 // If it was, invoke the continuation.
                 Action<object?>? c = _continuation;
-                if (c != null || (c = Interlocked.CompareExchange(ref _continuation, s_completedSentinel, null)) != null)
+                if (c is not null || (c = Interlocked.CompareExchange(ref _continuation, s_completedSentinel, null)) is not null)
                 {
                     Debug.Assert(c != s_completedSentinel, "The delegate should not have been the completed sentinel.");
 
@@ -647,7 +647,7 @@ namespace System.Net.Sockets
                     _continuation = s_completedSentinel; // in case someone's polling IsCompleted
 
                     ExecutionContext? ec = _executionContext;
-                    if (ec == null)
+                    if (ec is null)
                     {
                         InvokeContinuation(c, continuationState, forceAsync: false, requiresExecutionContextFlow: false);
                     }
@@ -670,7 +670,7 @@ namespace System.Net.Sockets
             /// <returns>This instance.</returns>
             public ValueTask<int> ReceiveAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+                Debug.Assert(Volatile.Read(ref _continuation) is null, $"Expected null continuation to indicate reserved for use");
 
                 if (socket.ReceiveAsync(this, cancellationToken))
                 {
@@ -692,7 +692,7 @@ namespace System.Net.Sockets
             /// <returns>This instance.</returns>
             public ValueTask<int> SendAsync(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+                Debug.Assert(Volatile.Read(ref _continuation) is null, $"Expected null continuation to indicate reserved for use");
 
                 if (socket.SendAsync(this, cancellationToken))
                 {
@@ -712,7 +712,7 @@ namespace System.Net.Sockets
 
             public ValueTask SendAsyncForNetworkStream(Socket socket, CancellationToken cancellationToken)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+                Debug.Assert(Volatile.Read(ref _continuation) is null, $"Expected null continuation to indicate reserved for use");
 
                 if (socket.SendAsync(this, cancellationToken))
                 {
@@ -731,7 +731,7 @@ namespace System.Net.Sockets
 
             public ValueTask ConnectAsync(Socket socket)
             {
-                Debug.Assert(Volatile.Read(ref _continuation) == null, $"Expected null continuation to indicate reserved for use");
+                Debug.Assert(Volatile.Read(ref _continuation) is null, $"Expected null continuation to indicate reserved for use");
 
                 try
                 {
@@ -785,7 +785,7 @@ namespace System.Net.Sockets
                 if ((flags & ValueTaskSourceOnCompletedFlags.UseSchedulingContext) != 0)
                 {
                     SynchronizationContext? sc = SynchronizationContext.Current;
-                    if (sc != null && sc.GetType() != typeof(SynchronizationContext))
+                    if (sc is not null && sc.GetType() != typeof(SynchronizationContext))
                     {
                         _scheduler = sc;
                     }
@@ -808,12 +808,12 @@ namespace System.Net.Sockets
                     // avoid a stack dive.  However, since all of the queueing mechanisms flow
                     // ExecutionContext, and since we're still in the same context where we
                     // captured it, we can just ignore the one we captured.
-                    bool requiresExecutionContextFlow = _executionContext != null;
+                    bool requiresExecutionContextFlow = _executionContext is not null;
                     _executionContext = null;
                     UserToken = null; // we have the state in "state"; no need for the one in UserToken
                     InvokeContinuation(continuation, state, forceAsync: true, requiresExecutionContextFlow);
                 }
-                else if (prevContinuation != null)
+                else if (prevContinuation is not null)
                 {
                     // Flag errors with the continuation being hooked up multiple times.
                     // This is purely to help alert a developer to a bug they need to fix.
@@ -826,7 +826,7 @@ namespace System.Net.Sockets
                 object? scheduler = _scheduler;
                 _scheduler = null;
 
-                if (scheduler != null)
+                if (scheduler is not null)
                 {
                     if (scheduler is SynchronizationContext sc)
                     {

@@ -84,7 +84,7 @@ namespace System.Globalization
 
         public static Calendar ReadOnly(Calendar calendar)
         {
-            if (calendar == null)
+            if (calendar is null)
             {
                 throw new ArgumentNullException(nameof(calendar));
             }

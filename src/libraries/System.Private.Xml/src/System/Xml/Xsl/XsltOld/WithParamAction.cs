@@ -22,7 +22,7 @@ namespace System.Xml.Xsl.XsltOld
                 CompileTemplate(compiler);
                 compiler.ToParent();
 
-                if (this.selectKey != Compiler.InvalidQueryKey && this.containedActions != null)
+                if (this.selectKey != Compiler.InvalidQueryKey && this.containedActions is not null)
                 {
                     throw XsltException.Create(SR.Xslt_VariableCntSel2, this.nameStr);
                 }
@@ -31,7 +31,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
             object ParamValue;
             switch (frame.State)
             {
@@ -44,7 +44,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                     else
                     {
-                        if (this.containedActions == null)
+                        if (this.containedActions is null)
                         {
                             processor.SetParameter(this.name!, string.Empty);
                             frame.Finished();

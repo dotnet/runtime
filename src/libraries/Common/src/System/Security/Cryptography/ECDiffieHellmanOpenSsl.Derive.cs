@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
                 byte[]? secretPrepend,
                 byte[]? secretAppend)
             {
-                if (otherPartyPublicKey == null)
+                if (otherPartyPublicKey is null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
                 if (string.IsNullOrEmpty(hashAlgorithm.Name))
                     throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
@@ -47,7 +47,7 @@ namespace System.Security.Cryptography
                 byte[]? secretPrepend,
                 byte[]? secretAppend)
             {
-                if (otherPartyPublicKey == null)
+                if (otherPartyPublicKey is null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
                 if (string.IsNullOrEmpty(hashAlgorithm.Name))
                     throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
@@ -65,11 +65,11 @@ namespace System.Security.Cryptography
 
             public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed)
             {
-                if (otherPartyPublicKey == null)
+                if (otherPartyPublicKey is null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (prfLabel == null)
+                if (prfLabel is null)
                     throw new ArgumentNullException(nameof(prfLabel));
-                if (prfSeed == null)
+                if (prfSeed is null)
                     throw new ArgumentNullException(nameof(prfSeed));
 
                 ThrowIfDisposed();
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography
             /// </summary>
             private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
             {
-                Debug.Assert(otherPartyPublicKey != null);
+                Debug.Assert(otherPartyPublicKey is not null);
 
                 // Ensure that this ECDH object contains a private key by attempting a parameter export
                 // which will throw an OpenSslCryptoException if no private key is available
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
                 ECDiffieHellmanOpenSslPublicKey? otherKey = otherPartyPublicKey as ECDiffieHellmanOpenSslPublicKey;
                 bool disposeOtherKey = false;
 
-                if (otherKey == null)
+                if (otherKey is null)
                 {
                     disposeOtherKey = true;
 
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography
 
                     using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(ourKey, theirKey, out uint secretLengthU))
                     {
-                        if (ctx == null || ctx.IsInvalid || secretLengthU == 0 || secretLengthU > int.MaxValue)
+                        if (ctx is null || ctx.IsInvalid || secretLengthU == 0 || secretLengthU > int.MaxValue)
                         {
                             throw Interop.Crypto.CreateOpenSslCryptographicException();
                         }
@@ -172,7 +172,7 @@ namespace System.Security.Cryptography
 
                         Interop.Crypto.EvpPKeyDeriveSecretAgreement(ctx, secret);
 
-                        if (hasher == null)
+                        if (hasher is null)
                         {
                             return secret.ToArray();
                         }
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography
                         otherKey.Dispose();
                     }
 
-                    if (rented != null)
+                    if (rented is not null)
                     {
                         CryptoPool.Return(rented, secretLength);
                     }

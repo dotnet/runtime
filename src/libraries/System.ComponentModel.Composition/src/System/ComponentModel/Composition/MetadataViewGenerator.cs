@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition
     //
     //     public __Foo__MedataViewProxy (IDictionary<string, object> metadata)
     //     {
-    //         if (metadata == null)
+    //         if (metadata is null)
     //         {
     //             throw InvalidArgumentException("metadata");
     //         }
@@ -78,7 +78,7 @@ namespace System.ComponentModel.Composition
         // Must be called with _lock held
         private static ModuleBuilder GetProxyModuleBuilder(bool requiresCritical)
         {
-            if (transparentProxyModuleBuilder == null)
+            if (transparentProxyModuleBuilder is null)
             {
                 // make a new assemblybuilder and modulebuilder
                 var assemblyBuilder = AssemblyBuilder.DefineDynamicAssembly(ProxyAssemblyName, AssemblyBuilderAccess.Run);
@@ -90,7 +90,7 @@ namespace System.ComponentModel.Composition
 
         public static MetadataViewFactory GetMetadataViewFactory(Type viewType)
         {
-            if (viewType == null)
+            if (viewType is null)
             {
                 throw new ArgumentNullException(nameof(viewType));
             }
@@ -113,14 +113,14 @@ namespace System.ComponentModel.Composition
             {
                 // Try again under a write lock if still none generate the proxy
                 Type? generatedProxyType = GenerateInterfaceViewProxyType(viewType);
-                if (generatedProxyType == null)
+                if (generatedProxyType is null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
 
                 MetadataViewFactory generatedMetadataViewFactory = (MetadataViewFactory)Delegate.CreateDelegate(
                     typeof(MetadataViewFactory), generatedProxyType.GetMethod(MetadataViewGenerator.MetadataViewFactoryName, BindingFlags.Public | BindingFlags.Static)!);
-                if (generatedMetadataViewFactory == null)
+                if (generatedMetadataViewFactory is null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
@@ -139,7 +139,7 @@ namespace System.ComponentModel.Composition
 
         public static TMetadataView CreateMetadataView<TMetadataView>(MetadataViewFactory metadataViewFactory, IDictionary<string, object?> metadata)
         {
-            if (metadataViewFactory == null)
+            if (metadataViewFactory is null)
             {
                 throw new ArgumentNullException(nameof(metadataViewFactory));
             }
@@ -160,7 +160,7 @@ namespace System.ComponentModel.Composition
             {
                 DefaultValueAttribute defaultAttribute = attrs[0];
                 IL.LoadValue(defaultAttribute.Value);
-                if ((defaultAttribute.Value != null) && (defaultAttribute.Value.GetType().IsValueType))
+                if ((defaultAttribute.Value is not null) && (defaultAttribute.Value.GetType().IsValueType))
                 {
                     IL.Emit(OpCodes.Box, defaultAttribute.Value.GetType());
                 }

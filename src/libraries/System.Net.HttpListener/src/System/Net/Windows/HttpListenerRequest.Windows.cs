@@ -60,24 +60,24 @@ namespace System.Net
             // Set up some of these now to avoid refcounting on memory blob later.
             _requestId = memoryBlob.RequestBlob->RequestId;
             _connectionId = memoryBlob.RequestBlob->ConnectionId;
-            _sslStatus = memoryBlob.RequestBlob->pSslInfo == null ? SslStatus.Insecure :
+            _sslStatus = memoryBlob.RequestBlob->pSslInfo is null ? SslStatus.Insecure :
                 memoryBlob.RequestBlob->pSslInfo->SslClientCertNegotiated == 0 ? SslStatus.NoClientCert :
                 SslStatus.ClientCert;
-            if (memoryBlob.RequestBlob->pRawUrl != null && memoryBlob.RequestBlob->RawUrlLength > 0)
+            if (memoryBlob.RequestBlob->pRawUrl is not null && memoryBlob.RequestBlob->RawUrlLength > 0)
             {
                 _rawUrl = Marshal.PtrToStringAnsi((IntPtr)memoryBlob.RequestBlob->pRawUrl, memoryBlob.RequestBlob->RawUrlLength);
             }
 
             Interop.HttpApi.HTTP_COOKED_URL cookedUrl = memoryBlob.RequestBlob->CookedUrl;
-            if (cookedUrl.pHost != null && cookedUrl.HostLength > 0)
+            if (cookedUrl.pHost is not null && cookedUrl.HostLength > 0)
             {
                 _cookedUrlHost = Marshal.PtrToStringUni((IntPtr)cookedUrl.pHost, cookedUrl.HostLength / 2);
             }
-            if (cookedUrl.pAbsPath != null && cookedUrl.AbsPathLength > 0)
+            if (cookedUrl.pAbsPath is not null && cookedUrl.AbsPathLength > 0)
             {
                 _cookedUrlPath = Marshal.PtrToStringUni((IntPtr)cookedUrl.pAbsPath, cookedUrl.AbsPathLength / 2);
             }
-            if (cookedUrl.pQueryString != null && cookedUrl.QueryStringLength > 0)
+            if (cookedUrl.pQueryString is not null && cookedUrl.QueryStringLength > 0)
             {
                 _cookedUrlQuery = Marshal.PtrToStringUni((IntPtr)cookedUrl.pQueryString, cookedUrl.QueryStringLength / 2);
             }
@@ -130,7 +130,7 @@ namespace System.Net
         // disposed.
         internal void DetachBlob(RequestContextBase memoryBlob)
         {
-            if (memoryBlob != null && (object)memoryBlob == (object)_memoryBlob!)
+            if (memoryBlob is not null && (object)memoryBlob == (object)_memoryBlob!)
             {
                 _memoryBlob = null;
             }
@@ -161,7 +161,7 @@ namespace System.Net
                 if (_boundaryType == BoundaryType.None)
                 {
                     string? transferEncodingHeader = Headers[HttpKnownHeaderNames.TransferEncoding];
-                    if (transferEncodingHeader != null && transferEncodingHeader.Equals("chunked", StringComparison.OrdinalIgnoreCase))
+                    if (transferEncodingHeader is not null && transferEncodingHeader.Equals("chunked", StringComparison.OrdinalIgnoreCase))
                     {
                         _boundaryType = BoundaryType.Chunked;
                         _contentLength = -1;
@@ -171,7 +171,7 @@ namespace System.Net
                         _contentLength = 0;
                         _boundaryType = BoundaryType.ContentLength;
                         string? length = Headers[HttpKnownHeaderNames.ContentLength];
-                        if (length != null)
+                        if (length is not null)
                         {
                             bool success = long.TryParse(length, NumberStyles.None, CultureInfo.InvariantCulture.NumberFormat, out _contentLength);
                             if (!success)
@@ -191,7 +191,7 @@ namespace System.Net
         {
             get
             {
-                if (_webHeaders == null)
+                if (_webHeaders is null)
                 {
                     _webHeaders = Interop.HttpApi.GetHeaders(RequestBuffer, OriginalBlobAddress);
                 }
@@ -204,7 +204,7 @@ namespace System.Net
         {
             get
             {
-                if (_httpMethod == null)
+                if (_httpMethod is null)
                 {
                     _httpMethod = Interop.HttpApi.GetVerb(RequestBuffer, OriginalBlobAddress);
                 }
@@ -217,7 +217,7 @@ namespace System.Net
         {
             get
             {
-                if (_requestStream == null)
+                if (_requestStream is null)
                 {
                     _requestStream = HasEntityBody ? new HttpRequestStream(HttpListenerContext) : Stream.Null;
                 }
@@ -230,7 +230,7 @@ namespace System.Net
             get
             {
                 IPrincipal? user = HttpListenerContext.User;
-                return user != null && user.Identity != null && user.Identity.IsAuthenticated;
+                return user is not null && user.Identity is not null && user.Identity.IsAuthenticated;
             }
         }
 
@@ -257,12 +257,12 @@ namespace System.Net
         {
             X509Certificate2? clientCertificate = null;
 
-            if (asyncResult == null)
+            if (asyncResult is null)
             {
                 throw new ArgumentNullException(nameof(asyncResult));
             }
             ListenerClientCertAsyncResult? clientCertAsyncResult = asyncResult as ListenerClientCertAsyncResult;
-            if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
+            if (clientCertAsyncResult is null || clientCertAsyncResult.AsyncObject != this)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
@@ -294,7 +294,7 @@ namespace System.Net
         {
             get
             {
-                if (_remoteEndPoint == null)
+                if (_remoteEndPoint is null)
                 {
                     _remoteEndPoint = Interop.HttpApi.GetRemoteEndPoint(RequestBuffer, OriginalBlobAddress);
                 }
@@ -308,7 +308,7 @@ namespace System.Net
         {
             get
             {
-                if (_localEndPoint == null)
+                if (_localEndPoint is null)
                 {
                     _localEndPoint = Interop.HttpApi.GetLocalEndPoint(RequestBuffer, OriginalBlobAddress);
                 }
@@ -321,7 +321,7 @@ namespace System.Net
         internal void Close()
         {
             RequestContextBase? memoryBlob = _memoryBlob;
-            if (memoryBlob != null)
+            if (memoryBlob is not null)
             {
                 memoryBlob.Close();
                 _memoryBlob = null;
@@ -494,12 +494,12 @@ namespace System.Net
                         }
                         else if (statusCode == Interop.HttpApi.ERROR_SUCCESS)
                         {
-                            if (pClientCertInfo != null)
+                            if (pClientCertInfo is not null)
                             {
                                 if (NetEventSource.Log.IsEnabled())
                                     NetEventSource.Info(this, $"pClientCertInfo:{(IntPtr)pClientCertInfo} pClientCertInfo->CertFlags: {pClientCertInfo->CertFlags} pClientCertInfo->CertEncodedSize: {pClientCertInfo->CertEncodedSize} pClientCertInfo->pCertEncoded: {(IntPtr)pClientCertInfo->pCertEncoded} pClientCertInfo->Token: {(IntPtr)pClientCertInfo->Token} pClientCertInfo->CertDeniedByMapper: {pClientCertInfo->CertDeniedByMapper}");
 
-                                if (pClientCertInfo->pCertEncoded != null)
+                                if (pClientCertInfo->pCertEncoded is not null)
                                 {
                                     try
                                     {
@@ -534,7 +534,7 @@ namespace System.Net
         {
             get
             {
-                if (_requestUri == null)
+                if (_requestUri is null)
                 {
                     _requestUri = HttpListenerRequestUriBuilder.GetRequestUri(
                         _rawUrl!, RequestScheme, _cookedUrlHost!, _cookedUrlPath!, _cookedUrlQuery!);

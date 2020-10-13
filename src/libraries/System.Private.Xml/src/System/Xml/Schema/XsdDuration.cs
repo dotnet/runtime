@@ -143,7 +143,7 @@ namespace System.Xml.Schema
         {
             XsdDuration result;
             Exception? exception = TryParse(s, durationType, out result);
-            if (exception != null)
+            if (exception is not null)
             {
                 throw exception;
             }
@@ -244,7 +244,7 @@ namespace System.Xml.Schema
         {
             TimeSpan result;
             Exception? exception = TryToTimeSpan(durationType, out result);
-            if (exception != null)
+            if (exception is not null)
             {
                 throw exception;
             }
@@ -465,7 +465,7 @@ namespace System.Xml.Schema
             if (s[pos++] != 'P') goto InvalidFormat;
 
             errorCode = TryParseDigits(s, ref pos, false, out value, out numDigits);
-            if (errorCode != null) goto Error;
+            if (errorCode is not null) goto Error;
 
             if (pos >= length) goto InvalidFormat;
 
@@ -478,7 +478,7 @@ namespace System.Xml.Schema
                 if (++pos == length) goto Done;
 
                 errorCode = TryParseDigits(s, ref pos, false, out value, out numDigits);
-                if (errorCode != null) goto Error;
+                if (errorCode is not null) goto Error;
 
                 if (pos >= length) goto InvalidFormat;
             }
@@ -492,7 +492,7 @@ namespace System.Xml.Schema
                 if (++pos == length) goto Done;
 
                 errorCode = TryParseDigits(s, ref pos, false, out value, out numDigits);
-                if (errorCode != null) goto Error;
+                if (errorCode is not null) goto Error;
 
                 if (pos >= length) goto InvalidFormat;
             }
@@ -506,7 +506,7 @@ namespace System.Xml.Schema
                 if (++pos == length) goto Done;
 
                 errorCode = TryParseDigits(s, ref pos, false, out value, out numDigits);
-                if (errorCode != null) goto Error;
+                if (errorCode is not null) goto Error;
 
                 if (pos >= length) goto InvalidFormat;
             }
@@ -517,7 +517,7 @@ namespace System.Xml.Schema
 
                 pos++;
                 errorCode = TryParseDigits(s, ref pos, false, out value, out numDigits);
-                if (errorCode != null) goto Error;
+                if (errorCode is not null) goto Error;
 
                 if (pos >= length) goto InvalidFormat;
 
@@ -530,7 +530,7 @@ namespace System.Xml.Schema
                     if (++pos == length) goto Done;
 
                     errorCode = TryParseDigits(s, ref pos, false, out value, out numDigits);
-                    if (errorCode != null) goto Error;
+                    if (errorCode is not null) goto Error;
 
                     if (pos >= length) goto InvalidFormat;
                 }
@@ -544,7 +544,7 @@ namespace System.Xml.Schema
                     if (++pos == length) goto Done;
 
                     errorCode = TryParseDigits(s, ref pos, false, out value, out numDigits);
-                    if (errorCode != null) goto Error;
+                    if (errorCode is not null) goto Error;
 
                     if (pos >= length) goto InvalidFormat;
                 }
@@ -557,7 +557,7 @@ namespace System.Xml.Schema
                     result._seconds = value;
 
                     errorCode = TryParseDigits(s, ref pos, true, out value, out numDigits);
-                    if (errorCode != null) goto Error;
+                    if (errorCode is not null) goto Error;
 
                     if (numDigits == 0)
                     { //If there are no digits after the decimal point, assume 0

@@ -22,10 +22,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal Assembly GetAssembly()
         {
-            if (_assembly == null)
+            if (_assembly is null)
             {
                 _assembly = FormatterServices.LoadAssemblyFromStringNoThrow(_assemblyString);
-                if (_assembly == null)
+                if (_assembly is null)
                 {
                     throw new SerializationException(SR.Format(SR.Serialization_AssemblyNotFound, _assemblyString));
                 }

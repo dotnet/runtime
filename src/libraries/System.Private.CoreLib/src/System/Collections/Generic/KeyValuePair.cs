@@ -25,14 +25,14 @@ namespace System.Collections.Generic
 
             s.Append('[');
 
-            if (key != null)
+            if (key is not null)
             {
                 s.Append(key.ToString());
             }
 
             s.Append(", ");
 
-            if (value != null)
+            if (value is not null)
             {
                 s.Append(value.ToString());
             }

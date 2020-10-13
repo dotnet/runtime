@@ -57,7 +57,7 @@ namespace System
             {
                 // Check to see if the target object is still alive.
                 object? targetObj = _weakTargetObj.Target;
-                if (targetObj == null)
+                if (targetObj is null)
                 {
                     // The target object is dead, so this callback object is no longer needed.
                     _weakTargetObj.Free();
@@ -67,7 +67,7 @@ namespace System
                 // Execute the callback method.
                 try
                 {
-                    Debug.Assert(_callback1 != null);
+                    Debug.Assert(_callback1 is not null);
                     if (!_callback1(targetObj))
                     {
                         // If the callback returns false, this callback object is no longer needed.
@@ -88,7 +88,7 @@ namespace System
                 // Execute the callback method.
                 try
                 {
-                    Debug.Assert(_callback0 != null);
+                    Debug.Assert(_callback0 is not null);
                     if (!_callback0())
                     {
                         // If the callback returns false, this callback object is no longer needed.

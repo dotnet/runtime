@@ -51,7 +51,7 @@ namespace System.Xml.Xsl.Xslt
 
         public void SetFocus(QilIterator? current)
         {
-            if (current != null)
+            if (current is not null)
             {
                 _focusType = SingletonFocusType.Iterator;
                 _current = current;
@@ -77,7 +77,7 @@ namespace System.Xml.Xsl.Xslt
                 case SingletonFocusType.InitialDocumentNode: return _f.Root(_f.XmlContext());
                 case SingletonFocusType.InitialContextNode: return _f.XmlContext();
                 default:
-                    Debug.Assert(_focusType == SingletonFocusType.Iterator && _current != null, "Unexpected singleton focus type");
+                    Debug.Assert(_focusType == SingletonFocusType.Iterator && _current is not null, "Unexpected singleton focus type");
                     return _current;
             }
         }
@@ -134,19 +134,19 @@ namespace System.Xml.Xsl.Xslt
 
         public QilNode GetCurrent()
         {
-            Debug.Assert(_current != null, "Naked current() is not expected in this function");
+            Debug.Assert(_current is not null, "Naked current() is not expected in this function");
             return _current;
         }
 
         public QilNode GetPosition()
         {
-            Debug.Assert(_position != null, "Naked position() is not expected in this function");
+            Debug.Assert(_position is not null, "Naked position() is not expected in this function");
             return _position;
         }
 
         public QilNode GetLast()
         {
-            Debug.Assert(_last != null, "Naked last() is not expected in this function");
+            Debug.Assert(_last is not null, "Naked last() is not expected in this function");
             return _last;
         }
     }
@@ -170,7 +170,7 @@ namespace System.Xml.Xsl.Xslt
 
         public bool IsFocusSet
         {
-            get { return _current != null; }
+            get { return _current is not null; }
         }
 
         public QilNode? GetCurrent()
@@ -185,7 +185,7 @@ namespace System.Xml.Xsl.Xslt
 
         public QilNode GetLast()
         {
-            if (_last == null)
+            if (_last is null)
             {
                 // Create a let that will be fixed up later in ConstructLoop or by LastFixupVisitor
                 _last = _f.Let(_f.Double(0));
@@ -195,7 +195,7 @@ namespace System.Xml.Xsl.Xslt
 
         public void EnsureCache()
         {
-            if (_cached == null)
+            if (_cached is null)
             {
                 _cached = _f.Let(_current!.Binding!);
                 _current.Binding = _cached;
@@ -204,7 +204,7 @@ namespace System.Xml.Xsl.Xslt
 
         public void Sort(QilNode? sortKeys)
         {
-            if (sortKeys != null)
+            if (sortKeys is not null)
             {
                 // If sorting is required, cache the input node-set to support last() within sort key expressions
                 EnsureCache();
@@ -216,7 +216,7 @@ namespace System.Xml.Xsl.Xslt
         public QilLoop ConstructLoop(QilNode body)
         {
             QilLoop result;
-            if (_last != null)
+            if (_last is not null)
             {
                 // last() encountered either in the sort keys or in the body of the current loop
                 EnsureCache();
@@ -224,11 +224,11 @@ namespace System.Xml.Xsl.Xslt
             }
 
             result = _f.BaseFactory.Loop(_current!, body);
-            if (_last != null)
+            if (_last is not null)
             {
                 result = _f.BaseFactory.Loop(_last, result);
             }
-            if (_cached != null)
+            if (_cached is not null)
             {
                 result = _f.BaseFactory.Loop(_cached, result);
             }

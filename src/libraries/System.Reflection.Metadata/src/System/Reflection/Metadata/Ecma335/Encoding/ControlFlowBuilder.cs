@@ -212,7 +212,7 @@ namespace System.Reflection.Metadata.Ecma335
             ValidateLabel(handlerStart, nameof(handlerStart));
             ValidateLabel(handlerEnd, nameof(handlerEnd));
 
-            if (_lazyExceptionHandlers == null)
+            if (_lazyExceptionHandlers is null)
             {
                 _lazyExceptionHandlers = ImmutableArray.CreateBuilder<ExceptionHandlerInfo>();
             }
@@ -319,7 +319,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal void SerializeExceptionTable(BlobBuilder builder)
         {
-            if (_lazyExceptionHandlers == null || _lazyExceptionHandlers.Count == 0)
+            if (_lazyExceptionHandlers is null || _lazyExceptionHandlers.Count == 0)
             {
                 return;
             }
@@ -365,7 +365,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         private bool HasSmallExceptionRegions()
         {
-            Debug.Assert(_lazyExceptionHandlers != null);
+            Debug.Assert(_lazyExceptionHandlers is not null);
 
             if (!ExceptionRegionEncoder.IsSmallRegionCount(_lazyExceptionHandlers.Count))
             {

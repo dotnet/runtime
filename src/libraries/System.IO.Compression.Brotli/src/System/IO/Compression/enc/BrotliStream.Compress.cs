@@ -111,7 +111,7 @@ namespace System.IO.Compression
             EnsureNotDisposed();
             if (_mode == CompressionMode.Compress)
             {
-                if (_encoder._state == null || _encoder._state.IsClosed)
+                if (_encoder._state is null || _encoder._state.IsClosed)
                     return;
 
                 OperationStatus lastResult = OperationStatus.DestinationTooSmall;
@@ -146,7 +146,7 @@ namespace System.IO.Compression
             AsyncOperationStarting();
             try
             {
-                if (_encoder._state == null || _encoder._state.IsClosed)
+                if (_encoder._state is null || _encoder._state.IsClosed)
                     return;
 
                 OperationStatus lastResult = OperationStatus.DestinationTooSmall;

@@ -51,7 +51,7 @@ namespace System.Data.OleDb
 
             // verify the existance of the table in the data set
             DataTable? metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections];
-            if (metaDataCollectionsTable == null)
+            if (metaDataCollectionsTable is null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.MetaDataCollections);
             }
@@ -61,7 +61,7 @@ namespace System.Data.OleDb
 
             // verify the existance of the table in the data set
             DataTable? restrictionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions];
-            if (restrictionsTable != null)
+            if (restrictionsTable is not null)
             {
                 // copy the table filtering out any rows that don't apply to the current version of the provider
                 restrictionsTable = CloneAndFilterCollection(DbMetaDataCollectionNames.Restrictions, null);
@@ -83,7 +83,7 @@ namespace System.Data.OleDb
                 throw ADP.InvalidXmlMissingColumn(DbMetaDataCollectionNames.MetaDataCollections, _collectionName);
             }
             DataColumn? restrictionCollectionName = null;
-            if (restrictionsTable != null)
+            if (restrictionsTable is not null)
             {
                 restrictionCollectionName = restrictionsTable.Columns[_collectionName];
                 if ((null == restrictionCollectionName) || (typeof(string) != restrictionCollectionName.DataType))
@@ -125,7 +125,7 @@ namespace System.Data.OleDb
 
                     // does the provider support the necessary schema rowset
                     bool isSchemaRowsetSupported = false;
-                    if (schemaSupport != null)
+                    if (schemaSupport is not null)
                     {
                         for (int i = 0; i < schemaSupport.Length; i++)
                         {
@@ -140,7 +140,7 @@ namespace System.Data.OleDb
                     if (isSchemaRowsetSupported == false)
                     {
                         // but first delete any related restrictions
-                        if (restrictionsTable != null)
+                        if (restrictionsTable is not null)
                         {
                             foreach (DataRow restriction in restrictionsTable.Rows)
                             {
@@ -167,7 +167,7 @@ namespace System.Data.OleDb
             CollectionDataSet.Tables.Remove(CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]!);
             CollectionDataSet.Tables.Add(metaDataCollectionsTable);
 
-            if (restrictionsTable != null)
+            if (restrictionsTable is not null)
             {
                 CollectionDataSet.Tables.Remove(CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions]!);
                 CollectionDataSet.Tables.Add(restrictionsTable);
@@ -190,7 +190,7 @@ namespace System.Data.OleDb
         {
             // verify that the data source information table is in the data set
             DataTable? dataSourceInformationTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataSourceInformation];
-            if (dataSourceInformationTable == null)
+            if (dataSourceInformationTable is null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.DataSourceInformation);
             }
@@ -209,13 +209,13 @@ namespace System.Data.OleDb
             string? catalogSeparatorPattern = internalConnection.GetLiteralInfo(ODB.DBLITERAL_CATALOG_SEPARATOR);
             string? schemaSeparatorPattern = internalConnection.GetLiteralInfo(ODB.DBLITERAL_SCHEMA_SEPARATOR);
 
-            if (catalogSeparatorPattern != null)
+            if (catalogSeparatorPattern is not null)
             {
                 StringBuilder compositeSeparatorPattern = new StringBuilder();
                 StringBuilder patternEscaped = new StringBuilder();
                 ADP.EscapeSpecialCharacters(catalogSeparatorPattern, patternEscaped);
                 compositeSeparatorPattern.Append(patternEscaped.ToString());
-                if ((schemaSeparatorPattern != null) && (schemaSeparatorPattern != catalogSeparatorPattern))
+                if ((schemaSeparatorPattern is not null) && (schemaSeparatorPattern != catalogSeparatorPattern))
                 {
                     compositeSeparatorPattern.Append('|');
                     patternEscaped.Length = 0;
@@ -224,7 +224,7 @@ namespace System.Data.OleDb
                 }
                 dataSourceInformation[DbMetaDataColumnNames.CompositeIdentifierSeparatorPattern] = compositeSeparatorPattern.ToString();
             }
-            else if (schemaSeparatorPattern != null)
+            else if (schemaSeparatorPattern is not null)
             {
                 StringBuilder patternEscaped = new StringBuilder();
                 ADP.EscapeSpecialCharacters(schemaSeparatorPattern, patternEscaped);
@@ -235,7 +235,7 @@ namespace System.Data.OleDb
             // update the DataSourceProductName
             object? property;
             property = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_DBMSNAME);
-            if (property != null)
+            if (property is not null)
             {
                 dataSourceInformation[DbMetaDataColumnNames.DataSourceProductName] = (string)property;
             }
@@ -251,7 +251,7 @@ namespace System.Data.OleDb
 
             property = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_GROUPBY);
             GroupByBehavior groupByBehavior = GroupByBehavior.Unknown;
-            if (property != null)
+            if (property is not null)
             {
                 switch ((int)property)
                 {
@@ -278,16 +278,16 @@ namespace System.Data.OleDb
             SetIdentifierCase(DbMetaDataColumnNames.QuotedIdentifierCase, ODB.DBPROP_QUOTEDIDENTIFIERCASE, dataSourceInformation, connection);
 
             property = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_ORDERBYCOLUNSINSELECT);
-            if (property != null)
+            if (property is not null)
             {
                 dataSourceInformation[DbMetaDataColumnNames.OrderByColumnsInSelect] = (bool)property;
             }
 
             DataTable? infoLiterals = internalConnection.BuildInfoLiterals();
-            if (infoLiterals != null)
+            if (infoLiterals is not null)
             {
                 DataRow[] tableNameRow = infoLiterals.Select("Literal = " + ODB.DBLITERAL_TABLE_NAME.ToString(CultureInfo.InvariantCulture));
-                if (tableNameRow != null)
+                if (tableNameRow is not null)
                 {
                     object invalidCharsObject = tableNameRow[0]["InvalidChars"];
                     if (invalidCharsObject.GetType() == typeof(string))
@@ -315,11 +315,11 @@ namespace System.Data.OleDb
             string quoteSuffix;
             connection.GetLiteralQuotes(ADP.GetSchema, out quotePrefix, out quoteSuffix);
 
-            if (quotePrefix != null)
+            if (quotePrefix is not null)
             {
                 // if the quote suffix is null assume that it is the same as the prefix (See OLEDB spec
                 // IDBInfo::GetLiteralInfo DBLITERAL_QUOTE_SUFFIX.)
-                if (quoteSuffix == null)
+                if (quoteSuffix is null)
                 {
                     quoteSuffix = quotePrefix;
                 }
@@ -354,7 +354,7 @@ namespace System.Data.OleDb
         {
             // verify the existance of the table in the data set
             DataTable? dataTypesTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataTypes];
-            if (dataTypesTable == null)
+            if (dataTypesTable is null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.DataTypes);
             }
@@ -428,7 +428,7 @@ namespace System.Data.OleDb
                 newRow[providerDbType] = nativeType.enumOleDbType;
 
                 // searchable has to be special cased becasue it is not an eaxct mapping
-                if ((isSearchable != null) && (isSearchableWithLike != null) && (searchable != null))
+                if ((isSearchable is not null) && (isSearchableWithLike is not null) && (searchable is not null))
                 {
                     newRow[isSearchable] = DBNull.Value;
                     newRow[isSearchableWithLike] = DBNull.Value;
@@ -534,7 +534,7 @@ namespace System.Data.OleDb
                         // string tpyes
                         object?[]? mungedRestrictions = restrictions;
                         ;
-                        if (restrictions != null)
+                        if (restrictions is not null)
                         {
                             //verify that there are not too many restrictions
                             DataTable metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]!;
@@ -563,7 +563,7 @@ namespace System.Data.OleDb
 
                             if ((collectionName == OleDbMetaDataCollectionNames.Indexes) &&
                                 (restrictions.Length >= indexRestrictionTypeSlot + 1) &&
-                                (restrictions[indexRestrictionTypeSlot] != null))
+                                (restrictions[indexRestrictionTypeSlot] is not null))
                             {
                                 mungedRestrictions = new object[restrictions.Length];
                                 for (int j = 0; j < restrictions.Length; j++)
@@ -607,7 +607,7 @@ namespace System.Data.OleDb
 
                             if ((collectionName == OleDbMetaDataCollectionNames.Procedures) &&
                                 (restrictions.Length >= procedureRestrictionTypeSlot + 1) &&
-                                (restrictions[procedureRestrictionTypeSlot] != null))
+                                (restrictions[procedureRestrictionTypeSlot] is not null))
                             {
                                 mungedRestrictions = new object[restrictions.Length];
                                 for (int j = 0; j < restrictions.Length; j++)
@@ -648,7 +648,7 @@ namespace System.Data.OleDb
                 }
             }
 
-            if (resultTable == null)
+            if (resultTable is null)
             {
                 throw ADP.UnableToBuildCollection(collectionName);
             }
@@ -660,7 +660,7 @@ namespace System.Data.OleDb
         {
             object? property = connection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, propertyID);
             IdentifierCase identifierCase = IdentifierCase.Unknown;
-            if (property != null)
+            if (property is not null)
             {
                 int propertyValue = (int)property;
                 switch (propertyValue)

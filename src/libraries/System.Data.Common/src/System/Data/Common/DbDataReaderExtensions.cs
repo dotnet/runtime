@@ -74,12 +74,12 @@ namespace System.Data.Common
         {
             var columnSchema = new List<DbColumn>();
             DataTable? schemaTable = reader.GetSchemaTable();
-            if (schemaTable != null)
+            if (schemaTable is not null)
             {
                 DataColumnCollection schemaTableColumns = schemaTable.Columns;
                 foreach (DataRow row in schemaTable.Rows)
                 {
-                    Debug.Assert(row != null);
+                    Debug.Assert(row is not null);
                     columnSchema.Add(new DataRowDbColumn(row, schemaTableColumns));
                 }
             }

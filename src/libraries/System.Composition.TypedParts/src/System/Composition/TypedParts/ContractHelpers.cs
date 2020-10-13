@@ -36,7 +36,7 @@ namespace System.Composition.TypedParts
             foreach (var attr in attributes)
             {
                 var ia = attr as ImportAttribute;
-                if (ia != null)
+                if (ia is not null)
                 {
                     importedContract = new CompositionContract(memberType, ia.ContractName);
                     allowDefault = ia.AllowDefault;
@@ -45,7 +45,7 @@ namespace System.Composition.TypedParts
                 else
                 {
                     var ima = attr as ImportManyAttribute;
-                    if (ima != null)
+                    if (ima is not null)
                     {
                         importMetadata = importMetadata ?? new Dictionary<string, object>();
                         importMetadata.Add(ImportManyImportMetadataConstraintName, true);
@@ -55,7 +55,7 @@ namespace System.Composition.TypedParts
                     else
                     {
                         var imca = attr as ImportMetadataConstraintAttribute;
-                        if (imca != null)
+                        if (imca is not null)
                         {
                             importMetadata = importMetadata ?? new Dictionary<string, object>();
                             importMetadata.Add(imca.Name, imca.Value);
@@ -65,7 +65,7 @@ namespace System.Composition.TypedParts
 
                 var attrType = attr.GetType();
                 // Note, we don't support ReflectionContext in this scenario
-                if (attrType.GetTypeInfo().GetCustomAttribute<MetadataAttributeAttribute>(true) != null)
+                if (attrType.GetTypeInfo().GetCustomAttribute<MetadataAttributeAttribute>(true) is not null)
                 {
                     // We don't coalesce to collections here the way export metadata does
                     foreach (var prop in attrType
@@ -84,7 +84,7 @@ namespace System.Composition.TypedParts
                 throw new CompositionFailedException(message);
             }
 
-            if (importMetadata != null)
+            if (importMetadata is not null)
             {
                 importedContract = new CompositionContract(importedContract.ContractType, importedContract.ContractName, importMetadata);
             }

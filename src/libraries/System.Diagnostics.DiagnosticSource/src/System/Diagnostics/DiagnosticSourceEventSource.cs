@@ -424,7 +424,7 @@ namespace System.Diagnostics
         // trivial helper to allow you to join two strings the first of which can be null.
         private static string NewLineSeparate(string? str1, string str2)
         {
-            Debug.Assert(str2 != null);
+            Debug.Assert(str2 is not null);
             if (string.IsNullOrEmpty(str1))
                 return str2;
             return str1 + "\n" + str2;
@@ -492,7 +492,7 @@ namespace System.Diagnostics
             public static void CreateFilterAndTransformList(ref FilterAndTransform? specList, string? filterAndPayloadSpecs, DiagnosticSourceEventSource eventSource)
             {
                 DestroyFilterAndTransformList(ref specList, eventSource);        // Stop anything that was on before.
-                if (filterAndPayloadSpecs == null)
+                if (filterAndPayloadSpecs is null)
                     filterAndPayloadSpecs = "";
 
                 // Points just beyond the last point in the string that has yet to be parsed. Thus we start with the whole string.
@@ -528,7 +528,7 @@ namespace System.Diagnostics
                         break;
                 }
 #if EVENTSOURCE_ACTIVITY_SUPPORT
-                if (eventSource._activitySourceSpecs != null)
+                if (eventSource._activitySourceSpecs is not null)
                 {
                     NormalizeActivitySourceSpecsList(eventSource);
                     CreateActivityListener(eventSource);
@@ -551,7 +551,7 @@ namespace System.Diagnostics
 
                 var curSpec = specList;
                 specList = null;            // Null out the list
-                while (curSpec != null)     // Dispose everything in the list.
+                while (curSpec is not null)     // Dispose everything in the list.
                 {
                     curSpec.Dispose();
                     curSpec = curSpec.Next;
@@ -565,7 +565,7 @@ namespace System.Diagnostics
             /// </summary>
             public FilterAndTransform(string filterAndPayloadSpec, int startIdx, int endIdx, DiagnosticSourceEventSource eventSource, FilterAndTransform? next)
             {
-                Debug.Assert(filterAndPayloadSpec != null && startIdx >= 0 && startIdx <= endIdx && endIdx <= filterAndPayloadSpec.Length);
+                Debug.Assert(filterAndPayloadSpec is not null && startIdx >= 0 && startIdx <= endIdx && endIdx <= filterAndPayloadSpec.Length);
                 Next = next;
                 _eventSource = eventSource;
 
@@ -639,7 +639,7 @@ namespace System.Diagnostics
                 }
 
                 Action<string, string, IEnumerable<KeyValuePair<string, string?>>>? writeEvent = null;
-                if (activityName != null && activityName.Contains("Activity"))
+                if (activityName is not null && activityName.Contains("Activity"))
                 {
 #if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
                     writeEvent = activityName switch
@@ -654,11 +654,11 @@ namespace System.Diagnostics
                     };
 #endif
 
-                    if (writeEvent == null)
+                    if (writeEvent is null)
                         _eventSource.Message("DiagnosticSource: Could not find Event to log Activity " + activityName);
                 }
 
-                if (writeEvent == null)
+                if (writeEvent is null)
                 {
 #if !NO_EVENTSOURCE_COMPLEX_TYPE_SUPPORT
                     writeEvent = _eventSource.Event;
@@ -674,18 +674,18 @@ namespace System.Diagnostics
                 // to the EventSource.
                 _diagnosticsListenersSubscription = DiagnosticListener.AllListeners.Subscribe(new CallbackObserver<DiagnosticListener>(delegate (DiagnosticListener newListener)
                 {
-                    if (listenerNameFilter == null || listenerNameFilter == newListener.Name)
+                    if (listenerNameFilter is null || listenerNameFilter == newListener.Name)
                     {
                         _eventSource.NewDiagnosticListener(newListener.Name);
                         Predicate<string>? eventNameFilterPredicate = null;
-                        if (eventNameFilter != null)
+                        if (eventNameFilter is not null)
                             eventNameFilterPredicate = (string eventName) => eventNameFilter == eventName;
 
                         var subscription = newListener.Subscribe(new CallbackObserver<KeyValuePair<string, object?>>(delegate (KeyValuePair<string, object?> evnt)
                         {
                             // The filter given to the DiagnosticSource may not work if users don't is 'IsEnabled' as expected.
                             // Thus we look for any events that may have snuck through and filter them out before forwarding.
-                            if (eventNameFilter != null && eventNameFilter != evnt.Key)
+                            if (eventNameFilter is not null && eventNameFilter != evnt.Key)
                                 return;
 
                             var outputArgs = this.Morph(evnt.Value);
@@ -847,9 +847,9 @@ namespace System.Diagnostics
                 ActivitySamplingResult specificResult = ActivitySamplingResult.None;
                 ActivitySamplingResult wildResult = ActivitySamplingResult.None;
 
-                while (list != null)
+                while (list is not null)
                 {
-                    if (list.ActivityName == null || list.ActivityName == activityName)
+                    if (list.ActivityName is null || list.ActivityName == activityName)
                     {
                         if (activitySourceName == list.SourceName)
                         {
@@ -888,8 +888,8 @@ namespace System.Diagnostics
 
             internal static void CreateActivityListener(DiagnosticSourceEventSource eventSource)
             {
-                Debug.Assert(eventSource._activityListener == null);
-                Debug.Assert(eventSource._activitySourceSpecs != null);
+                Debug.Assert(eventSource._activityListener is null);
+                Debug.Assert(eventSource._activitySourceSpecs is not null);
 
                 eventSource._activityListener = new ActivityListener();
 
@@ -899,7 +899,7 @@ namespace System.Diagnostics
                 eventSource._activityListener.ShouldListenTo = (activitySource) =>
                 {
                     FilterAndTransform? list = eventSource._activitySourceSpecs;
-                    while (list != null)
+                    while (list is not null)
                     {
                         if (activitySource.Name == list.SourceName || list.SourceName == "*")
                         {
@@ -915,11 +915,11 @@ namespace System.Diagnostics
                 eventSource._activityListener.ActivityStarted = activity =>
                 {
                     FilterAndTransform? list = eventSource._activitySourceSpecs;
-                    while (list != null)
+                    while (list is not null)
                     {
                         if ((list.Events & ActivityEvents.ActivityStart) != 0 &&
                             (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
-                            (list.ActivityName == null || list.ActivityName == activity.OperationName))
+                            (list.ActivityName is null || list.ActivityName == activity.OperationName))
                         {
                             eventSource.ActivityStart(activity.Source.Name, activity.OperationName, list.Morph(activity));
                             return;
@@ -932,11 +932,11 @@ namespace System.Diagnostics
                 eventSource._activityListener.ActivityStopped = activity =>
                 {
                     FilterAndTransform? list = eventSource._activitySourceSpecs;
-                    while (list != null)
+                    while (list is not null)
                     {
                         if ((list.Events & ActivityEvents.ActivityStop) != 0 &&
                             (activity.Source.Name == list.SourceName || list.SourceName == "*") &&
-                            (list.ActivityName == null || list.ActivityName == activity.OperationName))
+                            (list.ActivityName is null || list.ActivityName == activity.OperationName))
                         {
                             eventSource.ActivityStop(activity.Source.Name, activity.OperationName, list.Morph(activity));
                             return;
@@ -953,8 +953,8 @@ namespace System.Diagnostics
             // This will give more priority to the specific nodes over the wildcards.
             internal static void NormalizeActivitySourceSpecsList(DiagnosticSourceEventSource eventSource)
             {
-                Debug.Assert(eventSource._activityListener == null);
-                Debug.Assert(eventSource._activitySourceSpecs != null);
+                Debug.Assert(eventSource._activityListener is null);
+                Debug.Assert(eventSource._activitySourceSpecs is not null);
 
                 FilterAndTransform? list = eventSource._activitySourceSpecs;
 
@@ -964,30 +964,30 @@ namespace System.Diagnostics
                 FilterAndTransform? firstWildcardList = null;
                 FilterAndTransform? lastWildcardList = null;
 
-                while (list != null)
+                while (list is not null)
                 {
                     if (list.SourceName == "*")
                     {
-                        if (firstWildcardList == null)
+                        if (firstWildcardList is null)
                         {
                             firstWildcardList = lastWildcardList = list;
                         }
                         else
                         {
-                            Debug.Assert(lastWildcardList != null);
+                            Debug.Assert(lastWildcardList is not null);
                             lastWildcardList.Next = list;
                             lastWildcardList = list;
                         }
                     }
                     else
                     {
-                        if (firstSpecificList == null)
+                        if (firstSpecificList is null)
                         {
                             firstSpecificList = lastSpecificList = list;
                         }
                         else
                         {
-                            Debug.Assert(lastSpecificList != null);
+                            Debug.Assert(lastSpecificList is not null);
                             lastSpecificList.Next = list;
                             lastSpecificList = list;
                         }
@@ -996,13 +996,13 @@ namespace System.Diagnostics
                     list = list.Next;
                 }
 
-                if (firstSpecificList == null || firstWildcardList == null)
+                if (firstSpecificList is null || firstWildcardList is null)
                 {
-                    Debug.Assert(firstSpecificList != null || firstWildcardList != null);
+                    Debug.Assert(firstSpecificList is not null || firstWildcardList is not null);
                     return; // list shouldn't be chanaged.
                 }
 
-                Debug.Assert(lastWildcardList != null && lastSpecificList != null);
+                Debug.Assert(lastWildcardList is not null && lastSpecificList is not null);
 
                 lastSpecificList.Next = firstWildcardList;
                 lastWildcardList.Next = null;
@@ -1013,17 +1013,17 @@ namespace System.Diagnostics
 
             private void Dispose()
             {
-                if (_diagnosticsListenersSubscription != null)
+                if (_diagnosticsListenersSubscription is not null)
                 {
                     _diagnosticsListenersSubscription.Dispose();
                     _diagnosticsListenersSubscription = null;
                 }
 
-                if (_liveSubscriptions != null)
+                if (_liveSubscriptions is not null)
                 {
                     Subscriptions? subscr = _liveSubscriptions;
                     _liveSubscriptions = null;
-                    while (subscr != null)
+                    while (subscr is not null)
                     {
                         subscr.Subscription.Dispose();
                         subscr = subscr.Next;
@@ -1035,7 +1035,7 @@ namespace System.Diagnostics
             {
                 // Transform the args into a bag of key-value strings.
                 var outputArgs = new List<KeyValuePair<string, string?>>();
-                if (args != null)
+                if (args is not null)
                 {
                     if (!_noImplicitTransforms)
                     {
@@ -1045,11 +1045,11 @@ namespace System.Diagnostics
 
                         // First check the one-element cache _firstImplicitTransformsEntry
                         ImplicitTransformEntry? cacheEntry = _firstImplicitTransformsEntry;
-                        if (cacheEntry != null && cacheEntry.Type == argType)
+                        if (cacheEntry is not null && cacheEntry.Type == argType)
                         {
                             implicitTransforms = cacheEntry.Transforms;     // Yeah we hit the cache.
                         }
-                        else if (cacheEntry == null)
+                        else if (cacheEntry is null)
                         {
                             // _firstImplicitTransformsEntry is empty, we should fill it.
                             // Note that it is OK that two threads may race and both call MakeImplicitTransforms on their own
@@ -1064,7 +1064,7 @@ namespace System.Diagnostics
                             // In that case you will probably need many types
                             // Note currently we don't limit the cache size, but it is limited by the number of
                             // distinct types of objects passed to DiagnosticSource.Write.
-                            if (_implicitTransformsTable == null)
+                            if (_implicitTransformsTable is null)
                             {
                                 Interlocked.CompareExchange(ref _implicitTransformsTable,
                                     new ConcurrentDictionary<Type, TransformSpec?>(1, 8), null);
@@ -1073,19 +1073,19 @@ namespace System.Diagnostics
                         }
 
                         // implicitTransformas now fetched from cache or constructed, use it to Fetch all the implicit fields.
-                        if (implicitTransforms != null)
+                        if (implicitTransforms is not null)
                         {
-                            for (TransformSpec? serializableArg = implicitTransforms; serializableArg != null; serializableArg = serializableArg.Next)
+                            for (TransformSpec? serializableArg = implicitTransforms; serializableArg is not null; serializableArg = serializableArg.Next)
                                 outputArgs.Add(serializableArg.Morph(args));
                         }
                     }
 
-                    if (_explicitTransforms != null)
+                    if (_explicitTransforms is not null)
                     {
-                        for (TransformSpec? explicitTransform = _explicitTransforms; explicitTransform != null; explicitTransform = explicitTransform.Next)
+                        for (TransformSpec? explicitTransform = _explicitTransforms; explicitTransform is not null; explicitTransform = explicitTransform.Next)
                         {
                             var keyValue = explicitTransform.Morph(args);
-                            if (keyValue.Value != null)
+                            if (keyValue.Value is not null)
                                 outputArgs.Add(keyValue);
                         }
                     }
@@ -1116,7 +1116,7 @@ namespace System.Diagnostics
                 foreach (PropertyInfo property in curTypeInfo.DeclaredProperties)
                 {
                     // prevent TransformSpec from attempting to implicitly transform index properties
-                    if (property.GetMethod == null || property.GetMethod!.GetParameters().Length > 0)
+                    if (property.GetMethod is null || property.GetMethod!.GetParameters().Length > 0)
                         continue;
                     newSerializableArgs = new TransformSpec(property.Name, 0, property.Name.Length, newSerializableArgs);
                 }
@@ -1127,7 +1127,7 @@ namespace System.Diagnostics
             private static TransformSpec? Reverse(TransformSpec? list)
             {
                 TransformSpec? ret = null;
-                while (list != null)
+                while (list is not null)
                 {
                     var next = list.Next;
                     list.Next = ret;
@@ -1168,7 +1168,7 @@ namespace System.Diagnostics
             /// </summary>
             public TransformSpec(string transformSpec, int startIdx, int endIdx, TransformSpec? next = null)
             {
-                Debug.Assert(transformSpec != null && startIdx >= 0 && startIdx < endIdx && endIdx <= transformSpec.Length);
+                Debug.Assert(transformSpec is not null && startIdx >= 0 && startIdx < endIdx && endIdx <= transformSpec.Length);
                 Next = next;
 
                 // Pick off the Var=
@@ -1191,7 +1191,7 @@ namespace System.Diagnostics
                     _fetches = new PropertySpec(propertName, _fetches);
 
                     // If the user did not explicitly set a name, it is the last one (first to be processed from the end).
-                    if (_outputName == null)
+                    if (_outputName is null)
                         _outputName = propertName;
 
                     endIdx = dotIdx;    // This works even when LastIndexOf return -1.
@@ -1205,9 +1205,9 @@ namespace System.Diagnostics
             /// </summary>
             public KeyValuePair<string, string?> Morph(object? obj)
             {
-                for (PropertySpec? cur = _fetches; cur != null; cur = cur.Next)
+                for (PropertySpec? cur = _fetches; cur is not null; cur = cur.Next)
                 {
-                    if (obj != null || cur.IsStatic)
+                    if (obj is not null || cur.IsStatic)
                         obj = cur.Fetch(obj);
                 }
 
@@ -1256,9 +1256,9 @@ namespace System.Diagnostics
                 public object? Fetch(object? obj)
                 {
                     PropertyFetch? fetch = _fetchForExpectedType;
-                    Debug.Assert(obj != null || IsStatic);
+                    Debug.Assert(obj is not null || IsStatic);
                     Type? objType = obj?.GetType();
-                    if (fetch == null || fetch.Type != objType)
+                    if (fetch is null || fetch.Type != objType)
                     {
                         _fetchForExpectedType = fetch = PropertyFetch.FetcherForProperty(
                             objType, _propertyName);
@@ -1298,7 +1298,7 @@ namespace System.Diagnostics
                     [DynamicDependency("#ctor(System.Type,System.Reflection.PropertyInfo)", typeof(ValueTypedFetchProperty<,>))]
                     public static PropertyFetch FetcherForProperty(Type? type, string propertyName)
                     {
-                        if (propertyName == null)
+                        if (propertyName is null)
                             return new PropertyFetch(type);     // returns null on any fetch.
                         if (propertyName == CurrentActivityPropertyName)
                         {
@@ -1311,7 +1311,7 @@ namespace System.Diagnostics
 #endif
                         }
 
-                        Debug.Assert(type != null, "Type should only be null for the well-known static fetchers already checked");
+                        Debug.Assert(type is not null, "Type should only be null for the well-known static fetchers already checked");
                         TypeInfo typeInfo = type.GetTypeInfo();
                         if (propertyName == EnumeratePropertyName)
                         {
@@ -1345,7 +1345,7 @@ namespace System.Diagnostics
                         else
                         {
                             PropertyInfo? propertyInfo = typeInfo.GetDeclaredProperty(propertyName);
-                            if (propertyInfo == null)
+                            if (propertyInfo is null)
                             {
                                 Logger.Message($"Property {propertyName} not found on {type}");
                                 return new PropertyFetch(type);

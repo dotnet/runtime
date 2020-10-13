@@ -37,7 +37,7 @@ namespace System.DirectoryServices.AccountManagement
             LoadFilterMappingTable(mappingIndex, s_filterPropertiesTableRaw);
             LoadPropertyMappingTable(mappingIndex, s_propertyMappingTableRaw);
 
-            if (NonPresentAttrDefaultStateMapping == null)
+            if (NonPresentAttrDefaultStateMapping is null)
                 NonPresentAttrDefaultStateMapping = new Dictionary<string, bool>();
 
             for (int i = 0; i < s_presenceStateTable.GetLength(0); i++)
@@ -97,7 +97,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "LoadComputerInfo");
 
-            Debug.Assert(this.ctxBase != null);
+            Debug.Assert(this.ctxBase is not null);
 
             //
             // DNS Domain Name
@@ -166,7 +166,7 @@ namespace System.DirectoryServices.AccountManagement
             Debug.Assert(p.unpersisted == false);
             Debug.Assert(p is UserPrincipal);
 
-            Debug.Assert(p.UnderlyingObject != null);
+            Debug.Assert(p.UnderlyingObject is not null);
 
             DirectoryEntry principalDE = (DirectoryEntry)p.UnderlyingObject;
 
@@ -214,11 +214,11 @@ namespace System.DirectoryServices.AccountManagement
         {
             Debug.Assert(p.fakePrincipal == false);
 
-            Debug.Assert(p != null);
-            Debug.Assert(newPassword != null);  // but it could be an empty string
+            Debug.Assert(p is not null);
+            Debug.Assert(newPassword is not null);  // but it could be an empty string
 
             DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
-            Debug.Assert(de != null);
+            Debug.Assert(de is not null);
 
             SetupPasswordModification(p);
 
@@ -238,12 +238,12 @@ namespace System.DirectoryServices.AccountManagement
             // Shouldn't be being called if this is the case
             Debug.Assert(p.unpersisted == false);
 
-            Debug.Assert(p != null);
-            Debug.Assert(newPassword != null);  // but it could be an empty string
-            Debug.Assert(oldPassword != null);  // but it could be an empty string
+            Debug.Assert(p is not null);
+            Debug.Assert(newPassword is not null);  // but it could be an empty string
+            Debug.Assert(oldPassword is not null);  // but it could be an empty string
 
             DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
-            Debug.Assert(de != null);
+            Debug.Assert(de is not null);
 
             SetupPasswordModification(p);
 
@@ -266,7 +266,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                using (DirectoryEntry deRoot = new DirectoryEntry("LDAP://" + userSuppliedServerName + "/rootDSE", credentials == null ? null : credentials.UserName, credentials == null ? null : credentials.Password, authTypes))
+                using (DirectoryEntry deRoot = new DirectoryEntry("LDAP://" + userSuppliedServerName + "/rootDSE", credentials is null ? null : credentials.UserName, credentials is null ? null : credentials.Password, authTypes))
                 {
                     if (deRoot.Properties["schemaNamingContext"].Count == 0)
                     {
@@ -277,7 +277,7 @@ namespace System.DirectoryServices.AccountManagement
                     SchemaNamingContext = (string)deRoot.Properties["schemaNamingContext"].Value;
                 }
 
-                using (DirectoryEntry deSCN = new DirectoryEntry("LDAP://" + userSuppliedServerName + "/" + SchemaNamingContext, credentials == null ? null : credentials.UserName, credentials == null ? null : credentials.Password, authTypes))
+                using (DirectoryEntry deSCN = new DirectoryEntry("LDAP://" + userSuppliedServerName + "/" + SchemaNamingContext, credentials is null ? null : credentials.UserName, credentials is null ? null : credentials.Password, authTypes))
                 {
                     using (DirectorySearcher dirSearcher = new DirectorySearcher(deSCN))
                     {

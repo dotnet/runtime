@@ -47,7 +47,7 @@ namespace System.Text
 
         public override unsafe int GetCharCount(byte[] bytes, int index, int count, bool flush)
         {
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
@@ -62,7 +62,7 @@ namespace System.Text
             fixed (byte* pBytes = bytes)
             {
                 byte dummyByte;
-                byte* pBuffer = pBytes == null ? &dummyByte : pBytes + index;
+                byte* pBuffer = pBytes is null ? &dummyByte : pBytes + index;
 
                 return GetCharCount(pBuffer, count, flush);
             }
@@ -88,15 +88,15 @@ namespace System.Text
                 result += OSEncoding.MultiByteToWideChar(
                                         _encoding.CodePage, bytes + index,
                                         count - index,
-                                        chars == null ? null : chars + result,
-                                        chars == null ? 0 : charCount - result);
+                                        chars is null ? null : chars + result,
+                                        chars is null ? 0 : charCount - result);
 
             return result;
         }
 
         public unsafe override int GetCharCount(byte* bytes, int count, bool flush)
         {
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (count < 0)
@@ -130,8 +130,8 @@ namespace System.Text
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                              char[] chars, int charIndex, bool flush)
         {
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
+            if (bytes is null || chars is null)
+                throw new ArgumentNullException(bytes is null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
 
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -152,7 +152,7 @@ namespace System.Text
             fixed (byte* pBytes = bytes)
             {
                 byte dummyByte;
-                byte* pBuffer = pBytes == null ? &dummyByte : pBytes + byteIndex;
+                byte* pBuffer = pBytes is null ? &dummyByte : pBytes + byteIndex;
 
                 return GetChars(pBuffer, byteCount, pChars + charIndex, chars.Length - charIndex, flush);
             }
@@ -160,8 +160,8 @@ namespace System.Text
 
         public unsafe override int GetChars(byte* bytes, int byteCount, char* chars, int charCount, bool flush)
         {
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes), SR.ArgumentNull_Array);
+            if (chars is null || bytes is null)
+                throw new ArgumentNullException(chars is null ? nameof(chars) : nameof(bytes), SR.ArgumentNull_Array);
 
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -200,8 +200,8 @@ namespace System.Text
                                               char[] chars, int charIndex, int charCount, bool flush,
                                               out int bytesUsed, out int charsUsed, out bool completed)
         {
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
+            if (bytes is null || chars is null)
+                throw new ArgumentNullException(bytes is null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
 
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -227,7 +227,7 @@ namespace System.Text
             fixed (byte* pBytes = bytes)
             {
                 byte dummyByte;
-                byte* pBuffer = pBytes == null ? &dummyByte : pBytes + byteIndex;
+                byte* pBuffer = pBytes is null ? &dummyByte : pBytes + byteIndex;
 
                 Convert(pBuffer, byteCount, pChars + charIndex, charCount, flush, out bytesUsed, out charsUsed, out completed);
             }
@@ -237,8 +237,8 @@ namespace System.Text
                                               char* chars, int charCount, bool flush,
                                               out int bytesUsed, out int charsUsed, out bool completed)
         {
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes), SR.ArgumentNull_Array);
+            if (chars is null || bytes is null)
+                throw new ArgumentNullException(chars is null ? nameof(chars) : nameof(bytes), SR.ArgumentNull_Array);
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(byteCount < 0 ? nameof(byteCount) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 

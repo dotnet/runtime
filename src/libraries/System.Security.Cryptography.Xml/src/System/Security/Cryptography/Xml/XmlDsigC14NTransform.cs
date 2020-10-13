@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadInnerXml(XmlNodeList nodeList)
         {
-            if (nodeList != null && nodeList.Count > 0)
+            if (nodeList is not null && nodeList.Count > 0)
                 throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
         }
 

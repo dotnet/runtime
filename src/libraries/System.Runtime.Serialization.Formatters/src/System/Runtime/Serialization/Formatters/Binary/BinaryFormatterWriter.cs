@@ -117,22 +117,22 @@ namespace System.Runtime.Serialization.Formatters.Binary
             int assemId;
             int objectId = (int)nameInfo._objectId;
 
-            Debug.Assert(typeNameInfo != null); // Explicitly called with null, asserting for now https://github.com/dotnet/runtime/issues/31402
+            Debug.Assert(typeNameInfo is not null); // Explicitly called with null, asserting for now https://github.com/dotnet/runtime/issues/31402
             string? objectName = objectId < 0 ?
                 typeNameInfo.NIname : // Nested Object
                 nameInfo.NIname; // Non-Nested
 
-            if (_objectMapTable == null)
+            if (_objectMapTable is null)
             {
                 _objectMapTable = new Dictionary<string, ObjectMapInfo>();
             }
 
-            Debug.Assert(objectName != null);
+            Debug.Assert(objectName is not null);
             if (_objectMapTable.TryGetValue(objectName, out ObjectMapInfo? objectMapInfo) &&
                 objectMapInfo.IsCompatible(numMembers, memberNames, memberTypes))
             {
                 // Object
-                if (_binaryObject == null)
+                if (_binaryObject is null)
                 {
                     _binaryObject = new BinaryObject();
                 }
@@ -143,7 +143,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             else if (!typeNameInfo._transmitTypeOnObject)
             {
                 // ObjectWithMap
-                if (_binaryObjectWithMap == null)
+                if (_binaryObjectWithMap is null)
                 {
                     _binaryObjectWithMap = new BinaryObjectWithMap();
                 }
@@ -153,7 +153,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _binaryObjectWithMap.Set(objectId, objectName, numMembers, memberNames, assemId);
 
                 _binaryObjectWithMap.Write(this);
-                if (objectMapInfo == null)
+                if (objectMapInfo is null)
                 {
                     _objectMapTable.Add(objectName, new ObjectMapInfo(objectId, numMembers, memberNames, memberTypes));
                 }
@@ -172,7 +172,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     assemIdA[i] = assemId;
                 }
 
-                if (_binaryObjectWithMapTyped == null)
+                if (_binaryObjectWithMapTyped is null)
                 {
                     _binaryObjectWithMapTyped = new BinaryObjectWithMapTyped();
                 }
@@ -181,7 +181,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 assemId = (int)typeNameInfo._assemId;
                 _binaryObjectWithMapTyped.Set(objectId, objectName, numMembers, memberNames, binaryTypeEnumA, typeInformationA, assemIdA, assemId);
                 _binaryObjectWithMapTyped.Write(this);
-                if (objectMapInfo == null)
+                if (objectMapInfo is null)
                 {
                     _objectMapTable.Add(objectName, new ObjectMapInfo(objectId, numMembers, memberNames, memberTypes));
                 }
@@ -192,7 +192,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             InternalWriteItemNull();
 
-            if (_binaryObjectString == null)
+            if (_binaryObjectString is null)
             {
                 _binaryObjectString = new BinaryObjectString();
             }
@@ -225,7 +225,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(
                 arrayElemTypeNameInfo._type!, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
 
-            if (_binaryArray == null)
+            if (_binaryArray is null)
             {
                 _binaryArray = new BinaryArray();
             }
@@ -255,7 +255,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             InternalWriteItemNull();
             int arrayOffset = 0;
-            if (_byteBuffer == null)
+            if (_byteBuffer is null)
             {
                 _byteBuffer = new byte[ChunkSize];
             }
@@ -307,7 +307,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(arrayElemTypeNameInfo._type!, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
 
-            if (_binaryArray == null)
+            if (_binaryArray is null)
             {
                 _binaryArray = new BinaryArray();
             }
@@ -325,7 +325,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             int assemId = 0;
             BinaryTypeEnum binaryTypeEnum = BinaryTypeConverter.GetBinaryTypeInfo(arrayElemTypeNameInfo._type!, objectInfo, arrayElemTypeNameInfo.NIname, _objectWriter, out typeInformation, out assemId);
 
-            if (_binaryArray == null)
+            if (_binaryArray is null)
             {
                 _binaryArray = new BinaryArray();
             }
@@ -357,7 +357,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             // Writes Members with primitive values
             if (memberNameInfo._transmitTypeOnMember)
             {
-                if (_memberPrimitiveTyped == null)
+                if (_memberPrimitiveTyped is null)
                 {
                     _memberPrimitiveTyped = new MemberPrimitiveTyped();
                 }
@@ -366,7 +366,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             else
             {
-                if (_memberPrimitiveUnTyped == null)
+                if (_memberPrimitiveUnTyped is null)
                 {
                     _memberPrimitiveUnTyped = new MemberPrimitiveUnTyped();
                 }
@@ -378,7 +378,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal void WriteNullMember(NameInfo memberNameInfo, NameInfo typeNameInfo)
         {
             InternalWriteItemNull();
-            if (_objectNull == null)
+            if (_objectNull is null)
             {
                 _objectNull = new ObjectNull();
             }
@@ -394,7 +394,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         internal void WriteMemberObjectRef(NameInfo memberNameInfo, int idRef)
         {
             InternalWriteItemNull();
-            if (_memberReference == null)
+            if (_memberReference is null)
             {
                 _memberReference = new MemberReference();
             }
@@ -436,7 +436,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             if (_consecutiveNullArrayEntryCount > 0)
             {
-                if (_objectNull == null)
+                if (_objectNull is null)
                 {
                     _objectNull = new ObjectNull();
                 }
@@ -457,14 +457,14 @@ namespace System.Runtime.Serialization.Formatters.Binary
             //If the file being tested wasn't built as an assembly, then we're going to get null back
             //for the assembly name.  This is very unfortunate.
             InternalWriteItemNull();
-            if (assemblyString == null)
+            if (assemblyString is null)
             {
                 assemblyString = string.Empty;
             }
 
             if (isNew)
             {
-                if (_binaryAssembly == null)
+                if (_binaryAssembly is null)
                 {
                     _binaryAssembly = new BinaryAssembly();
                 }
@@ -526,7 +526,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         return false;
                     }
 
-                    if ((memberTypes != null) && (_memberTypes[i] != memberTypes[i]))
+                    if ((memberTypes is not null) && (_memberTypes[i] != memberTypes[i]))
                     {
                         return false;
                     }

@@ -13,7 +13,7 @@ namespace System.Reflection
 
         public CustomAttributeNamedArgument(MemberInfo memberInfo, object? value)
         {
-            if (memberInfo == null)
+            if (memberInfo is null)
                 throw new ArgumentNullException(nameof(memberInfo));
 
             Type type;
@@ -42,7 +42,7 @@ namespace System.Reflection
 
         public override string ToString()
         {
-            if (m_memberInfo == null)
+            if (m_memberInfo is null)
                 return base.ToString()!;
 
             return string.Format("{0} = {1}", MemberInfo.Name, TypedValue.ToString(ArgumentType != typeof(object)));

@@ -20,7 +20,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (_allow == null)
+                if (_allow is null)
                 {
                     _allow = new HttpHeaderValueCollection<string>(KnownHeaders.Allow.Descriptor,
                         this, HeaderUtilities.TokenValidator);
@@ -41,7 +41,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (_contentEncoding == null)
+                if (_contentEncoding is null)
                 {
                     _contentEncoding = new HttpHeaderValueCollection<string>(KnownHeaders.ContentEncoding.Descriptor,
                         this, HeaderUtilities.TokenValidator);
@@ -54,7 +54,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (_contentLanguage == null)
+                if (_contentLanguage is null)
                 {
                     _contentLanguage = new HttpHeaderValueCollection<string>(KnownHeaders.ContentLanguage.Descriptor,
                         this, HeaderUtilities.TokenValidator);
@@ -71,14 +71,14 @@ namespace System.Net.Http.Headers
                 object? storedValue = GetParsedValues(KnownHeaders.ContentLength.Descriptor);
 
                 // Only try to calculate the length if the user didn't set the value explicitly using the setter.
-                if (!_contentLengthSet && (storedValue == null))
+                if (!_contentLengthSet && (storedValue is null))
                 {
                     // If we don't have a value for Content-Length in the store, try to let the content calculate
                     // it's length. If the content object is able to calculate the length, we'll store it in the
                     // store.
                     long? calculatedLength = _parent.GetComputedOrBufferLength();
 
-                    if (calculatedLength != null)
+                    if (calculatedLength is not null)
                     {
                         SetParsedValue(KnownHeaders.ContentLength.Descriptor, (object)calculatedLength.Value);
                     }
@@ -86,7 +86,7 @@ namespace System.Net.Http.Headers
                     return calculatedLength;
                 }
 
-                if (storedValue == null)
+                if (storedValue is null)
                 {
                     return null;
                 }

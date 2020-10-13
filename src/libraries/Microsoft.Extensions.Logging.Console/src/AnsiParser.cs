@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Logging.Console
         private readonly Action<string, int, int, ConsoleColor?, ConsoleColor?> _onParseWrite;
         public AnsiParser(Action<string, int, int, ConsoleColor?, ConsoleColor?> onParseWrite)
         {
-            if (onParseWrite == null)
+            if (onParseWrite is null)
             {
                 throw new ArgumentNullException(nameof(onParseWrite));
             }
@@ -185,7 +185,7 @@ namespace Microsoft.Extensions.Logging.Console
                 37 => isBright ? ConsoleColor.White: ConsoleColor.Gray,
                 _ => null
             };
-            return color != null || number == 39;
+            return color is not null || number == 39;
         }
 
         private static bool TryGetBackgroundColor(int number, out ConsoleColor? color)
@@ -202,7 +202,7 @@ namespace Microsoft.Extensions.Logging.Console
                 47 => ConsoleColor.Gray,
                 _ => null
             };
-            return color != null || number == 49;
+            return color is not null || number == 49;
         }
     }
 }

@@ -26,7 +26,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         public AttributedPartCreationInfo(Type type, PartCreationPolicyAttribute? partCreationPolicy, bool ignoreConstructorImports, ICompositionElement? origin)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -49,7 +49,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         public ConstructorInfo? GetConstructor()
         {
-            if (_constructor == null && !_ignoreConstructorImports)
+            if (_constructor is null && !_ignoreConstructorImports)
             {
                 _constructor = SelectPartConstructor(_type);
             }
@@ -178,7 +178,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         {
             get
             {
-                if (_partCreationPolicy == null)
+                if (_partCreationPolicy is null)
                 {
                     _partCreationPolicy = _type.GetFirstAttribute<PartCreationPolicyAttribute>() ?? PartCreationPolicyAttribute.Default;
                 }
@@ -189,7 +189,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         private static ConstructorInfo? SelectPartConstructor(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -224,7 +224,7 @@ namespace System.ComponentModel.Composition.AttributedModel
                 // an importing constructor found
                 if (constructor.IsAttributeDefined<ImportingConstructorAttribute>())
                 {
-                    if (importingConstructor != null)
+                    if (importingConstructor is not null)
                     {
                         // more that one importing constructor - return null ot error out on creation
                         return null;
@@ -235,7 +235,7 @@ namespace System.ComponentModel.Composition.AttributedModel
                     }
                 }
                 // otherwise if we havent seen the default constructor yet, check if this one is it
-                else if (defaultConstructor == null)
+                else if (defaultConstructor is null)
                 {
                     if (constructor.GetParameters().Length == 0)
                     {
@@ -252,7 +252,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             // NOTE : in most cases both of these will be null or not null at the same time
             // the only situation when that is not the case is when there was a failure during the previous discovery
             // and one of them ended up not being set. In that case we will force the discovery again so that the same exception is thrown.
-            if ((_exports != null) && (_imports != null))
+            if ((_exports is not null) && (_imports is not null))
             {
                 return;
             }
@@ -387,7 +387,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
             Type? currentType = type.BaseType;
 
-            if (currentType == null)
+            if (currentType is null)
             {
                 yield break;
             }
@@ -395,7 +395,7 @@ namespace System.ComponentModel.Composition.AttributedModel
             // Stopping at object instead of null to help with performance. It is a noticable performance
             // gain (~5%) if we don't have to try and pull the attributes we know don't exist on object.
             // We also need the null check in case we're passed a type that doesn't live in the runtime context.
-            while (currentType != null && currentType.UnderlyingSystemType != CompositionServices.ObjectType)
+            while (currentType is not null && currentType.UnderlyingSystemType != CompositionServices.ObjectType)
             {
                 if (IsInheritedExport(currentType))
                 {
@@ -435,7 +435,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
             ConstructorInfo? constructor = GetConstructor();
 
-            if (constructor != null)
+            if (constructor is not null)
             {
                 foreach (ParameterInfo parameter in constructor.GetParameters())
                 {
@@ -460,14 +460,14 @@ namespace System.ComponentModel.Composition.AttributedModel
             }
 
             // Walk up the type chain until you hit object.
-            if (type.BaseType != null)
+            if (type.BaseType is not null)
             {
                 Type? baseType = type.BaseType;
 
                 // Stopping at object instead of null to help with performance. It is a noticable performance
                 // gain (~5%) if we don't have to try and pull the attributes we know don't exist on object.
                 // We also need the null check in case we're passed a type that doesn't live in the runtime context.
-                while (baseType != null && baseType.UnderlyingSystemType != CompositionServices.ObjectType)
+                while (baseType is not null && baseType.UnderlyingSystemType != CompositionServices.ObjectType)
                 {
                     foreach (MemberInfo member in GetDeclaredOnlyImportMembers(baseType))
                     {

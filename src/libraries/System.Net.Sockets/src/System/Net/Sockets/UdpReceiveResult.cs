@@ -18,12 +18,12 @@ namespace System.Net.Sockets
         /// <param name="remoteEndPoint">The remote endpoint of the UDP packet</param>
         public UdpReceiveResult(byte[] buffer, IPEndPoint remoteEndPoint)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
 
-            if (remoteEndPoint == null)
+            if (remoteEndPoint is null)
             {
                 throw new ArgumentNullException(nameof(remoteEndPoint));
             }
@@ -60,7 +60,7 @@ namespace System.Net.Sockets
         /// <returns>The hash code</returns>
         public override int GetHashCode()
         {
-            return (_buffer != null) ? (_buffer.GetHashCode() ^ _remoteEndPoint.GetHashCode()) : 0;
+            return (_buffer is not null) ? (_buffer.GetHashCode() ^ _remoteEndPoint.GetHashCode()) : 0;
         }
 
         /// <summary>

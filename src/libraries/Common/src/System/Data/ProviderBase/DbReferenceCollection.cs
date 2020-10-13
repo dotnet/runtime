@@ -22,9 +22,9 @@ namespace System.Data.ProviderBase
             {
                 Debug.Assert(!HasTarget, "Entry already has a valid target");
                 Debug.Assert(tag != 0, "Bad tag");
-                Debug.Assert(target != null, "Invalid target");
+                Debug.Assert(target is not null, "Invalid target");
 
-                if (_weak == null)
+                if (_weak is null)
                 {
                     _weak = new WeakReference(target, false);
                 }
@@ -156,7 +156,7 @@ namespace System.Data.ProviderBase
                                 // NOTE: Check if the returned value is null twice may seem wasteful, but this if for performance
                                 // Since checking for null twice is cheaper than calling both HasTarget and Target OR always attempting to typecast
                                 object? value = _items[counter].Target;
-                                if (value != null)
+                                if (value is not null)
                                 {
                                     // Make sure the item has the correct type and passes the filtering
                                     if (value is T tempItem && filterMethod(tempItem))

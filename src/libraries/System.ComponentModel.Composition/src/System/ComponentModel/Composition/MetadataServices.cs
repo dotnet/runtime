@@ -13,7 +13,7 @@ namespace System.ComponentModel.Composition
 
         public static IDictionary<string, object?> AsReadOnly(this IDictionary<string, object?>? metadata)
         {
-            if (metadata == null)
+            if (metadata is null)
             {
                 return EmptyMetadata;
             }
@@ -28,7 +28,7 @@ namespace System.ComponentModel.Composition
 
         public static T? GetValue<T>(this IDictionary<string, object?> metadata, string key)
         {
-            if (metadata == null)
+            if (metadata is null)
             {
                 throw new ArgumentNullException(nameof(metadata));
             }

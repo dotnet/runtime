@@ -34,7 +34,7 @@ namespace System.IO.Pipelines
 
             Execute(_firstCallback, ref exceptions);
 
-            if (_callbacks != null)
+            if (_callbacks is not null)
             {
                 try
                 {
@@ -50,7 +50,7 @@ namespace System.IO.Pipelines
                 }
             }
 
-            if (exceptions != null)
+            if (exceptions is not null)
             {
                 throw new AggregateException(exceptions);
             }
@@ -64,7 +64,7 @@ namespace System.IO.Pipelines
             }
             catch (Exception ex)
             {
-                if (exceptions == null)
+                if (exceptions is null)
                 {
                     exceptions = new List<Exception>();
                 }

@@ -67,7 +67,7 @@ namespace System.Configuration
 
         internal ConfigurationProperty(PropertyInfo info)
         {
-            Debug.Assert(info != null, "info != null");
+            Debug.Assert(info is not null, "info is not null");
 
             ConfigurationPropertyAttribute propertyAttribute = null;
             DescriptionAttribute descriptionAttribute = null;
@@ -92,7 +92,7 @@ namespace System.Configuration
                 }
                 else if (attribute is ConfigurationValidatorAttribute)
                 {
-                    if (validator != null)
+                    if (validator is not null)
                     {
                         // We only allow one validator to be specified on a property.
                         //
@@ -131,7 +131,7 @@ namespace System.Configuration
                     Attribute.GetCustomAttribute(propertyType,
                         typeof(ConfigurationCollectionAttribute)) as ConfigurationCollectionAttribute;
 
-                if (collectionAttribute != null)
+                if (collectionAttribute is not null)
                 {
                     if (collectionAttribute.AddItemName.IndexOf(',') == -1) AddElementName = collectionAttribute.AddItemName; // string.Contains(char) is .NetCore2.1+ specific
                     RemoveElementName = collectionAttribute.RemoveItemName;
@@ -140,7 +140,7 @@ namespace System.Configuration
             }
 
             // This constructor shouldn't be invoked if the reflection info is not for an actual config property
-            Debug.Assert(propertyAttribute != null, "attribProperty != null");
+            Debug.Assert(propertyAttribute is not null, "attribProperty is not null");
 
             ConstructorInit(propertyAttribute.Name,
                 info.PropertyType,
@@ -241,7 +241,7 @@ namespace System.Configuration
             _converter = converter;
 
             // Use the default validator if none was supplied
-            if (Validator == null)
+            if (Validator is null)
             {
                 Validator = s_defaultValidatorInstance;
             }
@@ -373,7 +373,7 @@ namespace System.Configuration
 
         private void CreateConverter()
         {
-            if (_converter != null) return;
+            if (_converter is not null) return;
 
             if (Type.IsEnum)
             {
@@ -390,7 +390,7 @@ namespace System.Configuration
             {
                 _converter = TypeDescriptor.GetConverter(Type);
 
-                if ((_converter == null) ||
+                if ((_converter is null) ||
                     !_converter.CanConvertFrom(typeof(string)) ||
                     !_converter.CanConvertTo(typeof(string)))
                 {

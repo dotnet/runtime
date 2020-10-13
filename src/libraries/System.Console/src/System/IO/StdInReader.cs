@@ -187,7 +187,7 @@ namespace System.IO
                                 if (ConsolePal.TryGetCursorPosition(out int left, out int top, reinitializeForRead: true) &&
                                     left == 0 && top > 0)
                                 {
-                                    if (s_clearToEol == null)
+                                    if (s_clearToEol is null)
                                     {
                                         s_clearToEol = ConsolePal.TerminalFormatStrings.Instance.ClrEol ?? string.Empty;
                                     }
@@ -199,7 +199,7 @@ namespace System.IO
                                 }
                                 else
                                 {
-                                    if (s_moveLeftString == null)
+                                    if (s_moveLeftString is null)
                                     {
                                         string? moveLeft = ConsolePal.TerminalFormatStrings.Instance.CursorLeft;
                                         s_moveLeftString = !string.IsNullOrEmpty(moveLeft) ? moveLeft + " " + moveLeft : string.Empty;

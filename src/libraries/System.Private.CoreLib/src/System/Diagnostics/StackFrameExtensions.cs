@@ -14,7 +14,7 @@ namespace System.Diagnostics
 
         public static bool HasMethod(this StackFrame stackFrame)
         {
-            return stackFrame.GetMethod() != null;
+            return stackFrame.GetMethod() is not null;
         }
 
         public static bool HasILOffset(this StackFrame stackFrame)
@@ -24,7 +24,7 @@ namespace System.Diagnostics
 
         public static bool HasSource(this StackFrame stackFrame)
         {
-            return stackFrame.GetFileName() != null;
+            return stackFrame.GetFileName() is not null;
         }
 
         public static IntPtr GetNativeIP(this StackFrame stackFrame)

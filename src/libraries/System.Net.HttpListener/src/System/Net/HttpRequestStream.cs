@@ -17,7 +17,7 @@ namespace System.Net
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
 
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -41,7 +41,7 @@ namespace System.Net
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "buffer.Length:" + buffer?.Length + " size:" + size + " offset:" + offset);
 
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }

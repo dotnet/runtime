@@ -32,7 +32,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMGroupsSet", "CurrentAsPrincipal");
 
-                Debug.Assert(_current != null);
+                Debug.Assert(_current is not null);
 
                 return SAMUtils.DirectoryEntryAsPrincipal(_current, _storeCtx);
             }

@@ -141,7 +141,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get
             {
-                if (_definition != null)
+                if (_definition is not null)
                 {
                     return _definition;
                 }
@@ -170,7 +170,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get
             {
-                Debug.Assert(Definition.Metadata != null);
+                Debug.Assert(Definition.Metadata is not null);
 
                 return Definition.Metadata;
             }
@@ -234,7 +234,7 @@ namespace System.ComponentModel.Composition.Primitives
         /// </remarks>
         protected virtual object? GetExportedValueCore()
         {
-            if (_exportedValueGetter != null)
+            if (_exportedValueGetter is not null)
             {
                 return _exportedValueGetter.Invoke();
             }

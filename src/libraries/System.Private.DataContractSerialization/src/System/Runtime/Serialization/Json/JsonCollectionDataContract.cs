@@ -28,11 +28,11 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (_helper.JsonFormatReaderDelegate == null)
+                if (_helper.JsonFormatReaderDelegate is null)
                 {
                     lock (this)
                     {
-                        if (_helper.JsonFormatReaderDelegate == null)
+                        if (_helper.JsonFormatReaderDelegate is null)
                         {
                             JsonFormatCollectionReaderDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
@@ -62,11 +62,11 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (_helper.JsonFormatGetOnlyReaderDelegate == null)
+                if (_helper.JsonFormatGetOnlyReaderDelegate is null)
                 {
                     lock (this)
                     {
-                        if (_helper.JsonFormatGetOnlyReaderDelegate == null)
+                        if (_helper.JsonFormatGetOnlyReaderDelegate is null)
                         {
                             CollectionKind kind = this.TraditionalCollectionDataContract.Kind;
                             if (this.TraditionalDataContract.UnderlyingType.IsInterface && (kind == CollectionKind.Enumerable || kind == CollectionKind.Collection || kind == CollectionKind.GenericEnumerable))
@@ -103,11 +103,11 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (_helper.JsonFormatWriterDelegate == null)
+                if (_helper.JsonFormatWriterDelegate is null)
                 {
                     lock (this)
                     {
-                        if (_helper.JsonFormatWriterDelegate == null)
+                        if (_helper.JsonFormatWriterDelegate is null)
                         {
                             JsonFormatCollectionWriterDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
@@ -132,7 +132,7 @@ namespace System.Runtime.Serialization.Json
 
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
 
             jsonReader.Read();
             object? o = null;
@@ -152,7 +152,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
             // IsGetOnlyCollection value has already been used to create current collectiondatacontract, value can now be reset.
             context.IsGetOnlyCollection = false;
             JsonFormatWriterDelegate(jsonWriter, obj, context, TraditionalCollectionDataContract);

@@ -51,7 +51,7 @@ namespace System.Xml.Xsl.IlGen
                     s_alreadyCheckedEnabled = true;
                 }
 
-                return (s_dirName != null);
+                return (s_dirName is not null);
             }
         }
 
@@ -168,7 +168,7 @@ namespace System.Xml.Xsl.IlGen
         private static void WriteQilRewrite(QilExpression qil, XmlWriter w, string? rewriteName)
         {
             w.WriteStartElement("Diff");
-            if (rewriteName != null)
+            if (rewriteName is not null)
                 w.WriteAttributeString("rewrite", rewriteName);
             WriteQil(qil, w);
             w.WriteEndElement();

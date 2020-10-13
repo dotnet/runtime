@@ -246,7 +246,7 @@ namespace System.IO
                     {
                         // File
                         string fileName = findData.cFileName.GetStringFromFixedBuffer();
-                        if (!Interop.Kernel32.DeleteFile(Path.Combine(fullPath, fileName)) && exception == null)
+                        if (!Interop.Kernel32.DeleteFile(Path.Combine(fullPath, fileName)) && exception is null)
                         {
                             errorCode = Marshal.GetLastWin32Error();
 
@@ -277,7 +277,7 @@ namespace System.IO
                             }
                             catch (Exception e)
                             {
-                                if (exception == null)
+                                if (exception is null)
                                     exception = e;
                             }
                         }
@@ -290,7 +290,7 @@ namespace System.IO
                                 // Mount point. Unmount using full path plus a trailing '\'.
                                 // (Note: This doesn't remove the underlying directory)
                                 string mountPoint = Path.Join(fullPath, fileName, PathInternal.DirectorySeparatorCharAsString);
-                                if (!Interop.Kernel32.DeleteVolumeMountPoint(mountPoint) && exception == null)
+                                if (!Interop.Kernel32.DeleteVolumeMountPoint(mountPoint) && exception is null)
                                 {
                                     errorCode = Marshal.GetLastWin32Error();
                                     if (errorCode != Interop.Errors.ERROR_SUCCESS &&
@@ -302,7 +302,7 @@ namespace System.IO
                             }
 
                             // Note that RemoveDirectory on a symbolic link will remove the link itself.
-                            if (!Interop.Kernel32.RemoveDirectory(Path.Combine(fullPath, fileName)) && exception == null)
+                            if (!Interop.Kernel32.RemoveDirectory(Path.Combine(fullPath, fileName)) && exception is null)
                             {
                                 errorCode = Marshal.GetLastWin32Error();
                                 if (errorCode != Interop.Errors.ERROR_PATH_NOT_FOUND)
@@ -314,7 +314,7 @@ namespace System.IO
                     }
                 } while (Interop.Kernel32.FindNextFile(handle, ref findData));
 
-                if (exception != null)
+                if (exception is not null)
                     throw exception;
 
                 errorCode = Marshal.GetLastWin32Error();

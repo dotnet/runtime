@@ -122,9 +122,9 @@ namespace System.Reflection.Metadata
         private void CheckInvariants()
         {
 #if DEBUG
-            Debug.Assert(_buffer != null);
+            Debug.Assert(_buffer is not null);
             Debug.Assert(Length >= 0 && Length <= _buffer.Length);
-            Debug.Assert(_nextOrPrevious != null);
+            Debug.Assert(_nextOrPrevious is not null);
 
             if (IsHead)
             {
@@ -205,7 +205,7 @@ namespace System.Reflection.Metadata
                 return true;
             }
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -324,7 +324,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Content is not available, the builder has been linked with another one.</exception>
         public void WriteContentTo(Stream destination)
         {
-            if (destination == null)
+            if (destination is null)
             {
                 Throw.ArgumentNull(nameof(destination));
             }
@@ -354,7 +354,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Content is not available, the builder has been linked with another one.</exception>
         public void WriteContentTo(BlobBuilder destination)
         {
-            if (destination == null)
+            if (destination is null)
             {
                 Throw.ArgumentNull(nameof(destination));
             }
@@ -369,7 +369,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void LinkPrefix(BlobBuilder prefix)
         {
-            if (prefix == null)
+            if (prefix is null)
             {
                 Throw.ArgumentNull(nameof(prefix));
             }
@@ -429,7 +429,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void LinkSuffix(BlobBuilder suffix)
         {
-            if (suffix == null)
+            if (suffix is null)
             {
                 throw new ArgumentNullException(nameof(suffix));
             }
@@ -638,7 +638,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public unsafe void WriteBytes(byte* buffer, int byteCount)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 Throw.ArgumentNull(nameof(buffer));
             }
@@ -680,7 +680,7 @@ namespace System.Reflection.Metadata
         /// <returns>Bytes successfully written from the <paramref name="source" />.</returns>
         public int TryWriteBytes(Stream source, int byteCount)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -749,7 +749,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public unsafe void WriteBytes(byte[] buffer, int start, int byteCount)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 Throw.ArgumentNull(nameof(buffer));
             }
@@ -932,7 +932,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public unsafe void WriteUTF16(char[] value)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ArgumentNull(nameof(value));
             }
@@ -971,7 +971,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public unsafe void WriteUTF16(string value)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ArgumentNull(nameof(value));
             }
@@ -1008,7 +1008,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteSerializedString(string? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 WriteByte(0xff);
                 return;
@@ -1030,7 +1030,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteUserString(string value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -1051,7 +1051,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="InvalidOperationException">Builder is not writable, it has been linked with another one.</exception>
         public void WriteUTF8(string value, bool allowUnpairedSurrogates = true)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ArgumentNull(nameof(value));
             }

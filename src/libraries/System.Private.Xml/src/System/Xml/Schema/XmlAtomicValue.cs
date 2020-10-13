@@ -80,7 +80,7 @@ namespace System.Xml.Schema
 
         internal XmlAtomicValue(XmlSchemaType xmlType, bool value)
         {
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
+            if (xmlType is null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _clrType = TypeCode.Boolean;
             _unionVal.boolVal = value;
@@ -88,7 +88,7 @@ namespace System.Xml.Schema
 
         internal XmlAtomicValue(XmlSchemaType xmlType, DateTime value)
         {
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
+            if (xmlType is null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _clrType = TypeCode.DateTime;
             _unionVal.dtVal = value;
@@ -96,7 +96,7 @@ namespace System.Xml.Schema
 
         internal XmlAtomicValue(XmlSchemaType xmlType, double value)
         {
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
+            if (xmlType is null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _clrType = TypeCode.Double;
             _unionVal.dblVal = value;
@@ -104,7 +104,7 @@ namespace System.Xml.Schema
 
         internal XmlAtomicValue(XmlSchemaType xmlType, int value)
         {
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
+            if (xmlType is null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _clrType = TypeCode.Int32;
             _unionVal.i32Val = value;
@@ -112,7 +112,7 @@ namespace System.Xml.Schema
 
         internal XmlAtomicValue(XmlSchemaType xmlType, long value)
         {
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
+            if (xmlType is null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _clrType = TypeCode.Int64;
             _unionVal.i64Val = value;
@@ -120,19 +120,19 @@ namespace System.Xml.Schema
 
         internal XmlAtomicValue(XmlSchemaType xmlType, string value)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
+            if (value is null) throw new ArgumentNullException(nameof(value));
+            if (xmlType is null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _objVal = value;
         }
 
         internal XmlAtomicValue(XmlSchemaType xmlType, string value, IXmlNamespaceResolver? nsResolver)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
+            if (value is null) throw new ArgumentNullException(nameof(value));
+            if (xmlType is null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _objVal = value;
-            if (nsResolver != null && (_xmlType.TypeCode == XmlTypeCode.QName || _xmlType.TypeCode == XmlTypeCode.Notation))
+            if (nsResolver is not null && (_xmlType.TypeCode == XmlTypeCode.QName || _xmlType.TypeCode == XmlTypeCode.Notation))
             {
                 string prefix = GetPrefixFromQName(value)!;
                 _nsPrefix = new NamespacePrefixForQName(prefix, nsResolver.LookupNamespace(prefix)!);
@@ -141,23 +141,23 @@ namespace System.Xml.Schema
 
         internal XmlAtomicValue(XmlSchemaType xmlType, object value)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
+            if (value is null) throw new ArgumentNullException(nameof(value));
+            if (xmlType is null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _objVal = value;
         }
 
         internal XmlAtomicValue(XmlSchemaType xmlType, object value, IXmlNamespaceResolver? nsResolver)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-            if (xmlType == null) throw new ArgumentNullException(nameof(xmlType));
+            if (value is null) throw new ArgumentNullException(nameof(value));
+            if (xmlType is null) throw new ArgumentNullException(nameof(xmlType));
             _xmlType = xmlType;
             _objVal = value;
 
-            if (nsResolver != null && (_xmlType.TypeCode == XmlTypeCode.QName || _xmlType.TypeCode == XmlTypeCode.Notation))
+            if (nsResolver is not null && (_xmlType.TypeCode == XmlTypeCode.QName || _xmlType.TypeCode == XmlTypeCode.Notation))
             { //Its a qualifiedName
                 XmlQualifiedName qname = (_objVal as XmlQualifiedName)!;
-                Debug.Assert(qname != null); //string representation is handled in a different overload
+                Debug.Assert(qname is not null); //string representation is handled in a different overload
                 string ns = qname.Namespace;
                 _nsPrefix = new NamespacePrefixForQName(nsResolver.LookupPrefix(ns)!, ns);
             }
@@ -210,7 +210,7 @@ namespace System.Xml.Schema
             {
                 XmlValueConverter valueConverter = _xmlType.ValueConverter;
 
-                if (_objVal == null)
+                if (_objVal is null)
                 {
                     switch (_clrType)
                     {
@@ -232,7 +232,7 @@ namespace System.Xml.Schema
             {
                 XmlValueConverter valueConverter = _xmlType.ValueConverter;
 
-                if (_objVal == null)
+                if (_objVal is null)
                 {
                     switch (_clrType)
                     {
@@ -255,7 +255,7 @@ namespace System.Xml.Schema
             {
                 XmlValueConverter valueConverter = _xmlType.ValueConverter;
 
-                if (_objVal == null)
+                if (_objVal is null)
                 {
                     switch (_clrType)
                     {
@@ -279,7 +279,7 @@ namespace System.Xml.Schema
             {
                 XmlValueConverter valueConverter = _xmlType.ValueConverter;
 
-                if (_objVal == null)
+                if (_objVal is null)
                 {
                     switch (_clrType)
                     {
@@ -302,7 +302,7 @@ namespace System.Xml.Schema
             {
                 XmlValueConverter valueConverter = _xmlType.ValueConverter;
 
-                if (_objVal == null)
+                if (_objVal is null)
                 {
                     switch (_clrType)
                     {
@@ -325,7 +325,7 @@ namespace System.Xml.Schema
             {
                 XmlValueConverter valueConverter = _xmlType.ValueConverter;
 
-                if (_objVal == null)
+                if (_objVal is null)
                 {
                     switch (_clrType)
                     {
@@ -349,7 +349,7 @@ namespace System.Xml.Schema
             if (type == typeof(XPathItem) || type == typeof(XmlAtomicValue))
                 return this;
 
-            if (_objVal == null)
+            if (_objVal is null)
             {
                 switch (_clrType)
                 {
@@ -371,7 +371,7 @@ namespace System.Xml.Schema
             {
                 XmlValueConverter valueConverter = _xmlType.ValueConverter;
 
-                if (_objVal == null)
+                if (_objVal is null)
                 {
                     switch (_clrType)
                     {

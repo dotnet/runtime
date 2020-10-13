@@ -34,7 +34,7 @@ namespace System.ComponentModel
         /// </summary>
         public TypeConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -49,7 +49,7 @@ namespace System.ComponentModel
         /// </summary>
         public TypeConverterAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName)
         {
-            if (typeName == null)
+            if (typeName is null)
             {
                 throw new ArgumentNullException(nameof(typeName));
             }

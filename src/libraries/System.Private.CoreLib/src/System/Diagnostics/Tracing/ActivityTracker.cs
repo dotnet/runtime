@@ -53,7 +53,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void OnStart(string providerName, string activityName, int task, ref Guid activityId, ref Guid relatedActivityId, EventActivityOptions options, bool useTplSource = true)
         {
-            if (m_current == null)        // We are not enabled
+            if (m_current is null)        // We are not enabled
             {
                 // We  used to rely on the TPL provider turning us on, but that has the disadvantage that you don't get Start-Stop tracking
                 // until you use Tasks for the first time (which you may never do).   Thus we change it to pull rather tan push for whether
@@ -63,7 +63,7 @@ namespace System.Diagnostics.Tracing
                 m_checkedForEnable = true;
                 if (useTplSource && TplEventSource.Log.IsEnabled(EventLevel.Informational, TplEventSource.Keywords.TasksFlowActivityIds))
                     Enable();
-                if (m_current == null)
+                if (m_current is null)
                     return;
             }
 
@@ -73,14 +73,14 @@ namespace System.Diagnostics.Tracing
             string fullActivityName = NormalizeActivityName(providerName, activityName, task);
 
             TplEventSource? log = useTplSource ? TplEventSource.Log : null;
-            bool tplDebug = log != null && log.Debug;
+            bool tplDebug = log is not null && log.Debug;
             if (tplDebug)
             {
                 log!.DebugFacilityMessage("OnStartEnter", fullActivityName);
                 log!.DebugFacilityMessage("OnStartEnterActivityState", ActivityInfo.LiveActivities(currentActivity));
             }
 
-            if (currentActivity != null)
+            if (currentActivity is not null)
             {
                 // Stop activity tracking if we reached the maximum allowed depth
                 if (currentActivity.m_level >= MAX_ACTIVITY_DEPTH)
@@ -95,7 +95,7 @@ namespace System.Diagnostics.Tracing
                 if ((options & EventActivityOptions.Recursive) == 0)
                 {
                     ActivityInfo? existingActivity = FindActiveActivity(fullActivityName, currentActivity);
-                    if (existingActivity != null)
+                    if (existingActivity is not null)
                     {
                         OnStop(providerName, activityName, task, ref activityId);
                         currentActivity = m_current.Value;
@@ -105,7 +105,7 @@ namespace System.Diagnostics.Tracing
 
             // Get a unique ID for this activity.
             long id;
-            if (currentActivity == null)
+            if (currentActivity is null)
                 id = Interlocked.Increment(ref m_nextId);
             else
                 id = Interlocked.Increment(ref currentActivity.m_lastChildID);
@@ -135,13 +135,13 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void OnStop(string providerName, string activityName, int task, ref Guid activityId, bool useTplSource = true)
         {
-            if (m_current == null)        // We are not enabled
+            if (m_current is null)        // We are not enabled
                 return;
 
             string fullActivityName = NormalizeActivityName(providerName, activityName, task);
 
             TplEventSource? log = useTplSource ? TplEventSource.Log : null;
-            bool tplDebug = log != null && log.Debug;
+            bool tplDebug = log is not null && log.Debug;
             if (tplDebug)
             {
                 log!.DebugFacilityMessage("OnStopEnter", fullActivityName);
@@ -159,7 +159,7 @@ namespace System.Diagnostics.Tracing
                 ActivityInfo? activityToStop = FindActiveActivity(fullActivityName, currentActivity);
 
                 // ignore stops where we can't find a start because we may have popped them previously.
-                if (activityToStop == null)
+                if (activityToStop is null)
                 {
                     activityId = Guid.Empty;
                     // TODO add some logging about this. Basically could not find matching start.
@@ -172,7 +172,7 @@ namespace System.Diagnostics.Tracing
 
                 // See if there are any orphans that need to be stopped.
                 ActivityInfo? orphan = currentActivity;
-                while (orphan != activityToStop && orphan != null)
+                while (orphan != activityToStop && orphan is not null)
                 {
                     if (orphan.m_stopped != 0)      // Skip dead activities.
                     {
@@ -218,7 +218,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void Enable()
         {
-            if (m_current == null)
+            if (m_current is null)
             {
                 // Catch the not Implemented
                 try
@@ -246,7 +246,7 @@ namespace System.Diagnostics.Tracing
         private static ActivityInfo? FindActiveActivity(string name, ActivityInfo? startLocation)
         {
             ActivityInfo? activity = startLocation;
-            while (activity != null)
+            while (activity is not null)
             {
                 if (name == activity.m_name && activity.m_stopped == 0)
                     return activity;
@@ -308,7 +308,7 @@ namespace System.Diagnostics.Tracing
                 m_eventOptions = options;
                 m_creator = creator;
                 m_uniqueId = uniqueId;
-                m_level = creator != null ? creator.m_level + 1 : 0;
+                m_level = creator is not null ? creator.m_level + 1 : 0;
                 m_activityIdToRestore = activityIDToRestore;
 
                 // Create a nice GUID that encodes the chain of activities that started this one.
@@ -319,7 +319,7 @@ namespace System.Diagnostics.Tracing
 
             public static string Path(ActivityInfo? activityInfo)
             {
-                if (activityInfo == null)
+                if (activityInfo is null)
                     return "";
                 return Path(activityInfo.m_creator) + "/" + activityInfo.m_uniqueId.ToString();
             }
@@ -331,7 +331,7 @@ namespace System.Diagnostics.Tracing
 
             public static string LiveActivities(ActivityInfo? list)
             {
-                if (list == null)
+                if (list is null)
                     return "";
                 return list.ToString() + ";" + LiveActivities(list.m_creator);
             }
@@ -369,7 +369,7 @@ namespace System.Diagnostics.Tracing
                 fixed (Guid* outPtr = &idRet)
                 {
                     int activityPathGuidOffsetStart = 0;
-                    if (m_creator != null)
+                    if (m_creator is not null)
                     {
                         activityPathGuidOffsetStart = m_creator.m_activityPathGuidOffset;
                         idRet = m_creator.m_guid;
@@ -402,7 +402,7 @@ namespace System.Diagnostics.Tracing
             private unsafe void CreateOverflowGuid(Guid* outPtr)
             {
                 // Search backwards for an ancestor that has sufficient space to put the ID.
-                for (ActivityInfo? ancestor = m_creator; ancestor != null; ancestor = ancestor.m_creator)
+                for (ActivityInfo? ancestor = m_creator; ancestor is not null; ancestor = ancestor.m_creator)
                 {
                     if (ancestor.m_activityPathGuidOffset <= 10)  // we need at least 2 bytes.
                     {
@@ -557,12 +557,12 @@ namespace System.Diagnostics.Tracing
 
             // Are we popping off a value?   (we have a prev, and it creator is cur)
             // Then check if we should use the GUID at the time of the start event
-            if (prev != null && prev.m_creator == cur)
+            if (prev is not null && prev.m_creator == cur)
             {
                 // If the saved activity ID is not the same as the creator activity
                 // that takes precedence (it means someone explicitly did a SetActivityID)
                 // Set it to that and get out
-                if (cur == null || prev.m_activityIdToRestore != cur.ActivityId)
+                if (cur is null || prev.m_activityIdToRestore != cur.ActivityId)
                 {
                     EventSource.SetCurrentThreadActivityId(prev.m_activityIdToRestore);
                     return;
@@ -573,7 +573,7 @@ namespace System.Diagnostics.Tracing
             // setting the activity to current ActivityInfo.  However that activity
             // might be dead, in which case we should skip it, so we never set
             // the ID to dead things.
-            while (cur != null)
+            while (cur is not null)
             {
                 // We found a live activity (typically the first time), set it to that.
                 if (cur.m_stopped == 0)

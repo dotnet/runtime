@@ -664,7 +664,7 @@ namespace System.Data.OleDb
                 reader = ReferenceCollection.FindItem<OleDbDataReader>(OleDbReferenceCollection.DataReaderTag, (dataReader) => cmd == dataReader.Command);
             }
 
-            return (reader != null);
+            return (reader is not null);
         }
 
         private void ProcessResults(OleDbHResult hr)

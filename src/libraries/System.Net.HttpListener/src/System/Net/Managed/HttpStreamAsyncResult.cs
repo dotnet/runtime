@@ -69,10 +69,10 @@ namespace System.Net
                     return;
 
                 _completed = true;
-                if (_handle != null)
+                if (_handle is not null)
                     _handle.Set();
 
-                if (_callback != null)
+                if (_callback is not null)
                     Task.Run(() => _callback(this));
             }
         }
@@ -88,7 +88,7 @@ namespace System.Net
             {
                 lock (_locker)
                 {
-                    if (_handle == null)
+                    if (_handle is null)
                         _handle = new ManualResetEvent(_completed);
                 }
 

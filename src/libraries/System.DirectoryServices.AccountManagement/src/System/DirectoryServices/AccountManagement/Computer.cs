@@ -24,7 +24,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public ComputerPrincipal(PrincipalContext context, string samAccountName, string password, bool enabled) : this(context)
         {
-            if (samAccountName == null || password == null)
+            if (samAccountName is null || password is null)
                 throw new ArgumentException(SR.NullArguments);
 
             if (Context.ContextType == ContextType.ApplicationDirectory && this.GetType() == typeof(ComputerPrincipal))
@@ -112,7 +112,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         internal override void LoadValueIntoProperty(string propertyName, object value)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "Computer", "LoadValueIntoProperty: name=" + propertyName + " value=" + (value == null ? "null" : value.ToString()));
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "Computer", "LoadValueIntoProperty: name=" + propertyName + " value=" + (value is null ? "null" : value.ToString()));
 
             switch (propertyName)
             {

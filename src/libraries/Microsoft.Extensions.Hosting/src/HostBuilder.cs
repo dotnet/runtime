@@ -232,7 +232,7 @@ namespace Microsoft.Extensions.Hosting
 
             _appServices = _serviceProviderFactory.CreateServiceProvider(containerBuilder);
 
-            if (_appServices == null)
+            if (_appServices is null)
             {
                 throw new InvalidOperationException($"The IServiceProviderFactory returned a null IServiceProvider.");
             }

@@ -63,7 +63,7 @@ namespace System.Net.Http
             get => _underlyingHandler.CookieContainer;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -256,7 +256,7 @@ namespace System.Net.Http
             set
             {
                 ThrowForModifiedManagedSslOptionsIfStarted();
-                _underlyingHandler.SslOptions.RemoteCertificateValidationCallback = value != null ?
+                _underlyingHandler.SslOptions.RemoteCertificateValidationCallback = value is not null ?
                     new ConnectHelper.CertificateCallbackMapper(value).ForSocketsHttpHandler :
                     null;
             }
@@ -291,7 +291,7 @@ namespace System.Net.Http
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            return DiagnosticsHandler.IsEnabled() && _diagnosticsHandler != null ?
+            return DiagnosticsHandler.IsEnabled() && _diagnosticsHandler is not null ?
                 _diagnosticsHandler.Send(request, cancellationToken) :
                 _underlyingHandler.Send(request, cancellationToken);
         }
@@ -299,7 +299,7 @@ namespace System.Net.Http
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            return DiagnosticsHandler.IsEnabled() && _diagnosticsHandler != null ?
+            return DiagnosticsHandler.IsEnabled() && _diagnosticsHandler is not null ?
                 _diagnosticsHandler.SendAsync(request, cancellationToken) :
                 _underlyingHandler.SendAsync(request, cancellationToken);
         }

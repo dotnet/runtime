@@ -38,7 +38,7 @@ namespace System.Xml.Xsl.Qil
             for (int i = 0; i < parent.Count; i++)
             {
                 QilNode oldChild = parent[i], newChild;
-                XmlQueryType? oldChildType = oldChild != null ? oldChild.XmlType : null;
+                XmlQueryType? oldChildType = oldChild is not null ? oldChild.XmlType : null;
 
                 // Visit child
                 if (IsReference(parent, i))
@@ -47,7 +47,7 @@ namespace System.Xml.Xsl.Qil
                     newChild = Visit(oldChild!);
 
                 // Only replace child and recalculate type if oldChild != newChild or oldChild.XmlType != newChild.XmlType
-                if ((object?)oldChild != (object)newChild || (newChild != null && (object?)oldChildType != (object?)newChild.XmlType))
+                if ((object?)oldChild != (object)newChild || (newChild is not null && (object?)oldChildType != (object?)newChild.XmlType))
                 {
                     recalcType = true;
                     parent[i] = newChild;

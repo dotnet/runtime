@@ -60,7 +60,7 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Dispose()
         {
-            if (_arrayFromPool != null)
+            if (_arrayFromPool is not null)
             {
                 ArrayPool<T>.Shared.Return(_arrayFromPool);
                 _arrayFromPool = null;
@@ -76,7 +76,7 @@ namespace System.Collections.Generic
 
             T[]? toReturn = _arrayFromPool;
             _span = _arrayFromPool = array;
-            if (toReturn != null)
+            if (toReturn is not null)
             {
                 ArrayPool<T>.Shared.Return(toReturn);
             }

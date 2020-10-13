@@ -40,7 +40,7 @@ namespace System.Data
 
         internal AggregateNode(DataTable? table, FunctionId aggregateType, string columnName, bool local, string? relationName) : base(table)
         {
-            Debug.Assert(columnName != null, "Invalid parameter column name (null).");
+            Debug.Assert(columnName is not null, "Invalid parameter column name (null).");
             _aggregate = (Aggregate)(int)aggregateType;
 
             if (aggregateType == FunctionId.Sum)
@@ -69,7 +69,7 @@ namespace System.Data
         internal override void Bind(DataTable table, List<DataColumn> list)
         {
             BindTable(table);
-            if (table == null)
+            if (table is null)
                 throw ExprException.AggregateUnbound(ToString()!);
 
             if (_local)
@@ -81,7 +81,7 @@ namespace System.Data
                 DataRelationCollection relations;
                 relations = table.ChildRelations;
 
-                if (_relationName == null)
+                if (_relationName is null)
                 {
                     // must have one and only one relation
 
@@ -104,16 +104,16 @@ namespace System.Data
                 }
             }
 
-            _childTable = (_relation == null) ? table : _relation.ChildTable;
+            _childTable = (_relation is null) ? table : _relation.ChildTable;
 
             _column = _childTable.Columns[_columnName];
 
-            if (_column == null)
+            if (_column is null)
                 throw ExprException.UnboundName(_columnName);
 
             // add column to the dependency list, do not add duplicate columns
 
-            Debug.Assert(_column != null, "Failed to bind column " + _columnName);
+            Debug.Assert(_column is not null, "Failed to bind column " + _columnName);
 
             int i;
             for (i = 0; i < list.Count; i++)
@@ -162,7 +162,7 @@ namespace System.Data
 
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
-            if (_childTable == null)
+            if (_childTable is null)
                 throw ExprException.AggregateUnbound(ToString()!);
 
             DataRow[] rows;
@@ -174,11 +174,11 @@ namespace System.Data
             }
             else
             {
-                if (row == null)
+                if (row is null)
                 {
                     throw ExprException.EvalNoContext();
                 }
-                if (_relation == null)
+                if (_relation is null)
                 {
                     throw ExprException.AggregateUnbound(ToString()!);
                 }
@@ -222,7 +222,7 @@ namespace System.Data
         // Helper for the DataTable.Compute method
         internal override object Eval(int[] records)
         {
-            if (_childTable == null)
+            if (_childTable is null)
                 throw ExprException.AggregateUnbound(ToString()!);
             if (!_local)
             {

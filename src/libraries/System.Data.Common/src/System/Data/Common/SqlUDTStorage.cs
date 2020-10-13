@@ -38,13 +38,13 @@ namespace System.Data.Common
         {
             // TODO: Is it OK for the null value of a UDT to be null? For now annotating is non-nullable.
             PropertyInfo? propInfo = type.GetProperty("Null", BindingFlags.Public | BindingFlags.Static);
-            if (propInfo != null)
+            if (propInfo is not null)
             {
                 return propInfo.GetValue(null, null)!;
             }
 
             FieldInfo fieldInfo = type.GetField("Null", BindingFlags.Public | BindingFlags.Static)!;
-            if (fieldInfo != null)
+            if (fieldInfo is not null)
             {
                 return fieldInfo.GetValue(null)!;
             }
@@ -133,7 +133,7 @@ namespace System.Data.Common
         public override void SetCapacity(int capacity)
         {
             object[] newValues = new object[capacity];
-            if (_values != null)
+            if (_values is not null)
             {
                 Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
             }
@@ -171,7 +171,7 @@ namespace System.Data.Common
             if (null == xmlAttrib)
             {
                 string? typeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.MSDNS);
-                if (typeName == null)
+                if (typeName is null)
                 {
                     string? xsdTypeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.XSINS); // this xsd type
                     if (null != xsdTypeName)
@@ -179,7 +179,7 @@ namespace System.Data.Common
                         typeName = XSDSchema.XsdtoClr(xsdTypeName).FullName!;
                     }
                 }
-                Type type = (typeName == null) ? _dataType : Type.GetType(typeName)!;
+                Type type = (typeName is null) ? _dataType : Type.GetType(typeName)!;
                 object Obj = System.Activator.CreateInstance(type, true)!;
                 Debug.Assert(xmlReader is DataTextReader, "Invalid DataTextReader is being passed to customer");
                 ((IXmlSerializable)Obj).ReadXml(xmlReader);

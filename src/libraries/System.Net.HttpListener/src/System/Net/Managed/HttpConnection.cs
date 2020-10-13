@@ -86,13 +86,13 @@ namespace System.Net
 #pragma warning disable CA5359
                 _sslStream = epl.Listener.CreateSslStream(new NetworkStream(sock, false), false, (t, c, ch, e) =>
                 {
-                    if (c == null)
+                    if (c is null)
                     {
                         return true;
                     }
 
                     var c2 = c as X509Certificate2;
-                    if (c2 == null)
+                    if (c2 is null)
                     {
                         c2 = new X509Certificate2(c.GetRawCertData());
                     }
@@ -107,7 +107,7 @@ namespace System.Net
             }
 
             _timer = new Timer(OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
-            if (_sslStream != null) {
+            if (_sslStream is not null) {
                 _sslStream.AuthenticateAsServer (_cert, true, (SslProtocols)ServicePointManager.SecurityProtocol, false);
             }
             Init();
@@ -148,7 +148,7 @@ namespace System.Net
 
         public bool IsClosed
         {
-            get { return (_socket == null); }
+            get { return (_socket is null); }
         }
 
         public int Reuses
@@ -160,7 +160,7 @@ namespace System.Net
         {
             get
             {
-                if (_localEndPoint != null)
+                if (_localEndPoint is not null)
                     return _localEndPoint;
 
                 _localEndPoint = (IPEndPoint?)_socket!.LocalEndPoint;
@@ -192,7 +192,7 @@ namespace System.Net
 
         public void BeginReadRequest()
         {
-            if (_buffer == null)
+            if (_buffer is null)
                 _buffer = new byte[BufferSize];
             try
             {
@@ -211,7 +211,7 @@ namespace System.Net
 
         public HttpRequestStream GetRequestStream(bool chunked, long contentlength)
         {
-            if (_requestStream == null)
+            if (_requestStream is null)
             {
                 byte[] buffer = _memoryStream!.GetBuffer();
                 int length = (int)_memoryStream!.Length;
@@ -232,11 +232,11 @@ namespace System.Net
 
         public HttpResponseStream GetResponseStream()
         {
-            if (_responseStream == null)
+            if (_responseStream is null)
             {
                 HttpListener? listener = _context._listener;
 
-                if (listener == null)
+                if (listener is null)
                     return new HttpResponseStream(_stream, _context.Response, true);
 
                 _responseStream = new HttpResponseStream(_stream, _context.Response, listener.IgnoreWriteExceptions);
@@ -267,9 +267,9 @@ namespace System.Net
             }
             catch
             {
-                if (_memoryStream != null && _memoryStream.Length > 0)
+                if (_memoryStream is not null && _memoryStream.Length > 0)
                     SendError();
-                if (_socket != null)
+                if (_socket is not null)
                 {
                     CloseSocket();
                     Unbind();
@@ -320,7 +320,7 @@ namespace System.Net
 
         private void RemoveConnection()
         {
-            if (_lastListener == null)
+            if (_lastListener is null)
                 _epl.RemoveConnection(this);
             else
                 _lastListener.RemoveConnection(this);
@@ -368,7 +368,7 @@ namespace System.Net
                     return true;
                 }
 
-                if (line == null)
+                if (line is null)
                     break;
 
                 if (line == "")
@@ -410,7 +410,7 @@ namespace System.Net
 
         private string? ReadLine(byte[] buffer, int offset, int len, ref int used)
         {
-            if (_currentLine == null)
+            if (_currentLine is null)
                 _currentLine = new StringBuilder(128);
             int last = offset + len;
             used = 0;
@@ -452,7 +452,7 @@ namespace System.Net
                 response.ContentType = "text/html";
                 string? description = HttpStatusDescription.Get(status);
                 string str;
-                if (msg != null)
+                if (msg is not null)
                     str = string.Format("<h1>{0} ({1})</h1>", description, msg);
                 else
                     str = string.Format("<h1>{0}</h1>", description);
@@ -487,7 +487,7 @@ namespace System.Net
 
         private void CloseSocket()
         {
-            if (_socket == null)
+            if (_socket is null)
                 return;
 
             try
@@ -505,16 +505,16 @@ namespace System.Net
 
         internal void Close(bool force)
         {
-            if (_socket != null)
+            if (_socket is not null)
             {
                 Stream st = GetResponseStream();
-                if (st != null)
+                if (st is not null)
                     st.Close();
 
                 _responseStream = null;
             }
 
-            if (_socket != null)
+            if (_socket is not null)
             {
                 force |= !_context.Request.KeepAlive;
                 if (!force)
@@ -543,7 +543,7 @@ namespace System.Net
                 _socket = null;
                 try
                 {
-                    if (s != null)
+                    if (s is not null)
                         s.Shutdown(SocketShutdown.Both);
                 }
                 catch
@@ -551,7 +551,7 @@ namespace System.Net
                 }
                 finally
                 {
-                    if (s != null)
+                    if (s is not null)
                         s.Close();
                 }
                 Unbind();

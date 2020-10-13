@@ -22,7 +22,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 DS_REPL_ATTR_META_DATA_2 attrMetaData = new DS_REPL_ATTR_META_DATA_2();
                 Marshal.PtrToStructure(info, attrMetaData);
-                Debug.Assert(attrMetaData != null);
+                Debug.Assert(attrMetaData is not null);
 
                 Name = Marshal.PtrToStringUni(attrMetaData.pszAttributeName);
                 Version = attrMetaData.dwVersion;
@@ -37,7 +37,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 DS_REPL_ATTR_META_DATA attrMetaData = new DS_REPL_ATTR_META_DATA();
                 Marshal.PtrToStructure(info, attrMetaData);
-                Debug.Assert(attrMetaData != null);
+                Debug.Assert(attrMetaData is not null);
 
                 Name = Marshal.PtrToStringUni(attrMetaData.pszAttributeName);
                 Version = attrMetaData.dwVersion;
@@ -68,7 +68,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (_originatingServerName == null)
+                if (_originatingServerName is null)
                 {
                     // check whether we have got it before
                     if (_nameTable.Contains(LastOriginatingInvocationId))
@@ -76,7 +76,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         _originatingServerName = (string)_nameTable[LastOriginatingInvocationId];
                     }
                     // do the translation for downlevel platform or kcc is able to do the name translation
-                    else if (!_advanced || (_advanced && _pszLastOriginatingDsaDN != null))
+                    else if (!_advanced || (_advanced && _pszLastOriginatingDsaDN is not null))
                     {
                         _originatingServerName = Utils.GetServerNameFromInvocationID(_pszLastOriginatingDsaDN, LastOriginatingInvocationId, _server);
 

@@ -191,12 +191,12 @@ namespace System.Text.RegularExpressions
                     int i = ch >> 8;
                     int j = ch & 0xFF;
 
-                    if (NegativeUnicode == null)
+                    if (NegativeUnicode is null)
                     {
                         NegativeUnicode = new int[256][];
                     }
 
-                    if (NegativeUnicode[i] == null)
+                    if (NegativeUnicode[i] is null)
                     {
                         int[] newarray = new int[256];
 
@@ -376,7 +376,7 @@ namespace System.Text.RegularExpressions
             }
             sb.AppendLine();
 
-            if (NegativeASCII != null)
+            if (NegativeASCII is not null)
             {
                 sb.Append($"{indent}Negative table: ");
                 for (int i = 0; i < NegativeASCII.Length; i++)

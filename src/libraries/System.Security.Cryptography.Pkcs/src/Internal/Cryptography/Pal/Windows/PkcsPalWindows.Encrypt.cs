@@ -121,7 +121,7 @@ namespace Internal.Cryptography.Pal.Windows
                     {
                         CMSG_ENVELOPED_ENCODE_INFO* pEnvelopedEncodeInfo = CreateCmsEnvelopedEncodeInfo(recipients, contentEncryptionAlgorithm, originatorCerts, unprotectedAttributes, hb);
                         SafeCryptMsgHandle hCryptMsg = Interop.Crypt32.CryptMsgOpenToEncode(MsgEncodingType.All, 0, CryptMsgType.CMSG_ENVELOPED, pEnvelopedEncodeInfo, innerContentType.Value!, IntPtr.Zero);
-                        if (hCryptMsg == null || hCryptMsg.IsInvalid)
+                        if (hCryptMsg is null || hCryptMsg.IsInvalid)
                             throw Marshal.GetLastWin32Error().ToCryptographicException();
 
                         return hCryptMsg;
@@ -266,7 +266,7 @@ namespace Internal.Cryptography.Pal.Windows
                         {
                             byte[] parameters = recipient.Certificate.GetKeyAlgorithmParameters();
 
-                            if (parameters == null || parameters.Length == 0)
+                            if (parameters is null || parameters.Length == 0)
                             {
                                 padding = RSAEncryptionPadding.OaepSHA1;
                             }

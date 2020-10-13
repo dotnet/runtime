@@ -23,7 +23,7 @@ namespace System.CodeDom.Compiler
             get
             {
                 object o = _options[nameof(IndentString)];
-                return o != null ? (string)o : "    ";
+                return o is not null ? (string)o : "    ";
             }
             set => _options[nameof(IndentString)] = value;
         }
@@ -33,7 +33,7 @@ namespace System.CodeDom.Compiler
             get
             {
                 object o = _options[nameof(BracingStyle)];
-                return o != null ? (string)o : "Block";
+                return o is not null ? (string)o : "Block";
             }
             set => _options[nameof(BracingStyle)] = value;
         }
@@ -43,7 +43,7 @@ namespace System.CodeDom.Compiler
             get
             {
                 object o = _options[nameof(ElseOnClosing)];
-                return o != null ? (bool)o : false;
+                return o is not null ? (bool)o : false;
             }
             set => _options[nameof(ElseOnClosing)] = value;
         }
@@ -53,7 +53,7 @@ namespace System.CodeDom.Compiler
             get
             {
                 object o = _options[nameof(BlankLinesBetweenMembers)];
-                return o != null ? (bool)o : true;
+                return o is not null ? (bool)o : true;
             }
             set => _options[nameof(BlankLinesBetweenMembers)] = value;
         }
@@ -63,7 +63,7 @@ namespace System.CodeDom.Compiler
             get
             {
                 object o = _options[nameof(VerbatimOrder)];
-                return o != null ? (bool)o : false;
+                return o is not null ? (bool)o : false;
             }
             set => _options[nameof(VerbatimOrder)] = value;
         }

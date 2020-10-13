@@ -46,7 +46,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 MethodInfo? getterInfo = propertyInfo.GetGetMethod();
-                if (getterInfo == null)
+                if (getterInfo is null)
                 {
                     continue;
                 }
@@ -61,7 +61,7 @@ namespace System.Diagnostics.Tracing
                 EventFieldAttribute? fieldAttribute = Statics.GetCustomAttribute<EventFieldAttribute>(propertyInfo);
 
                 string propertyName =
-                    fieldAttribute != null && fieldAttribute.Name != null
+                    fieldAttribute is not null && fieldAttribute.Name is not null
                     ? fieldAttribute.Name
                     : Statics.ShouldOverrideFieldName(propertyInfo.Name)
                     ? propertyTypeInfo.Name
@@ -84,7 +84,7 @@ namespace System.Diagnostics.Tracing
                 this.tags |= typeInfo.Tags;
             }
 
-            if (eventAttrib != null)
+            if (eventAttrib is not null)
             {
                 this.level = (EventLevel)Statics.Combine((int)eventAttrib.Level, (int)this.level);
                 this.opcode = (EventOpcode)Statics.Combine((int)eventAttrib.Opcode, (int)this.opcode);
@@ -93,7 +93,7 @@ namespace System.Diagnostics.Tracing
                 this.name = eventAttrib.Name;
             }
 
-            if (this.name == null)
+            if (this.name is null)
             {
                 this.name = dataType.Name;
             }

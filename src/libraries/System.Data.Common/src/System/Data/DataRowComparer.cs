@@ -96,13 +96,13 @@ namespace System.Data
         private static bool CompareEquatableArray<TElem>(TElem[] a, TElem[] b) where TElem : IEquatable<TElem>
         {
             Debug.Assert(!ReferenceEquals(a, b));
-            Debug.Assert(a != null);
-            Debug.Assert(b != null);
+            Debug.Assert(a is not null);
+            Debug.Assert(b is not null);
             Debug.Assert(a.Length == b.Length);
 
             for (int i = 0; i < a.Length; ++i)
             {
-                if (!a[i]?.Equals(b[i]) ?? b[i] != null)
+                if (!a[i]?.Equals(b[i]) ?? b[i] is not null)
                 {
                     return false;
                 }
@@ -185,7 +185,7 @@ namespace System.Data
             }
 
             int hash = 0;
-            Debug.Assert(row.Table != null);
+            Debug.Assert(row.Table is not null);
             if (row.Table.Columns.Count > 0)
             {
                 // if the row has at least one column, then use the first column value

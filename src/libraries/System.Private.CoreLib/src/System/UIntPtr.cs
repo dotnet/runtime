@@ -62,7 +62,7 @@ namespace System
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
+            if (info is null)
                 throw new ArgumentNullException(nameof(info));
 
             info.AddValue("value", ToUInt64());

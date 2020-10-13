@@ -18,7 +18,7 @@ namespace System.ComponentModel
 
         public static ArgumentException CreateContainsNullElement(string parameterName)
         {
-            if (parameterName == null)
+            if (parameterName is null)
             {
                 throw new ArgumentNullException(nameof(parameterName));
             }
@@ -30,7 +30,7 @@ namespace System.ComponentModel
 
         public static ObjectDisposedException CreateObjectDisposed(object instance)
         {
-            if (instance == null)
+            if (instance is null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
@@ -40,7 +40,7 @@ namespace System.ComponentModel
 
         public static NotImplementedException CreateNotOverriddenByDerived(string memberName)
         {
-            if (memberName == null)
+            if (memberName is null)
             {
                 throw new ArgumentNullException(nameof(memberName));
             }
@@ -57,7 +57,7 @@ namespace System.ComponentModel
 
         public static ArgumentException CreateExportDefinitionNotOnThisComposablePart(string parameterName)
         {
-            if (parameterName == null)
+            if (parameterName is null)
             {
                 throw new ArgumentNullException(nameof(parameterName));
             }
@@ -75,7 +75,7 @@ namespace System.ComponentModel
 
         public static ArgumentException CreateImportDefinitionNotOnThisComposablePart(string parameterName)
         {
-            if (parameterName == null)
+            if (parameterName is null)
             {
                 throw new ArgumentNullException(nameof(parameterName));
             }
@@ -92,17 +92,17 @@ namespace System.ComponentModel
 
         public static CompositionException CreateCannotGetExportedValue(ComposablePart part, ExportDefinition definition, Exception innerException)
         {
-            if (part == null)
+            if (part is null)
             {
                 throw new ArgumentNullException(nameof(part));
             }
 
-            if (definition == null)
+            if (definition is null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
 
-            if (innerException == null)
+            if (innerException is null)
             {
                 throw new ArgumentNullException(nameof(innerException));
             }
@@ -113,7 +113,7 @@ namespace System.ComponentModel
 
         public static ArgumentException CreateReflectionModelInvalidPartDefinition(string parameterName, Type partDefinitionType)
         {
-            if (parameterName == null)
+            if (parameterName is null)
             {
                 throw new ArgumentNullException(nameof(parameterName));
             }
@@ -123,7 +123,7 @@ namespace System.ComponentModel
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(parameterName)), nameof(parameterName));
             }
 
-            if (partDefinitionType == null)
+            if (partDefinitionType is null)
             {
                 throw new ArgumentNullException(nameof(partDefinitionType));
             }
@@ -133,7 +133,7 @@ namespace System.ComponentModel
 
         public static ArgumentException ExportFactory_TooManyGenericParameters(string typeName)
         {
-            if (typeName == null)
+            if (typeName is null)
             {
                 throw new ArgumentNullException(nameof(typeName));
             }

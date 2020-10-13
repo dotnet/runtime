@@ -14,7 +14,7 @@ namespace System.Configuration
 
         public ConfigurationValidatorAttribute(Type validator)
         {
-            if (validator == null) throw new ArgumentNullException(nameof(validator));
+            if (validator is null) throw new ArgumentNullException(nameof(validator));
 
             if (!typeof(ConfigurationValidatorBase).IsAssignableFrom(validator))
             {
@@ -38,13 +38,13 @@ namespace System.Configuration
         // security constraints than its base type.
         internal void SetDeclaringType(Type declaringType)
         {
-            if (declaringType == null)
+            if (declaringType is null)
             {
                 Debug.Fail("Declaring type must not be null.");
                 return; // don't throw in an in-place update
             }
 
-            if (_declaringType == null)
+            if (_declaringType is null)
             {
                 // First call to this method - allow any type to be set
                 _declaringType = declaringType;

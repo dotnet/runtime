@@ -130,7 +130,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             Interop.Runtime.ReleaseHandle(objToRelease.JSHandle, out int exception);
             if (exception != 0)
-                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.Int32Handle} raw '{objToRelease.RawObject != null}' weak raw '{objToRelease.IsWeakWrapper}'   )");
+                throw new JSException($"Error releasing handle on (js-obj js '{objToRelease.JSHandle}' mono '{objToRelease.Int32Handle} raw '{objToRelease.RawObject is not null}' weak raw '{objToRelease.IsWeakWrapper}'   )");
 
             lock (_boundObjects)
             {
@@ -145,7 +145,7 @@ namespace System.Runtime.InteropServices.JavaScript
             JSObject? obj = h.Target as JSObject;
             lock (_rawToJS)
             {
-                if (obj?.RawObject != null)
+                if (obj?.RawObject is not null)
                 {
                     _rawToJS.Remove(obj.RawObject);
                     obj.FreeHandle();
@@ -265,7 +265,7 @@ namespace System.Runtime.InteropServices.JavaScript
             tmp.ptr = methodHandle;
 
             MethodBase? mb = MethodBase.GetMethodFromHandle(tmp.handle);
-            if (mb == null)
+            if (mb is null)
                 return string.Empty;
 
             ParameterInfo[] parms = mb.GetParameters();
@@ -346,7 +346,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 try
                 {
-                    if (task.Exception == null)
+                    if (task.Exception is null)
                     {
                         object? result;
                         Type task_type = task.GetType();
@@ -384,7 +384,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private static double GetDateValue(object dtv)
         {
-            if (dtv == null)
+            if (dtv is null)
                 throw new ArgumentNullException(nameof(dtv));
             if (!(dtv is DateTime dt))
                 throw new InvalidCastException($"Unable to cast object of type {dtv.GetType()} to type DateTime.");
@@ -416,7 +416,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 safeHandle.DangerousAddRef(ref _addRefSucceeded);
 #if DEBUG_HANDLE
-                if (_addRefSucceeded && _anyref != null)
+                if (_addRefSucceeded && _anyref is not null)
                     _anyref.AddRef();
 #endif
             }
@@ -426,14 +426,14 @@ namespace System.Runtime.InteropServices.JavaScript
                 {
                     safeHandle.DangerousRelease();
 #if DEBUG_HANDLE
-                    if (_anyref != null)
+                    if (_anyref is not null)
                         _anyref.Release();
 #endif
                     _addRefSucceeded = false;
                 }
             }
 #if DEBUG_HANDLE
-            Debug.WriteLine($"\tSafeHandleAddRef: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref == null) ? 0 : _anyref.RefCount)}");
+            Debug.WriteLine($"\tSafeHandleAddRef: {safeHandle.DangerousGetHandle()} / RefCount: {((_anyref is null) ? 0 : _anyref.RefCount)}");
 #endif
             return _addRefSucceeded;
         }
@@ -443,7 +443,7 @@ namespace System.Runtime.InteropServices.JavaScript
             safeHandle.DangerousRelease();
 #if DEBUG_HANDLE
             var _anyref = safeHandle as AnyRef;
-            if (_anyref != null)
+            if (_anyref is not null)
             {
                 _anyref.Release();
                 Debug.WriteLine($"\tSafeHandleRelease: {safeHandle.DangerousGetHandle()} / RefCount: {_anyref.RefCount}");
@@ -460,7 +460,7 @@ namespace System.Runtime.InteropServices.JavaScript
             {
                 if (_boundObjects.TryGetValue(jsId, out WeakReference? reference))
                 {
-                    Debug.Assert(reference.Target != null, $"\tSafeHandleReleaseByHandle: did not find active target {jsId} / target: {reference.Target}");
+                    Debug.Assert(reference.Target is not null, $"\tSafeHandleReleaseByHandle: did not find active target {jsId} / target: {reference.Target}");
                     SafeHandleRelease((AnyRef)reference.Target);
                 }
                 else

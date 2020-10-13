@@ -22,7 +22,7 @@ namespace System.Linq.Expressions.Compiler
         {
             get
             {
-                if (s_assembly == null)
+                if (s_assembly is null)
                 {
                     Interlocked.CompareExchange(ref s_assembly, new AssemblyGen(), comparand: null);
                 }

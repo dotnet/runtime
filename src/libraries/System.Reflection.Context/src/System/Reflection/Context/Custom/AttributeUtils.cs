@@ -17,7 +17,7 @@ namespace System.Reflection.Context.Custom
 
             CustomType baseMember = type.BaseType as CustomType;
 
-            if (baseMember == null)
+            if (baseMember is null)
                 return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
 
             // GetAttributeUsage is expensive and should be put off as much as possible.
@@ -43,7 +43,7 @@ namespace System.Reflection.Context.Custom
                 CombineCustomAttributes(results, inheritedAttributes, attributeFilterType, inherited, allowMultiple);
 
                 baseMember = type.BaseType as CustomType;
-            } while (baseMember != null);
+            } while (baseMember is not null);
 
             return CollectionServices.ConvertListToArray(results, attributeFilterType);
         }
@@ -57,7 +57,7 @@ namespace System.Reflection.Context.Custom
 
             CustomMethodInfo baseMember = method.GetBaseDefinition() as CustomMethodInfo;
 
-            if (baseMember == null || baseMember.Equals(method))
+            if (baseMember is null || baseMember.Equals(method))
                 return CollectionServices.IEnumerableToArray(attributes, attributeFilterType);
 
             // GetAttributeUsage is expensive and should be put off as much as possible.
@@ -83,7 +83,7 @@ namespace System.Reflection.Context.Custom
                 CombineCustomAttributes(results, inheritedAttributes, attributeFilterType, inherited, allowMultiple);
 
                 baseMember = method.GetBaseDefinition() as CustomMethodInfo;
-            } while (baseMember != null && !baseMember.Equals(method));
+            } while (baseMember is not null && !baseMember.Equals(method));
 
             return CollectionServices.ConvertListToArray(results, attributeFilterType);
         }
@@ -131,7 +131,7 @@ namespace System.Reflection.Context.Custom
         public static bool IsDefined(ICustomAttributeProvider provider, Type attributeType, bool inherit)
         {
             object[] attributes = provider.GetCustomAttributes(attributeType, inherit);
-            return attributes != null && attributes.Length > 0;
+            return attributes is not null && attributes.Length > 0;
         }
 
         private static IEnumerable<object> GetFilteredAttributes(CustomReflectionContext context, MemberInfo member, Type attributeFilterType)
@@ -178,7 +178,7 @@ namespace System.Reflection.Context.Custom
         {
             AttributeUsageAttribute[] usageAttributes = (AttributeUsageAttribute[])attributeFilterType.GetCustomAttributes(typeof(AttributeUsageAttribute), false);
 
-            if (usageAttributes == null || usageAttributes.Length == 0)
+            if (usageAttributes is null || usageAttributes.Length == 0)
             {
                 // The default AttributeUsageAttribute.
                 inherited = true;
@@ -198,7 +198,7 @@ namespace System.Reflection.Context.Custom
         {
             foreach (object attr in attributes)
             {
-                if (attr == null)
+                if (attr is null)
                     throw new InvalidOperationException(SR.InvalidOperation_NullAttribute);
 
                 if (attributeFilterType.IsInstanceOfType(attr))

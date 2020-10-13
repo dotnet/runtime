@@ -10,8 +10,8 @@ namespace System.Security.Cryptography.Pkcs
     {
         internal PublicKeyInfo(AlgorithmIdentifier algorithm, byte[] keyValue)
         {
-            Debug.Assert(algorithm != null);
-            Debug.Assert(keyValue != null);
+            Debug.Assert(algorithm is not null);
+            Debug.Assert(keyValue is not null);
 
             Algorithm = algorithm;
             KeyValue = keyValue;

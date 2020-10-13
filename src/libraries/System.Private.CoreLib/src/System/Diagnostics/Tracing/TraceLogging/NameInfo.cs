@@ -95,7 +95,7 @@ namespace System.Diagnostics.Tracing
                             descriptor.Version,
                             (EventOpcode)descriptor.Opcode,
                             eventTypes);
-                        uint metadataLength = (metadata != null) ? (uint)metadata.Length : 0;
+                        uint metadataLength = (metadata is not null) ? (uint)metadata.Length : 0;
 
                         unsafe
                         {

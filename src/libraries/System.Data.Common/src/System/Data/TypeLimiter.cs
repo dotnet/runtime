@@ -22,7 +22,7 @@ namespace System.Data
 
         private TypeLimiter(Scope scope)
         {
-            Debug.Assert(scope != null);
+            Debug.Assert(scope is not null);
             m_instanceScope = scope;
         }
 
@@ -40,7 +40,7 @@ namespace System.Data
         public static TypeLimiter? Capture()
         {
             Scope? activeScope = s_activeScope;
-            return (activeScope != null) ? new TypeLimiter(activeScope) : null;
+            return (activeScope is not null) ? new TypeLimiter(activeScope) : null;
         }
 
         /// <summary>
@@ -106,7 +106,7 @@ namespace System.Data
         /// </summary>
         private static IEnumerable<Type> GetPreviouslyDeclaredDataTypes(DataTable dataTable)
         {
-            return (dataTable != null)
+            return (dataTable is not null)
                 ? dataTable.Columns.Cast<DataColumn>().Select(column => column.DataType)
                 : Enumerable.Empty<Type>();
         }
@@ -117,7 +117,7 @@ namespace System.Data
         /// </summary>
         private static IEnumerable<Type> GetPreviouslyDeclaredDataTypes(DataSet dataSet)
         {
-            return (dataSet != null)
+            return (dataSet is not null)
                 ? dataSet.Tables.Cast<DataTable>().SelectMany(table => GetPreviouslyDeclaredDataTypes(table))
                 : Enumerable.Empty<Type>();
         }
@@ -197,10 +197,10 @@ namespace System.Data
 
             internal Scope(Scope? previousScope, IEnumerable<Type> allowedTypes)
             {
-                Debug.Assert(allowedTypes != null);
+                Debug.Assert(allowedTypes is not null);
 
                 m_previousScope = previousScope;
-                m_allowedTypes = new HashSet<Type>(allowedTypes.Where(type => type != null));
+                m_allowedTypes = new HashSet<Type>(allowedTypes.Where(type => type is not null));
                 m_deserializationToken = SerializationInfo.StartDeserialization();
             }
 
@@ -220,7 +220,7 @@ namespace System.Data
 
             public bool IsAllowedType(Type type)
             {
-                Debug.Assert(type != null);
+                Debug.Assert(type is not null);
 
                 // Is the incoming type unconditionally allowed?
 
@@ -232,7 +232,7 @@ namespace System.Data
                 // The incoming type is allowed if the current scope or any nested inner
                 // scope allowed it.
 
-                for (Scope? currentScope = this; currentScope != null; currentScope = currentScope.m_previousScope)
+                for (Scope? currentScope = this; currentScope is not null; currentScope = currentScope.m_previousScope)
                 {
                     if (currentScope.m_allowedTypes.Contains(type))
                     {
@@ -243,7 +243,7 @@ namespace System.Data
                 // Did the application programmatically allow this type to be deserialized?
 
                 Type[]? appDomainAllowedTypes = (Type[]?)AppDomain.CurrentDomain.GetData(AppDomainDataSetDefaultAllowedTypesKey);
-                if (appDomainAllowedTypes != null)
+                if (appDomainAllowedTypes is not null)
                 {
                     for (int i = 0; i < appDomainAllowedTypes.Length; i++)
                     {
@@ -262,7 +262,7 @@ namespace System.Data
             private static bool IsTypeUnconditionallyAllowed(Type type)
             {
             TryAgain:
-                Debug.Assert(type != null);
+                Debug.Assert(type is not null);
 
                 // Check the list of unconditionally allowed types.
 

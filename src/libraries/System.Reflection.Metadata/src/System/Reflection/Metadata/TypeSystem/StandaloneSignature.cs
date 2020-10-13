@@ -16,7 +16,7 @@ namespace System.Reflection.Metadata
 
         internal StandaloneSignature(MetadataReader reader, StandaloneSignatureHandle handle)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(!handle.IsNil);
 
             _reader = reader;

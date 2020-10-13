@@ -34,9 +34,9 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
-            if (safeContents == null)
+            if (safeContents is null)
                 throw new ArgumentNullException(nameof(safeContents));
-            if (pbeParameters == null)
+            if (pbeParameters is null)
                 throw new ArgumentNullException(nameof(pbeParameters));
             if (pbeParameters.IterationCount < 1)
                 throw new ArgumentOutOfRangeException(nameof(pbeParameters));
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Pkcs
 
             byte[] encrypted = safeContents.Encrypt(ReadOnlySpan<char>.Empty, passwordBytes, pbeParameters);
 
-            if (_contents == null)
+            if (_contents is null)
             {
                 _contents = new List<ContentInfoAsn>();
             }
@@ -82,9 +82,9 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters)
         {
-            if (safeContents == null)
+            if (safeContents is null)
                 throw new ArgumentNullException(nameof(safeContents));
-            if (pbeParameters == null)
+            if (pbeParameters is null)
                 throw new ArgumentNullException(nameof(pbeParameters));
             if (pbeParameters.IterationCount < 1)
                 throw new ArgumentOutOfRangeException(nameof(pbeParameters));
@@ -100,7 +100,7 @@ namespace System.Security.Cryptography.Pkcs
 
             byte[] encrypted = safeContents.Encrypt(password, ReadOnlySpan<byte>.Empty, pbeParameters);
 
-            if (_contents == null)
+            if (_contents is null)
             {
                 _contents = new List<ContentInfoAsn>();
             }
@@ -115,12 +115,12 @@ namespace System.Security.Cryptography.Pkcs
 
         public void AddSafeContentsUnencrypted(Pkcs12SafeContents safeContents)
         {
-            if (safeContents == null)
+            if (safeContents is null)
                 throw new ArgumentNullException(nameof(safeContents));
             if (IsSealed)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_PfxIsSealed);
 
-            if (_contents == null)
+            if (_contents is null)
             {
                 _contents = new List<ContentInfoAsn>();
             }
@@ -173,7 +173,7 @@ namespace System.Security.Cryptography.Pkcs
                 using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithm))
                 {
                     contentsWriter.PushSequence();
-                    if (_contents != null)
+                    if (_contents is not null)
                     {
                         foreach (ContentInfoAsn contentInfo in _contents)
                         {
@@ -292,13 +292,13 @@ namespace System.Security.Cryptography.Pkcs
                 CryptographicOperations.ZeroMemory(macSpan);
                 CryptographicOperations.ZeroMemory(authSafeSpan);
 
-                if (rentedMac != null)
+                if (rentedMac is not null)
                 {
                     // Already cleared
                     CryptoPool.Return(rentedMac, clearSize: 0);
                 }
 
-                if (rentedAuthSafe != null)
+                if (rentedAuthSafe is not null)
                 {
                     // Already cleared
                     CryptoPool.Return(rentedAuthSafe, clearSize: 0);
@@ -315,7 +315,7 @@ namespace System.Security.Cryptography.Pkcs
             AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
             {
                 contentsWriter.PushSequence();
-                if (_contents != null)
+                if (_contents is not null)
                 {
                     foreach (ContentInfoAsn contentInfo in _contents)
                     {

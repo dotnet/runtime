@@ -17,7 +17,7 @@ namespace System.Text
 
         internal static int GetCodePageFromName(string name)
         {
-            if (name == null)
+            if (name is null)
                 return 0;
 
             int codePage;

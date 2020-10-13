@@ -63,14 +63,14 @@ namespace System.Net.Http.Headers
         {
             // Index may be value.Length (e.g. both 0). This may be allowed for some headers (e.g. Accept but not
             // allowed by others (e.g. Content-Length). The parser has to decide if this is valid or not.
-            Debug.Assert((value == null) || ((index >= 0) && (index <= value.Length)));
+            Debug.Assert((value is null) || ((index >= 0) && (index <= value.Length)));
 
             // If a parser returns 'null', it means there was no value, but that's valid (e.g. "Accept: "). The caller
             // can ignore the value.
             if (!TryParseValue(value, storeValue, ref index, out object? result))
             {
                 throw new FormatException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value,
-                    value == null ? "<null>" : value.Substring(index)));
+                    value is null ? "<null>" : value.Substring(index)));
             }
             return result;
         }
@@ -81,7 +81,7 @@ namespace System.Net.Http.Headers
         // values (e.g. byte[] to Base64 encoded string).
         public virtual string? ToString(object value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             return value.ToString();
         }

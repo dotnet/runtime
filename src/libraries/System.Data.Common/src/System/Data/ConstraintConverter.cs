@@ -29,7 +29,7 @@ namespace System.Data
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
@@ -40,7 +40,7 @@ namespace System.Data
                 {
                     UniqueConstraint constr = (UniqueConstraint)value;
                     Reflection.ConstructorInfo ctor = typeof(UniqueConstraint).GetConstructor(new Type[] { typeof(string), typeof(string[]), typeof(bool) })!;
-                    if (ctor != null)
+                    if (ctor is not null)
                     {
                         return new InstanceDescriptor(ctor, new object[] { constr.ConstraintName, constr.ColumnNames, constr.IsPrimaryKey });
                     }
@@ -51,7 +51,7 @@ namespace System.Data
                     System.Reflection.ConstructorInfo ctor =
                         typeof(ForeignKeyConstraint).GetConstructor(new Type[] { typeof(string), typeof(string), typeof(string[]),
                             typeof(string[]), typeof(AcceptRejectRule), typeof(Rule), typeof(Rule) })!;
-                    if (ctor != null)
+                    if (ctor is not null)
                     {
                         return new InstanceDescriptor(ctor, new object[] { constr.ConstraintName, constr.ParentKey.Table.TableName, constr.ParentColumnNames,
                             constr.ChildColumnNames, constr.AcceptRejectRule, constr.DeleteRule, constr.UpdateRule });

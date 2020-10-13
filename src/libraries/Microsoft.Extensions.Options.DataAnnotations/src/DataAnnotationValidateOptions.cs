@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Options
         public ValidateOptionsResult Validate(string name, TOptions options)
         {
             // Null name is used to configure all named options.
-            if (Name == null || name == Name)
+            if (Name is null || name == Name)
             {
                 var validationResults = new List<ValidationResult>();
                 if (Validator.TryValidateObject(options,

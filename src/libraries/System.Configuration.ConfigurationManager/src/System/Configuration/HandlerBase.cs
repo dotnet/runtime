@@ -17,7 +17,7 @@ namespace System.Configuration
             XmlNode a = node.Attributes.RemoveNamedItem(attrib);
 
             // If the attribute is required and was not present, throw
-            if (fRequired && a == null)
+            if (fRequired && a is null)
             {
                 throw new ConfigurationErrorsException(
                     SR.Format(SR.Config_missing_required_attribute, attrib, node.Name),
@@ -30,7 +30,7 @@ namespace System.Configuration
         private static XmlNode GetAndRemoveStringAttributeInternal(XmlNode node, string attrib, bool fRequired, ref string val)
         {
             XmlNode a = GetAndRemoveAttribute(node, attrib, fRequired);
-            if (a != null)
+            if (a is not null)
                 val = a.Value;
 
             return a;
@@ -45,7 +45,7 @@ namespace System.Configuration
         private static XmlNode GetAndRemoveBooleanAttributeInternal(XmlNode node, string attrib, bool fRequired, ref bool val)
         {
             XmlNode a = GetAndRemoveAttribute(node, attrib, fRequired);
-            if (a != null)
+            if (a is not null)
             {
                 try
                 {
@@ -71,7 +71,7 @@ namespace System.Configuration
         private static XmlNode GetAndRemoveIntegerAttributeInternal(XmlNode node, string attrib, bool fRequired, ref int val)
         {
             XmlNode a = GetAndRemoveAttribute(node, attrib, fRequired);
-            if (a != null)
+            if (a is not null)
             {
                 if (a.Value.Trim() != a.Value)
                 {
@@ -115,7 +115,7 @@ namespace System.Configuration
 
             XmlNode attribute = node.Attributes.RemoveNamedItem(name);
 
-            if (attribute != null)
+            if (attribute is not null)
             {
                 return attribute.Value;
             }
@@ -133,7 +133,7 @@ namespace System.Configuration
         {
             XmlNode attribute = node.Attributes.RemoveNamedItem(name);
 
-            if (attribute == null)
+            if (attribute is null)
             {
                 throw new ConfigurationErrorsException(
                                 SR.Format(SR.Config_base_required_attribute_missing, name),

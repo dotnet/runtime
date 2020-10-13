@@ -40,7 +40,7 @@ internal static partial class Interop
         {
             string? path = s_cgroupMemoryLimitPath;
 
-            if (path != null &&
+            if (path is not null &&
                 TryReadMemoryValueFromFile(path, out limit))
             {
                 return true;
@@ -132,7 +132,7 @@ internal static partial class Interop
         private static string? FindCGroupMemoryLimitPath(CGroupVersion cgroupVersion)
         {
             string? cgroupMemoryPath = FindCGroupPath(cgroupVersion, "memory");
-            if (cgroupMemoryPath != null)
+            if (cgroupMemoryPath is not null)
             {
                 if (cgroupVersion == CGroupVersion.CGroup1)
                 {
@@ -224,7 +224,7 @@ internal static partial class Interop
                     using (var reader = new StreamReader(mountInfoFilePath))
                     {
                         string? line;
-                        while ((line = reader.ReadLine()) != null)
+                        while ((line = reader.ReadLine()) is not null)
                         {
                             // Look for an entry that has cgroup as the "filesystem type"
                             // and, for cgroup1, that has options containing the specified subsystem
@@ -318,7 +318,7 @@ internal static partial class Interop
                     using (var reader = new StreamReader(procCGroupFilePath))
                     {
                         string? line;
-                        while ((line = reader.ReadLine()) != null)
+                        while ((line = reader.ReadLine()) is not null)
                         {
                             string[] lineParts = line.Split(':');
 

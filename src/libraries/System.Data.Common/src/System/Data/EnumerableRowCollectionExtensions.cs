@@ -150,7 +150,7 @@ namespace System.Data
                 //Anonymous type or some other type
                 //The only thing that matters from this point on is _enumerableRows
 
-                Debug.Assert(source != null);
+                Debug.Assert(source is not null);
 
                 IEnumerable<TResult> typedEnumerable = Enumerable.Cast<TResult>(source);
 

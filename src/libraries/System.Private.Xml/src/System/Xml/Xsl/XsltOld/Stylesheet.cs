@@ -65,7 +65,7 @@ namespace System.Xml.Xsl.XsltOld
         internal void AddSpace(Compiler compiler, string query, double Priority, bool PreserveSpace)
         {
             WhitespaceElement elem;
-            if (_queryKeyTable != null)
+            if (_queryKeyTable is not null)
             {
                 if (_queryKeyTable.Contains(query))
                 {
@@ -87,7 +87,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void SortWhiteSpace()
         {
-            if (_queryKeyTable != null)
+            if (_queryKeyTable is not null)
             {
                 for (int i = 0; i < _whitespaceList!.Count; i++)
                 {
@@ -105,7 +105,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 _whitespace = true;
             }
-            if (_imports != null)
+            if (_imports is not null)
             {
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
@@ -122,7 +122,7 @@ namespace System.Xml.Xsl.XsltOld
         internal bool PreserveWhiteSpace(Processor proc, XPathNavigator node)
         {
             // last one should win. I.E. We starting from the end. I.E. Lowest priority should go first
-            if (_whitespaceList != null)
+            if (_whitespaceList is not null)
             {
                 for (int i = _whitespaceList.Count - 1; 0 <= i; i--)
                 {
@@ -133,7 +133,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                 }
             }
-            if (_imports != null)
+            if (_imports is not null)
             {
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
@@ -147,12 +147,12 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddAttributeSet(AttributeSetAction attributeSet)
         {
-            Debug.Assert(attributeSet.Name != null);
-            if (_attributeSetTable == null)
+            Debug.Assert(attributeSet.Name is not null);
+            if (_attributeSetTable is null)
             {
                 _attributeSetTable = new Hashtable();
             }
-            Debug.Assert(_attributeSetTable != null);
+            Debug.Assert(_attributeSetTable is not null);
 
             if (_attributeSetTable.ContainsKey(attributeSet.Name) == false)
             {
@@ -173,9 +173,9 @@ namespace System.Xml.Xsl.XsltOld
             // Ensure template has a unique name
             //
 
-            Debug.Assert(_templateNameTable != null);
+            Debug.Assert(_templateNameTable is not null);
 
-            if (template.Name != null)
+            if (template.Name is not null)
             {
                 if (_templateNameTable.ContainsKey(template.Name) == false)
                 {
@@ -190,20 +190,20 @@ namespace System.Xml.Xsl.XsltOld
 
             if (template.MatchKey != Compiler.InvalidQueryKey)
             {
-                if (_modeManagers == null)
+                if (_modeManagers is null)
                 {
                     _modeManagers = new Hashtable();
                 }
-                Debug.Assert(_modeManagers != null);
+                Debug.Assert(_modeManagers is not null);
 
-                if (mode == null)
+                if (mode is null)
                 {
                     mode = XmlQualifiedName.Empty;
                 }
 
                 TemplateManager? manager = (TemplateManager?)_modeManagers[mode];
 
-                if (manager == null)
+                if (manager is null)
                 {
                     manager = new TemplateManager(this, mode);
 
@@ -211,11 +211,11 @@ namespace System.Xml.Xsl.XsltOld
 
                     if (mode.IsEmpty)
                     {
-                        Debug.Assert(_templates == null);
+                        Debug.Assert(_templates is null);
                         _templates = manager;
                     }
                 }
-                Debug.Assert(manager != null);
+                Debug.Assert(manager is not null);
 
                 template.TemplateId = ++_templateCount;
                 manager.AddTemplate(template);
@@ -224,7 +224,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void ProcessTemplates()
         {
-            if (_modeManagers != null)
+            if (_modeManagers is not null)
             {
                 IDictionaryEnumerator enumerator = _modeManagers.GetEnumerator();
                 while (enumerator.MoveNext())
@@ -235,13 +235,13 @@ namespace System.Xml.Xsl.XsltOld
                 }
             }
 
-            if (_imports != null)
+            if (_imports is not null)
             {
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
                     Debug.Assert(_imports[importIndex] is Stylesheet);
                     Stylesheet? stylesheet = (Stylesheet?)_imports[importIndex];
-                    Debug.Assert(stylesheet != null);
+                    Debug.Assert(stylesheet is not null);
 
                     //
                     // Process templates in imported stylesheet
@@ -255,13 +255,13 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void ReplaceNamespaceAlias(Compiler compiler)
         {
-            if (_modeManagers != null)
+            if (_modeManagers is not null)
             {
                 IDictionaryEnumerator enumerator = _modeManagers.GetEnumerator();
                 while (enumerator.MoveNext())
                 {
                     TemplateManager manager = (TemplateManager)enumerator.Value!;
-                    if (manager.templates != null)
+                    if (manager.templates is not null)
                     {
                         for (int i = 0; i < manager.templates.Count; i++)
                         {
@@ -271,7 +271,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                 }
             }
-            if (_templateNameTable != null)
+            if (_templateNameTable is not null)
             {
                 IDictionaryEnumerator enumerator = _templateNameTable.GetEnumerator();
                 while (enumerator.MoveNext())
@@ -280,7 +280,7 @@ namespace System.Xml.Xsl.XsltOld
                     template.ReplaceNamespaceAlias(compiler);
                 }
             }
-            if (_imports != null)
+            if (_imports is not null)
             {
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
@@ -292,18 +292,18 @@ namespace System.Xml.Xsl.XsltOld
 
         internal TemplateAction? FindTemplate(Processor processor, XPathNavigator navigator, XmlQualifiedName mode)
         {
-            Debug.Assert(processor != null && navigator != null);
-            Debug.Assert(mode != null);
+            Debug.Assert(processor is not null && navigator is not null);
+            Debug.Assert(mode is not null);
             TemplateAction? action = null;
 
             //
             // Try to find template within this stylesheet first
             //
-            if (_modeManagers != null)
+            if (_modeManagers is not null)
             {
                 TemplateManager? manager = (TemplateManager?)_modeManagers[mode];
 
-                if (manager != null)
+                if (manager is not null)
                 {
                     Debug.Assert(manager.Mode.Equals(mode));
                     action = manager.FindTemplate(processor, navigator);
@@ -314,7 +314,7 @@ namespace System.Xml.Xsl.XsltOld
             // If unsuccessful, search in imported documents from backwards
             //
 
-            if (action == null)
+            if (action is null)
             {
                 action = FindTemplateImports(processor, navigator, mode);
             }
@@ -330,13 +330,13 @@ namespace System.Xml.Xsl.XsltOld
             // Do we have imported stylesheets?
             //
 
-            if (_imports != null)
+            if (_imports is not null)
             {
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
                     Debug.Assert(_imports[importIndex] is Stylesheet);
                     Stylesheet? stylesheet = (Stylesheet?)_imports[importIndex];
-                    Debug.Assert(stylesheet != null);
+                    Debug.Assert(stylesheet is not null);
 
                     //
                     // Search in imported stylesheet
@@ -344,7 +344,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     action = stylesheet.FindTemplate(processor, navigator, mode);
 
-                    if (action != null)
+                    if (action is not null)
                     {
                         return action;
                     }
@@ -356,8 +356,8 @@ namespace System.Xml.Xsl.XsltOld
 
         internal TemplateAction? FindTemplate(Processor processor, XPathNavigator navigator)
         {
-            Debug.Assert(processor != null && navigator != null);
-            Debug.Assert(_templates == null && _modeManagers == null || _templates == _modeManagers![XmlQualifiedName.Empty]);
+            Debug.Assert(processor is not null && navigator is not null);
+            Debug.Assert(_templates is null && _modeManagers is null || _templates == _modeManagers![XmlQualifiedName.Empty]);
 
             TemplateAction? action = null;
 
@@ -365,7 +365,7 @@ namespace System.Xml.Xsl.XsltOld
             // Try to find template within this stylesheet first
             //
 
-            if (_templates != null)
+            if (_templates is not null)
             {
                 action = _templates.FindTemplate(processor, navigator);
             }
@@ -374,7 +374,7 @@ namespace System.Xml.Xsl.XsltOld
             // If unsuccessful, search in imported documents from backwards
             //
 
-            if (action == null)
+            if (action is null)
             {
                 action = FindTemplateImports(processor, navigator);
             }
@@ -384,7 +384,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal TemplateAction? FindTemplate(XmlQualifiedName name)
         {
-            //Debug.Assert(this.templateNameTable == null);
+            //Debug.Assert(this.templateNameTable is null);
 
             TemplateAction? action = null;
 
@@ -392,7 +392,7 @@ namespace System.Xml.Xsl.XsltOld
             // Try to find template within this stylesheet first
             //
 
-            if (_templateNameTable != null)
+            if (_templateNameTable is not null)
             {
                 action = (TemplateAction?)_templateNameTable[name];
             }
@@ -401,13 +401,13 @@ namespace System.Xml.Xsl.XsltOld
             // If unsuccessful, search in imported documents from backwards
             //
 
-            if (action == null && _imports != null)
+            if (action is null && _imports is not null)
             {
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
                     Debug.Assert(_imports[importIndex] is Stylesheet);
                     Stylesheet? stylesheet = (Stylesheet?)_imports[importIndex];
-                    Debug.Assert(stylesheet != null);
+                    Debug.Assert(stylesheet is not null);
 
                     //
                     // Search in imported stylesheet
@@ -415,7 +415,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     action = stylesheet.FindTemplate(name);
 
-                    if (action != null)
+                    if (action is not null)
                     {
                         return action;
                     }
@@ -433,13 +433,13 @@ namespace System.Xml.Xsl.XsltOld
             // Do we have imported stylesheets?
             //
 
-            if (_imports != null)
+            if (_imports is not null)
             {
                 for (int importIndex = _imports.Count - 1; importIndex >= 0; importIndex--)
                 {
                     Debug.Assert(_imports[importIndex] is Stylesheet);
                     Stylesheet? stylesheet = (Stylesheet?)_imports[importIndex];
-                    Debug.Assert(stylesheet != null);
+                    Debug.Assert(stylesheet is not null);
 
                     //
                     // Search in imported stylesheet
@@ -447,7 +447,7 @@ namespace System.Xml.Xsl.XsltOld
 
                     action = stylesheet.FindTemplate(processor, navigator);
 
-                    if (action != null)
+                    if (action is not null)
                     {
                         return action;
                     }

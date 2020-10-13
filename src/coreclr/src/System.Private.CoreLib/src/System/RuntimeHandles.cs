@@ -19,7 +19,7 @@ namespace System
         {
             // Create local copy to avoid a race condition
             RuntimeType type = m_type;
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             return new RuntimeTypeHandle(type);
         }
@@ -29,7 +29,7 @@ namespace System
         {
             // Create local copy to avoid a race condition
             RuntimeType type = m_type;
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             return type;
         }
@@ -41,7 +41,7 @@ namespace System
         {
             Type type = typeStart;
 
-            if (genericArgs != null)
+            if (genericArgs is not null)
             {
                 type = type.MakeGenericType(genericArgs);
             }
@@ -78,7 +78,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return m_type != null ? m_type.GetHashCode() : 0;
+            return m_type is not null ? m_type.GetHashCode() : 0;
         }
 
         public override bool Equals(object? obj)
@@ -95,7 +95,7 @@ namespace System
             return handle.m_type == m_type;
         }
 
-        public IntPtr Value => m_type != null ? m_type.m_handle : IntPtr.Zero;
+        public IntPtr Value => m_type is not null ? m_type.m_handle : IntPtr.Zero;
 
         [Intrinsic]
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -164,7 +164,7 @@ namespace System
 
         internal static IntPtr[]? CopyRuntimeTypeHandles(RuntimeTypeHandle[]? inHandles, out int length)
         {
-            if (inHandles == null || inHandles.Length == 0)
+            if (inHandles is null || inHandles.Length == 0)
             {
                 length = 0;
                 return null;
@@ -181,7 +181,7 @@ namespace System
 
         internal static IntPtr[]? CopyRuntimeTypeHandles(Type[]? inHandles, out int length)
         {
-            if (inHandles == null || inHandles.Length == 0)
+            if (inHandles is null || inHandles.Length == 0)
             {
                 length = 0;
                 return null;
@@ -688,7 +688,7 @@ namespace System
         // Returns handle for interop with EE. The handle is guaranteed to be non-null.
         internal static IRuntimeMethodInfo EnsureNonNullMethodInfo(IRuntimeMethodInfo method)
         {
-            if (method == null)
+            if (method is null)
                 throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             return method;
         }
@@ -717,7 +717,7 @@ namespace System
             throw new PlatformNotSupportedException();
         }
 
-        public IntPtr Value => m_value != null ? m_value.Value.Value : IntPtr.Zero;
+        public IntPtr Value => m_value is not null ? m_value.Value.Value : IntPtr.Zero;
 
         public override int GetHashCode()
         {
@@ -745,7 +745,7 @@ namespace System
 
         internal bool IsNullHandle()
         {
-            return m_value == null;
+            return m_value is null;
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -815,7 +815,7 @@ namespace System
 
         internal static int GetSlot(IRuntimeMethodInfo method)
         {
-            Debug.Assert(method != null);
+            Debug.Assert(method is not null);
 
             int slot = RuntimeMethodHandle.GetSlot(method.Value);
             GC.KeepAlive(method);
@@ -1014,7 +1014,7 @@ namespace System
         {
             // Create local copy to avoid a race condition
             IRuntimeFieldInfo field = m_ptr;
-            if (field == null)
+            if (field is null)
                 throw new ArgumentNullException(null, SR.Arg_InvalidHandle);
             return new RuntimeFieldHandle(field);
         }
@@ -1031,11 +1031,11 @@ namespace System
             return m_ptr;
         }
 
-        public IntPtr Value => m_ptr != null ? m_ptr.Value.Value : IntPtr.Zero;
+        public IntPtr Value => m_ptr is not null ? m_ptr.Value.Value : IntPtr.Zero;
 
         internal bool IsNullHandle()
         {
-            return m_ptr == null;
+            return m_ptr is null;
         }
 
         public override int GetHashCode()
@@ -1146,7 +1146,7 @@ namespace System
 
         public override int GetHashCode()
         {
-            return m_ptr != null ? m_ptr.GetHashCode() : 0;
+            return m_ptr is not null ? m_ptr.GetHashCode() : 0;
         }
 
         public override bool Equals(object? obj)
@@ -1177,7 +1177,7 @@ namespace System
         private static void ValidateModulePointer(RuntimeModule module)
         {
             // Make sure we have a valid Module to resolve against.
-            if (module == null)
+            if (module is null)
                 throw new InvalidOperationException(SR.InvalidOperation_NullModuleHandle);
         }
 

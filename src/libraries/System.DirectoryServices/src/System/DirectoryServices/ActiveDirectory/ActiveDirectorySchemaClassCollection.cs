@@ -56,7 +56,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get => (ActiveDirectorySchemaClass)List[index];
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -79,7 +79,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int Add(ActiveDirectorySchemaClass schemaClass)
         {
-            if (schemaClass == null)
+            if (schemaClass is null)
             {
                 throw new ArgumentNullException(nameof(schemaClass));
             }
@@ -101,14 +101,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ActiveDirectorySchemaClass[] schemaClasses)
         {
-            if (schemaClasses == null)
+            if (schemaClasses is null)
             {
                 throw new ArgumentNullException(nameof(schemaClasses));
             }
 
             foreach (ActiveDirectorySchemaClass schemaClass in schemaClasses)
             {
-                if (schemaClass == null)
+                if (schemaClass is null)
                 {
                     throw new ArgumentException(null, nameof(schemaClasses));
                 }
@@ -122,14 +122,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ActiveDirectorySchemaClassCollection schemaClasses)
         {
-            if (schemaClasses == null)
+            if (schemaClasses is null)
             {
                 throw new ArgumentNullException(nameof(schemaClasses));
             }
 
             foreach (ActiveDirectorySchemaClass schemaClass in schemaClasses)
             {
-                if (schemaClass == null)
+                if (schemaClass is null)
                 {
                     throw new ArgumentException(null, nameof(schemaClasses));
                 }
@@ -144,14 +144,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ReadOnlyActiveDirectorySchemaClassCollection schemaClasses)
         {
-            if (schemaClasses == null)
+            if (schemaClasses is null)
             {
                 throw new ArgumentNullException(nameof(schemaClasses));
             }
 
             foreach (ActiveDirectorySchemaClass schemaClass in schemaClasses)
             {
-                if (schemaClass == null)
+                if (schemaClass is null)
                 {
                     throw new ArgumentException(null, nameof(schemaClasses));
                 }
@@ -166,7 +166,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Remove(ActiveDirectorySchemaClass schemaClass)
         {
-            if (schemaClass == null)
+            if (schemaClass is null)
             {
                 throw new ArgumentNullException(nameof(schemaClass));
             }
@@ -190,7 +190,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Insert(int index, ActiveDirectorySchemaClass schemaClass)
         {
-            if (schemaClass == null)
+            if (schemaClass is null)
             {
                 throw new ArgumentNullException(nameof(schemaClass));
             }
@@ -212,7 +212,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ActiveDirectorySchemaClass schemaClass)
         {
-            if (schemaClass == null)
+            if (schemaClass is null)
             {
                 throw new ArgumentNullException(nameof(schemaClass));
             }
@@ -241,7 +241,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ActiveDirectorySchemaClass schemaClass)
         {
-            if (schemaClass == null)
+            if (schemaClass is null)
             {
                 throw new ArgumentNullException(nameof(schemaClass));
             }
@@ -267,7 +267,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_isBound)
             {
-                if (_classEntry == null)
+                if (_classEntry is null)
                 {
                     _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
                 }
@@ -290,7 +290,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_isBound)
             {
-                if (_classEntry == null)
+                if (_classEntry is null)
                 {
                     _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
                 }
@@ -310,7 +310,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_isBound)
             {
-                if (_classEntry == null)
+                if (_classEntry is null)
                 {
                     _classEntry = _schemaClass.GetSchemaClassDirectoryEntry();
                 }
@@ -352,7 +352,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         protected override void OnValidate(object value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }

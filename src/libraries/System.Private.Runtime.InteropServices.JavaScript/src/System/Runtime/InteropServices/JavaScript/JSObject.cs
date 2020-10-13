@@ -121,7 +121,7 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             object setPropResult = Interop.Runtime.SetObjectProperty(JSHandle, name, value, createIfNotExists, hasOwnProperty, out int exception);
             if (exception != 0)
-                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{Int32Handle} raw '{RawObject != null})");
+                throw new JSException($"Error setting {name} on (js-obj js '{JSHandle}' .NET '{Int32Handle} raw '{RawObject is not null})");
         }
 
         /// <summary>
@@ -148,7 +148,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="prop">The String name or Symbol of the property to test.</param>
         public bool PropertyIsEnumerable(string prop) => (bool)Invoke("propertyIsEnumerable", prop);
 
-        internal bool IsWeakWrapper => WeakRawObject?.Target != null;
+        internal bool IsWeakWrapper => WeakRawObject?.Target is not null;
 
         internal object? GetWrappedObject()
         {
@@ -201,7 +201,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public override string ToString()
         {
-            return $"(js-obj js '{Int32Handle}' raw '{RawObject != null}' weak_raw '{WeakRawObject != null}')";
+            return $"(js-obj js '{Int32Handle}' raw '{RawObject is not null}' weak_raw '{WeakRawObject is not null}')";
         }
     }
 }

@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Primitives
             // Validate arguments, check is minimal instructions with reduced branching for inlinable fast-path
             // Negative values discovered though conversion to high values when converted to unsigned
             // Failure should be rare and location determination and message is delegated to failure functions
-            if (buffer == null || (uint)offset > (uint)buffer.Length || (uint)length > (uint)(buffer.Length - offset))
+            if (buffer is null || (uint)offset > (uint)buffer.Length || (uint)length > (uint)(buffer.Length - offset))
             {
                 ThrowInvalidArguments(buffer, offset, length);
             }
@@ -96,7 +96,7 @@ namespace Microsoft.Extensions.Primitives
         /// </summary>
         public bool HasValue
         {
-            get { return Buffer != null; }
+            get { return Buffer is not null; }
         }
 
         /// <summary>
@@ -227,7 +227,7 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(string text, StringComparison comparisonType)
         {
-            if (text == null)
+            if (text is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
@@ -305,7 +305,7 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool StartsWith(string text, StringComparison comparisonType)
         {
-            if (text == null)
+            if (text is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
@@ -333,7 +333,7 @@ namespace Microsoft.Extensions.Primitives
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool EndsWith(string text, StringComparison comparisonType)
         {
-            if (text == null)
+            if (text is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
             }
@@ -673,7 +673,7 @@ namespace Microsoft.Extensions.Primitives
 
             Exception GetInvalidArgumentsException()
             {
-                if (buffer == null)
+                if (buffer is null)
                 {
                     return ThrowHelper.GetArgumentNullException(ExceptionArgument.buffer);
                 }

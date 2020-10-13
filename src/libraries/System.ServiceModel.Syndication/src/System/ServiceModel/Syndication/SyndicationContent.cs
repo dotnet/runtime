@@ -69,7 +69,7 @@ namespace System.ServiceModel.Syndication
 
         public void WriteTo(XmlWriter writer, string outerElementName, string outerElementNamespace)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -80,7 +80,7 @@ namespace System.ServiceModel.Syndication
 
             writer.WriteStartElement(outerElementName, outerElementNamespace);
             writer.WriteAttributeString(Atom10Constants.TypeTag, string.Empty, Type);
-            if (_attributeExtensions != null)
+            if (_attributeExtensions is not null)
             {
                 foreach (XmlQualifiedName key in _attributeExtensions.Keys)
                 {
@@ -98,12 +98,12 @@ namespace System.ServiceModel.Syndication
 
         internal void CopyAttributeExtensions(SyndicationContent source)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
-            if (source._attributeExtensions != null)
+            if (source._attributeExtensions is not null)
             {
                 foreach (XmlQualifiedName key in source._attributeExtensions.Keys)
                 {

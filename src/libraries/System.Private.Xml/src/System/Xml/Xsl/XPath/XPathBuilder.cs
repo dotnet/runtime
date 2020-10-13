@@ -73,7 +73,7 @@ namespace System.Xml.Xsl.XPath
         [return: NotNullIfNotNull("result")]
         public virtual QilNode? EndBuild(QilNode? result)
         {
-            if (result == null)
+            if (result is null)
             { // special door to clean builder state in exception handlers
                 _inTheBuild = false;
                 return result;
@@ -116,7 +116,7 @@ namespace System.Xml.Xsl.XPath
             Debug.Assert(op != XPathOperator.Unknown);
             XPathOperatorGroup opGroup = s_operatorGroup[(int)op];
 
-            Debug.Assert((opGroup != XPathOperatorGroup.Negate && right != null) || (opGroup == XPathOperatorGroup.Negate && right == null));
+            Debug.Assert((opGroup != XPathOperatorGroup.Negate && right is not null) || (opGroup == XPathOperatorGroup.Negate && right is null));
 
             switch (opGroup)
             {
@@ -300,7 +300,7 @@ namespace System.Xml.Xsl.XPath
         private QilNode UnionOperator(XPathOperator op, QilNode? left, QilNode right)
         {
             Debug.Assert(op == XPathOperator.Union);
-            if (left == null)
+            if (left is null)
             {
                 return _f.EnsureNodeSet(right);
             }
@@ -357,20 +357,20 @@ namespace System.Xml.Xsl.XPath
                 {
                     QilLoop filter = (QilLoop)qilAxis;
                     filter.Body = _f.And(filter.Body,
-                        name != null && nsUri != null ? _f.Eq(_f.NameOf(itr), _f.QName(name, nsUri)) : // ns:bar || bar
-                        nsUri != null ? _f.Eq(_f.NamespaceUriOf(itr), _f.String(nsUri)) : // ns:*
-                        name != null ? _f.Eq(_f.LocalNameOf(itr), _f.String(name)) : // *:foo
-                                                                                     /*name  == nsUri == null*/       _f.True()                                       // *
+                        name is not null && nsUri is not null ? _f.Eq(_f.NameOf(itr), _f.QName(name, nsUri)) : // ns:bar || bar
+                        nsUri is not null ? _f.Eq(_f.NamespaceUriOf(itr), _f.String(nsUri)) : // ns:*
+                        name is not null ? _f.Eq(_f.LocalNameOf(itr), _f.String(name)) : // *:foo
+                                                                                     /*name  == nsUri is null*/       _f.True()                                       // *
                     );
                     return filter;
                 }
             }
 
             return _f.Filter(itr = _f.For(qilAxis),
-                name != null && nsUri != null ? _f.Eq(_f.NameOf(itr), _f.QName(name, nsUri)) : // ns:bar || bar
-                nsUri != null ? _f.Eq(_f.NamespaceUriOf(itr), _f.String(nsUri)) : // ns:*
-                name != null ? _f.Eq(_f.LocalNameOf(itr), _f.String(name)) : // *:foo
-                                                                             /*name  == nsUri == null*/       _f.True()                                       // *
+                name is not null && nsUri is not null ? _f.Eq(_f.NameOf(itr), _f.QName(name, nsUri)) : // ns:bar || bar
+                nsUri is not null ? _f.Eq(_f.NamespaceUriOf(itr), _f.String(nsUri)) : // ns:*
+                name is not null ? _f.Eq(_f.LocalNameOf(itr), _f.String(name)) : // *:foo
+                                                                             /*name  == nsUri is null*/       _f.True()                                       // *
             );
         }
 
@@ -432,7 +432,7 @@ namespace System.Xml.Xsl.XPath
 
         public virtual QilNode Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string? prefix, string? name)
         {
-            string? nsUri = prefix == null ? null : _environment.ResolvePrefix(prefix);
+            string? nsUri = prefix is null ? null : _environment.ResolvePrefix(prefix);
             return BuildAxis(xpathAxis, nodeType, nsUri, name);
         }
 
@@ -851,7 +851,7 @@ namespace System.Xml.Xsl.XPath
                 QilDepthChecker.Check(inExpr);
                 _current = current;
                 _last = last;
-                Debug.Assert(current != null);
+                Debug.Assert(current is not null);
                 _justCount = false;
                 _environment = null;
                 numCurrent = numPosition = numLast = 0;
@@ -864,7 +864,7 @@ namespace System.Xml.Xsl.XPath
 
             public QilNode Fixup(QilNode inExpr, IXPathEnvironment environment)
             {
-                Debug.Assert(environment != null);
+                Debug.Assert(environment is not null);
                 QilDepthChecker.Check(inExpr);
                 _justCount = false;
                 _current = null;
@@ -894,11 +894,11 @@ namespace System.Xml.Xsl.XPath
                     numCurrent++;
                     if (!_justCount)
                     {
-                        if (_environment != null)
+                        if (_environment is not null)
                         {
                             unknown = _environment.GetCurrent()!;
                         }
-                        else if (_current != null)
+                        else if (_current is not null)
                         {
                             unknown = _current;
                         }
@@ -909,11 +909,11 @@ namespace System.Xml.Xsl.XPath
                     numPosition++;
                     if (!_justCount)
                     {
-                        if (_environment != null)
+                        if (_environment is not null)
                         {
                             unknown = _environment.GetPosition();
                         }
-                        else if (_current != null)
+                        else if (_current is not null)
                         {
                             // position can be in predicate only and in predicate current olways an iterator
                             unknown = f.XsltConvert(f.PositionOf((QilIterator)_current), T.DoubleX);
@@ -925,18 +925,18 @@ namespace System.Xml.Xsl.XPath
                     numLast++;
                     if (!_justCount)
                     {
-                        if (_environment != null)
+                        if (_environment is not null)
                         {
                             unknown = _environment.GetLast();
                         }
-                        else if (_current != null)
+                        else if (_current is not null)
                         {
-                            Debug.Assert(_last != null);
+                            Debug.Assert(_last is not null);
                             unknown = _last;
                         }
                     }
                 }
-                Debug.Assert(unknown != null);
+                Debug.Assert(unknown is not null);
                 return unknown;
             }
 
@@ -970,7 +970,7 @@ namespace System.Xml.Xsl.XPath
                 }
             }
             bool GetStopVisitMark(QilNode n) {
-                return XsltAnnotation.Write(n)[0] != null;
+                return XsltAnnotation.Write(n)[0] is not null;
             }
 #endif
         }
@@ -986,7 +986,7 @@ namespace System.Xml.Xsl.XPath
 
             public FunctionInfo(T id, int minArgs, int maxArgs, XmlTypeCode[]? argTypes)
             {
-                Debug.Assert(maxArgs == 0 || maxArgs == Infinity || argTypes != null && argTypes.Length == maxArgs);
+                Debug.Assert(maxArgs == 0 || maxArgs == Infinity || argTypes is not null && argTypes.Length == maxArgs);
                 this.id = id;
                 this.minArgs = minArgs;
                 this.maxArgs = maxArgs;
@@ -1044,7 +1044,7 @@ namespace System.Xml.Xsl.XPath
                 }
                 else
                 {
-                    Debug.Assert(args.Count == 0 || argTypes != null);
+                    Debug.Assert(args.Count == 0 || argTypes is not null);
                     for (int i = 0; i < args.Count; i++)
                     {
                         if (argTypes![i] == XmlTypeCode.Node && f.CannotBeNodeSet(args[i]))

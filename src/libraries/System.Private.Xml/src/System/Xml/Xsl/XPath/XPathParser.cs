@@ -24,8 +24,8 @@ namespace System.Xml.Xsl.XPath
 
         public Node Parse(XPathScanner scanner, IXPathBuilder<Node> builder, LexKind endLex)
         {
-            Debug.Assert(_scanner == null && _builder == null);
-            Debug.Assert(scanner != null && builder != null);
+            Debug.Assert(_scanner is null && _builder is null);
+            Debug.Assert(scanner is not null && builder is not null);
 
             Node result = default(Node);
             _scanner = scanner;
@@ -40,7 +40,7 @@ namespace System.Xml.Xsl.XPath
             }
             catch (XPathCompileException e)
             {
-                if (e.queryString == null)
+                if (e.queryString is null)
                 {
                     e.queryString = scanner.Source;
                     PopPosInfo(out e.startChar, out e.endChar);

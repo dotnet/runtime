@@ -14,11 +14,11 @@ namespace System.Net
     {
         internal static SecurityPackageInfoClass[] EnumerateSecurityPackages(ISSPIInterface secModule)
         {
-            if (secModule.SecurityPackages == null)
+            if (secModule.SecurityPackages is null)
             {
                 lock (secModule)
                 {
-                    if (secModule.SecurityPackages == null)
+                    if (secModule.SecurityPackages is null)
                     {
                         int moduleCount = 0;
                         SafeFreeContextBuffer? arrayBaseHandle = null;
@@ -56,7 +56,7 @@ namespace System.Net
         internal static SecurityPackageInfoClass? GetVerifyPackageInfo(ISSPIInterface secModule, string packageName, bool throwIfMissing)
         {
             SecurityPackageInfoClass[] supportedSecurityPackages = EnumerateSecurityPackages(secModule);
-            if (supportedSecurityPackages != null)
+            if (supportedSecurityPackages is not null)
             {
                 for (int i = 0; i < supportedSecurityPackages.Length; i++)
                 {
@@ -247,7 +247,7 @@ namespace System.Net
                     ref readonly SecurityBuffer iBuffer = ref input[i];
                     unmanagedBuffer[i].cbBuffer = iBuffer.size;
                     unmanagedBuffer[i].BufferType = iBuffer.type;
-                    if (iBuffer.token == null || iBuffer.token.Length == 0)
+                    if (iBuffer.token is null || iBuffer.token.Length == 0)
                     {
                         unmanagedBuffer[i].pvBuffer = IntPtr.Zero;
                     }
@@ -302,7 +302,7 @@ namespace System.Net
                         int j;
                         for (j = 0; j < input.Length; j++)
                         {
-                            if (buffers[j] != null)
+                            if (buffers[j] is not null)
                             {
                                 checked
                                 {
@@ -328,12 +328,12 @@ namespace System.Net
                     }
 
                     // Backup validate the new sizes.
-                    if (iBuffer.offset < 0 || iBuffer.offset > (iBuffer.token == null ? 0 : iBuffer.token.Length))
+                    if (iBuffer.offset < 0 || iBuffer.offset > (iBuffer.token is null ? 0 : iBuffer.token.Length))
                     {
                         NetEventSource.Fail(null, $"'offset' out of range.  [{iBuffer.offset}]");
                     }
 
-                    if (iBuffer.size < 0 || iBuffer.size > (iBuffer.token == null ? 0 : iBuffer.token.Length - iBuffer.offset))
+                    if (iBuffer.size < 0 || iBuffer.size > (iBuffer.token is null ? 0 : iBuffer.token.Length - iBuffer.offset))
                     {
                         NetEventSource.Fail(null, $"'size' out of range.  [{iBuffer.size}]");
                     }
@@ -438,7 +438,7 @@ namespace System.Net
                 typeof(SafeFreeContextBuffer),
                 out SafeHandle? sspiHandle);
 
-            Debug.Assert(sspiHandle != null);
+            Debug.Assert(sspiHandle is not null);
 
             using (sspiHandle)
             {

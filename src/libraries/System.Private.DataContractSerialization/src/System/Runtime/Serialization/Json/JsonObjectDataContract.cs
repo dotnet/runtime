@@ -46,7 +46,7 @@ namespace System.Runtime.Serialization.Json
                     throw XmlObjectSerializer.CreateSerializationException(SR.Format(SR.JsonUnexpectedAttributeValue, contentMode));
             }
 
-            if (context != null)
+            if (context is not null)
             {
                 context.AddNewObject(obj);
             }
@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization.Json
 
         internal static object ParseJsonNumber(string value, out TypeCode objectTypeCode)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new XmlException(SR.Format(SR.XmlInvalidConversion, value, Globals.TypeOfInt));
             }

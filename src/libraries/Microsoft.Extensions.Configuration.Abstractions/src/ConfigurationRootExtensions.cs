@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     (string Value, IConfigurationProvider Provider) valueAndProvider = GetValueAndProvider(root, child.Path);
 
-                    if (valueAndProvider.Provider != null)
+                    if (valueAndProvider.Provider is not null)
                     {
                         stringBuilder
                             .Append(indent)

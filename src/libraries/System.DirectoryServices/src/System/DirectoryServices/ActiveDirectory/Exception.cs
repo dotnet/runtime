@@ -128,7 +128,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 string s = base.Message;
-                if (!((Name == null) ||
+                if (!((Name is null) ||
                        (Name.Length == 0)))
                     return s + Environment.NewLine + SR.Format(SR.Name, Name) + Environment.NewLine;
                 else
@@ -182,7 +182,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (_errors == null)
+                if (_errors is null)
                     return Array.Empty<SyncFromAllServersErrorInformation>();
 
                 SyncFromAllServersErrorInformation[] tempError = new SyncFromAllServersErrorInformation[_errors.Length];
@@ -310,7 +310,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // ServerDown/Unavailable/Busy
                 //
 
-                if (context != null)
+                if (context is not null)
                 {
                     exception = new ActiveDirectoryServerDownException(errorMessage, e, errorCode, context.GetServerName());
                 }

@@ -9,7 +9,7 @@ namespace System
     {
         internal static string SubstringTrim(this string value, int startIndex, int length)
         {
-            Debug.Assert(value != null, "string must be non-null");
+            Debug.Assert(value is not null, "string must be non-null");
             Debug.Assert(startIndex >= 0, "startIndex must be non-negative");
             Debug.Assert(length >= 0, "length must be non-negative");
             Debug.Assert(startIndex <= value.Length - length, "startIndex + length must be <= value.Length");

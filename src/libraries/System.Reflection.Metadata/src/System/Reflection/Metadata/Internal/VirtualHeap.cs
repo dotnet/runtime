@@ -55,7 +55,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 var blobs = Interlocked.Exchange(ref _blobs, null);
 
-                if (blobs != null)
+                if (blobs is not null)
                 {
                     foreach (var blobPair in blobs)
                     {
@@ -68,7 +68,7 @@ namespace System.Reflection.Metadata.Ecma335
         private Dictionary<uint, PinnedBlob> GetBlobs()
         {
             var blobs = _blobs;
-            if (blobs == null)
+            if (blobs is null)
             {
                 throw new ObjectDisposedException(nameof(VirtualHeap));
             }
@@ -110,7 +110,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal static VirtualHeap GetOrCreateVirtualHeap(ref VirtualHeap? lazyHeap)
         {
-            if (lazyHeap == null)
+            if (lazyHeap is null)
             {
                 Interlocked.CompareExchange(ref lazyHeap, new VirtualHeap(), null);
             }

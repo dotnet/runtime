@@ -31,11 +31,11 @@ namespace Internal.Cryptography.Pal.AnyOS
 
         public override byte[] GetSubjectKeyIdentifier(X509Certificate2 certificate)
         {
-            Debug.Assert(certificate != null);
+            Debug.Assert(certificate is not null);
 
             X509Extension? extension = certificate.Extensions[Oids.SubjectKeyIdentifier];
 
-            if (extension == null)
+            if (extension is null)
             {
                 // Construct the value from the public key info.
                 extension = new X509SubjectKeyIdentifierExtension(
@@ -98,7 +98,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             if (alg is RC2)
             {
-                if (contentEncryptionAlgorithm.Parameters == null)
+                if (contentEncryptionAlgorithm.Parameters is null)
                 {
                     // Windows issues CRYPT_E_BAD_DECODE
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
@@ -113,7 +113,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             }
             else
             {
-                if (contentEncryptionAlgorithm.Parameters == null)
+                if (contentEncryptionAlgorithm.Parameters is null)
                 {
                     // Windows issues CRYPT_E_BAD_DECODE
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
@@ -159,7 +159,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
         private static SymmetricAlgorithm OpenAlgorithm(string algorithmIdentifier)
         {
-            Debug.Assert(algorithmIdentifier != null);
+            Debug.Assert(algorithmIdentifier is not null);
 
             SymmetricAlgorithm alg;
 

@@ -72,10 +72,10 @@ namespace System.Reflection.Emit
 
         public void AddOtherMethod(MethodBuilder mdBuilder)
         {
-            if (mdBuilder == null)
+            if (mdBuilder is null)
                 throw new ArgumentNullException(nameof(mdBuilder));
             RejectIfCreated();
-            if (other_methods != null)
+            if (other_methods is not null)
             {
                 MethodBuilder[] newv = new MethodBuilder[other_methods.Length + 1];
                 other_methods.CopyTo(newv, 0);
@@ -90,21 +90,21 @@ namespace System.Reflection.Emit
 
         public void SetAddOnMethod(MethodBuilder mdBuilder)
         {
-            if (mdBuilder == null)
+            if (mdBuilder is null)
                 throw new ArgumentNullException(nameof(mdBuilder));
             RejectIfCreated();
             add_method = mdBuilder;
         }
         public void SetRaiseMethod(MethodBuilder mdBuilder)
         {
-            if (mdBuilder == null)
+            if (mdBuilder is null)
                 throw new ArgumentNullException(nameof(mdBuilder));
             RejectIfCreated();
             raise_method = mdBuilder;
         }
         public void SetRemoveOnMethod(MethodBuilder mdBuilder)
         {
-            if (mdBuilder == null)
+            if (mdBuilder is null)
                 throw new ArgumentNullException(nameof(mdBuilder));
             RejectIfCreated();
             remove_method = mdBuilder;
@@ -112,7 +112,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
                 throw new ArgumentNullException(nameof(customBuilder));
             RejectIfCreated();
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
@@ -121,7 +121,7 @@ namespace System.Reflection.Emit
                 attrs |= EventAttributes.SpecialName;
                 return;
             }
-            if (cattrs != null)
+            if (cattrs is not null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
                 cattrs.CopyTo(new_array, 0);
@@ -138,9 +138,9 @@ namespace System.Reflection.Emit
         [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
+            if (con is null)
                 throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
+            if (binaryAttribute is null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }

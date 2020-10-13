@@ -56,7 +56,7 @@ namespace System.Threading
 
         public static bool IsEntered(object obj)
         {
-            if (obj == null)
+            if (obj is null)
                 throw new ArgumentNullException(nameof(obj));
             return IsEnteredNative(obj);
         }
@@ -64,21 +64,21 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
-            if (obj == null)
+            if (obj is null)
                 throw new ArgumentNullException(nameof(obj));
             return ObjWait(millisecondsTimeout, obj);
         }
 
         public static void Pulse(object obj)
         {
-            if (obj == null)
+            if (obj is null)
                 throw new ArgumentNullException(nameof(obj));
             ObjPulse(obj);
         }
 
         public static void PulseAll(object obj)
         {
-            if (obj == null)
+            if (obj is null)
                 throw new ArgumentNullException(nameof(obj));
             ObjPulseAll(obj);
         }
@@ -126,7 +126,7 @@ namespace System.Threading
 
         private static void ReliableEnterTimeout(object obj, int timeout, ref bool lockTaken)
         {
-            if (obj == null)
+            if (obj is null)
                 throw new ArgumentNullException(nameof(obj));
 
             if (timeout < 0 && timeout != (int)Timeout.Infinite)

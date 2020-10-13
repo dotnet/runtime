@@ -21,7 +21,7 @@ internal static partial class Interop
                 fixed (byte* pbOutput = output)
                 {
                     int cbResult;
-                    NTSTATUS ntStatus = BCryptEncrypt(hKey, pbInput, input.Length, IntPtr.Zero, iv, iv == null ? 0 : iv.Length, pbOutput, output.Length, out cbResult, 0);
+                    NTSTATUS ntStatus = BCryptEncrypt(hKey, pbInput, input.Length, IntPtr.Zero, iv, iv is null ? 0 : iv.Length, pbOutput, output.Length, out cbResult, 0);
 
                     if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                     {
@@ -42,7 +42,7 @@ internal static partial class Interop
                 fixed (byte* pbOutput = output)
                 {
                     int cbResult;
-                    NTSTATUS ntStatus = BCryptDecrypt(hKey, pbInput, input.Length, IntPtr.Zero, iv, iv == null ? 0 : iv.Length, pbOutput, output.Length, out cbResult, 0);
+                    NTSTATUS ntStatus = BCryptDecrypt(hKey, pbInput, input.Length, IntPtr.Zero, iv, iv is null ? 0 : iv.Length, pbOutput, output.Length, out cbResult, 0);
 
                     if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                     {

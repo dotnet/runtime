@@ -424,12 +424,12 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableDictionary<TKey, TValue> WithComparers(IEqualityComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer)
         {
-            if (keyComparer == null)
+            if (keyComparer is null)
             {
                 keyComparer = EqualityComparer<TKey>.Default;
             }
 
-            if (valueComparer == null)
+            if (valueComparer is null)
             {
                 valueComparer = EqualityComparer<TValue>.Default;
             }
@@ -851,7 +851,7 @@ namespace System.Collections.Immutable
         private static bool TryCastToImmutableMap(IEnumerable<KeyValuePair<TKey, TValue>> sequence, [NotNullWhen(true)] out ImmutableDictionary<TKey, TValue>? other)
         {
             other = sequence as ImmutableDictionary<TKey, TValue>;
-            if (other != null)
+            if (other is not null)
             {
                 return true;
             }
@@ -1038,7 +1038,7 @@ namespace System.Collections.Immutable
         /// <returns>The immutable collection.</returns>
         private ImmutableDictionary<TKey, TValue> Wrap(SortedInt32KeyNode<HashBucket>? root, int adjustedCountIfDifferentRoot)
         {
-            if (root == null)
+            if (root is null)
             {
                 return this.Clear();
             }

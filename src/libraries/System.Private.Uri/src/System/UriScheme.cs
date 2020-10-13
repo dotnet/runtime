@@ -109,7 +109,7 @@ namespace System
 
             Uri? result = Uri.ResolveHelper(baseUri, relativeUri, ref newUriString, ref userEscaped);
 
-            if (result != null)
+            if (result is not null)
                 return result.OriginalString;
 
             return newUriString;
@@ -162,10 +162,10 @@ namespace System
         //
         public static void Register(UriParser uriParser, string schemeName, int defaultPort)
         {
-            if (uriParser == null)
+            if (uriParser is null)
                 throw new ArgumentNullException(nameof(uriParser));
 
-            if (schemeName == null)
+            if (schemeName is null)
                 throw new ArgumentNullException(nameof(schemeName));
 
             if (schemeName.Length == 1)
@@ -186,14 +186,14 @@ namespace System
         //
         public static bool IsKnownScheme(string schemeName)
         {
-            if (schemeName == null)
+            if (schemeName is null)
                 throw new ArgumentNullException(nameof(schemeName));
 
             if (!Uri.CheckSchemeName(schemeName))
                 throw new ArgumentOutOfRangeException(nameof(schemeName));
 
             UriParser? syntax = UriParser.GetSyntax(schemeName.ToLowerInvariant());
-            return syntax != null && syntax.NotAny(UriSyntaxFlags.V1_UnknownUri);
+            return syntax is not null && syntax.NotAny(UriSyntaxFlags.V1_UnknownUri);
         }
     }
 }

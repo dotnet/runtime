@@ -35,7 +35,7 @@ namespace System.Data.SqlTypes
 
         public SqlGuid(byte[] value)
         {
-            if (value == null || value.Length != SizeOfGuid)
+            if (value is null || value.Length != SizeOfGuid)
                 throw new ArgumentException(SQLResource.InvalidArraySizeMessage);
 
             m_value = new byte[SizeOfGuid];
@@ -44,7 +44,7 @@ namespace System.Data.SqlTypes
 
         internal SqlGuid(byte[] value, bool ignored)
         {
-            if (value == null || value.Length != SizeOfGuid)
+            if (value is null || value.Length != SizeOfGuid)
                 throw new ArgumentException(SQLResource.InvalidArraySizeMessage);
 
             m_value = value;
@@ -306,7 +306,7 @@ namespace System.Data.SqlTypes
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
             string? isNull = reader.GetAttribute("nil", XmlSchema.InstanceNamespace);
-            if (isNull != null && XmlConvert.ToBoolean(isNull))
+            if (isNull is not null && XmlConvert.ToBoolean(isNull))
             {
                 // Read the next value.
                 reader.ReadElementString();

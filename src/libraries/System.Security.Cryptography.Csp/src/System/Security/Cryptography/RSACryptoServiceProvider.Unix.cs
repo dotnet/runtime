@@ -41,7 +41,7 @@ namespace System.Security.Cryptography
 
         public byte[] Decrypt(byte[] rgb, bool fOAEP)
         {
-            if (rgb == null)
+            if (rgb is null)
                 throw new ArgumentNullException(nameof(rgb));
 
             // size check -- must be exactly the modulus size
@@ -53,9 +53,9 @@ namespace System.Security.Cryptography
 
         public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
-            if (padding == null)
+            if (padding is null)
                 throw new ArgumentNullException(nameof(padding));
 
             return
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
 
         public override bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
-            if (padding == null)
+            if (padding is null)
                 throw new ArgumentNullException(nameof(padding));
             if (data.Length != (KeySize / 8))
                 throw new CryptographicException(SR.Cryptography_RSA_DecryptWrongSize);
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
 
         public byte[] Encrypt(byte[] rgb, bool fOAEP)
         {
-            if (rgb == null)
+            if (rgb is null)
                 throw new ArgumentNullException(nameof(rgb));
 
             return _impl.Encrypt(rgb, fOAEP ? RSAEncryptionPadding.OaepSHA1 : RSAEncryptionPadding.Pkcs1);
@@ -95,9 +95,9 @@ namespace System.Security.Cryptography
 
         public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
-            if (padding == null)
+            if (padding is null)
                 throw new ArgumentNullException(nameof(padding));
 
             return
@@ -108,7 +108,7 @@ namespace System.Security.Cryptography
 
         public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
-            if (padding == null)
+            if (padding is null)
                 throw new ArgumentNullException(nameof(padding));
             if (padding != RSAEncryptionPadding.Pkcs1 && padding != RSAEncryptionPadding.OaepSHA1)
                 throw PaddingModeNotSupported();
@@ -145,13 +145,13 @@ namespace System.Security.Cryptography
         public override void ImportParameters(RSAParameters parameters)
         {
             // Although _impl supports larger Exponent, limit here for compat.
-            if (parameters.Exponent == null || parameters.Exponent.Length > 4)
+            if (parameters.Exponent is null || parameters.Exponent.Length > 4)
                 throw new CryptographicException(SR.Argument_InvalidValue);
 
             _impl.ImportParameters(parameters);
 
             // P was verified in ImportParameters
-            _publicOnly = (parameters.P == null || parameters.P.Length == 0);
+            _publicOnly = (parameters.P is null || parameters.P.Length == 0);
         }
 
         public override void ImportEncryptedPkcs8PrivateKey(
@@ -190,17 +190,17 @@ namespace System.Security.Cryptography
         public override string SignatureAlgorithm => "http://www.w3.org/2000/09/xmldsig#rsa-sha1";
 
         public override byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
-            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding is null ? throw new ArgumentNullException(nameof(padding)) :
             padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.SignData(data, hashAlgorithm, padding);
 
         public override byte[] SignData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
-            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding is null ? throw new ArgumentNullException(nameof(padding)) :
             padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.SignData(data, offset, count, hashAlgorithm, padding);
 
         public override bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten) =>
-            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding is null ? throw new ArgumentNullException(nameof(padding)) :
             padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.TrySignData(data, destination, hashAlgorithm, padding, out bytesWritten);
 
@@ -214,18 +214,18 @@ namespace System.Security.Cryptography
             _impl.SignData(inputStream, HashAlgorithmNames.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
 
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
-            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding is null ? throw new ArgumentNullException(nameof(padding)) :
             padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.SignHash(hash, hashAlgorithm, padding);
 
         public override bool TrySignHash(ReadOnlySpan<byte> hash, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten) =>
-            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding is null ? throw new ArgumentNullException(nameof(padding)) :
             padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.TrySignHash(hash, destination, hashAlgorithm, padding, out bytesWritten);
 
         public byte[] SignHash(byte[] rgbHash, string str)
         {
-            if (rgbHash == null)
+            if (rgbHash is null)
                 throw new ArgumentNullException(nameof(rgbHash));
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
@@ -240,22 +240,22 @@ namespace System.Security.Cryptography
             _impl.VerifyData(buffer, signature, HashAlgorithmNames.ObjToHashAlgorithmName(halg), RSASignaturePadding.Pkcs1);
 
         public override bool VerifyData(byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
-            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding is null ? throw new ArgumentNullException(nameof(padding)) :
             padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.VerifyData(data, offset, count, signature, hashAlgorithm, padding);
 
         public override bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
-            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding is null ? throw new ArgumentNullException(nameof(padding)) :
             padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.VerifyData(data, signature, hashAlgorithm, padding);
 
         public override bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (hash == null)
+            if (hash is null)
             {
                 throw new ArgumentNullException(nameof(hash));
             }
-            if (signature == null)
+            if (signature is null)
             {
                 throw new ArgumentNullException(nameof(signature));
             }
@@ -264,17 +264,17 @@ namespace System.Security.Cryptography
         }
 
         public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) =>
-            padding == null ? throw new ArgumentNullException(nameof(padding)) :
+            padding is null ? throw new ArgumentNullException(nameof(padding)) :
             padding != RSASignaturePadding.Pkcs1 ? throw PaddingModeNotSupported() :
             _impl.VerifyHash(hash, signature, hashAlgorithm, padding);
 
         public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature)
         {
-            if (rgbHash == null)
+            if (rgbHash is null)
             {
                 throw new ArgumentNullException(nameof(rgbHash));
             }
-            if (rgbSignature == null)
+            if (rgbSignature is null)
             {
                 throw new ArgumentNullException(nameof(rgbSignature));
             }
@@ -297,7 +297,7 @@ namespace System.Security.Cryptography
         /// </summary>
         private static bool IsPublic(byte[] keyBlob)
         {
-            if (keyBlob == null)
+            if (keyBlob is null)
                 throw new ArgumentNullException(nameof(keyBlob));
 
             // The CAPI RSA public key representation consists of the following sequence:

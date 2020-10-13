@@ -50,7 +50,7 @@ namespace System.ComponentModel.DataAnnotations
 
             int length;
             // Automatically pass if value is null. RequiredAttribute should be used to assert a value is not null.
-            if (value == null)
+            if (value is null)
             {
                 return true;
             }

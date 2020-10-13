@@ -20,7 +20,7 @@ namespace System.Reflection.Emit
         internal FieldBuilder(TypeBuilder typeBuilder, string fieldName, Type type,
             Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
-            if (fieldName == null)
+            if (fieldName is null)
                 throw new ArgumentNullException(nameof(fieldName));
 
             if (fieldName.Length == 0)
@@ -29,7 +29,7 @@ namespace System.Reflection.Emit
             if (fieldName[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(fieldName));
 
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
             if (type == typeof(void))
@@ -149,7 +149,7 @@ namespace System.Reflection.Emit
         {
             m_typeBuilder.ThrowIfCreated();
 
-            if (defaultValue == null && m_fieldType.IsValueType)
+            if (defaultValue is null && m_fieldType.IsValueType)
             {
                 // nullable types can hold null value.
                 if (!(m_fieldType.IsGenericType && m_fieldType.GetGenericTypeDefinition() == typeof(Nullable<>)))
@@ -161,10 +161,10 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
+            if (con is null)
                 throw new ArgumentNullException(nameof(con));
 
-            if (binaryAttribute == null)
+            if (binaryAttribute is null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
 
             ModuleBuilder module = (m_typeBuilder.Module as ModuleBuilder)!;
@@ -177,7 +177,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
             m_typeBuilder.ThrowIfCreated();

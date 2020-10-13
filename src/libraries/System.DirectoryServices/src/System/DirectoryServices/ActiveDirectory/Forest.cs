@@ -88,7 +88,7 @@ namespace System.DirectoryServices.ActiveDirectory
             string rootDomainNC = null;
 
             // check that the argument is not null
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
             // contexttype should be Forest or DirectoryServer
@@ -98,12 +98,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.TargetShouldBeServerORForest, nameof(context));
             }
 
-            if ((context.Name == null) && (!context.isRootDomain()))
+            if ((context.Name is null) && (!context.isRootDomain()))
             {
                 throw new ActiveDirectoryObjectNotFoundException(SR.ContextNotAssociatedWithDomain, typeof(Forest), null);
             }
 
-            if (context.Name != null)
+            if (context.Name is not null)
             {
                 // the target should be a valid forest name or a server
                 if (!((context.isRootDomain()) || (context.isServer())))
@@ -239,7 +239,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -258,7 +258,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -277,7 +277,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -299,7 +299,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             CheckIfDisposed();
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -323,7 +323,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForestName == null)
+            if (targetForestName is null)
                 throw new ArgumentNullException(nameof(targetForestName));
 
             if (targetForestName.Length == 0)
@@ -346,7 +346,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForestName == null)
+            if (targetForestName is null)
                 throw new ArgumentNullException(nameof(targetForestName));
 
             if (targetForestName.Length == 0)
@@ -359,7 +359,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForestName == null)
+            if (targetForestName is null)
                 throw new ArgumentNullException(nameof(targetForestName));
 
             if (targetForestName.Length == 0)
@@ -372,7 +372,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForestName == null)
+            if (targetForestName is null)
                 throw new ArgumentNullException(nameof(targetForestName));
 
             if (targetForestName.Length == 0)
@@ -385,7 +385,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForestName == null)
+            if (targetForestName is null)
                 throw new ArgumentNullException(nameof(targetForestName));
 
             if (targetForestName.Length == 0)
@@ -398,7 +398,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForestName == null)
+            if (targetForestName is null)
                 throw new ArgumentNullException(nameof(targetForestName));
 
             if (targetForestName.Length == 0)
@@ -412,7 +412,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForest == null)
+            if (targetForest is null)
                 throw new ArgumentNullException(nameof(targetForest));
 
             // first delete the trust on the remote side
@@ -426,7 +426,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForestName == null)
+            if (targetForestName is null)
                 throw new ArgumentNullException(nameof(targetForestName));
 
             if (targetForestName.Length == 0)
@@ -439,7 +439,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForest == null)
+            if (targetForest is null)
                 throw new ArgumentNullException(nameof(targetForest));
 
             if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional)
@@ -476,7 +476,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForestName == null)
+            if (targetForestName is null)
                 throw new ArgumentNullException(nameof(targetForestName));
 
             if (targetForestName.Length == 0)
@@ -485,7 +485,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional)
                 throw new InvalidEnumArgumentException(nameof(direction), (int)direction, typeof(TrustDirection));
 
-            if (trustPassword == null)
+            if (trustPassword is null)
                 throw new ArgumentNullException(nameof(trustPassword));
 
             if (trustPassword.Length == 0)
@@ -503,7 +503,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForest == null)
+            if (targetForest is null)
                 throw new ArgumentNullException(nameof(targetForest));
 
             if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional)
@@ -528,13 +528,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForestName == null)
+            if (targetForestName is null)
                 throw new ArgumentNullException(nameof(targetForestName));
 
             if (targetForestName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetForestName));
 
-            if (newTrustPassword == null)
+            if (newTrustPassword is null)
                 throw new ArgumentNullException(nameof(newTrustPassword));
 
             if (newTrustPassword.Length == 0)
@@ -547,7 +547,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForestName == null)
+            if (targetForestName is null)
                 throw new ArgumentNullException(nameof(targetForestName));
 
             if (targetForestName.Length == 0)
@@ -556,7 +556,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (newTrustDirection < TrustDirection.Inbound || newTrustDirection > TrustDirection.Bidirectional)
                 throw new InvalidEnumArgumentException(nameof(newTrustDirection), (int)newTrustDirection, typeof(TrustDirection));
 
-            if (newTrustPassword == null)
+            if (newTrustPassword is null)
                 throw new ArgumentNullException(nameof(newTrustPassword));
 
             if (newTrustPassword.Length == 0)
@@ -569,7 +569,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetForest == null)
+            if (targetForest is null)
                 throw new ArgumentNullException(nameof(targetForest));
 
             if (newTrustDirection < TrustDirection.Inbound || newTrustDirection > TrustDirection.Bidirectional)
@@ -595,7 +595,7 @@ namespace System.DirectoryServices.ActiveDirectory
             TrustDirection direction = TrustDirection.Bidirectional;
             CheckIfDisposed();
 
-            if (targetForest == null)
+            if (targetForest is null)
                 throw new ArgumentNullException(nameof(targetForest));
 
             // first try to reset the secure channel
@@ -649,7 +649,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSites == null)
+                if (_cachedSites is null)
                 {
                     _cachedSites = new ReadOnlySiteCollection(GetSites());
                 }
@@ -662,7 +662,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedDomains == null)
+                if (_cachedDomains is null)
                 {
                     _cachedDomains = new DomainCollection(GetDomains());
                 }
@@ -675,7 +675,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedGlobalCatalogs == null)
+                if (_cachedGlobalCatalogs is null)
                 {
                     _cachedGlobalCatalogs = FindAllGlobalCatalogs();
                 }
@@ -688,7 +688,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedApplicationPartitions == null)
+                if (_cachedApplicationPartitions is null)
                 {
                     _cachedApplicationPartitions = new ApplicationPartitionCollection(GetApplicationPartitions());
                 }
@@ -729,7 +729,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedRootDomain == null)
+                if (_cachedRootDomain is null)
                 {
                     // Domain context is created by passing the name of the forest
                     // (since the root domain and the forest have the same name)
@@ -745,7 +745,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSchema == null)
+                if (_cachedSchema is null)
                 {
                     try
                     {
@@ -765,7 +765,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSchemaRoleOwner == null)
+                if (_cachedSchemaRoleOwner is null)
                 {
                     _cachedSchemaRoleOwner = GetRoleOwner(ActiveDirectoryRole.SchemaRole);
                 }
@@ -778,7 +778,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedNamingRoleOwner == null)
+                if (_cachedNamingRoleOwner is null)
                 {
                     _cachedNamingRoleOwner = GetRoleOwner(ActiveDirectoryRole.NamingRole);
                 }
@@ -857,7 +857,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (entry != null)
+                if (entry is not null)
                 {
                     entry.Dispose();
                 }
@@ -1016,7 +1016,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
+                if (resCol is not null)
                 {
                     resCol.Dispose();
                 }
@@ -1073,7 +1073,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
+                if (resCol is not null)
                 {
                     resCol.Dispose();
                 }
@@ -1152,7 +1152,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.PtrToStructure(addr, unmanagedTrust);
 
                         // whether this is the case that a paticular forest trust info is needed
-                        if (targetForestName != null)
+                        if (targetForestName is not null)
                         {
                             bool sameTarget = false;
                             string tmpDNSName = null;
@@ -1164,9 +1164,9 @@ namespace System.DirectoryServices.ActiveDirectory
                                 tmpNetBIOSName = Marshal.PtrToStringUni(unmanagedTrust.NetbiosDomainName);
 
                             // check whether it is the same target
-                            if (tmpDNSName != null && Utils.Compare(targetForestName, tmpDNSName) == 0)
+                            if (tmpDNSName is not null && Utils.Compare(targetForestName, tmpDNSName) == 0)
                                 sameTarget = true;
-                            else if (tmpNetBIOSName != null && Utils.Compare(targetForestName, tmpNetBIOSName) == 0)
+                            else if (tmpNetBIOSName is not null && Utils.Compare(targetForestName, tmpNetBIOSName) == 0)
                                 sameTarget = true;
 
                             if (!sameTarget)

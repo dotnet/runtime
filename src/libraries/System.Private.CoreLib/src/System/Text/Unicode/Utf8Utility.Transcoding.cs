@@ -23,10 +23,10 @@ namespace System.Text.Unicode
         public static OperationStatus TranscodeToUtf16(byte* pInputBuffer, int inputLength, char* pOutputBuffer, int outputCharsRemaining, out byte* pInputBufferRemaining, out char* pOutputBufferRemaining)
         {
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");
-            Debug.Assert(pInputBuffer != null || inputLength == 0, "Input length must be zero if input buffer pointer is null.");
+            Debug.Assert(pInputBuffer is not null || inputLength == 0, "Input length must be zero if input buffer pointer is null.");
 
             Debug.Assert(outputCharsRemaining >= 0, "Destination length must not be negative.");
-            Debug.Assert(pOutputBuffer != null || outputCharsRemaining == 0, "Destination length must be zero if destination buffer pointer is null.");
+            Debug.Assert(pOutputBuffer is not null || outputCharsRemaining == 0, "Destination length must be zero if destination buffer pointer is null.");
 
             // First, try vectorized conversion.
 
@@ -844,10 +844,10 @@ namespace System.Text.Unicode
             const int CharsPerDWord = sizeof(uint) / sizeof(char);
 
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");
-            Debug.Assert(pInputBuffer != null || inputLength == 0, "Input length must be zero if input buffer pointer is null.");
+            Debug.Assert(pInputBuffer is not null || inputLength == 0, "Input length must be zero if input buffer pointer is null.");
 
             Debug.Assert(outputBytesRemaining >= 0, "Destination length must not be negative.");
-            Debug.Assert(pOutputBuffer != null || outputBytesRemaining == 0, "Destination length must be zero if destination buffer pointer is null.");
+            Debug.Assert(pOutputBuffer is not null || outputBytesRemaining == 0, "Destination length must be zero if destination buffer pointer is null.");
 
             // First, try vectorized conversion.
 

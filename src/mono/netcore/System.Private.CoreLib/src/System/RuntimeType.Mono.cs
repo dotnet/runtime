@@ -79,7 +79,7 @@ namespace System
                 get
                 {
                     Debug.Assert(index < Count);
-                    return (_items != null) ? _items[index] : _item;
+                    return (_items is not null) ? _items[index] : _item;
                 }
             }
 
@@ -156,7 +156,7 @@ namespace System
         internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly,
             ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
+            if (typeName is null)
                 throw new ArgumentNullException(nameof(typeName));
 
             return RuntimeTypeHandle.GetTypeByName(
@@ -172,12 +172,12 @@ namespace System
 
         internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments, RuntimeType[] genericParamters)
         {
-            if (genericArguments == null)
+            if (genericArguments is null)
                 throw new ArgumentNullException();
 
             for (int i = 0; i < genericArguments.Length; i++)
             {
-                if (genericArguments[i] == null)
+                if (genericArguments[i] is null)
                     throw new ArgumentNullException();
 
                 ThrowIfTypeNeverValidGenericArgument(genericArguments[i]);
@@ -193,7 +193,7 @@ namespace System
             name = null;
             ns = null;
 
-            if (fullname == null)
+            if (fullname is null)
                 return;
 
             // Get namespace
@@ -258,7 +258,7 @@ namespace System
             prefixLookup = false;
             ignoreCase = false;
 
-            if (name != null)
+            if (name is not null)
             {
                 if ((bindingFlags & BindingFlags.IgnoreCase) != 0)
                 {
@@ -298,7 +298,7 @@ namespace System
         // Most of the plural GetXXX methods allow prefix lookups while the singular GetXXX methods mostly do not.
         private static bool FilterApplyPrefixLookup(MemberInfo memberInfo, string? name, bool ignoreCase)
         {
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
 
             if (ignoreCase)
             {
@@ -321,8 +321,8 @@ namespace System
             string? name, bool prefixLookup)
         {
             #region Preconditions
-            Debug.Assert(memberInfo != null);
-            Debug.Assert(name == null || (bindingFlags & BindingFlags.IgnoreCase) == 0 || (name.ToLowerInvariant().Equals(name)));
+            Debug.Assert(memberInfo is not null);
+            Debug.Assert(name is null || (bindingFlags & BindingFlags.IgnoreCase) == 0 || (name.ToLowerInvariant().Equals(name)));
             #endregion
 
             #region Filter by Public & Private
@@ -387,7 +387,7 @@ namespace System
             {
                 MethodInfo? methodInfo = memberInfo as MethodInfo;
 
-                if (methodInfo == null)
+                if (methodInfo is null)
                     return false;
 
                 if (!methodInfo.IsVirtual && !methodInfo.IsAbstract)
@@ -411,7 +411,7 @@ namespace System
             if (!FilterApplyBase(type, bindingFlags, isPublic, type.IsNestedAssembly, isStatic, name, prefixLookup))
                 return false;
 
-            if (ns != null && ns != type.Namespace)
+            if (ns is not null && ns != type.Namespace)
                 return false;
 
             return true;
@@ -437,7 +437,7 @@ namespace System
         private static bool FilterApplyMethodBase(
             MethodBase methodBase, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
-            Debug.Assert(methodBase != null);
+            Debug.Assert(methodBase is not null);
 
             bindingFlags ^= BindingFlags.DeclaredOnly;
             #region Check CallingConvention
@@ -454,7 +454,7 @@ namespace System
             #endregion
 
             #region If argumentTypes supplied
-            if (argumentTypes != null)
+            if (argumentTypes is not null)
             {
                 ParameterInfo[] parameterInfos = methodBase.GetParametersNoCopy();
 
@@ -655,7 +655,7 @@ namespace System
                 RuntimePropertyInfo propertyInfo = cache[i];
                 if ((bindingAttr & propertyInfo.BindingFlags) == propertyInfo.BindingFlags &&
                     (!prefixLookup || FilterApplyPrefixLookup(propertyInfo, name, ignoreCase)) &&
-                    (types == null || (propertyInfo.GetIndexParameters().Length == types.Length)))
+                    (types is null || (propertyInfo.GetIndexParameters().Length == types.Length)))
                 {
                     candidates.Add(propertyInfo);
                 }
@@ -820,7 +820,7 @@ namespace System
             if (candidates.Count == 0)
                 return null;
 
-            if (types == null || types.Length == 0)
+            if (types is null || types.Length == 0)
             {
                 MethodInfo firstCandidate = candidates[0];
 
@@ -828,7 +828,7 @@ namespace System
                 {
                     return firstCandidate;
                 }
-                else if (types == null)
+                else if (types is null)
                 {
                     for (int j = 1; j < candidates.Count; j++)
                     {
@@ -842,7 +842,7 @@ namespace System
                 }
             }
 
-            if (binder == null)
+            if (binder is null)
                 binder = DefaultBinder;
 
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as MethodInfo;
@@ -863,7 +863,7 @@ namespace System
                 ConstructorInfo firstCandidate = candidates[0];
 
                 ParameterInfo[] parameters = firstCandidate.GetParametersNoCopy();
-                if (parameters == null || parameters.Length == 0)
+                if (parameters is null || parameters.Length == 0)
                 {
                     return firstCandidate;
                 }
@@ -872,7 +872,7 @@ namespace System
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                 return System.DefaultBinder.ExactBinding(candidates.ToArray(), types, modifiers) as ConstructorInfo;
 
-            if (binder == null)
+            if (binder is null)
                 binder = DefaultBinder;
 
             return binder.SelectMethod(bindingAttr, candidates.ToArray(), types, modifiers) as ConstructorInfo;
@@ -882,14 +882,14 @@ namespace System
         protected override PropertyInfo? GetPropertyImpl(
             string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<PropertyInfo> candidates = GetPropertyCandidates(name, bindingAttr, types, false);
 
             if (candidates.Count == 0)
                 return null;
 
-            if (types == null || types.Length == 0)
+            if (types is null || types.Length == 0)
             {
                 // no arguments
                 if (candidates.Count == 1)
@@ -912,7 +912,7 @@ namespace System
             if ((bindingAttr & BindingFlags.ExactBinding) != 0)
                 return System.DefaultBinder.ExactPropertyBinding(candidates.ToArray(), returnType, types, modifiers);
 
-            if (binder == null)
+            if (binder is null)
                 binder = DefaultBinder;
 
             return binder.SelectProperty(bindingAttr, candidates.ToArray(), returnType, types, modifiers);
@@ -921,7 +921,7 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
         public override EventInfo? GetEvent(string name, BindingFlags bindingAttr)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
             bool ignoreCase;
             MemberListType listType;
@@ -937,7 +937,7 @@ namespace System
                 RuntimeEventInfo eventInfo = cache[i];
                 if ((bindingAttr & eventInfo.BindingFlags) == eventInfo.BindingFlags)
                 {
-                    if (match != null)
+                    if (match is not null)
                         throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
 
                     match = eventInfo;
@@ -950,7 +950,7 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
-            if (name == null) throw new ArgumentNullException();
+            if (name is null) throw new ArgumentNullException();
 
             bool ignoreCase;
             MemberListType listType;
@@ -966,7 +966,7 @@ namespace System
             {
                 RuntimeFieldInfo fieldInfo = cache[i];
                 {
-                    if (match != null)
+                    if (match is not null)
                     {
                         if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
                             throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
@@ -975,7 +975,7 @@ namespace System
                             multipleStaticFieldMatches = true;
                     }
 
-                    if (match == null || fieldInfo.DeclaringType!.IsSubclassOf(match.DeclaringType!) || match.DeclaringType!.IsInterface)
+                    if (match is null || fieldInfo.DeclaringType!.IsSubclassOf(match.DeclaringType!) || match.DeclaringType!.IsInterface)
                         match = fieldInfo;
                 }
             }
@@ -988,7 +988,7 @@ namespace System
 
         public override Type? GetInterface(string fullname, bool ignoreCase)
         {
-            if (fullname == null) throw new ArgumentNullException(nameof(fullname));
+            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
 
             BindingFlags bindingAttr = BindingFlags.Public | BindingFlags.NonPublic;
 
@@ -1012,13 +1012,13 @@ namespace System
                     continue;
                 }
 
-                if (list == null)
+                if (list is null)
                     list = new List<RuntimeType>(2);
 
                 list.Add(t);
             }
 
-            if (list == null)
+            if (list is null)
                 return null;
 
             RuntimeType[]? cache = list.ToArray();
@@ -1029,7 +1029,7 @@ namespace System
                 RuntimeType iface = cache[i];
                 if (FilterApplyType(iface, bindingAttr, name, false, ns))
                 {
-                    if (match != null)
+                    if (match is not null)
                         throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
 
                     match = iface;
@@ -1042,7 +1042,7 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes)]
         public override Type? GetNestedType(string fullname, BindingFlags bindingAttr)
         {
-            if (fullname == null) throw new ArgumentNullException(nameof(fullname));
+            if (fullname is null) throw new ArgumentNullException(nameof(fullname));
 
             bool ignoreCase;
             bindingAttr &= ~BindingFlags.Static;
@@ -1058,7 +1058,7 @@ namespace System
                 RuntimeType nestedType = cache[i];
                 if (FilterApplyType(nestedType, bindingAttr, name, false, ns))
                 {
-                    if (match != null)
+                    if (match is not null)
                         throw new AmbiguousMatchException(Environment.GetResourceString("Arg_AmbiguousMatchException"));
 
                     match = nestedType;
@@ -1071,7 +1071,7 @@ namespace System
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override MemberInfo[] GetMember(string name, MemberTypes type, BindingFlags bindingAttr)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<MethodInfo> methods = default;
             ListBuilder<ConstructorInfo> constructors = default;
@@ -1205,7 +1205,7 @@ namespace System
         {
             Type[] types = GetGenericArgumentsInternal(false);
 
-            if (types == null)
+            if (types is null)
                 types = Array.Empty<Type>();
 
             return types;
@@ -1213,7 +1213,7 @@ namespace System
 
         public override Type MakeGenericType(Type[] instantiation)
         {
-            if (instantiation == null)
+            if (instantiation is null)
                 throw new ArgumentNullException(nameof(instantiation));
 
             RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
@@ -1228,12 +1228,12 @@ namespace System
             for (int i = 0; i < instantiation.Length; i++)
             {
                 Type instantiationElem = instantiation[i];
-                if (instantiationElem == null)
+                if (instantiationElem is null)
                     throw new ArgumentNullException();
 
                 RuntimeType? rtInstantiationElem = instantiationElem as RuntimeType;
 
-                if (rtInstantiationElem == null)
+                if (rtInstantiationElem is null)
                 {
                     if (instantiationElem.IsSignatureType)
                         return MakeGenericSignatureType(this, instantiation);
@@ -1253,7 +1253,7 @@ namespace System
             SanityCheckGenericArguments(instantiationRuntimeType, genericParameters);
 
             Type? ret = MakeGenericType(this, instantiationRuntimeType);
-            if (ret == null)
+            if (ret is null)
                 throw new TypeLoadException();
             return ret;
         }
@@ -1303,9 +1303,9 @@ namespace System
             }
 
             // There must not be more named parameters than provided arguments
-            if (namedParams != null)
+            if (namedParams is not null)
             {
-                if (providedArgs != null)
+                if (providedArgs is not null)
                 {
                     if (namedParams.Length > providedArgs.Length)
                         // "Named parameter array can not be bigger than argument array."
@@ -1321,15 +1321,15 @@ namespace System
             #endregion
 
             #region Check that any named paramters are not null
-            if (namedParams != null && Array.IndexOf<string?>(namedParams, null) != -1)
+            if (namedParams is not null && Array.IndexOf<string?>(namedParams, null) != -1)
                 // "Named parameter value must not be null."
                 throw new ArgumentException(Environment.GetResourceString("Arg_NamedParamNull"), nameof(namedParams));
             #endregion
 
-            int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
+            int argCnt = (providedArgs is not null) ? providedArgs.Length : 0;
 
             #region Get a Binder
-            if (binder == null)
+            if (binder is null)
                 binder = DefaultBinder;
 
             #endregion
@@ -1350,7 +1350,7 @@ namespace System
                 bindingFlags |= BindingFlags.SetProperty;
 
             #region Name
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0 || name.Equals(@"[DISPID=0]"))
@@ -1380,7 +1380,7 @@ namespace System
                 {
                     Debug.Assert(IsSetField);
 
-                    if (providedArgs == null)
+                    if (providedArgs is null)
                         throw new ArgumentNullException(nameof(providedArgs));
 
                     if ((bindingFlags & BindingFlags.GetProperty) != 0)
@@ -1397,7 +1397,7 @@ namespace System
                 FieldInfo? selFld = null;
                 FieldInfo[]? flds = GetMember(name, MemberTypes.Field, bindingFlags) as FieldInfo[];
 
-                Debug.Assert(flds != null);
+                Debug.Assert(flds is not null);
 
                 if (flds.Length == 1)
                 {
@@ -1409,7 +1409,7 @@ namespace System
                 }
                 #endregion
 
-                if (selFld != null)
+                if (selFld is not null)
                 {
                     #region Invocation on a field
                     if (selFld.FieldType.IsArray || ReferenceEquals(selFld.FieldType, typeof(System.Array)))
@@ -1497,14 +1497,14 @@ namespace System
             // else with the same (insufficient) number of actual arguments to get a
             // cache hit because then they would bypass the default argument processing
             // and the invocation would fail.
-            if (bDefaultBinder && namedParams == null && argCnt < 6)
+            if (bDefaultBinder && namedParams is null && argCnt < 6)
                 useCache = true;
 
             if (useCache)
             {
                 MethodBase invokeMethod = GetMethodFromCache (name, bindingFlags, argCnt, providedArgs);
 
-                if (invokeMethod != null)
+                if (invokeMethod is not null)
                     return ((MethodInfo) invokeMethod).Invoke(target, bindingFlags, binder, providedArgs, culture);
             }
             */
@@ -1551,12 +1551,12 @@ namespace System
                 for (int i = 0; i < semiFinalists.Length; i++)
                 {
                     MethodInfo semiFinalist = semiFinalists[i];
-                    Debug.Assert(semiFinalist != null);
+                    Debug.Assert(semiFinalist is not null);
 
                     if (!FilterApplyMethodInfo((RuntimeMethodInfo)semiFinalist, bindingFlags, CallingConventions.Any, new Type[argCnt]))
                         continue;
 
-                    if (finalist == null)
+                    if (finalist is null)
                     {
                         finalist = semiFinalist;
                     }
@@ -1567,7 +1567,7 @@ namespace System
                     }
                 }
 
-                if (results != null)
+                if (results is not null)
                 {
                     Debug.Assert(results.Count > 1);
                     finalists = new MethodInfo[results.Count];
@@ -1577,10 +1577,10 @@ namespace System
             }
             #endregion
 
-            Debug.Assert(finalists == null || finalist != null);
+            Debug.Assert(finalists is null || finalist is not null);
 
             #region BindingFlags.GetProperty or BindingFlags.SetProperty
-            if (finalist == null && isGetProperty || isSetProperty)
+            if (finalist is null && isGetProperty || isSetProperty)
             {
                 #region Lookup Property
                 PropertyInfo[] semiFinalists = (GetMember(name, MemberTypes.Property, bindingFlags) as PropertyInfo[])!;
@@ -1599,13 +1599,13 @@ namespace System
                         semiFinalist = semiFinalists[i].GetGetMethod(true);
                     }
 
-                    if (semiFinalist == null)
+                    if (semiFinalist is null)
                         continue;
 
                     if (!FilterApplyMethodInfo((RuntimeMethodInfo)semiFinalist, bindingFlags, CallingConventions.Any, new Type[argCnt]))
                         continue;
 
-                    if (finalist == null)
+                    if (finalist is null)
                     {
                         finalist = semiFinalist;
                     }
@@ -1616,7 +1616,7 @@ namespace System
                     }
                 }
 
-                if (results != null)
+                if (results is not null)
                 {
                     Debug.Assert(results.Count > 1);
                     finalists = new MethodInfo[results.Count];
@@ -1626,10 +1626,10 @@ namespace System
             }
             #endregion
 
-            if (finalist != null)
+            if (finalist is not null)
             {
                 #region Invoke
-                if (finalists == null &&
+                if (finalists is null &&
                     argCnt == 0 &&
                     finalist.GetParametersNoCopy().Length == 0 &&
                     (bindingFlags & BindingFlags.OptionalParamBinding) == 0)
@@ -1651,7 +1651,7 @@ namespace System
                 try { invokeMethod = binder.BindToMethod(bindingFlags, finalists, ref providedArgs, modifiers, culture, namedParams, out state); }
                 catch (MissingMethodException) { }
 
-                if (invokeMethod == null)
+                if (invokeMethod is null)
                     throw new MissingMethodException(FullName, name);
 
                 //if (useCache && argCnt == invokeMethod.GetParameters().Length)
@@ -1659,7 +1659,7 @@ namespace System
 
                 object? result = ((MethodInfo)invokeMethod).Invoke(target, bindingFlags, binder, providedArgs, culture);
 
-                if (state != null)
+                if (state is not null)
                     binder.ReorderArgumentArray(ref providedArgs, state);
 
                 return result;
@@ -1716,7 +1716,7 @@ namespace System
                     int argCnt = args.Length;
 
                     // Without a binder we need to do use the default binder...
-                    if (binder == null)
+                    if (binder is null)
                         binder = DefaultBinder;
 
                     // deal with the __COMObject case first. It is very special because from a reflection point of view it has no ctors
@@ -1737,7 +1737,7 @@ namespace System
                         Type[] argsType = new Type[argCnt];
                         for (int i = 0; i < argCnt; i++)
                         {
-                            if (args[i] != null)
+                            if (args[i] is not null)
                             {
                                 argsType[i] = args[i]!.GetType();
                             }
@@ -1751,10 +1751,10 @@ namespace System
 
                         MethodBase[]? cons = new MethodBase[matches.Count];
                         matches.CopyTo(cons);
-                        if (cons != null && cons.Length == 0)
+                        if (cons is not null && cons.Length == 0)
                             cons = null;
 
-                        if (cons == null)
+                        if (cons is null)
                         {
                             throw new MissingMethodException(Environment.GetResourceString("MissingConstructor_Name", FullName));
                         }
@@ -1768,7 +1768,7 @@ namespace System
                         }
                         catch (MissingMethodException) { invokeMethod = null; }
 
-                        if (invokeMethod == null)
+                        if (invokeMethod is null)
                         {
                             throw new MissingMethodException(Environment.GetResourceString("MissingConstructor_Name", FullName));
                         }
@@ -1790,7 +1790,7 @@ namespace System
                         else
                         {
                             server = ((ConstructorInfo)invokeMethod).Invoke(bindingAttr, binder, args, culture);
-                            if (state != null)
+                            if (state is not null)
                                 binder.ReorderArgumentArray(ref args, state);
                         }
                     }
@@ -1828,7 +1828,7 @@ namespace System
         {
             get
             {
-                if (cache == null)
+                if (cache is null)
                     LazyInitializer.EnsureInitialized(ref cache, () => new TypeCache());
 
                 return cache;
@@ -1883,14 +1883,14 @@ namespace System
 
         internal override MethodInfo GetMethod(MethodInfo fromNoninstanciated)
         {
-            if (fromNoninstanciated == null)
+            if (fromNoninstanciated is null)
                 throw new ArgumentNullException(nameof(fromNoninstanciated));
             return GetCorrespondingInflatedMethod(fromNoninstanciated);
         }
 
         internal override ConstructorInfo GetConstructor(ConstructorInfo fromNoninstanciated)
         {
-            if (fromNoninstanciated == null)
+            if (fromNoninstanciated is null)
                 throw new ArgumentNullException(nameof(fromNoninstanciated));
             return GetCorrespondingInflatedConstructor(fromNoninstanciated);
         }
@@ -1914,7 +1914,7 @@ namespace System
         private RuntimeConstructorInfo? m_serializationCtor;
         internal RuntimeConstructorInfo? GetSerializationCtor()
         {
-            if (m_serializationCtor == null)
+            if (m_serializationCtor is null)
             {
                 var s_SICtorParamTypes = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
 
@@ -1947,12 +1947,12 @@ namespace System
         private object? CreateInstanceMono(bool nonPublic, bool wrapExceptions)
         {
             RuntimeConstructorInfo? ctor = GetDefaultConstructor();
-            if (!nonPublic && ctor != null && !ctor.IsPublic)
+            if (!nonPublic && ctor is not null && !ctor.IsPublic)
             {
                 throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, FullName));
             }
 
-            if (ctor == null)
+            if (ctor is null)
             {
                 Type elementType = this.GetRootElementType();
                 if (ReferenceEquals(elementType, typeof(TypedReference)) || ReferenceEquals(elementType, typeof(RuntimeArgumentHandle)))
@@ -1983,7 +1983,7 @@ namespace System
             if ((invokeAttr & BindingFlags.ExactBinding) == BindingFlags.ExactBinding)
                 throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Arg_ObjObjEx"), value!.GetType(), this));
 
-            if (binder != null && binder != DefaultBinder)
+            if (binder is not null && binder != DefaultBinder)
                 return binder.ChangeType(value!, this, culture);
 
             throw new ArgumentException(string.Format(CultureInfo.CurrentUICulture, Environment.GetResourceString("Arg_ObjObjEx"), value!.GetType(), this));
@@ -1999,13 +1999,13 @@ namespace System
             if (IsByRef)
             {
                 Type? elementType = GetElementType();
-                if (value == null || elementType.IsInstanceOfType(value))
+                if (value is null || elementType.IsInstanceOfType(value))
                 {
                     return value;
                 }
             }
 
-            if (value == null)
+            if (value is null)
                 return value;
 
             if (IsEnum)
@@ -2014,13 +2014,13 @@ namespace System
                 if (type == value.GetType())
                     return value;
                 object? res = IsConvertibleToPrimitiveType(value, type);
-                if (res != null)
+                if (res is not null)
                     return res;
             }
             else if (IsPrimitive)
             {
                 object? res = IsConvertibleToPrimitiveType(value, this);
-                if (res != null)
+                if (res is not null)
                     return res;
             }
             else if (IsPointer)
@@ -2353,7 +2353,7 @@ namespace System
 
             RuntimeType? ifaceRtType = ifaceType as RuntimeType;
 
-            if (ifaceRtType == null)
+            if (ifaceRtType is null)
                 throw new ArgumentException(Environment.GetResourceString("Argument_MustBeRuntimeType"), nameof(ifaceType));
 
             InterfaceMapping res;
@@ -2364,7 +2364,7 @@ namespace System
             res.TargetType = this;
             res.InterfaceType = ifaceType;
             GetInterfaceMapData(this, ifaceType, out res.TargetMethods, out res.InterfaceMethods);
-            if (res.TargetMethods == null)
+            if (res.TargetMethods is null)
                 throw new ArgumentException("Interface not found", nameof(ifaceType));
 
             return res;
@@ -2464,7 +2464,7 @@ namespace System
         private RuntimeType[] GetNestedTypes_internal(string? displayName, BindingFlags bindingAttr, MemberListType listType)
         {
             string? internalName = null;
-            if (displayName != null)
+            if (displayName is not null)
                 internalName = displayName;
             using (var namePtr = new Mono.SafeStringMarshal(internalName))
             using (var h = new Mono.SafeGPtrArrayHandle(GetNestedTypes_native(namePtr.Value, bindingAttr, listType)))
@@ -2517,7 +2517,7 @@ namespace System
 
                 string? fullName;
                 TypeCache? cache = Cache;
-                if ((fullName = cache.full_name) == null)
+                if ((fullName = cache.full_name) is null)
                     fullName = cache.full_name = getFullName(true, false);
 
                 return fullName;
@@ -2548,7 +2548,7 @@ namespace System
                 throw new ArgumentNullException(nameof(type));
 
             RuntimeType? rtType = type as RuntimeType;
-            if (rtType == null)
+            if (rtType is null)
                 return false;
 
             return RuntimeTypeHandle.IsSubclassOf(this, rtType);

@@ -121,7 +121,7 @@ namespace System.Management
         /// </value>
         public string Name
         { //doesn't change for this object so we don't need to refresh
-            get { return propertyName != null ? propertyName : ""; }
+            get { return propertyName is not null ? propertyName : ""; }
         }
 
         /// <summary>
@@ -254,7 +254,7 @@ namespace System.Management
         {
             get
             {
-                if (qualifiers == null)
+                if (qualifiers is null)
                     qualifiers = new QualifierDataCollection(parent, propertyName, QualifierType.PropertyQualifier);
 
                 return qualifiers;

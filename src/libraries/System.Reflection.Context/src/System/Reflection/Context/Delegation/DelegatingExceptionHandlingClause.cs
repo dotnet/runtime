@@ -11,7 +11,7 @@ namespace System.Reflection.Context.Delegation
 
         public DelegatingExceptionHandlingClause(ExceptionHandlingClause clause)
         {
-            Debug.Assert(clause != null);
+            Debug.Assert(clause is not null);
 
             _clause = clause;
         }

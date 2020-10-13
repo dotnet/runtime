@@ -32,20 +32,20 @@ namespace System.Data
             get { return _name; }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     value = string.Empty;
                 }
 
-                if (string.IsNullOrEmpty(value) && (Table != null) && InCollection)
+                if (string.IsNullOrEmpty(value) && (Table is not null) && InCollection)
                 {
                     throw ExceptionBuilder.NoConstraintName();
                 }
 
-                CultureInfo locale = (Table != null ? Table.Locale : CultureInfo.CurrentCulture);
+                CultureInfo locale = (Table is not null ? Table.Locale : CultureInfo.CurrentCulture);
                 if (string.Compare(_name, value, true, locale) != 0)
                 {
-                    if ((Table != null) && InCollection)
+                    if ((Table is not null) && InCollection)
                     {
                         Table.Constraints.RegisterName(value);
                         if (_name.Length != 0)

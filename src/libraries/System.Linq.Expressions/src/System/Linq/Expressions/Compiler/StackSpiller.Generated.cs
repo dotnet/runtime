@@ -15,7 +15,7 @@ namespace System.Linq.Expressions.Compiler
         /// <returns>Rewritten expression.</returns>
         private Result RewriteExpression(Expression node, Stack stack)
         {
-            if (node == null)
+            if (node is null)
             {
                 return new Result(RewriteAction.None, null);
             }

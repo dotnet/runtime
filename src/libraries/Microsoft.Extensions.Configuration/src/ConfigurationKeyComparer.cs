@@ -38,8 +38,8 @@ namespace Microsoft.Extensions.Configuration
                 int value1 = 0;
                 int value2 = 0;
 
-                bool xIsInt = x != null && int.TryParse(x, out value1);
-                bool yIsInt = y != null && int.TryParse(y, out value2);
+                bool xIsInt = x is not null && int.TryParse(x, out value1);
+                bool yIsInt = y is not null && int.TryParse(y, out value2);
 
                 int result;
 

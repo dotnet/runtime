@@ -43,11 +43,11 @@ namespace System.Globalization
                 using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(JapaneseErasHive))
                 {
                     // Abort if we didn't find anything
-                    if (key == null) return null;
+                    if (key is null) return null;
 
                     // Look up the values in our reg key
                     string[] valueNames = key.GetValueNames();
-                    if (valueNames != null && valueNames.Length > 0)
+                    if (valueNames is not null && valueNames.Length > 0)
                     {
                         registryEraRanges = new EraInfo[valueNames.Length];
 
@@ -58,7 +58,7 @@ namespace System.Globalization
                             EraInfo? era = GetEraFromValue(valueNames[i], key.GetValue(valueNames[i])?.ToString());
 
                             // continue if not valid
-                            if (era == null) continue;
+                            if (era is null) continue;
 
                             // Remember we found one.
                             registryEraRanges[iFoundEras] = era;
@@ -161,7 +161,7 @@ namespace System.Globalization
         private static EraInfo? GetEraFromValue(string? value, string? data)
         {
             // Need inputs
-            if (value == null || data == null) return null;
+            if (value is null || data is null) return null;
 
             //
             // Get Date

@@ -27,12 +27,12 @@ namespace System.CodeDom
         public CodeAttributeDeclaration(CodeTypeReference attributeType, params CodeAttributeArgument[] arguments)
         {
             _attributeType = attributeType;
-            if (attributeType != null)
+            if (attributeType is not null)
             {
                 _name = attributeType.BaseType;
             }
 
-            if (arguments != null)
+            if (arguments is not null)
             {
                 Arguments.AddRange(arguments);
             }

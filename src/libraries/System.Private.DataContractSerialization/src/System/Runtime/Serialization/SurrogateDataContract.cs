@@ -25,7 +25,7 @@ namespace System.Runtime.Serialization
 
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
 
             SerializationInfo serInfo = new SerializationInfo(UnderlyingType, XmlObjectSerializer.FormatterConverter, !context.UnsafeTypeForwardingEnabled);
             SerializationSurrogateGetObjectData(obj, serInfo, context.GetStreamingContext());
@@ -58,7 +58,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
 
             xmlReader.Read();
             Type objType = UnderlyingType;
@@ -67,7 +67,7 @@ namespace System.Runtime.Serialization
             string objectId = context.GetObjectId();
             SerializationInfo serInfo = context.ReadSerializationInfo(xmlReader, objType);
             object? newObj = SerializationSurrogateSetObjectData(obj, serInfo, context.GetStreamingContext());
-            if (newObj == null)
+            if (newObj is null)
                 newObj = obj;
             if (newObj is IDeserializationCallback)
                 ((IDeserializationCallback)newObj).OnDeserialization(null);

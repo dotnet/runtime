@@ -40,9 +40,9 @@ namespace System.DirectoryServices.AccountManagement
             string contextName = name;
             string userName = null;
             bool explicitCreds = false;
-            if (credentials != null && credentials.UserName != null)
+            if (credentials is not null && credentials.UserName is not null)
             {
-                if (credentials.Domain != null)
+                if (credentials.Domain is not null)
                     userName = credentials.Domain + "\\" + credentials.UserName;
                 else
                     userName = credentials.UserName;
@@ -83,7 +83,7 @@ namespace System.DirectoryServices.AccountManagement
                 PrincipalContext ctx = null;
 
                 // Wait for the PrincipalContext to be ready
-                if (contextReadyEvent != null)
+                if (contextReadyEvent is not null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSCache", "GetContext: waiting");
 
@@ -96,12 +96,12 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     CredHolder credHolder = (CredHolder)_table[contextName];
 
-                    if (credHolder != null)
+                    if (credHolder is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSCache", "GetContext: found a credHolder for " + contextName);
 
                         credTable = (explicitCreds ? credHolder.explicitCreds : credHolder.defaultCreds);
-                        Debug.Assert(credTable != null);
+                        Debug.Assert(credTable is not null);
 
                         object o = credTable[userName];
 
@@ -116,7 +116,7 @@ namespace System.DirectoryServices.AccountManagement
                         }
 
                         WeakReference refToContext = o as WeakReference;
-                        if (refToContext != null)
+                        if (refToContext is not null)
                         {
                             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSCache", "GetContext: refToContext is non-null");
 
@@ -124,7 +124,7 @@ namespace System.DirectoryServices.AccountManagement
 
                             // If the PrincipalContext hasn't been GCed or disposed, use it.
                             // Otherwise, we'll need to create a new one
-                            if (ctx != null && ctx.Disposed == false)
+                            if (ctx is not null && ctx.Disposed == false)
                             {
                                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSCache", "GetContext: using found refToContext");
                                 return ctx;
@@ -140,7 +140,7 @@ namespace System.DirectoryServices.AccountManagement
                     // Either credHolder/credTable are null (no contexts exist for the contextName), or credHolder/credTable
                     // are non-null (contexts exist, but none for the userName).  Either way, we need to create a PrincipalContext.
 
-                    if (credHolder == null)
+                    if (credHolder is null)
                     {
                         GlobalDebug.WriteLineIf(
                                 GlobalDebug.Info,
@@ -171,8 +171,8 @@ namespace System.DirectoryServices.AccountManagement
                                 contextName,
                                 null,
                                 contextOptions,
-                                (credentials != null ? credentials.UserName : null),
-                                (credentials != null ? credentials.Password : null)
+                                (credentials is not null ? credentials.UserName : null),
+                                (credentials is not null ? credentials.Password : null)
                                 );
 
                 lock (_tableLock)

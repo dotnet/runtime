@@ -31,7 +31,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 ActiveDirectorySubnet subnet = (ActiveDirectorySubnet)value;
 
-                if (subnet == null)
+                if (subnet is null)
                     throw new ArgumentNullException(nameof(value));
 
                 if (!subnet.existing)
@@ -46,7 +46,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int Add(ActiveDirectorySubnet subnet)
         {
-            if (subnet == null)
+            if (subnet is null)
                 throw new ArgumentNullException(nameof(subnet));
 
             if (!subnet.existing)
@@ -60,12 +60,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ActiveDirectorySubnet[] subnets)
         {
-            if (subnets == null)
+            if (subnets is null)
                 throw new ArgumentNullException(nameof(subnets));
 
             foreach (ActiveDirectorySubnet s in subnets)
             {
-                if (s == null)
+                if (s is null)
                 {
                     throw new ArgumentException(null, nameof(subnets));
                 }
@@ -77,7 +77,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ActiveDirectorySubnetCollection subnets)
         {
-            if (subnets == null)
+            if (subnets is null)
                 throw new ArgumentNullException(nameof(subnets));
 
             int count = subnets.Count;
@@ -87,7 +87,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ActiveDirectorySubnet subnet)
         {
-            if (subnet == null)
+            if (subnet is null)
                 throw new ArgumentNullException(nameof(subnet));
 
             if (!subnet.existing)
@@ -115,7 +115,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ActiveDirectorySubnet subnet)
         {
-            if (subnet == null)
+            if (subnet is null)
                 throw new ArgumentNullException(nameof(subnet));
 
             if (!subnet.existing)
@@ -138,7 +138,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Insert(int index, ActiveDirectorySubnet subnet)
         {
-            if (subnet == null)
+            if (subnet is null)
                 throw new ArgumentNullException(nameof(subnet));
 
             if (!subnet.existing)
@@ -152,7 +152,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Remove(ActiveDirectorySubnet subnet)
         {
-            if (subnet == null)
+            if (subnet is null)
                 throw new ArgumentNullException(nameof(subnet));
 
             if (!subnet.existing)
@@ -259,7 +259,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         protected override void OnValidate(object value)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (value is null) throw new ArgumentNullException(nameof(value));
 
             if (!(value is ActiveDirectorySubnet))
                 throw new ArgumentException(null, nameof(value));

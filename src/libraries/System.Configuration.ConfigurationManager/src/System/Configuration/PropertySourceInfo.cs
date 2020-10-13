@@ -22,7 +22,7 @@ namespace System.Configuration
         {
             IConfigErrorInfo err = reader as IConfigErrorInfo;
 
-            return err != null ? err.Filename : "";
+            return err is not null ? err.Filename : "";
         }
 
         private int GetLineNumber(XmlReader reader)

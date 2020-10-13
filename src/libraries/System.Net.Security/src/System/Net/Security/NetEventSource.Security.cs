@@ -66,7 +66,7 @@ namespace System.Net
                 string? remoteId = null;
 
                 NetworkStream? ns = innerStream as NetworkStream;
-                if (ns != null)
+                if (ns is not null)
                 {
                     try
                     {
@@ -77,7 +77,7 @@ namespace System.Net
                     catch { };
                 }
 
-                if (localId == null)
+                if (localId is null)
                 {
                     localId = IdOf(innerStream);
                 }
@@ -389,7 +389,7 @@ namespace System.Net
         static partial void AdditionalCustomizedToString<T>(T value, ref string? result)
         {
             X509Certificate? cert = value as X509Certificate;
-            if (cert != null)
+            if (cert is not null)
             {
                 result = cert.ToString(fVerbose: true);
             }

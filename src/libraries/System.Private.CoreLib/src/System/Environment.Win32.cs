@@ -17,7 +17,7 @@ namespace System
 
         private static string? GetEnvironmentVariableFromRegistry(string variable, bool fromMachine)
         {
-            Debug.Assert(variable != null);
+            Debug.Assert(variable is not null);
 
             using (RegistryKey? environmentKey = OpenEnvironmentKeyIfExists(fromMachine, writable: false))
             {
@@ -27,7 +27,7 @@ namespace System
 
         private static void SetEnvironmentVariableFromRegistry(string variable, string? value, bool fromMachine)
         {
-            Debug.Assert(variable != null);
+            Debug.Assert(variable is not null);
 
             const int MaxUserEnvVariableLength = 255; // User-wide env vars stored in the registry have names limited to 255 chars
             if (!fromMachine && variable.Length >= MaxUserEnvVariableLength)
@@ -37,9 +37,9 @@ namespace System
 
             using (RegistryKey? environmentKey = OpenEnvironmentKeyIfExists(fromMachine, writable: true))
             {
-                if (environmentKey != null)
+                if (environmentKey is not null)
                 {
-                    if (value == null)
+                    if (value is null)
                     {
                         environmentKey.DeleteValue(variable, throwOnMissingValue: false);
                     }
@@ -67,7 +67,7 @@ namespace System
 
             using (RegistryKey? environmentKey = OpenEnvironmentKeyIfExists(fromMachine, writable: false))
             {
-                if (environmentKey != null)
+                if (environmentKey is not null)
                 {
                     foreach (string name in environmentKey.GetValueNames())
                     {

@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization
 
         internal void Add(string id, object? obj)
         {
-            if (_objectDictionary == null)
+            if (_objectDictionary is null)
                 _objectDictionary = new Dictionary<string, object?>();
 
             object? existingObject;
@@ -30,13 +30,13 @@ namespace System.Runtime.Serialization
 
         internal void Remove(string id)
         {
-            if (_objectDictionary != null)
+            if (_objectDictionary is not null)
                 _objectDictionary.Remove(id);
         }
 
         internal object? GetObject(string id)
         {
-            if (_referencedObjectDictionary == null)
+            if (_referencedObjectDictionary is null)
             {
                 _referencedObjectDictionary = new Dictionary<string, object?>();
                 _referencedObjectDictionary.Add(id, null);
@@ -46,7 +46,7 @@ namespace System.Runtime.Serialization
                 _referencedObjectDictionary.TryAdd(id, null);
             }
 
-            if (_objectDictionary != null)
+            if (_objectDictionary is not null)
             {
                 object? obj;
                 _objectDictionary.TryGetValue(id, out obj);
@@ -58,7 +58,7 @@ namespace System.Runtime.Serialization
 
         internal bool IsObjectReferenced(string id)
         {
-            if (_referencedObjectDictionary != null)
+            if (_referencedObjectDictionary is not null)
             {
                 return _referencedObjectDictionary.ContainsKey(id);
             }

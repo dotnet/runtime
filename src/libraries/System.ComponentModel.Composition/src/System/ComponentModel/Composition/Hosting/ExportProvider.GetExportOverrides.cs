@@ -729,7 +729,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             Export? export = GetExportsCore(typeof(T), (Type?)null, contractName, cardinality).SingleOrDefault();
 
-            return (export != null) ? ExportServices.GetCastedExportedValue<T>(export) : default;
+            return (export is not null) ? ExportServices.GetCastedExportedValue<T>(export) : default;
         }
 
         private IEnumerable<Lazy<T>> GetExportsCore<T>(string? contractName)
@@ -760,14 +760,14 @@ namespace System.ComponentModel.Composition.Hosting
         {
             Export? export = GetExportsCore(typeof(T), typeof(TMetadataView), contractName, ImportCardinality.ExactlyOne).SingleOrDefault();
 
-            return (export != null) ? ExportServices.CreateStronglyTypedLazyOfTM<T, TMetadataView>(export) : null;
+            return (export is not null) ? ExportServices.CreateStronglyTypedLazyOfTM<T, TMetadataView>(export) : null;
         }
 
         private Lazy<T>? GetExportCore<T>(string? contractName)
         {
             Export? export = GetExportsCore(typeof(T), null, contractName, ImportCardinality.ExactlyOne).SingleOrDefault();
 
-            return (export != null) ? ExportServices.CreateStronglyTypedLazyOfT<T>(export) : null;
+            return (export is not null) ? ExportServices.CreateStronglyTypedLazyOfT<T>(export) : null;
         }
 
         private IEnumerable<Export> GetExportsCore(Type type, Type? metadataViewType, string? contractName, ImportCardinality cardinality)
@@ -780,7 +780,7 @@ namespace System.ComponentModel.Composition.Hosting
                 contractName = AttributedModelServices.GetContractName(type);
             }
 
-            if (metadataViewType == null)
+            if (metadataViewType is null)
             {
                 metadataViewType = ExportServices.DefaultMetadataViewType;
             }
@@ -796,17 +796,17 @@ namespace System.ComponentModel.Composition.Hosting
 
         private static ImportDefinition BuildImportDefinition(Type type, Type metadataViewType, string contractName, ImportCardinality cardinality)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
 
-            if (metadataViewType == null)
+            if (metadataViewType is null)
             {
                 throw new ArgumentNullException(nameof(metadataViewType));
             }
 
-            if (contractName == null)
+            if (contractName is null)
             {
                 throw new ArgumentNullException(nameof(contractName));
             }

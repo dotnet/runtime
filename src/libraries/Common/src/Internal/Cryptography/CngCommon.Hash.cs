@@ -13,7 +13,7 @@ namespace Internal.Cryptography
         public static byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
             // The classes that call us are sealed and their base class has checked this already.
-            Debug.Assert(data != null);
+            Debug.Assert(data is not null);
             Debug.Assert(offset >= 0 && offset <= data.Length);
             Debug.Assert(count >= 0 && count <= data.Length);
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
@@ -45,7 +45,7 @@ namespace Internal.Cryptography
         public static byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
         {
             // The classes that call us are sealed and their base class has checked this already.
-            Debug.Assert(data != null);
+            Debug.Assert(data is not null);
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
             using (var hashProvider = new HashProviderCng(hashAlgorithm.Name, null))

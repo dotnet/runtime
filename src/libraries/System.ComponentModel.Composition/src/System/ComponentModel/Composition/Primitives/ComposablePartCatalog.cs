@@ -54,12 +54,12 @@ namespace System.ComponentModel.Composition.Primitives
             get
             {
                 ThrowIfDisposed();
-                if (_queryableParts == null)
+                if (_queryableParts is null)
                 {
                     // Guarantee one time only set _queryableParts
                     var p = this.AsQueryable();
                     Interlocked.CompareExchange(ref _queryableParts, p, null);
-                    if (_queryableParts == null)
+                    if (_queryableParts is null)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
@@ -102,7 +102,7 @@ namespace System.ComponentModel.Composition.Primitives
 
             List<Tuple<ComposablePartDefinition, ExportDefinition>>? exports = null;
             var candidateParts = GetCandidateParts(definition);
-            if (candidateParts != null)
+            if (candidateParts is not null)
             {
                 foreach (var part in candidateParts)
                 {
@@ -113,7 +113,7 @@ namespace System.ComponentModel.Composition.Primitives
                 }
             }
 
-            Debug.Assert(exports != null || _EmptyExportsList != null);
+            Debug.Assert(exports is not null || _EmptyExportsList is not null);
             return exports ?? _EmptyExportsList;
         }
 

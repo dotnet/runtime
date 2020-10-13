@@ -28,7 +28,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddEvents(ArrayList copyEvents)
         {
-            Debug.Assert(copyEvents != null);
+            Debug.Assert(copyEvents is not null);
             _copyEvents.AddRange(copyEvents);
         }
 
@@ -43,8 +43,8 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
-            Debug.Assert(_copyEvents != null && _copyEvents.Count > 0);
+            Debug.Assert(processor is not null && frame is not null);
+            Debug.Assert(_copyEvents is not null && _copyEvents.Count > 0);
 
             switch (frame.State)
             {

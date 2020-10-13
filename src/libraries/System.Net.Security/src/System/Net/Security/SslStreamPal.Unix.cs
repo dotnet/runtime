@@ -66,7 +66,7 @@ namespace System.Net.Security
             {
                 bindingHandle = EndpointChannelBindingToken.Build(securityContext);
 
-                if (bindingHandle == null)
+                if (bindingHandle is null)
                 {
                     throw Interop.OpenSsl.CreateSslException(SR.net_ssl_invalid_certificate);
                 }
@@ -118,7 +118,7 @@ namespace System.Net.Security
                 // We have this workaround, as openssl supports terminating handshake only from version 1.1.0,
                 // whereas ALPN is supported from version 1.0.2.
                 SafeSslHandle sslContext = ((SafeDeleteSslContext)context).SslContext;
-                if (done && sslAuthenticationOptions.IsServer && sslAuthenticationOptions.ApplicationProtocols != null && sslContext.AlpnHandle.IsAllocated && sslContext.AlpnHandle.Target == null)
+                if (done && sslAuthenticationOptions.IsServer && sslAuthenticationOptions.ApplicationProtocols is not null && sslContext.AlpnHandle.IsAllocated && sslContext.AlpnHandle.Target is null)
                 {
                     return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, Interop.OpenSsl.CreateSslException(SR.net_alpn_failed));
                 }
@@ -144,7 +144,7 @@ namespace System.Net.Security
 
         internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext? context)
         {
-            if (context == null)
+            if (context is null)
                 return null;
 
             return Interop.Ssl.SslGetAlpnSelected(((SafeDeleteSslContext)context).SslContext);

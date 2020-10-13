@@ -25,7 +25,7 @@ namespace Microsoft.Extensions.Logging
 
         private void LoadDefaultConfigValues(LoggerFilterOptions options)
         {
-            if (_configuration == null)
+            if (_configuration is null)
             {
                 return;
             }
@@ -42,7 +42,7 @@ namespace Microsoft.Extensions.Logging
                 else
                 {
                     IConfigurationSection logLevelSection = configurationSection.GetSection(LogLevelKey);
-                    if (logLevelSection != null)
+                    if (logLevelSection is not null)
                     {
                         // Load logger specific rules
                         string logger = configurationSection.Key;

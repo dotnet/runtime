@@ -38,7 +38,7 @@ namespace System.Net.Http
 
         protected static void ValidateBufferArgs(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -60,7 +60,7 @@ namespace System.Net.Http
         /// </summary>
         protected static void ValidateCopyToArgs(Stream source, Stream destination, int bufferSize)
         {
-            if (destination == null)
+            if (destination is null)
             {
                 throw new ArgumentNullException(nameof(destination));
             }

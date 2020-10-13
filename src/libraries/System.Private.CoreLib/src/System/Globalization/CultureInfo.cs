@@ -163,7 +163,7 @@ namespace System.Globalization
 
         public CultureInfo(string name, bool useUserOverride)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -171,7 +171,7 @@ namespace System.Globalization
             // Get our data providing record
             CultureData? cultureData = CultureData.GetCultureData(name, useUserOverride);
 
-            if (cultureData == null)
+            if (cultureData is null)
             {
                 throw new CultureNotFoundException(nameof(name), name, SR.Argument_CultureNotSupported);
             }
@@ -183,7 +183,7 @@ namespace System.Globalization
 
         private CultureInfo(CultureData cultureData, bool isReadOnly = false)
         {
-            Debug.Assert(cultureData != null);
+            Debug.Assert(cultureData is not null);
             _cultureData = cultureData;
             _name = cultureData.CultureName;
             _isReadOnly = isReadOnly;
@@ -191,9 +191,9 @@ namespace System.Globalization
 
         private static CultureInfo? CreateCultureInfoNoThrow(string name, bool useUserOverride)
         {
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
             CultureData? cultureData = CultureData.GetCultureData(name, useUserOverride);
-            if (cultureData == null)
+            if (cultureData is null)
             {
                 return null;
             }
@@ -242,7 +242,7 @@ namespace System.Globalization
         /// </summary>
         internal CultureInfo(string cultureName, string textAndCompareCultureName)
         {
-            if (cultureName == null)
+            if (cultureName is null)
             {
                 throw new ArgumentNullException(nameof(cultureName), SR.ArgumentNull_String);
             }
@@ -318,7 +318,7 @@ namespace System.Globalization
                     }
                 }
 
-                if (culture == null)
+                if (culture is null)
                 {
                     // nothing to save here; throw the original exception
                     throw;
@@ -394,12 +394,12 @@ namespace System.Globalization
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                if (s_asyncLocalCurrentCulture == null)
+                if (s_asyncLocalCurrentCulture is null)
                 {
                     Interlocked.CompareExchange(ref s_asyncLocalCurrentCulture, new AsyncLocal<CultureInfo>(AsyncLocalSetCurrentCulture), null);
                 }
@@ -417,14 +417,14 @@ namespace System.Globalization
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
 
                 CultureInfo.VerifyCultureName(value, true);
 
-                if (s_asyncLocalCurrentUICulture == null)
+                if (s_asyncLocalCurrentUICulture is null)
                 {
                     Interlocked.CompareExchange(ref s_asyncLocalCurrentUICulture, new AsyncLocal<CultureInfo>(AsyncLocalSetCurrentUICulture), null);
                 }
@@ -458,7 +458,7 @@ namespace System.Globalization
                 // If you add more pre-conditions to this method, check to see if you also need to
                 // add them to Thread.CurrentUICulture.set.
 
-                if (value != null)
+                if (value is not null)
                 {
                     CultureInfo.VerifyCultureName(value, true);
                 }
@@ -479,7 +479,7 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(s_InvariantCultureInfo != null);
+                Debug.Assert(s_InvariantCultureInfo is not null);
                 return s_InvariantCultureInfo;
             }
         }
@@ -491,7 +491,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_parent == null)
+                if (_parent is null)
                 {
                     CultureInfo culture;
                     string parentName = _cultureData.ParentName;
@@ -559,7 +559,7 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(_name != null, "[CultureInfo.DisplayName] Always expect _name to be set");
+                Debug.Assert(_name is not null, "[CultureInfo.DisplayName] Always expect _name to be set");
                 return _cultureData.DisplayName;
             }
         }
@@ -609,7 +609,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_textInfo == null)
+                if (_textInfo is null)
                 {
                     // Make a new textInfo
                     TextInfo tempTextInfo = new TextInfo(_cultureData);
@@ -695,7 +695,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_numInfo == null)
+                if (_numInfo is null)
                 {
                     NumberFormatInfo temp = new NumberFormatInfo(_cultureData);
                     temp._isReadOnly = _isReadOnly;
@@ -705,7 +705,7 @@ namespace System.Globalization
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -723,7 +723,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_dateTimeInfo == null)
+                if (_dateTimeInfo is null)
                 {
                     // Change the calendar of DTFI to the specified calendar of this CultureInfo.
                     DateTimeFormatInfo temp = new DateTimeFormatInfo(_cultureData, this.Calendar);
@@ -735,7 +735,7 @@ namespace System.Globalization
 
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -830,7 +830,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_calendar == null)
+                if (_calendar is null)
                 {
                     // Get the default calendar for this culture.  Note that the value can be
                     // from registry if this is a user default culture.
@@ -872,7 +872,7 @@ namespace System.Globalization
         public CultureInfo GetConsoleFallbackUICulture()
         {
             CultureInfo? temp = _consoleFallbackCulture;
-            if (temp == null)
+            if (temp is null)
             {
                 temp = CreateSpecificCulture(_cultureData.SCONSOLEFALLBACKNAME);
                 temp._isReadOnly = true;
@@ -890,11 +890,11 @@ namespace System.Globalization
             // they've already been allocated.  If this is a derived type, we'll take a more generic codepath.
             if (!_isInherited)
             {
-                if (_dateTimeInfo != null)
+                if (_dateTimeInfo is not null)
                 {
                     ci._dateTimeInfo = (DateTimeFormatInfo)_dateTimeInfo.Clone();
                 }
-                if (_numInfo != null)
+                if (_numInfo is not null)
                 {
                     ci._numInfo = (NumberFormatInfo)_numInfo.Clone();
                 }
@@ -905,12 +905,12 @@ namespace System.Globalization
                 ci.NumberFormat = (NumberFormatInfo)this.NumberFormat.Clone();
             }
 
-            if (_textInfo != null)
+            if (_textInfo is not null)
             {
                 ci._textInfo = (TextInfo)_textInfo.Clone();
             }
 
-            if (_dateTimeInfo != null && _dateTimeInfo.Calendar == _calendar)
+            if (_dateTimeInfo is not null && _dateTimeInfo.Calendar == _calendar)
             {
                 // Usually when we access CultureInfo.DateTimeFormat first time, we create the DateTimeFormatInfo object
                 // using CultureInfo.Calendar. i.e. CultureInfo.DateTimeInfo.Calendar == CultureInfo.calendar.
@@ -918,7 +918,7 @@ namespace System.Globalization
                 // then we can keep the same behavior for the cloned object and no need to create another calendar object.
                 ci._calendar = ci.DateTimeFormat.Calendar;
             }
-            else if (_calendar != null)
+            else if (_calendar is not null)
             {
                 ci._calendar = (Calendar)_calendar.Clone();
             }
@@ -928,7 +928,7 @@ namespace System.Globalization
 
         public static CultureInfo ReadOnly(CultureInfo ci)
         {
-            if (ci == null)
+            if (ci is null)
             {
                 throw new ArgumentNullException(nameof(ci));
             }
@@ -945,11 +945,11 @@ namespace System.Globalization
                 // they've already been allocated.  If this is a derived type, we'll take a more generic codepath.
                 if (!ci._isInherited)
                 {
-                    if (ci._dateTimeInfo != null)
+                    if (ci._dateTimeInfo is not null)
                     {
                         newInfo._dateTimeInfo = DateTimeFormatInfo.ReadOnly(ci._dateTimeInfo);
                     }
-                    if (ci._numInfo != null)
+                    if (ci._numInfo is not null)
                     {
                         newInfo._numInfo = NumberFormatInfo.ReadOnly(ci._numInfo);
                     }
@@ -961,12 +961,12 @@ namespace System.Globalization
                 }
             }
 
-            if (ci._textInfo != null)
+            if (ci._textInfo is not null)
             {
                 newInfo._textInfo = TextInfo.ReadOnly(ci._textInfo);
             }
 
-            if (ci._calendar != null)
+            if (ci._calendar is not null)
             {
                 newInfo._calendar = Calendar.ReadOnly(ci._calendar);
             }

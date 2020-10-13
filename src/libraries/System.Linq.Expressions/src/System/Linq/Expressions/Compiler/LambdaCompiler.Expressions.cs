@@ -79,7 +79,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitExpressionAsVoid(Expression node, CompilationFlags flags)
         {
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
 
             CompilationFlags startEmitted = EmitExpressionStart(node);
 
@@ -173,7 +173,7 @@ namespace System.Linq.Expressions.Compiler
             // This is worth it because otherwise we end up with an extra call
             // to DynamicMethod.CreateDelegate, which is expensive.
             //
-            if (node.LambdaOperand != null)
+            if (node.LambdaOperand is not null)
             {
                 EmitInlinedInvoke(node, flags);
                 return;
@@ -206,7 +206,7 @@ namespace System.Linq.Expressions.Compiler
             // 3. Emit the body
             // if the inlined lambda is the last expression of the whole lambda,
             // tail call can be applied.
-            if (wb != null)
+            if (wb is not null)
             {
                 Debug.Assert(wb.Count > 0);
                 flags = UpdateEmitAsTailCallFlag(flags, CompilationFlags.EmitAsNoTail);
@@ -227,7 +227,7 @@ namespace System.Linq.Expressions.Compiler
 
             // Emit instance, if calling an instance method
             Type? objectType = null;
-            if (node.Object != null)
+            if (node.Object is not null)
             {
                 EmitInstance(node.Object, out objectType);
             }
@@ -253,7 +253,7 @@ namespace System.Linq.Expressions.Compiler
 
             // Emit instance, if calling an instance method
             Type? objectType = null;
-            if (index.Object != null)
+            if (index.Object is not null)
             {
                 EmitInstance(index.Object, out objectType);
             }
@@ -289,7 +289,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitGetIndexCall(IndexExpression node, Type? objectType)
         {
-            if (node.Indexer != null)
+            if (node.Indexer is not null)
             {
                 // For indexed properties, just call the getter
                 MethodInfo method = node.Indexer.GetGetMethod(nonPublic: true)!;
@@ -317,7 +317,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitSetIndexCall(IndexExpression node, Type? objectType)
         {
-            if (node.Indexer != null)
+            if (node.Indexer is not null)
             {
                 // For indexed properties, just call the setter
                 MethodInfo method = node.Indexer.GetSetMethod(nonPublic: true)!;
@@ -370,12 +370,12 @@ namespace System.Linq.Expressions.Compiler
             Type? objectType = null;
             if (!method.IsStatic)
             {
-                Debug.Assert(obj != null);
+                Debug.Assert(obj is not null);
                 EmitInstance(obj, out objectType);
             }
             // if the obj has a value type, its address is passed to the method call so we cannot destroy the
             // stack by emitting a tail call
-            if (obj != null && obj.Type.IsValueType)
+            if (obj is not null && obj.Type.IsValueType)
             {
                 EmitMethodCall(method, methodCallExpr, objectType);
             }
@@ -524,9 +524,9 @@ namespace System.Linq.Expressions.Compiler
                     type = type.GetElementType()!;
 
                     WriteBack? wb = EmitAddressWriteBack(argument, type);
-                    if (wb != null)
+                    if (wb is not null)
                     {
-                        if (writeBacks == null)
+                        if (writeBacks is null)
                         {
                             writeBacks = new List<WriteBack>();
                         }
@@ -544,7 +544,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitWriteBack(List<WriteBack>? writeBacks)
         {
-            if (writeBacks != null)
+            if (writeBacks is not null)
             {
                 foreach (WriteBack wb in writeBacks)
                 {
@@ -564,7 +564,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitConstant(object value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
             EmitConstant(value, value.GetType());
         }
 
@@ -615,7 +615,7 @@ namespace System.Linq.Expressions.Compiler
         {
             NewExpression node = (NewExpression)expr;
 
-            if (node.Constructor != null)
+            if (node.Constructor is not null)
             {
                 if (node.Constructor.DeclaringType!.IsAbstract)
                     throw Error.NonAbstractConstructorRequired();
@@ -785,7 +785,7 @@ namespace System.Linq.Expressions.Compiler
 
             // emit "this", if any
             Type? objectType = null;
-            if (lvalue.Expression != null)
+            if (lvalue.Expression is not null)
             {
                 EmitInstance(lvalue.Expression, out objectType);
             }
@@ -828,7 +828,7 @@ namespace System.Linq.Expressions.Compiler
 
             // emit "this", if any
             Type? instanceType = null;
-            if (node.Expression != null)
+            if (node.Expression is not null)
             {
                 EmitInstance(node.Expression, out instanceType);
             }
@@ -1013,8 +1013,8 @@ namespace System.Linq.Expressions.Compiler
                 _ilg.Emit(OpCodes.Stloc, loc);
                 _ilg.Emit(OpCodes.Ldloca, loc);
             }
-            EmitMemberInit(init.Bindings, loc == null, init.NewExpression.Type);
-            if (loc != null)
+            EmitMemberInit(init.Bindings, loc is null, init.NewExpression.Type);
+            if (loc is not null)
             {
                 _ilg.Emit(OpCodes.Ldloc, loc);
                 FreeLocal(loc);
@@ -1057,8 +1057,8 @@ namespace System.Linq.Expressions.Compiler
                 _ilg.Emit(OpCodes.Stloc, loc);
                 _ilg.Emit(OpCodes.Ldloca, loc);
             }
-            EmitListInit(init.Initializers, loc == null, init.NewExpression.Type);
-            if (loc != null)
+            EmitListInit(init.Initializers, loc is null, init.NewExpression.Type);
+            if (loc is not null)
             {
                 _ilg.Emit(OpCodes.Ldloc, loc);
                 FreeLocal(loc);

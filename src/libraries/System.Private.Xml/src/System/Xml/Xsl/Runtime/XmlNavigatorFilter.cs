@@ -157,7 +157,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public static XmlNavigatorFilter Create(XPathNodeType nodeType)
         {
-            Debug.Assert(s_typeFilters[(int)nodeType] != null);
+            Debug.Assert(s_typeFilters[(int)nodeType] is not null);
             return s_typeFilters[(int)nodeType];
         }
 

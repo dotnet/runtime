@@ -54,7 +54,7 @@ namespace System.Linq
             Func<TSource, TCollection, TResult> resultSelector)
         {
             immutableArray.ThrowNullRefIfNotInitialized();
-            if (collectionSelector == null || resultSelector == null)
+            if (collectionSelector is null || resultSelector is null)
             {
                 // throw the same exception as would LINQ
                 return Enumerable.SelectMany(immutableArray, collectionSelector!, resultSelector!);
@@ -167,7 +167,7 @@ namespace System.Linq
                 return false;
             }
 
-            if (comparer == null)
+            if (comparer is null)
             {
                 comparer = EqualityComparer<TBase>.Default;
             }
@@ -192,7 +192,7 @@ namespace System.Linq
         {
             Requires.NotNull(items, nameof(items));
 
-            if (comparer == null)
+            if (comparer is null)
             {
                 comparer = EqualityComparer<TBase>.Default;
             }

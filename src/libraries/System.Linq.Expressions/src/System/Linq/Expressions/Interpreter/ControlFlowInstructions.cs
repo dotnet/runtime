@@ -26,7 +26,7 @@ namespace System.Linq.Expressions.Interpreter
             _offset = offset;
 
             Instruction[] cache = Cache;
-            if (cache != null && offset >= 0 && offset < cache.Length)
+            if (cache is not null && offset >= 0 && offset < cache.Length)
             {
                 return cache[offset] ?? (cache[offset] = this);
             }
@@ -53,7 +53,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             get
             {
-                if (s_cache == null)
+                if (s_cache is null)
                 {
                     s_cache = new Instruction[CacheSize];
                 }
@@ -85,7 +85,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             get
             {
-                if (s_cache == null)
+                if (s_cache is null)
                 {
                     s_cache = new Instruction[CacheSize];
                 }
@@ -117,7 +117,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             get
             {
-                if (s_cache == null)
+                if (s_cache is null)
                 {
                     s_cache = new Instruction[CacheSize];
                 }
@@ -133,7 +133,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             Debug.Assert(_offset != Unknown);
 
-            if (frame.Peek() != null)
+            if (frame.Peek() is not null)
             {
                 return _offset;
             }
@@ -150,7 +150,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             get
             {
-                if (s_caches == null)
+                if (s_caches is null)
                 {
                     s_caches = new Instruction[2][][] { new Instruction[2][], new Instruction[2][] };
                 }
@@ -297,7 +297,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal void SetTryHandler(TryCatchFinallyHandler tryHandler)
         {
-            Debug.Assert(_tryHandler == null && tryHandler != null, "the tryHandler can be set only once");
+            Debug.Assert(_tryHandler is null && tryHandler is not null, "the tryHandler can be set only once");
             _tryHandler = tryHandler;
         }
 
@@ -323,7 +323,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int Run(InterpretedFrame frame)
         {
-            Debug.Assert(_tryHandler != null, "the tryHandler must be set already");
+            Debug.Assert(_tryHandler is not null, "the tryHandler must be set already");
 
             if (_hasFinally)
             {
@@ -361,7 +361,7 @@ namespace System.Linq.Expressions.Interpreter
 #if FEATURE_THREAD_ABORT
                 // stay in the current catch so that ThreadAbortException is not rethrown by CLR:
                 var abort = exception as ThreadAbortException;
-                if (abort != null)
+                if (abort is not null)
                 {
                     Interpreter.AnyAbortException = abort;
                     frame.CurrentAbortHandler = exHandler;
@@ -445,14 +445,14 @@ namespace System.Linq.Expressions.Interpreter
 
         internal void SetTryHandler(TryFaultHandler tryHandler)
         {
-            Debug.Assert(tryHandler != null);
-            Debug.Assert(_tryHandler == null, "the tryHandler can be set only once");
+            Debug.Assert(tryHandler is not null);
+            Debug.Assert(_tryHandler is null, "the tryHandler can be set only once");
             _tryHandler = tryHandler;
         }
 
         public override int Run(InterpretedFrame frame)
         {
-            Debug.Assert(_tryHandler != null, "the tryHandler must be set already");
+            Debug.Assert(_tryHandler is not null, "the tryHandler must be set already");
 
             // Push fault.
             frame.PushContinuation(_labelIndex);
@@ -766,7 +766,7 @@ namespace System.Linq.Expressions.Interpreter
         }
 
         private static Exception? WrapThrownObject(object? thrown) =>
-            thrown == null ? null : (thrown as Exception ?? new RuntimeWrappedException(thrown));
+            thrown is null ? null : (thrown as Exception ?? new RuntimeWrappedException(thrown));
     }
 
     internal sealed class IntSwitchInstruction<T> : Instruction where T : notnull
@@ -809,7 +809,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             object? value = frame.Pop();
 
-            if (value == null)
+            if (value is null)
             {
                 return _nullCase.Value;
             }

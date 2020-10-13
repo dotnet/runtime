@@ -35,7 +35,7 @@ namespace System.ComponentModel
         /// </summary>
         public PropertyDescriptorCollection(PropertyDescriptor[] properties)
         {
-            if (properties == null)
+            if (properties is null)
             {
                 _properties = Array.Empty<PropertyDescriptor>();
                 Count = 0;
@@ -60,7 +60,7 @@ namespace System.ComponentModel
         private PropertyDescriptorCollection(PropertyDescriptor[] properties, int propCount, string[] namedSort, IComparer comparer)
         {
             _propsOwned = false;
-            if (namedSort != null)
+            if (namedSort is not null)
             {
                 _namedSort = (string[])namedSort.Clone();
             }
@@ -132,7 +132,7 @@ namespace System.ComponentModel
             if (!_propsOwned)
             {
                 _propsOwned = true;
-                if (_properties != null)
+                if (_properties is not null)
                 {
                     PropertyDescriptor[] newProps = new PropertyDescriptor[Count];
                     Array.Copy(_properties, newProps, Count);
@@ -178,7 +178,7 @@ namespace System.ComponentModel
             {
                 PropertyDescriptor p = null;
 
-                if (_cachedFoundProperties == null || _cachedIgnoreCase != ignoreCase)
+                if (_cachedFoundProperties is null || _cachedIgnoreCase != ignoreCase)
                 {
                     _cachedIgnoreCase = ignoreCase;
                     if (ignoreCase)
@@ -195,7 +195,7 @@ namespace System.ComponentModel
                 //
                 object cached = _cachedFoundProperties[name];
 
-                if (cached != null)
+                if (cached is not null)
                 {
                     return (PropertyDescriptor)cached;
                 }
@@ -327,7 +327,7 @@ namespace System.ComponentModel
 
             InternalSort(_comparer);
 
-            if (names != null && names.Length > 0)
+            if (names is not null && names.Length > 0)
             {
                 List<PropertyDescriptor> propList = new List<PropertyDescriptor>(_properties);
                 int foundCount = 0;
@@ -342,7 +342,7 @@ namespace System.ComponentModel
                         // Found a matching property. Here, we add it to our array. We also
                         // mark it as null in our array list so we don't add it twice later.
                         //
-                        if (currentProp != null && currentProp.Name.Equals(names[i]))
+                        if (currentProp is not null && currentProp.Name.Equals(names[i]))
                         {
                             _properties[foundCount++] = currentProp;
                             propList[j] = null;
@@ -358,7 +358,7 @@ namespace System.ComponentModel
                 //
                 for (int i = 0; i < propCount; i++)
                 {
-                    if (propList[i] != null)
+                    if (propList[i] is not null)
                     {
                         _properties[foundCount++] = propList[i];
                     }
@@ -373,7 +373,7 @@ namespace System.ComponentModel
         /// </summary>
         protected void InternalSort(IComparer sorter)
         {
-            if (sorter == null)
+            if (sorter is null)
             {
                 TypeDescriptor.SortDescriptorArray(this);
             }
@@ -426,7 +426,7 @@ namespace System.ComponentModel
         {
             if (key is string)
             {
-                return this[(string)key] != null;
+                return this[(string)key] is not null;
             }
             return false;
         }
@@ -455,7 +455,7 @@ namespace System.ComponentModel
                     throw new NotSupportedException();
                 }
 
-                if (value != null && !(value is PropertyDescriptor))
+                if (value is not null && !(value is PropertyDescriptor))
                 {
                     throw new ArgumentException(nameof(value));
                 }
@@ -495,7 +495,7 @@ namespace System.ComponentModel
                 {
                     EnsurePropsOwned();
                     _properties[index] = (PropertyDescriptor)value;
-                    if (_cachedFoundProperties != null && key is string)
+                    if (_cachedFoundProperties is not null && key is string)
                     {
                         _cachedFoundProperties[key] = value;
                     }
@@ -539,7 +539,7 @@ namespace System.ComponentModel
             if (key is string)
             {
                 PropertyDescriptor pd = this[(string)key];
-                if (pd != null)
+                if (pd is not null)
                 {
                     ((IList)this).Remove(pd);
                 }
@@ -576,7 +576,7 @@ namespace System.ComponentModel
                 }
 
 
-                if (value != null && !(value is PropertyDescriptor))
+                if (value is not null && !(value is PropertyDescriptor))
                 {
                     throw new ArgumentException(nameof(value));
                 }

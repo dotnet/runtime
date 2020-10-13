@@ -95,7 +95,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                                       false, /* don't need paged search */
                                                       false /* don't need to cache result */);
                 SearchResult srchResult = adSearcher.FindOne();
-                if (srchResult == null)
+                if (srchResult is null)
                 {
                     // no such site object
                     throw new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySite), siteName);
@@ -158,7 +158,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (de != null)
+                if (de is not null)
                     de.Dispose();
             }
 
@@ -210,7 +210,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 try
                 {
                     string siteName = Marshal.PtrToStringUni(ptr);
-                    Debug.Assert(siteName != null);
+                    Debug.Assert(siteName is not null);
 
                     // find the forest this machine belongs to
                     string forestName = Locator.GetDomainControllerInfo(null, null, null, (long)PrivateLocatorFlags.DirectoryServicesRequired).DnsForestName;
@@ -356,7 +356,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (existing)
                 {
                     // have not load topology generator information from the directory and user has not set it yet
-                    if (_topologyGenerator == null && !_topologyTouched)
+                    if (_topologyGenerator is null && !_topologyTouched)
                     {
                         bool ISTGExist;
                         try
@@ -411,7 +411,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (_disposed)
                     throw new ObjectDisposedException(GetType().Name);
 
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 if (existing)
@@ -500,7 +500,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 try
                 {
-                    if (value == null)
+                    if (value is null)
                     {
                         if (cachedEntry.Properties.Contains("location"))
                             cachedEntry.Properties["location"].Clear();
@@ -598,7 +598,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         if (NTDSSiteEntry.Properties.Contains("schedule"))
                         {
                             byte[] tmpSchedule = (byte[])NTDSSiteEntry.Properties["schedule"][0];
-                            Debug.Assert(tmpSchedule != null && tmpSchedule.Length == 188);
+                            Debug.Assert(tmpSchedule is not null && tmpSchedule.Length == 188);
                             schedule = new ActiveDirectorySchedule();
                             schedule.SetUnmanagedSchedule(tmpSchedule);
                         }
@@ -610,7 +610,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    if (_replicationSchedule != null)
+                    if (_replicationSchedule is not null)
                     {
                         // newly created site, get the schedule if already has been set by the user
                         schedule = new ActiveDirectorySchedule();
@@ -629,7 +629,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     try
                     {
-                        if (value == null)
+                        if (value is null)
                         {
                             // clear it out if existing before
                             if (NTDSSiteEntry.Properties.Contains("schedule"))
@@ -647,7 +647,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 else
                 {
                     // clear out the schedule
-                    if (value == null)
+                    if (value is null)
                         _replicationSchedule = null;
                     else
                     {
@@ -684,7 +684,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (_ntdsEntry == null)
+                if (_ntdsEntry is null)
                 {
                     DirectoryEntry tmp = DirectoryEntryManager.GetDirectoryEntry(context, "CN=NTDS Site Settings," + (string)PropertyManager.GetPropertyValue(context, cachedEntry, PropertyManager.DistinguishedName));
                     try
@@ -803,13 +803,13 @@ namespace System.DirectoryServices.ActiveDirectory
                         DirectoryEntry tmpEntry = cachedEntry.Children.Add("CN=NTDS Site Settings", "nTDSSiteSettings");
                         //set properties on the Site NTDS settings object
                         DirectoryServer replica = InterSiteTopologyGenerator;
-                        if (replica != null)
+                        if (replica is not null)
                         {
                             string ntdsaName = (replica is DomainController) ? ((DomainController)replica).NtdsaObjectName : ((AdamInstance)replica).NtdsaObjectName;
                             tmpEntry.Properties["interSiteTopologyGenerator"].Value = ntdsaName;
                         }
                         tmpEntry.Properties["options"].Value = _siteOptions;
-                        if (_replicationSchedule != null)
+                        if (_replicationSchedule is not null)
                         {
                             tmpEntry.Properties["schedule"].Value = _replicationSchedule;
                         }
@@ -934,7 +934,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                 string fromSite = Utils.GetPartialDN(fromServer, 3);
                                 pathCracker.Set(fromSite, NativeComInterfaces.ADS_SETTYPE_DN);
                                 fromSite = pathCracker.Retrieve(NativeComInterfaces.ADS_FORMAT_LEAF);
-                                Debug.Assert(fromSite != null && Utils.Compare(fromSite, 0, 3, "CN=", 0, 3) == 0);
+                                Debug.Assert(fromSite is not null && Utils.Compare(fromSite, 0, 3, "CN=", 0, 3) == 0);
                                 fromSite = fromSite.Substring(3);
 
                                 string serverObjectName = Utils.GetPartialDN((string)PropertyManager.GetSearchResultPropertyValue(r, PropertyManager.DistinguishedName), 2);
@@ -1013,7 +1013,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                 // escaping manipulation
                                 pathCracker.Set(otherSite, NativeComInterfaces.ADS_SETTYPE_DN);
                                 otherSite = pathCracker.Retrieve(NativeComInterfaces.ADS_FORMAT_LEAF);
-                                Debug.Assert(otherSite != null && Utils.Compare(otherSite, 0, 3, "CN=", 0, 3) == 0);
+                                Debug.Assert(otherSite is not null && Utils.Compare(otherSite, 0, 3, "CN=", 0, 3) == 0);
                                 otherSite = otherSite.Substring(3);
 
                                 // check whether from different sites
@@ -1088,10 +1088,10 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (cachedEntry != null)
+                if (cachedEntry is not null)
                     cachedEntry.Dispose();
 
-                if (_ntdsEntry != null)
+                if (_ntdsEntry is not null)
                     _ntdsEntry.Dispose();
             }
 
@@ -1103,23 +1103,23 @@ namespace System.DirectoryServices.ActiveDirectory
         private static void ValidateArgument(DirectoryContext context, string siteName)
         {
             // basic validation first
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
-            if ((context.Name == null) && (!context.isRootDomain()))
+            if ((context.Name is null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
             // more validation for the context, if the target is not null, then it should be either forest name or server name
-            if (context.Name != null)
+            if (context.Name is not null)
             {
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
                     throw new ArgumentException(SR.NotADOrADAM, nameof(context));
             }
 
-            if (siteName == null)
+            if (siteName is null)
                 throw new ArgumentNullException(nameof(siteName));
 
             if (siteName.Length == 0)
@@ -1333,7 +1333,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             if (nameResult.status == DS_NAME_ERROR.DS_NAME_NO_ERROR || nameResult.status == DS_NAME_ERROR.DS_NAME_ERROR_DOMAIN_ONLY)
                             {
                                 string domainName = Marshal.PtrToStringUni(nameResult.pName);
-                                if (domainName != null && domainName.Length > 0)
+                                if (domainName is not null && domainName.Length > 0)
                                 {
                                     string d = Utils.GetDnsNameFromDN(domainName);
                                     Domain domain = new Domain(Utils.GetNewDirectoryContext(d, DirectoryContextType.Domain, context), d);

@@ -86,7 +86,7 @@ namespace System.Data.ProviderBase
 
         internal override bool TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource<DbConnectionInternal>? retry, DbConnectionOptions? userOptions)
         {
-            if (retry == null || !retry.Task.IsCompleted)
+            if (retry is null || !retry.Task.IsCompleted)
             {
                 // retry is null if this is a synchronous call
 

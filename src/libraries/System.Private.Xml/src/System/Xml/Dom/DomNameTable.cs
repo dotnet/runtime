@@ -28,18 +28,18 @@ namespace System.Xml
 
         public XmlName? GetName(string? prefix, string localName, string? ns, IXmlSchemaInfo? schemaInfo)
         {
-            if (prefix == null)
+            if (prefix is null)
             {
                 prefix = string.Empty;
             }
-            if (ns == null)
+            if (ns is null)
             {
                 ns = string.Empty;
             }
 
             int hashCode = XmlName.GetHashCode(localName);
 
-            for (XmlName e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (XmlName e = _entries[hashCode & _mask]; e is not null; e = e.next)
             {
                 if (e.HashCode == hashCode
                     && ((object)e.LocalName == (object)localName
@@ -58,18 +58,18 @@ namespace System.Xml
 
         public XmlName AddName(string? prefix, string localName, string? ns, IXmlSchemaInfo? schemaInfo)
         {
-            if (prefix == null)
+            if (prefix is null)
             {
                 prefix = string.Empty;
             }
-            if (ns == null)
+            if (ns is null)
             {
                 ns = string.Empty;
             }
 
             int hashCode = XmlName.GetHashCode(localName);
 
-            for (XmlName e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (XmlName e = _entries[hashCode & _mask]; e is not null; e = e.next)
             {
                 if (e.HashCode == hashCode
                     && ((object)e.LocalName == (object)localName
@@ -109,7 +109,7 @@ namespace System.Xml
             for (int i = 0; i < oldEntries.Length; i++)
             {
                 XmlName name = oldEntries[i];
-                while (name != null)
+                while (name is not null)
                 {
                     int newIndex = name.HashCode & newMask;
                     XmlName tmp = name.next;

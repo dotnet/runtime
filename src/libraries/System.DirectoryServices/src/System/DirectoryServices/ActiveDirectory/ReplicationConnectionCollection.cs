@@ -13,7 +13,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ReplicationConnection connection)
         {
-            if (connection == null)
+            if (connection is null)
                 throw new ArgumentNullException(nameof(connection));
 
             if (!connection.existingConnection)
@@ -36,7 +36,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ReplicationConnection connection)
         {
-            if (connection == null)
+            if (connection is null)
                 throw new ArgumentNullException(nameof(connection));
 
             if (!connection.existingConnection)

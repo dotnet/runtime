@@ -61,7 +61,7 @@ internal partial class Interop
             /// </summary>
             public static unsafe FILE_FULL_DIR_INFORMATION* GetNextInfo(FILE_FULL_DIR_INFORMATION* info)
             {
-                if (info == null)
+                if (info is null)
                     return null;
 
                 uint nextOffset = (*info).NextEntryOffset;

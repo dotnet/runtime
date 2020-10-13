@@ -28,7 +28,7 @@ namespace System.Linq.Expressions.Compiler
 
         private LabelInfo DefineLabel(LabelTarget? node)
         {
-            if (node == null)
+            if (node is null)
             {
                 return new LabelInfo(_ilg, null, false);
             }
@@ -44,14 +44,14 @@ namespace System.Linq.Expressions.Compiler
 
         private void PopLabelBlock(LabelScopeKind kind)
         {
-            Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind);
+            Debug.Assert(_labelBlock is not null && _labelBlock.Kind == kind);
             _labelBlock = _labelBlock.Parent!;
         }
 
         private void EmitLabelExpression(Expression expr, CompilationFlags flags)
         {
             var node = (LabelExpression)expr;
-            Debug.Assert(node.Target != null);
+            Debug.Assert(node.Target is not null);
 
             // If we're an immediate child of a block, our label will already
             // be defined. If not, we need to define our own block so this
@@ -63,21 +63,21 @@ namespace System.Linq.Expressions.Compiler
                 _labelBlock.TryGetLabelInfo(node.Target, out label);
 
                 // We're in a block but didn't find our label, try switch
-                if (label == null && _labelBlock.Parent!.Kind == LabelScopeKind.Switch)
+                if (label is null && _labelBlock.Parent!.Kind == LabelScopeKind.Switch)
                 {
                     _labelBlock.Parent.TryGetLabelInfo(node.Target, out label);
                 }
 
                 // if we're in a switch or block, we should've found the label
-                Debug.Assert(label != null);
+                Debug.Assert(label is not null);
             }
 
-            if (label == null)
+            if (label is null)
             {
                 label = DefineLabel(node.Target);
             }
 
-            if (node.DefaultValue != null)
+            if (node.DefaultValue is not null)
             {
                 if (node.Target.Type == typeof(void))
                 {
@@ -109,7 +109,7 @@ namespace System.Linq.Expressions.Compiler
                 flags = UpdateEmitAsTailCallFlag(flags, tailCall);
             }
 
-            if (node.Value != null)
+            if (node.Value is not null)
             {
                 if (node.Target.Type == typeof(void))
                 {
@@ -224,7 +224,7 @@ namespace System.Linq.Expressions.Compiler
         private void DefineBlockLabels(Expression? node)
         {
             var block = node as BlockExpression;
-            if (block == null || block is SpilledExpressionBlock)
+            if (block is null || block is SpilledExpressionBlock)
             {
                 return;
             }
@@ -233,7 +233,7 @@ namespace System.Linq.Expressions.Compiler
                 Expression e = block.GetExpression(i);
 
                 var label = e as LabelExpression;
-                if (label != null)
+                if (label is not null)
                 {
                     DefineLabel(label.Target);
                 }

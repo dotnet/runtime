@@ -17,7 +17,7 @@ namespace System.Net.Http
 
         internal NoWriteNoSeekStreamContent(Stream content)
         {
-            Debug.Assert(content != null);
+            Debug.Assert(content is not null);
             Debug.Assert(content.CanRead);
             Debug.Assert(!content.CanWrite);
             Debug.Assert(!content.CanSeek);
@@ -35,7 +35,7 @@ namespace System.Net.Http
 #endif
             Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            Debug.Assert(stream != null);
+            Debug.Assert(stream is not null);
 
             if (_contentConsumed)
             {

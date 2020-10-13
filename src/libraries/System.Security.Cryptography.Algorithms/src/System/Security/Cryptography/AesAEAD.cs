@@ -21,16 +21,16 @@ namespace System.Security.Cryptography
             byte[] ciphertext,
             byte[] tag)
         {
-            if (nonce == null)
+            if (nonce is null)
                 throw new ArgumentNullException(nameof(nonce));
 
-            if (plaintext == null)
+            if (plaintext is null)
                 throw new ArgumentNullException(nameof(plaintext));
 
-            if (ciphertext == null)
+            if (ciphertext is null)
                 throw new ArgumentNullException(nameof(ciphertext));
 
-            if (tag == null)
+            if (tag is null)
                 throw new ArgumentNullException(nameof(tag));
         }
     }

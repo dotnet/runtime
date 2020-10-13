@@ -14,7 +14,7 @@ namespace System.Security.Cryptography.Xml
         {
             XmlNode nodeA = a as XmlNode;
             XmlNode nodeB = b as XmlNode;
-            if ((nodeA == null) || (nodeB == null))
+            if ((nodeA is null) || (nodeB is null))
                 throw new ArgumentException();
             bool nodeAdefault = Utils.IsDefaultNamespaceNode(nodeA);
             bool nodeBdefault = Utils.IsDefaultNamespaceNode(nodeB);

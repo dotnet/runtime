@@ -178,7 +178,7 @@ namespace System.Text
         public static byte[] Convert(Encoding srcEncoding, Encoding dstEncoding,
             byte[] bytes)
         {
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
             return Convert(srcEncoding, dstEncoding, bytes, 0, bytes.Length);
@@ -192,12 +192,12 @@ namespace System.Text
         public static byte[] Convert(Encoding srcEncoding, Encoding dstEncoding,
             byte[] bytes, int index, int count)
         {
-            if (srcEncoding == null || dstEncoding == null)
+            if (srcEncoding is null || dstEncoding is null)
             {
-                throw new ArgumentNullException(srcEncoding == null ? nameof(srcEncoding) : nameof(dstEncoding),
+                throw new ArgumentNullException(srcEncoding is null ? nameof(srcEncoding) : nameof(dstEncoding),
                     SR.ArgumentNull_Array);
             }
-            if (bytes == null)
+            if (bytes is null)
             {
                 throw new ArgumentNullException(nameof(bytes),
                     SR.ArgumentNull_Array);
@@ -215,7 +215,7 @@ namespace System.Text
         public static Encoding GetEncoding(int codepage)
         {
             Encoding? result = FilterDisallowedEncodings(EncodingProvider.GetEncodingFromProvider(codepage));
-            if (result != null)
+            if (result is not null)
                 return result;
 
             switch (codepage)
@@ -272,7 +272,7 @@ namespace System.Text
         {
             Encoding? baseEncoding = FilterDisallowedEncodings(EncodingProvider.GetEncodingFromProvider(codepage, encoderFallback, decoderFallback));
 
-            if (baseEncoding != null)
+            if (baseEncoding is not null)
                 return baseEncoding;
 
             // Get the default encoding (which is cached and read only)
@@ -332,7 +332,7 @@ namespace System.Text
         public static EncodingInfo[] GetEncodings()
         {
             Dictionary<int, EncodingInfo>? result = EncodingProvider.GetEncodingListFromProviders();
-            return result == null ? EncodingTable.GetEncodings() : EncodingTable.GetEncodings(result);
+            return result is null ? EncodingTable.GetEncodings() : EncodingTable.GetEncodings(result);
         }
 
         public virtual byte[] GetPreamble() => Array.Empty<byte>();
@@ -341,10 +341,10 @@ namespace System.Text
 
         private void GetDataItem()
         {
-            if (_dataItem == null)
+            if (_dataItem is null)
             {
                 _dataItem = EncodingTable.GetCodePageDataItem(_codePage);
-                if (_dataItem == null)
+                if (_dataItem is null)
                 {
                     throw new NotSupportedException(SR.Format(SR.NotSupported_NoCodepageData, _codePage));
                 }
@@ -358,7 +358,7 @@ namespace System.Text
         {
             get
             {
-                if (_dataItem == null)
+                if (_dataItem is null)
                 {
                     GetDataItem();
                 }
@@ -371,7 +371,7 @@ namespace System.Text
         {
             get
             {
-                if (_dataItem == null)
+                if (_dataItem is null)
                 {
                     GetDataItem();
                 }
@@ -387,7 +387,7 @@ namespace System.Text
         {
             get
             {
-                if (_dataItem == null)
+                if (_dataItem is null)
                 {
                     GetDataItem();
                 }
@@ -400,7 +400,7 @@ namespace System.Text
         {
             get
             {
-                if (_dataItem == null)
+                if (_dataItem is null)
                 {
                     GetDataItem();
                 }
@@ -414,7 +414,7 @@ namespace System.Text
         {
             get
             {
-                if (_dataItem == null)
+                if (_dataItem is null)
                 {
                     GetDataItem();
                 }
@@ -428,7 +428,7 @@ namespace System.Text
         {
             get
             {
-                if (_dataItem == null)
+                if (_dataItem is null)
                 {
                     GetDataItem();
                 }
@@ -442,7 +442,7 @@ namespace System.Text
         {
             get
             {
-                if (_dataItem == null)
+                if (_dataItem is null)
                 {
                     GetDataItem();
                 }
@@ -456,7 +456,7 @@ namespace System.Text
         {
             get
             {
-                if (_dataItem == null)
+                if (_dataItem is null)
                 {
                     GetDataItem();
                 }
@@ -471,7 +471,7 @@ namespace System.Text
         {
             get
             {
-                if (_dataItem == null)
+                if (_dataItem is null)
                 {
                     GetDataItem();
                 }
@@ -491,7 +491,7 @@ namespace System.Text
                 if (this.IsReadOnly)
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
 
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 encoderFallback = value;
@@ -506,7 +506,7 @@ namespace System.Text
                 if (this.IsReadOnly)
                     throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
 
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 decoderFallback = value;
@@ -541,7 +541,7 @@ namespace System.Text
         //
         public virtual int GetByteCount(char[] chars)
         {
-            if (chars == null)
+            if (chars is null)
             {
                 throw new ArgumentNullException(nameof(chars),
                     SR.ArgumentNull_Array);
@@ -552,7 +552,7 @@ namespace System.Text
 
         public virtual int GetByteCount(string s)
         {
-            if (s == null)
+            if (s is null)
                 throw new ArgumentNullException(nameof(s));
 
             char[] chars = s.ToCharArray();
@@ -568,7 +568,7 @@ namespace System.Text
         //
         public int GetByteCount(string s, int index, int count)
         {
-            if (s == null)
+            if (s is null)
                 throw new ArgumentNullException(nameof(s),
                     SR.ArgumentNull_String);
             if (index < 0)
@@ -598,7 +598,7 @@ namespace System.Text
         public virtual unsafe int GetByteCount(char* chars, int count)
         {
             // Validate input parameters
-            if (chars == null)
+            if (chars is null)
                 throw new ArgumentNullException(nameof(chars),
                       SR.ArgumentNull_Array);
 
@@ -624,7 +624,7 @@ namespace System.Text
         //
         public virtual byte[] GetBytes(char[] chars)
         {
-            if (chars == null)
+            if (chars is null)
             {
                 throw new ArgumentNullException(nameof(chars),
                     SR.ArgumentNull_Array);
@@ -659,7 +659,7 @@ namespace System.Text
         //
         public virtual byte[] GetBytes(string s)
         {
-            if (s == null)
+            if (s is null)
                 throw new ArgumentNullException(nameof(s),
                     SR.ArgumentNull_String);
 
@@ -675,7 +675,7 @@ namespace System.Text
         //
         public byte[] GetBytes(string s, int index, int count)
         {
-            if (s == null)
+            if (s is null)
                 throw new ArgumentNullException(nameof(s),
                     SR.ArgumentNull_String);
             if (index < 0)
@@ -710,7 +710,7 @@ namespace System.Text
         public virtual int GetBytes(string s, int charIndex, int charCount,
                                        byte[] bytes, int byteIndex)
         {
-            if (s == null)
+            if (s is null)
                 throw new ArgumentNullException(nameof(s));
             return GetBytes(s.ToCharArray(), charIndex, charCount, bytes, byteIndex);
         }
@@ -737,8 +737,8 @@ namespace System.Text
                                               byte* bytes, int byteCount)
         {
             // Validate input parameters
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
+            if (bytes is null || chars is null)
+                throw new ArgumentNullException(bytes is null ? nameof(bytes) : nameof(chars),
                     SR.ArgumentNull_Array);
 
             if (charCount < 0 || byteCount < 0)
@@ -784,7 +784,7 @@ namespace System.Text
         //
         public virtual int GetCharCount(byte[] bytes)
         {
-            if (bytes == null)
+            if (bytes is null)
             {
                 throw new ArgumentNullException(nameof(bytes),
                     SR.ArgumentNull_Array);
@@ -803,7 +803,7 @@ namespace System.Text
         public virtual unsafe int GetCharCount(byte* bytes, int count)
         {
             // Validate input parameters
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes),
                       SR.ArgumentNull_Array);
 
@@ -829,7 +829,7 @@ namespace System.Text
         //
         public virtual char[] GetChars(byte[] bytes)
         {
-            if (bytes == null)
+            if (bytes is null)
             {
                 throw new ArgumentNullException(nameof(bytes),
                     SR.ArgumentNull_Array);
@@ -882,8 +882,8 @@ namespace System.Text
                                               char* chars, int charCount)
         {
             // Validate input parameters
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
+            if (chars is null || bytes is null)
+                throw new ArgumentNullException(chars is null ? nameof(chars) : nameof(bytes),
                     SR.ArgumentNull_Array);
 
             if (byteCount < 0 || charCount < 0)
@@ -927,7 +927,7 @@ namespace System.Text
         [CLSCompliant(false)]
         public unsafe string GetString(byte* bytes, int byteCount)
         {
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (byteCount < 0)
@@ -1020,7 +1020,7 @@ namespace System.Text
         //
         public virtual string GetString(byte[] bytes)
         {
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes),
                     SR.ArgumentNull_Array);
 
@@ -1136,9 +1136,9 @@ namespace System.Text
 
         internal void ThrowBytesOverflow(EncoderNLS? encoder, bool nothingEncoded)
         {
-            if (encoder == null || encoder._throwOnOverflow || nothingEncoded)
+            if (encoder is null || encoder._throwOnOverflow || nothingEncoded)
             {
-                if (encoder != null && encoder.InternalHasFallbackBuffer)
+                if (encoder is not null && encoder.InternalHasFallbackBuffer)
                     encoder.FallbackBuffer.InternalReset();
                 // Special message to include fallback type in case fallback's GetMaxCharCount is broken
                 // This happens if user has implemented an encoder fallback with a broken GetMaxCharCount
@@ -1164,9 +1164,9 @@ namespace System.Text
 
         internal void ThrowCharsOverflow(DecoderNLS? decoder, bool nothingDecoded)
         {
-            if (decoder == null || decoder._throwOnOverflow || nothingDecoded)
+            if (decoder is null || decoder._throwOnOverflow || nothingDecoded)
             {
-                if (decoder != null && decoder.InternalHasFallbackBuffer)
+                if (decoder is not null && decoder.InternalHasFallbackBuffer)
                     decoder.FallbackBuffer.InternalReset();
 
                 // Special message to include fallback type in case fallback's GetMaxCharCount is broken
@@ -1320,7 +1320,7 @@ namespace System.Text
                 _bytes = byteStart;
                 _byteEnd = byteStart + byteCount;
 
-                if (_decoder == null)
+                if (_decoder is null)
                     _fallbackBuffer = enc.DecoderFallback.CreateFallbackBuffer();
                 else
                     _fallbackBuffer = _decoder.FallbackBuffer;
@@ -1334,7 +1334,7 @@ namespace System.Text
 
             internal unsafe bool AddChar(char ch, int numBytes)
             {
-                if (_chars != null)
+                if (_chars is not null)
                 {
                     if (_chars >= _charEnd)
                     {
@@ -1417,7 +1417,7 @@ namespace System.Text
             internal unsafe bool Fallback(byte[] byteBuffer)
             {
                 // Do the fallback and add the data.
-                if (_chars != null)
+                if (_chars is not null)
                 {
                     char* pTemp = _chars;
                     if (!_fallbackBuffer.InternalFallback(byteBuffer, _bytes, ref _chars))
@@ -1468,7 +1468,7 @@ namespace System.Text
                 _byteStart = inByteStart;
                 _byteEnd = inByteStart + inByteCount;
 
-                if (_encoder == null)
+                if (_encoder is null)
                     this.fallbackBuffer = _enc.EncoderFallback.CreateFallbackBuffer();
                 else
                 {
@@ -1479,13 +1479,13 @@ namespace System.Text
                         throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty,
                             _encoder.Encoding.EncodingName, _encoder.Fallback!.GetType()));
                 }
-                fallbackBuffer.InternalInitialize(_chars, _charEnd, _encoder, _bytes != null);
+                fallbackBuffer.InternalInitialize(_chars, _charEnd, _encoder, _bytes is not null);
             }
 
             internal unsafe bool AddByte(byte b, int moreBytesExpected)
             {
                 Debug.Assert(moreBytesExpected >= 0, "[EncodingByteBuffer.AddByte]expected non-negative moreBytesExpected");
-                if (_bytes != null)
+                if (_bytes is not null)
                 {
                     if (_bytes >= _byteEnd - moreBytesExpected)
                     {

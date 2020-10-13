@@ -98,7 +98,7 @@ namespace System.Configuration
 
         private static bool IsAbsoluteLocalPhysicalPath(string path)
         {
-            if ((path == null) || (path.Length < 3))
+            if ((path is null) || (path.Length < 3))
                 return false;
 
             // e.g c:\foo
@@ -107,7 +107,7 @@ namespace System.Configuration
 
         private static bool IsAbsoluteUncPhysicalPath(string path)
         {
-            if ((path == null) || (path.Length < 3))
+            if ((path is null) || (path.Length < 3))
                 return false;
 
             // e.g \\server\share\foo or //server/share/foo

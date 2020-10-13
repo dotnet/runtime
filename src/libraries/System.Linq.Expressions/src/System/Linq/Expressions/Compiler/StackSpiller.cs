@@ -130,7 +130,7 @@ namespace System.Linq.Expressions.Compiler
         [Conditional("DEBUG")]
         private static void VerifyRewrite(Result result, Expression node)
         {
-            Debug.Assert(result.Node != null);
+            Debug.Assert(result.Node is not null);
 
             // (result.Action == RewriteAction.None) if and only if (node == result.Node)
             Debug.Assert((result.Action == RewriteAction.None) ^ (node != result.Node), "rewrite action does not match node object identity");
@@ -449,7 +449,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (cr.Rewrite)
             {
-                if (node.Object != null)
+                if (node.Object is not null)
                 {
                     expr = new InstanceMethodCallExpressionN(node.Method, cr[0]!, cr[1, -1]!);
                 }
@@ -498,7 +498,7 @@ namespace System.Linq.Expressions.Compiler
 
             // See if the lambda will be inlined.
             LambdaExpression? lambda = node.LambdaOperand;
-            if (lambda != null)
+            if (lambda is not null)
             {
                 // Arguments execute on current stack.
                 cr = new ChildRewriter(this, stack, node.ArgumentCount);
@@ -786,12 +786,12 @@ namespace System.Linq.Expressions.Compiler
                 Result rewritten = RewriteExpression(expression, stack);
                 action |= rewritten.Action;
 
-                if (clone == null && rewritten.Action != RewriteAction.None)
+                if (clone is null && rewritten.Action != RewriteAction.None)
                 {
                     clone = Clone(node.Expressions, i);
                 }
 
-                if (clone != null)
+                if (clone is not null)
                 {
                     clone[i] = rewritten.Node;
                 }
@@ -895,12 +895,12 @@ namespace System.Linq.Expressions.Compiler
                     Result test = RewriteExpression(testValues[j], stack);
                     action |= test.Action;
 
-                    if (cloneTests == null && test.Action != RewriteAction.None)
+                    if (cloneTests is null && test.Action != RewriteAction.None)
                     {
                         cloneTests = Clone(testValues, j);
                     }
 
-                    if (cloneTests != null)
+                    if (cloneTests is not null)
                     {
                         cloneTests[j] = test.Node;
                     }
@@ -910,22 +910,22 @@ namespace System.Linq.Expressions.Compiler
                 Result body = RewriteExpression(@case.Body, stack);
                 action |= body.Action;
 
-                if (body.Action != RewriteAction.None || cloneTests != null)
+                if (body.Action != RewriteAction.None || cloneTests is not null)
                 {
-                    if (cloneTests != null)
+                    if (cloneTests is not null)
                     {
                         testValues = new ReadOnlyCollection<Expression>(cloneTests);
                     }
 
                     @case = new SwitchCase(body.Node, testValues);
 
-                    if (clone == null)
+                    if (clone is null)
                     {
                         clone = Clone(cases, i);
                     }
                 }
 
-                if (clone != null)
+                if (clone is not null)
                 {
                     clone[i] = @case;
                 }
@@ -937,7 +937,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (action != RewriteAction.None)
             {
-                if (clone != null)
+                if (clone is not null)
                 {
                     // okay to wrap because we aren't modifying the array
                     cases = new ReadOnlyCollection<SwitchCase>(clone);
@@ -960,7 +960,7 @@ namespace System.Linq.Expressions.Compiler
             CatchBlock[]? clone = null;
 
             RewriteAction action = body.Action;
-            if (handlers != null)
+            if (handlers is not null)
             {
                 for (int i = 0; i < handlers.Count; i++)
                 {
@@ -969,7 +969,7 @@ namespace System.Linq.Expressions.Compiler
                     CatchBlock handler = handlers[i];
 
                     Expression? filter = handler.Filter;
-                    if (handler.Filter != null)
+                    if (handler.Filter is not null)
                     {
                         // Our code gen saves the incoming filter value and provides it as a variable so the stack is empty
                         Result rfault = RewriteExpression(handler.Filter, Stack.Empty);
@@ -987,13 +987,13 @@ namespace System.Linq.Expressions.Compiler
                     {
                         handler = Expression.MakeCatchBlock(handler.Test, handler.Variable, rbody.Node, filter);
 
-                        if (clone == null)
+                        if (clone is null)
                         {
                             clone = Clone(handlers, i);
                         }
                     }
 
-                    if (clone != null)
+                    if (clone is not null)
                     {
                         clone[i] = handler;
                     }
@@ -1014,7 +1014,7 @@ namespace System.Linq.Expressions.Compiler
 
             if (action != RewriteAction.None)
             {
-                if (clone != null)
+                if (clone is not null)
                 {
                     // Okay to wrap because we aren't modifying the array.
                     handlers = new ReadOnlyCollection<CatchBlock>(clone);
@@ -1044,7 +1044,7 @@ namespace System.Linq.Expressions.Compiler
         /// <returns>The cloned array.</returns>
         private static T[] Clone<T>(ReadOnlyCollection<T> original, int max)
         {
-            Debug.Assert(original != null);
+            Debug.Assert(original is not null);
             Debug.Assert(max < original.Count);
 
             T[] clone = new T[original.Count];
@@ -1073,7 +1073,7 @@ namespace System.Linq.Expressions.Compiler
         /// </remarks>
         private static void RequireNoRefArgs(MethodBase? method)
         {
-            if (method != null && method.GetParametersCached().Any(p => p.ParameterType.IsByRef))
+            if (method is not null && method.GetParametersCached().Any(p => p.ParameterType.IsByRef))
             {
                 throw Error.TryNotSupportedForMethodsWithRefArgs(method);
             }
@@ -1102,7 +1102,7 @@ namespace System.Linq.Expressions.Compiler
             // Primitive value types are okay because they are all read-only,
             // but we can't rely on this for non-primitive types. So we have
             // to either throw NotSupported or use ref locals.
-            return instance != null && instance.Type.IsValueType && instance.Type.GetTypeCode() == TypeCode.Object;
+            return instance is not null && instance.Type.IsValueType && instance.Type.GetTypeCode() == TypeCode.Object;
         }
     }
 }

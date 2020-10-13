@@ -16,12 +16,12 @@ namespace Microsoft.Extensions.Http
 
         public LoggingHttpMessageHandlerBuilderFilter(ILoggerFactory loggerFactory, IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor)
         {
-            if (loggerFactory == null)
+            if (loggerFactory is null)
             {
                 throw new ArgumentNullException(nameof(loggerFactory));
             }
 
-            if (optionsMonitor == null)
+            if (optionsMonitor is null)
             {
                 throw new ArgumentNullException(nameof(optionsMonitor));
             }
@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.Http
 
         public Action<HttpMessageHandlerBuilder> Configure(Action<HttpMessageHandlerBuilder> next)
         {
-            if (next == null)
+            if (next is null)
             {
                 throw new ArgumentNullException(nameof(next));
             }

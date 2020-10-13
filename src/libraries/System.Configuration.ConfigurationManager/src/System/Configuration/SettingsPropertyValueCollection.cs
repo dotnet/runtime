@@ -42,7 +42,7 @@ namespace System.Configuration
 
             object pos = _indices[name];
 
-            if (pos == null || !(pos is int))
+            if (pos is null || !(pos is int))
                 return;
 
             int ipos = (int)pos;
@@ -69,7 +69,7 @@ namespace System.Configuration
             {
                 object pos = _indices[name];
 
-                if (pos == null || !(pos is int))
+                if (pos is null || !(pos is int))
                     return null;
 
                 int ipos = (int)pos;

@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
-                if (left == null || right == null)
+                if (left is null || right is null)
                 {
                     frame.Push(null);
                     return 1;
@@ -37,7 +37,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
-                if (left == null || right == null)
+                if (left is null || right is null)
                 {
                     frame.Push(null);
                     return 1;
@@ -53,7 +53,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
-                if (left == null || right == null)
+                if (left is null || right is null)
                 {
                     frame.Push(null);
                     return 1;
@@ -69,7 +69,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
-                if (left == null || right == null)
+                if (left is null || right is null)
                 {
                     frame.Push(null);
                     return 1;
@@ -85,7 +85,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
-                if (left == null || right == null)
+                if (left is null || right is null)
                 {
                     frame.Push(null);
                     return 1;
@@ -101,7 +101,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
-                if (left == null || right == null)
+                if (left is null || right is null)
                 {
                     frame.Push(null);
                     return 1;
@@ -117,7 +117,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
-                if (left == null || right == null)
+                if (left is null || right is null)
                 {
                     frame.Push(null);
                     return 1;
@@ -133,7 +133,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
-                if (left == null || right == null)
+                if (left is null || right is null)
                 {
                     frame.Push(null);
                     return 1;
@@ -149,7 +149,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? left = frame.Pop();
                 object? right = frame.Pop();
-                if (left == null || right == null)
+                if (left is null || right is null)
                 {
                     frame.Push(null);
                     return 1;

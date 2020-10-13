@@ -230,7 +230,7 @@ namespace System.Net
             {
                 if (string.IsNullOrEmpty(value) || !InternalSetName(value))
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", value == null ? "<null>" : value));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", value is null ? "<null>" : value));
                 }
             }
         }
@@ -344,24 +344,24 @@ namespace System.Net
             {
                 if (shouldThrow)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", m_name == null ? "<null>" : m_name));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Name", m_name is null ? "<null>" : m_name));
                 }
                 return false;
             }
 
             // Check the value
-            if (m_value == null ||
+            if (m_value is null ||
                 (!(m_value.Length > 2 && m_value[0] == '\"' && m_value[m_value.Length - 1] == '\"') && m_value.IndexOfAny(ReservedToValue) != -1))
             {
                 if (shouldThrow)
                 {
-                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Value", m_value == null ? "<null>" : m_value));
+                    throw new CookieException(SR.Format(SR.net_cookie_attribute, "Value", m_value is null ? "<null>" : m_value));
                 }
                 return false;
             }
 
             // Check Comment syntax
-            if (Comment != null && !(Comment.Length > 2 && Comment[0] == '\"' && Comment[Comment.Length - 1] == '\"')
+            if (Comment is not null && !(Comment.Length > 2 && Comment[0] == '\"' && Comment[Comment.Length - 1] == '\"')
                 && (Comment.IndexOfAny(ReservedToValue) != -1))
             {
                 if (shouldThrow)
@@ -372,7 +372,7 @@ namespace System.Net
             }
 
             // Check Path syntax
-            if (Path != null && !(Path.Length > 2 && Path[0] == '\"' && Path[Path.Length - 1] == '\"')
+            if (Path is not null && !(Path.Length > 2 && Path[0] == '\"' && Path[Path.Length - 1] == '\"')
                 && (Path.IndexOfAny(ReservedToValue) != -1))
             {
                 if (shouldThrow)
@@ -406,7 +406,7 @@ namespace System.Net
                     {
                         if (shouldThrow)
                         {
-                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, domain == null ? "<null>" : domain));
+                            throw new CookieException(SR.Format(SR.net_cookie_attribute, CookieFields.DomainAttributeName, domain is null ? "<null>" : domain));
                         }
                         return false;
                     }
@@ -555,7 +555,7 @@ namespace System.Net
         // as per RFC 952 (relaxed on first char could be a digit and string can have '_').
         private static bool DomainCharsTest(string name)
         {
-            if (name == null || name.Length == 0)
+            if (name is null || name.Length == 0)
             {
                 return false;
             }
@@ -714,7 +714,7 @@ namespace System.Net
         {
             Cookie? other = comparand as Cookie;
 
-            return other != null
+            return other is not null
                     && string.Equals(Name, other.Name, StringComparison.OrdinalIgnoreCase)
                     && string.Equals(Value, other.Value, StringComparison.Ordinal)
                     && string.Equals(Path, other.Path, StringComparison.Ordinal)
@@ -793,11 +793,11 @@ namespace System.Net
         internal string? ToServerString()
         {
             string result = Name + EqualsLiteral + Value;
-            if (m_comment != null && m_comment.Length > 0)
+            if (m_comment is not null && m_comment.Length > 0)
             {
                 result += SeparatorLiteral + CookieFields.CommentAttributeName + EqualsLiteral + m_comment;
             }
-            if (m_commentUri != null)
+            if (m_commentUri is not null)
             {
                 result += SeparatorLiteral + CookieFields.CommentUrlAttributeName + EqualsLiteral + QuotesLiteral + m_commentUri.ToString() + QuotesLiteral;
             }
@@ -805,7 +805,7 @@ namespace System.Net
             {
                 result += SeparatorLiteral + CookieFields.DiscardAttributeName;
             }
-            if (!m_domain_implicit && m_domain != null && m_domain.Length > 0)
+            if (!m_domain_implicit && m_domain is not null && m_domain.Length > 0)
             {
                 result += SeparatorLiteral + CookieFields.DomainAttributeName + EqualsLiteral + m_domain;
             }
@@ -820,11 +820,11 @@ namespace System.Net
                 }
                 result += SeparatorLiteral + CookieFields.MaxAgeAttributeName + EqualsLiteral + seconds.ToString(NumberFormatInfo.InvariantInfo);
             }
-            if (!m_path_implicit && m_path != null && m_path.Length > 0)
+            if (!m_path_implicit && m_path is not null && m_path.Length > 0)
             {
                 result += SeparatorLiteral + CookieFields.PathAttributeName + EqualsLiteral + m_path;
             }
-            if (!Plain && !m_port_implicit && m_port != null && m_port.Length > 0)
+            if (!Plain && !m_port_implicit && m_port is not null && m_port.Length > 0)
             {
                 // QuotesLiteral are included in _port.
                 result += SeparatorLiteral + CookieFields.PortAttributeName + EqualsLiteral + m_port;

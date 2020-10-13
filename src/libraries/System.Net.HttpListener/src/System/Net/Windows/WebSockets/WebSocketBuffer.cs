@@ -48,7 +48,7 @@ namespace System.Net.WebSockets
 
         private WebSocketBuffer(ArraySegment<byte> internalBuffer, int receiveBufferSize, int sendBufferSize)
         {
-            Debug.Assert(internalBuffer.Array != null, "'internalBuffer.Array' MUST NOT be NULL.");
+            Debug.Assert(internalBuffer.Array is not null, "'internalBuffer.Array' MUST NOT be NULL.");
             Debug.Assert(receiveBufferSize >= HttpWebSocket.MinReceiveBufferSize,
                 "'receiveBufferSize' MUST be at least " + HttpWebSocket.MinReceiveBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
             Debug.Assert(sendBufferSize >= HttpWebSocket.MinSendBufferSize,
@@ -303,7 +303,7 @@ namespace System.Net.WebSockets
 
             Debug.Assert(_payloadOffset == 0,
                 "'m_PayloadOffset' MUST be '0' at this point.");
-            Debug.Assert(_bufferedPayloadReceiveResult == null || _bufferedPayloadReceiveResult.Count == 0,
+            Debug.Assert(_bufferedPayloadReceiveResult is null || _bufferedPayloadReceiveResult.Count == 0,
                 "'_bufferedPayloadReceiveResult.Count' MUST be '0' at this point.");
 
             Buffer.BlockCopy(payload.Array!,
@@ -431,7 +431,7 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(dataBufferCount <= (uint)int.MaxValue,
                 "'dataBufferCount' MUST NOT be bigger than Int32.MaxValue.");
-            Debug.Assert(dataBuffers != null, "'dataBuffers' MUST NOT be NULL.");
+            Debug.Assert(dataBuffers is not null, "'dataBuffers' MUST NOT be NULL.");
 
             ThrowIfDisposed();
             if (dataBufferCount > dataBuffers.Length)
@@ -551,7 +551,7 @@ namespace System.Net.WebSockets
         [Conditional("DEBUG")]
         private void ValidateBufferedPayload()
         {
-            Debug.Assert(_bufferedPayloadReceiveResult != null,
+            Debug.Assert(_bufferedPayloadReceiveResult is not null,
                 "'_bufferedPayloadReceiveResult' MUST NOT be NULL.");
             Debug.Assert(_bufferedPayloadReceiveResult.Count >= 0,
                 "'_bufferedPayloadReceiveResult.Count' MUST NOT be negative.");
@@ -580,8 +580,8 @@ namespace System.Net.WebSockets
         // within m_NativeBuffer not m_InternalBuffer
         internal bool IsInternalBuffer(byte[] buffer, int offset, int count)
         {
-            Debug.Assert(buffer != null, "'buffer' MUST NOT be NULL.");
-            Debug.Assert(_nativeBuffer.Array != null, "'m_NativeBuffer.Array' MUST NOT be NULL.");
+            Debug.Assert(buffer is not null, "'buffer' MUST NOT be NULL.");
+            Debug.Assert(_nativeBuffer.Array is not null, "'m_NativeBuffer.Array' MUST NOT be NULL.");
             Debug.Assert(offset >= 0, "'offset' MUST NOT be negative.");
             Debug.Assert(count >= 0, "'count' MUST NOT be negative.");
             Debug.Assert(offset + count <= buffer.Length, "'offset + count' MUST NOT exceed 'buffer.Length'.");

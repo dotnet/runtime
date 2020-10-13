@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             EncapContentInfo.Encode(writer);
 
-            if (CertificateSet != null)
+            if (CertificateSet is not null)
             {
 
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
 
 
-            if (Crls != null)
+            if (Crls is not null)
             {
 
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 1));

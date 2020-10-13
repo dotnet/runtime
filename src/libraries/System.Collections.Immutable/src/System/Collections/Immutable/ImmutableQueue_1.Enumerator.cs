@@ -50,7 +50,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (_remainingForwardsStack == null)
+                    if (_remainingForwardsStack is null)
                     {
                         // The initial call to MoveNext has not yet been made.
                         throw new InvalidOperationException();
@@ -78,7 +78,7 @@ namespace System.Collections.Immutable
             /// <returns>A value indicating whether there is another element in the enumeration.</returns>
             public bool MoveNext()
             {
-                if (_remainingForwardsStack == null)
+                if (_remainingForwardsStack is null)
                 {
                     // This is the initial step.
                     // Empty queues have no forwards or backwards
@@ -141,7 +141,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     this.ThrowIfDisposed();
-                    if (_remainingForwardsStack == null)
+                    if (_remainingForwardsStack is null)
                     {
                         // The initial call to MoveNext has not yet been made.
                         throw new InvalidOperationException();
@@ -178,7 +178,7 @@ namespace System.Collections.Immutable
             public bool MoveNext()
             {
                 this.ThrowIfDisposed();
-                if (_remainingForwardsStack == null)
+                if (_remainingForwardsStack is null)
                 {
                     // This is the initial step.
                     // Empty queues have no forwards or backwards

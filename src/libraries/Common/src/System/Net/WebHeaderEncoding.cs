@@ -20,7 +20,7 @@ namespace System.Net
                 return string.Empty;
             }
 
-            Debug.Assert(bytes != null && (uint)byteIndex <= (uint)bytes.Length && (uint)(byteIndex + byteCount) <= (uint)bytes.Length);
+            Debug.Assert(bytes is not null && (uint)byteIndex <= (uint)bytes.Length && (uint)(byteIndex + byteCount) <= (uint)bytes.Length);
 
             return string.Create(byteCount, (bytes, byteIndex), (buffer, state) =>
             {

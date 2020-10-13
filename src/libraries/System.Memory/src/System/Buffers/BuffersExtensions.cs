@@ -43,7 +43,7 @@ namespace System.Buffers
                 {
                     return source.GetPosition(index, result);
                 }
-                else if (position.GetObject() == null)
+                else if (position.GetObject() is null)
                 {
                     break;
                 }
@@ -85,7 +85,7 @@ namespace System.Buffers
             {
                 ReadOnlySpan<T> span = memory.Span;
                 span.CopyTo(destination);
-                if (position.GetObject() != null)
+                if (position.GetObject() is not null)
                 {
                     destination = destination.Slice(span.Length);
                 }

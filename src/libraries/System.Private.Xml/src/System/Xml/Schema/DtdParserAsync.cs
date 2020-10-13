@@ -54,12 +54,12 @@ namespace System.Xml
             _schemaInfo.Finish();
 
             // check undeclared forward references
-            if (_validate && _undeclaredNotations != null)
+            if (_validate && _undeclaredNotations is not null)
             {
                 foreach (UndeclaredNotation un in _undeclaredNotations.Values)
                 {
                     UndeclaredNotation? tmpUn = un;
-                    while (tmpUn != null)
+                    while (tmpUn is not null)
                     {
                         SendValidationEvent(XmlSeverityType.Error, new XmlSchemaException(SR.Sch_UndeclaredNotation, un.name, BaseUriStr, (int)un.lineNo, (int)un.linePos));
                         tmpUn = tmpUn.next;
@@ -111,7 +111,7 @@ namespace System.Xml
             }
             SaveParsingBuffer();
 
-            if (_systemId != null && _systemId.Length > 0)
+            if (_systemId is not null && _systemId.Length > 0)
             {
                 await ParseExternalSubsetAsync().ConfigureAwait(false);
             }
@@ -126,7 +126,7 @@ namespace System.Xml
                 SaveParsingBuffer();
             }
 
-            if (_systemId != null && _systemId.Length > 0)
+            if (_systemId is not null && _systemId.Length > 0)
             {
                 await ParseExternalSubsetAsync().ConfigureAwait(false);
             }
@@ -149,7 +149,7 @@ namespace System.Xml
             }
 
             Uri? baseUri = _readerAdapter.BaseUri;
-            if (baseUri != null)
+            if (baseUri is not null)
             {
                 _externalDtdBaseUri = baseUri.ToString();
             }
@@ -229,7 +229,7 @@ namespace System.Xml
                                 Throw(_curPos, SR.Xml_UnclosedConditionalSection);
                             }
                             // append the rest to internal subset value but not the closing ']'
-                            if (_internalSubsetValueSb != null)
+                            if (_internalSubsetValueSb is not null)
                             {
                                 Debug.Assert(_curPos > 0 && _chars[_curPos - 1] == ']');
                                 SaveParsingBuffer(_curPos - 1);
@@ -324,7 +324,7 @@ namespace System.Xml
                             // BUG BUG: For backward compatibility, we check the correct type and values of the
                             // xml:space attribute only on the last attribute in the list.
                             // See Webdata bugs #97457 and #93935.
-                            if (attrDef != null && attrDef.Prefix.Length > 0 && attrDef.Prefix.Equals("xml") && attrDef.Name.Name == "space")
+                            if (attrDef is not null && attrDef.Prefix.Length > 0 && attrDef.Prefix.Equals("xml") && attrDef.Name.Name == "space")
                             {
                                 attrDef.Reserved = SchemaAttDef.Reserve.XmlSpace;
                                 if (attrDef.Datatype.TokenizedType != XmlTokenizedType.ENUMERATION)
@@ -342,7 +342,7 @@ namespace System.Xml
                         goto UnexpectedError;
                 }
 
-                bool attrDefAlreadyExists = (elementDecl.GetAttDef(attrDef.Name) != null);
+                bool attrDefAlreadyExists = (elementDecl.GetAttDef(attrDef.Name) is not null);
 
                 await ParseAttlistTypeAsync(attrDef, elementDecl, attrDefAlreadyExists).ConfigureAwait(false);
                 await ParseAttlistDefaultAsync(attrDef, attrDefAlreadyExists).ConfigureAwait(false);
@@ -416,7 +416,7 @@ namespace System.Xml
                         if (_validate && elementDecl.IsIdDeclared)
                         {
                             SchemaAttDef? idAttrDef = elementDecl.GetAttDef(attrDef.Name);
-                            if ((idAttrDef == null || idAttrDef.Datatype.TokenizedType != XmlTokenizedType.ID) && !ignoreErrors)
+                            if ((idAttrDef is null || idAttrDef.Datatype.TokenizedType != XmlTokenizedType.ID) && !ignoreErrors)
                             {
                                 SendValidationEvent(XmlSeverityType.Error, SR.Sch_IdAttrDeclared, elementDecl.Name.ToString());
                             }
@@ -435,7 +435,7 @@ namespace System.Xml
                     }
                     else
                     {
-                        if (elementDecl.ContentValidator != null &&
+                        if (elementDecl.ContentValidator is not null &&
                             elementDecl.ContentValidator.ContentType == XmlSchemaContentType.Empty &&
                             !ignoreErrors)
                         {
@@ -462,7 +462,7 @@ namespace System.Xml
                     {
                         AddUndeclaredNotation(notationName);
                     }
-                    if (_validate && !_v1Compat && attrDef.Values != null && attrDef.Values.Contains(notationName) && !ignoreErrors)
+                    if (_validate && !_v1Compat && attrDef.Values is not null && attrDef.Values.Contains(notationName) && !ignoreErrors)
                     {
                         SendValidationEvent(XmlSeverityType.Error, new XmlSchemaException(SR.Xml_AttlistDuplNotationValue, notationName, BaseUriStr, (int)LineNo, (int)LinePos));
                     }
@@ -501,7 +501,7 @@ namespace System.Xml
                             if (await GetTokenAsync(false).ConfigureAwait(false) != Token.Nmtoken)
                                 goto UnexpectedError;
                             string nmtoken = GetNmtokenString();
-                            if (_validate && !_v1Compat && attrDef.Values != null && attrDef.Values.Contains(nmtoken) && !ignoreErrors)
+                            if (_validate && !_v1Compat && attrDef.Values is not null && attrDef.Values.Contains(nmtoken) && !ignoreErrors)
                             {
                                 SendValidationEvent(XmlSeverityType.Error, new XmlSchemaException(SR.Xml_AttlistDuplEnumValue, nmtoken, BaseUriStr, (int)LineNo, (int)LinePos));
                             }
@@ -951,7 +951,7 @@ namespace System.Xml
             SchemaNotation? notation = null;
             if (!_schemaInfo.Notations.ContainsKey(notationName.Name))
             {
-                if (_undeclaredNotations != null)
+                if (_undeclaredNotations is not null)
                 {
                     _undeclaredNotations.Remove(notationName.Name);
                 }
@@ -978,7 +978,7 @@ namespace System.Xml
                 notationPublicId = tuple_2.Item1;
                 notationSystemId = tuple_2.Item2;
 
-                if (notation != null)
+                if (notation is not null)
                 {
                     notation.SystemLiteral = notationSystemId;
                     notation.Pubid = notationPublicId;
@@ -1000,7 +1000,7 @@ namespace System.Xml
             {
                 if (SaveInternalSubsetValue)
                 {
-                    Debug.Assert(_internalSubsetValueSb != null);
+                    Debug.Assert(_internalSubsetValueSb is not null);
                     await _readerAdapter.ParseCommentAsync(_internalSubsetValueSb).ConfigureAwait(false);
                     _internalSubsetValueSb.Append("-->");
                 }
@@ -1028,7 +1028,7 @@ namespace System.Xml
             SaveParsingBuffer();
             if (SaveInternalSubsetValue)
             {
-                Debug.Assert(_internalSubsetValueSb != null);
+                Debug.Assert(_internalSubsetValueSb is not null);
                 await _readerAdapter.ParsePIAsync(_internalSubsetValueSb).ConfigureAwait(false);
                 _internalSubsetValueSb.Append("?>");
             }
@@ -1056,7 +1056,7 @@ namespace System.Xml
                     }
                     if (_validate)
                     {
-                        if (_condSectionEntityIds == null)
+                        if (_condSectionEntityIds is null)
                         {
                             _condSectionEntityIds = new int[CondSectionEntityIdsInitialSize];
                         }
@@ -2603,7 +2603,7 @@ namespace System.Xml
             }
 
             SchemaEntity? entity = VerifyEntityReference(entityName, paramEntity, true, inAttribute);
-            if (entity == null)
+            if (entity is null)
             {
                 return false;
             }

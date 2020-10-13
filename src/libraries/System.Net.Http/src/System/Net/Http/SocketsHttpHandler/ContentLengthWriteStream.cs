@@ -23,7 +23,7 @@ namespace System.Net.Http
                 // force a flush of anything already in the buffer, i.e. any remaining request headers
                 // that are still buffered.
                 HttpConnection connection = GetConnectionOrThrow();
-                Debug.Assert(connection._currentRequest != null);
+                Debug.Assert(connection._currentRequest is not null);
                 connection.Write(buffer);
             }
 
@@ -35,7 +35,7 @@ namespace System.Net.Http
                 // force a flush of anything already in the buffer, i.e. any remaining request headers
                 // that are still buffered.
                 HttpConnection connection = GetConnectionOrThrow();
-                Debug.Assert(connection._currentRequest != null);
+                Debug.Assert(connection._currentRequest is not null);
                 return connection.WriteAsync(buffer, async: true);
             }
 

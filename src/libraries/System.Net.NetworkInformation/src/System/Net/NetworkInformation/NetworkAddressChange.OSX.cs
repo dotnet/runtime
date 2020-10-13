@@ -44,7 +44,7 @@ namespace System.Net.NetworkInformation
         {
             add
             {
-                if (value != null)
+                if (value is not null)
                 {
                     lock (s_lockObj)
                     {
@@ -60,7 +60,7 @@ namespace System.Net.NetworkInformation
             }
             remove
             {
-                if (value != null)
+                if (value is not null)
                 {
                     lock (s_lockObj)
                     {
@@ -81,7 +81,7 @@ namespace System.Net.NetworkInformation
         {
             add
             {
-                if (value != null)
+                if (value is not null)
                 {
                     lock (s_lockObj)
                     {
@@ -101,7 +101,7 @@ namespace System.Net.NetworkInformation
             }
             remove
             {
-                if (value != null)
+                if (value is not null)
                 {
                     lock (s_lockObj)
                     {
@@ -121,7 +121,7 @@ namespace System.Net.NetworkInformation
 
         private static unsafe void CreateAndStartRunLoop()
         {
-            Debug.Assert(s_dynamicStoreRef == null);
+            Debug.Assert(s_dynamicStoreRef is null);
 
             Interop.SystemConfiguration.SCDynamicStoreContext storeContext = default;
             using (SafeCreateHandle storeName = Interop.CoreFoundation.CFStringCreateWithCString("NetworkAddressChange.OSX"))
@@ -217,8 +217,8 @@ namespace System.Net.NetworkInformation
         private static void StopRunLoop()
         {
             Debug.Assert(s_runLoop != IntPtr.Zero);
-            Debug.Assert(s_runLoopSource != null);
-            Debug.Assert(s_dynamicStoreRef != null);
+            Debug.Assert(s_runLoopSource is not null);
+            Debug.Assert(s_dynamicStoreRef is not null);
 
             // Allow RunLoop to finish current processing.
             SpinWait.SpinUntil(() => Interop.RunLoop.CFRunLoopIsWaiting(s_runLoop));
@@ -244,7 +244,7 @@ namespace System.Net.NetworkInformation
                 }
             }
 
-            if (addressChangedSubscribers != null)
+            if (addressChangedSubscribers is not null)
             {
                 foreach (KeyValuePair<NetworkAddressChangedEventHandler, ExecutionContext?>
                     subscriber in addressChangedSubscribers)
@@ -252,7 +252,7 @@ namespace System.Net.NetworkInformation
                     NetworkAddressChangedEventHandler handler = subscriber.Key;
                     ExecutionContext? ec = subscriber.Value;
 
-                    if (ec == null) // Flow supressed
+                    if (ec is null) // Flow supressed
                     {
                         handler(null, EventArgs.Empty);
                     }
@@ -263,7 +263,7 @@ namespace System.Net.NetworkInformation
                 }
             }
 
-            if (availabilityChangedSubscribers != null)
+            if (availabilityChangedSubscribers is not null)
             {
                 bool isAvailable = NetworkInterface.GetIsNetworkAvailable();
                 NetworkAvailabilityEventArgs args = isAvailable ? s_availableEventArgs : s_notAvailableEventArgs;
@@ -274,7 +274,7 @@ namespace System.Net.NetworkInformation
                     NetworkAvailabilityChangedEventHandler handler = subscriber.Key;
                     ExecutionContext? ec = subscriber.Value;
 
-                    if (ec == null) // Flow supressed
+                    if (ec is null) // Flow supressed
                     {
                         handler(null, args);
                     }

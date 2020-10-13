@@ -209,7 +209,7 @@ namespace System.Threading
 
         internal void ResetThreadPoolThread()
         {
-            if (_name != null)
+            if (_name is not null)
                 Name = null;
 
             if ((state & ThreadState.Background) == 0)
@@ -271,9 +271,9 @@ namespace System.Threading
         // Called from the runtime
         internal void StartCallback()
         {
-            if (culture != null)
+            if (culture is not null)
                 CurrentCulture = culture;
-            if (ui_culture != null)
+            if (ui_culture is not null)
                 CurrentUICulture = ui_culture;
             if (m_start is ThreadStart del)
             {

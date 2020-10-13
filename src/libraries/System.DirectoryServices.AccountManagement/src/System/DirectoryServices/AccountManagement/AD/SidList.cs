@@ -21,7 +21,7 @@ namespace System.DirectoryServices.AccountManagement
         internal SidList(List<byte[]> sidListByteFormat, string target, NetCred credentials)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SidList", "SidList: processing {0} ByteFormat SIDs", sidListByteFormat.Count);
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SidList", "SidList: Targetting {0} ", (target != null) ? target : "local store");
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "SidList", "SidList: Targetting {0} ", (target is not null) ? target : "local store");
 
             // Build the list of SIDs to resolve
             IntPtr hUser = IntPtr.Zero;
@@ -36,7 +36,7 @@ namespace System.DirectoryServices.AccountManagement
 
             try
             {
-                if (credentials != null)
+                if (credentials is not null)
                 {
                     Utils.BeginImpersonation(credentials, out hUser);
                 }
@@ -100,7 +100,7 @@ namespace System.DirectoryServices.AccountManagement
                 Marshal.StructureToPtr(oa, pOA, false);
 
                 int err = 0;
-                if (target == null)
+                if (target is null)
                 {
                     err = UnsafeNativeMethods.LsaOpenPolicy(
                                     IntPtr.Zero,

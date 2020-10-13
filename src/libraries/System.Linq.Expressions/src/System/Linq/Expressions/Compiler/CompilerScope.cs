@@ -124,7 +124,7 @@ namespace System.Linq.Expressions.Compiler
 
             AllocateLocals(lc);
 
-            if (IsMethod && _closureHoistedLocals != null)
+            if (IsMethod && _closureHoistedLocals is not null)
             {
                 EmitClosureAccess(lc, _closureHoistedLocals);
             }
@@ -168,7 +168,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal void EmitVariableAccess(LambdaCompiler lc, ReadOnlyCollection<ParameterExpression> vars)
         {
-            if (NearestHoistedLocals != null && vars.Count > 0)
+            if (NearestHoistedLocals is not null && vars.Count > 0)
             {
                 // Find what array each variable is on & its index
                 var indexes = new ArrayBuilder<long>(vars.Count);
@@ -182,7 +182,7 @@ namespace System.Linq.Expressions.Compiler
                     {
                         parents++;
                         locals = locals.Parent;
-                        Debug.Assert(locals != null);
+                        Debug.Assert(locals is not null);
                     }
 
                     // combine the number of parents we walked, with the
@@ -242,7 +242,7 @@ namespace System.Linq.Expressions.Compiler
         private Storage ResolveVariable(ParameterExpression variable, HoistedLocals? hoistedLocals)
         {
             // Search IL locals and arguments, but only in this lambda
-            for (CompilerScope? s = this; s != null; s = s._parent)
+            for (CompilerScope? s = this; s is not null; s = s._parent)
             {
                 if (s._locals.TryGetValue(variable, out Storage? storage))
                 {
@@ -257,7 +257,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // search hoisted locals
-            for (HoistedLocals? h = hoistedLocals; h != null; h = h.Parent)
+            for (HoistedLocals? h = hoistedLocals; h is not null; h = h.Parent)
             {
                 int index;
                 if (h.Indexes.TryGetValue(variable, out index))
@@ -283,10 +283,10 @@ namespace System.Linq.Expressions.Compiler
 
         private void SetParent(LambdaCompiler lc, CompilerScope? parent)
         {
-            Debug.Assert(_parent == null && parent != this);
+            Debug.Assert(_parent is null && parent != this);
             _parent = parent;
 
-            if (NeedsClosure && _parent != null)
+            if (NeedsClosure && _parent is not null)
             {
                 _closureHoistedLocals = _parent.NearestHoistedLocals;
             }
@@ -303,7 +303,7 @@ namespace System.Linq.Expressions.Compiler
         // Emits creation of the hoisted local storage
         private void EmitNewHoistedLocals(LambdaCompiler lc)
         {
-            if (_hoistedLocals == null)
+            if (_hoistedLocals is null)
             {
                 return;
             }
@@ -357,7 +357,7 @@ namespace System.Linq.Expressions.Compiler
         // when we go to look it up later
         private void EmitCachedVariables()
         {
-            if (ReferenceCount == null)
+            if (ReferenceCount is null)
             {
                 return;
             }
@@ -385,7 +385,7 @@ namespace System.Linq.Expressions.Compiler
 
         private bool ShouldCache(ParameterExpression v)
         {
-            if (ReferenceCount == null)
+            if (ReferenceCount is null)
             {
                 return false;
             }
@@ -405,7 +405,7 @@ namespace System.Linq.Expressions.Compiler
         // Creates IL locals for accessing closures
         private void EmitClosureAccess(LambdaCompiler lc, HoistedLocals? locals)
         {
-            if (locals == null)
+            if (locals is null)
             {
                 return;
             }
@@ -458,7 +458,7 @@ namespace System.Linq.Expressions.Compiler
         }
 
         private IEnumerable<ParameterExpression> GetVariables() =>
-            MergedScopes == null ? GetVariables(Node) : GetVariablesIncludingMerged();
+            MergedScopes is null ? GetVariables(Node) : GetVariablesIncludingMerged();
 
         private IEnumerable<ParameterExpression> GetVariablesIncludingMerged()
         {
@@ -494,7 +494,7 @@ namespace System.Linq.Expressions.Compiler
             get
             {
                 CompilerScope? s = this;
-                while (s != null)
+                while (s is not null)
                 {
                     if (s.Node is LambdaExpression lambda)
                     {

@@ -66,7 +66,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (key == null)
+                if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key));
                 }
@@ -75,7 +75,7 @@ namespace System.Collections.Specialized
             }
             set
             {
-                if (key == null)
+                if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key));
                 }
@@ -123,7 +123,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public virtual void Add(string key, string? value)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -144,7 +144,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public virtual bool ContainsKey(string key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -182,7 +182,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public virtual void Remove(string key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }

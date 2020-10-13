@@ -21,7 +21,7 @@ namespace System.Reflection.Internal
 
         private PooledStringBuilder(ObjectPool<PooledStringBuilder> pool)
         {
-            Debug.Assert(pool != null);
+            Debug.Assert(pool is not null);
             _pool = pool;
         }
 

@@ -25,7 +25,7 @@ namespace System.Numerics
 
         public static uint[] Pow(uint[] value, uint power)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             // The basic pow method for a big integer.
             // To spare memory allocations we first roughly
@@ -96,7 +96,7 @@ namespace System.Numerics
 
         public static uint Pow(uint[] value, uint power, uint modulus)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             // The 32-bit modulus pow method for a big integer
             // raised by a 32-bit integer...
@@ -107,7 +107,7 @@ namespace System.Numerics
 
         public static uint Pow(uint value, uint[] power, uint modulus)
         {
-            Debug.Assert(power != null);
+            Debug.Assert(power is not null);
 
             // The 32-bit modulus pow method for a 32-bit integer
             // raised by a big integer...
@@ -117,8 +117,8 @@ namespace System.Numerics
 
         public static uint Pow(uint[] value, uint[] power, uint modulus)
         {
-            Debug.Assert(value != null);
-            Debug.Assert(power != null);
+            Debug.Assert(value is not null);
+            Debug.Assert(power is not null);
 
             // The 32-bit modulus pow method for a big integer
             // raised by a big integer...
@@ -168,7 +168,7 @@ namespace System.Numerics
 
         public static uint[] Pow(uint value, uint power, uint[] modulus)
         {
-            Debug.Assert(modulus != null);
+            Debug.Assert(modulus is not null);
 
             // The big modulus pow method for a 32-bit integer
             // raised by a 32-bit integer...
@@ -180,8 +180,8 @@ namespace System.Numerics
 
         public static uint[] Pow(uint[] value, uint power, uint[] modulus)
         {
-            Debug.Assert(value != null);
-            Debug.Assert(modulus != null);
+            Debug.Assert(value is not null);
+            Debug.Assert(modulus is not null);
 
             // The big modulus pow method for a big integer
             // raised by a 32-bit integer...
@@ -196,8 +196,8 @@ namespace System.Numerics
 
         public static uint[] Pow(uint value, uint[] power, uint[] modulus)
         {
-            Debug.Assert(power != null);
-            Debug.Assert(modulus != null);
+            Debug.Assert(power is not null);
+            Debug.Assert(modulus is not null);
 
             // The big modulus pow method for a 32-bit integer
             // raised by a big integer...
@@ -209,9 +209,9 @@ namespace System.Numerics
 
         public static uint[] Pow(uint[] value, uint[] power, uint[] modulus)
         {
-            Debug.Assert(value != null);
-            Debug.Assert(power != null);
-            Debug.Assert(modulus != null);
+            Debug.Assert(value is not null);
+            Debug.Assert(power is not null);
+            Debug.Assert(modulus is not null);
 
             // The big modulus pow method for a big integer
             // raised by a big integer...
@@ -395,7 +395,7 @@ namespace System.Numerics
 
         private static int ActualLength(uint[] value, int length)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
             Debug.Assert(length <= value.Length);
 
             while (length > 0 && value[length - 1] == 0)

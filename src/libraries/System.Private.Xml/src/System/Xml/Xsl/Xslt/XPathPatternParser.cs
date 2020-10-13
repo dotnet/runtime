@@ -25,8 +25,8 @@ namespace System.Xml.Xsl.Xslt
 
         public QilNode Parse(XPathScanner scanner, IPatternBuilder ptrnBuilder)
         {
-            Debug.Assert(_scanner == null && _ptrnBuilder == null);
-            Debug.Assert(scanner != null && ptrnBuilder != null);
+            Debug.Assert(_scanner is null && _ptrnBuilder is null);
+            Debug.Assert(scanner is not null && ptrnBuilder is not null);
             QilNode? result = null;
             ptrnBuilder.StartBuild();
             try
@@ -230,7 +230,7 @@ namespace System.Xml.Xsl.Xslt
             opnd = _ptrnBuilder!.Axis(axis, nodeType, nodePrefix, nodeName);
 
             XPathPatternBuilder? xpathPatternBuilder = _ptrnBuilder as XPathPatternBuilder;
-            if (xpathPatternBuilder != null)
+            if (xpathPatternBuilder is not null)
             {
                 //for XPathPatternBuilder, get all predicates and then build them
                 List<QilNode> predicates = new List<QilNode>();

@@ -207,7 +207,7 @@ namespace System.Net
                 }
             }
 
-            if (ares != null)
+            if (ares is not null)
             {
                 ares.Complete(context);
             }
@@ -289,7 +289,7 @@ namespace System.Net
                 lock ((_contextQueue as ICollection).SyncRoot)
                 {
                     HttpListenerContext? ctx = GetContextFromQueue();
-                    if (ctx != null)
+                    if (ctx is not null)
                     {
                         ares.Complete(ctx, true);
                         return ares;
@@ -305,13 +305,13 @@ namespace System.Net
         public HttpListenerContext EndGetContext(IAsyncResult asyncResult)
         {
             CheckDisposed();
-            if (asyncResult == null)
+            if (asyncResult is null)
             {
                 throw new ArgumentNullException(nameof(asyncResult));
             }
 
             ListenerAsyncResult? ares = asyncResult as ListenerAsyncResult;
-            if (ares == null || !ReferenceEquals(this, ares._parent))
+            if (ares is null || !ReferenceEquals(this, ares._parent))
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
@@ -339,7 +339,7 @@ namespace System.Net
 
         internal AuthenticationSchemes SelectAuthenticationScheme(HttpListenerContext context)
         {
-            return AuthenticationSchemeSelectorDelegate != null ? AuthenticationSchemeSelectorDelegate(context.Request) : _authenticationScheme;
+            return AuthenticationSchemeSelectorDelegate is not null ? AuthenticationSchemeSelectorDelegate(context.Request) : _authenticationScheme;
         }
 
         public HttpListenerContext GetContext()

@@ -319,7 +319,7 @@ namespace System.Security.AccessControl
 
                 if (disposing)
                 {
-                    if (this.threadHandle != null)
+                    if (this.threadHandle is not null)
                     {
                         this.threadHandle.Dispose();
                         this.threadHandle = null!;
@@ -381,7 +381,7 @@ namespace System.Security.AccessControl
 
         public Privilege(string privilegeName)
         {
-            if (privilegeName == null)
+            if (privilegeName is null)
             {
                 throw new ArgumentNullException(nameof(privilegeName));
             }
@@ -462,7 +462,7 @@ namespace System.Security.AccessControl
 
                     this.tlsContents = t_tlsSlotData;
 
-                    if (this.tlsContents == null)
+                    if (this.tlsContents is null)
                     {
                         this.tlsContents = new TlsContents();
                         t_tlsSlotData = this.tlsContents;
@@ -633,7 +633,7 @@ namespace System.Security.AccessControl
 #if false
         public static void RunWithPrivilege( string privilege, bool enabled, PrivilegedHelper helper )
         {
-            if ( helper == null )
+            if ( helper is null )
             {
                 throw new ArgumentNullException( "helper" );
             }
@@ -666,7 +666,7 @@ namespace System.Security.AccessControl
             this.initialState = false;
             this.needToRevert = false;
 
-            if (this.tlsContents != null)
+            if (this.tlsContents is not null)
             {
                 if (0 == this.tlsContents.DecrementReferenceCount())
                 {

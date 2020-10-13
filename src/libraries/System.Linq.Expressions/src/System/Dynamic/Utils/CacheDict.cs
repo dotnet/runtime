@@ -71,7 +71,7 @@ namespace System.Dynamic.Utils
             int idx = hash & _mask;
 
             Entry entry = Volatile.Read(ref _entries[idx]);
-            if (entry != null && entry._hash == hash && entry._key.Equals(key))
+            if (entry is not null && entry._hash == hash && entry._key.Equals(key))
             {
                 value = entry._value;
                 return true;
@@ -91,7 +91,7 @@ namespace System.Dynamic.Utils
             int idx = hash & _mask;
 
             Entry entry = Volatile.Read(ref _entries[idx]);
-            if (entry == null || entry._hash != hash || !entry._key.Equals(key))
+            if (entry is null || entry._hash != hash || !entry._key.Equals(key))
             {
                 Volatile.Write(ref _entries[idx], new Entry(hash, key, value));
             }

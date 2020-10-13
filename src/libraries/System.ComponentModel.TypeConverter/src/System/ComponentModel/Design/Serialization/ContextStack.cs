@@ -33,7 +33,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             get
             {
-                if (_contextStack != null && _contextStack.Count > 0)
+                if (_contextStack is not null && _contextStack.Count > 0)
                 {
                     return _contextStack[_contextStack.Count - 1];
                 }
@@ -53,7 +53,7 @@ namespace System.ComponentModel.Design.Serialization
                 {
                     throw new ArgumentOutOfRangeException(nameof(level));
                 }
-                if (_contextStack != null && level < _contextStack.Count)
+                if (_contextStack is not null && level < _contextStack.Count)
                 {
                     return _contextStack[_contextStack.Count - 1 - level];
                 }
@@ -70,12 +70,12 @@ namespace System.ComponentModel.Design.Serialization
         {
             get
             {
-                if (type == null)
+                if (type is null)
                 {
                     throw new ArgumentNullException(nameof(type));
                 }
 
-                if (_contextStack != null)
+                if (_contextStack is not null)
                 {
                     int level = _contextStack.Count;
                     while (level > 0)
@@ -101,12 +101,12 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public void Append(object context)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (_contextStack == null)
+            if (_contextStack is null)
             {
                 _contextStack = new ArrayList();
             }
@@ -121,7 +121,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             object context = null;
 
-            if (_contextStack != null && _contextStack.Count > 0)
+            if (_contextStack is not null && _contextStack.Count > 0)
             {
                 int idx = _contextStack.Count - 1;
                 context = _contextStack[idx];
@@ -136,12 +136,12 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public void Push(object context)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if (_contextStack == null)
+            if (_contextStack is null)
             {
                 _contextStack = new ArrayList();
             }

@@ -49,7 +49,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, localEP);
 
-            if (localEP == null)
+            if (localEP is null)
             {
                 throw new ArgumentNullException(nameof(localEP));
             }
@@ -65,7 +65,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, hostname);
 
-            if (hostname == null)
+            if (hostname is null)
             {
                 throw new ArgumentNullException(nameof(hostname));
             }
@@ -119,7 +119,7 @@ namespace System.Net.Sockets
             get { return Client?.ExclusiveAddressUse ?? false; }
             set
             {
-                if (_clientSocket != null)
+                if (_clientSocket is not null)
                 {
                     _clientSocket.ExclusiveAddressUse = value;
                 }
@@ -132,7 +132,7 @@ namespace System.Net.Sockets
 
             ThrowIfDisposed();
 
-            if (hostname == null)
+            if (hostname is null)
             {
                 throw new ArgumentNullException(nameof(hostname));
             }
@@ -163,7 +163,7 @@ namespace System.Net.Sockets
                 {
                     try
                     {
-                        if (_clientSocket == null)
+                        if (_clientSocket is null)
                         {
                             // We came via the <hostname,port> constructor. Set the address family appropriately,
                             // create the socket and try to connect.
@@ -224,7 +224,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (address == null)
+            if (address is null)
             {
                 throw new ArgumentNullException(nameof(address));
             }
@@ -242,7 +242,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (remoteEP == null)
+            if (remoteEP is null)
             {
                 throw new ArgumentNullException(nameof(remoteEP));
             }
@@ -315,7 +315,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_notconnected);
             }
 
-            if (_dataStream == null)
+            if (_dataStream is null)
             {
                 _dataStream = new NetworkStream(Client, true);
             }
@@ -333,7 +333,7 @@ namespace System.Net.Sockets
                 if (disposing)
                 {
                     IDisposable? dataStream = _dataStream;
-                    if (dataStream != null)
+                    if (dataStream is not null)
                     {
                         dataStream.Dispose();
                     }
@@ -344,7 +344,7 @@ namespace System.Net.Sockets
                         // we are bound to a local IPEndPoint this will remove the
                         // binding and free up the IPEndPoint for later uses.
                         Socket chkClientSocket = Volatile.Read(ref _clientSocket);
-                        if (chkClientSocket != null)
+                        if (chkClientSocket is not null)
                         {
                             try
                             {
@@ -411,7 +411,7 @@ namespace System.Net.Sockets
 
         private void InitializeClientSocket()
         {
-            Debug.Assert(_clientSocket == null);
+            Debug.Assert(_clientSocket is null);
             if (_family == AddressFamily.Unknown)
             {
                 // If AF was not explicitly set try to initialize dual mode socket or fall-back to IPv4.

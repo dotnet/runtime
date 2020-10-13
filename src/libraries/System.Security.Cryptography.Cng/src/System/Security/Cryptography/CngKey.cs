@@ -19,8 +19,8 @@ namespace System.Security.Cryptography
     {
         private CngKey(SafeNCryptProviderHandle providerHandle, SafeNCryptKeyHandle keyHandle)
         {
-            Debug.Assert(keyHandle != null && !keyHandle.IsInvalid && !keyHandle.IsClosed);
-            Debug.Assert(providerHandle != null && !providerHandle.IsInvalid && !providerHandle.IsClosed);
+            Debug.Assert(keyHandle is not null && !keyHandle.IsInvalid && !keyHandle.IsClosed);
+            Debug.Assert(providerHandle is not null && !providerHandle.IsInvalid && !providerHandle.IsClosed);
 
             _providerHandle = providerHandle;
             _keyHandle = keyHandle;
@@ -28,12 +28,12 @@ namespace System.Security.Cryptography
 
         public void Dispose()
         {
-            if (_providerHandle != null)
+            if (_providerHandle is not null)
             {
                 _providerHandle.Dispose();
             }
 
-            if (_keyHandle != null)
+            if (_keyHandle is not null)
             {
                 _keyHandle.Dispose();
             }

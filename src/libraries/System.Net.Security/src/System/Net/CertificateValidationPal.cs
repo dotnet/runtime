@@ -20,7 +20,7 @@ namespace System.Net
         {
             X509Store? store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
 
-            if (store == null)
+            if (store is null)
             {
                 StoreLocation storeLocation = isMachineStore ? StoreLocation.LocalMachine : StoreLocation.CurrentUser;
 
@@ -40,7 +40,7 @@ namespace System.Net
                 {
                     store = isMachineStore ? s_myMachineCertStoreEx : s_myCertStoreEx;
 
-                    if (store == null)
+                    if (store is null)
                     {
                         try
                         {

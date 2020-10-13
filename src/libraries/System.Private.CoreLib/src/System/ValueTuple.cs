@@ -58,7 +58,7 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple))
             {
@@ -83,7 +83,7 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple))
             {
@@ -311,7 +311,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1>)) return false;
+            if (other is null || !(other is ValueTuple<T1>)) return false;
 
             var objTuple = (ValueTuple<T1>)other;
 
@@ -320,7 +320,7 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1>))
             {
@@ -347,7 +347,7 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1>))
             {
@@ -504,7 +504,7 @@ namespace System
         /// </remarks>
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2>)) return false;
+            if (other is null || !(other is ValueTuple<T1, T2>)) return false;
 
             var objTuple = (ValueTuple<T1, T2>)other;
 
@@ -514,7 +514,7 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2>))
             {
@@ -542,7 +542,7 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2>))
             {
@@ -695,7 +695,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2, T3>)) return false;
+            if (other is null || !(other is ValueTuple<T1, T2, T3>)) return false;
 
             var objTuple = (ValueTuple<T1, T2, T3>)other;
 
@@ -706,7 +706,7 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2, T3>))
             {
@@ -737,7 +737,7 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2, T3>))
             {
@@ -902,7 +902,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2, T3, T4>)) return false;
+            if (other is null || !(other is ValueTuple<T1, T2, T3, T4>)) return false;
 
             var objTuple = (ValueTuple<T1, T2, T3, T4>)other;
 
@@ -914,7 +914,7 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2, T3, T4>))
             {
@@ -948,7 +948,7 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2, T3, T4>))
             {
@@ -1127,7 +1127,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2, T3, T4, T5>)) return false;
+            if (other is null || !(other is ValueTuple<T1, T2, T3, T4, T5>)) return false;
 
             var objTuple = (ValueTuple<T1, T2, T3, T4, T5>)other;
 
@@ -1140,7 +1140,7 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5>))
             {
@@ -1177,7 +1177,7 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5>))
             {
@@ -1370,7 +1370,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2, T3, T4, T5, T6>)) return false;
+            if (other is null || !(other is ValueTuple<T1, T2, T3, T4, T5, T6>)) return false;
 
             var objTuple = (ValueTuple<T1, T2, T3, T4, T5, T6>)other;
 
@@ -1384,7 +1384,7 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6>))
             {
@@ -1424,7 +1424,7 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6>))
             {
@@ -1631,7 +1631,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7>)) return false;
+            if (other is null || !(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7>)) return false;
 
             var objTuple = (ValueTuple<T1, T2, T3, T4, T5, T6, T7>)other;
 
@@ -1646,7 +1646,7 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7>))
             {
@@ -1689,7 +1689,7 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7>))
             {
@@ -1916,7 +1916,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null || !(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>)) return false;
+            if (other is null || !(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>)) return false;
 
             var objTuple = (ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>)other;
 
@@ -1932,7 +1932,7 @@ namespace System
 
         int IComparable.CompareTo(object? other)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>))
             {
@@ -1978,7 +1978,7 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null) return 1;
+            if (other is null) return 1;
 
             if (!(other is ValueTuple<T1, T2, T3, T4, T5, T6, T7, TRest>))
             {

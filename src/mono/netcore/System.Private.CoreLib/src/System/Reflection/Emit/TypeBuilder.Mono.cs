@@ -120,7 +120,7 @@ namespace System.Reflection.Emit
 
             check_name(nameof(fullname), fullname);
 
-            if (parent == null && (attr & TypeAttributes.Interface) != 0 && (attr & TypeAttributes.Abstract) == 0)
+            if (parent is null && (attr & TypeAttributes.Interface) != 0 && (attr & TypeAttributes.Abstract) == 0)
                 throw new InvalidOperationException(SR.InvalidOperation_BadInterfaceNotAbstract);
 
             sep_index = fullname.LastIndexOf('.');
@@ -134,14 +134,14 @@ namespace System.Reflection.Emit
                 this.tname = fullname;
                 this.nspace = string.Empty;
             }
-            if (interfaces != null)
+            if (interfaces is not null)
             {
                 this.interfaces = new Type[interfaces.Length];
                 Array.Copy(interfaces, this.interfaces, interfaces.Length);
             }
             pmodule = mb;
 
-            if (((attr & TypeAttributes.Interface) == 0) && (parent == null))
+            if (((attr & TypeAttributes.Interface) == 0) && (parent is null))
                 this.parent = typeof(object);
 
             // skip .<Module> ?
@@ -179,12 +179,12 @@ namespace System.Reflection.Emit
         public override bool IsSubclassOf(Type c)
         {
             Type? t;
-            if (c == null)
+            if (c is null)
                 return false;
             if (c == this)
                 return false;
             t = parent;
-            while (t != null)
+            while (t is not null)
             {
                 if (c == t)
                     return true;
@@ -202,7 +202,7 @@ namespace System.Reflection.Emit
 
                 if (IsEnum)
                 {
-                    if (underlying_type != null)
+                    if (underlying_type is not null)
                         return underlying_type;
                     throw new InvalidOperationException(
                         "Enumeration type is not defined.");
@@ -215,9 +215,9 @@ namespace System.Reflection.Emit
         private ITypeName GetFullName()
         {
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(tname);
-            if (nesting_type != null)
+            if (nesting_type is not null)
                 return TypeNames.FromDisplay(nesting_type.FullName!).NestedName(ident);
-            if ((nspace != null) && (nspace.Length > 0))
+            if ((nspace is not null) && (nspace.Length > 0))
                 return TypeIdentifiers.FromInternal(nspace, ident);
             return ident;
         }
@@ -272,13 +272,13 @@ namespace System.Reflection.Emit
         [ComVisible(true)]
         public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
         {
-            if (interfaceType == null)
+            if (interfaceType is null)
                 throw new ArgumentNullException(nameof(interfaceType));
             if (interfaceType.IsByRef)
                 throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
             check_not_created();
 
-            if (interfaces != null)
+            if (interfaces is not null)
             {
                 // Check for duplicates
                 foreach (Type t in interfaces)
@@ -312,7 +312,7 @@ namespace System.Reflection.Emit
                  * newly built one.
                  */
 
-                if (ctors == null)
+                if (ctors is null)
                     return null;
 
                 ConstructorBuilder? found = null;
@@ -328,7 +328,7 @@ namespace System.Reflection.Emit
 
                 if (count == 0)
                     return null;
-                if (types == null)
+                if (types is null)
                 {
                     if (count > 1)
                         throw new AmbiguousMatchException();
@@ -405,11 +405,11 @@ namespace System.Reflection.Emit
                 ((attrs & TypeAttributes.VisibilityMask) == TypeAttributes.NotPublic))
                 throw new ArgumentException (nameof(attr), "Bad type flags for nested type.");
             */
-            if (interfaces != null)
+            if (interfaces is not null)
             {
                 foreach (Type iface in interfaces)
                 {
-                    if (iface == null)
+                    if (iface is null)
                         throw new ArgumentNullException(nameof(interfaces));
                     if (iface.IsByRef)
                         throw new ArgumentException(nameof(interfaces));
@@ -419,7 +419,7 @@ namespace System.Reflection.Emit
             TypeBuilder res = new TypeBuilder(pmodule, name, attr, parent, interfaces, packSize, typeSize, this);
             res.fullname = res.GetFullName();
             pmodule.RegisterTypeName(res, res.fullname);
-            if (subtypes != null)
+            if (subtypes is not null)
             {
                 TypeBuilder[] new_types = new TypeBuilder[subtypes.Length + 1];
                 Array.Copy(subtypes, new_types, subtypes.Length);
@@ -471,7 +471,7 @@ namespace System.Reflection.Emit
             ConstructorBuilder cb = new ConstructorBuilder(this, attributes,
                 callingConvention, parameterTypes, requiredCustomModifiers,
                 optionalCustomModifiers);
-            if (ctors != null)
+            if (ctors is not null)
             {
                 ConstructorBuilder[] new_ctors = new ConstructorBuilder[ctors.Length + 1];
                 Array.Copy(ctors, new_ctors, ctors.Length);
@@ -498,7 +498,7 @@ namespace System.Reflection.Emit
             if ((attributes & (MethodAttributes.Static | MethodAttributes.Virtual)) > 0)
                 throw new ArgumentException(SR.Arg_NoStaticVirtual);
 
-            if (parent != null)
+            if (parent is not null)
                 parent_type = parent;
             else
                 parent_type = typeof(object);
@@ -513,7 +513,7 @@ namespace System.Reflection.Emit
                 parent_type.GetConstructor(
                     BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance,
                     null, EmptyTypes, null);
-            if (parent_constructor == null)
+            if (parent_constructor is null)
             {
                 throw new NotSupportedException("Parent does"
                     + " not have a default constructor."
@@ -533,7 +533,7 @@ namespace System.Reflection.Emit
 
         private void append_method(MethodBuilder mb)
         {
-            if (methods != null)
+            if (methods is not null)
             {
                 if (methods.Length == num_methods)
                 {
@@ -572,7 +572,7 @@ namespace System.Reflection.Emit
                 !(((attributes & MethodAttributes.Static) != 0)))
                 throw new ArgumentException("Interface method must be abstract and virtual.");
 
-            if (returnType == null)
+            if (returnType is null)
                 returnType = typeof(void);
             MethodBuilder res = new MethodBuilder(this, name, attributes,
                 callingConvention, returnType,
@@ -652,9 +652,9 @@ namespace System.Reflection.Emit
 
         public void DefineMethodOverride(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
         {
-            if (methodInfoBody == null)
+            if (methodInfoBody is null)
                 throw new ArgumentNullException(nameof(methodInfoBody));
-            if (methodInfoDeclaration == null)
+            if (methodInfoDeclaration is null)
                 throw new ArgumentNullException(nameof(methodInfoDeclaration));
             check_not_created();
             if (methodInfoBody.DeclaringType != this)
@@ -679,7 +679,7 @@ namespace System.Reflection.Emit
             check_not_created();
 
             FieldBuilder res = new FieldBuilder(this, fieldName, type, attributes, requiredCustomModifiers, optionalCustomModifiers);
-            if (fields != null)
+            if (fields is not null)
             {
                 if (fields.Length == num_fields)
                 {
@@ -699,7 +699,7 @@ namespace System.Reflection.Emit
 
             if (IsEnum)
             {
-                if (underlying_type == null && (attributes & FieldAttributes.Static) == 0)
+                if (underlying_type is null && (attributes & FieldAttributes.Static) == 0)
                     underlying_type = type;
             }
 
@@ -724,15 +724,15 @@ namespace System.Reflection.Emit
         public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers, Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
             check_name(nameof(name), name);
-            if (parameterTypes != null)
+            if (parameterTypes is not null)
                 foreach (Type param in parameterTypes)
-                    if (param == null)
+                    if (param is null)
                         throw new ArgumentNullException(nameof(parameterTypes));
             check_not_created();
 
             PropertyBuilder res = new PropertyBuilder(this, name, attributes, callingConvention, returnType, returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes, parameterTypeRequiredCustomModifiers, parameterTypeOptionalCustomModifiers);
 
-            if (properties != null)
+            if (properties is not null)
             {
                 Array.Resize(ref properties, properties.Length + 1);
                 properties[properties.Length - 1] = res;
@@ -759,7 +759,7 @@ namespace System.Reflection.Emit
 
         private bool is_nested_in(Type? t)
         {
-            while (t != null)
+            while (t is not null)
             {
                 if (t == this)
                     return true;
@@ -805,18 +805,18 @@ namespace System.Reflection.Emit
             if (createTypeCalled)
                 return created;
 
-            if (!IsInterface && (parent == null) && (this != typeof(object)) && (FullName != "<Module>"))
+            if (!IsInterface && (parent is null) && (this != typeof(object)) && (FullName != "<Module>"))
             {
                 SetParent(typeof(object));
             }
 
             // Fire TypeResolve events for fields whose type is an unfinished
             // value type.
-            if (fields != null)
+            if (fields is not null)
             {
                 foreach (FieldBuilder fb in fields)
                 {
-                    if (fb == null)
+                    if (fb is null)
                         continue;
                     Type ft = fb.FieldType;
                     if (!fb.IsStatic && (ft is TypeBuilder builder) && ft.IsValueType && (ft != this) && is_nested_in(ft))
@@ -830,7 +830,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            if (parent != null)
+            if (parent is not null)
             {
                 if (parent.IsByRef)
                     throw new ArgumentException();
@@ -841,13 +841,13 @@ namespace System.Reflection.Emit
             //
             // On classes, define a default constructor if not provided
             //
-            if (!(IsInterface || IsValueType) && (ctors == null) && (tname != "<Module>") &&
+            if (!(IsInterface || IsValueType) && (ctors is null) && (tname != "<Module>") &&
                 (GetAttributeFlagsImpl() & TypeAttributes.Abstract | TypeAttributes.Sealed) != (TypeAttributes.Abstract | TypeAttributes.Sealed) && !has_ctor_method())
                 DefineDefaultConstructor(MethodAttributes.Public);
 
             createTypeCalled = true;
 
-            if (parent != null)
+            if (parent is not null)
             {
                 if (parent.IsSealed)
                     throw new TypeLoadException("Could not load type '" + fullname.DisplayName + "' from assembly '" + Assembly + "' because the parent type is sealed.");
@@ -855,9 +855,9 @@ namespace System.Reflection.Emit
                     throw new BadImageFormatException();
             }
 
-            if (parent == typeof(Enum) && methods != null)
+            if (parent == typeof(Enum) && methods is not null)
                 throw new TypeLoadException("Could not load type '" + fullname.DisplayName + "' from assembly '" + Assembly + "' because it is an enum with methods.");
-            if (interfaces != null)
+            if (interfaces is not null)
             {
                 foreach (Type iface in interfaces)
                 {
@@ -872,18 +872,18 @@ namespace System.Reflection.Emit
                 }
             }
 
-            if (fields != null)
+            if (fields is not null)
             {
                 foreach (FieldBuilder fb in fields)
                 {
-                    if (fb == null)
+                    if (fb is null)
                         continue;
                     if (fb.FieldType.IsByRef)
                         throw new COMException();
                 }
             }
 
-            if (methods != null)
+            if (methods is not null)
             {
                 bool is_concrete = !IsAbstract;
                 for (int i = 0; i < num_methods; ++i)
@@ -896,7 +896,7 @@ namespace System.Reflection.Emit
                 }
             }
 
-            if (ctors != null)
+            if (ctors is not null)
             {
                 foreach (ConstructorBuilder ctor in ctors)
                     ctor.fixup();
@@ -905,7 +905,7 @@ namespace System.Reflection.Emit
             ResolveUserTypes();
 
             created = create_runtime_class();
-            if (created != null)
+            if (created is not null)
                 return created;
             return this;
         }
@@ -914,27 +914,27 @@ namespace System.Reflection.Emit
         {
             parent = ResolveUserType(parent);
             ResolveUserTypes(interfaces);
-            if (fields != null)
+            if (fields is not null)
             {
                 foreach (FieldBuilder fb in fields)
                 {
-                    if (fb != null)
+                    if (fb is not null)
                         fb.ResolveUserTypes();
                 }
             }
-            if (methods != null)
+            if (methods is not null)
             {
                 foreach (MethodBuilder mb in methods)
                 {
-                    if (mb != null)
+                    if (mb is not null)
                         mb.ResolveUserTypes();
                 }
             }
-            if (ctors != null)
+            if (ctors is not null)
             {
                 foreach (ConstructorBuilder cb in ctors)
                 {
-                    if (cb != null)
+                    if (cb is not null)
                         cb.ResolveUserTypes();
                 }
             }
@@ -942,7 +942,7 @@ namespace System.Reflection.Emit
 
         internal static void ResolveUserTypes(Type?[]? types)
         {
-            if (types != null)
+            if (types is not null)
                 for (int i = 0; i < types.Length; ++i)
                     types[i] = ResolveUserType(types[i]);
         }
@@ -950,10 +950,10 @@ namespace System.Reflection.Emit
         [return: NotNullIfNotNull("t")]
         internal static Type? ResolveUserType(Type? t)
         {
-            if (t != null && ((t.GetType().Assembly != typeof(int).Assembly) || (t is TypeDelegator)))
+            if (t is not null && ((t.GetType().Assembly != typeof(int).Assembly) || (t is TypeDelegator)))
             {
                 t = t.UnderlyingSystemType;
-                if (t != null && ((t.GetType().Assembly != typeof(int).Assembly) || (t is TypeDelegator)))
+                if (t is not null && ((t.GetType().Assembly != typeof(int).Assembly) || (t is TypeDelegator)))
                     throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
                 return t;
             }
@@ -967,21 +967,21 @@ namespace System.Reflection.Emit
                 {
                     symbolWriter.OpenNamespace (this.Namespace);
 
-                    if (methods != null) {
+                    if (methods is not null) {
                         for (int i = 0; i < num_methods; ++i) {
                             MethodBuilder metb = (MethodBuilder) methods[i];
                             metb.GenerateDebugInfo (symbolWriter);
                         }
                     }
 
-                    if (ctors != null) {
+                    if (ctors is not null) {
                         foreach (ConstructorBuilder ctor in ctors)
                             ctor.GenerateDebugInfo (symbolWriter);
                     }
 
                     symbolWriter.CloseNamespace ();
 
-                    if (subtypes != null) {
+                    if (subtypes is not null) {
                         for (int i = 0; i < subtypes.Length; ++i)
                             subtypes [i].GenerateDebugInfo (symbolWriter);
                     }
@@ -999,7 +999,7 @@ namespace System.Reflection.Emit
 
         internal ConstructorInfo[] GetConstructorsInternal(BindingFlags bindingAttr)
         {
-            if (ctors == null)
+            if (ctors is null)
                 return Array.Empty<ConstructorInfo>();
             List<ConstructorInfo> result = new List<ConstructorInfo>();
             bool match;
@@ -1094,7 +1094,7 @@ namespace System.Reflection.Emit
             if (is_created)
                 return created!.GetInterfaces();
 
-            if (interfaces != null)
+            if (interfaces is not null)
             {
                 Type[] ret = new Type[interfaces.Length];
                 interfaces.CopyTo(ret, 0);
@@ -1127,7 +1127,7 @@ namespace System.Reflection.Emit
             bool match;
             MethodAttributes mattrs;
 
-            if (((bindingAttr & BindingFlags.DeclaredOnly) == 0) && (parent != null))
+            if (((bindingAttr & BindingFlags.DeclaredOnly) == 0) && (parent is not null))
             {
                 MethodInfo[] parent_methods = parent.GetMethods(bindingAttr);
                 List<MethodInfo> parent_candidates = new List<MethodInfo>(parent_methods.Length);
@@ -1155,7 +1155,7 @@ namespace System.Reflection.Emit
                         parent_candidates.Add(m);
                 }
 
-                if (methods == null)
+                if (methods is null)
                 {
                     candidates = new MethodInfo[parent_candidates.Count];
                     parent_candidates.CopyTo(candidates);
@@ -1170,16 +1170,16 @@ namespace System.Reflection.Emit
             else
                 candidates = methods;
 
-            if (candidates == null)
+            if (candidates is null)
                 return Array.Empty<MethodInfo>();
 
             List<MethodInfo> result = new List<MethodInfo>();
 
             foreach (MethodInfo c in candidates)
             {
-                if (c == null)
+                if (c is null)
                     continue;
-                if (name != null)
+                if (name is not null)
                 {
                     if (string.Compare(c.Name, name, ignoreCase) != 0)
                         continue;
@@ -1232,7 +1232,7 @@ namespace System.Reflection.Emit
         {
             check_created();
 
-            if (types == null)
+            if (types is null)
                 return created!.GetMethod(name, bindingAttr);
 
             return created!.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
@@ -1243,7 +1243,7 @@ namespace System.Reflection.Emit
         {
             check_created();
 
-            if (subtypes == null)
+            if (subtypes is null)
                 return null;
 
             foreach (TypeBuilder t in subtypes)
@@ -1276,7 +1276,7 @@ namespace System.Reflection.Emit
             bool match;
             List<Type> result = new List<Type>();
 
-            if (subtypes == null)
+            if (subtypes is null)
                 return EmptyTypes;
             foreach (TypeBuilder t in subtypes)
             {
@@ -1357,7 +1357,7 @@ namespace System.Reflection.Emit
         protected override bool IsValueTypeImpl()
         {
             Type? parent_type = parent;
-            while (parent_type != null)
+            while (parent_type is not null)
             {
                 if (parent_type == typeof(ValueType))
                     return true;
@@ -1397,7 +1397,7 @@ namespace System.Reflection.Emit
 
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException("not a generic type definition");
-            if (typeArguments == null)
+            if (typeArguments is null)
                 throw new ArgumentNullException(nameof(typeArguments));
 
             if (generic_params!.Length != typeArguments.Length)
@@ -1405,7 +1405,7 @@ namespace System.Reflection.Emit
 
             foreach (Type t in typeArguments)
             {
-                if (t == null)
+                if (t is null)
                     throw new ArgumentNullException(nameof(typeArguments));
             }
 
@@ -1430,7 +1430,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
@@ -1534,7 +1534,7 @@ namespace System.Reflection.Emit
                 attrs |= TypeAttributes.HasSecurity;
             }
 
-            if (cattrs != null)
+            if (cattrs is not null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
                 cattrs.CopyTo(new_array, 0);
@@ -1557,13 +1557,13 @@ namespace System.Reflection.Emit
         public EventBuilder DefineEvent(string name, EventAttributes attributes, Type eventtype)
         {
             check_name(nameof(name), name);
-            if (eventtype == null)
+            if (eventtype is null)
                 throw new ArgumentNullException(nameof(eventtype));
             check_not_created();
             if (eventtype.IsByRef)
                 throw new ArgumentException(SR.Argument_CannotGetTypeTokenForByRef);
             EventBuilder res = new EventBuilder(this, name, attributes, eventtype);
-            if (events != null)
+            if (events is not null)
             {
                 EventBuilder[] new_events = new EventBuilder[events.Length + 1];
                 Array.Copy(events, new_events, events.Length);
@@ -1580,7 +1580,7 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
 
             FieldBuilder res = DefineUninitializedData(name, data.Length, attributes);
@@ -1590,7 +1590,7 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineUninitializedData(string name, int size, FieldAttributes attributes)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException("Empty name is not legal", nameof(name));
@@ -1601,7 +1601,7 @@ namespace System.Reflection.Emit
             string typeName = "$ArrayType$" + size;
             ITypeIdentifier ident = TypeIdentifiers.WithoutEscape(typeName);
             Type? datablobtype = pmodule.GetRegisteredType(fullname.NestedName(ident));
-            if (datablobtype == null)
+            if (datablobtype is null)
             {
                 TypeBuilder tb = DefineNestedType(typeName,
                     TypeAttributes.NestedPrivate | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
@@ -1620,7 +1620,7 @@ namespace System.Reflection.Emit
         {
             check_not_created();
 
-            if (parent == null)
+            if (parent is null)
             {
                 if ((attrs & TypeAttributes.Interface) != 0)
                 {
@@ -1650,7 +1650,7 @@ namespace System.Reflection.Emit
         [ComVisible(true)]
         public override InterfaceMapping GetInterfaceMap(Type interfaceType)
         {
-            if (created == null)
+            if (created is null)
                 throw new NotSupportedException("This method is not implemented for incomplete types.");
 
             return created.GetInterfaceMap(interfaceType);
@@ -1695,7 +1695,7 @@ namespace System.Reflection.Emit
 
         private static void check_name(string argName, string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(argName);
             if (name.Length == 0 || name[0] == ((char)0))
                 throw new ArgumentException(SR.Argument_EmptyName, argName);
@@ -1720,13 +1720,13 @@ namespace System.Reflection.Emit
 
             if (c!.IsInterface)
             {
-                if (parent != null && is_created)
+                if (parent is not null && is_created)
                 {
                     if (c.IsAssignableFrom(parent))
                         return true;
                 }
 
-                if (interfaces == null)
+                if (interfaces is null)
                     return false;
                 foreach (Type t in interfaces)
                     if (c.IsAssignableFrom(t))
@@ -1735,7 +1735,7 @@ namespace System.Reflection.Emit
                     return false;
             }
 
-            if (parent == null)
+            if (parent is null)
                 return c == typeof(object);
             else
                 return c.IsAssignableFrom(parent);
@@ -1748,7 +1748,7 @@ namespace System.Reflection.Emit
 
         public override Type[] GetGenericArguments()
         {
-            if (generic_params == null)
+            if (generic_params is null)
                 return Type.EmptyTypes;
             Type[] args = new Type[generic_params.Length];
             generic_params.CopyTo(args, 0);
@@ -1757,7 +1757,7 @@ namespace System.Reflection.Emit
 
         public override Type GetGenericTypeDefinition()
         {
-            if (generic_params == null)
+            if (generic_params is null)
                 throw new InvalidOperationException("Type is not generic");
             return this;
         }
@@ -1766,7 +1766,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                return generic_params != null;
+                return generic_params is not null;
             }
         }
 
@@ -1787,7 +1787,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                return generic_params != null;
+                return generic_params is not null;
             }
         }
 
@@ -1815,7 +1815,7 @@ namespace System.Reflection.Emit
 
         public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
-            if (names == null)
+            if (names is null)
                 throw new ArgumentNullException(nameof(names));
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
@@ -1824,7 +1824,7 @@ namespace System.Reflection.Emit
             for (int i = 0; i < names.Length; i++)
             {
                 string item = names[i];
-                if (item == null)
+                if (item is null)
                     throw new ArgumentNullException(nameof(names));
                 generic_params[i] = new GenericTypeParameterBuilder(this, null, item, i);
             }
@@ -1837,7 +1837,7 @@ namespace System.Reflection.Emit
         public static ConstructorInfo GetConstructor(Type type, ConstructorInfo constructor)
         {
             /*FIXME I would expect the same checks of GetMethod here*/
-            if (type == null)
+            if (type is null)
                 throw new ArgumentException("Type is not generic", nameof(type));
 
             if (!type.IsGenericType)
@@ -1846,7 +1846,7 @@ namespace System.Reflection.Emit
             if (type.IsGenericTypeDefinition)
                 throw new ArgumentException("Type cannot be a generic type definition", nameof(type));
 
-            if (constructor == null)
+            if (constructor is null)
                 throw new NullReferenceException(); //MS raises this instead of an ArgumentNullException
 
             if (!constructor.DeclaringType!.IsGenericTypeDefinition)
@@ -1855,7 +1855,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException("constructor declaring type is not the generic type definition of type", nameof(constructor));
 
             ConstructorInfo res = type.GetConstructor(constructor);
-            if (res == null)
+            if (res is null)
                 throw new ArgumentException("constructor not found");
 
             return res;
@@ -1872,7 +1872,7 @@ namespace System.Reflection.Emit
                 return false;
 
             Type[] inst = type.GetGenericArguments();
-            if (inst == null)
+            if (inst is null)
                 return false;
             for (int i = 0; i < inst.Length; ++i)
             {
@@ -1899,11 +1899,11 @@ namespace System.Reflection.Emit
                 throw new ArgumentException("method declaring type is not a generic type definition", nameof(method));
             if (method.DeclaringType != type.GetGenericTypeDefinition())
                 throw new ArgumentException("method declaring type is not the generic type definition of type", nameof(method));
-            if (method == null)
+            if (method is null)
                 throw new NullReferenceException(); //MS raises this instead of an ArgumentNullException
 
             MethodInfo res = type.GetMethod(method);
-            if (res == null)
+            if (res is null)
                 throw new ArgumentException(string.Format("method {0} not found in type {1}", method.Name, type));
 
             return res;
@@ -1924,7 +1924,7 @@ namespace System.Reflection.Emit
                 throw new ArgumentException("field declaring type is not the generic type definition of type", nameof(field));
 
             FieldInfo res = type.GetField(field);
-            if (res == null)
+            if (res is null)
                 throw new System.Exception("field not found");
             else
                 return res;
@@ -1962,7 +1962,7 @@ namespace System.Reflection.Emit
             // This is a helper function that is used by ParameterBuilder, PropertyBuilder,
             // and FieldBuilder to validate a default value and save it in the meta-data.
 
-            if (value != null)
+            if (value is not null)
             {
                 Type type = value.GetType();
 
@@ -2006,7 +2006,7 @@ namespace System.Reflection.Emit
 
                         // The constant value supplied should match either the baked enum type or its underlying type
                         // typeBldr.m_enumUnderlyingType is null if the user hasn't created a "value__" field on the enum
-                        if (underlyingType == null || (type != typeBldr.UnderlyingSystemType && type != underlyingType))
+                        if (underlyingType is null || (type != typeBldr.UnderlyingSystemType && type != underlyingType))
                             throw_argument_ConstantDoesntMatch();
                     }
                     else

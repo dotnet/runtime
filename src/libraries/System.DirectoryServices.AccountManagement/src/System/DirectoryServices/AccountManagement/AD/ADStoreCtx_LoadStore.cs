@@ -38,7 +38,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
 
-                if (de == null)
+                if (de is null)
                 {
                     // Must be a newly-inserted Principal for which PushChangesToNative has not yet
                     // been called.
@@ -78,7 +78,7 @@ namespace System.DirectoryServices.AccountManagement
                             DirectoryRdnPrefixAttribute[] MyAttribute =
                             (DirectoryRdnPrefixAttribute[])Attribute.GetCustomAttributes(principalType.BaseType, typeof(DirectoryRdnPrefixAttribute), false);
 
-                            if (MyAttribute == null)
+                            if (MyAttribute is null)
                                 throw new InvalidOperationException(SR.ExtensionInvalidClassAttributes);
 
                             string defaultRdn = null;
@@ -87,7 +87,7 @@ namespace System.DirectoryServices.AccountManagement
                             // that matches the principals context or the first rdnPrefix that has a null context type
                             for (int i = 0; i < MyAttribute.Length; i++)
                             {
-                                if ((MyAttribute[i].Context == null && null == defaultRdn) ||
+                                if ((MyAttribute[i].Context is null && null == defaultRdn) ||
                                     (p.ContextType == MyAttribute[i].Context))
                                 {
                                     defaultRdn = MyAttribute[i].RdnPrefix;
@@ -113,11 +113,11 @@ namespace System.DirectoryServices.AccountManagement
                         // They set a display name.
                         string name = (string)p.GetValueForProperty(PropertyNames.PrincipalName);
 
-                        if ((name != null) && (name.Length > 0))
+                        if ((name is not null) && (name.Length > 0))
                             rdnValue = ADUtils.EscapeDNComponent(name);
                     }
 
-                    if (rdnValue == null)
+                    if (rdnValue is null)
                     {
                         if (p.GetChangeStatusForProperty(PropertyNames.PrincipalSamAccountName))
                         {
@@ -133,20 +133,20 @@ namespace System.DirectoryServices.AccountManagement
                                                                      samAccountName;
                             }
 
-                            if ((samAccountName != null) && (samAccountName.Length > 0))
+                            if ((samAccountName is not null) && (samAccountName.Length > 0))
                             {
                                 rdnValue = ADUtils.EscapeDNComponent(samAccountName);
                             }
                         }
                     }
 
-                    if (rdnPrefix == null)
+                    if (rdnPrefix is null)
                     {
                         // There was no rdn prefix attribute set on the principal class
                         throw new InvalidOperationException(SR.ExtensionInvalidClassAttributes);
                     }
 
-                    if (rdnValue == null)
+                    if (rdnValue is null)
                     {
                         // They didn't set a display name or SAM IdentityClaim (or set an empty/invalid value for those).
                         throw new InvalidOperationException(SR.NameMustBeSetToPersistPrincipal);
@@ -234,7 +234,7 @@ namespace System.DirectoryServices.AccountManagement
         // We need to determine the type and then use the appropriate object.
         internal override Principal GetAsPrincipal(object storeObject, object discriminant)
         {
-            Debug.Assert(storeObject != null);
+            Debug.Assert(storeObject is not null);
 
             DirectoryEntry de = null;
             SearchResult sr = null;
@@ -286,7 +286,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
 
-                if (de != null)
+                if (de is not null)
                 {
                     //NOTE: If target is GC then we do NOT use variable "de". So, need to dispose this at the end.
                     p = SDSUtils.DirectoryEntryToPrincipal((targetIsFromGC ? dcEntry : de), constructedContext ?? this.OwningContext, (Type)discriminant);
@@ -298,11 +298,11 @@ namespace System.DirectoryServices.AccountManagement
                     p.UnderlyingObject = (targetIsFromGC ? dcEntry : sr.GetDirectoryEntry());
                 }
 
-                Debug.Assert(p != null);
+                Debug.Assert(p is not null);
 
                 Guid g;
 
-                if (de != null)
+                if (de is not null)
                     g = de.Guid;
                 else
                 {
@@ -321,7 +321,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (targetIsFromGC && de != null)
+                if (targetIsFromGC && de is not null)
                 {
                     //Since target is GC, variable "de" is not getting used. Disposing it.
                     de.Dispose();
@@ -351,8 +351,8 @@ namespace System.DirectoryServices.AccountManagement
 
         internal override void Load(Principal p, string principalPropertyName)
         {
-            Debug.Assert(p != null);
-            Debug.Assert(p.UnderlyingObject != null);
+            Debug.Assert(p is not null);
+            Debug.Assert(p.UnderlyingObject is not null);
             Debug.Assert(p.UnderlyingObject is DirectoryEntry);
 
             dSPropertyCollection props;
@@ -361,7 +361,7 @@ namespace System.DirectoryServices.AccountManagement
             if (null == sr)
             {
                 DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
-                Debug.Assert(de != null);
+                Debug.Assert(de is not null);
                 Debug.Assert(p.GetUnderlyingObjectType() == typeof(DirectoryEntry));
 
                 props = new dSPropertyCollection(de.Properties);
@@ -376,7 +376,7 @@ namespace System.DirectoryServices.AccountManagement
             ArrayList entries = (ArrayList)propertyMappingTable[principalPropertyName];
 
             // We don't support this property and cannot load it.  To maintain backward compatibility with the old code just return.
-            if (entries == null)
+            if (entries is null)
                 return;
 
             Debug.Assert(null != entries);
@@ -401,12 +401,12 @@ namespace System.DirectoryServices.AccountManagement
         // Loads the store values from p.UnderlyingObject into p, performing schema mapping as needed.
         internal override void Load(Principal p)
         {
-            Debug.Assert(p != null);
-            Debug.Assert(p.UnderlyingObject != null);
+            Debug.Assert(p is not null);
+            Debug.Assert(p.UnderlyingObject is not null);
             Debug.Assert(p.UnderlyingObject is DirectoryEntry);
 
             DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
-            Debug.Assert(de != null);
+            Debug.Assert(de is not null);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "Entering Load, type={0}, path={1}", p.GetType(), de.Path);
 
@@ -465,8 +465,8 @@ namespace System.DirectoryServices.AccountManagement
                                     "ADStoreCtx",
                                     "FindPrincipalByIdentRefHelper: type={0}, scheme={1}, value={2}, useSidHistory={3}",
                                     principalType.ToString(),
-                                    (urnScheme != null ? urnScheme : "NULL"),
-                                    (urnValue != null ? urnValue : "NULL"),
+                                    (urnScheme is not null ? urnScheme : "NULL"),
+                                    (urnValue is not null ? urnValue : "NULL"),
                                     useSidHistory);
 
             //
@@ -507,7 +507,7 @@ namespace System.DirectoryServices.AccountManagement
                 ldapFilter.Append(GetObjectClassPortion(principalType));
 
                 // Build the rest of the filter based off of the user's specified IdentityReference.
-                if (urnScheme != null)
+                if (urnScheme is not null)
                 {
                     // If they're searching by SID for a SID corresponding to a fake group, construct
                     // and return the fake group
@@ -519,7 +519,7 @@ namespace System.DirectoryServices.AccountManagement
                         sid.GetBinaryForm(sidb, 0);
                         //                        = Utils.StringToByteArray(urnValue);
 
-                        if (sid == null)
+                        if (sid is null)
                             throw new ArgumentException(SR.StoreCtxSecurityIdentityClaimBadFormat);
 
                         IntPtr pSid = IntPtr.Zero;
@@ -573,7 +573,7 @@ namespace System.DirectoryServices.AccountManagement
                         {
                         }
 
-                        if (sidb != null)
+                        if (sidb is not null)
                         {
                             // They passed in a hex string, is it a valid SID, and if so, does it correspond to a fake
                             // principal?
@@ -643,9 +643,9 @@ namespace System.DirectoryServices.AccountManagement
                 //
                 src = ds.FindAll();
 
-                Debug.Assert(src != null);
+                Debug.Assert(src is not null);
 
-                if (src == null)
+                if (src is null)
                     return null;
 
                 // Did we find a match?
@@ -669,7 +669,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 ds.Dispose();
-                if (src != null)
+                if (src is not null)
                 {
                     src.Dispose();
                 }
@@ -681,7 +681,7 @@ namespace System.DirectoryServices.AccountManagement
         // for ADStoreCtx).  For others, it may vary depending on the Principal passed in.
         internal override Type NativeType(Principal p)
         {
-            Debug.Assert(p != null);
+            Debug.Assert(p is not null);
 
             return typeof(DirectoryEntry);
         }
@@ -1176,10 +1176,10 @@ namespace System.DirectoryServices.AccountManagement
         {
             string value = (string)p.GetValueForProperty(propertyName);
 
-            if (p.unpersisted && value == null)
+            if (p.unpersisted && value is null)
                 return;
 
-            if ((value == null) || (value.Length > 0))
+            if ((value is null) || (value.Length > 0))
                 de.Properties[suggestedAdProperty].Value = value;
             else
                 throw new ArgumentException(SR.Format(SR.InvalidStringValueForStore, propertyName));
@@ -1189,10 +1189,10 @@ namespace System.DirectoryServices.AccountManagement
         {
             byte[] value = (byte[])p.GetValueForProperty(propertyName);
 
-            if (p.unpersisted && value == null)
+            if (p.unpersisted && value is null)
                 return;
 
-            if (value != null && value.Length != 0)
+            if (value is not null && value.Length != 0)
                 de.Properties[suggestedAdProperty].Value = value;
             else
                 de.Properties[suggestedAdProperty].Value = null;
@@ -1207,10 +1207,10 @@ namespace System.DirectoryServices.AccountManagement
         {
             object value = (bool)p.GetValueForProperty(propertyName);
 
-            if (p.unpersisted && value == null)
+            if (p.unpersisted && value is null)
                 return;
 
-            if (value != null)
+            if (value is not null)
                 de.Properties[suggestedAdProperty].Value = (bool)value;
             else
                 de.Properties[suggestedAdProperty].Value = null;
@@ -1225,7 +1225,7 @@ namespace System.DirectoryServices.AccountManagement
             if (!p.unpersisted)
             {
                 object value = (bool)p.GetValueForProperty(propertyName);
-                if (value != null)
+                if (value is not null)
                     de.Properties[suggestedAdProperty].Value = !(bool)value;
                 else
                     de.Properties[suggestedAdProperty].Value = null;
@@ -1252,7 +1252,7 @@ namespace System.DirectoryServices.AccountManagement
 
             string s = (sb.Length > 0) ? sb.ToString() : null;
 
-            if (p.unpersisted && s == null)
+            if (p.unpersisted && s is null)
                 return;
 
             de.Properties[suggestedAdProperty].Value = s;
@@ -1294,7 +1294,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             Nullable<DateTime> dt = (Nullable<DateTime>)p.GetValueForProperty(propertyName);
 
-            if (p.unpersisted && dt == null)
+            if (p.unpersisted && dt is null)
                 return;
 
             UnsafeNativeMethods.ADsLargeInteger largeIntObj = new UnsafeNativeMethods.ADsLargeInteger();
@@ -1495,13 +1495,13 @@ namespace System.DirectoryServices.AccountManagement
                                                 credentials,
                                                 authTypes);
 
-                        Debug.Assert(copyOfDe != null);
+                        Debug.Assert(copyOfDe is not null);
                         copyOfDe.Properties["member"].Clear();
                         copyOfDe.CommitChanges();
                     }
                     finally
                     {
-                        if (copyOfDe != null)
+                        if (copyOfDe is not null)
                             copyOfDe.Dispose();
                     }
                 }
@@ -1537,7 +1537,7 @@ namespace System.DirectoryServices.AccountManagement
                     if (member.unpersisted)
                         throw new InvalidOperationException(SR.StoreCtxGroupHasUnpersistedInsertedPrincipal);
 
-                    Debug.Assert(member.Context != null);
+                    Debug.Assert(member.Context is not null);
 
                     // Can only insert AD principals (no reg-SAM/MSAM principals)
                     if (member.ContextType == ContextType.Machine)
@@ -1562,7 +1562,7 @@ namespace System.DirectoryServices.AccountManagement
                         // Build a SID DN.  This needs to be a DN path not an ADSI sid path with the LDAP prefix.
                         string memberSidDN = GetSidPathFromPrincipal(member);
 
-                        if (memberSidDN == null)
+                        if (memberSidDN is null)
                             throw new PrincipalOperationException(SR.ADStoreCtxCouldntGetSIDForGroupMember);
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "UpdateGroupMembership: add {0}", memberSidDN);
@@ -1608,7 +1608,7 @@ namespace System.DirectoryServices.AccountManagement
                         // Build a SID DN.
                         string memberSidDN = GetSidPathFromPrincipal(member);
 
-                        if (memberSidDN == null)
+                        if (memberSidDN is null)
                             throw new PrincipalOperationException(SR.ADStoreCtxCouldntGetSIDForGroupMember);
 
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "UpdateGroupMembership: remove via SID {0}", memberSidDN);
@@ -1641,7 +1641,7 @@ namespace System.DirectoryServices.AccountManagement
             if (p.fakePrincipal)
             {
                 SecurityIdentifier Sid = p.Sid;
-                if (Sid == null)
+                if (Sid is null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADStoreCtx", "GetSidADsPathFromPrincipal: no SID IC (fake principal)");
                     throw new InvalidOperationException(SR.StoreCtxNeedValueSecurityIdentityClaimToQuery);
@@ -1653,7 +1653,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 // Retrieve the member's SID
                 DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
-                Debug.Assert(de != null); // since member can't be unpersisted
+                Debug.Assert(de is not null); // since member can't be unpersisted
 
                 // Force it to load if it hasn't been already loaded
                 if (!de.Properties.Contains("objectSid"))
@@ -1661,7 +1661,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 byte[] sid = (byte[])de.Properties["objectSid"].Value;
 
-                if (sid == null)
+                if (sid is null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "ADStoreCtx", "GetSidADsPathFromPrincipal: no SID");
                     return null;

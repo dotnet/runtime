@@ -28,7 +28,7 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (this.dictionaryReader == null)
+                if (this.dictionaryReader is null)
                 {
                     return null;
                 }
@@ -43,7 +43,7 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (_dateTimeArrayHelper == null)
+                if (_dateTimeArrayHelper is null)
                 {
                     _dateTimeArrayHelper = new DateTimeArrayJsonHelperWithString(_dateTimeFormat);
                 }
@@ -98,7 +98,7 @@ namespace System.Runtime.Serialization.Json
 
             byte[] buffer;
 
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
             {
                 XmlDictionaryReader tempDictionaryReader = XmlDictionaryReader.CreateDictionaryReader(reader);
                 buffer = ByteArrayHelperWithString.Instance.ReadArray(tempDictionaryReader, JsonGlobals.itemString, string.Empty, tempDictionaryReader.Quotas.MaxArrayLength);
@@ -142,7 +142,7 @@ namespace System.Runtime.Serialization.Json
 
         internal static DateTime ParseJsonDate(string originalDateTimeValue, DateTimeFormat? dateTimeFormat)
         {
-            if (dateTimeFormat == null)
+            if (dateTimeFormat is null)
             {
                 return ParseJsonDateInDefaultFormat(originalDateTimeValue);
             }
@@ -247,7 +247,7 @@ namespace System.Runtime.Serialization.Json
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, [NotNullWhen(true)] out DateTime[]? array)
         {
-            if ((dictionaryReader == null) || (arrayLength != -1))
+            if ((dictionaryReader is null) || (arrayLength != -1))
             {
                 array = null;
                 return false;
@@ -291,7 +291,7 @@ namespace System.Runtime.Serialization.Json
         {
             string value = reader.ReadContentAsString();
 
-            if (value == null || value.Length == 0)
+            if (value is null || value.Length == 0)
             {
                 throw new XmlException(XmlObjectSerializer.TryAddLineInfo(this, SR.Format(SR.XmlInvalidConversion, value, "UInt64")));
             }
@@ -324,7 +324,7 @@ namespace System.Runtime.Serialization.Json
 
             string value = reader.ReadElementContentAsString();
 
-            if (value == null || value.Length == 0)
+            if (value is null || value.Length == 0)
             {
                 throw new XmlException(XmlObjectSerializer.TryAddLineInfo(this, SR.Format(SR.XmlInvalidConversion, value, "UInt64")));
             }

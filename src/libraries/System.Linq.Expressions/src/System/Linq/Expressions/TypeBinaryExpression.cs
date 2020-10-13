@@ -84,7 +84,7 @@ namespace System.Linq.Expressions
 
             // expression is a ByVal parameter. Can safely reevaluate.
             var parameter = Expression as ParameterExpression;
-            if (parameter != null && !parameter.IsByRef)
+            if (parameter is not null && !parameter.IsByRef)
             {
                 return ByValParameterTypeEqual(parameter);
             }
@@ -139,7 +139,7 @@ namespace System.Linq.Expressions
         {
             ConstantExpression? ce = Expression as ConstantExpression;
             //TypeEqual(null, T) always returns false.
-            if (ce!.Value == null)
+            if (ce!.Value is null)
             {
                 return Utils.Constant(value: false);
             }

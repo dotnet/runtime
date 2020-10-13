@@ -91,7 +91,7 @@ namespace System.Net.Http
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -120,7 +120,7 @@ namespace System.Net.Http
 
             CheckDisposed();
 
-            if (_state.TcsInternalWriteDataToRequestStream != null &&
+            if (_state.TcsInternalWriteDataToRequestStream is not null &&
                 !_state.TcsInternalWriteDataToRequestStream.Task.IsCompleted)
             {
                 throw new InvalidOperationException(SR.net_http_no_concurrent_io_allowed);

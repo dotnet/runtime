@@ -27,7 +27,7 @@ namespace System.ComponentModel
         /// </summary>
         ~AsyncOperation()
         {
-            if (!_alreadyCompleted && _syncContext != null)
+            if (!_alreadyCompleted && _syncContext is not null)
             {
                 _syncContext.OperationCompleted();
             }
@@ -98,7 +98,7 @@ namespace System.ComponentModel
 
         private void VerifyDelegateNotNull(SendOrPostCallback d)
         {
-            if (d == null)
+            if (d is null)
             {
                 throw new ArgumentNullException(nameof(d), SR.Async_NullDelegate);
             }

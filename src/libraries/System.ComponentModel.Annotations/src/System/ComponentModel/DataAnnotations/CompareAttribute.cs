@@ -28,7 +28,7 @@ namespace System.ComponentModel.DataAnnotations
         protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
             var otherPropertyInfo = validationContext.ObjectType.GetRuntimeProperty(OtherProperty);
-            if (otherPropertyInfo == null)
+            if (otherPropertyInfo is null)
             {
                 return new ValidationResult(SR.Format(SR.CompareAttribute_UnknownProperty, OtherProperty));
             }
@@ -40,12 +40,12 @@ namespace System.ComponentModel.DataAnnotations
             object? otherPropertyValue = otherPropertyInfo.GetValue(validationContext.ObjectInstance, null);
             if (!Equals(value, otherPropertyValue))
             {
-                if (OtherPropertyDisplayName == null)
+                if (OtherPropertyDisplayName is null)
                 {
                     OtherPropertyDisplayName = GetDisplayNameForProperty(otherPropertyInfo);
                 }
 
-                string[]? memberNames = validationContext.MemberName != null
+                string[]? memberNames = validationContext.MemberName is not null
                    ? new[] { validationContext.MemberName }
                    : null;
                 return new ValidationResult(FormatErrorMessage(validationContext.DisplayName), memberNames);
@@ -58,7 +58,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             var attributes = CustomAttributeExtensions.GetCustomAttributes(property, true);
             var display = attributes.OfType<DisplayAttribute>().FirstOrDefault();
-            if (display != null)
+            if (display is not null)
             {
                 // TODO-NULLABLE: This will return null if [DisplayName] is specified but no Name has been defined - probably a bug.
                 // Should fall back to OtherProperty in this case instead.

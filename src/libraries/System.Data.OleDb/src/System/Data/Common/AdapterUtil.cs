@@ -36,8 +36,8 @@ namespace System.Data.Common
 
         private static void TraceException(string trace, Exception e)
         {
-            Debug.Assert(e != null, "TraceException: null Exception");
-            if (e != null)
+            Debug.Assert(e is not null, "TraceException: null Exception");
+            if (e is not null)
             {
                 DataCommonEventSource.Log.Trace(trace, e);
             }
@@ -220,7 +220,7 @@ namespace System.Data.Common
         internal static bool IsCatchableExceptionType(Exception e)
         {
             // a 'catchable' exception is defined by what it is not.
-            Debug.Assert(e != null, "Unexpected null exception!");
+            Debug.Assert(e is not null, "Unexpected null exception!");
             Type type = e.GetType();
 
             return ((type != StackOverflowType) &&
@@ -240,7 +240,7 @@ namespace System.Data.Common
             // the other way to write this method is, but then SecurityException is checked twice
             // return ((e is SecurityException) || IsCatchableExceptionType(e));
 
-            Debug.Assert(e != null, "Unexpected null exception!");
+            Debug.Assert(e is not null, "Unexpected null exception!");
             Type type = e.GetType();
 
             return ((type != StackOverflowType) &&
@@ -1059,7 +1059,7 @@ namespace System.Data.Common
             const string config = "config\\";
             // get location of config directory
             string rootPath = System.Runtime.InteropServices.RuntimeEnvironment.GetRuntimeDirectory();
-            if (rootPath == null)
+            if (rootPath is null)
             {
                 throw ADP.ConfigUnableToLoadXmlMetaDataFile(errorString);
             }
@@ -1187,7 +1187,7 @@ namespace System.Data.Common
         internal static bool RemoveStringQuotes(string? quotePrefix, string? quoteSuffix, string? quotedString, out string? unquotedString)
         {
             int prefixLength;
-            if (quotePrefix == null)
+            if (quotePrefix is null)
             {
                 prefixLength = 0;
             }
@@ -1197,7 +1197,7 @@ namespace System.Data.Common
             }
 
             int suffixLength;
-            if (quoteSuffix == null)
+            if (quoteSuffix is null)
             {
                 suffixLength = 0;
             }
@@ -1212,7 +1212,7 @@ namespace System.Data.Common
                 return true;
             }
 
-            if (quotedString == null)
+            if (quotedString is null)
             {
                 unquotedString = quotedString;
                 return false;
@@ -1330,7 +1330,7 @@ namespace System.Data.Common
                 return true;
             }
             INullable? nullable = (value as INullable);
-            return ((null != nullable) && nullable.IsNull);
+            return ((nullable is not null) && nullable.IsNull);
         }
     }
 }

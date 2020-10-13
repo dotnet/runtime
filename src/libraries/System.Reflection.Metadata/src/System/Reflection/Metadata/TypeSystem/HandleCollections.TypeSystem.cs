@@ -234,7 +234,7 @@ namespace System.Reflection.Metadata
 
         internal CustomAttributeHandleCollection(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
             _firstRowId = 1;
             _lastRowId = reader.CustomAttributeTable.NumberOfRows;
@@ -242,7 +242,7 @@ namespace System.Reflection.Metadata
 
         internal CustomAttributeHandleCollection(MetadataReader reader, EntityHandle handle)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
 
             _reader = reader;
             reader.CustomAttributeTable.GetAttributeRange(handle, out _firstRowId, out _lastRowId);
@@ -296,7 +296,7 @@ namespace System.Reflection.Metadata
                 {
                     // PERF: keep this code small to enable inlining.
 
-                    if (_reader.CustomAttributeTable.PtrTable != null)
+                    if (_reader.CustomAttributeTable.PtrTable is not null)
                     {
                         return GetCurrentCustomAttributeIndirect();
                     }
@@ -354,7 +354,7 @@ namespace System.Reflection.Metadata
 
         internal DeclarativeSecurityAttributeHandleCollection(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
             _firstRowId = 1;
             _lastRowId = reader.DeclSecurityTable.NumberOfRows;
@@ -362,7 +362,7 @@ namespace System.Reflection.Metadata
 
         internal DeclarativeSecurityAttributeHandleCollection(MetadataReader reader, EntityHandle handle)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(!handle.IsNil);
 
             _reader = reader;
@@ -461,7 +461,7 @@ namespace System.Reflection.Metadata
 
         internal MethodDefinitionHandleCollection(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
             _firstRowId = 1;
             _lastRowId = reader.MethodDefTable.NumberOfRows;
@@ -469,7 +469,7 @@ namespace System.Reflection.Metadata
 
         internal MethodDefinitionHandleCollection(MetadataReader reader, TypeDefinitionHandle containingType)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(!containingType.IsNil);
 
             _reader = reader;
@@ -581,7 +581,7 @@ namespace System.Reflection.Metadata
 
         internal FieldDefinitionHandleCollection(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
             _firstRowId = 1;
             _lastRowId = reader.FieldTable.NumberOfRows;
@@ -589,7 +589,7 @@ namespace System.Reflection.Metadata
 
         internal FieldDefinitionHandleCollection(MetadataReader reader, TypeDefinitionHandle containingType)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(!containingType.IsNil);
 
             _reader = reader;
@@ -701,7 +701,7 @@ namespace System.Reflection.Metadata
 
         internal PropertyDefinitionHandleCollection(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
             _firstRowId = 1;
             _lastRowId = reader.PropertyTable.NumberOfRows;
@@ -709,7 +709,7 @@ namespace System.Reflection.Metadata
 
         internal PropertyDefinitionHandleCollection(MetadataReader reader, TypeDefinitionHandle containingType)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(!containingType.IsNil);
 
             _reader = reader;
@@ -821,7 +821,7 @@ namespace System.Reflection.Metadata
 
         internal EventDefinitionHandleCollection(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
             _firstRowId = 1;
             _lastRowId = reader.EventTable.NumberOfRows;
@@ -829,7 +829,7 @@ namespace System.Reflection.Metadata
 
         internal EventDefinitionHandleCollection(MetadataReader reader, TypeDefinitionHandle containingType)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(!containingType.IsNil);
 
             _reader = reader;
@@ -939,7 +939,7 @@ namespace System.Reflection.Metadata
 
         internal MethodImplementationHandleCollection(MetadataReader reader, TypeDefinitionHandle containingType)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
 
             if (containingType.IsNil)
             {
@@ -1044,7 +1044,7 @@ namespace System.Reflection.Metadata
 
         internal ParameterHandleCollection(MetadataReader reader, MethodDefinitionHandle containingMethod)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(!containingMethod.IsNil);
             _reader = reader;
 
@@ -1156,7 +1156,7 @@ namespace System.Reflection.Metadata
 
         internal InterfaceImplementationHandleCollection(MetadataReader reader, TypeDefinitionHandle implementingType)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(!implementingType.IsNil);
             _reader = reader;
 
@@ -1657,7 +1657,7 @@ namespace System.Reflection.Metadata
 
         internal AssemblyReferenceHandleCollection(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
         }
 

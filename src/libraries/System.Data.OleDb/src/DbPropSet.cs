@@ -103,7 +103,7 @@ namespace System.Data.OleDb
             string message = string.Empty;
 
             OleDbHResult errorInfoHr = UnsafeNativeMethods.GetErrorInfo(0, out errorInfo);  // 0 - IErrorInfo exists, 1 - no IErrorInfo
-            if ((errorInfoHr == OleDbHResult.S_OK) && (errorInfo != null))
+            if ((errorInfoHr == OleDbHResult.S_OK) && (errorInfo is not null))
             {
                 ODB.GetErrorDescription(errorInfo, lastErrorHr, out message);
                 // note that either GetErrorInfo or GetErrorDescription might fail in which case we will have only the HRESULT value in exception message
@@ -159,7 +159,7 @@ namespace System.Data.OleDb
         {
             if ((index < 0) || (PropertySetCount <= index))
             {
-                if (lastErrorFromProvider != null)
+                if (lastErrorFromProvider is not null)
                 {
                     // add extra error information for CSS/stress troubleshooting.
                     // We need to keep same exception type to avoid breaking change with Orcas RTM/SP1.
@@ -205,7 +205,7 @@ namespace System.Data.OleDb
         {
             if ((index < 0) || (PropertySetCount <= index))
             {
-                if (lastErrorFromProvider != null)
+                if (lastErrorFromProvider is not null)
                 {
                     // add extra error information for CSS/stress troubleshooting.
                     // We need to keep same exception type to avoid breaking change with Orcas RTM/SP1.

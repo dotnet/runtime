@@ -930,7 +930,7 @@ namespace System.Collections.Immutable
                 // Creating an instance of ImmutableList<T> with our root node automatically freezes our tree,
                 // ensuring that the returned instance is immutable.  Any further mutations made to this builder
                 // will clone (and unfreeze) the spine of modified nodes until the next time this method is invoked.
-                if (_immutable == null)
+                if (_immutable is null)
                 {
                     _immutable = ImmutableList<T>.WrapNode(this.Root);
                 }
@@ -1085,7 +1085,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (_syncRoot == null)
+                    if (_syncRoot is null)
                     {
                         System.Threading.Interlocked.CompareExchange<object?>(ref _syncRoot, new object(), null);
                     }
@@ -1130,7 +1130,7 @@ namespace System.Collections.Immutable
         {
             get
             {
-                if (_cachedContents == null)
+                if (_cachedContents is null)
                 {
                     _cachedContents = _list.ToArray(_list.Count);
                 }

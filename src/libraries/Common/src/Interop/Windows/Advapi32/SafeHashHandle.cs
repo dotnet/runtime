@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
                 return;
             }
 
-            Debug.Assert(_parent == null);
+            Debug.Assert(_parent is null);
             Debug.Assert(!parent.IsClosed);
             Debug.Assert(!parent.IsInvalid);
 

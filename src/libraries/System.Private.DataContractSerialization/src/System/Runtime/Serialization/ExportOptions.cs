@@ -27,7 +27,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_knownTypes == null)
+                if (_knownTypes is null)
                 {
                     _knownTypes = new Collection<Type>();
                 }

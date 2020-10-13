@@ -21,7 +21,7 @@ namespace System.CodeDom.Compiler
         {
             get
             {
-                if (_compiledAssembly == null && PathToAssembly != null)
+                if (_compiledAssembly is null && PathToAssembly is not null)
                 {
                     _compiledAssembly = Assembly.LoadFile(PathToAssembly);
                 }

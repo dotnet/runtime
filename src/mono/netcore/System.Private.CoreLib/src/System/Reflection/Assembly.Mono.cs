@@ -17,7 +17,7 @@ namespace System.Reflection
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly? LoadWithPartialName(string partialName)
         {
-            if (partialName == null)
+            if (partialName is null)
                 throw new ArgumentNullException(nameof(partialName));
 
             if (partialName.Length == 0 || partialName[0] == '\0')
@@ -58,7 +58,7 @@ namespace System.Reflection
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(string assemblyString)
         {
-            if (assemblyString == null)
+            if (assemblyString is null)
                 throw new ArgumentNullException(nameof(assemblyString));
 
             var name = new AssemblyName(assemblyString);
@@ -71,7 +71,7 @@ namespace System.Reflection
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(AssemblyName assemblyRef)
         {
-            if (assemblyRef == null)
+            if (assemblyRef is null)
                 throw new ArgumentNullException(nameof(assemblyRef));
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -81,8 +81,8 @@ namespace System.Reflection
         internal static Assembly Load(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext)
         {
             // TODO: pass AssemblyName
-            Assembly? assembly = InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
-            if (assembly == null)
+            Assembly? assembly = InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext is not null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
+            if (assembly is null)
                 throw new FileNotFoundException(null, assemblyRef.Name);
             return assembly;
         }

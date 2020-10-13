@@ -57,7 +57,7 @@ namespace System.Security
 
         private void AppendResourceString(string resourceString, object attr, StringBuilder sb)
         {
-            if (attr == null)
+            if (attr is null)
                 return;
 
             sb.Append(Environment.NewLine);

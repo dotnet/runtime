@@ -47,7 +47,7 @@ namespace System.Composition.Convention
         /// <returns>A <see cref="PartConventionBuilder"/> that must be used to specify the rule.</returns>
         public PartConventionBuilder ForTypesDerivedFrom(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -76,7 +76,7 @@ namespace System.Composition.Convention
         /// <returns>A <see cref="PartConventionBuilder"/> that must be used to specify the rule.</returns>
         public PartConventionBuilder ForType(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -95,7 +95,7 @@ namespace System.Composition.Convention
         /// <returns>A <see cref="PartConventionBuilder{T}"/> that must be used to specify the rule.</returns>
         public PartConventionBuilder<T> ForTypesMatching<T>(Predicate<Type> typeFilter)
         {
-            if (typeFilter == null)
+            if (typeFilter is null)
             {
                 throw new ArgumentNullException(nameof(typeFilter));
             }
@@ -113,7 +113,7 @@ namespace System.Composition.Convention
         /// <returns>A <see cref="PartConventionBuilder{T}"/> that must be used to specify the rule.</returns>
         public PartConventionBuilder ForTypesMatching(Predicate<Type> typeFilter)
         {
-            if (typeFilter == null)
+            if (typeFilter is null)
             {
                 throw new ArgumentNullException(nameof(typeFilter));
             }
@@ -158,7 +158,7 @@ namespace System.Composition.Convention
         /// <returns>The list of applied attributes.</returns>
         public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, System.Reflection.MemberInfo member)
         {
-            if (member == null)
+            if (member is null)
             {
                 throw new ArgumentNullException(nameof(member));
             }
@@ -166,7 +166,7 @@ namespace System.Composition.Convention
             // Now edit the attributes returned from the base type
             List<Attribute> cachedAttributes = null;
             var typeInfo = member as TypeInfo;
-            if (typeInfo != null)
+            if (typeInfo is not null)
             {
                 var memberInfo = typeInfo as MemberInfo;
                 _lock.EnterReadLock();
@@ -178,7 +178,7 @@ namespace System.Composition.Convention
                 {
                     _lock.ExitReadLock();
                 }
-                if (cachedAttributes == null)
+                if (cachedAttributes is null)
                 {
                     _lock.EnterWriteLock();
                     try
@@ -190,12 +190,12 @@ namespace System.Composition.Convention
                             foreach (Tuple<object, List<Attribute>> element in EvaluateThisTypeInfoAgainstTheConvention(typeInfo))
                             {
                                 attributeList = element.Item2;
-                                if (attributeList != null)
+                                if (attributeList is not null)
                                 {
                                     var mi = element.Item1 as MemberInfo;
-                                    if (mi != null)
+                                    if (mi is not null)
                                     {
-                                        if (mi != null && (mi is ConstructorInfo || mi is TypeInfo || mi is PropertyInfo || mi is MethodInfo))
+                                        if (mi is not null && (mi is ConstructorInfo || mi is TypeInfo || mi is PropertyInfo || mi is MethodInfo))
                                         {
                                             if (!_memberInfos.TryGetValue(mi, out List<Attribute> memberAttributes))
                                             {
@@ -206,7 +206,7 @@ namespace System.Composition.Convention
                                     else
                                     {
                                         var pi = element.Item1 as ParameterInfo;
-                                        if (pi == null)
+                                        if (pi is null)
                                         {
                                             throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                                         }
@@ -241,7 +241,7 @@ namespace System.Composition.Convention
             else
                 appliedAttributes = member.GetCustomAttributes<Attribute>(false);
 
-            return cachedAttributes == null ? appliedAttributes : appliedAttributes.Concat(cachedAttributes);
+            return cachedAttributes is null ? appliedAttributes : appliedAttributes.Concat(cachedAttributes);
         }
 
         private List<Attribute> ReadMemberCustomAttributes(Type reflectedType, System.Reflection.MemberInfo member)
@@ -256,7 +256,7 @@ namespace System.Composition.Convention
                 if (!_memberInfos.TryGetValue(member, out cachedAttributes))
                 {
                     // If there is nothing for this member Cache any attributes for the DeclaringType
-                    if (reflectedType != null
+                    if (reflectedType is not null
                         && !_memberInfos.TryGetValue(member.DeclaringType.GetTypeInfo() as MemberInfo, out cachedAttributes))
                     {
                         // If there is nothing for this parameter look to see if the declaring Member has been cached yet?
@@ -298,14 +298,14 @@ namespace System.Composition.Convention
         /// <returns>The list of applied attributes.</returns>
         public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, System.Reflection.ParameterInfo parameter)
         {
-            if (parameter == null)
+            if (parameter is null)
             {
                 throw new ArgumentNullException(nameof(parameter));
             }
 
             IEnumerable<Attribute> attributes = parameter.GetCustomAttributes<Attribute>(false);
             List<Attribute> cachedAttributes = ReadParameterCustomAttributes(reflectedType, parameter);
-            return cachedAttributes == null ? attributes : attributes.Concat(cachedAttributes);
+            return cachedAttributes is null ? attributes : attributes.Concat(cachedAttributes);
         }
 
         private List<Attribute> ReadParameterCustomAttributes(Type reflectedType, System.Reflection.ParameterInfo parameter)
@@ -320,7 +320,7 @@ namespace System.Composition.Convention
                 if (!_parameters.TryGetValue(parameter, out cachedAttributes))
                 {
                     // If there is nothing for this parameter Cache any attributes for the DeclaringType
-                    if (reflectedType != null
+                    if (reflectedType is not null
                      && !_memberInfos.TryGetValue(reflectedType.GetTypeInfo() as MemberInfo, out cachedAttributes))
                     {
                         // If there is nothing for this parameter look to see if the declaring Member has been cached yet?
@@ -356,7 +356,7 @@ namespace System.Composition.Convention
 
         private static bool IsGenericDescendentOf(TypeInfo derivedType, TypeInfo baseType)
         {
-            if (derivedType.BaseType == null)
+            if (derivedType.BaseType is null)
                 return false;
 
             if (derivedType.BaseType == baseType.AsType())
@@ -374,7 +374,7 @@ namespace System.Composition.Convention
 
         private static bool IsDescendentOf(Type type, Type baseType)
         {
-            if (type == baseType || type == typeof(object) || type == null)
+            if (type == baseType || type == typeof(object) || type is null)
             {
                 return false;
             }

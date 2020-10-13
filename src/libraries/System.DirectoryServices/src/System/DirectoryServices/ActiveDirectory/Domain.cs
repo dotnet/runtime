@@ -60,7 +60,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static Domain GetDomain(DirectoryContext context)
         {
             // check that the argument is not null
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
             // contexttype should be Domain or DirectoryServer
@@ -70,12 +70,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.TargetShouldBeServerORDomain, nameof(context));
             }
 
-            if ((context.Name == null) && (!context.isDomain()))
+            if ((context.Name is null) && (!context.isDomain()))
             {
                 throw new ActiveDirectoryObjectNotFoundException(SR.ContextNotAssociatedWithDomain, typeof(Domain), null);
             }
 
-            if (context.Name != null)
+            if (context.Name is not null)
             {
                 // the target should be a valid domain name or a server
                 if (!((context.isDomain()) || (context.isServer())))
@@ -136,7 +136,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static Domain GetComputerDomain()
         {
             string computerDomainName = DirectoryContext.GetDnsDomainName(null);
-            if (computerDomainName == null)
+            if (computerDomainName is null)
             {
                 throw new ActiveDirectoryObjectNotFoundException(SR.ComputerNotJoinedToDomain, typeof(Domain), null);
             }
@@ -242,7 +242,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (domainEntry != null)
+                if (domainEntry is not null)
                 {
                     domainEntry.Dispose();
                 }
@@ -400,7 +400,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (domainEntry != null)
+                if (domainEntry is not null)
                 {
                     domainEntry.Dispose();
                 }
@@ -423,7 +423,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -442,7 +442,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -461,7 +461,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -483,7 +483,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             CheckIfDisposed();
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -515,7 +515,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomainName == null)
+            if (targetDomainName is null)
                 throw new ArgumentNullException(nameof(targetDomainName));
 
             if (targetDomainName.Length == 0)
@@ -539,7 +539,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomainName == null)
+            if (targetDomainName is null)
                 throw new ArgumentNullException(nameof(targetDomainName));
 
             if (targetDomainName.Length == 0)
@@ -552,7 +552,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomainName == null)
+            if (targetDomainName is null)
                 throw new ArgumentNullException(nameof(targetDomainName));
 
             if (targetDomainName.Length == 0)
@@ -565,7 +565,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomainName == null)
+            if (targetDomainName is null)
                 throw new ArgumentNullException(nameof(targetDomainName));
 
             if (targetDomainName.Length == 0)
@@ -578,7 +578,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomainName == null)
+            if (targetDomainName is null)
                 throw new ArgumentNullException(nameof(targetDomainName));
 
             if (targetDomainName.Length == 0)
@@ -591,7 +591,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomainName == null)
+            if (targetDomainName is null)
                 throw new ArgumentNullException(nameof(targetDomainName));
 
             if (targetDomainName.Length == 0)
@@ -605,7 +605,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomain == null)
+            if (targetDomain is null)
                 throw new ArgumentNullException(nameof(targetDomain));
 
             // first delete the trust on the remote side
@@ -619,7 +619,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomainName == null)
+            if (targetDomainName is null)
                 throw new ArgumentNullException(nameof(targetDomainName));
 
             if (targetDomainName.Length == 0)
@@ -632,7 +632,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomain == null)
+            if (targetDomain is null)
                 throw new ArgumentNullException(nameof(targetDomain));
 
             if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional)
@@ -669,7 +669,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomainName == null)
+            if (targetDomainName is null)
                 throw new ArgumentNullException(nameof(targetDomainName));
 
             if (targetDomainName.Length == 0)
@@ -678,7 +678,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional)
                 throw new InvalidEnumArgumentException(nameof(direction), (int)direction, typeof(TrustDirection));
 
-            if (trustPassword == null)
+            if (trustPassword is null)
                 throw new ArgumentNullException(nameof(trustPassword));
 
             if (trustPassword.Length == 0)
@@ -696,7 +696,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomain == null)
+            if (targetDomain is null)
                 throw new ArgumentNullException(nameof(targetDomain));
 
             if (direction < TrustDirection.Inbound || direction > TrustDirection.Bidirectional)
@@ -721,13 +721,13 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomainName == null)
+            if (targetDomainName is null)
                 throw new ArgumentNullException(nameof(targetDomainName));
 
             if (targetDomainName.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(targetDomainName));
 
-            if (newTrustPassword == null)
+            if (newTrustPassword is null)
                 throw new ArgumentNullException(nameof(newTrustPassword));
 
             if (newTrustPassword.Length == 0)
@@ -740,7 +740,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomainName == null)
+            if (targetDomainName is null)
                 throw new ArgumentNullException(nameof(targetDomainName));
 
             if (targetDomainName.Length == 0)
@@ -749,7 +749,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (newTrustDirection < TrustDirection.Inbound || newTrustDirection > TrustDirection.Bidirectional)
                 throw new InvalidEnumArgumentException(nameof(newTrustDirection), (int)newTrustDirection, typeof(TrustDirection));
 
-            if (newTrustPassword == null)
+            if (newTrustPassword is null)
                 throw new ArgumentNullException(nameof(newTrustPassword));
 
             if (newTrustPassword.Length == 0)
@@ -762,7 +762,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (targetDomain == null)
+            if (targetDomain is null)
                 throw new ArgumentNullException(nameof(targetDomain));
 
             if (newTrustDirection < TrustDirection.Inbound || newTrustDirection > TrustDirection.Bidirectional)
@@ -789,7 +789,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             CheckIfDisposed();
 
-            if (targetDomain == null)
+            if (targetDomain is null)
                 throw new ArgumentNullException(nameof(targetDomain));
 
             // first try to reset the secure channel
@@ -839,7 +839,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedForest == null)
+                if (_cachedForest is null)
                 {
                     // get the name of rootDomainNamingContext
                     DirectoryEntry rootDSE = directoryEntryMgr.GetCachedDirectoryEntry(WellKnownDN.RootDSE);
@@ -857,7 +857,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedDomainControllers == null)
+                if (_cachedDomainControllers is null)
                 {
                     _cachedDomainControllers = FindAllDomainControllers();
                 }
@@ -870,7 +870,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedChildren == null)
+                if (_cachedChildren is null)
                 {
                     _cachedChildren = new DomainCollection(GetChildDomains());
                 }
@@ -923,7 +923,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedPdcRoleOwner == null)
+                if (_cachedPdcRoleOwner is null)
                 {
                     _cachedPdcRoleOwner = GetRoleOwner(ActiveDirectoryRole.PdcRole);
                 }
@@ -936,7 +936,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedRidRoleOwner == null)
+                if (_cachedRidRoleOwner is null)
                 {
                     _cachedRidRoleOwner = GetRoleOwner(ActiveDirectoryRole.RidRole);
                 }
@@ -949,7 +949,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedInfrastructureRoleOwner == null)
+                if (_cachedInfrastructureRoleOwner is null)
                 {
                     _cachedInfrastructureRoleOwner = GetRoleOwner(ActiveDirectoryRole.InfrastructureRole);
                 }
@@ -983,7 +983,7 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 rootDSE.Dispose();
-                if (domainEntry != null)
+                if (domainEntry is not null)
                 {
                     domainEntry.Dispose();
                 }
@@ -1061,7 +1061,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (domainEntry != null)
+                if (domainEntry is not null)
                 {
                     domainEntry.Dispose();
                 }
@@ -1108,7 +1108,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (entry != null)
+                if (entry is not null)
                 {
                     entry.Dispose();
                 }
@@ -1172,7 +1172,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (partitionsEntry != null)
+                if (partitionsEntry is not null)
                 {
                     partitionsEntry.Dispose();
                 }
@@ -1181,11 +1181,11 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private Domain GetParent()
         {
-            if (_crossRefDN == null)
+            if (_crossRefDN is null)
             {
                 LoadCrossRefAttributes();
             }
-            if (_trustParent != null)
+            if (_trustParent is not null)
             {
                 DirectoryEntry parentCrossRef = DirectoryEntryManager.GetDirectoryEntry(context, _trustParent);
                 string parentDomainName = null;
@@ -1210,7 +1210,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             ArrayList childDomains = new ArrayList();
 
-            if (_crossRefDN == null)
+            if (_crossRefDN is null)
             {
                 LoadCrossRefAttributes();
             }
@@ -1264,11 +1264,11 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
+                if (resCol is not null)
                 {
                     resCol.Dispose();
                 }
-                if (partitionsEntry != null)
+                if (partitionsEntry is not null)
                 {
                     partitionsEntry.Dispose();
                 }
@@ -1364,14 +1364,14 @@ namespace System.DirectoryServices.ActiveDirectory
                         obj.ParentIndex = unmanagedTrust.ParentIndex;
 
                         // check whether it is the case that we are only interested in the trust with target as specified
-                        if (targetDomainName != null)
+                        if (targetDomainName is not null)
                         {
                             bool sameTarget = false;
 
                             // check whether it is the same target
-                            if (obj.DnsDomainName != null && Utils.Compare(targetDomainName, obj.DnsDomainName) == 0)
+                            if (obj.DnsDomainName is not null && Utils.Compare(targetDomainName, obj.DnsDomainName) == 0)
                                 sameTarget = true;
-                            else if (obj.NetbiosDomainName != null && Utils.Compare(targetDomainName, obj.NetbiosDomainName) == 0)
+                            else if (obj.NetbiosDomainName is not null && Utils.Compare(targetDomainName, obj.NetbiosDomainName) == 0)
                                 sameTarget = true;
 
                             // we only want to need local domain and specified target domain trusts
@@ -1418,7 +1418,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             continue;
 
                         // parent domain
-                        if (localDomainParent != null && Utils.Compare(localDomainParent, tmpObject.DnsDomainName) == 0)
+                        if (localDomainParent is not null && Utils.Compare(localDomainParent, tmpObject.DnsDomainName) == 0)
                         {
                             tmpObject.TrustType = TrustType.ParentChild;
                             continue;

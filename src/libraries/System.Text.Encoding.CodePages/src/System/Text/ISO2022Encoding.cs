@@ -224,7 +224,7 @@ namespace System.Text
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             Debug.Assert(count >= 0, "[ISO2022Encoding.GetByteCount]count is negative");
-            Debug.Assert(chars != null, "[ISO2022Encoding.GetByteCount]chars is null");
+            Debug.Assert(chars is not null, "[ISO2022Encoding.GetByteCount]chars is null");
 
             // Just call GetBytes with null byte* to get count
             return GetBytes(chars, count, null, 0, baseEncoder);
@@ -234,12 +234,12 @@ namespace System.Text
                                                 byte* bytes, int byteCount, EncoderNLS? baseEncoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Debug.Assert(chars != null, "[ISO2022Encoding.GetBytes]chars is null");
+            Debug.Assert(chars is not null, "[ISO2022Encoding.GetBytes]chars is null");
             Debug.Assert(byteCount >= 0, "[ISO2022Encoding.GetBytes]byteCount is negative");
             Debug.Assert(charCount >= 0, "[ISO2022Encoding.GetBytes]charCount is negative");
 
             // Assert because we shouldn't be able to have a null encoder.
-            Debug.Assert(EncoderFallback != null, "[ISO2022Encoding.GetBytes]Attempting to use null encoder fallback");
+            Debug.Assert(EncoderFallback is not null, "[ISO2022Encoding.GetBytes]Attempting to use null encoder fallback");
 
             // Fix our encoder
             ISO2022Encoder? encoder = (ISO2022Encoder?)baseEncoder;
@@ -274,7 +274,7 @@ namespace System.Text
         public override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS? baseDecoder)
         {
             // Just assert, we're called internally so these should be safe, checked already
-            Debug.Assert(bytes != null, "[ISO2022Encoding.GetCharCount]bytes is null");
+            Debug.Assert(bytes is not null, "[ISO2022Encoding.GetCharCount]bytes is null");
             Debug.Assert(count >= 0, "[ISO2022Encoding.GetCharCount]byteCount is negative");
 
             // Just call getChars with null char* to get count
@@ -285,7 +285,7 @@ namespace System.Text
                                                 char* chars, int charCount, DecoderNLS? baseDecoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Debug.Assert(bytes != null, "[ISO2022Encoding.GetChars]bytes is null");
+            Debug.Assert(bytes is not null, "[ISO2022Encoding.GetChars]bytes is null");
             Debug.Assert(byteCount >= 0, "[ISO2022Encoding.GetChars]byteCount is negative");
             Debug.Assert(charCount >= 0, "[ISO2022Encoding.GetChars]charCount is negative");
 
@@ -363,7 +363,7 @@ namespace System.Text
             ISO2022Modes shiftInMode = ISO2022Modes.ModeASCII;      // Mode that shift in will go back to (only used by CP 50222)
 
             // Check our encoder
-            if (encoder != null)
+            if (encoder is not null)
             {
                 char charLeftOver = encoder.charLeftOver;
 
@@ -522,7 +522,7 @@ namespace System.Text
 
             // Switch back to ASCII if MustFlush or no encoder
             if (currentMode != ISO2022Modes.ModeASCII &&
-                (encoder == null || encoder.MustFlush))
+                (encoder is null || encoder.MustFlush))
             {
                 // If we're CP 50222 we may have to shift in from Katakana mode first
                 if (CodePage == 50222 && currentMode == ISO2022Modes.ModeHalfwidthKatakana)
@@ -552,7 +552,7 @@ namespace System.Text
             }
 
             // Remember our encoder state
-            if (bytes != null && encoder != null)
+            if (bytes is not null && encoder is not null)
             {
                 // This is ASCII if we had to flush
                 encoder.currentMode = currentMode;
@@ -604,7 +604,7 @@ namespace System.Text
             ISO2022Modes shiftOutMode = ISO2022Modes.ModeASCII;     // ModeKR if already stamped lead bytes
 
             // Check our encoder
-            if (encoder != null)
+            if (encoder is not null)
             {
                 // May have leftover stuff
                 char charLeftOver = encoder.charLeftOver;
@@ -686,7 +686,7 @@ namespace System.Text
 
             // Switch back to ASCII if MustFlush or no encoder
             if (currentMode != ISO2022Modes.ModeASCII &&
-                (encoder == null || encoder.MustFlush))
+                (encoder is null || encoder.MustFlush))
             {
                 // Get back to ASCII to be safe.  Only do it if it success.
                 if (buffer.AddByte(SHIFT_IN))
@@ -698,7 +698,7 @@ namespace System.Text
             }
 
             // Remember our encoder state
-            if (bytes != null && encoder != null)
+            if (bytes is not null && encoder is not null)
             {
                 // If we didn't use the encoder, then there's no chars left over
                 if (!buffer.fallbackBufferHelper.bUsedEncoder)
@@ -752,7 +752,7 @@ namespace System.Text
             ISO2022Modes currentMode = ISO2022Modes.ModeASCII;
 
             // Check our encoder
-            if (encoder != null)
+            if (encoder is not null)
             {
                 char charLeftOver = encoder.charLeftOver;
                 currentMode = encoder.currentMode;
@@ -845,7 +845,7 @@ namespace System.Text
 
             // Add ASCII shift out if we're at end of decoder
             if (currentMode != ISO2022Modes.ModeASCII &&
-                (encoder == null || encoder.MustFlush))
+                (encoder is null || encoder.MustFlush))
             {
                 // Need to add the ASCII mode marker
                 // Only turn off other mode if this works
@@ -858,7 +858,7 @@ namespace System.Text
             }
 
             // Need to remember our mode
-            if (encoder != null && bytes != null)
+            if (encoder is not null && bytes is not null)
             {
                 // This is ASCII if we had to flush
                 encoder.currentMode = currentMode;
@@ -887,7 +887,7 @@ namespace System.Text
             byte[] escapeBytes = new byte[4];
             int escapeCount = 0;
 
-            if (decoder != null)
+            if (decoder is not null)
             {
                 currentMode = decoder.currentMode;
                 shiftInMode = decoder.shiftInOutMode;
@@ -914,7 +914,7 @@ namespace System.Text
                         // Stop if no more input
                         if (!buffer.MoreData)
                         {
-                            if (decoder != null && !decoder.MustFlush)
+                            if (decoder is not null && !decoder.MustFlush)
                                 break;
                         }
                         else
@@ -1011,7 +1011,7 @@ namespace System.Text
                     else
                     {
                         // Not enough input, use decoder if possible
-                        if (decoder == null || decoder.MustFlush)
+                        if (decoder is null || decoder.MustFlush)
                         {
                             // No decoder, do fallback for this byte
                             buffer.Fallback(ch);
@@ -1019,7 +1019,7 @@ namespace System.Text
                         }
 
                         // Stick it in the decoder if we're not counting
-                        if (chars != null)
+                        if (chars is not null)
                         {
                             escapeBytes[0] = ch;
                             escapeCount = 1;
@@ -1077,7 +1077,7 @@ namespace System.Text
             }
 
             // Make sure our decoder state matches our mode, if not counting
-            if (chars != null && decoder != null)
+            if (chars is not null && decoder is not null)
             {
                 // Remember it if we don't flush
                 if (!decoder.MustFlush || escapeCount != 0)
@@ -1212,7 +1212,7 @@ namespace System.Text
             byte[] escapeBytes = new byte[4];
             int escapeCount = 0;
 
-            if (decoder != null)
+            if (decoder is not null)
             {
                 currentMode = decoder.currentMode;
 
@@ -1238,7 +1238,7 @@ namespace System.Text
                         // Stop if no more input
                         if (!buffer.MoreData)
                         {
-                            if (decoder != null && !decoder.MustFlush)
+                            if (decoder is not null && !decoder.MustFlush)
                                 break;
                         }
                         else
@@ -1333,7 +1333,7 @@ namespace System.Text
                     else
                     {
                         // Not enough input, use decoder if possible
-                        if (decoder == null || decoder.MustFlush)
+                        if (decoder is null || decoder.MustFlush)
                         {
                             // No decoder, do fallback for lonely 1st byte
                             buffer.Fallback(ch);
@@ -1341,7 +1341,7 @@ namespace System.Text
                         }
 
                         // Stick it in the decoder if we're not counting
-                        if (chars != null)
+                        if (chars is not null)
                         {
                             escapeBytes[0] = ch;
                             escapeCount = 1;
@@ -1376,7 +1376,7 @@ namespace System.Text
             }
 
             // Make sure our decoder state matches our mode, if not counting
-            if (chars != null && decoder != null)
+            if (chars is not null && decoder is not null)
             {
                 // Remember it if we don't flush
                 if (!decoder.MustFlush || escapeCount != 0)
@@ -1441,7 +1441,7 @@ namespace System.Text
                                                 char* chars, int charCount, ISO2022Decoder? decoder)
         {
             Debug.Assert(byteCount >= 0, "[ISO2022Encoding.GetCharsCP52936]count >=0");
-            Debug.Assert(bytes != null, "[ISO2022Encoding.GetCharsCP52936]bytes!=null");
+            Debug.Assert(bytes is not null, "[ISO2022Encoding.GetCharsCP52936]bytes!=null");
 
             // Get our info.
             EncodingCharBuffer buffer = new EncodingCharBuffer(this, decoder, chars, charCount, bytes, byteCount);
@@ -1451,7 +1451,7 @@ namespace System.Text
             int byteLeftOver = -1;
             bool bUsedDecoder = false;
 
-            if (decoder != null)
+            if (decoder is not null)
             {
                 currentMode = decoder.currentMode;
                 // See if we have leftover decoder buffer to use
@@ -1487,7 +1487,7 @@ namespace System.Text
                     {
                         // We don't have anything left, it'll be in decoder or a ?
                         // don't fail if we are allowing overflows
-                        if (decoder == null || decoder.MustFlush)
+                        if (decoder is null || decoder.MustFlush)
                         {
                             // We'll be a '?'
                             buffer.Fallback(ch);
@@ -1499,7 +1499,7 @@ namespace System.Text
                         // Stick it in decoder
                         decoder.ClearMustFlush();
 
-                        if (chars != null)
+                        if (chars is not null)
                         {
                             decoder.bytesLeftOverCount = 1;
                             decoder.bytesLeftOver[0] = (byte)'~';
@@ -1565,7 +1565,7 @@ namespace System.Text
                     {
                         // No bytes left
                         // don't fail if we are allowing overflows
-                        if (decoder == null || decoder.MustFlush)
+                        if (decoder is null || decoder.MustFlush)
                         {
                             // Not enough bytes, fallback lead byte
                             buffer.Fallback(ch);
@@ -1577,7 +1577,7 @@ namespace System.Text
                         decoder.ClearMustFlush();
 
                         // Stick it in decoder
-                        if (chars != null)
+                        if (chars is not null)
                         {
                             decoder.bytesLeftOverCount = 1;
                             decoder.bytesLeftOver[0] = ch;
@@ -1659,7 +1659,7 @@ namespace System.Text
             }
 
             // Need to remember our state, IF we're not counting
-            if (chars != null && decoder != null)
+            if (chars is not null && decoder is not null)
             {
                 if (!bUsedDecoder)
                 {
@@ -1803,7 +1803,7 @@ namespace System.Text
                 currentMode = ISO2022Modes.ModeASCII;
                 shiftInOutMode = ISO2022Modes.ModeASCII;
                 charLeftOver = (char)0;
-                if (m_fallbackBuffer != null)
+                if (m_fallbackBuffer is not null)
                     m_fallbackBuffer.Reset();
             }
 
@@ -1838,7 +1838,7 @@ namespace System.Text
                 bytesLeftOver = new byte[4];
                 currentMode = ISO2022Modes.ModeASCII;
                 shiftInOutMode = ISO2022Modes.ModeASCII;
-                if (m_fallbackBuffer != null)
+                if (m_fallbackBuffer is not null)
                     m_fallbackBuffer.Reset();
             }
 

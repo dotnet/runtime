@@ -115,7 +115,7 @@ namespace System
         {
             Type? type = null;
             Assembly? assembly = null;
-            if (assemblyString == null)
+            if (assemblyString is null)
             {
                 assembly = Assembly.GetExecutingAssembly(ref stackMark);
             }
@@ -135,14 +135,14 @@ namespace System
                 }
             }
 
-            if (type == null)
+            if (type is null)
             {
                 type = assembly!.GetType(typeName, throwOnError: true, ignoreCase);
             }
 
             object? o = CreateInstance(type!, bindingAttr, binder, args, culture, activationAttributes);
 
-            return o != null ? new ObjectHandle(o) : null;
+            return o is not null ? new ObjectHandle(o) : null;
         }
 
         [System.Runtime.CompilerServices.Intrinsic]

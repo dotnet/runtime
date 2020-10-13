@@ -41,7 +41,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         public static Group Synchronized(Group inner)
         {
-            if (inner == null)
+            if (inner is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.inner);
             }

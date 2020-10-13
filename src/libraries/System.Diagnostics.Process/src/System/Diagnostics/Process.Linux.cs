@@ -20,7 +20,7 @@ namespace System.Diagnostics
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
             ProcessManager.ThrowIfRemoteMachine(machineName);
-            if (processName == null)
+            if (processName is null)
             {
                 processName = string.Empty;
             }
@@ -276,7 +276,7 @@ namespace System.Diagnostics
                             buffer.CopyTo(tmp);
                             byte[]? toReturn = rentedArray;
                             buffer = rentedArray = tmp;
-                            if (toReturn != null)
+                            if (toReturn is not null)
                             {
                                 ArrayPool<byte>.Shared.Return(toReturn);
                             }
@@ -296,7 +296,7 @@ namespace System.Diagnostics
                         {
                             // Check if argv[0] has the process name.
                             string? name = GetUntruncatedNameFromArg(argRemainder.Slice(0, argEnd), prefix: stat.comm);
-                            if (name != null)
+                            if (name is not null)
                             {
                                 return name;
                             }
@@ -324,7 +324,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (rentedArray != null)
+                if (rentedArray is not null)
                 {
                     ArrayPool<byte>.Shared.Return(rentedArray);
                 }

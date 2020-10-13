@@ -90,18 +90,18 @@ namespace System.Net.Security
 
         public SecurityBuffer(byte[]? data, int offset, int size, SecurityBufferType tokentype)
         {
-            if (offset < 0 || offset > (data == null ? 0 : data.Length))
+            if (offset < 0 || offset > (data is null ? 0 : data.Length))
             {
                 NetEventSource.Fail(typeof(SecurityBuffer), $"'offset' out of range.  [{offset}]");
             }
 
-            if (size < 0 || size > (data == null ? 0 : data.Length - offset))
+            if (size < 0 || size > (data is null ? 0 : data.Length - offset))
             {
                 NetEventSource.Fail(typeof(SecurityBuffer), $"'size' out of range.  [{size}]");
             }
 
-            this.offset = data == null || offset < 0 ? 0 : Math.Min(offset, data.Length);
-            this.size = data == null || size < 0 ? 0 : Math.Min(size, data.Length - this.offset);
+            this.offset = data is null || offset < 0 ? 0 : Math.Min(offset, data.Length);
+            this.size = data is null || size < 0 ? 0 : Math.Min(size, data.Length - this.offset);
             this.type = tokentype;
             this.token = size == 0 ? null : data;
             this.unmanagedToken = null;
@@ -110,7 +110,7 @@ namespace System.Net.Security
         public SecurityBuffer(byte[]? data, SecurityBufferType tokentype)
         {
             this.offset = 0;
-            this.size = data == null ? 0 : data.Length;
+            this.size = data is null ? 0 : data.Length;
             this.type = tokentype;
             this.token = size == 0 ? null : data;
             this.unmanagedToken = null;
@@ -133,7 +133,7 @@ namespace System.Net.Security
         public SecurityBuffer(ChannelBinding binding)
         {
             this.offset = 0;
-            this.size = (binding == null ? 0 : binding.Size);
+            this.size = (binding is null ? 0 : binding.Size);
             this.type = SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS;
             this.token = null;
             this.unmanagedToken = binding;

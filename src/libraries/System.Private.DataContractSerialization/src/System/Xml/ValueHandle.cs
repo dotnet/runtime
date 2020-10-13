@@ -510,7 +510,7 @@ namespace System.Xml
                     return GetDictionaryString().Value;
                 case ValueHandleType.Base64:
                     byte[] bytes = ToByteArray();
-                    DiagnosticUtility.DebugAssert(bytes != null, "");
+                    DiagnosticUtility.DebugAssert(bytes is not null, "");
                     return Base64Encoding.GetString(bytes, 0, bytes.Length);
                 case ValueHandleType.List:
                     return XmlConverter.ToString(ToList());

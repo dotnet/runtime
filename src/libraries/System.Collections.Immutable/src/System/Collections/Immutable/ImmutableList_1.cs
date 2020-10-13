@@ -1103,13 +1103,13 @@ namespace System.Collections.Immutable
         private static bool TryCastToImmutableList(IEnumerable<T> sequence, [NotNullWhen(true)] out ImmutableList<T>? other)
         {
             other = sequence as ImmutableList<T>;
-            if (other != null)
+            if (other is not null)
             {
                 return true;
             }
 
             var builder = sequence as Builder;
-            if (builder != null)
+            if (builder is not null)
             {
                 other = builder.ToImmutable();
                 return true;
@@ -1130,7 +1130,7 @@ namespace System.Collections.Immutable
         {
             // Non-null values are fine.  Only accept nulls if T is a class or Nullable<U>.
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
-            return ((value is T) || (value == null && default(T) == null));
+            return ((value is T) || (value is null && default(T) is null));
         }
 
         /// <summary>

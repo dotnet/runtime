@@ -38,7 +38,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public static XmlQuerySequence<T> CreateOrReuse(XmlQuerySequence<T> seq)
         {
-            if (seq != null)
+            if (seq is not null)
             {
                 seq.Clear();
                 return seq;
@@ -53,7 +53,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public static XmlQuerySequence<T> CreateOrReuse(XmlQuerySequence<T> seq, T item)
         {
-            if (seq != null)
+            if (seq is not null)
             {
                 seq.Clear();
                 seq.Add(item);
@@ -429,7 +429,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public static XmlQueryItemSequence CreateOrReuse(XmlQueryItemSequence seq)
         {
-            if (seq != null)
+            if (seq is not null)
             {
                 seq.Clear();
                 return seq;
@@ -444,7 +444,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public static XmlQueryItemSequence CreateOrReuse(XmlQueryItemSequence seq, XPathItem item)
         {
-            if (seq != null)
+            if (seq is not null)
             {
                 seq.Clear();
                 seq.Add(item);
@@ -503,7 +503,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public static XmlQueryNodeSequence CreateOrReuse(XmlQueryNodeSequence seq)
         {
-            if (seq != null)
+            if (seq is not null)
             {
                 seq.Clear();
                 return seq;
@@ -518,7 +518,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public static XmlQueryNodeSequence CreateOrReuse(XmlQueryNodeSequence seq, XPathNavigator navigator)
         {
-            if (seq != null)
+            if (seq is not null)
             {
                 seq.Clear();
                 seq.Add(navigator);
@@ -599,7 +599,7 @@ namespace System.Xml.Xsl.Runtime
             int iEach, iDistinct;
             XPathNavigator[] sortArray;
 
-            if (_docOrderDistinct != null)
+            if (_docOrderDistinct is not null)
                 return _docOrderDistinct;
 
             if (Count <= 1)

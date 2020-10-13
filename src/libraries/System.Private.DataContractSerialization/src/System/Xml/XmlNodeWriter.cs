@@ -20,7 +20,7 @@ namespace System.Xml
         {
             get
             {
-                if (s_nullNodeWriter == null)
+                if (s_nullNodeWriter is null)
                     s_nullNodeWriter = new XmlNullNodeWriter();
                 return s_nullNodeWriter;
             }

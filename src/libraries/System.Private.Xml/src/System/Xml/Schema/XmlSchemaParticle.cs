@@ -27,7 +27,7 @@ namespace System.Xml.Schema
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     _minOccurs = decimal.One;
                     _flags &= ~Occurs.Min;
@@ -53,7 +53,7 @@ namespace System.Xml.Schema
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     _maxOccurs = decimal.One;
                     _flags &= ~Occurs.Max;
@@ -136,17 +136,17 @@ namespace System.Xml.Schema
         internal XmlQualifiedName GetQualifiedName()
         {
             XmlSchemaElement? elem = this as XmlSchemaElement;
-            if (elem != null)
+            if (elem is not null)
             {
                 return elem.QualifiedName;
             }
             else
             {
                 XmlSchemaAny? any = this as XmlSchemaAny;
-                if (any != null)
+                if (any is not null)
                 {
                     string? ns = any.Namespace;
-                    if (ns != null)
+                    if (ns is not null)
                     {
                         ns = ns.Trim();
                     }

@@ -55,7 +55,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 _provider = value;

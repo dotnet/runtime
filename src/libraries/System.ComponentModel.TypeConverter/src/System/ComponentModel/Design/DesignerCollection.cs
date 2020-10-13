@@ -19,7 +19,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerCollection(IDesignerHost[] designers)
         {
-            if (designers != null)
+            if (designers is not null)
             {
                 _designers = new ArrayList(designers);
             }

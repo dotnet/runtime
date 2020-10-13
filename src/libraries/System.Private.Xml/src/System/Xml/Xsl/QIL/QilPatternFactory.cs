@@ -23,7 +23,7 @@ namespace System.Xml.Xsl.Qil
 
         public QilPatternFactory(QilFactory f, bool debug)
         {
-            Debug.Assert(f != null);
+            Debug.Assert(f is not null);
             _f = f;
             _debug = debug;
         }
@@ -225,7 +225,7 @@ namespace System.Xml.Xsl.Qil
         //-----------------------------------------------
         private static void CheckLogicArg(QilNode arg)
         {
-            Debug.Assert(arg != null, "Argument shouldn't be null");
+            Debug.Assert(arg is not null, "Argument shouldn't be null");
             Debug.Assert(arg.XmlType!.TypeCode == XmlTypeCode.Boolean && arg.XmlType.IsSingleton,
                 "The operand must be boolean-typed"
             );
@@ -767,7 +767,7 @@ namespace System.Xml.Xsl.Qil
 
         public QilNode IsType(QilNode expr, XmlQueryType t)
         {
-            Debug.Assert(t != null, "Type can't be null");
+            Debug.Assert(t is not null, "Type can't be null");
             return _f.IsType(expr, t);
         }
 

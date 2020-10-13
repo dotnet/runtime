@@ -198,7 +198,7 @@ namespace System.Data
 
         internal override bool CanEnableConstraint()
         {
-            if (Table!.DataSet == null || !Table.DataSet.EnforceConstraints)
+            if (Table!.DataSet is null || !Table.DataSet.EnforceConstraints)
             {
                 return true;
             }
@@ -256,7 +256,7 @@ namespace System.Data
 
         internal void CascadeDelete(DataRow row)
         {
-            Debug.Assert(row.Table.DataSet != null);
+            Debug.Assert(row.Table.DataSet is not null);
 
             if (-1 == row._newRecord)
             {
@@ -356,7 +356,7 @@ namespace System.Data
 
         internal void CascadeRollback(DataRow row)
         {
-            Debug.Assert(row.Table.DataSet != null);
+            Debug.Assert(row.Table.DataSet is not null);
 
             Index childIndex = _childKey.GetSortIndex(row.RowState == DataRowState.Deleted ? DataViewRowState.OriginalRows : DataViewRowState.CurrentRows);
             object[] key = row.GetKeyValues(_parentKey, row.RowState == DataRowState.Modified ? DataRowVersion.Current : DataRowVersion.Default);
@@ -401,7 +401,7 @@ namespace System.Data
 
         internal void CascadeUpdate(DataRow row)
         {
-            Debug.Assert(Table?.DataSet != null && row.Table.DataSet != null);
+            Debug.Assert(Table?.DataSet is not null && row.Table.DataSet is not null);
 
             if (-1 == row._newRecord)
             {
@@ -494,7 +494,7 @@ namespace System.Data
 
         internal void CheckCanClearParentTable(DataTable table)
         {
-            Debug.Assert(Table?.DataSet != null);
+            Debug.Assert(Table?.DataSet is not null);
             if (Table.DataSet.EnforceConstraints && Table.Rows.Count > 0)
             {
                 throw ExceptionBuilder.FailedClearParentTable(table.TableName, ConstraintName, Table.TableName);
@@ -503,7 +503,7 @@ namespace System.Data
 
         internal void CheckCanRemoveParentRow(DataRow row)
         {
-            Debug.Assert(Table?.DataSet != null, "Relation " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
+            Debug.Assert(Table?.DataSet is not null, "Relation " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
             if (!Table.DataSet.EnforceConstraints)
             {
                 return;
@@ -516,7 +516,7 @@ namespace System.Data
 
         internal void CheckCascade(DataRow row, DataRowAction action)
         {
-            Debug.Assert(Table?.DataSet != null, "ForeignKeyConstraint " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
+            Debug.Assert(Table?.DataSet is not null, "ForeignKeyConstraint " + ConstraintName + " isn't part of a DataSet, so this check shouldn't be happening.");
 
             if (row._inCascade)
             {
@@ -564,7 +564,7 @@ namespace System.Data
             if ((action == DataRowAction.Change ||
                  action == DataRowAction.Add ||
                  action == DataRowAction.Rollback) &&
-                Table!.DataSet != null && Table.DataSet.EnforceConstraints &&
+                Table!.DataSet is not null && Table.DataSet.EnforceConstraints &&
                 childRow.HasKeyChanged(_childKey))
             {
                 // This branch is for cascading case verification.
@@ -575,7 +575,7 @@ namespace System.Data
                 {
                     // this is the new proposed value for the parent.
                     DataRow? parentRow = DataRelation.GetParentRow(ParentKey, ChildKey, childRow, version);
-                    if (parentRow != null && parentRow._inCascade)
+                    if (parentRow is not null && parentRow._inCascade)
                     {
                         object[] parentKeyValues = parentRow.GetKeyValues(_parentKey, action == DataRowAction.Rollback ? version : DataRowVersion.Default);
 
@@ -621,7 +621,7 @@ namespace System.Data
 
         private void NonVirtualCheckState()
         {
-            if (_DataSet == null)
+            if (_DataSet is null)
             {
                 // Make sure columns arrays are valid
                 _parentKey.CheckState();

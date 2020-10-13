@@ -9,7 +9,7 @@ namespace System.Reflection
     {
         protected SignatureHasElementType(SignatureType elementType)
         {
-            Debug.Assert(elementType != null);
+            Debug.Assert(elementType is not null);
             _elementType = elementType;
         }
 

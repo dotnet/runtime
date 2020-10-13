@@ -19,7 +19,7 @@ namespace System.Text
 
         public DecoderReplacementFallback(string replacement)
         {
-            if (replacement == null)
+            if (replacement is null)
                 throw new ArgumentNullException(nameof(replacement));
 
             // Make sure it doesn't have bad surrogate pairs

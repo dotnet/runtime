@@ -18,7 +18,7 @@ namespace System.Net
         {
             get
             {
-                if (_serviceNameCollection == null)
+                if (_serviceNameCollection is null)
                 {
                     _serviceNameCollection = new ServiceNameCollection(_serviceNames);
                 }
@@ -205,7 +205,7 @@ namespace System.Net
         // Assumes already normalized
         private bool Contains(string? newServiceName)
         {
-            if (newServiceName == null)
+            if (newServiceName is null)
             {
                 return false;
             }
@@ -268,7 +268,7 @@ namespace System.Net
         {
             string? hostname = ExtractHostname(uriPrefix, false);
 
-            if (hostname != null)
+            if (hostname is not null)
             {
                 return "HTTP/" + hostname;
             }

@@ -104,7 +104,7 @@ namespace System.DirectoryServices.ActiveDirectory
             string dnsName = null;
             IntPtr results = IntPtr.Zero;
 
-            Debug.Assert(distinguishedName != null);
+            Debug.Assert(distinguishedName is not null);
 
             // call DsCrackNamesW
             IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
@@ -131,7 +131,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         Marshal.PtrToStructure(dsNameResult.items, dsNameResultItem);
 
                         if (dsNameResultItem.status == NativeMethods.DS_NAME_ERROR_NO_SYNTACTICAL_MAPPING ||
-                            dsNameResultItem.name == null)
+                            dsNameResultItem.name is null)
                         {
                             throw new ArgumentException(SR.InvalidDNFormat, nameof(distinguishedName));
                         }
@@ -192,7 +192,7 @@ namespace System.DirectoryServices.ActiveDirectory
             string dn = null;
             IntPtr results = IntPtr.Zero;
 
-            Debug.Assert(dnsName != null);
+            Debug.Assert(dnsName is not null);
 
             // call DsCrackNamesW
             IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(DirectoryContext.ADHandle, "DsCrackNamesW");
@@ -333,7 +333,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 serversEntry.Dispose();
             }
 
-            if ((ldapPort == -1) || (dnsHostName == null))
+            if ((ldapPort == -1) || (dnsHostName is null))
             {
                 throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber, dn));
             }
@@ -393,7 +393,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 serversEntry.Dispose();
             }
 
-            if ((ldapPort == -1) || (sslPort == -1) || (dnsHostName == null))
+            if ((ldapPort == -1) || (sslPort == -1) || (dnsHostName is null))
             {
                 throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber, dn));
             }
@@ -447,7 +447,7 @@ namespace System.DirectoryServices.ActiveDirectory
         //
         internal static Component[] GetDNComponents(string distinguishedName)
         {
-            Debug.Assert(distinguishedName != null, "Utils.GetDNComponents: distinguishedName is null");
+            Debug.Assert(distinguishedName is not null, "Utils.GetDNComponents: distinguishedName is null");
 
             // First split by ','
             string[] components = Split(distinguishedName, ',');
@@ -483,7 +483,7 @@ namespace System.DirectoryServices.ActiveDirectory
         //
         internal static bool IsValidDNFormat(string distinguishedName)
         {
-            Debug.Assert(distinguishedName != null, "Utils.GetDNComponents: distinguishedName is null");
+            Debug.Assert(distinguishedName is not null, "Utils.GetDNComponents: distinguishedName is null");
 
             // First split by ','
             string[] components = Split(distinguishedName, ',');
@@ -584,7 +584,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static void GetDomainAndUsername(DirectoryContext context, out string username, out string domain)
         {
-            if ((context.UserName != null) && (context.UserName.Length > 0))
+            if ((context.UserName is not null) && (context.UserName.Length > 0))
             {
                 string tmpUsername = context.UserName;
                 int index = -1;
@@ -660,7 +660,7 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr handle;
 
             // call DsBindWithCred
-            Debug.Assert((domainControllerName != null && domainName == null) || (domainName != null && domainControllerName == null));
+            Debug.Assert((domainControllerName is not null && domainName is null) || (domainName is not null && domainControllerName is null));
             IntPtr functionPtr = UnsafeNativeMethods.GetProcAddress(libHandle, "DsBindWithCredW");
             if (functionPtr == (IntPtr)0)
             {
@@ -671,7 +671,7 @@ namespace System.DirectoryServices.ActiveDirectory
             result = bindWithCred(domainControllerName, domainName, authIdentity, out handle);
             if (result != 0)
             {
-                throw ExceptionHelper.GetExceptionFromErrorCode(result, (domainControllerName != null) ? domainControllerName : domainName);
+                throw ExceptionHelper.GetExceptionFromErrorCode(result, (domainControllerName is not null) ? domainControllerName : domainName);
             }
             return handle;
         }
@@ -695,7 +695,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal static bool CheckCapability(DirectoryEntry rootDSE, Capability capability)
         {
             bool result = false;
-            if (rootDSE != null)
+            if (rootDSE is not null)
             {
                 if (capability == Capability.ActiveDirectory)
                 {
@@ -770,7 +770,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 res = searcher.FindOne();
 
-                if (res == null)
+                if (res is null)
                 {
                     // should not happen
                     throw new ActiveDirectoryObjectNotFoundException(SR.AppNCNotFound, typeof(ActiveDirectoryPartition), partitionName);
@@ -787,7 +787,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static ActiveDirectoryTransportType GetTransportTypeFromDN(string DN)
         {
-            Debug.Assert(DN != null);
+            Debug.Assert(DN is not null);
 
             string rdn = GetRdnFromDN(DN);
             Component[] component = GetDNComponents(rdn);
@@ -826,7 +826,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             string originatingServerName = null;
 
-            if (serverObjectDN == null)
+            if (serverObjectDN is null)
             {
                 // this is the win2k case, we need to get the DSA address first
                 string siteName = (server is DomainController) ? ((DomainController)server).SiteObjectName : ((AdamInstance)server).SiteObjectName;
@@ -869,7 +869,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 try
                 {
                     srchResult = adSearcher.FindOne();
-                    if (srchResult != null)
+                    if (srchResult is not null)
                     {
                         DirectoryEntry srvEntry = srchResult.GetDirectoryEntry().Parent;
                         originatingServerName = (string)PropertyManager.GetPropertyValue(server.Context, srvEntry, PropertyManager.DnsHostName);
@@ -920,7 +920,7 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr hToken = (IntPtr)0;
 
             // default credential is specified, no need to do impersonation
-            if ((context.UserName == null) && (context.Password == null))
+            if ((context.UserName is null) && (context.Password is null))
                 return false;
 
             string userName;
@@ -1137,7 +1137,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 propertiesStillToLoad.Clear();
 
                 res = searcher.FindOne();
-                if (res != null)
+                if (res is not null)
                 {
                     foreach (string propertyNameWithRangeInfo in res.Properties.PropertyNames)
                     {
@@ -1234,7 +1234,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // msDS-NC-Replica-Locations and msDS-NC-RO-Replica-Locations (for Configuration/Schema, these attributes are
             // not populated, so we just return a list of all the servers)
             //
-            if (partitionName != null && !isDefaultNC)
+            if (partitionName is not null && !isDefaultNC)
             {
                 DistinguishedName dn = new DistinguishedName(partitionName);
                 DistinguishedName configDn = new DistinguishedName(configurationNamingContext);
@@ -1295,7 +1295,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // extract the property values
                     ArrayList replicaLocations = (ArrayList)values[PropertyManager.MsDSNCReplicaLocations.ToLowerInvariant()];
                     ArrayList roReplicaLocations = (ArrayList)values[PropertyManager.MsDSNCROReplicaLocations.ToLowerInvariant()];
-                    Debug.Assert(replicaLocations != null);
+                    Debug.Assert(replicaLocations is not null);
 
                     if (replicaLocations.Count == 0)
                     {
@@ -1339,11 +1339,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (partitionsEntry != null)
+                    if (partitionsEntry is not null)
                     {
                         partitionsEntry.Dispose();
                     }
-                    if (fsmoPartitionsEntry != null)
+                    if (fsmoPartitionsEntry is not null)
                     {
                         fsmoPartitionsEntry.Dispose();
                     }
@@ -1355,7 +1355,7 @@ namespace System.DirectoryServices.ActiveDirectory
             try
             {
                 // check whether we can narrow down our search within a specific site
-                if (siteName != null)
+                if (siteName is not null)
                 {
                     searchRootDN = "CN=Servers,CN=" + siteName + ",CN=Sites," + configurationNamingContext;
                 }
@@ -1375,7 +1375,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     if (isDefaultNC)
                     {
-                        Debug.Assert(partitionName != null);
+                        Debug.Assert(partitionName is not null);
                         Debug.Assert(!isGC);
 
                         filter2 = "(|(&(" + PropertyManager.ObjectCategory + "=nTDSDSA)(" + PropertyManager.HasMasterNCs +
@@ -1403,7 +1403,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    Debug.Assert(partitionName != null);
+                    Debug.Assert(partitionName is not null);
                     // resctrict the search to the servers that were listed in the crossRef
                     if (isGC)
                     {
@@ -1516,7 +1516,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         propertyName = propertyWithRangeInfo;
                                     }
 
-                                    if (propertyName == null)
+                                    if (propertyName is null)
                                     {
                                         // property does not exist, possiblyno values, so continue
                                         continue;
@@ -1581,7 +1581,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     finally
                     {
-                        if (resCol != null)
+                        if (resCol is not null)
                         {
                             resCol.Dispose();
                         }
@@ -1656,7 +1656,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                         propertyName = propertyWithRangeInfo2;
                                     }
 
-                                    if (propertyName == null)
+                                    if (propertyName is null)
                                     {
                                         // property does not exist, possiblyno values, so continue
                                         continue;
@@ -1704,7 +1704,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 catch (COMException e)
                 {
-                    if (e.ErrorCode == unchecked((int)0x80072030) && siteName != null)
+                    if (e.ErrorCode == unchecked((int)0x80072030) && siteName is not null)
                     {
                         // this means that the site object does not exist, so we return an empty collection
                         return dnsNames;
@@ -1717,7 +1717,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (searchRootEntry != null)
+                if (searchRootEntry is not null)
                 {
                     searchRootEntry.Dispose();
                 }
@@ -1728,7 +1728,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 string hostName = (string)serverNames[ntdsaName];
 
-                if (hostName == null)
+                if (hostName is null)
                 {
                     Debug.Fail($"ConfigurationSet::GetReplicaList - no dnsHostName information for replica {ntdsaName}");
                     if (isADAM)
@@ -1743,7 +1743,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isADAM)
                 {
-                    if (serverPorts[ntdsaName] == null)
+                    if (serverPorts[ntdsaName] is null)
                     {
                         Debug.Fail($"ConfigurationSet::GetReplicaList - no port number  information for replica {ntdsaName}");
                         throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber, ntdsaName));
@@ -1846,7 +1846,7 @@ namespace System.DirectoryServices.ActiveDirectory
             //
             // This method handles comparison of the specified strings
             // if and only if either one of the two strings or both are null.
-            if (s1 == null || s2 == null)
+            if (s1 is null || s2 is null)
             {
                 return string.Compare(s1, s2);
             }
@@ -1892,11 +1892,11 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static int Compare(string s1, int offset1, int length1, string s2, int offset2, int length2)
         {
-            if (s1 == null)
+            if (s1 is null)
             {
                 throw new ArgumentNullException(nameof(s1));
             }
-            if (s2 == null)
+            if (s2 is null)
             {
                 throw new ArgumentNullException(nameof(s2));
             }
@@ -1905,11 +1905,11 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static int Compare(string s1, int offset1, int length1, string s2, int offset2, int length2, uint compareFlags)
         {
-            if (s1 == null)
+            if (s1 is null)
             {
                 throw new ArgumentNullException(nameof(s1));
             }
-            if (s2 == null)
+            if (s2 is null)
             {
                 throw new ArgumentNullException(nameof(s2));
             }
@@ -1979,7 +1979,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static string GetNtAuthorityString()
         {
-            if (s_NTAuthorityString == null)
+            if (s_NTAuthorityString is null)
             {
                 SecurityIdentifier sidLocalSystem = new SecurityIdentifier("S-1-5-18");
                 NTAccount ntLocalSystem = (NTAccount)sidLocalSystem.Translate(typeof(NTAccount));

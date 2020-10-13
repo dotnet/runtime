@@ -218,12 +218,12 @@ namespace System.Globalization
 
         internal static unsafe int IndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (value == null)
+            if (value is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
@@ -279,12 +279,12 @@ namespace System.Globalization
 
         internal static unsafe int LastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
 
-            if (value == null)
+            if (value is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }

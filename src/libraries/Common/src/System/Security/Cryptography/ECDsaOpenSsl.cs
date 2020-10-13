@@ -77,7 +77,7 @@ namespace System.Security.Cryptography
 
             public override byte[] SignHash(byte[] hash)
             {
-                if (hash == null)
+                if (hash is null)
                     throw new ArgumentNullException(nameof(hash));
 
                 ThrowIfDisposed();
@@ -193,9 +193,9 @@ namespace System.Security.Cryptography
 
             public override bool VerifyHash(byte[] hash, byte[] signature)
             {
-                if (hash == null)
+                if (hash is null)
                     throw new ArgumentNullException(nameof(hash));
-                if (signature == null)
+                if (signature is null)
                     throw new ArgumentNullException(nameof(signature));
 
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
@@ -349,7 +349,7 @@ namespace System.Security.Cryptography
 
             private void ThrowIfDisposed()
             {
-                if (_key == null)
+                if (_key is null)
                 {
                     throw new ObjectDisposedException(
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS

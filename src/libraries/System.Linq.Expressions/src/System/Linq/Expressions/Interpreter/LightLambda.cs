@@ -75,7 +75,7 @@ namespace System.Linq.Expressions.Interpreter
                                 AddHandlerExit(catchHandler.HandlerEndIndex);
 
                                 ExceptionFilter? filter = catchHandler.Filter;
-                                if (filter != null)
+                                if (filter is not null)
                                 {
                                     _handlerEnter.Add(filter.StartIndex - 1 /* include EnterExceptionFilter instruction */, "filter");
                                     AddHandlerExit(filter.EndIndex);
@@ -366,7 +366,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 #else
             Func<LightLambda, Delegate> fastCtor = GetRunDelegateCtor(delegateType);
-            if (fastCtor != null)
+            if (fastCtor is not null)
             {
                 return fastCtor(this);
             }

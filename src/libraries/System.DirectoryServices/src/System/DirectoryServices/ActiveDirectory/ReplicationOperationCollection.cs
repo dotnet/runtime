@@ -22,7 +22,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ReplicationOperation operation)
         {
-            if (operation == null)
+            if (operation is null)
                 throw new ArgumentNullException(nameof(operation));
 
             return InnerList.Contains(operation);
@@ -30,7 +30,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ReplicationOperation operation)
         {
-            if (operation == null)
+            if (operation is null)
                 throw new ArgumentNullException(nameof(operation));
 
             return InnerList.IndexOf(operation);

@@ -71,7 +71,7 @@ namespace System.Net
             }
             finally
             {
-                if (result != null)
+                if (result is not null)
                 {
                     Interop.Winsock.FreeAddrInfoW(result);
                 }
@@ -208,11 +208,11 @@ namespace System.Net
 
         private static unsafe IPAddress[] ParseAddressInfo(Interop.Winsock.AddressInfo* addressInfoPtr, bool justAddresses, out string? hostName)
         {
-            Debug.Assert(addressInfoPtr != null);
+            Debug.Assert(addressInfoPtr is not null);
 
             // Count how many results we have.
             int addressCount = 0;
-            for (Interop.Winsock.AddressInfo* result = addressInfoPtr; result != null; result = result->ai_next)
+            for (Interop.Winsock.AddressInfo* result = addressInfoPtr; result is not null; result = result->ai_next)
             {
                 int addressLength = (int)result->ai_addrlen;
 
@@ -236,9 +236,9 @@ namespace System.Net
             var addresses = new IPAddress[addressCount];
             addressCount = 0;
             string? canonicalName = justAddresses ? "NONNULLSENTINEL" : null;
-            for (Interop.Winsock.AddressInfo* result = addressInfoPtr; result != null; result = result->ai_next)
+            for (Interop.Winsock.AddressInfo* result = addressInfoPtr; result is not null; result = result->ai_next)
             {
-                if (canonicalName == null && result->ai_canonname != null)
+                if (canonicalName is null && result->ai_canonname is not null)
                 {
                     canonicalName = Marshal.PtrToStringUni((IntPtr)result->ai_canonname);
                 }
@@ -268,11 +268,11 @@ namespace System.Net
 
         private static unsafe IPAddress[] ParseAddressInfoEx(Interop.Winsock.AddressInfoEx* addressInfoExPtr, bool justAddresses, out string? hostName)
         {
-            Debug.Assert(addressInfoExPtr != null);
+            Debug.Assert(addressInfoExPtr is not null);
 
             // First count how many address results we have.
             int addressCount = 0;
-            for (Interop.Winsock.AddressInfoEx* result = addressInfoExPtr; result != null; result = result->ai_next)
+            for (Interop.Winsock.AddressInfoEx* result = addressInfoExPtr; result is not null; result = result->ai_next)
             {
                 int addressLength = (int)result->ai_addrlen;
 
@@ -296,9 +296,9 @@ namespace System.Net
             var addresses = new IPAddress[addressCount];
             addressCount = 0;
             string? canonicalName = justAddresses ? "NONNULLSENTINEL" : null;
-            for (Interop.Winsock.AddressInfoEx* result = addressInfoExPtr; result != null; result = result->ai_next)
+            for (Interop.Winsock.AddressInfoEx* result = addressInfoExPtr; result is not null; result = result->ai_next)
             {
-                if (canonicalName == null && result->ai_canonname != IntPtr.Zero)
+                if (canonicalName is null && result->ai_canonname != IntPtr.Zero)
                 {
                     canonicalName = Marshal.PtrToStringUni(result->ai_canonname);
                 }
@@ -434,7 +434,7 @@ namespace System.Net
 
             public static void FreeContext(GetAddrInfoExContext* context)
             {
-                if (context->Result != null)
+                if (context->Result is not null)
                 {
                     Interop.Winsock.FreeAddrInfoExW(context->Result);
                 }

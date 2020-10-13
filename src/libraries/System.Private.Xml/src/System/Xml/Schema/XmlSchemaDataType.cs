@@ -25,11 +25,11 @@ namespace System.Xml.Schema
 
         public virtual object ChangeType(object value, Type targetType)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            if (targetType == null)
+            if (targetType is null)
             {
                 throw new ArgumentNullException(nameof(targetType));
             }
@@ -38,15 +38,15 @@ namespace System.Xml.Schema
 
         public virtual object ChangeType(object value, Type targetType, IXmlNamespaceResolver namespaceResolver)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            if (targetType == null)
+            if (targetType is null)
             {
                 throw new ArgumentNullException(nameof(targetType));
             }
-            if (namespaceResolver == null)
+            if (namespaceResolver is null)
             {
                 throw new ArgumentNullException(nameof(namespaceResolver));
             }

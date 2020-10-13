@@ -31,7 +31,7 @@ namespace System.Xml.Xsl.XsltOld
             string value = compiler.Input.Value;
             if (Ref.Equal(name, compiler.Atoms.Name))
             {
-                Debug.Assert(this.name == null);
+                Debug.Assert(this.name is null);
                 this.name = compiler.CreateXPathQName(value);
             }
             else if (Ref.Equal(name, compiler.Atoms.UseAttributeSets))
@@ -99,7 +99,7 @@ namespace System.Xml.Xsl.XsltOld
             Action? action;
             int i = 0;
 
-            while ((action = attributeAction.GetAction(i)) != null)
+            while ((action = attributeAction.GetAction(i)) is not null)
             {
                 AddAction(action);
                 i++;

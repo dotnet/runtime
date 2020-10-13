@@ -33,7 +33,7 @@ namespace System.Data
             _expr = null;
 
             // Note: nobody seems to pass a null expression in the codebase
-            if (expression != null)
+            if (expression is not null)
             {
                 _storageType = DataStorage.GetStorageType(type);
                 if (_storageType == StorageType.BigInteger)
@@ -44,7 +44,7 @@ namespace System.Data
                 _dataType = type;
                 _expr = parser.Parse();
                 _parsed = true;
-                if (_expr != null && table != null)
+                if (_expr is not null && table is not null)
                 {
                     Bind(table);
                 }
@@ -59,7 +59,7 @@ namespace System.Data
         {
             get
             {
-                return (_originalExpression != null ? _originalExpression : ""); // CONSIDER: return optimized expression here (if bound)
+                return (_originalExpression is not null ? _originalExpression : ""); // CONSIDER: return optimized expression here (if bound)
             }
         }
 
@@ -83,10 +83,10 @@ namespace System.Data
         {
             _table = table;
 
-            if (table == null)
+            if (table is null)
                 return;
 
-            if (_expr != null)
+            if (_expr is not null)
             {
                 Debug.Assert(_parsed, "Invalid calling order: Bind() before Parse()");
                 List<DataColumn> list = new List<DataColumn>();
@@ -100,7 +100,7 @@ namespace System.Data
 
         internal bool DependsOn(DataColumn column)
         {
-            if (_expr != null)
+            if (_expr is not null)
             {
                 return _expr.DependsOn(column);
             }
@@ -124,7 +124,7 @@ namespace System.Data
                 Bind(_table);
             }
             // Note: _expr is always non-null in the current codebase
-            if (_expr != null)
+            if (_expr is not null)
             {
                 result = _expr.Eval(row, version);
                 // if the type is a SqlType (StorageType.Uri < _storageType), convert DBNull values.
@@ -165,7 +165,7 @@ namespace System.Data
             {
                 Bind(_table);
             }
-            if (_expr != null)
+            if (_expr is not null)
             {
                 List<int> recordList = new List<int>();
                 foreach (DataRow row in rows)
@@ -187,10 +187,10 @@ namespace System.Data
 
         public bool Invoke(DataRow row, DataRowVersion version)
         {
-            if (_expr == null)
+            if (_expr is null)
                 return true;
 
-            if (row == null)
+            if (row is null)
             {
                 throw ExprException.InvokeArgument();
             }
@@ -209,13 +209,13 @@ namespace System.Data
 
         internal DataColumn[] GetDependency()
         {
-            Debug.Assert(_dependency != null, "GetDependencies: null, we should have created an empty list");
+            Debug.Assert(_dependency is not null, "GetDependencies: null, we should have created an empty list");
             return _dependency;
         }
 
         internal bool IsTableAggregate()
         {
-            if (_expr != null)
+            if (_expr is not null)
                 return _expr.IsTableConstant();
             else
                 return false;
@@ -228,7 +228,7 @@ namespace System.Data
 
         internal bool HasLocalAggregate()
         {
-            if (_expr != null)
+            if (_expr is not null)
                 return _expr.HasLocalAggregate();
             else
                 return false;
@@ -236,7 +236,7 @@ namespace System.Data
 
         internal bool HasRemoteAggregate()
         {
-            if (_expr != null)
+            if (_expr is not null)
                 return _expr.HasRemoteAggregate();
             else
                 return false;

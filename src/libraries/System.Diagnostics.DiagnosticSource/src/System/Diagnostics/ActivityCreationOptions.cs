@@ -38,7 +38,7 @@ namespace System.Diagnostics
             {
                 _context = ac;
             }
-            else if (parent is string p && p != null)
+            else if (parent is string p && p is not null)
             {
                 // We don't care about the return value. we care if _context is initialized accordingly.
                 ActivityContext.TryParse(p, null, out _context);
@@ -86,7 +86,7 @@ namespace System.Diagnostics
 #endif
             get
             {
-                if (_samplerTags == null)
+                if (_samplerTags is null)
                 {
                     // Because the struct is readonly, we cannot directly assign _samplerTags. We have to workaround it by calling Unsafe.AsRef
                     Unsafe.AsRef(in _samplerTags) = new ActivityTagsCollection();

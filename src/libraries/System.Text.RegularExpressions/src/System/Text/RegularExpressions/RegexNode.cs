@@ -339,7 +339,7 @@ namespace System.Text.RegularExpressions
                             case Setloop when node.N == int.MaxValue:
                             case Setloopatomic when node.N == int.MaxValue:
                                 RegexNode? parent = node.Next;
-                                if (parent != null && parent.Type == Concatenate)
+                                if (parent is not null && parent.Type == Concatenate)
                                 {
                                     parent.InsertChild(1, new RegexNode(UpdateBumpalong, node.Options));
                                 }
@@ -430,7 +430,7 @@ namespace System.Text.RegularExpressions
                     case Loop:
                         {
                             RegexNode? loopDescendent = FindLastExpressionInLoopForAutoAtomic(node, maxDepth - 1);
-                            if (loopDescendent != null)
+                            if (loopDescendent is not null)
                             {
                                 node = loopDescendent;
                                 continue; // loop around to process node
@@ -463,7 +463,7 @@ namespace System.Text.RegularExpressions
             }
 
             next = next.Next;
-            return next != null && next.Type == Atomic;
+            return next is not null && next.Type == Atomic;
         }
 
         /// <summary>
@@ -1341,7 +1341,7 @@ namespace System.Text.RegularExpressions
                         if (node.Type == Loop)
                         {
                             RegexNode? loopDescendent = FindLastExpressionInLoopForAutoAtomic(node, maxDepth - 1);
-                            if (loopDescendent != null)
+                            if (loopDescendent is not null)
                             {
                                 node = loopDescendent;
                                 continue;
@@ -1720,7 +1720,7 @@ namespace System.Text.RegularExpressions
 
         public void ReplaceChild(int index, RegexNode newChild)
         {
-            Debug.Assert(Children != null);
+            Debug.Assert(Children is not null);
             Debug.Assert(index < ChildCount());
 
             newChild.Next = this;

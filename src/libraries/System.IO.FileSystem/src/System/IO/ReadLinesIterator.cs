@@ -33,10 +33,10 @@ namespace System.IO
 
         private ReadLinesIterator(string path, Encoding encoding, StreamReader reader)
         {
-            Debug.Assert(path != null);
+            Debug.Assert(path is not null);
             Debug.Assert(path.Length > 0);
-            Debug.Assert(encoding != null);
-            Debug.Assert(reader != null);
+            Debug.Assert(encoding is not null);
+            Debug.Assert(reader is not null);
 
             _path = path;
             _encoding = encoding;
@@ -45,10 +45,10 @@ namespace System.IO
 
         public override bool MoveNext()
         {
-            if (this._reader != null)
+            if (this._reader is not null)
             {
                 this.current = _reader.ReadLine();
-                if (this.current != null)
+                if (this.current is not null)
                     return true;
 
                 // To maintain 4.0 behavior we Dispose
@@ -76,7 +76,7 @@ namespace System.IO
             {
                 if (disposing)
                 {
-                    if (_reader != null)
+                    if (_reader is not null)
                     {
                         _reader.Dispose();
                     }

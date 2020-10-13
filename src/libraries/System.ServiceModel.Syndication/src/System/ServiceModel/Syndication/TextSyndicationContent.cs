@@ -28,7 +28,7 @@ namespace System.ServiceModel.Syndication
 
         protected TextSyndicationContent(TextSyndicationContent source) : base(source)
         {
-            Debug.Assert(source != null, "The base constructor already checks if source is valid.");
+            Debug.Assert(source is not null, "The base constructor already checks if source is valid.");
             Text = source.Text;
             _textKind = source._textKind;
         }

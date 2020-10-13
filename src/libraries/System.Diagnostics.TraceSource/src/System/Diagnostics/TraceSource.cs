@@ -28,7 +28,7 @@ namespace System.Diagnostics
 
         public TraceSource(string name, SourceLevels defaultLevel)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(name)), nameof(name));
@@ -54,7 +54,7 @@ namespace System.Diagnostics
                     for (int i = 0; i < s_tracesources.Count; i++)
                     {
                         TraceSource? tracesource = ((TraceSource?)s_tracesources[i].Target);
-                        if (tracesource != null)
+                        if (tracesource is not null)
                         {
                             buffer.Add(s_tracesources[i]);
                         }
@@ -96,7 +96,7 @@ namespace System.Diagnostics
         public void Close()
         {
             // No need to call Initialize()
-            if (_listeners != null)
+            if (_listeners is not null)
             {
                 // Use global lock
                 lock (TraceInternal.critSec)
@@ -112,7 +112,7 @@ namespace System.Diagnostics
         public void Flush()
         {
             // No need to call Initialize()
-            if (_listeners != null)
+            if (_listeners is not null)
             {
                 if (TraceInternal.UseGlobalLock)
                 {
@@ -154,7 +154,7 @@ namespace System.Diagnostics
                 for (int i = 0; i < s_tracesources.Count; i++)
                 {
                     TraceSource? tracesource = ((TraceSource?)s_tracesources[i].Target);
-                    if (tracesource != null)
+                    if (tracesource is not null)
                     {
                         tracesource.Refresh();
                     }
@@ -176,7 +176,7 @@ namespace System.Diagnostics
         {
             Initialize();
 
-            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
+            if (_internalSwitch!.ShouldTrace(eventType) && _listeners is not null)
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -221,7 +221,7 @@ namespace System.Diagnostics
         {
             Initialize();
 
-            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
+            if (_internalSwitch!.ShouldTrace(eventType) && _listeners is not null)
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -266,7 +266,7 @@ namespace System.Diagnostics
         {
             Initialize();
 
-            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
+            if (_internalSwitch!.ShouldTrace(eventType) && _listeners is not null)
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -311,7 +311,7 @@ namespace System.Diagnostics
         {
             Initialize();
 
-            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
+            if (_internalSwitch!.ShouldTrace(eventType) && _listeners is not null)
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -356,7 +356,7 @@ namespace System.Diagnostics
         {
             Initialize();
 
-            if (_internalSwitch!.ShouldTrace(eventType) && _listeners != null)
+            if (_internalSwitch!.ShouldTrace(eventType) && _listeners is not null)
             {
                 TraceEventCache manager = new TraceEventCache();
 
@@ -418,7 +418,7 @@ namespace System.Diagnostics
 
             TraceEventCache manager = new TraceEventCache();
 
-            if (_internalSwitch!.ShouldTrace(TraceEventType.Transfer) && _listeners != null)
+            if (_internalSwitch!.ShouldTrace(TraceEventType.Transfer) && _listeners is not null)
             {
                 if (TraceInternal.UseGlobalLock)
                 {
@@ -474,7 +474,7 @@ namespace System.Diagnostics
                 // Ensure that config is loaded
                 Initialize();
 
-                if (_attributes == null)
+                if (_attributes is null)
                     _attributes = new StringDictionary();
 
                 return _attributes;
@@ -510,7 +510,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(Switch));
 
                 Initialize();

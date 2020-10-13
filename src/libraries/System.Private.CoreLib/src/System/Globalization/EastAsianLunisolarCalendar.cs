@@ -78,7 +78,7 @@ namespace System.Globalization
         internal int MinEraCalendarYear(int era)
         {
             EraInfo[]? eraInfo = CalEraInfo;
-            if (eraInfo == null)
+            if (eraInfo is null)
             {
                 return MinCalendarYear;
             }
@@ -108,7 +108,7 @@ namespace System.Globalization
         internal int MaxEraCalendarYear(int era)
         {
             EraInfo[]? eraInfo = CalEraInfo;
-            if (eraInfo == null)
+            if (eraInfo is null)
             {
                 return MaxCalendarYear;
             }

@@ -68,7 +68,7 @@ namespace System.ComponentModel.Design
             if (promote)
             {
                 IServiceContainer container = Container;
-                if (container != null)
+                if (container is not null)
                 {
                     container.AddService(serviceType, serviceInstance, promote);
                     return;
@@ -78,8 +78,8 @@ namespace System.ComponentModel.Design
             // We're going to add this locally. Ensure that the service instance
             // is correct.
             //
-            if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
-            if (serviceInstance == null) throw new ArgumentNullException(nameof(serviceInstance));
+            if (serviceType is null) throw new ArgumentNullException(nameof(serviceType));
+            if (serviceInstance is null) throw new ArgumentNullException(nameof(serviceInstance));
             if (!(serviceInstance is ServiceCreatorCallback) && !serviceInstance.GetType().IsCOMObject && !serviceType.IsInstanceOfType(serviceInstance))
             {
                 throw new ArgumentException(SR.Format(SR.ErrorInvalidServiceInstance, serviceType.FullName));
@@ -109,7 +109,7 @@ namespace System.ComponentModel.Design
             if (promote)
             {
                 IServiceContainer container = Container;
-                if (container != null)
+                if (container is not null)
                 {
                     container.AddService(serviceType, callback, promote);
                     return;
@@ -119,8 +119,8 @@ namespace System.ComponentModel.Design
             // We're going to add this locally. Ensure that the service instance
             // is correct.
             //
-            if (serviceType == null) throw new ArgumentNullException(nameof(serviceType));
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
+            if (serviceType is null) throw new ArgumentNullException(nameof(serviceType));
+            if (callback is null) throw new ArgumentNullException(nameof(callback));
 
             if (Services.ContainsKey(serviceType))
             {
@@ -149,7 +149,7 @@ namespace System.ComponentModel.Design
             {
                 ServiceCollection<object> serviceCollection = _services;
                 _services = null;
-                if (serviceCollection != null)
+                if (serviceCollection is not null)
                 {
                     foreach (object o in serviceCollection.Values)
                     {
@@ -174,14 +174,14 @@ namespace System.ComponentModel.Design
             Type[] defaults = DefaultServices;
             for (int idx = 0; idx < defaults.Length; idx++)
             {
-                if (serviceType != null && serviceType.IsEquivalentTo(defaults[idx]))
+                if (serviceType is not null && serviceType.IsEquivalentTo(defaults[idx]))
                 {
                     service = this;
                     break;
                 }
             }
 
-            if (service == null && serviceType != null)
+            if (service is null && serviceType is not null)
             {
                 Services.TryGetValue(serviceType, out service);
             }
@@ -190,7 +190,7 @@ namespace System.ComponentModel.Design
             if (service is ServiceCreatorCallback)
             {
                 service = ((ServiceCreatorCallback)service)(this, serviceType);
-                if (service != null && !service.GetType().IsCOMObject && !serviceType.IsInstanceOfType(service))
+                if (service is not null && !service.GetType().IsCOMObject && !serviceType.IsInstanceOfType(service))
                 {
                     // Callback passed us a bad service. NULL it, rather than throwing an exception.
                     // Callers here do not need to be prepared to handle bad callback implemetations.
@@ -201,7 +201,7 @@ namespace System.ComponentModel.Design
                 Services[serviceType] = service;
             }
 
-            if (service == null && _parentProvider != null)
+            if (service is null && _parentProvider is not null)
             {
                 service = _parentProvider.GetService(serviceType);
             }
@@ -225,7 +225,7 @@ namespace System.ComponentModel.Design
             if (promote)
             {
                 IServiceContainer container = Container;
-                if (container != null)
+                if (container is not null)
                 {
                     container.RemoveService(serviceType, promote);
                     return;
@@ -233,7 +233,7 @@ namespace System.ComponentModel.Design
             }
 
             // We're going to remove this from our local list.
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }

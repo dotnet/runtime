@@ -62,7 +62,7 @@ namespace System.Net
             {
                 try
                 {
-                    if (ms != null)
+                    if (ms is not null)
                     {
                         long start = ms.Position;
                         if (chunked && !_trailer_sent)
@@ -175,7 +175,7 @@ namespace System.Net
             byte[]? bytes = null;
             MemoryStream? ms = GetHeaders(false);
             bool chunked = _response.SendChunked;
-            if (ms != null)
+            if (ms is not null)
             {
                 long start = ms.Position; // After the possible preamble for the encoding
                 ms.Position = ms.Length;
@@ -219,7 +219,7 @@ namespace System.Net
             byte[]? bytes = null;
             MemoryStream? ms = GetHeaders(false);
             bool chunked = _response.SendChunked;
-            if (ms != null)
+            if (ms is not null)
             {
                 long start = ms.Position;
                 ms.Position = ms.Length;

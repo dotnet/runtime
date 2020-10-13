@@ -19,8 +19,8 @@ namespace System.Xml.Xsl.XsltOld
         {
             public int Compare(object? x, object? y)
             {
-                Debug.Assert(x != null && x is TemplateAction);
-                Debug.Assert(y != null && y is TemplateAction);
+                Debug.Assert(x is not null && x is TemplateAction);
+                Debug.Assert(y is not null && y is TemplateAction);
 
                 TemplateAction tx = (TemplateAction)x;
                 TemplateAction ty = (TemplateAction)y;
@@ -55,14 +55,14 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddTemplate(TemplateAction template)
         {
-            Debug.Assert(template != null);
+            Debug.Assert(template is not null);
             Debug.Assert(
                 ((object)_mode == (object?)template.Mode) ||
-                (template.Mode == null && _mode.Equals(XmlQualifiedName.Empty)) ||
+                (template.Mode is null && _mode.Equals(XmlQualifiedName.Empty)) ||
                 _mode.Equals(template.Mode)
             );
 
-            if (this.templates == null)
+            if (this.templates is null)
             {
                 this.templates = new ArrayList();
             }
@@ -72,7 +72,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void ProcessTemplates()
         {
-            if (this.templates != null)
+            if (this.templates is not null)
             {
                 this.templates.Sort(s_TemplateComparer);
             }
@@ -80,12 +80,12 @@ namespace System.Xml.Xsl.XsltOld
 
         internal TemplateAction? FindTemplate(Processor processor, XPathNavigator navigator)
         {
-            if (this.templates == null)
+            if (this.templates is null)
             {
                 return null;
             }
 
-            Debug.Assert(this.templates != null);
+            Debug.Assert(this.templates is not null);
             for (int templateIndex = this.templates.Count - 1; templateIndex >= 0; templateIndex--)
             {
                 TemplateAction action = (TemplateAction)this.templates[templateIndex]!;

@@ -36,13 +36,13 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The new instance of T if successful, default(T) otherwise.</returns>
         public static T Get<T>(this IConfiguration configuration, Action<BinderOptions> configureOptions)
         {
-            if (configuration == null)
+            if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
             object result = configuration.Get(typeof(T), configureOptions);
-            if (result == null)
+            if (result is null)
             {
                 return default(T);
             }
@@ -71,7 +71,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The new instance if successful, null otherwise.</returns>
         public static object Get(this IConfiguration configuration, Type type, Action<BinderOptions> configureOptions)
         {
-            if (configuration == null)
+            if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
@@ -106,12 +106,12 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="configureOptions">Configures the binder options.</param>
         public static void Bind(this IConfiguration configuration, object instance, Action<BinderOptions> configureOptions)
         {
-            if (configuration == null)
+            if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            if (instance != null)
+            if (instance is not null)
             {
                 var options = new BinderOptions();
                 configureOptions?.Invoke(options);
@@ -168,7 +168,7 @@ namespace Microsoft.Extensions.Configuration
         {
             IConfigurationSection section = configuration.GetSection(key);
             string value = section.Value;
-            if (value != null)
+            if (value is not null)
             {
                 return ConvertValue(type, value, section.Path);
             }
@@ -177,7 +177,7 @@ namespace Microsoft.Extensions.Configuration
 
         private static void BindNonScalar(this IConfiguration configuration, object instance, BinderOptions options)
         {
-            if (instance != null)
+            if (instance is not null)
             {
                 foreach (PropertyInfo property in GetAllProperties(instance.GetType().GetTypeInfo()))
                 {
@@ -189,7 +189,7 @@ namespace Microsoft.Extensions.Configuration
         private static void BindProperty(PropertyInfo property, object instance, IConfiguration config, BinderOptions options)
         {
             // We don't support set only, non public, or indexer properties
-            if (property.GetMethod == null ||
+            if (property.GetMethod is null ||
                 (!options.BindNonPublicProperties && !property.GetMethod.IsPublic) ||
                 property.GetMethod.GetParameters().Length > 0)
             {
@@ -197,9 +197,9 @@ namespace Microsoft.Extensions.Configuration
             }
 
             object propertyValue = property.GetValue(instance);
-            bool hasSetter = property.SetMethod != null && (property.SetMethod.IsPublic || options.BindNonPublicProperties);
+            bool hasSetter = property.SetMethod is not null && (property.SetMethod.IsPublic || options.BindNonPublicProperties);
 
-            if (propertyValue == null && !hasSetter)
+            if (propertyValue is null && !hasSetter)
             {
                 // Property doesn't have a value and we cannot set it so there is no
                 // point in going further down the graph
@@ -208,7 +208,7 @@ namespace Microsoft.Extensions.Configuration
 
             propertyValue = BindInstance(property.PropertyType, propertyValue, config.GetSection(property.Name), options);
 
-            if (propertyValue != null && hasSetter)
+            if (propertyValue is not null && hasSetter)
             {
                 property.SetValue(instance, propertyValue);
             }
@@ -233,14 +233,14 @@ namespace Microsoft.Extensions.Configuration
             }
 
             Type collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyList<>), type);
-            if (collectionInterface != null)
+            if (collectionInterface is not null)
             {
                 // IEnumerable<T> is guaranteed to have exactly one parameter
                 return BindToCollection(typeInfo, config, options);
             }
 
             collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyDictionary<,>), type);
-            if (collectionInterface != null)
+            if (collectionInterface is not null)
             {
                 Type dictionaryType = typeof(Dictionary<,>).MakeGenericType(typeInfo.GenericTypeArguments[0], typeInfo.GenericTypeArguments[1]);
                 object instance = Activator.CreateInstance(dictionaryType);
@@ -249,7 +249,7 @@ namespace Microsoft.Extensions.Configuration
             }
 
             collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
-            if (collectionInterface != null)
+            if (collectionInterface is not null)
             {
                 object instance = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(typeInfo.GenericTypeArguments[0], typeInfo.GenericTypeArguments[1]));
                 BindDictionary(instance, collectionInterface, config, options);
@@ -257,21 +257,21 @@ namespace Microsoft.Extensions.Configuration
             }
 
             collectionInterface = FindOpenGenericInterface(typeof(IReadOnlyCollection<>), type);
-            if (collectionInterface != null)
+            if (collectionInterface is not null)
             {
                 // IReadOnlyCollection<T> is guaranteed to have exactly one parameter
                 return BindToCollection(typeInfo, config, options);
             }
 
             collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
-            if (collectionInterface != null)
+            if (collectionInterface is not null)
             {
                 // ICollection<T> is guaranteed to have exactly one parameter
                 return BindToCollection(typeInfo, config, options);
             }
 
             collectionInterface = FindOpenGenericInterface(typeof(IEnumerable<>), type);
-            if (collectionInterface != null)
+            if (collectionInterface is not null)
             {
                 // IEnumerable<T> is guaranteed to have exactly one parameter
                 return BindToCollection(typeInfo, config, options);
@@ -292,9 +292,9 @@ namespace Microsoft.Extensions.Configuration
             string configValue = section?.Value;
             object convertedValue;
             Exception error;
-            if (configValue != null && TryConvertValue(type, configValue, section.Path, out convertedValue, out error))
+            if (configValue is not null && TryConvertValue(type, configValue, section.Path, out convertedValue, out error))
             {
-                if (error != null)
+                if (error is not null)
                 {
                     throw error;
                 }
@@ -303,14 +303,14 @@ namespace Microsoft.Extensions.Configuration
                 return convertedValue;
             }
 
-            if (config != null && config.GetChildren().Any())
+            if (config is not null && config.GetChildren().Any())
             {
                 // If we don't have an instance, try to create one
-                if (instance == null)
+                if (instance is null)
                 {
                     // We are already done if binding to a new collection instance worked
                     instance = AttemptBindToCollectionInterfaces(type, config, options);
-                    if (instance != null)
+                    if (instance is not null)
                     {
                         return instance;
                     }
@@ -320,7 +320,7 @@ namespace Microsoft.Extensions.Configuration
 
                 // See if its a Dictionary
                 Type collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
-                if (collectionInterface != null)
+                if (collectionInterface is not null)
                 {
                     BindDictionary(instance, collectionInterface, config, options);
                 }
@@ -332,7 +332,7 @@ namespace Microsoft.Extensions.Configuration
                 {
                     // See if its an ICollection
                     collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
-                    if (collectionInterface != null)
+                    if (collectionInterface is not null)
                     {
                         BindCollection(instance, collectionInterface, config, options);
                     }
@@ -408,7 +408,7 @@ namespace Microsoft.Extensions.Configuration
                     instance: null,
                     config: child,
                     options: options);
-                if (item != null)
+                if (item is not null)
                 {
                     if (keyType == typeof(string))
                     {
@@ -441,7 +441,7 @@ namespace Microsoft.Extensions.Configuration
                         instance: null,
                         config: section,
                         options: options);
-                    if (item != null)
+                    if (item is not null)
                     {
                         addMethod.Invoke(collection, new[] { item });
                     }
@@ -474,7 +474,7 @@ namespace Microsoft.Extensions.Configuration
                         instance: null,
                         config: children[i],
                         options: options);
-                    if (item != null)
+                    if (item is not null)
                     {
                         newArray.SetValue(item, arrayLength + i);
                     }
@@ -541,7 +541,7 @@ namespace Microsoft.Extensions.Configuration
             object result;
             Exception error;
             TryConvertValue(type, value, path, out result, out error);
-            if (error != null)
+            if (error is not null)
             {
                 throw error;
             }

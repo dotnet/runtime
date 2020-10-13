@@ -41,8 +41,8 @@ namespace System.Threading.Tasks
             get
             {
                 Action? c = Volatile.Read(ref _continuation);
-                Debug.Assert(c == null || c == s_completionSentinel);
-                return c != null;
+                Debug.Assert(c is null || c == s_completionSentinel);
+                return c is not null;
             }
         }
 
@@ -51,13 +51,13 @@ namespace System.Threading.Tasks
             AssertResultConsistency(expectedCompleted: true);
 
             // Clear out the continuation to prepare for another use
-            Debug.Assert(_continuation != null);
+            Debug.Assert(_continuation is not null);
             _continuation = null;
 
             // Propagate any error if there is one, clearing it out first to prepare for reuse.
             // We don't need to clear a result, as result and error are mutually exclusive.
             ExceptionDispatchInfo? error = _error;
-            if (error != null)
+            if (error is not null)
             {
                 _error = null;
                 error.Throw();
@@ -92,7 +92,7 @@ namespace System.Threading.Tasks
         /// <summary>Set the failure for the operation.</summary>
         public void SetException(Exception exception)
         {
-            Debug.Assert(exception != null);
+            Debug.Assert(exception is not null);
             AssertResultConsistency(expectedCompleted: false);
 
             _error = ExceptionDispatchInfo.Capture(exception);
@@ -103,7 +103,7 @@ namespace System.Threading.Tasks
         private void NotifyAwaiter()
         {
             Action? c = _continuation ?? Interlocked.CompareExchange(ref _continuation, s_completionSentinel, null);
-            if (c != null)
+            if (c is not null)
             {
                 Debug.Assert(c != s_completionSentinel);
 
@@ -121,10 +121,10 @@ namespace System.Threading.Tasks
         /// <summary>Register the continuation to invoke when the operation completes.</summary>
         public void OnCompleted(Action continuation)
         {
-            Debug.Assert(continuation != null);
+            Debug.Assert(continuation is not null);
 
             Action? c = _continuation ?? Interlocked.CompareExchange(ref _continuation, continuation, null);
-            if (c != null)
+            if (c is not null)
             {
                 Debug.Assert(c == s_completionSentinel);
                 Task.Run(continuation);
@@ -140,11 +140,11 @@ namespace System.Threading.Tasks
 #if DEBUG
             if (expectedCompleted)
             {
-                Debug.Assert(_resultSet ^ (_error != null));
+                Debug.Assert(_resultSet ^ (_error is not null));
             }
             else
             {
-                Debug.Assert(!_resultSet && _error == null);
+                Debug.Assert(!_resultSet && _error is null);
             }
 #endif
         }

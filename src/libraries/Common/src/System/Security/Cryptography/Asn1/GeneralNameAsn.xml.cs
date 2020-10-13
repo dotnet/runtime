@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Asn1
                 wroteValue = true;
             }
 
-            if (Rfc822Name != null)
+            if (Rfc822Name is not null)
             {
                 if (wroteValue)
                     throw new CryptographicException();
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Asn1
                 wroteValue = true;
             }
 
-            if (DnsName != null)
+            if (DnsName is not null)
             {
                 if (wroteValue)
                     throw new CryptographicException();
@@ -130,7 +130,7 @@ namespace System.Security.Cryptography.Asn1
                 wroteValue = true;
             }
 
-            if (Uri != null)
+            if (Uri is not null)
             {
                 if (wroteValue)
                     throw new CryptographicException();
@@ -148,7 +148,7 @@ namespace System.Security.Cryptography.Asn1
                 wroteValue = true;
             }
 
-            if (RegisteredId != null)
+            if (RegisteredId is not null)
             {
                 if (wroteValue)
                     throw new CryptographicException();

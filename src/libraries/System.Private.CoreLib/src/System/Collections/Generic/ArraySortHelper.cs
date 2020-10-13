@@ -52,7 +52,7 @@ namespace System.Collections.Generic
 
         internal static void Sort(Span<T> keys, Comparison<T> comparer)
         {
-            Debug.Assert(comparer != null, "Check the arguments in the caller!");
+            Debug.Assert(comparer is not null, "Check the arguments in the caller!");
 
             // Add a try block here to detect bogus comparisons
             try
@@ -71,7 +71,7 @@ namespace System.Collections.Generic
 
         internal static int InternalBinarySearch(T[] array, int index, int length, T value, IComparer<T> comparer)
         {
-            Debug.Assert(array != null, "Check the arguments in the caller!");
+            Debug.Assert(array is not null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
 
             int lo = index;
@@ -119,7 +119,7 @@ namespace System.Collections.Generic
 
         internal static void IntrospectiveSort(Span<T> keys, Comparison<T> comparer)
         {
-            Debug.Assert(comparer != null);
+            Debug.Assert(comparer is not null);
 
             if (keys.Length > 1)
             {
@@ -131,7 +131,7 @@ namespace System.Collections.Generic
         {
             Debug.Assert(!keys.IsEmpty);
             Debug.Assert(depthLimit >= 0);
-            Debug.Assert(comparer != null);
+            Debug.Assert(comparer is not null);
 
             int partitionSize = keys.Length;
             while (partitionSize > 1)
@@ -175,7 +175,7 @@ namespace System.Collections.Generic
         private static int PickPivotAndPartition(Span<T> keys, Comparison<T> comparer)
         {
             Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
-            Debug.Assert(comparer != null);
+            Debug.Assert(comparer is not null);
 
             int hi = keys.Length - 1;
 
@@ -212,7 +212,7 @@ namespace System.Collections.Generic
 
         private static void HeapSort(Span<T> keys, Comparison<T> comparer)
         {
-            Debug.Assert(comparer != null);
+            Debug.Assert(comparer is not null);
             Debug.Assert(!keys.IsEmpty);
 
             int n = keys.Length;
@@ -230,7 +230,7 @@ namespace System.Collections.Generic
 
         private static void DownHeap(Span<T> keys, int i, int n, int lo, Comparison<T> comparer)
         {
-            Debug.Assert(comparer != null);
+            Debug.Assert(comparer is not null);
             Debug.Assert(lo >= 0);
             Debug.Assert(lo < keys.Length);
 
@@ -282,7 +282,7 @@ namespace System.Collections.Generic
         {
             try
             {
-                if (comparer == null || comparer == Comparer<T>.Default)
+                if (comparer is null || comparer == Comparer<T>.Default)
                 {
                     if (keys.Length > 1)
                     {
@@ -321,12 +321,12 @@ namespace System.Collections.Generic
 
         public int BinarySearch(T[] array, int index, int length, T value, IComparer<T>? comparer)
         {
-            Debug.Assert(array != null, "Check the arguments in the caller!");
+            Debug.Assert(array is not null, "Check the arguments in the caller!");
             Debug.Assert(index >= 0 && length >= 0 && (array.Length - index >= length), "Check the arguments in the caller!");
 
             try
             {
-                if (comparer == null || comparer == Comparer<T>.Default)
+                if (comparer is null || comparer == Comparer<T>.Default)
                 {
                     return BinarySearch(array, index, length, value);
                 }
@@ -355,9 +355,9 @@ namespace System.Collections.Generic
             {
                 int i = lo + ((hi - lo) >> 1);
                 int order;
-                if (array[i] == null)
+                if (array[i] is null)
                 {
-                    order = (value == null) ? 0 : -1;
+                    order = (value is null) ? 0 : -1;
                 }
                 else
                 {
@@ -386,7 +386,7 @@ namespace System.Collections.Generic
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void SwapIfGreater(ref T i, ref T j)
         {
-            if (i != null && GreaterThan(ref i, ref j))
+            if (i is not null && GreaterThan(ref i, ref j))
             {
                 Swap(ref i, ref j);
             }
@@ -471,7 +471,7 @@ namespace System.Collections.Generic
             ref T leftRef = ref zeroRef, rightRef = ref nextToLastRef;
             while (Unsafe.IsAddressLessThan(ref leftRef, ref rightRef))
             {
-                if (pivot == null)
+                if (pivot is null)
                 {
                     while (Unsafe.IsAddressLessThan(ref leftRef, ref nextToLastRef) && (leftRef = ref Unsafe.Add(ref leftRef, 1)) == null) ;
                     while (Unsafe.IsAddressGreaterThan(ref rightRef, ref zeroRef) && (rightRef = ref Unsafe.Add(ref rightRef, -1)) != null) ;
@@ -524,12 +524,12 @@ namespace System.Collections.Generic
             while (i <= n >> 1)
             {
                 int child = 2 * i;
-                if (child < n && (keys[lo + child - 1] == null || LessThan(ref keys[lo + child - 1], ref keys[lo + child])))
+                if (child < n && (keys[lo + child - 1] is null || LessThan(ref keys[lo + child - 1], ref keys[lo + child])))
                 {
                     child++;
                 }
 
-                if (keys[lo + child - 1] == null || !LessThan(ref d, ref keys[lo + child - 1]))
+                if (keys[lo + child - 1] is null || !LessThan(ref d, ref keys[lo + child - 1]))
                     break;
 
                 keys[lo + i - 1] = keys[lo + child - 1];
@@ -546,7 +546,7 @@ namespace System.Collections.Generic
                 T t = Unsafe.Add(ref MemoryMarshal.GetReference(keys), i + 1);
 
                 int j = i;
-                while (j >= 0 && (t == null || LessThan(ref t, ref Unsafe.Add(ref MemoryMarshal.GetReference(keys), j))))
+                while (j >= 0 && (t is null || LessThan(ref t, ref Unsafe.Add(ref MemoryMarshal.GetReference(keys), j))))
                 {
                     Unsafe.Add(ref MemoryMarshal.GetReference(keys), j + 1) = Unsafe.Add(ref MemoryMarshal.GetReference(keys), j);
                     j--;
@@ -630,7 +630,7 @@ namespace System.Collections.Generic
 
         private static void SwapIfGreaterWithValues(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer, int i, int j)
         {
-            Debug.Assert(comparer != null);
+            Debug.Assert(comparer is not null);
             Debug.Assert(0 <= i && i < keys.Length && i < values.Length);
             Debug.Assert(0 <= j && j < keys.Length && j < values.Length);
             Debug.Assert(i != j);
@@ -663,7 +663,7 @@ namespace System.Collections.Generic
 
         internal static void IntrospectiveSort(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
         {
-            Debug.Assert(comparer != null);
+            Debug.Assert(comparer is not null);
             Debug.Assert(keys.Length == values.Length);
 
             if (keys.Length > 1)
@@ -677,7 +677,7 @@ namespace System.Collections.Generic
             Debug.Assert(!keys.IsEmpty);
             Debug.Assert(values.Length == keys.Length);
             Debug.Assert(depthLimit >= 0);
-            Debug.Assert(comparer != null);
+            Debug.Assert(comparer is not null);
 
             int partitionSize = keys.Length;
             while (partitionSize > 1)
@@ -721,7 +721,7 @@ namespace System.Collections.Generic
         private static int PickPivotAndPartition(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
         {
             Debug.Assert(keys.Length >= Array.IntrosortSizeThreshold);
-            Debug.Assert(comparer != null);
+            Debug.Assert(comparer is not null);
 
             int hi = keys.Length - 1;
 
@@ -758,7 +758,7 @@ namespace System.Collections.Generic
 
         private static void HeapSort(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
         {
-            Debug.Assert(comparer != null);
+            Debug.Assert(comparer is not null);
             Debug.Assert(!keys.IsEmpty);
 
             int n = keys.Length;
@@ -776,7 +776,7 @@ namespace System.Collections.Generic
 
         private static void DownHeap(Span<TKey> keys, Span<TValue> values, int i, int n, int lo, IComparer<TKey> comparer)
         {
-            Debug.Assert(comparer != null);
+            Debug.Assert(comparer is not null);
             Debug.Assert(lo >= 0);
             Debug.Assert(lo < keys.Length);
 
@@ -805,7 +805,7 @@ namespace System.Collections.Generic
 
         private static void InsertionSort(Span<TKey> keys, Span<TValue> values, IComparer<TKey> comparer)
         {
-            Debug.Assert(comparer != null);
+            Debug.Assert(comparer is not null);
 
             for (int i = 0; i < keys.Length - 1; i++)
             {
@@ -835,7 +835,7 @@ namespace System.Collections.Generic
             // underlying IComparables, etc) that are bogus.
             try
             {
-                if (comparer == null || comparer == Comparer<TKey>.Default)
+                if (comparer is null || comparer == Comparer<TKey>.Default)
                 {
                     if (keys.Length > 1)
                     {
@@ -878,7 +878,7 @@ namespace System.Collections.Generic
             Debug.Assert(i != j);
 
             ref TKey keyRef = ref keys[i];
-            if (keyRef != null && GreaterThan(ref keyRef, ref keys[j]))
+            if (keyRef is not null && GreaterThan(ref keyRef, ref keys[j]))
             {
                 TKey key = keyRef;
                 keys[i] = keys[j];
@@ -969,10 +969,10 @@ namespace System.Collections.Generic
 
             while (left < right)
             {
-                if (pivot == null)
+                if (pivot is null)
                 {
-                    while (left < (hi - 1) && keys[++left] == null) ;
-                    while (right > 0 && keys[--right] != null) ;
+                    while (left < (hi - 1) && keys[++left] is null) ;
+                    while (right > 0 && keys[--right] is not null) ;
                 }
                 else
                 {
@@ -1022,12 +1022,12 @@ namespace System.Collections.Generic
             while (i <= n >> 1)
             {
                 int child = 2 * i;
-                if (child < n && (keys[lo + child - 1] == null || LessThan(ref keys[lo + child - 1], ref keys[lo + child])))
+                if (child < n && (keys[lo + child - 1] is null || LessThan(ref keys[lo + child - 1], ref keys[lo + child])))
                 {
                     child++;
                 }
 
-                if (keys[lo + child - 1] == null || !LessThan(ref d, ref keys[lo + child - 1]))
+                if (keys[lo + child - 1] is null || !LessThan(ref d, ref keys[lo + child - 1]))
                     break;
 
                 keys[lo + i - 1] = keys[lo + child - 1];
@@ -1047,7 +1047,7 @@ namespace System.Collections.Generic
                 TValue tValue = values[i + 1];
 
                 int j = i;
-                while (j >= 0 && (t == null || LessThan(ref t, ref keys[j])))
+                while (j >= 0 && (t is null || LessThan(ref t, ref keys[j])))
                 {
                     keys[j + 1] = keys[j];
                     values[j + 1] = values[j];

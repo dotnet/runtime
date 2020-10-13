@@ -22,7 +22,7 @@ namespace System.Xml
         {
             if (!IsValidXmlVersion(version))
                 throw new ArgumentException(SR.Xdom_Version);
-            if ((standalone != null) && (standalone.Length > 0))
+            if ((standalone is not null) && (standalone.Length > 0))
                 if ((standalone != YES) && (standalone != NO))
                     throw new ArgumentException(SR.Format(SR.Xdom_standalone, standalone));
             this.Encoding = encoding;
@@ -46,7 +46,7 @@ namespace System.Xml
         {
             get { return _encoding; }
             [MemberNotNull(nameof(_encoding))]
-            set { _encoding = ((value == null) ? string.Empty : value); }
+            set { _encoding = ((value is null) ? string.Empty : value); }
         }
 
         // Specifies the value of the standalone attribute.
@@ -57,7 +57,7 @@ namespace System.Xml
             [MemberNotNull(nameof(_standalone))]
             set
             {
-                if (value == null)
+                if (value is null)
                     _standalone = string.Empty;
                 else if (value.Length == 0 || value == YES || value == NO)
                     _standalone = value;
@@ -112,13 +112,13 @@ namespace System.Xml
 
                 try
                 {
-                    if (tempVersion != null && !IsValidXmlVersion(tempVersion))
+                    if (tempVersion is not null && !IsValidXmlVersion(tempVersion))
                         throw new ArgumentException(SR.Xdom_Version);
                     Version = tempVersion!;
 
-                    if (tempEncoding != null)
+                    if (tempEncoding is not null)
                         Encoding = tempEncoding;
-                    if (tempStandalone != null)
+                    if (tempStandalone is not null)
                         Standalone = tempStandalone;
                 }
                 catch
@@ -157,7 +157,7 @@ namespace System.Xml
         // Creates a duplicate of this node.
         public override XmlNode CloneNode(bool deep)
         {
-            Debug.Assert(OwnerDocument != null);
+            Debug.Assert(OwnerDocument is not null);
             return OwnerDocument.CreateXmlDeclaration(Version, Encoding, Standalone);
         }
 

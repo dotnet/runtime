@@ -145,7 +145,7 @@ namespace System.Net
 
         private static bool IsPredefinedScheme(string scheme)
         {
-            if (scheme == null || scheme.Length < 3)
+            if (scheme is null || scheme.Length < 3)
                 return false;
 
             char c = scheme[0];
@@ -172,7 +172,7 @@ namespace System.Net
         internal void FinishInitialization()
         {
             string host = UserHostName;
-            if (_version > HttpVersion.Version10 && (host == null || host.Length == 0))
+            if (_version > HttpVersion.Version10 && (host is null || host.Length == 0))
             {
                 _context.ErrorMessage = "Invalid host name";
                 return;
@@ -180,16 +180,16 @@ namespace System.Net
 
             string path;
             Uri? raw_uri = null;
-            Debug.Assert(_rawUrl != null);
+            Debug.Assert(_rawUrl is not null);
             if (MaybeUri(_rawUrl!.ToLowerInvariant()) && Uri.TryCreate(_rawUrl, UriKind.Absolute, out raw_uri))
                 path = raw_uri.PathAndQuery;
             else
                 path = _rawUrl;
 
-            if ((host == null || host.Length == 0))
+            if ((host is null || host.Length == 0))
                 host = UserHostAddress;
 
-            if (raw_uri != null)
+            if (raw_uri is not null)
                 host = raw_uri.Host;
 
             int colon = host.IndexOf(':');
@@ -210,9 +210,9 @@ namespace System.Net
             if (_version >= HttpVersion.Version11)
             {
                 string? t_encoding = Headers[HttpKnownHeaderNames.TransferEncoding];
-                _isChunked = (t_encoding != null && string.Equals(t_encoding, "chunked", StringComparison.OrdinalIgnoreCase));
+                _isChunked = (t_encoding is not null && string.Equals(t_encoding, "chunked", StringComparison.OrdinalIgnoreCase));
                 // 'identity' is not valid!
-                if (t_encoding != null && !_isChunked)
+                if (t_encoding is not null && !_isChunked)
                 {
                     _context.Connection.SendError(null, 501);
                     return;
@@ -279,14 +279,14 @@ namespace System.Net
             }
             else if (name.Equals("transfer-encoding", StringComparison.OrdinalIgnoreCase))
             {
-                if (Headers[HttpKnownHeaderNames.TransferEncoding] != null)
+                if (Headers[HttpKnownHeaderNames.TransferEncoding] is not null)
                 {
                     _context.ErrorStatus = (int)HttpStatusCode.NotImplemented;
                     _context.ErrorMessage = HttpStatusDescription.Get(HttpStatusCode.NotImplemented);
                 }
             }
 
-            if (_context.ErrorMessage == null)
+            if (_context.ErrorMessage is null)
             {
                 _headers.Set(name, val);
             }
@@ -330,10 +330,10 @@ namespace System.Net
         private int GetClientCertificateErrorCore()
         {
             HttpConnection cnc = _context.Connection;
-            if (cnc.ClientCertificate == null)
+            if (cnc.ClientCertificate is null)
                 return 0;
             int[]? errors = cnc.ClientCertificateErrors;
-            if (errors != null && errors.Length > 0)
+            if (errors is not null && errors.Length > 0)
                 return errors[0];
             return 0;
         }
@@ -359,7 +359,7 @@ namespace System.Net
         {
             get
             {
-                if (_inputStream == null)
+                if (_inputStream is null)
                 {
                     if (_isChunked || _contentLength > 0)
                         _inputStream = _context.Connection.GetRequestStream(_isChunked, _contentLength);
@@ -397,11 +397,11 @@ namespace System.Net
 
         public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult)
         {
-            if (asyncResult == null)
+            if (asyncResult is null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
             GetClientCertificateAsyncResult? clientCertAsyncResult = asyncResult as GetClientCertificateAsyncResult;
-            if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
+            if (clientCertAsyncResult is null || clientCertAsyncResult.AsyncObject != this)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }

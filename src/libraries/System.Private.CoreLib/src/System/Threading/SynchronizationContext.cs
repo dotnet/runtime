@@ -44,7 +44,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         protected static int WaitHelper(IntPtr[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
-            if (waitHandles == null)
+            if (waitHandles is null)
             {
                 throw new ArgumentNullException(nameof(waitHandles));
             }

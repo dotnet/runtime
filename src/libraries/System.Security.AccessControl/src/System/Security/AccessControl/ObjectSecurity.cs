@@ -74,7 +74,7 @@ namespace System.Security.AccessControl
         protected ObjectSecurity(CommonSecurityDescriptor securityDescriptor)
             : this()
         {
-            if (securityDescriptor == null)
+            if (securityDescriptor is null)
             {
                 throw new ArgumentNullException(nameof(securityDescriptor));
             }
@@ -88,7 +88,7 @@ namespace System.Security.AccessControl
 
         private void UpdateWithNewSecurityDescriptor(RawSecurityDescriptor newOne, AccessControlSections includeSections)
         {
-            Debug.Assert(newOne != null, "Must not supply a null parameter here");
+            Debug.Assert(newOne is not null, "Must not supply a null parameter here");
 
             if ((includeSections & AccessControlSections.Owner) != 0)
             {
@@ -105,7 +105,7 @@ namespace System.Security.AccessControl
             if ((includeSections & AccessControlSections.Audit) != 0)
             {
                 _saclModified = true;
-                if (newOne!.SystemAcl != null)
+                if (newOne!.SystemAcl is not null)
                 {
                     _securityDescriptor.SystemAcl = new SystemAcl(IsContainer, IsDS, newOne.SystemAcl, true);
                 }
@@ -120,7 +120,7 @@ namespace System.Security.AccessControl
             if ((includeSections & AccessControlSections.Access) != 0)
             {
                 _daclModified = true;
-                if (newOne!.DiscretionaryAcl != null)
+                if (newOne!.DiscretionaryAcl is not null)
                 {
                     _securityDescriptor.DiscretionaryAcl = new DiscretionaryAcl(IsContainer, IsDS, newOne.DiscretionaryAcl, true);
                 }
@@ -308,7 +308,7 @@ namespace System.Security.AccessControl
             catch
             {
                 // protection against exception filter-based luring attacks
-                if (ownerPrivilege != null)
+                if (ownerPrivilege is not null)
                 {
                     ownerPrivilege.Revert();
                 }
@@ -316,7 +316,7 @@ namespace System.Security.AccessControl
             }
             finally
             {
-                if (ownerPrivilege != null)
+                if (ownerPrivilege is not null)
                 {
                     ownerPrivilege.Revert();
                 }
@@ -348,7 +348,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                if (_securityDescriptor.Owner == null)
+                if (_securityDescriptor.Owner is null)
                 {
                     return null;
                 }
@@ -363,7 +363,7 @@ namespace System.Security.AccessControl
 
         public void SetOwner(IdentityReference identity)
         {
-            if (identity == null)
+            if (identity is null)
             {
                 throw new ArgumentNullException(nameof(identity));
             }
@@ -391,7 +391,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                if (_securityDescriptor.Group == null)
+                if (_securityDescriptor.Group is null)
                 {
                     return null;
                 }
@@ -406,7 +406,7 @@ namespace System.Security.AccessControl
 
         public void SetGroup(IdentityReference identity)
         {
-            if (identity == null)
+            if (identity is null)
             {
                 throw new ArgumentNullException(nameof(identity));
             }
@@ -426,7 +426,7 @@ namespace System.Security.AccessControl
 
         public virtual void PurgeAccessRules(IdentityReference identity)
         {
-            if (identity == null)
+            if (identity is null)
             {
                 throw new ArgumentNullException(nameof(identity));
             }
@@ -446,7 +446,7 @@ namespace System.Security.AccessControl
 
         public virtual void PurgeAuditRules(IdentityReference identity)
         {
-            if (identity == null)
+            if (identity is null)
             {
                 throw new ArgumentNullException(nameof(identity));
             }
@@ -588,7 +588,7 @@ namespace System.Security.AccessControl
 
         public void SetSecurityDescriptorSddlForm(string sddlForm, AccessControlSections includeSections)
         {
-            if (sddlForm == null)
+            if (sddlForm is null)
             {
                 throw new ArgumentNullException(nameof(sddlForm));
             }
@@ -637,7 +637,7 @@ namespace System.Security.AccessControl
 
         public void SetSecurityDescriptorBinaryForm(byte[] binaryForm, AccessControlSections includeSections)
         {
-            if (binaryForm == null)
+            if (binaryForm is null)
             {
                 throw new ArgumentNullException(nameof(binaryForm));
             }
@@ -670,7 +670,7 @@ namespace System.Security.AccessControl
 
         public virtual bool ModifyAccessRule(AccessControlModification modification, AccessRule rule, out bool modified)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -696,7 +696,7 @@ namespace System.Security.AccessControl
 
         public virtual bool ModifyAuditRule(AccessControlModification modification, AuditRule rule, out bool modified)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }

@@ -170,11 +170,11 @@ namespace System
             {
                 syntax._flags &= ~UriSyntaxFlags.V1_UnknownUri;
                 UriParser? oldSyntax = (UriParser?)s_table[lwrCaseSchemeName];
-                if (oldSyntax != null)
+                if (oldSyntax is not null)
                     throw new InvalidOperationException(SR.Format(SR.net_uri_AlreadyRegistered, oldSyntax.SchemeName));
 
                 oldSyntax = (UriParser?)s_tempTable[syntax.SchemeName];
-                if (oldSyntax != null)
+                if (oldSyntax is not null)
                 {
                     // optimization on schemeName, will try to keep the first reference
                     lwrCaseSchemeName = oldSyntax._scheme;
@@ -196,12 +196,12 @@ namespace System
         {
             // check may be other thread just added one
             UriParser? syntax = (UriParser?)s_table[lwrCaseScheme];
-            if (syntax != null)
+            if (syntax is not null)
             {
                 return syntax;
             }
             syntax = (UriParser?)s_tempTable[lwrCaseScheme];
-            if (syntax != null)
+            if (syntax is not null)
             {
                 return syntax;
             }

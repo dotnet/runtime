@@ -46,7 +46,7 @@ namespace System.Net.Http
         [NonEvent]
         public void RequestStart(HttpRequestMessage request)
         {
-            Debug.Assert(request.RequestUri != null);
+            Debug.Assert(request.RequestUri is not null);
 
             RequestStart(
                 request.RequestUri.Scheme,
@@ -255,9 +255,9 @@ namespace System.Net.Http
         {
             if (IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
-                if (arg4 == null) arg4 = "";
+                if (arg1 is null) arg1 = "";
+                if (arg2 is null) arg2 = "";
+                if (arg4 is null) arg4 = "";
 
                 fixed (char* arg1Ptr = arg1)
                 fixed (char* arg2Ptr = arg2)

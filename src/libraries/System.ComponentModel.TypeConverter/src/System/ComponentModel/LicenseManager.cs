@@ -37,11 +37,11 @@ namespace System.ComponentModel
         {
             get
             {
-                if (s_context == null)
+                if (s_context is null)
                 {
                     lock (s_internalSyncObject)
                     {
-                        if (s_context == null)
+                        if (s_context is null)
                         {
                             s_context = new RuntimeLicenseContext();
                         }
@@ -53,7 +53,7 @@ namespace System.ComponentModel
             {
                 lock (s_internalSyncObject)
                 {
-                    if (s_contextLockHolder != null)
+                    if (s_contextLockHolder is not null)
                     {
                         throw new InvalidOperationException(SR.LicMgrContextCannotBeChanged);
                     }
@@ -71,7 +71,7 @@ namespace System.ComponentModel
         {
             get
             {
-                if (s_context != null)
+                if (s_context is not null)
                 {
                     return s_context.UsageMode;
                 }
@@ -86,7 +86,7 @@ namespace System.ComponentModel
         /// </summary>
         private static void CacheProvider(Type type, LicenseProvider provider)
         {
-            if (s_providers == null)
+            if (s_providers is null)
             {
                 Interlocked.CompareExchange(ref s_providers, new Hashtable(), null);
             }
@@ -96,9 +96,9 @@ namespace System.ComponentModel
                 s_providers[type] = provider;
             }
 
-            if (provider != null)
+            if (provider is not null)
             {
-                if (s_providerInstances == null)
+                if (s_providerInstances is null)
                 {
                     Interlocked.CompareExchange(ref s_providerInstances, new Hashtable(), null);
                 }
@@ -166,7 +166,7 @@ namespace System.ComponentModel
         /// </summary>
         private static bool GetCachedNoLicenseProvider(Type type)
         {
-            if (s_providers != null)
+            if (s_providers is not null)
             {
                 return s_providers.ContainsKey(type);
             }
@@ -190,7 +190,7 @@ namespace System.ComponentModel
         /// </summary>
         private static LicenseProvider GetCachedProviderInstance(Type providerType)
         {
-            Debug.Assert(providerType != null, "Type cannot ever be null");
+            Debug.Assert(providerType is not null, "Type cannot ever be null");
             return (LicenseProvider)s_providerInstances?[providerType];
         }
 
@@ -199,9 +199,9 @@ namespace System.ComponentModel
         /// </summary>
         public static bool IsLicensed(Type type)
         {
-            Debug.Assert(type != null, "IsValid Type cannot ever be null");
+            Debug.Assert(type is not null, "IsValid Type cannot ever be null");
             bool value = ValidateInternal(type, null, false, out License license);
-            if (license != null)
+            if (license is not null)
             {
                 license.Dispose();
                 license = null;
@@ -214,9 +214,9 @@ namespace System.ComponentModel
         /// </summary>
         public static bool IsValid(Type type)
         {
-            Debug.Assert(type != null, "IsValid Type cannot ever be null");
+            Debug.Assert(type is not null, "IsValid Type cannot ever be null");
             bool value = ValidateInternal(type, null, false, out License license);
-            if (license != null)
+            if (license is not null)
             {
                 license.Dispose();
                 license = null;
@@ -237,7 +237,7 @@ namespace System.ComponentModel
         {
             lock (s_internalSyncObject)
             {
-                if (s_contextLockHolder != null)
+                if (s_contextLockHolder is not null)
                 {
                     throw new InvalidOperationException(SR.LicMgrAlreadyLocked);
                 }
@@ -279,12 +279,12 @@ namespace System.ComponentModel
         private static bool ValidateInternalRecursive(LicenseContext context, Type type, object instance, bool allowExceptions, out License license, out string licenseKey)
         {
             LicenseProvider provider = GetCachedProvider(type);
-            if (provider == null && !GetCachedNoLicenseProvider(type))
+            if (provider is null && !GetCachedNoLicenseProvider(type))
             {
                 // NOTE : Must look directly at the class, we want no inheritance.
                 LicenseProviderAttribute attr = (LicenseProviderAttribute)Attribute.GetCustomAttribute(type, typeof(LicenseProviderAttribute), false);
 
-                if (attr != null)
+                if (attr is not null)
                 {
                     Type providerType = attr.LicenseProvider;
                     provider = GetCachedProviderInstance(providerType) ?? (LicenseProvider)Activator.CreateInstance(providerType);
@@ -297,10 +297,10 @@ namespace System.ComponentModel
             bool isValid = true;
 
             licenseKey = null;
-            if (provider != null)
+            if (provider is not null)
             {
                 license = provider.GetLicense(context, type, instance, allowExceptions);
-                if (license == null)
+                if (license is null)
                 {
                     isValid = false;
                 }
@@ -315,19 +315,19 @@ namespace System.ComponentModel
             // When looking only at a type, we need to recurse up the inheritence
             // chain, however, we can't give out the license, since this may be
             // from more than one provider.
-            if (isValid && instance == null)
+            if (isValid && instance is null)
             {
                 Type baseType = type.BaseType;
-                if (baseType != typeof(object) && baseType != null)
+                if (baseType != typeof(object) && baseType is not null)
                 {
-                    if (license != null)
+                    if (license is not null)
                     {
                         license.Dispose();
                         license = null;
                     }
                     string temp;
                     isValid = ValidateInternalRecursive(context, baseType, null, allowExceptions, out license, out temp);
-                    if (license != null)
+                    if (license is not null)
                     {
                         license.Dispose();
                         license = null;
@@ -349,7 +349,7 @@ namespace System.ComponentModel
                 throw new LicenseException(type);
             }
 
-            if (lic != null)
+            if (lic is not null)
             {
                 lic.Dispose();
                 lic = null;

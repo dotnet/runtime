@@ -14,7 +14,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         protected ImportingItem(ContractBasedImportDefinition definition, ImportType importType)
         {
-            if (definition == null)
+            if (definition is null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
@@ -47,7 +47,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private object CastExportsToCollectionImportType(Export[] exports)
         {
-            if (exports == null)
+            if (exports is null)
             {
                 throw new ArgumentNullException(nameof(exports));
             }
@@ -70,7 +70,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private object? CastExportsToSingleImportType(Export[] exports)
         {
-            if (exports == null)
+            if (exports is null)
             {
                 throw new ArgumentNullException(nameof(exports));
             }
@@ -90,7 +90,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private object? CastSingleExportToImportType(Type type, Export export)
         {
-            if (ImportType.CastExport != null)
+            if (ImportType.CastExport is not null)
             {
                 return ImportType.CastExport(export);
             }

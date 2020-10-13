@@ -61,7 +61,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_internalSyncObject == null)
+                if (_internalSyncObject is null)
                 {
                     object o = new object();
                     Interlocked.CompareExchange<object?>(ref _internalSyncObject, o, null);
@@ -86,7 +86,7 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchemaSet(XmlNameTable nameTable)
         {
-            if (nameTable == null)
+            if (nameTable is null)
             {
                 throw new ArgumentNullException(nameof(nameTable));
             }
@@ -106,7 +106,7 @@ namespace System.Xml.Schema
 
             // we don't have to check XmlReaderSettings.EnableLegacyXmlSettings() here because the following
             // code will return same result either we are running on v4.5 or later
-            if (_readerSettings.GetXmlResolver() == null)
+            if (_readerSettings.GetXmlResolver() is null)
             {
                 // The created resolver will be used in the schema validation only
                 _readerSettings.XmlResolver = new XmlUrlResolver();
@@ -137,7 +137,7 @@ namespace System.Xml.Schema
             {
                 _eventHandler -= _internalEventHandler;
                 _eventHandler += value;
-                if (_eventHandler == null)
+                if (_eventHandler is null)
                 {
                     _eventHandler = _internalEventHandler;
                 }
@@ -145,7 +145,7 @@ namespace System.Xml.Schema
             remove
             {
                 _eventHandler -= value;
-                if (_eventHandler == null)
+                if (_eventHandler is null)
                 {
                     _eventHandler = _internalEventHandler;
                 }
@@ -198,7 +198,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (elements == null)
+                if (elements is null)
                 {
                     elements = new XmlSchemaObjectTable();
                 }
@@ -210,7 +210,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (attributes == null)
+                if (attributes is null)
                 {
                     attributes = new XmlSchemaObjectTable();
                 }
@@ -222,7 +222,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (schemaTypes == null)
+                if (schemaTypes is null)
                 {
                     schemaTypes = new XmlSchemaObjectTable();
                 }
@@ -234,7 +234,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (substitutionGroups == null)
+                if (substitutionGroups is null)
                 {
                     substitutionGroups = new XmlSchemaObjectTable();
                 }
@@ -260,7 +260,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_typeExtensions == null)
+                if (_typeExtensions is null)
                 {
                     _typeExtensions = new XmlSchemaObjectTable();
                 }
@@ -276,12 +276,12 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchema? Add(string? targetNamespace, string schemaUri)
         {
-            if (schemaUri == null || schemaUri.Length == 0)
+            if (schemaUri is null || schemaUri.Length == 0)
             {
                 throw new ArgumentNullException(nameof(schemaUri));
             }
 
-            if (targetNamespace != null)
+            if (targetNamespace is not null)
             {
                 targetNamespace = XmlComplianceUtil.CDataNormalize(targetNamespace);
             }
@@ -291,7 +291,7 @@ namespace System.Xml.Schema
             {
                 //Check if schema from url has already been added
                 XmlResolver? tempResolver = _readerSettings.GetXmlResolver();
-                if (tempResolver == null)
+                if (tempResolver is null)
                 {
                     tempResolver = new XmlUrlResolver();
                 }
@@ -326,11 +326,11 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchema? Add(string? targetNamespace, XmlReader schemaDocument)
         {
-            if (schemaDocument == null)
+            if (schemaDocument is null)
             {
                 throw new ArgumentNullException(nameof(schemaDocument));
             }
-            if (targetNamespace != null)
+            if (targetNamespace is not null)
             {
                 targetNamespace = XmlComplianceUtil.CDataNormalize(targetNamespace);
             }
@@ -360,7 +360,7 @@ namespace System.Xml.Schema
         /// </summary>
         public void Add(XmlSchemaSet schemas)
         {
-            if (schemas == null)
+            if (schemas is null)
             {
                 throw new ArgumentNullException(nameof(schemas));
             }
@@ -405,16 +405,16 @@ namespace System.Xml.Schema
                     foreach (XmlSchema? schema in schemas.SortedSchemas.Values)
                     {
                         tns = schema!.TargetNamespace;
-                        if (tns == null)
+                        if (tns is null)
                         {
                             tns = string.Empty;
                         }
-                        if (_schemas.ContainsKey(schema.SchemaId) || FindSchemaByNSAndUrl(schema.BaseUri, tns, null) != null)
+                        if (_schemas.ContainsKey(schema.SchemaId) || FindSchemaByNSAndUrl(schema.BaseUri, tns, null) is not null)
                         { //Do not already existing url
                             continue;
                         }
                         currentSchema = Add(schema.TargetNamespace, schema);
-                        if (currentSchema == null)
+                        if (currentSchema is null)
                         {
                             remove = true;
                             break;
@@ -446,7 +446,7 @@ namespace System.Xml.Schema
 
         public XmlSchema? Add(XmlSchema schema)
         {
-            if (schema == null)
+            if (schema is null)
             {
                 throw new ArgumentNullException(nameof(schema));
             }
@@ -468,7 +468,7 @@ namespace System.Xml.Schema
 
         public bool RemoveRecursive(XmlSchema schemaToRemove)
         {
-            if (schemaToRemove == null)
+            if (schemaToRemove is null)
             {
                 throw new ArgumentNullException(nameof(schemaToRemove));
             }
@@ -488,7 +488,7 @@ namespace System.Xml.Schema
                     for (int i = 0; i < schemaToRemove.ImportedNamespaces.Count; i++)
                     {
                         importedNS = (string)schemaToRemove.ImportedNamespaces[i]!;
-                        if (disallowedNamespaces[importedNS] == null)
+                        if (disallowedNamespaces[importedNS] is null)
                         {
                             disallowedNamespaces.Add(importedNS, importedNS);
                         }
@@ -541,17 +541,17 @@ namespace System.Xml.Schema
 
         public bool Contains(string? targetNamespace)
         {
-            if (targetNamespace == null)
+            if (targetNamespace is null)
             {
                 targetNamespace = string.Empty;
             }
 
-            return _targetNamespaces[targetNamespace] != null;
+            return _targetNamespaces[targetNamespace] is not null;
         }
 
         public bool Contains(XmlSchema schema)
         {
-            if (schema == null)
+            if (schema is null)
             {
                 throw new ArgumentNullException(nameof(schema));
             }
@@ -660,7 +660,7 @@ namespace System.Xml.Schema
             // The only difference is that we don't touch .schemas collection here to not break a code like this:
             // foreach (XmlSchema s in schemaset.schemas) { schemaset.Reprocess(s); }
             // This is by purpose.
-            if (schema == null)
+            if (schema is null)
             {
                 throw new ArgumentNullException(nameof(schema));
             }
@@ -678,7 +678,7 @@ namespace System.Xml.Schema
 
                 RemoveSchemaFromGlobalTables(schema);
                 RemoveSchemaFromCaches(schema);
-                if (schema.BaseUri != null)
+                if (schema.BaseUri is not null)
                 {
                     _schemaLocations.Remove(schema.BaseUri);
                 }
@@ -710,11 +710,11 @@ namespace System.Xml.Schema
                     #region Copied from AddSchemaToSet(XmlSchema schema)
 
                     //Add to targetNamespaces table
-                    if (_targetNamespaces[tns] == null)
+                    if (_targetNamespaces[tns] is null)
                     {
                         _targetNamespaces.Add(tns, tns);
                     }
-                    if (_schemaForSchema == null && tns == XmlReservedNs.NsXs && schema.SchemaTypes[DatatypeImplementation.QnAnyType] != null)
+                    if (_schemaForSchema is null && tns == XmlReservedNs.NsXs && schema.SchemaTypes[DatatypeImplementation.QnAnyType] is not null)
                     { //it has xs:anyType
                         _schemaForSchema = schema;
                     }
@@ -726,11 +726,11 @@ namespace System.Xml.Schema
                             _schemas.Add(s.SchemaId, s);
                         }
                         tns = GetTargetNamespace(s);
-                        if (_targetNamespaces[tns] == null)
+                        if (_targetNamespaces[tns] is null)
                         {
                             _targetNamespaces.Add(tns, tns);
                         }
-                        if (_schemaForSchema == null && tns == XmlReservedNs.NsXs && schema.SchemaTypes[DatatypeImplementation.QnAnyType] != null)
+                        if (_schemaForSchema is null && tns == XmlReservedNs.NsXs && schema.SchemaTypes[DatatypeImplementation.QnAnyType] is not null)
                         { //it has xs:anyType
                             _schemaForSchema = schema;
                         }
@@ -746,7 +746,7 @@ namespace System.Xml.Schema
 
         public void CopyTo(XmlSchema[] schemas, int index)
         {
-            if (schemas == null)
+            if (schemas is null)
                 throw new ArgumentNullException(nameof(schemas));
             if (index < 0 || index > schemas.Length - 1)
                 throw new ArgumentOutOfRangeException(nameof(index));
@@ -762,7 +762,7 @@ namespace System.Xml.Schema
         {
             ArrayList tnsSchemas = new ArrayList();
             XmlSchema currentSchema;
-            if (targetNamespace == null)
+            if (targetNamespace is null)
             {
                 targetNamespace = string.Empty;
             }
@@ -784,7 +784,7 @@ namespace System.Xml.Schema
             // Due to bug 644477 - this method is tightly coupled (THE CODE IS BASICALLY COPIED) to Reprocess
             // method. If you change anything here *make sure* to update Reprocess method accordingly.
 
-            if (schema == null || schema.ErrorCount != 0)
+            if (schema is null || schema.ErrorCount != 0)
             { //Schema with parsing errors cannot be loaded
                 return null;
             }
@@ -818,7 +818,7 @@ namespace System.Xml.Schema
                 }
                 newCompiledInfo.Add(cachedCompiledInfo, eventHandler); //Add existing compiled info
                 cachedCompiledInfo = newCompiledInfo;
-                if (substitutionGroupsTable != null) {
+                if (substitutionGroupsTable is not null) {
                     ProcessNewSubstitutionGroups(substitutionGroupsTable, true);
                 }
                 if (schemas.Count == 0) { //If its the first compiled schema being added, then set doesnt need to be compiled
@@ -832,7 +832,7 @@ namespace System.Xml.Schema
 
         private bool AddToCompiledInfo(XmlSchema schema, SchemaInfo newCompiledInfo, ref XmlSchemaObjectTable substTable) {
             //Add schema's compiled tables to the set
-            if (schema.BaseUri != null && schemaLocations[schema.BaseUri] == null) { //Update schemaLocations table
+            if (schema.BaseUri is not null && schemaLocations[schema.BaseUri] is null) { //Update schemaLocations table
                 schemaLocations.Add(schema.BaseUri, schema);
             }
 
@@ -843,11 +843,11 @@ namespace System.Xml.Schema
                 }
                 XmlQualifiedName head = element.SubstitutionGroup;
                 if (!head.IsEmpty) {
-                    if (substTable == null) {
+                    if (substTable is null) {
                         substTable = new XmlSchemaObjectTable();
                     }
                     XmlSchemaSubstitutionGroup substitutionGroup = (XmlSchemaSubstitutionGroup)substTable[head];
-                    if (substitutionGroup == null) {
+                    if (substitutionGroup is null) {
                         substitutionGroup = new XmlSchemaSubstitutionGroup();
                         substitutionGroup.Examplar = head;
                         substTable.Add(head, substitutionGroup);
@@ -879,17 +879,17 @@ namespace System.Xml.Schema
         //For use by the validator when loading schemaLocations in the instance
         internal void Add(string? targetNamespace, XmlReader reader, Hashtable validatedNamespaces)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
-            if (targetNamespace == null)
+            if (targetNamespace is null)
             {
                 targetNamespace = string.Empty;
             }
-            if (validatedNamespaces[targetNamespace] != null)
+            if (validatedNamespaces[targetNamespace] is not null)
             {
-                if (FindSchemaByNSAndUrl(new Uri(reader.BaseURI!, UriKind.RelativeOrAbsolute), targetNamespace, null) != null)
+                if (FindSchemaByNSAndUrl(new Uri(reader.BaseURI!, UriKind.RelativeOrAbsolute), targetNamespace, null) is not null)
                 {
                     return;
                 }
@@ -922,11 +922,11 @@ namespace System.Xml.Schema
                     {
                         XmlSchema impSchema = (XmlSchema)schema.ImportedSchemas[i]!;
                         tns = impSchema.TargetNamespace;
-                        if (tns == null)
+                        if (tns is null)
                         {
                             tns = string.Empty;
                         }
-                        if (validatedNamespaces[tns] != null && (FindSchemaByNSAndUrl(impSchema.BaseUri, tns, oldLocations) == null))
+                        if (validatedNamespaces[tns] is not null && (FindSchemaByNSAndUrl(impSchema.BaseUri, tns, oldLocations) is null))
                         {
                             RemoveRecursive(schema);
                             throw new XmlSchemaException(SR.Sch_ComponentAlreadySeenForNS, tns);
@@ -938,13 +938,13 @@ namespace System.Xml.Schema
 
         internal XmlSchema? FindSchemaByNSAndUrl(Uri? schemaUri, string ns, DictionaryEntry[]? locationsTable)
         {
-            if (schemaUri == null || schemaUri.OriginalString.Length == 0)
+            if (schemaUri is null || schemaUri.OriginalString.Length == 0)
             {
                 return null;
             }
 
             XmlSchema? schema = null;
-            if (locationsTable == null)
+            if (locationsTable is null)
             {
                 schema = (XmlSchema)_schemaLocations[schemaUri]!;
             }
@@ -960,10 +960,10 @@ namespace System.Xml.Schema
                 }
             }
 
-            if (schema != null)
+            if (schema is not null)
             {
-                Debug.Assert(ns != null);
-                string tns = schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+                Debug.Assert(ns is not null);
+                string tns = schema.TargetNamespace is null ? string.Empty : schema.TargetNamespace;
                 if (tns == ns)
                 {
                     return schema;
@@ -988,14 +988,14 @@ namespace System.Xml.Schema
 
         private void SetDtdProcessing(XmlReader reader)
         {
-            if (reader.Settings != null)
+            if (reader.Settings is not null)
             {
                 _readerSettings.DtdProcessing = reader.Settings.DtdProcessing;
             }
             else
             {
                 XmlTextReader? v1Reader = reader as XmlTextReader;
-                if (v1Reader != null)
+                if (v1Reader is not null)
                 {
                     _readerSettings.DtdProcessing = v1Reader.DtdProcessing;
                 }
@@ -1016,11 +1016,11 @@ namespace System.Xml.Schema
             #region This code is copied to Reprocess(XmlSchema schema) method
 
             string tns = GetTargetNamespace(schema);
-            if (_targetNamespaces[tns] == null)
+            if (_targetNamespaces[tns] is null)
             {
                 _targetNamespaces.Add(tns, tns);
             }
-            if (_schemaForSchema == null && tns == XmlReservedNs.NsXs && schema.SchemaTypes[DatatypeImplementation.QnAnyType] != null)
+            if (_schemaForSchema is null && tns == XmlReservedNs.NsXs && schema.SchemaTypes[DatatypeImplementation.QnAnyType] is not null)
             { //it has xs:anyType
                 _schemaForSchema = schema;
             }
@@ -1032,11 +1032,11 @@ namespace System.Xml.Schema
                     _schemas.Add(s.SchemaId, s);
                 }
                 tns = GetTargetNamespace(s);
-                if (_targetNamespaces[tns] == null)
+                if (_targetNamespaces[tns] is null)
                 {
                     _targetNamespaces.Add(tns, tns);
                 }
-                if (_schemaForSchema == null && tns == XmlReservedNs.NsXs && schema.SchemaTypes[DatatypeImplementation.QnAnyType] != null)
+                if (_schemaForSchema is null && tns == XmlReservedNs.NsXs && schema.SchemaTypes[DatatypeImplementation.QnAnyType] is not null)
                 { //it has xs:anyType
                     _schemaForSchema = schema;
                 }
@@ -1057,7 +1057,7 @@ namespace System.Xml.Schema
                 //Add or Merge new substitutionGroups with those that already exist in the set
                 XmlQualifiedName head = substGroup!.Examplar;
                 XmlSchemaSubstitutionGroup? oldSubstGroup = (XmlSchemaSubstitutionGroup?)substitutionGroups![head];
-                if (oldSubstGroup != null)
+                if (oldSubstGroup is not null)
                 {
                     for (int i = 0; i < substGroup.Members.Count; ++i)
                     {
@@ -1088,7 +1088,7 @@ namespace System.Xml.Schema
 
                 //Chain to other head's that are members of this head's substGroup
                 XmlSchemaSubstitutionGroup? g = (XmlSchemaSubstitutionGroup?)substTable[element.QualifiedName];
-                if (g != null)
+                if (g is not null)
                 {
                     ResolveSubstitutionGroup(g, substTable);
                     for (int j = 0; j < g.Members.Count; ++j)
@@ -1096,7 +1096,7 @@ namespace System.Xml.Schema
                         XmlSchemaElement element1 = (XmlSchemaElement)g.Members[j]!;
                         if (element1 != element)
                         { //Exclude the head
-                            if (newMembers == null)
+                            if (newMembers is null)
                             {
                                 newMembers = new List<XmlSchemaElement>();
                             }
@@ -1105,7 +1105,7 @@ namespace System.Xml.Schema
                     }
                 }
             }
-            if (newMembers != null)
+            if (newMembers is not null)
             {
                 for (int i = 0; i < newMembers.Count; ++i)
                 {
@@ -1119,7 +1119,7 @@ namespace System.Xml.Schema
         {
             // Due to bug 644477 - this method is tightly coupled (THE CODE IS BASICALLY COPIED) to Reprocess
             // method. If you change anything here *make sure* to update Reprocess method accordingly.
-            if (schema == null)
+            if (schema is null)
             {
                 throw new ArgumentNullException(nameof(schema));
             }
@@ -1139,7 +1139,7 @@ namespace System.Xml.Schema
                         RemoveSchemaFromCaches(schema);
                     }
                     _schemas.Remove(schema.SchemaId);
-                    if (schema.BaseUri != null)
+                    if (schema.BaseUri is not null)
                     {
                         _schemaLocations.Remove(schema.BaseUri);
                     }
@@ -1215,18 +1215,18 @@ namespace System.Xml.Schema
             {
                 currentSchema = (XmlSchema)copyFromList.GetByIndex(i)!;
                 baseUri = currentSchema.BaseUri;
-                if (_schemas.ContainsKey(currentSchema.SchemaId) || (baseUri != null && baseUri.OriginalString.Length != 0 && _schemaLocations[baseUri] != null))
+                if (_schemas.ContainsKey(currentSchema.SchemaId) || (baseUri is not null && baseUri.OriginalString.Length != 0 && _schemaLocations[baseUri] is not null))
                 {
                     existingSchemas.Add(currentSchema);
                     continue;
                 }
                 _schemas.Add(currentSchema.SchemaId, currentSchema);
-                if (baseUri != null && baseUri.OriginalString.Length != 0)
+                if (baseUri is not null && baseUri.OriginalString.Length != 0)
                 {
                     _schemaLocations.Add(baseUri, currentSchema);
                 }
                 string tns = GetTargetNamespace(currentSchema);
-                if (_targetNamespaces[tns] == null)
+                if (_targetNamespaces[tns] is null)
                 {
                     _targetNamespaces.Add(tns, tns);
                 }
@@ -1334,7 +1334,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                if (_schemaNames == null)
+                if (_schemaNames is null)
                 {
                     _schemaNames = new SchemaNames(_nameTable);
                 }
@@ -1345,7 +1345,7 @@ namespace System.Xml.Schema
         internal bool IsSchemaLoaded(Uri schemaUri, string? targetNamespace, out XmlSchema? schema)
         {
             schema = null;
-            if (targetNamespace == null)
+            if (targetNamespace is null)
             {
                 targetNamespace = string.Empty;
             }
@@ -1355,10 +1355,10 @@ namespace System.Xml.Schema
                 { //schema is present in set
                     //Schema found
                 }
-                else if (schema.TargetNamespace == null)
+                else if (schema.TargetNamespace is null)
                 { //If schema not in set or namespace doesnt match, then it might be a chameleon
                     XmlSchema? chameleonSchema = FindSchemaByNSAndUrl(schemaUri, targetNamespace, null);
-                    if (chameleonSchema != null && _schemas.ContainsKey(chameleonSchema.SchemaId))
+                    if (chameleonSchema is not null && _schemas.ContainsKey(chameleonSchema.SchemaId))
                     {
                         schema = chameleonSchema;
                     }
@@ -1375,7 +1375,7 @@ namespace System.Xml.Schema
                 else
                 {
                     //If here, schema not present in set but in loc and might be added in loc through an earlier include
-                    //S.TNS != null && ( tns == null or tns == s.TNS)
+                    //S.TNS is not null && ( tns is null or tns == s.TNS)
                     AddSchemaToSet(schema);
                 }
 
@@ -1388,13 +1388,13 @@ namespace System.Xml.Schema
         internal bool GetSchemaByUri(Uri schemaUri, [NotNullWhen(true)] out XmlSchema? schema)
         {
             schema = null;
-            if (schemaUri == null || schemaUri.OriginalString.Length == 0)
+            if (schemaUri is null || schemaUri.OriginalString.Length == 0)
             {
                 return false;
             }
 
             schema = (XmlSchema?)_schemaLocations[schemaUri];
-            if (schema != null)
+            if (schema is not null)
             {
                 return true;
             }
@@ -1404,7 +1404,7 @@ namespace System.Xml.Schema
 
         internal string GetTargetNamespace(XmlSchema schema)
         {
-            return schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+            return schema.TargetNamespace is null ? string.Empty : schema.TargetNamespace;
         }
 
         internal SortedList SortedSchemas
@@ -1423,7 +1423,7 @@ namespace System.Xml.Schema
             schema.GetExternalSchemasList(reprocessList, schema);
             for (int i = 0; i < reprocessList.Count; ++i)
             { //Remove schema from schemaLocations & chameleonSchemas tables
-                if (reprocessList[i].BaseUri != null && reprocessList[i].BaseUri!.OriginalString.Length != 0)
+                if (reprocessList[i].BaseUri is not null && reprocessList[i].BaseUri!.OriginalString.Length != 0)
                 {
                     _schemaLocations.Remove(reprocessList[i].BaseUri!);
                 }
@@ -1439,7 +1439,7 @@ namespace System.Xml.Schema
                         //   otherwise we need to care about it as there may be more chameleon schemas without
                         //   a base URI and we want to remove only those which were created as a clone of the one
                         //   we're removing.
-                        if (cKey.originalSchema == null || Ref.ReferenceEquals(cKey.originalSchema, reprocessList[i]))
+                        if (cKey.originalSchema is null || Ref.ReferenceEquals(cKey.originalSchema, reprocessList[i]))
                         {
                             removalList.Add(cKey);
                         }
@@ -1497,7 +1497,7 @@ namespace System.Xml.Schema
             }
 
             XmlSchemaObject? existingObject = (XmlSchemaObject?)table[qname];
-            if (existingObject != null)
+            if (existingObject is not null)
             {
                 if (existingObject == item || existingObject.SourceUri == item.SourceUri)
                 {
@@ -1549,19 +1549,19 @@ namespace System.Xml.Schema
 
         private void VerifyTables()
         {
-            if (elements == null)
+            if (elements is null)
             {
                 elements = new XmlSchemaObjectTable();
             }
-            if (attributes == null)
+            if (attributes is null)
             {
                 attributes = new XmlSchemaObjectTable();
             }
-            if (schemaTypes == null)
+            if (schemaTypes is null)
             {
                 schemaTypes = new XmlSchemaObjectTable();
             }
-            if (substitutionGroups == null)
+            if (substitutionGroups is null)
             {
                 substitutionGroups = new XmlSchemaObjectTable();
             }
@@ -1577,7 +1577,7 @@ namespace System.Xml.Schema
 
         private void SendValidationEvent(XmlSchemaException e, XmlSeverityType severity)
         {
-            if (_eventHandler != null)
+            if (_eventHandler is not null)
             {
                 _eventHandler(this, new ValidationEventArgs(e, severity));
             }

@@ -62,7 +62,7 @@ namespace System.Dynamic.Utils
         {
             Debug.Assert(!string.IsNullOrEmpty(paramName));
 
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(paramName);
             }
@@ -88,7 +88,7 @@ namespace System.Dynamic.Utils
         {
             Debug.Assert(!string.IsNullOrEmpty(paramName));
 
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(GetParamName(paramName, index));
             }
@@ -134,7 +134,7 @@ namespace System.Dynamic.Utils
 
             for (int i = 0, n = array.Count; i < n; i++)
             {
-                if (array[i] == null)
+                if (array[i] is null)
                 {
                     throw new ArgumentNullException(GetParamName(arrayName, i));
                 }
@@ -158,7 +158,7 @@ namespace System.Dynamic.Utils
         {
             Debug.Assert(!string.IsNullOrEmpty(offsetName));
             Debug.Assert(!string.IsNullOrEmpty(countName));
-            Debug.Assert(array != null);
+            Debug.Assert(array is not null);
 
             if (count < 0)
                 throw new ArgumentOutOfRangeException(countName);

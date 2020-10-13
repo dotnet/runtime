@@ -52,7 +52,7 @@ namespace System.Net
                             if (stoleBlob)
                             {
                                 // The request has been handed to the user, which means this code can't reuse the blob.  Reset it here.
-                                asyncResult._requestContext = result == null ? new AsyncRequestContext(listenerSession.RequestQueueBoundHandle, asyncResult) : null;
+                                asyncResult._requestContext = result is null ? new AsyncRequestContext(listenerSession.RequestQueueBoundHandle, asyncResult) : null;
                             }
                             else
                             {
@@ -66,7 +66,7 @@ namespace System.Net
                     }
 
                     // We need to issue a new request, either because auth failed, or because our buffer was too small the first time.
-                    if (result == null)
+                    if (result is null)
                     {
                         uint statusCode = asyncResult.QueueBeginGetContext();
                         if (statusCode != Interop.HttpApi.ERROR_SUCCESS &&
@@ -77,7 +77,7 @@ namespace System.Net
                             result = new HttpListenerException((int)statusCode);
                         }
                     }
-                    if (result == null)
+                    if (result is null)
                     {
                         return;
                     }
@@ -105,10 +105,10 @@ namespace System.Net
             uint statusCode = Interop.HttpApi.ERROR_SUCCESS;
             while (true)
             {
-                Debug.Assert(_requestContext != null);
+                Debug.Assert(_requestContext is not null);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Calling Interop.HttpApi.HttpReceiveHttpRequest RequestId: {_requestContext.RequestBlob->RequestId}Buffer:0x {((IntPtr)_requestContext.RequestBlob).ToString("x")} Size: {_requestContext.Size}");
                 uint bytesTransferred = 0;
-                Debug.Assert(AsyncObject != null);
+                Debug.Assert(AsyncObject is not null);
                 HttpListenerSession listenerSession = (HttpListenerSession)AsyncObject!;
                 statusCode = Interop.HttpApi.HttpReceiveHttpRequest(
                     listenerSession.RequestQueueHandle,
@@ -147,7 +147,7 @@ namespace System.Net
         // Will be called from the base class upon InvokeCallback()
         protected override void Cleanup()
         {
-            if (_requestContext != null)
+            if (_requestContext is not null)
             {
                 _requestContext.ReleasePins();
                 _requestContext.Close();

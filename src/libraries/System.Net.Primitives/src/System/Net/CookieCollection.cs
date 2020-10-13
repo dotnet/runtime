@@ -68,7 +68,7 @@ namespace System.Net
 
         public void Add(Cookie cookie)
         {
-            if (cookie == null)
+            if (cookie is null)
             {
                 throw new ArgumentNullException(nameof(cookie));
             }
@@ -85,7 +85,7 @@ namespace System.Net
 
         public void Add(CookieCollection cookies)
         {
-            if (cookies == null)
+            if (cookies is null)
             {
                 throw new ArgumentNullException(nameof(cookies));
             }

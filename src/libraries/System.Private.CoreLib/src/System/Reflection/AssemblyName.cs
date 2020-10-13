@@ -56,7 +56,7 @@ namespace System.Reflection
         public string? CultureName
         {
             get => _cultureInfo?.Name;
-            set => _cultureInfo = (value == null) ? null : new CultureInfo(value);
+            set => _cultureInfo = (value is null) ? null : new CultureInfo(value);
         }
 
         public string? CodeBase
@@ -69,7 +69,7 @@ namespace System.Reflection
         {
             get
             {
-                if (_codeBase == null)
+                if (_codeBase is null)
                     return null;
                 else
                     return EscapeCodeBase(_codeBase);
@@ -141,7 +141,7 @@ namespace System.Reflection
          */
         public static AssemblyName GetAssemblyName(string assemblyFile)
         {
-            if (assemblyFile == null)
+            if (assemblyFile is null)
                 throw new ArgumentNullException(nameof(assemblyFile));
 
             return GetFileInformationCore(assemblyFile);
@@ -156,7 +156,7 @@ namespace System.Reflection
         {
             _publicKey = publicKey;
 
-            if (publicKey == null)
+            if (publicKey is null)
                 _flags &= ~AssemblyNameFlags.PublicKey;
             else
                 _flags |= AssemblyNameFlags.PublicKey;
@@ -210,7 +210,7 @@ namespace System.Reflection
         {
             get
             {
-                if (this.Name == null)
+                if (this.Name is null)
                     return string.Empty;
                 // Do not call GetPublicKeyToken() here - that latches the result into AssemblyName which isn't a side effect we want.
                 byte[]? pkt = _publicKeyToken ?? ComputePublicKeyToken();
@@ -221,7 +221,7 @@ namespace System.Reflection
         public override string ToString()
         {
             string s = FullName;
-            if (s == null)
+            if (s is null)
                 return base.ToString()!;
             else
                 return s;
@@ -247,10 +247,10 @@ namespace System.Reflection
             if (object.ReferenceEquals(reference, definition))
                 return true;
 
-            if (reference == null)
+            if (reference is null)
                 throw new ArgumentNullException(nameof(reference));
 
-            if (definition == null)
+            if (definition is null)
                 throw new ArgumentNullException(nameof(definition));
 
             string refName = reference.Name ?? string.Empty;
@@ -260,12 +260,12 @@ namespace System.Reflection
 
         internal static string EscapeCodeBase(string? codebase)
         {
-            if (codebase == null)
+            if (codebase is null)
                 return string.Empty;
 
             int position = 0;
             char[]? dest = EscapeString(codebase, 0, codebase.Length, null, ref position, true, c_DummyChar, c_DummyChar, c_DummyChar);
-            if (dest == null)
+            if (dest is null)
                 return codebase;
 
             return new string(dest, 0, position);
@@ -365,7 +365,7 @@ namespace System.Reflection
                 if (prevInputPos != i)
                 {
                     // need to fill up the dest array ?
-                    if (prevInputPos != start || dest != null)
+                    if (prevInputPos != start || dest is not null)
                         dest = EnsureDestinationSize(pStr, dest, i, 0, 0, ref destPos, prevInputPos);
                 }
             }

@@ -32,7 +32,7 @@ namespace System.Net
 
         // If set, no more calls should be made.
         internal bool IsCompleted => _isCompleted;
-        internal bool IsValidContext => !(_securityContext == null || _securityContext.IsInvalid);
+        internal bool IsValidContext => !(_securityContext is null || _securityContext.IsInvalid);
         internal string Package => _package;
 
         // True indicates this instance is for Server and will use AcceptSecurityContext SSPI API.
@@ -42,7 +42,7 @@ namespace System.Net
         {
             get
             {
-                if (_clientSpecifiedSpn == null)
+                if (_clientSpecifiedSpn is null)
                 {
                     _clientSpecifiedSpn = GetClientSpecifiedSpn();
                 }
@@ -56,7 +56,7 @@ namespace System.Net
             get
             {
                 // Note: May return string.Empty if the auth is not done yet or failed.
-                if (_protocolName == null)
+                if (_protocolName is null)
                 {
                     string? negotiationAuthenticationPackage = null;
 
@@ -80,7 +80,7 @@ namespace System.Net
         {
             get
             {
-                if (_lastProtocolName == null)
+                if (_lastProtocolName is null)
                 {
                     _lastProtocolName = ProtocolName;
                 }
@@ -152,7 +152,7 @@ namespace System.Net
 
         internal void CloseContext()
         {
-            if (_securityContext != null && !_securityContext.IsClosed)
+            if (_securityContext is not null && !_securityContext.IsClosed)
             {
                 _securityContext.Dispose();
             }
@@ -171,13 +171,13 @@ namespace System.Net
         internal string? GetOutgoingBlob(string? incomingBlob)
         {
             byte[]? decodedIncomingBlob = null;
-            if (incomingBlob != null && incomingBlob.Length > 0)
+            if (incomingBlob is not null && incomingBlob.Length > 0)
             {
                 decodedIncomingBlob = Convert.FromBase64String(incomingBlob);
             }
             byte[]? decodedOutgoingBlob = null;
 
-            if ((IsValidContext || IsCompleted) && decodedIncomingBlob == null)
+            if ((IsValidContext || IsCompleted) && decodedIncomingBlob is null)
             {
                 // we tried auth previously, now we got a null blob, we're done. this happens
                 // with Kerberos & valid credentials on the domain but no ACLs on the resource
@@ -190,7 +190,7 @@ namespace System.Net
             }
 
             string? outgoingBlob = null;
-            if (decodedOutgoingBlob != null && decodedOutgoingBlob.Length > 0)
+            if (decodedOutgoingBlob is not null && decodedOutgoingBlob.Length > 0)
             {
                 outgoingBlob = Convert.ToBase64String(decodedOutgoingBlob);
             }
@@ -214,7 +214,7 @@ namespace System.Net
         {
             byte[]? result = new byte[_tokenSize];
 
-            bool firstTime = _securityContext == null;
+            bool firstTime = _securityContext is null;
             try
             {
                 if (!_isServer)
@@ -282,7 +282,7 @@ namespace System.Net
 
                 return null;
             }
-            else if (firstTime && _credentialsHandle != null)
+            else if (firstTime && _credentialsHandle is not null)
             {
                 // Cache until it is pushed out by newly incoming handles.
                 SSPIHandleCache.CacheCredential(_credentialsHandle);

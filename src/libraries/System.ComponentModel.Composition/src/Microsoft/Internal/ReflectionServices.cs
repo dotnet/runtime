@@ -20,7 +20,7 @@ namespace Microsoft.Internal
                 return type.Assembly;
             }
 
-            Debug.Assert(member.DeclaringType != null);
+            Debug.Assert(member.DeclaringType is not null);
             return member.DeclaringType.Assembly;
         }
 
@@ -31,13 +31,13 @@ namespace Microsoft.Internal
 
         public static bool IsVisible(this FieldInfo field)
         {
-            Debug.Assert(field.DeclaringType != null);
+            Debug.Assert(field.DeclaringType is not null);
             return field.DeclaringType.IsVisible && field.IsPublic;
         }
 
         public static bool IsVisible(this MethodInfo method)
         {
-            Debug.Assert(method.DeclaringType != null);
+            Debug.Assert(method.DeclaringType is not null);
             if (!method.DeclaringType.IsVisible)
                 return false;
 
@@ -59,7 +59,7 @@ namespace Microsoft.Internal
 
         public static string GetDisplayName(Type declaringType, string? name)
         {
-            if (declaringType == null)
+            if (declaringType is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -69,7 +69,7 @@ namespace Microsoft.Internal
 
         public static string GetDisplayName(this MemberInfo member)
         {
-            if (member == null)
+            if (member is null)
             {
                 throw new ArgumentNullException(nameof(member));
             }
@@ -111,7 +111,7 @@ namespace Microsoft.Internal
                 //  takign the chance that there aren't too many types which implement multiple
                 //  interfaces by the same name...
                 Type? targetInterface = instanceType.GetInterface(targetOpenInterfaceType.Name, false);
-                if (targetInterface != null &&
+                if (targetInterface is not null &&
                     targetInterface.UnderlyingSystemType.GetGenericTypeDefinition() == targetOpenInterfaceType.UnderlyingSystemType)
                 {
                     targetClosedInterfaceType = targetInterface;
@@ -137,7 +137,7 @@ namespace Microsoft.Internal
             IEnumerable<MethodInfo> declaredMethods = type.GetDeclaredMethods();
 
             Type? baseType = type.BaseType;
-            Debug.Assert(baseType != null);
+            Debug.Assert(baseType is not null);
             if (baseType.UnderlyingSystemType != typeof(object))
             {
                 return declaredMethods.Concat(baseType.GetAllMethods());
@@ -161,7 +161,7 @@ namespace Microsoft.Internal
             IEnumerable<FieldInfo> declaredFields = type.GetDeclaredFields();
 
             Type? baseType = type.BaseType;
-            Debug.Assert(baseType != null);
+            Debug.Assert(baseType is not null);
             if (baseType.UnderlyingSystemType != typeof(object))
             {
                 return declaredFields.Concat(baseType.GetAllFields());
@@ -187,7 +187,7 @@ namespace Microsoft.Internal
                 return false;
             }
 
-            while (type != null)
+            while (type is not null)
             {
                 if (type == baseClass)
                     return true;

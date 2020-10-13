@@ -214,27 +214,27 @@ namespace System.Xml
         internal XmlName AddXmlName(string? prefix, string localName, string? namespaceURI, IXmlSchemaInfo? schemaInfo)
         {
             XmlName n = _domNameTable.AddName(prefix, localName, namespaceURI, schemaInfo);
-            Debug.Assert((prefix == null) ? (n.Prefix.Length == 0) : (prefix == n.Prefix));
+            Debug.Assert((prefix is null) ? (n.Prefix.Length == 0) : (prefix == n.Prefix));
             Debug.Assert(n.LocalName == localName);
-            Debug.Assert((namespaceURI == null) ? (n.NamespaceURI.Length == 0) : (n.NamespaceURI == namespaceURI));
+            Debug.Assert((namespaceURI is null) ? (n.NamespaceURI.Length == 0) : (n.NamespaceURI == namespaceURI));
             return n;
         }
 
         internal XmlName? GetXmlName(string? prefix, string localName, string? namespaceURI, IXmlSchemaInfo? schemaInfo)
         {
             XmlName? n = _domNameTable.GetName(prefix, localName, namespaceURI, schemaInfo);
-            Debug.Assert(n == null || ((prefix == null) ? (n.Prefix.Length == 0) : (prefix == n.Prefix)));
-            Debug.Assert(n == null || n.LocalName == localName);
-            Debug.Assert(n == null || ((namespaceURI == null) ? (n.NamespaceURI.Length == 0) : (n.NamespaceURI == namespaceURI)));
+            Debug.Assert(n is null || ((prefix is null) ? (n.Prefix.Length == 0) : (prefix == n.Prefix)));
+            Debug.Assert(n is null || n.LocalName == localName);
+            Debug.Assert(n is null || ((namespaceURI is null) ? (n.NamespaceURI.Length == 0) : (n.NamespaceURI == namespaceURI)));
             return n;
         }
 
         internal XmlName AddAttrXmlName(string? prefix, string localName, string? namespaceURI, IXmlSchemaInfo? schemaInfo)
         {
             XmlName xmlName = AddXmlName(prefix, localName, namespaceURI, schemaInfo);
-            Debug.Assert((prefix == null) ? (xmlName.Prefix.Length == 0) : (prefix == xmlName.Prefix));
+            Debug.Assert((prefix is null) ? (xmlName.Prefix.Length == 0) : (prefix == xmlName.Prefix));
             Debug.Assert(xmlName.LocalName == localName);
-            Debug.Assert((namespaceURI == null) ? (xmlName.NamespaceURI.Length == 0) : (xmlName.NamespaceURI == namespaceURI));
+            Debug.Assert((namespaceURI is null) ? (xmlName.NamespaceURI.Length == 0) : (xmlName.NamespaceURI == namespaceURI));
 
             if (!this.IsLoading)
             {
@@ -253,9 +253,9 @@ namespace System.Xml
             //when XmlLoader call XmlDocument.AddInfo, the element.XmlName and attr.XmlName
             //have already been replaced with the ones that don't have namespace values (or just
             //string.Empty) because in DTD, the namespace is not supported
-            if (_htElementIDAttrDecl == null || _htElementIDAttrDecl[eleName] == null)
+            if (_htElementIDAttrDecl is null || _htElementIDAttrDecl[eleName] is null)
             {
-                if (_htElementIDAttrDecl == null)
+                if (_htElementIDAttrDecl is null)
                     _htElementIDAttrDecl = new Hashtable();
                 _htElementIDAttrDecl.Add(eleName, attrName);
                 return true;
@@ -269,7 +269,7 @@ namespace System.Xml
             //we need only compare the prefix and localname of element.XmlName with
             //the registered htElementIDAttrDecl.
             XmlName? newName = GetXmlName(eleName.Prefix, eleName.LocalName, string.Empty, null);
-            if (newName != null)
+            if (newName is not null)
             {
                 return (XmlName?)(_htElementIDAttrDecl![newName]);
             }
@@ -278,7 +278,7 @@ namespace System.Xml
 
         internal XmlName? GetIDInfoByElement(XmlName eleName)
         {
-            if (_htElementIDAttrDecl == null)
+            if (_htElementIDAttrDecl is null)
                 return null;
             else
                 return GetIDInfoByElement_(eleName);
@@ -306,9 +306,9 @@ namespace System.Xml
 
         internal void AddElementWithId(string id, XmlElement elem)
         {
-            if (_htElementIdMap == null || !_htElementIdMap.Contains(id))
+            if (_htElementIdMap is null || !_htElementIdMap.Contains(id))
             {
-                if (_htElementIdMap == null)
+                if (_htElementIdMap is null)
                     _htElementIdMap = new Hashtable();
                 ArrayList elementList = new ArrayList();
                 elementList.Add(new WeakReference(elem));
@@ -318,18 +318,18 @@ namespace System.Xml
             {
                 // there are other element(s) that has the same id
                 ArrayList elementList = (ArrayList)(_htElementIdMap[id]!);
-                if (GetElement(elementList, elem) == null)
+                if (GetElement(elementList, elem) is null)
                     elementList.Add(new WeakReference(elem));
             }
         }
 
         internal void RemoveElementWithId(string id, XmlElement elem)
         {
-            if (_htElementIdMap != null && _htElementIdMap.Contains(id))
+            if (_htElementIdMap is not null && _htElementIdMap.Contains(id))
             {
                 ArrayList elementList = (ArrayList)(_htElementIdMap[id]!);
                 WeakReference? elemRef = GetElement(elementList, elem);
-                if (elemRef != null)
+                if (elemRef is not null)
                 {
                     elementList.Remove(elemRef);
                     if (elementList.Count == 0)
@@ -425,7 +425,7 @@ namespace System.Xml
         {
             get
             {
-                if (_schemas == null)
+                if (_schemas is null)
                 {
                     _schemas = new XmlSchemaSet(NameTable);
                 }
@@ -462,7 +462,7 @@ namespace System.Xml
                     bSetResolver = true;
 
                 XmlDocumentType? dtd = this.DocumentType;
-                if (dtd != null)
+                if (dtd is not null)
                 {
                     dtd.DtdSchemaInfo = null;
                 }
@@ -479,17 +479,17 @@ namespace System.Xml
                     return true;
 
                 case XmlNodeType.DocumentType:
-                    if (DocumentType != null)
+                    if (DocumentType is not null)
                         throw new InvalidOperationException(SR.Xdom_DualDocumentTypeNode);
                     return true;
 
                 case XmlNodeType.Element:
-                    if (DocumentElement != null)
+                    if (DocumentElement is not null)
                         throw new InvalidOperationException(SR.Xdom_DualDocumentElementNode);
                     return true;
 
                 case XmlNodeType.XmlDeclaration:
-                    if (Declaration != null)
+                    if (Declaration is not null)
                         throw new InvalidOperationException(SR.Xdom_DualDeclarationNode);
                     return true;
 
@@ -501,13 +501,13 @@ namespace System.Xml
         //  if any of the nodes has type equals to "nt", return true; otherwise, return false;
         private bool HasNodeTypeInPrevSiblings(XmlNodeType nt, XmlNode? refNode)
         {
-            if (refNode == null)
+            if (refNode is null)
                 return false;
 
             XmlNode? node = null;
-            if (refNode.ParentNode != null)
+            if (refNode.ParentNode is not null)
                 node = refNode.ParentNode.FirstChild;
-            while (node != null)
+            while (node is not null)
             {
                 if (node.NodeType == nt)
                     return true;
@@ -523,7 +523,7 @@ namespace System.Xml
         private bool HasNodeTypeInNextSiblings(XmlNodeType nt, XmlNode? refNode)
         {
             XmlNode? node = refNode;
-            while (node != null)
+            while (node is not null)
             {
                 if (node.NodeType == nt)
                     return true;
@@ -534,10 +534,10 @@ namespace System.Xml
 
         internal override bool CanInsertBefore(XmlNode newChild, XmlNode? refChild)
         {
-            if (refChild == null)
+            if (refChild is null)
                 refChild = FirstChild;
 
-            if (refChild == null)
+            if (refChild is null)
                 return true;
 
             switch (newChild.NodeType)
@@ -577,10 +577,10 @@ namespace System.Xml
 
         internal override bool CanInsertAfter(XmlNode newChild, XmlNode? refChild)
         {
-            if (refChild == null)
+            if (refChild is null)
                 refChild = LastChild;
 
-            if (refChild == null)
+            if (refChild is null)
                 return true;
 
             switch (newChild.NodeType)
@@ -672,7 +672,7 @@ namespace System.Xml
         {
             SchemaInfo? schInfo = DtdSchemaInfo;
             SchemaElementDecl? ed = GetSchemaElementDecl(elem);
-            if (ed != null && ed.AttDefs != null)
+            if (ed is not null && ed.AttDefs is not null)
             {
                 foreach (KeyValuePair<XmlQualifiedName, SchemaAttDef> attrDefs in ed.AttDefs)
                 {
@@ -703,7 +703,7 @@ namespace System.Xml
         private SchemaElementDecl? GetSchemaElementDecl(XmlElement elem)
         {
             SchemaInfo? schInfo = DtdSchemaInfo;
-            if (schInfo != null)
+            if (schInfo is not null)
             {
                 //build XmlQualifiedName used to identify the element schema declaration
                 XmlQualifiedName qname = new XmlQualifiedName(elem.LocalName, schInfo.SchemaType == SchemaType.DTD ? elem.Prefix : elem.NamespaceURI);
@@ -726,7 +726,7 @@ namespace System.Xml
             defattr.InnerXml = attdef.DefaultValueRaw;
             //during the expansion of the tree, the flag could be set to true, we need to set it back.
             XmlUnspecifiedAttribute? unspAttr = defattr as XmlUnspecifiedAttribute;
-            if (unspAttr != null)
+            if (unspAttr is not null)
             {
                 unspAttr.SetSpecified(false);
             }
@@ -787,7 +787,7 @@ namespace System.Xml
                 case XmlNodeType.CDATA:
                 case XmlNodeType.SignificantWhitespace:
                     parent = node.ParentNode;
-                    if (parent != null)
+                    if (parent is not null)
                     {
                         do
                         {
@@ -805,13 +805,13 @@ namespace System.Xml
                                 break;
                             }
                         }
-                        while (parent != null);
+                        while (parent is not null);
                     }
                     node = NormalizeText(node)!;
                     break;
                 case XmlNodeType.Whitespace:
                     parent = node.ParentNode;
-                    if (parent != null)
+                    if (parent is not null)
                     {
                         do
                         {
@@ -830,7 +830,7 @@ namespace System.Xml
                                 break;
                             }
                         }
-                        while (parent != null);
+                        while (parent is not null);
                     }
                     node = NormalizeText(node)!;
                     break;
@@ -864,14 +864,14 @@ namespace System.Xml
                 retnode = n;
                 n = n.PreviousSibling;
 
-                if (n == null)
+                if (n is null)
                 {
                     XmlNode intnode = retnode;
                     while (true)
                     {
-                        if (intnode.ParentNode != null && intnode.ParentNode.NodeType == XmlNodeType.EntityReference)
+                        if (intnode.ParentNode is not null && intnode.ParentNode.NodeType == XmlNodeType.EntityReference)
                         {
-                            if (intnode.ParentNode.PreviousSibling != null)
+                            if (intnode.ParentNode.PreviousSibling is not null)
                             {
                                 n = intnode.ParentNode.PreviousSibling;
                                 break;
@@ -879,7 +879,7 @@ namespace System.Xml
                             else
                             {
                                 intnode = intnode.ParentNode;
-                                if (intnode == null)
+                                if (intnode is null)
                                     break;
                             }
                         }
@@ -888,7 +888,7 @@ namespace System.Xml
                     }
                 }
 
-                if (n == null)
+                if (n is null)
                     break;
 
                 while (n.NodeType == XmlNodeType.EntityReference)
@@ -946,15 +946,15 @@ namespace System.Xml
         // Returns the XmlElement with the specified ID.
         public virtual XmlElement? GetElementById(string elementId)
         {
-            if (_htElementIdMap != null)
+            if (_htElementIdMap is not null)
             {
                 ArrayList? elementList = (ArrayList?)(_htElementIdMap[elementId]);
-                if (elementList != null)
+                if (elementList is not null)
                 {
                     foreach (WeakReference elemRef in elementList)
                     {
                         XmlElement? elem = (XmlElement?)elemRef.Target;
-                        if (elem != null
+                        if (elem is not null
                             && elem.IsConnected())
                             return elem;
                     }
@@ -971,7 +971,7 @@ namespace System.Xml
 
         private XmlNode ImportNodeInternal(XmlNode node, bool deep)
         {
-            if (node == null)
+            if (node is null)
             {
                 throw new InvalidOperationException(SR.Xdom_Import_NullNode);
             }
@@ -1055,7 +1055,7 @@ namespace System.Xml
         private void ImportChildren(XmlNode fromNode, XmlNode toNode, bool deep)
         {
             Debug.Assert(toNode.NodeType != XmlNodeType.EntityReference);
-            for (XmlNode? n = fromNode.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode? n = fromNode.FirstChild; n is not null; n = n.NextSibling)
             {
                 toNode.AppendChild(ImportNodeInternal(n, deep));
             }
@@ -1107,7 +1107,7 @@ namespace System.Xml
         {
             get
             {
-                if (_entities == null)
+                if (_entities is null)
                     _entities = new XmlNamedNodeMap(this);
                 return _entities;
             }
@@ -1133,13 +1133,13 @@ namespace System.Xml
             switch (type)
             {
                 case XmlNodeType.Element:
-                    if (prefix != null)
+                    if (prefix is not null)
                         return CreateElement(prefix, name, namespaceURI);
                     else
                         return CreateElement(name, namespaceURI);
 
                 case XmlNodeType.Attribute:
-                    if (prefix != null)
+                    if (prefix is not null)
                         return CreateAttribute(prefix, name, namespaceURI);
                     else
                         return CreateAttribute(name, namespaceURI);
@@ -1371,7 +1371,7 @@ namespace System.Xml
         {
             get
             {
-                if (Declaration != null)
+                if (Declaration is not null)
                 {
                     string value = Declaration.Encoding;
                     if (value.Length > 0)
@@ -1408,7 +1408,7 @@ namespace System.Xml
         //Saves out the to the file with exact content in the XmlDocument.
         public virtual void Save(string filename)
         {
-            if (DocumentElement == null)
+            if (DocumentElement is null)
                 throw new XmlException(SR.Xml_InvalidXmlDocument, SR.Xdom_NoRootEle);
             XmlDOMTextWriter xw = new XmlDOMTextWriter(filename, TextEncoding);
             try
@@ -1453,7 +1453,7 @@ namespace System.Xml
         public virtual void Save(XmlWriter w)
         {
             XmlNode? n = this.FirstChild;
-            if (n == null)
+            if (n is null)
                 return;
             if (w.WriteState == WriteState.Start)
             {
@@ -1472,7 +1472,7 @@ namespace System.Xml
                     w.WriteStartDocument();
                 }
             }
-            while (n != null)
+            while (n is not null)
             {
                 n.WriteTo(w);
                 n = n.NextSibling;
@@ -1506,7 +1506,7 @@ namespace System.Xml
 
         public void Validate(ValidationEventHandler? validationEventHandler, XmlNode nodeToValidate)
         {
-            if (_schemas == null || _schemas.Count == 0)
+            if (_schemas is null || _schemas.Count == 0)
             { //Should we error
                 throw new InvalidOperationException(SR.XmlDocument_NoSchemaInfo);
             }
@@ -1606,19 +1606,19 @@ namespace System.Xml
             switch (action)
             {
                 case XmlNodeChangedAction.Insert:
-                    if (_onNodeInsertingDelegate == null && _onNodeInsertedDelegate == null)
+                    if (_onNodeInsertingDelegate is null && _onNodeInsertedDelegate is null)
                     {
                         return null;
                     }
                     break;
                 case XmlNodeChangedAction.Remove:
-                    if (_onNodeRemovingDelegate == null && _onNodeRemovedDelegate == null)
+                    if (_onNodeRemovingDelegate is null && _onNodeRemovedDelegate is null)
                     {
                         return null;
                     }
                     break;
                 case XmlNodeChangedAction.Change:
-                    if (_onNodeChangingDelegate == null && _onNodeChangedDelegate == null)
+                    if (_onNodeChangingDelegate is null && _onNodeChangedDelegate is null)
                     {
                         return null;
                     }
@@ -1629,7 +1629,7 @@ namespace System.Xml
 
         internal XmlNodeChangedEventArgs? GetInsertEventArgsForLoad(XmlNode node, XmlNode newParent)
         {
-            if (_onNodeInsertingDelegate == null && _onNodeInsertedDelegate == null)
+            if (_onNodeInsertingDelegate is null && _onNodeInsertedDelegate is null)
             {
                 return null;
             }
@@ -1639,22 +1639,22 @@ namespace System.Xml
 
         internal override void BeforeEvent(XmlNodeChangedEventArgs args)
         {
-            if (args != null)
+            if (args is not null)
             {
                 switch (args.Action)
                 {
                     case XmlNodeChangedAction.Insert:
-                        if (_onNodeInsertingDelegate != null)
+                        if (_onNodeInsertingDelegate is not null)
                             _onNodeInsertingDelegate(this, args);
                         break;
 
                     case XmlNodeChangedAction.Remove:
-                        if (_onNodeRemovingDelegate != null)
+                        if (_onNodeRemovingDelegate is not null)
                             _onNodeRemovingDelegate(this, args);
                         break;
 
                     case XmlNodeChangedAction.Change:
-                        if (_onNodeChangingDelegate != null)
+                        if (_onNodeChangingDelegate is not null)
                             _onNodeChangingDelegate(this, args);
                         break;
                 }
@@ -1663,22 +1663,22 @@ namespace System.Xml
 
         internal override void AfterEvent(XmlNodeChangedEventArgs args)
         {
-            if (args != null)
+            if (args is not null)
             {
                 switch (args.Action)
                 {
                     case XmlNodeChangedAction.Insert:
-                        if (_onNodeInsertedDelegate != null)
+                        if (_onNodeInsertedDelegate is not null)
                             _onNodeInsertedDelegate(this, args);
                         break;
 
                     case XmlNodeChangedAction.Remove:
-                        if (_onNodeRemovedDelegate != null)
+                        if (_onNodeRemovedDelegate is not null)
                             _onNodeRemovedDelegate(this, args);
                         break;
 
                     case XmlNodeChangedAction.Change:
-                        if (_onNodeChangedDelegate != null)
+                        if (_onNodeChangedDelegate is not null)
                             _onNodeChangedDelegate(this, args);
                         break;
                 }
@@ -1693,7 +1693,7 @@ namespace System.Xml
         {
             SchemaInfo? schInfo = DtdSchemaInfo;
             SchemaElementDecl? ed = GetSchemaElementDecl(elem);
-            if (ed != null && ed.AttDefs != null)
+            if (ed is not null && ed.AttDefs is not null)
             {
                 foreach (KeyValuePair<XmlQualifiedName, SchemaAttDef> attrDefs in ed.AttDefs)
                 {
@@ -1722,7 +1722,7 @@ namespace System.Xml
             get
             {
                 XmlDeclaration? decl = Declaration;
-                if (decl != null)
+                if (decl is not null)
                     return decl.Version;
                 return null;
             }
@@ -1733,7 +1733,7 @@ namespace System.Xml
             get
             {
                 XmlDeclaration? decl = Declaration;
-                if (decl != null)
+                if (decl is not null)
                     return decl.Encoding;
                 return null;
             }
@@ -1744,7 +1744,7 @@ namespace System.Xml
             get
             {
                 XmlDeclaration? decl = Declaration;
-                if (decl != null)
+                if (decl is not null)
                     return decl.Standalone;
                 return null;
             }
@@ -1752,10 +1752,10 @@ namespace System.Xml
 
         internal XmlEntity? GetEntityNode(string name)
         {
-            if (DocumentType != null)
+            if (DocumentType is not null)
             {
                 XmlNamedNodeMap entites = DocumentType.Entities;
-                if (entites != null)
+                if (entites is not null)
                     return (XmlEntity?)(entites.GetNamedItem(name));
             }
             return null;
@@ -1768,7 +1768,7 @@ namespace System.Xml
                 if (_reportValidity)
                 {
                     XmlElement? documentElement = DocumentElement;
-                    if (documentElement != null)
+                    if (documentElement is not null)
                     {
                         switch (documentElement.SchemaInfo.Validity)
                         {
@@ -1805,12 +1805,12 @@ namespace System.Xml
 
             XmlNodeChangedEventArgs? args = GetInsertEventArgsForLoad(newChild, this);
 
-            if (args != null)
+            if (args is not null)
                 BeforeEvent(args);
 
             XmlLinkedNode newNode = (XmlLinkedNode)newChild;
 
-            if (_lastChild == null)
+            if (_lastChild is null)
             {
                 newNode.next = newNode;
             }
@@ -1823,7 +1823,7 @@ namespace System.Xml
             _lastChild = newNode;
             newNode.SetParentForLoad(this);
 
-            if (args != null)
+            if (args is not null)
                 AfterEvent(args);
 
             return newNode;
@@ -1843,7 +1843,7 @@ namespace System.Xml
         {
             get
             {
-                if (_namespaceXml == null)
+                if (_namespaceXml is null)
                 {
                     _namespaceXml = new XmlAttribute(AddAttrXmlName(strXmlns, strXml, strReservedXmlns, null), this);
                     _namespaceXml.Value = strReservedXml;

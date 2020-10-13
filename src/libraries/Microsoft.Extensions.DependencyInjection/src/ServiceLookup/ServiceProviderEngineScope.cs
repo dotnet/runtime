@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
             lock (ResolvedServices)
             {
-                if (_disposables == null)
+                if (_disposables is null)
                 {
                     _disposables = new List<object>();
                 }
@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             List<object> toDispose = BeginDispose();
 
-            if (toDispose != null)
+            if (toDispose is not null)
             {
                 for (int i = toDispose.Count - 1; i >= 0; i--)
                 {
@@ -86,7 +86,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         {
             List<object> toDispose = BeginDispose();
 
-            if (toDispose != null)
+            if (toDispose is not null)
             {
                 try
                 {

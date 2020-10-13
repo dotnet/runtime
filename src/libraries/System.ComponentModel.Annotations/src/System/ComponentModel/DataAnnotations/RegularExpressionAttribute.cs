@@ -92,7 +92,7 @@ namespace System.ComponentModel.DataAnnotations
         /// zero or greater than approximately 24 days </exception>
         private void SetupRegex()
         {
-            if (Regex == null)
+            if (Regex is null)
             {
                 if (string.IsNullOrEmpty(Pattern))
                 {

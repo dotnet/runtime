@@ -15,7 +15,7 @@ namespace System
             // Parse the uname's utsname.release for the first four numbers found.
             // This isn't perfect, but Version already doesn't map exactly to all possible release
             // formats, e.g. 2.6.19-1.2895.fc6
-            if (release != null)
+            if (release is not null)
             {
                 int i = 0;
                 major = FindAndParseNextNumber(release, ref i);

@@ -35,7 +35,7 @@ namespace System.Diagnostics
             get => _target;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }

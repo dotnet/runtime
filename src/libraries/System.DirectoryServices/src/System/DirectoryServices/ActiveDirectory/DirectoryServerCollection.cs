@@ -49,7 +49,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 DirectoryServer server = (DirectoryServer)value;
 
-                if (server == null)
+                if (server is null)
                     throw new ArgumentNullException(nameof(value));
 
                 if (!Contains(server))
@@ -61,7 +61,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int Add(DirectoryServer server)
         {
-            if (server == null)
+            if (server is null)
                 throw new ArgumentNullException(nameof(server));
 
             // make sure that it is within the current site
@@ -92,7 +92,7 @@ namespace System.DirectoryServices.ActiveDirectory
             else
             {
                 string siteName = (server is DomainController) ? ((DomainController)server).SiteObjectName : ((AdamInstance)server).SiteObjectName;
-                Debug.Assert(siteName != null);
+                Debug.Assert(siteName is not null);
                 if (Utils.Compare(siteDN, siteName) != 0)
                 {
                     throw new ArgumentException(SR.NotWithinSite);
@@ -107,12 +107,12 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(DirectoryServer[] servers)
         {
-            if (servers == null)
+            if (servers is null)
                 throw new ArgumentNullException(nameof(servers));
 
             foreach (DirectoryServer s in servers)
             {
-                if (s == null)
+                if (s is null)
                 {
                     throw new ArgumentException(null, nameof(servers));
                 }
@@ -124,7 +124,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(DirectoryServer server)
         {
-            if (server == null)
+            if (server is null)
                 throw new ArgumentNullException(nameof(server));
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -146,7 +146,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(DirectoryServer server)
         {
-            if (server == null)
+            if (server is null)
                 throw new ArgumentNullException(nameof(server));
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -163,7 +163,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Insert(int index, DirectoryServer server)
         {
-            if (server == null)
+            if (server is null)
                 throw new ArgumentNullException(nameof(server));
 
             if (_isForNC)
@@ -194,7 +194,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // make sure that it is within the current site
                 string siteName = (server is DomainController) ? ((DomainController)server).SiteObjectName : ((AdamInstance)server).SiteObjectName;
-                Debug.Assert(siteName != null);
+                Debug.Assert(siteName is not null);
                 if (Utils.Compare(siteDN, siteName) != 0)
                 {
                     throw new ArgumentException(SR.NotWithinSite, nameof(server));
@@ -209,7 +209,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Remove(DirectoryServer server)
         {
-            if (server == null)
+            if (server is null)
                 throw new ArgumentNullException(nameof(server));
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -244,7 +244,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // if the property exists, clear it out
             if (_isForNC)
             {
-                if (_crossRefEntry != null)
+                if (_crossRefEntry is not null)
                 {
                     try
                     {
@@ -272,7 +272,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (_isForNC)
             {
-                if (_crossRefEntry != null)
+                if (_crossRefEntry is not null)
                 {
                     try
                     {
@@ -319,7 +319,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 try
                 {
-                    if (_crossRefEntry != null)
+                    if (_crossRefEntry is not null)
                     {
                         string ntdsaName = (value is DomainController) ? ((DomainController)value).NtdsaObjectName : ((AdamInstance)value).NtdsaObjectName;
                         _crossRefEntry.Properties[PropertyManager.MsDSNCReplicaLocations].Remove(ntdsaName);
@@ -365,7 +365,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         protected override void OnValidate(object value)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (value is null) throw new ArgumentNullException(nameof(value));
 
             if (_isForNC)
             {

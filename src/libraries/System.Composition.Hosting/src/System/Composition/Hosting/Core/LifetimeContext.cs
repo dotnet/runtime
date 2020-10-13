@@ -74,11 +74,11 @@ namespace System.Composition.Hosting.Core
         /// <remarks>Currently, the root cannot be a boundary.</remarks>
         public LifetimeContext FindContextWithin(string sharingBoundary)
         {
-            if (sharingBoundary == null)
+            if (sharingBoundary is null)
                 return _root;
 
             var toCheck = this;
-            while (toCheck != null)
+            while (toCheck is not null)
             {
                 foreach (var implemented in toCheck._sharingBoundaries)
                 {
@@ -106,14 +106,14 @@ namespace System.Composition.Hosting.Core
             IEnumerable<IDisposable> toDispose = null;
             lock (_boundPartLock)
             {
-                if (_boundPartInstances != null)
+                if (_boundPartInstances is not null)
                 {
                     toDispose = _boundPartInstances;
                     _boundPartInstances = null;
                 }
             }
 
-            if (toDispose != null)
+            if (toDispose is not null)
             {
                 foreach (var instance in toDispose)
                     instance.Dispose();
@@ -129,7 +129,7 @@ namespace System.Composition.Hosting.Core
         {
             lock (_boundPartLock)
             {
-                if (_boundPartInstances == null)
+                if (_boundPartInstances is null)
                     throw new ObjectDisposedException(ToString());
 
                 _boundPartInstances.Add(instance);
@@ -152,13 +152,13 @@ namespace System.Composition.Hosting.Core
         public object GetOrCreate(int sharingId, CompositionOperation operation, CompositeActivator creator)
         {
             object result;
-            if (_sharedPartInstances != null && _sharedPartInstances.TryGetValue(sharingId, out result))
+            if (_sharedPartInstances is not null && _sharedPartInstances.TryGetValue(sharingId, out result))
                 return result;
 
             // Remains locked for the rest of the operation.
             operation.EnterSharingLock(_sharingLock);
 
-            if (_sharedPartInstances == null)
+            if (_sharedPartInstances is null)
             {
                 _sharedPartInstances = new SmallSparseInitonlyArray();
                 _instancesUndergoingInitialization = new SmallSparseInitonlyArray();
@@ -211,7 +211,7 @@ namespace System.Composition.Hosting.Core
         /// <returns>A string description.</returns>
         public override string ToString()
         {
-            if (_parent == null)
+            if (_parent is null)
                 return "Root Lifetime Context";
 
             if (_sharingBoundaries.Length == 0)

@@ -28,7 +28,7 @@ namespace System.Security.Cryptography
             private set
             {
                 CngKey key = value;
-                Debug.Assert(key != null, "key != null");
+                Debug.Assert(key is not null, "key is not null");
                 if (key.AlgorithmGroup != CngAlgorithmGroup.Dsa)
                     throw new ArgumentException(SR.Cryptography_ArgDSARequiresDSAKey, nameof(value));
                 _core.SetKey(key);

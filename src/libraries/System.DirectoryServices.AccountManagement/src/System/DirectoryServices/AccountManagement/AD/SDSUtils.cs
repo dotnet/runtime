@@ -177,7 +177,7 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static void MoveDirectoryEntry(DirectoryEntry deToMove, DirectoryEntry newParent, string newName)
         {
-            if (newName != null)
+            if (newName is not null)
                 deToMove.MoveTo(newParent, newName);
             else
                 deToMove.MoveTo(newParent);
@@ -207,9 +207,9 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "Entering InsertPrincipal");
 
-            Debug.Assert(storeCtx != null);
+            Debug.Assert(storeCtx is not null);
             Debug.Assert(storeCtx is ADStoreCtx || storeCtx is SAMStoreCtx);
-            Debug.Assert(p != null);
+            Debug.Assert(p is not null);
 
             if ((!(p is UserPrincipal)) &&
                  (!(p is GroupPrincipal)) &&
@@ -243,7 +243,7 @@ namespace System.DirectoryServices.AccountManagement
                 Debug.Assert(p is AuthenticablePrincipal);
 
                 string password = (string)p.GetValueForProperty(PropertyNames.PwdInfoPassword);
-                Debug.Assert(password != null); // if null, PasswordInfo should not have indicated it was changed
+                Debug.Assert(password is not null); // if null, PasswordInfo should not have indicated it was changed
 
                 storeCtx.SetPassword((AuthenticablePrincipal)p, password);
             }
@@ -274,10 +274,10 @@ namespace System.DirectoryServices.AccountManagement
                                                 AuthenticationTypes authTypes)
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "Entering ApplyChangesToDirectory");
-            Debug.Assert(storeCtx != null);
+            Debug.Assert(storeCtx is not null);
             Debug.Assert(storeCtx is ADStoreCtx || storeCtx is SAMStoreCtx || storeCtx is ADAMStoreCtx);
-            Debug.Assert(p != null);
-            Debug.Assert(updateGroupMembership != null);
+            Debug.Assert(p is not null);
+            Debug.Assert(updateGroupMembership is not null);
 
             // Update the properties in the DirectoryEntry.  Note that this does NOT
             // update group membership.
@@ -309,8 +309,8 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static void SetPassword(DirectoryEntry de, string newPassword)
         {
-            Debug.Assert(newPassword != null);  // but it could be an empty string
-            Debug.Assert(de != null);
+            Debug.Assert(newPassword is not null);  // but it could be an empty string
+            Debug.Assert(de is not null);
 
             try
             {
@@ -341,10 +341,10 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static void ChangePassword(DirectoryEntry de, string oldPassword, string newPassword)
         {
-            Debug.Assert(newPassword != null);  // but it could be an empty string
-            Debug.Assert(oldPassword != null);  // but it could be an empty string
+            Debug.Assert(newPassword is not null);  // but it could be an empty string
+            Debug.Assert(oldPassword is not null);  // but it could be an empty string
 
-            Debug.Assert(de != null);
+            Debug.Assert(de is not null);
 
             try
             {
@@ -376,8 +376,8 @@ namespace System.DirectoryServices.AccountManagement
         internal static DirectoryEntry BuildDirectoryEntry(string path, NetCred credentials, AuthenticationTypes authTypes)
         {
             DirectoryEntry de = new DirectoryEntry(path,
-                                                                               credentials != null ? credentials.UserName : null,
-                                                                               credentials != null ? credentials.Password : null,
+                                                                               credentials is not null ? credentials.UserName : null,
+                                                                               credentials is not null ? credentials.Password : null,
                                                                                authTypes);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "BuildDirectoryEntry (1): built DE for  " + de.Path);
@@ -389,8 +389,8 @@ namespace System.DirectoryServices.AccountManagement
         {
             DirectoryEntry de = new DirectoryEntry();
 
-            de.Username = credentials != null ? credentials.UserName : null;
-            de.Password = credentials != null ? credentials.Password : null;
+            de.Username = credentials is not null ? credentials.UserName : null;
+            de.Password = credentials is not null ? credentials.Password : null;
             de.AuthenticationType = authTypes;
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SDSUtils", "BuildDirectoryEntry (2): built DE");
@@ -400,7 +400,7 @@ namespace System.DirectoryServices.AccountManagement
 
         internal static void WriteAttribute<T>(string dePath, string attribute, T value, NetCred credentials, AuthenticationTypes authTypes)
         {
-            Debug.Assert(attribute != null && attribute.Length > 0);
+            Debug.Assert(attribute is not null && attribute.Length > 0);
 
             // Ideally, we'd just like to set the property in the principal's DirectoryEntry and write
             // the changes to the store.  However, there might be other changes in the DirectoryEntry,
@@ -413,7 +413,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 copyOfDe = SDSUtils.BuildDirectoryEntry(dePath, credentials, authTypes);
 
-                Debug.Assert(copyOfDe != null);
+                Debug.Assert(copyOfDe is not null);
 
                 // So we don't do a implicit GetInfo() and retrieve every attribute
                 copyOfDe.RefreshCache(new string[] { attribute });
@@ -428,7 +428,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (copyOfDe != null)
+                if (copyOfDe is not null)
                     copyOfDe.Dispose();
             }
         }
@@ -443,7 +443,7 @@ namespace System.DirectoryServices.AccountManagement
                         attribute,
                         dePath);
 
-            Debug.Assert(attribute != null && attribute.Length > 0);
+            Debug.Assert(attribute is not null && attribute.Length > 0);
 
             // Ideally, we'd just like to set the property in the principal's DirectoryEntry and write
             // the changes to the store.  However, there might be other changes in the DirectoryEntry,
@@ -456,7 +456,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 copyOfDe = SDSUtils.BuildDirectoryEntry(dePath, credentials, authTypes);
 
-                Debug.Assert(copyOfDe != null);
+                Debug.Assert(copyOfDe is not null);
 
                 // So we don't do a implicit GetInfo() and retrieve every attribute
                 copyOfDe.RefreshCache(new string[] { attribute });
@@ -480,7 +480,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (copyOfDe != null)
+                if (copyOfDe is not null)
                     copyOfDe.Dispose();
             }
         }
@@ -490,7 +490,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         internal static void SingleScalarFromDirectoryEntry<T>(dSPropertyCollection properties, string suggestedProperty, Principal p, string propertyName)
         {
-            if (properties[suggestedProperty].Count != 0 && properties[suggestedProperty][0] != null)
+            if (properties[suggestedProperty].Count != 0 && properties[suggestedProperty][0] is not null)
             {
                 // We're intended to handle single-valued scalar properties
                 Debug.Assert(properties[suggestedProperty].Count == 1);
@@ -603,7 +603,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             PrincipalValueCollection<string> trackingList = (PrincipalValueCollection<string>)p.GetValueForProperty(propertyName);
 
-            if (p.unpersisted && trackingList == null)
+            if (p.unpersisted && trackingList is null)
                 return;
 
             List<string> insertedValues = trackingList.Inserted;
@@ -617,23 +617,23 @@ namespace System.DirectoryServices.AccountManagement
             // we want to maintain idempotency
             foreach (string value in removedValues)
             {
-                if (value != null && properties.Contains(value))
+                if (value is not null && properties.Contains(value))
                     properties.Remove(value);
             }
 
             foreach (Pair<string, string> changedValue in changedValues)
             {
                 // Remove the original value and add in the new value
-                Debug.Assert(changedValue.Left != null);    // since it came from the system
+                Debug.Assert(changedValue.Left is not null);    // since it came from the system
                 properties.Remove(changedValue.Left);
 
-                if (changedValue.Right != null && !properties.Contains(changedValue.Right))
+                if (changedValue.Right is not null && !properties.Contains(changedValue.Right))
                     properties.Add(changedValue.Right);
             }
 
             foreach (string value in insertedValues)
             {
-                if (value != null && !properties.Contains(value))
+                if (value is not null && !properties.Contains(value))
                     properties.Add(value);
             }
         }

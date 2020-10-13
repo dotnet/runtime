@@ -97,7 +97,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 // If new writer might remove itself from pipeline, have it callback on this method when it's ready to go
                 IRemovableWriter removable = value as IRemovableWriter;
-                if (removable != null)
+                if (removable is not null)
                     removable.OnRemoveWriterEvent = SetWrappedWriter;
 
                 _xwrt = value;
@@ -160,7 +160,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override void WriteStartElement(string prefix, string localName, string ns)
         {
-            Debug.Assert(prefix != null && localName != null && localName.Length != 0 && ns != null, "Invalid argument");
+            Debug.Assert(prefix is not null && localName is not null && localName.Length != 0 && ns is not null, "Invalid argument");
             Debug.Assert(ValidateNames.ValidateName(prefix, localName, ns, XPathNodeType.Element, ValidateNames.Flags.All), "Name validation failed");
 
             // Xml state transitions
@@ -173,7 +173,7 @@ namespace System.Xml.Xsl.Runtime
             WriteNamespaceDeclarationUnchecked(prefix, ns);
 
             // Cache attributes in order to detect duplicates
-            if (_attrCache == null)
+            if (_attrCache is null)
                 _attrCache = new XmlAttributeCache();
 
             _attrCache.Init(Writer);
@@ -220,7 +220,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override void WriteStartAttribute(string prefix, string localName, string ns)
         {
-            Debug.Assert(prefix != null && localName != null && ns != null, "Invalid argument");
+            Debug.Assert(prefix is not null && localName is not null && ns is not null, "Invalid argument");
 
             if (prefix.Length == 5 && prefix == "xmlns")
             {
@@ -446,7 +446,7 @@ namespace System.Xml.Xsl.Runtime
         public void WriteStartElementUnchecked(string prefix, string localName, string ns)
         {
             Debug.Assert(_xstate == XmlState.WithinContent, "WriteStartElement cannot be called in the " + _xstate + " state.");
-            if (_nsmgr != null) _nsmgr.PushScope();
+            if (_nsmgr is not null) _nsmgr.PushScope();
             Writer.WriteStartElement(prefix, localName, ns);
             //reset when enter element
             _usedPrefixes.Clear();
@@ -487,7 +487,7 @@ namespace System.Xml.Xsl.Runtime
             Writer.WriteEndElement(prefix, localName, ns);
             _xstate = XmlState.WithinContent;
             _depth--;
-            if (_nsmgr != null) _nsmgr.PopScope();
+            if (_nsmgr is not null) _nsmgr.PopScope();
         }
 
         /// <summary>
@@ -537,7 +537,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteNamespaceDeclarationUnchecked(string prefix, string ns)
         {
-            Debug.Assert(prefix != null && ns != null);
+            Debug.Assert(prefix is not null && ns is not null);
             Debug.Assert(_xstate == XmlState.EnumAttrs, "WriteNamespaceDeclaration cannot be called in the " + _xstate + " state.");
 
             // xmlns:foo="" is illegal
@@ -550,7 +550,7 @@ namespace System.Xml.Xsl.Runtime
                 return;
             }
 
-            if (_nsmgr == null)
+            if (_nsmgr is null)
             {
                 // If namespace manager has no namespaces, then xmlns="" is in scope by default
                 if (ns.Length == 0 && prefix.Length == 0)
@@ -698,11 +698,11 @@ namespace System.Xml.Xsl.Runtime
         public void WriteNamespaceDeclaration(string prefix, string ns)
         {
             string nsExisting;
-            Debug.Assert(prefix != null && ns != null);
+            Debug.Assert(prefix is not null && ns is not null);
 
             ConstructInEnumAttrs(XPathNodeType.Namespace);
 
-            if (_nsmgr == null)
+            if (_nsmgr is null)
             {
                 // If namespace manager has not yet been created, then there is no possibility of conflict
                 WriteNamespaceDeclarationUnchecked(prefix, ns);
@@ -720,7 +720,7 @@ namespace System.Xml.Xsl.Runtime
                     // prefix, ns, nsExisting --> Look for xmlns:foo="uri", found xmlns:foo="uri2"
 
                     // If the prefix is mapped to a uri,
-                    if (nsExisting != null)
+                    if (nsExisting is not null)
                     {
                         // Then throw an error except if the prefix trying to redefine is already used
                         if (_usedPrefixes.ContainsKey(prefix))
@@ -745,7 +745,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteStartNamespace(string prefix)
         {
-            Debug.Assert(prefix != null, "Invalid argument");
+            Debug.Assert(prefix is not null, "Invalid argument");
 
             // Handle namespace attributes that are not sent directly to WriteNamespaceDeclaration
             ConstructInEnumAttrs(XPathNodeType.Namespace);
@@ -898,7 +898,7 @@ namespace System.Xml.Xsl.Runtime
         {
             RtfNavigator navRtf = navigator as RtfNavigator;
 
-            if (navRtf != null)
+            if (navRtf is not null)
             {
                 // Copy Rtf
                 navRtf.CopyToWriter(this);
@@ -979,7 +979,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         private void WriteString(string text, bool disableOutputEscaping)
         {
-            Debug.Assert(text != null, "Invalid argument");
+            Debug.Assert(text is not null, "Invalid argument");
 
             // Xml state transitions
             switch (_xstate)
@@ -1036,7 +1036,7 @@ namespace System.Xml.Xsl.Runtime
         {
             XPathNodeType nodeType;
             int depthStart = _depth;
-            Debug.Assert(navigator != null);
+            Debug.Assert(navigator is not null);
 
             while (true)
             {
@@ -1146,7 +1146,7 @@ namespace System.Xml.Xsl.Runtime
                     {
                         // Do not allow namespaces to be copied after attributes
                         XmlAttributeCache attrCache = Writer as XmlAttributeCache;
-                        if (attrCache != null && attrCache.Count != 0)
+                        if (attrCache is not null && attrCache.Count != 0)
                             throw new XslTransformException(SR.XmlIl_NmspAfterAttr, string.Empty);
 
                         WriteNamespaceDeclaration(navigator.LocalName, navigator.Value);
@@ -1318,7 +1318,7 @@ namespace System.Xml.Xsl.Runtime
             while (_cntNmsp != 0)
             {
                 // Output each prefix->ns mapping pair
-                Debug.Assert(_nsmgr != null);
+                Debug.Assert(_nsmgr is not null);
                 _cntNmsp--;
                 _nsmgr.GetNamespaceDeclaration(_cntNmsp, out prefix, out ns);
                 Writer.WriteNamespaceDeclaration(prefix, ns);
@@ -1353,7 +1353,7 @@ namespace System.Xml.Xsl.Runtime
             Debug.Assert(prefix.Length != 0 && ns.Length != 0);
 
             // Ensure that this attribute's prefix does not conflict with previously declared prefixes in this scope
-            if (_nsmgr == null)
+            if (_nsmgr is null)
             {
                 // If namespace manager has no namespaces, then there is no possibility of conflict
                 WriteNamespaceDeclarationUnchecked(prefix, ns);
@@ -1367,7 +1367,7 @@ namespace System.Xml.Xsl.Runtime
                     if (nsExisting != ns)
                     {
                         // Then if the prefix is already mapped,
-                        if (nsExisting != null)
+                        if (nsExisting is not null)
                         {
                             // Then there is a conflict that must be resolved by finding another prefix
                             // Always find a new prefix, even if the conflict didn't occur in the current scope
@@ -1398,12 +1398,12 @@ namespace System.Xml.Xsl.Runtime
         private string RemapPrefix(string prefix, string ns, bool isElemPrefix)
         {
             string genPrefix;
-            Debug.Assert(prefix != null && ns != null && ns.Length != 0);
+            Debug.Assert(prefix is not null && ns is not null && ns.Length != 0);
 
-            if (_conflictPrefixes == null)
+            if (_conflictPrefixes is null)
                 _conflictPrefixes = new Dictionary<string, string>(16);
 
-            if (_nsmgr == null)
+            if (_nsmgr is null)
             {
                 _nsmgr = new XmlNamespaceManager(_runtime.NameTable);
                 _nsmgr.PushScope();
@@ -1411,7 +1411,7 @@ namespace System.Xml.Xsl.Runtime
 
             // Rule #1: If another in-scope prefix is already mapped to "ns", then use that
             genPrefix = _nsmgr.LookupPrefix(ns);
-            if (genPrefix != null)
+            if (genPrefix is not null)
             {
                 // Can't use an empty prefix for an attribute
                 if (isElemPrefix || genPrefix.Length != 0)
@@ -1542,7 +1542,7 @@ namespace System.Xml.Xsl.Runtime
         private void PushElementNames(string prefix, string localName, string ns)
         {
             // Push the name parts onto a stack
-            if (_stkNames == null)
+            if (_stkNames is null)
                 _stkNames = new Stack<string>(15);
 
             _stkNames.Push(prefix);
@@ -1555,7 +1555,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         private void PopElementNames(out string prefix, out string localName, out string ns)
         {
-            Debug.Assert(_stkNames != null);
+            Debug.Assert(_stkNames is not null);
 
             ns = _stkNames.Pop();
             localName = _stkNames.Pop();

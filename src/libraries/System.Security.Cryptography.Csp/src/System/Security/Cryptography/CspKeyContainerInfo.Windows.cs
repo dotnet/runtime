@@ -51,7 +51,7 @@ namespace System.Security.Cryptography
             {
                 object? retVal = ReadKeyParameterSilent(Constants.CLR_ACCESSIBLE, throwOnNotFound: false);
 
-                if (retVal == null)
+                if (retVal is null)
                 {
                     // The key wasn't found, so consider it to be not accessible.
                     return false;

@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Xml
         public override void LoadInnerXml(XmlNodeList nodeList)
         {
             // XPath transform is specified by text child of first XPath child
-            if (nodeList == null)
+            if (nodeList is null)
                 throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
 
             foreach (XmlNode node in nodeList)
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Xml
                 string prefix = null;
                 string namespaceURI = null;
                 XmlElement elem = node as XmlElement;
-                if (elem != null)
+                if (elem is not null)
                 {
                     if (elem.LocalName == "XPath")
                     {
@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Xml
                             {
                                 prefix = attrib.LocalName;
                                 namespaceURI = attrib.Value;
-                                if (prefix == null)
+                                if (prefix is null)
                                 {
                                     prefix = elem.Prefix;
                                     namespaceURI = elem.NamespaceURI;
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Xml
                 }
             }
 
-            if (_xpathexpr == null)
+            if (_xpathexpr is null)
                 throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
         }
 
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.Xml
             XmlDocument document = new XmlDocument();
             XmlElement element = document.CreateElement(null, "XPath", SignedXml.XmlDsigNamespaceUrl);
 
-            if (_nsm != null)
+            if (_nsm is not null)
             {
                 // Add each of the namespaces as attributes of the element
                 foreach (string prefix in _nsm)
@@ -103,7 +103,7 @@ namespace System.Security.Cryptography.Xml
                         // Other namespaces
                         default:
                             // Ignore the default namespace
-                            if (prefix != null && prefix.Length > 0)
+                            if (prefix is not null && prefix.Length > 0)
                                 element.SetAttribute("xmlns:" + prefix, _nsm.LookupNamespace(prefix));
                             break;
                     }

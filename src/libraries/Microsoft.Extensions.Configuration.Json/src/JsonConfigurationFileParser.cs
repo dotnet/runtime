@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Configuration.Json
                 ExitContext();
             }
 
-            if (isEmpty && _currentPath != null)
+            if (isEmpty && _currentPath is not null)
             {
                 _data[_currentPath] = null;
             }

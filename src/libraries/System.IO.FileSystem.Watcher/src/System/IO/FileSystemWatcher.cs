@@ -248,7 +248,7 @@ namespace System.IO
             }
             set
             {
-                value = (value == null) ? string.Empty : value;
+                value = (value is null) ? string.Empty : value;
                 if (!string.Equals(_directory, value, PathInternal.StringComparison))
                 {
                     if (value.Length == 0)
@@ -370,7 +370,7 @@ namespace System.IO
 
         private static void CheckPathValidity(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             // Early check for directory parameter so that an exception can be thrown as early as possible.
@@ -419,7 +419,7 @@ namespace System.IO
         {
             // filter if there's no handler or neither new name or old name match a specified pattern
             RenamedEventHandler? handler = _onRenamedHandler;
-            if (handler != null &&
+            if (handler is not null &&
                 (MatchPattern(name) || MatchPattern(oldName)))
             {
                 handler(this, new RenamedEventArgs(action, _directory, name.IsEmpty ? null : name.ToString(), oldName.IsEmpty ? null : oldName.ToString()));
@@ -449,7 +449,7 @@ namespace System.IO
         {
             FileSystemEventHandler? handler = GetHandler(changeType);
 
-            if (handler != null && MatchPattern(name.IsEmpty ? _directory : name))
+            if (handler is not null && MatchPattern(name.IsEmpty ? _directory : name))
             {
                 handler(this, new FileSystemEventArgs(changeType, _directory, name.IsEmpty ? null : name.ToString()));
             }
@@ -462,7 +462,7 @@ namespace System.IO
         {
             FileSystemEventHandler? handler = GetHandler(changeType);
 
-            if (handler != null && MatchPattern(string.IsNullOrEmpty(name) ? _directory : name))
+            if (handler is not null && MatchPattern(string.IsNullOrEmpty(name) ? _directory : name))
             {
                 handler(this, new FileSystemEventArgs(changeType, _directory, name));
             }
@@ -494,10 +494,10 @@ namespace System.IO
 
         private void InvokeOn(FileSystemEventArgs e, FileSystemEventHandler? handler)
         {
-            if (handler != null)
+            if (handler is not null)
             {
                 ISynchronizeInvoke? syncObj = SynchronizingObject;
-                if (syncObj != null && syncObj.InvokeRequired)
+                if (syncObj is not null && syncObj.InvokeRequired)
                     syncObj.BeginInvoke(handler, new object[] { this, e });
                 else
                     handler(this, e);
@@ -510,10 +510,10 @@ namespace System.IO
         protected void OnError(ErrorEventArgs e)
         {
             ErrorEventHandler? handler = _onErrorHandler;
-            if (handler != null)
+            if (handler is not null)
             {
                 ISynchronizeInvoke? syncObj = SynchronizingObject;
-                if (syncObj != null && syncObj.InvokeRequired)
+                if (syncObj is not null && syncObj.InvokeRequired)
                     syncObj.BeginInvoke(handler, new object[] { this, e });
                 else
                     handler(this, e);
@@ -526,10 +526,10 @@ namespace System.IO
         protected void OnRenamed(RenamedEventArgs e)
         {
             RenamedEventHandler? handler = _onRenamedHandler;
-            if (handler != null)
+            if (handler is not null)
             {
                 ISynchronizeInvoke? syncObj = SynchronizingObject;
-                if (syncObj != null && syncObj.InvokeRequired)
+                if (syncObj is not null && syncObj.InvokeRequired)
                     syncObj.BeginInvoke(handler, new object[] { this, e });
                 else
                     handler(this, e);
@@ -596,11 +596,11 @@ namespace System.IO
             finally
             {
                 // Unregister the event handlers.
-                if (reh != null)
+                if (reh is not null)
                 {
                     Renamed -= reh;
                 }
-                if (fseh != null)
+                if (fseh is not null)
                 {
                     if ((changeType & WatcherChangeTypes.Changed) != 0)
                         Changed -= fseh;
@@ -650,7 +650,7 @@ namespace System.IO
 
                 // set EnableRaisingEvents to true at design time so the user
                 // doesn't have to manually.
-                if (Site != null && Site.DesignMode)
+                if (Site is not null && Site.DesignMode)
                     EnableRaisingEvents = true;
             }
         }

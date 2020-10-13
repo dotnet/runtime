@@ -24,13 +24,13 @@ namespace Internal.Cryptography.Pal.Windows
             X509Certificate2Collection extraStore,
             out Exception? exception)
         {
-            Debug.Assert((cert != null) ^ (privateKey != null));
+            Debug.Assert((cert is not null) ^ (privateKey is not null));
 
-            if (privateKey != null)
+            if (privateKey is not null)
             {
                 RSA? key = privateKey as RSA;
 
-                if (key == null)
+                if (key is null)
                 {
                     exception = new CryptographicException(SR.Cryptography_Cms_Ktri_RSARequired);
                     return null;
@@ -50,7 +50,7 @@ namespace Internal.Cryptography.Pal.Windows
                 {
                     try
                     {
-                        if (exception != null)
+                        if (exception is not null)
                         {
                             return null;
                         }
@@ -64,7 +64,7 @@ namespace Internal.Cryptography.Pal.Windows
                     }
                     finally
                     {
-                        if (cek != null)
+                        if (cek is not null)
                         {
                             Array.Clear(cek, 0, cek.Length);
                         }
@@ -72,14 +72,14 @@ namespace Internal.Cryptography.Pal.Windows
                 }
             }
 
-            Debug.Assert(recipientInfo != null);
-            Debug.Assert(cert != null);
-            Debug.Assert(originatorCerts != null);
-            Debug.Assert(extraStore != null);
+            Debug.Assert(recipientInfo is not null);
+            Debug.Assert(cert is not null);
+            Debug.Assert(originatorCerts is not null);
+            Debug.Assert(extraStore is not null);
 
             CryptKeySpec keySpec;
             exception = TryGetKeySpecForCertificate(cert, out keySpec);
-            if (exception != null)
+            if (exception is not null)
                 return null;
 
             // .NET Framework compat: We pass false for "silent" here (thus allowing crypto providers to display UI.)
@@ -90,7 +90,7 @@ namespace Internal.Cryptography.Pal.Windows
             const bool PreferNCrypt = false;
             using (SafeProvOrNCryptKeyHandle? hKey = PkcsPalWindows.GetCertificatePrivateKey(cert, Silent, PreferNCrypt, out _, out exception))
             {
-                if (hKey == null)
+                if (hKey is null)
                     return null;
 
                 RecipientInfoType type = recipientInfo.Type;
@@ -111,7 +111,7 @@ namespace Internal.Cryptography.Pal.Windows
                         throw new NotSupportedException();
                 }
 
-                if (exception != null)
+                if (exception is not null)
                     return null;
 
                 // If we got here, we successfully decrypted. Return the decrypted content.
@@ -206,7 +206,7 @@ namespace Internal.Cryptography.Pal.Windows
                                     candidateCerts.AddRange(extraStore);
                                     SubjectIdentifier originatorId = pKeyAgreeRecipientInfo->OriginatorCertId.ToSubjectIdentifier();
                                     X509Certificate2? originatorCert = candidateCerts.TryFindMatchingCertificate(originatorId);
-                                    if (originatorCert == null)
+                                    if (originatorCert is null)
                                         return ErrorCode.CRYPT_E_NOT_FOUND.ToCryptographicException();
                                     using (SafeCertContextHandle hCertContext = originatorCert.CreateCertContextHandle())
                                     {

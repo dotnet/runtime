@@ -12,24 +12,24 @@ namespace System.Reflection.Emit
     {
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
-            if (typeInfo == null) return false;
+            if (typeInfo is null) return false;
             return IsAssignableFrom(typeInfo.AsType());
         }
 
         #region Static Members
         internal static Type MakeGenericType(Type type, Type[] typeArguments)
         {
-            Debug.Assert(type != null, "this is only called from RuntimeType.MakeGenericType and TypeBuilder.MakeGenericType so 'type' cannot be null");
+            Debug.Assert(type is not null, "this is only called from RuntimeType.MakeGenericType and TypeBuilder.MakeGenericType so 'type' cannot be null");
 
             if (!type.IsGenericTypeDefinition)
                 throw new InvalidOperationException();
 
-            if (typeArguments == null)
+            if (typeArguments is null)
                 throw new ArgumentNullException(nameof(typeArguments));
 
             foreach (Type t in typeArguments)
             {
-                if (t == null)
+                if (t is null)
                     throw new ArgumentNullException(nameof(typeArguments));
             }
 
@@ -144,12 +144,12 @@ namespace System.Reflection.Emit
             {
                 Type? typeBldrBase = m_type.BaseType;
 
-                if (typeBldrBase == null)
+                if (typeBldrBase is null)
                     return null;
 
                 TypeBuilderInstantiation? typeBldrBaseAs = typeBldrBase as TypeBuilderInstantiation;
 
-                if (typeBldrBaseAs == null)
+                if (typeBldrBaseAs is null)
                     return typeBldrBase;
 
                 return typeBldrBaseAs.Substitute(GetGenericArguments());

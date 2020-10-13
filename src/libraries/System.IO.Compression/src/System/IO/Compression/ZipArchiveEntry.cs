@@ -188,7 +188,7 @@ namespace System.IO.Compression
             [MemberNotNull(nameof(_storedEntryName))]
             private set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(FullName));
 
                 bool isUTF8;
@@ -262,7 +262,7 @@ namespace System.IO.Compression
         /// <exception cref="ObjectDisposedException">The ZipArchive that this entry belongs to has been disposed.</exception>
         public void Delete()
         {
-            if (_archive == null)
+            if (_archive is null)
                 return;
 
             if (_currentlyOpenForWrite)
@@ -322,9 +322,9 @@ namespace System.IO.Compression
         {
             get
             {
-                if (_storedOffsetOfCompressedData == null)
+                if (_storedOffsetOfCompressedData is null)
                 {
-                    Debug.Assert(_archive.ArchiveReader != null);
+                    Debug.Assert(_archive.ArchiveReader is not null);
                     _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
                     // by calling this, we are using local header _storedEntryNameBytes.Length and extraFieldLength
                     // to find start of data, but still using central directory size information
@@ -340,7 +340,7 @@ namespace System.IO.Compression
         {
             get
             {
-                if (_storedUncompressedData == null)
+                if (_storedUncompressedData is null)
                 {
                     // this means we have never opened it before
 
@@ -398,12 +398,12 @@ namespace System.IO.Compression
 
         private string DecodeEntryName(byte[] entryNameBytes)
         {
-            Debug.Assert(entryNameBytes != null);
+            Debug.Assert(entryNameBytes is not null);
 
             Encoding readEntryNameEncoding;
             if ((_generalPurposeBitFlag & BitFlagValues.UnicodeFileName) == 0)
             {
-                readEntryNameEncoding = _archive == null ?
+                readEntryNameEncoding = _archive is null ?
                     Encoding.UTF8 :
                     _archive.EntryNameEncoding ?? Encoding.UTF8;
             }
@@ -417,10 +417,10 @@ namespace System.IO.Compression
 
         private byte[] EncodeEntryName(string entryName, out bool isUTF8)
         {
-            Debug.Assert(entryName != null);
+            Debug.Assert(entryName is not null);
 
             Encoding writeEntryNameEncoding;
-            if (_archive != null && _archive.EntryNameEncoding != null)
+            if (_archive is not null && _archive.EntryNameEncoding is not null)
                 writeEntryNameEncoding = _archive.EntryNameEncoding;
             else
                 writeEntryNameEncoding = ZipHelper.RequiresUnicode(entryName) ? Encoding.UTF8 : Encoding.ASCII;
@@ -504,7 +504,7 @@ namespace System.IO.Compression
 
             // determine if we can fit zip64 extra field and original extra fields all in
             int bigExtraFieldLength = (zip64Needed ? zip64ExtraField.TotalSize : 0)
-                                      + (_cdUnknownExtraFields != null ? ZipGenericExtraField.TotalSize(_cdUnknownExtraFields) : 0);
+                                      + (_cdUnknownExtraFields is not null ? ZipGenericExtraField.TotalSize(_cdUnknownExtraFields) : 0);
             ushort extraFieldLength;
             if (bigExtraFieldLength > ushort.MaxValue)
             {
@@ -530,9 +530,9 @@ namespace System.IO.Compression
             writer.Write(extraFieldLength);                                     // Extra Field Length                       (2 bytes)
 
             // This should hold because of how we read it originally in ZipCentralDirectoryFileHeader:
-            Debug.Assert((_fileComment == null) || (_fileComment.Length <= ushort.MaxValue));
+            Debug.Assert((_fileComment is null) || (_fileComment.Length <= ushort.MaxValue));
 
-            writer.Write(_fileComment != null ? (ushort)_fileComment.Length : (ushort)0); // file comment length
+            writer.Write(_fileComment is not null ? (ushort)_fileComment.Length : (ushort)0); // file comment length
             writer.Write((ushort)0); // disk number start
             writer.Write((ushort)0); // internal file attributes
             writer.Write(_externalFileAttr); // external file attributes
@@ -543,10 +543,10 @@ namespace System.IO.Compression
             // write extra fields
             if (zip64Needed)
                 zip64ExtraField.WriteBlock(_archive.ArchiveStream);
-            if (_cdUnknownExtraFields != null)
+            if (_cdUnknownExtraFields is not null)
                 ZipGenericExtraField.WriteAllBlocks(_cdUnknownExtraFields, _archive.ArchiveStream);
 
-            if (_fileComment != null)
+            if (_fileComment is not null)
                 writer.Write(_fileComment);
         }
 
@@ -562,7 +562,7 @@ namespace System.IO.Compression
             {
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
 
-                Debug.Assert(_archive.ArchiveReader != null);
+                Debug.Assert(_archive.ArchiveReader is not null);
                 _lhUnknownExtraFields = ZipLocalFileHeader.GetExtraFields(_archive.ArchiveReader);
             }
 
@@ -748,7 +748,7 @@ namespace System.IO.Compression
                     message = SR.LocalFileHeaderCorrupt;
                     return false;
                 }
-                Debug.Assert(_archive.ArchiveReader != null);
+                Debug.Assert(_archive.ArchiveReader is not null);
                 _archive.ArchiveStream.Seek(_offsetOfLocalHeader, SeekOrigin.Begin);
                 if (!ZipLocalFileHeader.TrySkipBlock(_archive.ArchiveReader))
                 {
@@ -854,7 +854,7 @@ namespace System.IO.Compression
 
             // calculate extra field. if zip64 stuff + original extraField aren't going to fit, dump the original extraField, because this is more important
             int bigExtraFieldLength = (zip64Used ? zip64ExtraField.TotalSize : 0)
-                                      + (_lhUnknownExtraFields != null ? ZipGenericExtraField.TotalSize(_lhUnknownExtraFields) : 0);
+                                      + (_lhUnknownExtraFields is not null ? ZipGenericExtraField.TotalSize(_lhUnknownExtraFields) : 0);
             ushort extraFieldLength;
             if (bigExtraFieldLength > ushort.MaxValue)
             {
@@ -882,7 +882,7 @@ namespace System.IO.Compression
 
             if (zip64Used)
                 zip64ExtraField.WriteBlock(_archive.ArchiveStream);
-            if (_lhUnknownExtraFields != null)
+            if (_lhUnknownExtraFields is not null)
                 ZipGenericExtraField.WriteAllBlocks(_lhUnknownExtraFields, _archive.ArchiveStream);
 
             return zip64Used;
@@ -891,9 +891,9 @@ namespace System.IO.Compression
         private void WriteLocalFileHeaderAndDataIfNeeded()
         {
             // _storedUncompressedData gets frozen here, and is what gets written to the file
-            if (_storedUncompressedData != null || _compressedBytes != null)
+            if (_storedUncompressedData is not null || _compressedBytes is not null)
             {
-                if (_storedUncompressedData != null)
+                if (_storedUncompressedData is not null)
                 {
                     _uncompressedSize = _storedUncompressedData.Length;
 
@@ -922,7 +922,7 @@ namespace System.IO.Compression
                     // according to ZIP specs, zero-byte files MUST NOT include file data
                     if (_uncompressedSize != 0)
                     {
-                        Debug.Assert(_compressedBytes != null);
+                        Debug.Assert(_compressedBytes is not null);
                         foreach (byte[] compressedBytes in _compressedBytes)
                         {
                             _archive.ArchiveStream.Write(compressedBytes, 0, compressedBytes.Length);
@@ -1046,7 +1046,7 @@ namespace System.IO.Compression
 
         private void UnloadStreams()
         {
-            if (_storedUncompressedData != null)
+            if (_storedUncompressedData is not null)
                 _storedUncompressedData.Dispose();
             _compressedBytes = null;
             _outstandingWriteStream = null;
@@ -1055,7 +1055,7 @@ namespace System.IO.Compression
         private void CloseStreams()
         {
             // if the user left the stream open, close the underlying stream for them
-            if (_outstandingWriteStream != null)
+            if (_outstandingWriteStream is not null)
             {
                 _outstandingWriteStream.Dispose();
             }
@@ -1075,7 +1075,7 @@ namespace System.IO.Compression
 
         private void ThrowIfInvalidArchive()
         {
-            if (_archive == null)
+            if (_archive is null)
                 throw new InvalidOperationException(SR.DeletedEntry);
             _archive.ThrowIfDisposed();
         }
@@ -1185,7 +1185,7 @@ namespace System.IO.Compression
             public override void Write(byte[] buffer, int offset, int count)
             {
                 //we can't pass the argument checking down a level
-                if (buffer == null)
+                if (buffer is null)
                     throw new ArgumentNullException(nameof(buffer));
                 if (offset < 0)
                     throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentNeedNonNegative);

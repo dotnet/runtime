@@ -12,7 +12,7 @@ namespace System.Linq
         internal static Type? FindGenericType(Type definition, Type type)
         {
             bool? definitionIsInterface = null;
-            while (type != null && type != typeof(object))
+            while (type is not null && type != typeof(object))
             {
                 if (type.IsGenericType && type.GetGenericTypeDefinition() == definition)
                     return type;
@@ -23,7 +23,7 @@ namespace System.Linq
                     foreach (Type itype in type.GetInterfaces())
                     {
                         Type? found = FindGenericType(definition, itype);
-                        if (found != null)
+                        if (found is not null)
                             return found;
                     }
                 }

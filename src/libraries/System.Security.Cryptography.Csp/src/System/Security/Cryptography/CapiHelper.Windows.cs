@@ -111,7 +111,7 @@ namespace Internal.NativeCrypto
                 wszUpgrade = UpgradeDSS(dwType, providerNameString);
             }
 
-            return wszUpgrade != null ?
+            return wszUpgrade is not null ?
                 wszUpgrade : // Overwrite the provider name with the upgraded provider name
                 providerNameString;
         }
@@ -175,8 +175,8 @@ namespace Internal.NativeCrypto
         /// <param name="safeProvHandle">Safe provider handle</param>
         internal static void AcquireCsp(CspParameters cspParameters, out SafeProvHandle safeProvHandle)
         {
-            Debug.Assert(cspParameters != null);
-            Debug.Assert(cspParameters.KeyContainerName == null);
+            Debug.Assert(cspParameters is not null);
+            Debug.Assert(cspParameters.KeyContainerName is null);
 
             SafeProvHandle hProv;
             //
@@ -302,7 +302,7 @@ namespace Internal.NativeCrypto
                 }
             }
 
-            if (parameters.KeyPassword != null)
+            if (parameters.KeyPassword is not null)
             {
                 IntPtr password = Marshal.SecureStringToCoTaskMemAnsi(parameters.KeyPassword);
                 try
@@ -664,7 +664,7 @@ namespace Internal.NativeCrypto
             out bool randomKeyContainer)
         {
             CspParameters parameters;
-            if (userParameters == null)
+            if (userParameters is null)
             {
                 parameters = new CspParameters(keyType == CspAlgorithmType.Dss ?
                                                 DefaultDssProviderType : DefaultRsaProviderType,
@@ -692,7 +692,7 @@ namespace Internal.NativeCrypto
             // to generate an ephemeral key
             randomKeyContainer = IsFlagBitSet((uint)parameters.Flags, (uint)CspProviderFlags.CreateEphemeralKey);
 
-            if (parameters.KeyContainerName == null && !IsFlagBitSet((uint)parameters.Flags,
+            if (parameters.KeyContainerName is null && !IsFlagBitSet((uint)parameters.Flags,
                 (uint)CspProviderFlags.UseDefaultKeyContainer))
             {
                 parameters.Flags |= CspProviderFlags.CreateEphemeralKey;
@@ -815,7 +815,7 @@ namespace Internal.NativeCrypto
         internal static void DecryptKey(SafeKeyHandle safeKeyHandle, byte[] encryptedData, int encryptedDataLength, bool fOAEP, out byte[] decryptedData)
         {
             VerifyValidHandle(safeKeyHandle);
-            Debug.Assert(encryptedData != null, "Encrypted Data is null");
+            Debug.Assert(encryptedData is not null, "Encrypted Data is null");
             Debug.Assert(encryptedDataLength >= 0, "Encrypted data length is less than 0");
 
             byte[] dataToBeDecrypted = new byte[encryptedDataLength];
@@ -875,7 +875,7 @@ namespace Internal.NativeCrypto
         internal static void EncryptKey(SafeKeyHandle safeKeyHandle, byte[] pbKey, int cbKey, bool foep, [NotNull] ref byte[]? pbEncryptedKey)
         {
             VerifyValidHandle(safeKeyHandle);
-            Debug.Assert(pbKey != null, "pbKey is null");
+            Debug.Assert(pbKey is not null, "pbKey is null");
             Debug.Assert(cbKey >= 0, $"cbKey is less than 0 ({cbKey})");
 
             int dwEncryptFlags = foep ? (int)Interop.Advapi32.CryptDecryptFlags.CRYPT_OAEP : 0;
@@ -1033,11 +1033,11 @@ namespace Internal.NativeCrypto
         public static int NameOrOidToHashAlgId(string? nameOrOid, OidGroup oidGroup)
         {
             // Default Algorithm Id is CALG_SHA1
-            if (nameOrOid == null)
+            if (nameOrOid is null)
                 return CapiHelper.CALG_SHA1;
 
             string? oidValue = CryptoConfig.MapNameToOID(nameOrOid);
-            if (oidValue == null)
+            if (oidValue is null)
                 oidValue = nameOrOid; // we were probably passed an OID value directly
 
             int algId = GetAlgIdFromOid(oidValue, oidGroup);
@@ -1052,11 +1052,11 @@ namespace Internal.NativeCrypto
         /// </summary>
         public static int ObjToHashAlgId(object hashAlg)
         {
-            if (hashAlg == null)
+            if (hashAlg is null)
                 throw new ArgumentNullException(nameof(hashAlg));
 
             string? hashAlgString = hashAlg as string;
-            if (hashAlgString != null)
+            if (hashAlgString is not null)
             {
                 int algId = NameOrOidToHashAlgId(hashAlgString, OidGroup.HashAlgorithm);
                 return algId;
@@ -1124,7 +1124,7 @@ namespace Internal.NativeCrypto
         /// </summary>
         private static int GetAlgIdFromOid(string oid, OidGroup oidGroup)
         {
-            Debug.Assert(oid != null);
+            Debug.Assert(oid is not null);
 
             // CAPI does not have ALGID mappings for all of the hash algorithms - see if we know the mapping
             // first to avoid doing an AD lookup on these values
@@ -1392,7 +1392,7 @@ namespace Internal.NativeCrypto
             }
             finally
             {
-                if (hHash != null)
+                if (hHash is not null)
                 {
                     hHash.Dispose();
                 }

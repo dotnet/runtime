@@ -22,7 +22,7 @@ namespace System.Linq.Expressions.Compiler
 
             Debug.Assert(b.NodeType != ExpressionType.AndAlso && b.NodeType != ExpressionType.OrElse && b.NodeType != ExpressionType.Coalesce);
 
-            if (b.Method != null)
+            if (b.Method is not null)
             {
                 EmitBinaryMethod(b, flags);
                 return;
@@ -516,7 +516,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Ldloca, locRight);
             _ilg.EmitGetValueOrDefault(type);
             _ilg.Emit(OpCodes.Or);
-            // if !(left != null | right == true)
+            // if !(left is not null | right == true)
             _ilg.Emit(OpCodes.Brfalse_S, returnRight);
             _ilg.Emit(OpCodes.Ldloc, locLeft);
             FreeLocal(locLeft);
@@ -547,7 +547,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Ldloca, locLeft);
             _ilg.EmitHasValue(type);
             _ilg.Emit(OpCodes.Or);
-            // if !(right == true | left != null)
+            // if !(right == true | left is not null)
             _ilg.Emit(OpCodes.Brfalse_S, returnLeft);
             _ilg.Emit(OpCodes.Ldloc, locRight);
             FreeLocal(locRight);

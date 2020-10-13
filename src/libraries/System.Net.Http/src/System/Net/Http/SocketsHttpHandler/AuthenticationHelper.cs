@@ -47,7 +47,7 @@ namespace System.Net.Http
             {
                 if (StringComparer.OrdinalIgnoreCase.Equals(scheme, ahv.Scheme))
                 {
-                    // Note, a valid challenge can have challengeData == null
+                    // Note, a valid challenge can have challengeData is null
                     challengeData = ahv.Parameter;
                     return true;
                 }
@@ -88,7 +88,7 @@ namespace System.Net.Http
             }
 
             NetworkCredential? credential = credentials.GetCredential(uri, scheme);
-            if (credential == null)
+            if (credential is null)
             {
                 // We have no credential for this auth type, so we can't respond to the challenge.
                 // We'll continue to look for a different auth type that we do have a credential for.
@@ -218,19 +218,19 @@ namespace System.Net.Http
             bool performedBasicPreauth = false;
             if (preAuthenticate)
             {
-                Debug.Assert(pool.PreAuthCredentials != null);
+                Debug.Assert(pool.PreAuthCredentials is not null);
                 NetworkCredential? credential;
                 lock (pool.PreAuthCredentials)
                 {
                     // Just look for basic credentials.  If in the future we support preauth
                     // for other schemes, this will need to search in order of precedence.
-                    Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, NegotiateScheme) == null);
-                    Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, NtlmScheme) == null);
-                    Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, DigestScheme) == null);
+                    Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, NegotiateScheme) is null);
+                    Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, NtlmScheme) is null);
+                    Debug.Assert(pool.PreAuthCredentials.GetCredential(authUri, DigestScheme) is null);
                     credential = pool.PreAuthCredentials.GetCredential(authUri, BasicScheme);
                 }
 
-                if (credential != null)
+                if (credential is not null)
                 {
                     SetBasicAuthToken(request, credential, isProxyAuth);
                     performedBasicPreauth = true;
@@ -332,7 +332,7 @@ namespace System.Net.Http
 
         public static ValueTask<HttpResponseMessage> SendWithRequestAuthAsync(HttpRequestMessage request, bool async, ICredentials credentials, bool preAuthenticate, HttpConnectionPool pool, CancellationToken cancellationToken)
         {
-            Debug.Assert(request.RequestUri != null);
+            Debug.Assert(request.RequestUri is not null);
             return SendWithAuthAsync(request, request.RequestUri, async, credentials, preAuthenticate, isProxyAuth: false, doRequestAuth: true, pool, cancellationToken);
         }
     }

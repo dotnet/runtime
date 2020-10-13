@@ -26,11 +26,11 @@ namespace System.CodeDom.Compiler
         {
             get
             {
-                if (_type == null)
+                if (_type is null)
                 {
                     lock (this)
                     {
-                        if (_type == null)
+                        if (_type is null)
                         {
                             _type = Type.GetType(_codeDomProviderTypeName);
                         }
@@ -41,7 +41,7 @@ namespace System.CodeDom.Compiler
             }
         }
 
-        public bool IsCodeDomProviderTypeValid => Type.GetType(_codeDomProviderTypeName) != null;
+        public bool IsCodeDomProviderTypeValid => Type.GetType(_codeDomProviderTypeName) is not null;
 
         public CodeDomProvider CreateProvider()
         {
@@ -49,12 +49,12 @@ namespace System.CodeDom.Compiler
             // provider options have been provided then call that and give it the
             // provider options dictionary.  Otherwise call the normal one.
 
-            Debug.Assert(_providerOptions != null, "Created CompilerInfo w/ null _providerOptions");
+            Debug.Assert(_providerOptions is not null, "Created CompilerInfo w/ null _providerOptions");
 
             if (_providerOptions.Count > 0)
             {
                 ConstructorInfo ci = CodeDomProviderType.GetConstructor(new Type[] { typeof(IDictionary<string, string>) });
-                if (ci != null)
+                if (ci is not null)
                 {
                     return (CodeDomProvider)ci.Invoke(new object[] { _providerOptions });
                 }
@@ -65,13 +65,13 @@ namespace System.CodeDom.Compiler
 
         public CodeDomProvider CreateProvider(IDictionary<string, string> providerOptions)
         {
-            if (providerOptions == null)
+            if (providerOptions is null)
             {
                 throw new ArgumentNullException(nameof(providerOptions));
             }
 
             ConstructorInfo constructor = CodeDomProviderType.GetConstructor(new Type[] { typeof(IDictionary<string, string>) });
-            if (constructor != null)
+            if (constructor is not null)
             {
                 return (CodeDomProvider)constructor.Invoke(new object[] { providerOptions });
             }

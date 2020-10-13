@@ -32,7 +32,7 @@ namespace System
             // Capture the current synchronization context.
             // If there is no current context, we use a default instance targeting the ThreadPool.
             _synchronizationContext = SynchronizationContext.Current ?? ProgressStatics.DefaultContext;
-            Debug.Assert(_synchronizationContext != null);
+            Debug.Assert(_synchronizationContext is not null);
             _invokeHandlers = new SendOrPostCallback(InvokeHandlers);
         }
 
@@ -66,7 +66,7 @@ namespace System
             // an event handler is removed between now and then.
             Action<T>? handler = _handler;
             EventHandler<T>? changedEvent = ProgressChanged;
-            if (handler != null || changedEvent != null)
+            if (handler is not null || changedEvent is not null)
             {
                 // Post the processing to the sync context.
                 // (If T is a value type, it will get boxed here.)

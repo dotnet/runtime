@@ -140,7 +140,7 @@ namespace System.IO.MemoryMappedFiles
                 }
                 finally
                 {
-                    if (firstPagePtr != null)
+                    if (firstPagePtr is not null)
                     {
                         _viewHandle.ReleasePointer();
                     }

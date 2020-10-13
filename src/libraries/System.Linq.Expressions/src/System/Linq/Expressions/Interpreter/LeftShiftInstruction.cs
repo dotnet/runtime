@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
-                if (value == null || shift == null)
+                if (value is null || shift is null)
                 {
                     frame.Push(null);
                 }
@@ -39,7 +39,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
-                if (value == null || shift == null)
+                if (value is null || shift is null)
                 {
                     frame.Push(null);
                 }
@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
-                if (value == null || shift == null)
+                if (value is null || shift is null)
                 {
                     frame.Push(null);
                 }
@@ -75,7 +75,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
-                if (value == null || shift == null)
+                if (value is null || shift is null)
                 {
                     frame.Push(null);
                 }
@@ -93,7 +93,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
-                if (value == null || shift == null)
+                if (value is null || shift is null)
                 {
                     frame.Push(null);
                 }
@@ -111,7 +111,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
-                if (value == null || shift == null)
+                if (value is null || shift is null)
                 {
                     frame.Push(null);
                 }
@@ -129,7 +129,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
-                if (value == null || shift == null)
+                if (value is null || shift is null)
                 {
                     frame.Push(null);
                 }
@@ -147,7 +147,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? shift = frame.Pop();
                 object? value = frame.Pop();
-                if (value == null || shift == null)
+                if (value is null || shift is null)
                 {
                     frame.Push(null);
                 }

@@ -32,7 +32,7 @@ namespace System.Net.WebSockets
             get
             {
                 // state == Connected or Disposed
-                if (_innerWebSocket != null)
+                if (_innerWebSocket is not null)
                 {
                     return _innerWebSocket.State;
                 }
@@ -52,7 +52,7 @@ namespace System.Net.WebSockets
 
         public Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
         {
-            if (uri == null)
+            if (uri is null)
             {
                 throw new ArgumentNullException(nameof(uri));
             }
@@ -126,8 +126,8 @@ namespace System.Net.WebSockets
                     throw new InvalidOperationException(SR.net_WebSockets_NotConnected);
                 }
 
-                Debug.Assert(_innerWebSocket != null);
-                Debug.Assert(_innerWebSocket.WebSocket != null);
+                Debug.Assert(_innerWebSocket is not null);
+                Debug.Assert(_innerWebSocket.WebSocket is not null);
 
                 return _innerWebSocket.WebSocket;
             }

@@ -152,7 +152,7 @@ namespace System.Xml.Xsl.Runtime
         // Disregard unrecognized options.
         internal static XmlCollation Create(string collationLiteral, bool throwOnError)
         {
-            Debug.Assert(collationLiteral != null, "collation literal should not be null");
+            Debug.Assert(collationLiteral is not null, "collation literal should not be null");
 
             if (collationLiteral == XmlReservedNs.NsCollCodePoint)
             {
@@ -277,7 +277,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // new cultureinfo based on alternate sorting option
-            if (sort != null && cultInfo != null)
+            if (sort is not null && cultInfo is not null)
             {
                 string cultName = cultInfo.Name;
                 switch (sort)
@@ -349,7 +349,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             XmlCollation that = obj as XmlCollation;
-            return that != null &&
+            return that is not null &&
                 _options == that._options &&
                 object.Equals(_cultInfo, that._cultInfo);
         }
@@ -357,7 +357,7 @@ namespace System.Xml.Xsl.Runtime
         public override int GetHashCode()
         {
             int hashCode = _options;
-            if (_cultInfo != null)
+            if (_cultInfo is not null)
             {
                 hashCode ^= _cultInfo.GetHashCode();
             }
@@ -375,9 +375,9 @@ namespace System.Xml.Xsl.Runtime
         internal void GetObjectData(BinaryWriter writer)
         {
             // NOTE: For CultureInfo we serialize only LCID. It seems to suffice for our purposes.
-            Debug.Assert(_cultInfo == null || _cultInfo.Equals(new CultureInfo(_cultInfo.Name)),
+            Debug.Assert(_cultInfo is null || _cultInfo.Equals(new CultureInfo(_cultInfo.Name)),
                 "Cannot serialize CultureInfo correctly");
-            writer.Write(_cultInfo != null ? _cultInfo.Name : LOCALE_CURRENT);
+            writer.Write(_cultInfo is not null ? _cultInfo.Name : LOCALE_CURRENT);
             writer.Write(_options);
         }
 
@@ -413,7 +413,7 @@ namespace System.Xml.Xsl.Runtime
             get
             {
                 // Use default thread culture if this.cultinfo = null
-                if (_cultInfo == null)
+                if (_cultInfo is null)
                     return CultureInfo.CurrentCulture;
 
                 return _cultInfo;

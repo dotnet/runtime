@@ -27,7 +27,7 @@ namespace System.Net.Http
             set
             {
 #if !PHONE
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -50,7 +50,7 @@ namespace System.Net.Http
 
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    if (value == null)
+                    if (value is null)
                     {
                         NetEventSource.ContentNull(this);
                     }
@@ -85,7 +85,7 @@ namespace System.Net.Http
         {
             get
             {
-                if (_reasonPhrase != null)
+                if (_reasonPhrase is not null)
                 {
                     return _reasonPhrase;
                 }
@@ -94,7 +94,7 @@ namespace System.Net.Http
             }
             set
             {
-                if ((value != null) && ContainsNewLineCharacter(value))
+                if ((value is not null) && ContainsNewLineCharacter(value))
                 {
                     throw new FormatException(SR.net_http_reasonphrase_format_error);
                 }
@@ -137,7 +137,7 @@ namespace System.Net.Http
             set
             {
                 CheckDisposed();
-                if (value != null) NetEventSource.Associate(this, value);
+                if (value is not null) NetEventSource.Associate(this, value);
                 _requestMessage = value;
             }
         }
@@ -194,12 +194,12 @@ namespace System.Net.Http
             sb.Append(_version);
 
             sb.Append(", Content: ");
-            sb.Append(_content == null ? "<null>" : _content.GetType().ToString());
+            sb.Append(_content is null ? "<null>" : _content.GetType().ToString());
 
             sb.AppendLine(", Headers:");
             HeaderUtilities.DumpHeaders(sb, _headers, _content?.Headers);
 
-            if (_trailingHeaders != null)
+            if (_trailingHeaders is not null)
             {
                 sb.AppendLine(", Trailing Headers:");
                 HeaderUtilities.DumpHeaders(sb, _trailingHeaders);
@@ -229,7 +229,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_content != null)
+                if (_content is not null)
                 {
                     _content.Dispose();
                 }

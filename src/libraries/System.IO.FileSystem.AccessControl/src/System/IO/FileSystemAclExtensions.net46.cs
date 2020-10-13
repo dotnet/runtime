@@ -9,10 +9,10 @@ namespace System.IO
     {
         public static FileStream Create(this FileInfo fileInfo, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity fileSecurity)
         {
-            if (fileInfo == null)
+            if (fileInfo is null)
                 throw new ArgumentNullException(nameof(fileInfo));
 
-            if (fileSecurity == null)
+            if (fileSecurity is null)
                 throw new ArgumentNullException(nameof(fileSecurity));
 
             return new FileStream(fileInfo.FullName, mode, rights, share, bufferSize, options, fileSecurity);
@@ -20,10 +20,10 @@ namespace System.IO
 
         public static void Create(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
         {
-            if (directoryInfo == null)
+            if (directoryInfo is null)
                 throw new ArgumentNullException(nameof(directoryInfo));
 
-            if (directorySecurity == null)
+            if (directorySecurity is null)
                 throw new ArgumentNullException(nameof(directorySecurity));
 
             directoryInfo.Create(directorySecurity);
@@ -31,10 +31,10 @@ namespace System.IO
 
         public static DirectoryInfo CreateDirectory(this DirectorySecurity directorySecurity, string path)
         {
-            if (directorySecurity == null)
+            if (directorySecurity is null)
                 throw new ArgumentNullException(nameof(directorySecurity));
 
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             if (path.Length == 0)
@@ -45,7 +45,7 @@ namespace System.IO
 
         public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo)
         {
-            if (directoryInfo == null)
+            if (directoryInfo is null)
                 throw new ArgumentNullException(nameof(directoryInfo));
 
             return directoryInfo.GetAccessControl();
@@ -53,7 +53,7 @@ namespace System.IO
 
         public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo, AccessControlSections includeSections)
         {
-            if (directoryInfo == null)
+            if (directoryInfo is null)
                 throw new ArgumentNullException(nameof(directoryInfo));
 
             return directoryInfo.GetAccessControl(includeSections);
@@ -61,10 +61,10 @@ namespace System.IO
 
         public static void SetAccessControl(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
         {
-            if (directoryInfo == null)
+            if (directoryInfo is null)
                 throw new ArgumentNullException(nameof(directoryInfo));
 
-            if (directorySecurity == null)
+            if (directorySecurity is null)
                 throw new ArgumentNullException(nameof(directorySecurity));
 
             directoryInfo.SetAccessControl(directorySecurity);
@@ -72,7 +72,7 @@ namespace System.IO
 
         public static FileSecurity GetAccessControl(this FileInfo fileInfo)
         {
-            if (fileInfo == null)
+            if (fileInfo is null)
                 throw new ArgumentNullException(nameof(fileInfo));
 
             return fileInfo.GetAccessControl();
@@ -80,7 +80,7 @@ namespace System.IO
 
         public static FileSecurity GetAccessControl(this FileInfo fileInfo, AccessControlSections includeSections)
         {
-            if (fileInfo == null)
+            if (fileInfo is null)
                 throw new ArgumentNullException(nameof(fileInfo));
 
             return fileInfo.GetAccessControl(includeSections);
@@ -88,10 +88,10 @@ namespace System.IO
 
         public static void SetAccessControl(this FileInfo fileInfo, FileSecurity fileSecurity)
         {
-            if (fileInfo == null)
+            if (fileInfo is null)
                 throw new ArgumentNullException(nameof(fileInfo));
 
-            if (fileSecurity == null)
+            if (fileSecurity is null)
                 throw new ArgumentNullException(nameof(fileSecurity));
 
             fileInfo.SetAccessControl(fileSecurity);
@@ -99,7 +99,7 @@ namespace System.IO
 
         public static FileSecurity GetAccessControl(this FileStream fileStream)
         {
-            if (fileStream == null)
+            if (fileStream is null)
                 throw new ArgumentNullException(nameof(fileStream));
 
             return fileStream.GetAccessControl();
@@ -107,10 +107,10 @@ namespace System.IO
 
         public static void SetAccessControl(this FileStream fileStream, FileSecurity fileSecurity)
         {
-            if (fileStream == null)
+            if (fileStream is null)
                 throw new ArgumentNullException(nameof(fileStream));
 
-            if (fileSecurity == null)
+            if (fileSecurity is null)
                 throw new ArgumentNullException(nameof(fileSecurity));
 
             fileStream.SetAccessControl(fileSecurity);

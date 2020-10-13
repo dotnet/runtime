@@ -135,7 +135,7 @@ namespace System.Net.Http.Headers
 
         private CacheControlHeaderValue(CacheControlHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _noCache = source._noCache;
             _noStore = source._noStore;
@@ -151,7 +151,7 @@ namespace System.Net.Http.Headers
             _mustRevalidate = source._mustRevalidate;
             _proxyRevalidate = source._proxyRevalidate;
 
-            if (source._noCacheHeaders != null)
+            if (source._noCacheHeaders is not null)
             {
                 foreach (var noCacheHeader in source._noCacheHeaders)
                 {
@@ -159,7 +159,7 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            if (source._privateHeaders != null)
+            if (source._privateHeaders is not null)
             {
                 foreach (var privateHeader in source._privateHeaders)
                 {
@@ -167,7 +167,7 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            if (source._extensions != null)
+            if (source._extensions is not null)
             {
                 foreach (var extension in source._extensions)
                 {
@@ -190,7 +190,7 @@ namespace System.Net.Http.Headers
             if (_noCache)
             {
                 AppendValueWithSeparatorIfRequired(sb, noCacheString);
-                if ((_noCacheHeaders != null) && (_noCacheHeaders.Count > 0))
+                if ((_noCacheHeaders is not null) && (_noCacheHeaders.Count > 0))
                 {
                     sb.Append("=\"");
                     AppendValues(sb, _noCacheHeaders);
@@ -272,7 +272,7 @@ namespace System.Net.Http.Headers
             if (_privateField)
             {
                 AppendValueWithSeparatorIfRequired(sb, privateString);
-                if ((_privateHeaders != null) && (_privateHeaders.Count > 0))
+                if ((_privateHeaders is not null) && (_privateHeaders.Count > 0))
                 {
                     sb.Append("=\"");
                     AppendValues(sb, _privateHeaders);
@@ -289,7 +289,7 @@ namespace System.Net.Http.Headers
         {
             CacheControlHeaderValue? other = obj as CacheControlHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -341,7 +341,7 @@ namespace System.Net.Http.Headers
                 (_maxStaleLimit.HasValue ? _maxStaleLimit.Value.GetHashCode() ^ 4 : 0) ^
                 (_minFresh.HasValue ? _minFresh.Value.GetHashCode() ^ 8 : 0);
 
-            if ((_noCacheHeaders != null) && (_noCacheHeaders.Count > 0))
+            if ((_noCacheHeaders is not null) && (_noCacheHeaders.Count > 0))
             {
                 foreach (var noCacheHeader in _noCacheHeaders)
                 {
@@ -349,7 +349,7 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            if ((_privateHeaders != null) && (_privateHeaders.Count > 0))
+            if ((_privateHeaders is not null) && (_privateHeaders.Count > 0))
             {
                 foreach (var privateHeader in _privateHeaders)
                 {
@@ -357,7 +357,7 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            if ((_extensions != null) && (_extensions.Count > 0))
+            if ((_extensions is not null) && (_extensions.Count > 0))
             {
                 foreach (var extension in _extensions)
                 {
@@ -421,7 +421,7 @@ namespace System.Net.Http.Headers
             // CacheControlHeaderValue. So if we already have an instance of CacheControlHeaderValue, add the values
             // from this string to the existing instances.
             CacheControlHeaderValue? result = storeValue;
-            if (result == null)
+            if (result is null)
             {
                 result = new CacheControlHeaderValue();
             }
@@ -434,7 +434,7 @@ namespace System.Net.Http.Headers
             // If we had an existing store value and we just updated that instance, return 'null' to indicate that
             // we don't have a new instance of CacheControlHeaderValue, but just updated an existing one. This is the
             // case if we have multiple 'Cache-Control' headers set in a request/response message.
-            if (storeValue == null)
+            if (storeValue is null)
             {
                 parsedValue = result;
             }
@@ -466,7 +466,7 @@ namespace System.Net.Http.Headers
                         break;
 
                     case maxStaleString:
-                        success = ((nameValue.Value == null) || TrySetTimeSpan(nameValue, ref cc._maxStaleLimit));
+                        success = ((nameValue.Value is null) || TrySetTimeSpan(nameValue, ref cc._maxStaleLimit));
                         if (success)
                         {
                             cc._maxStale = true;
@@ -521,7 +521,7 @@ namespace System.Net.Http.Headers
 
         private static bool TrySetTokenOnlyValue(NameValueHeaderValue nameValue, ref bool boolField)
         {
-            if (nameValue.Value != null)
+            if (nameValue.Value is not null)
             {
                 return false;
             }
@@ -533,9 +533,9 @@ namespace System.Net.Http.Headers
         private static bool TrySetOptionalTokenList(NameValueHeaderValue nameValue, ref bool boolField,
             ref ObjectCollection<string>? destination)
         {
-            Debug.Assert(nameValue != null);
+            Debug.Assert(nameValue is not null);
 
-            if (nameValue.Value == null)
+            if (nameValue.Value is null)
             {
                 boolField = true;
                 return true;
@@ -553,7 +553,7 @@ namespace System.Net.Http.Headers
             int current = 1; // skip the initial '"' character.
             int maxLength = valueString.Length - 1; // -1 because we don't want to parse the final '"'.
             bool separatorFound = false;
-            int originalValueCount = destination == null ? 0 : destination.Count;
+            int originalValueCount = destination is null ? 0 : destination.Count;
             while (current < maxLength)
             {
                 current = HeaderUtilities.GetNextNonEmptyOrWhitespaceIndex(valueString, current, true,
@@ -580,7 +580,7 @@ namespace System.Net.Http.Headers
             }
 
             // After parsing a valid token list, we expect to have at least one value
-            if ((destination != null) && (destination.Count > originalValueCount))
+            if ((destination is not null) && (destination.Count > originalValueCount))
             {
                 boolField = true;
                 return true;
@@ -591,9 +591,9 @@ namespace System.Net.Http.Headers
 
         private static bool TrySetTimeSpan(NameValueHeaderValue nameValue, ref TimeSpan? timeSpan)
         {
-            Debug.Assert(nameValue != null);
+            Debug.Assert(nameValue is not null);
 
-            if (nameValue.Value == null)
+            if (nameValue.Value is null)
             {
                 return false;
             }

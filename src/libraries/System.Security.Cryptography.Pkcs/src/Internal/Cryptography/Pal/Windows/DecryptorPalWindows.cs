@@ -21,7 +21,7 @@ namespace Internal.Cryptography.Pal.Windows
 
         public sealed override void Dispose()
         {
-            if (_hCryptMsg != null && !_hCryptMsg.IsInvalid)
+            if (_hCryptMsg is not null && !_hCryptMsg.IsInvalid)
             {
                 _hCryptMsg.Dispose();
                 _hCryptMsg = null!;

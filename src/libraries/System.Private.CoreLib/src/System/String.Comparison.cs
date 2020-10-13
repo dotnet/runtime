@@ -20,8 +20,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool EqualsHelper(string strA, string strB)
         {
-            Debug.Assert(strA != null);
-            Debug.Assert(strB != null);
+            Debug.Assert(strA is not null);
+            Debug.Assert(strB is not null);
             Debug.Assert(strA.Length == strB.Length);
 
             return SpanHelpers.SequenceEqual(
@@ -33,8 +33,8 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static int CompareOrdinalHelper(string strA, int indexA, int countA, string strB, int indexB, int countB)
         {
-            Debug.Assert(strA != null);
-            Debug.Assert(strB != null);
+            Debug.Assert(strA is not null);
+            Debug.Assert(strB is not null);
             Debug.Assert(indexA >= 0 && indexB >= 0);
             Debug.Assert(countA >= 0 && countB >= 0);
             Debug.Assert(indexA + countA <= strA.Length && indexB + countB <= strB.Length);
@@ -71,8 +71,8 @@ namespace System
 
         private static unsafe int CompareOrdinalHelper(string strA, string strB)
         {
-            Debug.Assert(strA != null);
-            Debug.Assert(strB != null);
+            Debug.Assert(strA is not null);
+            Debug.Assert(strB is not null);
 
             // NOTE: This may be subject to change if eliminating the check
             // in the callers makes them small enough to be inlined
@@ -219,12 +219,12 @@ namespace System
             }
 
             // They can't both be null at this point.
-            if (strA == null)
+            if (strA is null)
             {
                 CheckStringComparison(comparisonType);
                 return -1;
             }
-            if (strB == null)
+            if (strB is null)
             {
                 CheckStringComparison(comparisonType);
                 return 1;
@@ -314,12 +314,12 @@ namespace System
             int lengthA = length;
             int lengthB = length;
 
-            if (strA != null)
+            if (strA is not null)
             {
                 lengthA = Math.Min(lengthA, strA.Length - indexA);
             }
 
-            if (strB != null)
+            if (strB is not null)
             {
                 lengthB = Math.Min(lengthB, strB.Length - indexB);
             }
@@ -349,12 +349,12 @@ namespace System
             int lengthA = length;
             int lengthB = length;
 
-            if (strA != null)
+            if (strA is not null)
             {
                 lengthA = Math.Min(lengthA, strA.Length - indexA);
             }
 
-            if (strB != null)
+            if (strB is not null)
             {
                 lengthB = Math.Min(lengthB, strB.Length - indexB);
             }
@@ -366,7 +366,7 @@ namespace System
         {
             CheckStringComparison(comparisonType);
 
-            if (strA == null || strB == null)
+            if (strA is null || strB is null)
             {
                 if (object.ReferenceEquals(strA, strB))
                 {
@@ -374,7 +374,7 @@ namespace System
                     return 0;
                 }
 
-                return strA == null ? -1 : 1;
+                return strA is null ? -1 : 1;
             }
 
             if (length < 0)
@@ -431,11 +431,11 @@ namespace System
             }
 
             // They can't both be null at this point.
-            if (strA == null)
+            if (strA is null)
             {
                 return -1;
             }
-            if (strB == null)
+            if (strB is null)
             {
                 return 1;
             }
@@ -458,7 +458,7 @@ namespace System
         //
         public static int CompareOrdinal(string? strA, int indexA, string? strB, int indexB, int length)
         {
-            if (strA == null || strB == null)
+            if (strA is null || strB is null)
             {
                 if (object.ReferenceEquals(strA, strB))
                 {
@@ -466,7 +466,7 @@ namespace System
                     return 0;
                 }
 
-                return strA == null ? -1 : 1;
+                return strA is null ? -1 : 1;
             }
 
             // COMPAT: Checking for nulls should become before the arguments are validated,
@@ -506,7 +506,7 @@ namespace System
         //
         public int CompareTo(object? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 return 1;
             }
@@ -626,7 +626,7 @@ namespace System
             // If either side of an == comparison between strings
             // is null, Roslyn generates a simple ceq instruction
             // instead of calling string.op_Equality.
-            if (value == null)
+            if (value is null)
                 return false;
 
             if (this.Length != value.Length)

@@ -35,10 +35,10 @@ namespace System
         //  compiler generated code
         protected Delegate(object target, string method)
         {
-            if (target == null)
+            if (target is null)
                 throw new ArgumentNullException(nameof(target));
 
-            if (method == null)
+            if (method is null)
                 throw new ArgumentNullException(nameof(method));
 
             // This API existed in v1/v1.1 and only expected to create closed
@@ -58,13 +58,13 @@ namespace System
         // for the class defining the method.
         protected Delegate(Type target, string method)
         {
-            if (target == null)
+            if (target is null)
                 throw new ArgumentNullException(nameof(target));
 
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
 
-            if (method == null)
+            if (method is null)
                 throw new ArgumentNullException(nameof(method));
 
             if (!(target is RuntimeType rtTarget))
@@ -94,7 +94,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || !InternalEqualTypes(this, obj))
+            if (obj is null || !InternalEqualTypes(this, obj))
                 return false;
 
             Delegate d = (Delegate)obj;
@@ -136,7 +136,7 @@ namespace System
 
             // method ptrs don't match, go down long path
             //
-            if (_methodBase == null || d._methodBase == null || !(_methodBase is MethodInfo) || !(d._methodBase is MethodInfo))
+            if (_methodBase is null || d._methodBase is null || !(_methodBase is MethodInfo) || !(d._methodBase is MethodInfo))
                 return Delegate.InternalEqualMethodHandles(this, d);
             else
                 return _methodBase.Equals(d._methodBase);
@@ -155,14 +155,14 @@ namespace System
                 return unchecked((int)((long)this._methodPtrAux));
             */
             if (_methodPtrAux == IntPtr.Zero)
-                return (_target != null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + GetType().GetHashCode();
+                return (_target is not null ? RuntimeHelpers.GetHashCode(_target) * 33 : 0) + GetType().GetHashCode();
             else
                 return GetType().GetHashCode();
         }
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            if ((_methodBase == null) || !(_methodBase is MethodInfo))
+            if ((_methodBase is null) || !(_methodBase is MethodInfo))
             {
                 IRuntimeMethodInfo method = FindMethodHandle();
                 RuntimeType? declaringType = RuntimeMethodHandle.GetDeclaringType(method);
@@ -186,7 +186,7 @@ namespace System
                             // walking won't be we compare using the generic type definition forms instead.
                             Type? currentType = _target!.GetType();
                             Type targetType = declaringType.GetGenericTypeDefinition();
-                            while (currentType != null)
+                            while (currentType is not null)
                             {
                                 if (currentType.IsGenericType &&
                                     currentType.GetGenericTypeDefinition() == targetType)
@@ -200,7 +200,7 @@ namespace System
                             // RCWs don't need to be "strongly-typed" in which case we don't find a base type
                             // that matches the declaring type of the method. This is fine because interop needs
                             // to work with exact methods anyway so declaringType is never shared at this point.
-                            Debug.Assert(currentType != null || _target.GetType().IsCOMObject, "The class hierarchy should declare the method");
+                            Debug.Assert(currentType is not null || _target.GetType().IsCOMObject, "The class hierarchy should declare the method");
                         }
                         else
                         {
@@ -221,11 +221,11 @@ namespace System
         [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, object target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
-            if (target == null)
+            if (target is null)
                 throw new ArgumentNullException(nameof(target));
-            if (method == null)
+            if (method is null)
                 throw new ArgumentNullException(nameof(method));
 
             if (!(type is RuntimeType rtType))
@@ -260,13 +260,13 @@ namespace System
         [RequiresUnreferencedCode("The target method might be removed")]
         public static Delegate? CreateDelegate(Type type, Type target, string method, bool ignoreCase, bool throwOnBindFailure)
         {
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
-            if (target == null)
+            if (target is null)
                 throw new ArgumentNullException(nameof(target));
             if (target.ContainsGenericParameters)
                 throw new ArgumentException(SR.Arg_UnboundGenParam, nameof(target));
-            if (method == null)
+            if (method is null)
                 throw new ArgumentNullException(nameof(method));
 
             if (!(type is RuntimeType rtType))
@@ -300,9 +300,9 @@ namespace System
         public static Delegate? CreateDelegate(Type type, MethodInfo method, bool throwOnBindFailure)
         {
             // Validate the parameters.
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
-            if (method == null)
+            if (method is null)
                 throw new ArgumentNullException(nameof(method));
 
             if (!(type is RuntimeType rtType))
@@ -328,7 +328,7 @@ namespace System
                 null,
                 DelegateBindingFlags.OpenDelegateOnly | DelegateBindingFlags.RelaxedSignature);
 
-            if (d == null && throwOnBindFailure)
+            if (d is null && throwOnBindFailure)
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);
 
             return d;
@@ -338,9 +338,9 @@ namespace System
         public static Delegate? CreateDelegate(Type type, object? firstArgument, MethodInfo method, bool throwOnBindFailure)
         {
             // Validate the parameters.
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
-            if (method == null)
+            if (method is null)
                 throw new ArgumentNullException(nameof(method));
 
             if (!(type is RuntimeType rtType))
@@ -363,7 +363,7 @@ namespace System
                 firstArgument,
                 DelegateBindingFlags.RelaxedSignature);
 
-            if (d == null && throwOnBindFailure)
+            if (d is null && throwOnBindFailure)
                 throw new ArgumentException(SR.Arg_DlgtTargMeth);
 
             return d;
@@ -377,7 +377,7 @@ namespace System
         internal static Delegate CreateDelegateNoSecurityCheck(Type type, object? target, RuntimeMethodHandle method)
         {
             // Validate the parameters.
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
             if (method.IsNullHandle())

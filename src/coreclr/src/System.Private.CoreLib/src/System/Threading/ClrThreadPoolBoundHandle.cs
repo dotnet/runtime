@@ -73,7 +73,7 @@ namespace System.Threading
         /// </remarks>
         public static ThreadPoolBoundHandle BindHandle(SafeHandle handle)
         {
-            if (handle == null)
+            if (handle is null)
                 throw new ArgumentNullException(nameof(handle));
 
             if (handle.IsClosed || handle.IsInvalid)
@@ -126,7 +126,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData)
         {
-            if (callback == null)
+            if (callback is null)
                 throw new ArgumentNullException(nameof(callback));
 
             EnsureNotDisposed();
@@ -167,7 +167,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated)
         {
-            if (preAllocated == null)
+            if (preAllocated is null)
                 throw new ArgumentNullException(nameof(preAllocated));
 
             EnsureNotDisposed();
@@ -177,7 +177,7 @@ namespace System.Threading
             {
                 ThreadPoolBoundHandleOverlapped overlapped = preAllocated._overlapped;
 
-                if (overlapped._boundHandle != null)
+                if (overlapped._boundHandle is not null)
                     throw new ArgumentException(SR.Argument_PreAllocatedAlreadyAllocated, nameof(preAllocated));
 
                 overlapped._boundHandle = this;
@@ -217,7 +217,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped)
         {
-            if (overlapped == null)
+            if (overlapped is null)
                 throw new ArgumentNullException(nameof(overlapped));
 
             // Note: we explicitly allow FreeNativeOverlapped calls after the ThreadPoolBoundHandle has been Disposed.
@@ -227,7 +227,7 @@ namespace System.Threading
             if (wrapper._boundHandle != this)
                 throw new ArgumentException(SR.Argument_NativeOverlappedWrongBoundHandle, nameof(overlapped));
 
-            if (wrapper._preAllocated != null)
+            if (wrapper._preAllocated is not null)
                 wrapper._preAllocated.Release();
             else
                 Overlapped.Free(overlapped);
@@ -252,11 +252,11 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe object? GetNativeOverlappedState(NativeOverlapped* overlapped)
         {
-            if (overlapped == null)
+            if (overlapped is null)
                 throw new ArgumentNullException(nameof(overlapped));
 
             ThreadPoolBoundHandleOverlapped wrapper = GetOverlappedWrapper(overlapped);
-            Debug.Assert(wrapper._boundHandle != null);
+            Debug.Assert(wrapper._boundHandle is not null);
             return wrapper._userState;
         }
 

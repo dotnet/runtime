@@ -25,11 +25,11 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public object CreateBuilder(IServiceCollection services)
         {
-            if (_serviceProviderFactory == null)
+            if (_serviceProviderFactory is null)
             {
                 _serviceProviderFactory = _factoryResolver(_contextResolver());
 
-                if (_serviceProviderFactory == null)
+                if (_serviceProviderFactory is null)
                 {
                     throw new InvalidOperationException("The resolver returned a null IServiceProviderFactory");
                 }
@@ -39,7 +39,7 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public IServiceProvider CreateServiceProvider(object containerBuilder)
         {
-            if (_serviceProviderFactory == null)
+            if (_serviceProviderFactory is null)
             {
                 throw new InvalidOperationException("CreateBuilder must be called before CreateServiceProvider");
             }

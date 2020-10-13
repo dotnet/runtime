@@ -25,7 +25,7 @@ namespace System.IO.Ports
 
             using (RegistryKey serialKey = Registry.LocalMachine.OpenSubKey(@"HARDWARE\DEVICEMAP\SERIALCOMM"))
             {
-                if (serialKey != null)
+                if (serialKey is not null)
                 {
                     string[] result = serialKey.GetValueNames();
                     for (int i = 0; i < result.Length; i++)

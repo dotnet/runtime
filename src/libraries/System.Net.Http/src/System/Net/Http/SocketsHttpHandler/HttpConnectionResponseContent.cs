@@ -15,7 +15,7 @@ namespace System.Net.Http
 
         public void SetStream(Stream stream)
         {
-            Debug.Assert(stream != null);
+            Debug.Assert(stream is not null);
             Debug.Assert(stream.CanRead);
             Debug.Assert(!_consumedStream);
 
@@ -24,7 +24,7 @@ namespace System.Net.Http
 
         private Stream ConsumeStream()
         {
-            if (_consumedStream || _stream == null)
+            if (_consumedStream || _stream is null)
             {
                 throw new InvalidOperationException(SR.net_http_content_stream_already_read);
             }
@@ -36,7 +36,7 @@ namespace System.Net.Http
         protected override void SerializeToStream(Stream stream, TransportContext? context,
             CancellationToken cancellationToken)
         {
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
@@ -53,7 +53,7 @@ namespace System.Net.Http
 
         protected sealed override async Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
@@ -86,7 +86,7 @@ namespace System.Net.Http
         {
             if (disposing)
             {
-                if (_stream != null)
+                if (_stream is not null)
                 {
                     _stream.Dispose();
                     _stream = null;

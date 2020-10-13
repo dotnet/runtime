@@ -14,7 +14,7 @@ namespace System.ComponentModel.Composition
     {
         public static TMetadataView GetMetadataView<TMetadataView>(IDictionary<string, object?> metadata)
         {
-            if (metadata == null)
+            if (metadata is null)
             {
                 throw new ArgumentNullException(nameof(metadata));
             }
@@ -47,9 +47,9 @@ namespace System.ComponentModel.Composition
                     else
                     {
                         var implementationAttribute = metadataViewType.GetFirstAttribute<MetadataViewImplementationAttribute>();
-                        Debug.Assert(implementationAttribute != null);
+                        Debug.Assert(implementationAttribute is not null);
                         proxyType = implementationAttribute.ImplementationType;
-                        if (proxyType == null)
+                        if (proxyType is null)
                         {
                             throw new CompositionContractMismatchException(SR.Format(
                                 SR.ContractMismatch_MetadataViewImplementationCanNotBeNull,
@@ -75,13 +75,13 @@ namespace System.ComponentModel.Composition
                 // Now we have the type for the proxy create it
                 try
                 {
-                    if (metadataViewFactory != null)
+                    if (metadataViewFactory is not null)
                     {
                         return MetadataViewGenerator.CreateMetadataView<TMetadataView>(metadataViewFactory, metadata);
                     }
                     else
                     {
-                        if (proxyType == null)
+                        if (proxyType is null)
                         {
                             throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                         }
@@ -128,7 +128,7 @@ namespace System.ComponentModel.Composition
 
         public static bool IsViewTypeValid(Type metadataViewType)
         {
-            if (metadataViewType == null)
+            if (metadataViewType is null)
             {
                 throw new ArgumentNullException(nameof(metadataViewType));
             }

@@ -29,7 +29,7 @@ namespace System.Configuration
             get
             {
                 ConfigurationElementCollection collection = _thisElement as ConfigurationElementCollection;
-                if ((collection == null) && (_thisElement.Properties.DefaultCollectionProperty != null))
+                if ((collection is null) && (_thisElement.Properties.DefaultCollectionProperty is not null))
                 {
                     // this is not a collection but it may contain a default collection
                     collection =
@@ -37,7 +37,7 @@ namespace System.Configuration
                             ConfigurationElementCollection;
                 }
 
-                return collection != null;
+                return collection is not null;
             }
         }
 

@@ -12,7 +12,7 @@ namespace Microsoft.Win32.SafeHandles
     {
 #if DEBUG
         private static readonly bool s_captureTrace =
-            Environment.GetEnvironmentVariable("DEBUG_SAFEX509HANDLE_FINALIZATION") != null;
+            Environment.GetEnvironmentVariable("DEBUG_SAFEX509HANDLE_FINALIZATION") is not null;
 
         private readonly StackTrace? _stacktrace =
             s_captureTrace ? new StackTrace(fNeedFileInfo: true) : null;

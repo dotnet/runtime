@@ -72,7 +72,7 @@ namespace System.Data.Common
                     for (i = 0; i < recordNos.Length; i++)
                     {
                         object? value = _values[recordNos[i]];
-                        if (value != null)
+                        if (value is not null)
                             count++;
                     }
                     return count;
@@ -88,9 +88,9 @@ namespace System.Data.Common
             if (valueNo1 == (object?)valueNo2)
                 return 0;
 
-            if (valueNo1 == null)
+            if (valueNo1 is null)
                 return -1;
-            if (valueNo2 == null)
+            if (valueNo2 is null)
                 return 1;
 
             return _table.Compare(valueNo1, valueNo2);
@@ -179,7 +179,7 @@ namespace System.Data.Common
         public override void SetCapacity(int capacity)
         {
             string[] newValues = new string[capacity];
-            if (_values != null)
+            if (_values is not null)
             {
                 Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
             }

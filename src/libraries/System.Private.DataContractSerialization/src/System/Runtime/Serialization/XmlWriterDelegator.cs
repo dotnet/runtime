@@ -60,9 +60,9 @@ namespace System.Runtime.Serialization
 
         internal void WriteXmlnsAttribute(XmlDictionaryString ns)
         {
-            if (dictionaryWriter != null)
+            if (dictionaryWriter is not null)
             {
-                if (ns != null)
+                if (ns is not null)
                     dictionaryWriter.WriteXmlnsAttribute(null, ns);
             }
             else
@@ -71,18 +71,18 @@ namespace System.Runtime.Serialization
 
         internal void WriteXmlnsAttribute(string? ns)
         {
-            if (ns != null)
+            if (ns is not null)
             {
                 if (ns.Length == 0)
                     writer.WriteAttributeString("xmlns", string.Empty, null, ns);
                 else
                 {
-                    if (dictionaryWriter != null)
+                    if (dictionaryWriter is not null)
                         dictionaryWriter.WriteXmlnsAttribute(null, ns);
                     else
                     {
                         string? prefix = writer.LookupPrefix(ns);
-                        if (prefix == null)
+                        if (prefix is null)
                         {
                             prefix = string.Format(CultureInfo.InvariantCulture, "d{0}p{1}", depth, _prefixes);
                             _prefixes++;
@@ -95,7 +95,7 @@ namespace System.Runtime.Serialization
 
         internal void WriteXmlnsAttribute(string prefix, XmlDictionaryString ns)
         {
-            if (dictionaryWriter != null)
+            if (dictionaryWriter is not null)
             {
                 dictionaryWriter.WriteXmlnsAttribute(prefix, ns);
             }
@@ -112,12 +112,12 @@ namespace System.Runtime.Serialization
 
         private void WriteStartAttribute(string prefix, XmlDictionaryString localName, XmlDictionaryString namespaceUri)
         {
-            if (dictionaryWriter != null)
+            if (dictionaryWriter is not null)
                 dictionaryWriter.WriteStartAttribute(prefix, localName, namespaceUri);
             else
                 writer.WriteStartAttribute(prefix,
-                    (localName == null ? null : localName.Value)!,
-                    (namespaceUri == null ? null : namespaceUri.Value));
+                    (localName is null ? null : localName.Value)!,
+                    (namespaceUri is null ? null : namespaceUri.Value));
         }
 
         internal void WriteAttributeString(string? prefix, string localName, string? ns, string value)
@@ -148,7 +148,7 @@ namespace System.Runtime.Serialization
 
         private void WriteAttributeStringValue(XmlDictionaryString value)
         {
-            if (dictionaryWriter == null)
+            if (dictionaryWriter is null)
                 writer.WriteString(value.Value);
             else
                 dictionaryWriter.WriteString(value);
@@ -201,7 +201,7 @@ namespace System.Runtime.Serialization
 
         private void WriteAttributeQualifiedNameValue(XmlDictionaryString name, XmlDictionaryString ns)
         {
-            if (dictionaryWriter == null)
+            if (dictionaryWriter is null)
                 writer.WriteQualifiedName(name.Value, ns.Value);
             else
                 dictionaryWriter.WriteQualifiedName(name, ns);
@@ -226,20 +226,20 @@ namespace System.Runtime.Serialization
 
         internal void WriteStartElement(string? prefix, XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            if (dictionaryWriter != null)
+            if (dictionaryWriter is not null)
                 dictionaryWriter.WriteStartElement(prefix, localName, namespaceUri);
             else
-                writer.WriteStartElement(prefix, (localName == null ? null : localName.Value)!, (namespaceUri == null ? null : namespaceUri.Value));
+                writer.WriteStartElement(prefix, (localName is null ? null : localName.Value)!, (namespaceUri is null ? null : namespaceUri.Value));
             depth++;
             _prefixes = 1;
         }
 
         internal void WriteStartElementPrimitive(XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            if (dictionaryWriter != null)
+            if (dictionaryWriter is not null)
                 dictionaryWriter.WriteStartElement(null, localName, namespaceUri);
             else
-                writer.WriteStartElement(null, (localName == null ? null : localName.Value)!, (namespaceUri == null ? null : namespaceUri.Value));
+                writer.WriteStartElement(null, (localName is null ? null : localName.Value)!, (namespaceUri is null ? null : namespaceUri.Value));
         }
 
         internal void WriteEndElementPrimitive()
@@ -412,7 +412,7 @@ namespace System.Runtime.Serialization
                     else if (valueType == Globals.TypeOfObject)
                     {
                         object? obj = dataNode.Value;
-                        if (obj != null)
+                        if (obj is not null)
                             WriteAnyType(obj);
                     }
                     else if (valueType == Globals.TypeOfTimeSpan)
@@ -523,7 +523,7 @@ namespace System.Runtime.Serialization
 
         internal virtual void WriteBase64(byte[]? bytes)
         {
-            if (bytes == null)
+            if (bytes is null)
                 return;
 
             writer.WriteBase64(bytes, 0, bytes.Length);
@@ -671,7 +671,7 @@ namespace System.Runtime.Serialization
 
         internal void WriteQualifiedName(XmlDictionaryString localName, XmlDictionaryString ns)
         {
-            if (dictionaryWriter == null)
+            if (dictionaryWriter is null)
                 writer.WriteQualifiedName(localName.Value, ns.Value);
             else
                 dictionaryWriter.WriteQualifiedName(localName, ns);
@@ -679,7 +679,7 @@ namespace System.Runtime.Serialization
 
         internal void WriteBooleanArray(bool[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
         {
-            if (dictionaryWriter == null)
+            if (dictionaryWriter is null)
             {
                 for (int i = 0; i < value.Length; i++)
                 {
@@ -694,7 +694,7 @@ namespace System.Runtime.Serialization
 
         internal void WriteDateTimeArray(DateTime[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
         {
-            if (dictionaryWriter == null)
+            if (dictionaryWriter is null)
             {
                 for (int i = 0; i < value.Length; i++)
                 {
@@ -709,7 +709,7 @@ namespace System.Runtime.Serialization
 
         internal void WriteDecimalArray(decimal[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
         {
-            if (dictionaryWriter == null)
+            if (dictionaryWriter is null)
             {
                 for (int i = 0; i < value.Length; i++)
                 {
@@ -724,7 +724,7 @@ namespace System.Runtime.Serialization
 
         internal void WriteInt32Array(int[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
         {
-            if (dictionaryWriter == null)
+            if (dictionaryWriter is null)
             {
                 for (int i = 0; i < value.Length; i++)
                 {
@@ -739,7 +739,7 @@ namespace System.Runtime.Serialization
 
         internal void WriteInt64Array(long[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
         {
-            if (dictionaryWriter == null)
+            if (dictionaryWriter is null)
             {
                 for (int i = 0; i < value.Length; i++)
                 {
@@ -754,7 +754,7 @@ namespace System.Runtime.Serialization
 
         internal void WriteSingleArray(float[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
         {
-            if (dictionaryWriter == null)
+            if (dictionaryWriter is null)
             {
                 for (int i = 0; i < value.Length; i++)
                 {
@@ -769,7 +769,7 @@ namespace System.Runtime.Serialization
 
         internal void WriteDoubleArray(double[] value, XmlDictionaryString itemName, XmlDictionaryString itemNamespace)
         {
-            if (dictionaryWriter == null)
+            if (dictionaryWriter is null)
             {
                 for (int i = 0; i < value.Length; i++)
                 {

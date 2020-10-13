@@ -30,8 +30,8 @@ namespace System.Reflection
         internal RuntimePropertyInfo(
             int tkProperty, RuntimeType declaredType, RuntimeTypeCache reflectedTypeCache, out bool isPrivate)
         {
-            Debug.Assert(declaredType != null);
-            Debug.Assert(reflectedTypeCache != null);
+            Debug.Assert(declaredType is not null);
+            Debug.Assert(reflectedTypeCache is not null);
             Debug.Assert(!reflectedTypeCache.IsGlobal);
 
             MetadataImport scope = declaredType.GetRuntimeModule().MetadataImport;
@@ -63,7 +63,7 @@ namespace System.Reflection
         {
             get
             {
-                if (m_signature == null)
+                if (m_signature is null)
                 {
 
                     GetRuntimeModule().MetadataImport.GetPropertyProps(
@@ -139,12 +139,12 @@ namespace System.Reflection
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null)
+            if (attributeRuntimeType is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
@@ -152,12 +152,12 @@ namespace System.Reflection
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null)
+            if (attributeRuntimeType is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
@@ -276,14 +276,14 @@ namespace System.Reflection
             // @History - Logic ported from RTM
 
             // No need to lock because we don't guarantee the uniqueness of ParameterInfo objects
-            if (m_parameters == null)
+            if (m_parameters is null)
             {
                 int numParams = 0;
                 ParameterInfo[]? methParams = null;
 
                 // First try to get the Get method.
                 MethodInfo? m = GetGetMethod(true);
-                if (m != null)
+                if (m is not null)
                 {
                     // There is a Get method so use it.
                     methParams = m.GetParametersNoCopy();
@@ -294,7 +294,7 @@ namespace System.Reflection
                     // If there is no Get method then use the Set method.
                     m = GetSetMethod(true);
 
-                    if (m != null)
+                    if (m is not null)
                     {
                         methParams = m.GetParametersNoCopy();
                         numParams = methParams.Length - 1;
@@ -317,9 +317,9 @@ namespace System.Reflection
 
         public override PropertyAttributes Attributes => m_flags;
 
-        public override bool CanRead => m_getterMethod != null;
+        public override bool CanRead => m_getterMethod is not null;
 
-        public override bool CanWrite => m_setterMethod != null;
+        public override bool CanWrite => m_setterMethod is not null;
         #endregion
 
         #region Dynamic
@@ -336,7 +336,7 @@ namespace System.Reflection
         public override object? GetValue(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             MethodInfo? m = GetGetMethod(true);
-            if (m == null)
+            if (m is null)
                 throw new ArgumentException(System.SR.Arg_GetMethNotFnd);
             return m.Invoke(obj, invokeAttr, binder, index, null);
         }
@@ -359,11 +359,11 @@ namespace System.Reflection
         {
             MethodInfo? m = GetSetMethod(true);
 
-            if (m == null)
+            if (m is null)
                 throw new ArgumentException(System.SR.Arg_SetMethNotFnd);
 
             object?[] args;
-            if (index != null)
+            if (index is not null)
             {
                 args = new object[index.Length + 1];
 

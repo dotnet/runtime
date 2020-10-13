@@ -395,7 +395,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     // validate the trust existence
                     ValidateTrust(policyHandle, trustedDomainName, sourceName, targetName, isForest, (int)direction, policyServerName);  // need to verify direction
 
-                    if (preferredTargetServer == null)
+                    if (preferredTargetServer is null)
                         data = Marshal.StringToHGlobalUni(targetName);
                     else
                         // this is the case that we need to specifically go to a particular server. This is the way to tell netlogon to do that.

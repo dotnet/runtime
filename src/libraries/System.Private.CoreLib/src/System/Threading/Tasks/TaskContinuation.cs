@@ -28,7 +28,7 @@ namespace System.Threading.Tasks
             // Get and null out the antecedent.  This is crucial to avoid a memory
             // leak with long chains of continuations.
             Task? antecedent = m_antecedent;
-            Debug.Assert(antecedent != null,
+            Debug.Assert(antecedent is not null,
                 "No antecedent was set for the ContinuationTaskFromTask.");
             m_antecedent = null;
 
@@ -36,7 +36,7 @@ namespace System.Threading.Tasks
             antecedent.NotifyDebuggerOfWaitCompletionIfNecessary();
 
             // Invoke the delegate
-            Debug.Assert(m_action != null);
+            Debug.Assert(m_action is not null);
             if (m_action is Action<Task> action)
             {
                 action(antecedent);
@@ -74,7 +74,7 @@ namespace System.Threading.Tasks
             // Get and null out the antecedent.  This is crucial to avoid a memory
             // leak with long chains of continuations.
             Task? antecedent = m_antecedent;
-            Debug.Assert(antecedent != null,
+            Debug.Assert(antecedent is not null,
                 "No antecedent was set for the ContinuationResultTaskFromTask.");
             m_antecedent = null;
 
@@ -82,7 +82,7 @@ namespace System.Threading.Tasks
             antecedent.NotifyDebuggerOfWaitCompletionIfNecessary();
 
             // Invoke the delegate
-            Debug.Assert(m_action != null);
+            Debug.Assert(m_action is not null);
             if (m_action is Func<Task, TResult> func)
             {
                 m_result = func(antecedent);
@@ -120,7 +120,7 @@ namespace System.Threading.Tasks
             // Get and null out the antecedent.  This is crucial to avoid a memory
             // leak with long chains of continuations.
             Task<TAntecedentResult>? antecedent = m_antecedent;
-            Debug.Assert(antecedent != null,
+            Debug.Assert(antecedent is not null,
                 "No antecedent was set for the ContinuationTaskFromResultTask.");
             m_antecedent = null;
 
@@ -128,7 +128,7 @@ namespace System.Threading.Tasks
             antecedent.NotifyDebuggerOfWaitCompletionIfNecessary();
 
             // Invoke the delegate
-            Debug.Assert(m_action != null);
+            Debug.Assert(m_action is not null);
             if (m_action is Action<Task<TAntecedentResult>> action)
             {
                 action(antecedent);
@@ -166,7 +166,7 @@ namespace System.Threading.Tasks
             // Get and null out the antecedent.  This is crucial to avoid a memory
             // leak with long chains of continuations.
             Task<TAntecedentResult>? antecedent = m_antecedent;
-            Debug.Assert(antecedent != null,
+            Debug.Assert(antecedent is not null,
                 "No antecedent was set for the ContinuationResultTaskFromResultTask.");
             m_antecedent = null;
 
@@ -174,7 +174,7 @@ namespace System.Threading.Tasks
             antecedent.NotifyDebuggerOfWaitCompletionIfNecessary();
 
             // Invoke the delegate
-            Debug.Assert(m_action != null);
+            Debug.Assert(m_action is not null);
             if (m_action is Func<Task<TAntecedentResult>, TResult> func)
             {
                 m_result = func(antecedent);
@@ -213,8 +213,8 @@ namespace System.Threading.Tasks
         /// </param>
         protected static void InlineIfPossibleOrElseQueue(Task task, bool needsProtection)
         {
-            Debug.Assert(task != null);
-            Debug.Assert(task.m_taskScheduler != null);
+            Debug.Assert(task is not null);
+            Debug.Assert(task.m_taskScheduler is not null);
 
             // Set the TASK_STATE_STARTED flag.  This only needs to be done
             // if the task may be canceled or if someone else has a reference to it
@@ -271,8 +271,8 @@ namespace System.Threading.Tasks
         /// <param name="scheduler">The scheduler to use for the continuation.</param>
         internal ContinueWithTaskContinuation(Task task, TaskContinuationOptions options, TaskScheduler scheduler)
         {
-            Debug.Assert(task != null, "TaskContinuation ctor: task is null");
-            Debug.Assert(scheduler != null, "TaskContinuation ctor: scheduler is null");
+            Debug.Assert(task is not null, "TaskContinuation ctor: task is null");
+            Debug.Assert(scheduler is not null, "TaskContinuation ctor: scheduler is null");
             m_task = task;
             m_options = options;
             m_taskScheduler = scheduler;
@@ -288,11 +288,11 @@ namespace System.Threading.Tasks
         /// <param name="canInlineContinuationTask">Whether the continuation can be inlined.</param>
         internal override void Run(Task completedTask, bool canInlineContinuationTask)
         {
-            Debug.Assert(completedTask != null);
+            Debug.Assert(completedTask is not null);
             Debug.Assert(completedTask.IsCompleted, "ContinuationTask.Run(): completedTask not completed");
 
             Task? continuationTask = m_task;
-            Debug.Assert(continuationTask != null);
+            Debug.Assert(continuationTask is not null);
             m_task = null;
 
             // Check if the completion status of the task works with the desired
@@ -382,7 +382,7 @@ namespace System.Threading.Tasks
             SynchronizationContext context, Action action, bool flowExecutionContext) :
             base(action, flowExecutionContext)
         {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
             m_syncContext = context;
         }
 
@@ -463,7 +463,7 @@ namespace System.Threading.Tasks
             TaskScheduler scheduler, Action action, bool flowExecutionContext) :
             base(action, flowExecutionContext)
         {
-            Debug.Assert(scheduler != null);
+            Debug.Assert(scheduler is not null);
             m_scheduler = scheduler;
         }
 
@@ -531,7 +531,7 @@ namespace System.Threading.Tasks
         /// <param name="flowExecutionContext">Whether to capture and restore ExecutionContext.</param>
         internal AwaitTaskContinuation(Action action, bool flowExecutionContext)
         {
-            Debug.Assert(action != null);
+            Debug.Assert(action is not null);
             m_action = action;
             if (flowExecutionContext)
             {
@@ -546,8 +546,8 @@ namespace System.Threading.Tasks
         /// <returns>The created task.</returns>
         protected Task CreateTask(Action<object?> action, object? state, TaskScheduler scheduler)
         {
-            Debug.Assert(action != null);
-            Debug.Assert(scheduler != null);
+            Debug.Assert(action is not null);
+            Debug.Assert(scheduler is not null);
 
             return new Task(
                 action, state, null, default,
@@ -608,12 +608,12 @@ namespace System.Threading.Tasks
                 // If there's a SynchronizationContext, we'll be conservative and say
                 // this is a bad location to inline.
                 SynchronizationContext? ctx = SynchronizationContext.Current;
-                if (ctx != null && ctx.GetType() != typeof(SynchronizationContext)) return false;
+                if (ctx is not null && ctx.GetType() != typeof(SynchronizationContext)) return false;
 
                 // Similarly, if there's a non-default TaskScheduler, we'll be conservative
                 // and say this is a bad location to inline.
                 TaskScheduler? sched = TaskScheduler.InternalCurrent;
-                return sched == null || sched == TaskScheduler.Default;
+                return sched is null || sched == TaskScheduler.Default;
             }
         }
 
@@ -622,7 +622,7 @@ namespace System.Threading.Tasks
             TplEventSource log = TplEventSource.Log;
             ExecutionContext? context = m_capturedContext;
 
-            if (!log.IsEnabled() && context == null)
+            if (!log.IsEnabled() && context is null)
             {
                 m_action();
                 return;
@@ -642,7 +642,7 @@ namespace System.Threading.Tasks
                 ExecutionContext.CheckThreadPoolAndContextsAreDefault();
                 // If there's no execution context or Default, just invoke the delegate as ThreadPool is on Default context.
                 // We don't have to use ExecutionContext.Run for the Default context here as there is no extra processing after the delegate
-                if (context == null || context.IsDefault)
+                if (context is null || context.IsDefault)
                 {
                     m_action();
                 }
@@ -680,7 +680,7 @@ namespace System.Threading.Tasks
         /// <param name="currentTask">A reference to Task.t_currentTask.</param>
         protected void RunCallback(ContextCallback callback, object? state, ref Task? currentTask)
         {
-            Debug.Assert(callback != null);
+            Debug.Assert(callback is not null);
             Debug.Assert(currentTask == Task.t_currentTask);
 
             // Pretend there's no current task, so that no task is seen as a parent
@@ -688,10 +688,10 @@ namespace System.Threading.Tasks
             Task? prevCurrentTask = currentTask;
             try
             {
-                if (prevCurrentTask != null) currentTask = null;
+                if (prevCurrentTask is not null) currentTask = null;
 
                 ExecutionContext? context = m_capturedContext;
-                if (context == null)
+                if (context is null)
                 {
                     // If there's no captured context, just run the callback directly.
                     callback(state);
@@ -709,7 +709,7 @@ namespace System.Threading.Tasks
             finally
             {
                 // Restore the current task information
-                if (prevCurrentTask != null) currentTask = prevCurrentTask;
+                if (prevCurrentTask is not null) currentTask = prevCurrentTask;
             }
         }
 
@@ -739,7 +739,7 @@ namespace System.Threading.Tasks
             // Otherwise, run it, making sure that t_currentTask is null'd out appropriately during the execution
             try
             {
-                if (prevCurrentTask != null) currentTask = null;
+                if (prevCurrentTask is not null) currentTask = null;
                 action();
             }
             catch (Exception exception)
@@ -748,7 +748,7 @@ namespace System.Threading.Tasks
             }
             finally
             {
-                if (prevCurrentTask != null) currentTask = prevCurrentTask;
+                if (prevCurrentTask is not null) currentTask = prevCurrentTask;
             }
         }
 
@@ -791,7 +791,7 @@ namespace System.Threading.Tasks
             // Otherwise, run it, making sure that t_currentTask is null'd out appropriately during the execution
             try
             {
-                if (prevCurrentTask != null) currentTask = null;
+                if (prevCurrentTask is not null) currentTask = null;
                 box.MoveNext();
             }
             catch (Exception exception)
@@ -800,7 +800,7 @@ namespace System.Threading.Tasks
             }
             finally
             {
-                if (prevCurrentTask != null) currentTask = prevCurrentTask;
+                if (prevCurrentTask is not null) currentTask = prevCurrentTask;
             }
         }
 
@@ -812,7 +812,7 @@ namespace System.Threading.Tasks
             AwaitTaskContinuation atc = new AwaitTaskContinuation(action, flowExecutionContext: false);
 
             TplEventSource log = TplEventSource.Log;
-            if (log.IsEnabled() && task != null)
+            if (log.IsEnabled() && task is not null)
             {
                 atc.m_continuationId = Task.NewId();
                 log.AwaitTaskContinuationScheduled((task.ExecutingTaskScheduler ?? TaskScheduler.Default).Id, task.Id, atc.m_continuationId);
@@ -823,7 +823,7 @@ namespace System.Threading.Tasks
 
         internal override Delegate[] GetDelegateContinuationsForDebugger()
         {
-            Debug.Assert(m_action != null);
+            Debug.Assert(m_action is not null);
             return new Delegate[] { AsyncMethodBuilderCore.TryGetStateMachineForDebugger(m_action) };
         }
     }

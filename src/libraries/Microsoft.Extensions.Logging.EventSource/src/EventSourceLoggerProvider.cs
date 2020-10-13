@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Logging.EventSource
 
         public EventSourceLoggerProvider(LoggingEventSource eventSource)
         {
-            if (eventSource == null)
+            if (eventSource is null)
             {
                 throw new ArgumentNullException(nameof(eventSource));
             }
@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         public void Dispose()
         {
             // Turn off any logging
-            for (EventSourceLogger logger = _loggers; logger != null; logger = logger.Next)
+            for (EventSourceLogger logger = _loggers; logger is not null; logger = logger.Next)
             {
                 logger.Level = LogLevel.None;
             }

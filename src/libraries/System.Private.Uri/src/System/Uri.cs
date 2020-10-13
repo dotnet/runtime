@@ -189,7 +189,7 @@ namespace System
 
         private void InterlockedSetFlags(Flags flags)
         {
-            Debug.Assert(_syntax != null);
+            Debug.Assert(_syntax is not null);
 
             if (_syntax.IsSimple)
             {
@@ -311,7 +311,7 @@ namespace System
             {
                 CreateUriInfo(cF);
             }
-            Debug.Assert(_info != null && (_flags & Flags.MinimalUriInfoSet) != 0);
+            Debug.Assert(_info is not null && (_flags & Flags.MinimalUriInfoSet) != 0);
             return _info;
         }
 
@@ -366,7 +366,7 @@ namespace System
         [Obsolete("The constructor has been deprecated. Please use new Uri(string). The dontEscape parameter is deprecated and is always false. https://go.microsoft.com/fwlink/?linkid=14202")]
         public Uri(string uriString, bool dontEscape)
         {
-            if (uriString == null)
+            if (uriString is null)
                 throw new ArgumentNullException(nameof(uriString));
 
             CreateThis(uriString, dontEscape, UriKind.Absolute);
@@ -485,7 +485,7 @@ namespace System
                 Uri? uriResult = ResolveHelper(baseUri, this, ref relativeUri, ref dontEscape);
 
                 // If resolved into a Uri then we build from that Uri
-                if (uriResult != null)
+                if (uriResult is not null)
                 {
                     if (!ReferenceEquals(this, uriResult))
                         CreateThisFromUri(uriResult);
@@ -497,7 +497,7 @@ namespace System
             {
                 dontEscape = false;
                 relativeUri = baseUri.Syntax.InternalResolve(baseUri, this, out UriFormatException? e);
-                if (e != null)
+                if (e is not null)
                     throw e;
             }
 
@@ -531,7 +531,7 @@ namespace System
                 dontEscape = InFact(Flags.UserEscaped);
                 Uri? resolvedRelativeUri = ResolveHelper(baseUri, this, ref newUriString, ref dontEscape);
 
-                if (resolvedRelativeUri != null)
+                if (resolvedRelativeUri is not null)
                 {
                     if (!ReferenceEquals(this, resolvedRelativeUri))
                         CreateThisFromUri(resolvedRelativeUri);
@@ -544,7 +544,7 @@ namespace System
             {
                 dontEscape = false;
                 newUriString = baseUri.Syntax.InternalResolve(baseUri, this, out UriFormatException? e);
-                if (e != null)
+                if (e is not null)
                     throw e;
             }
 
@@ -696,7 +696,7 @@ namespace System
         {
             get
             {
-                if (_syntax == null)
+                if (_syntax is null)
                 {
                     throw new InvalidOperationException(SR.net_uri_NotAbsolute);
                 }
@@ -936,8 +936,8 @@ namespace System
             if (IsUncOrDosPath)
             {
                 EnsureHostString(false);
-                Debug.Assert(_info != null);
-                Debug.Assert(_info.Host != null);
+                Debug.Assert(_info is not null);
+                Debug.Assert(_info.Host is not null);
                 int start;
 
                 // Do we have a valid local path right in _string?
@@ -1170,7 +1170,7 @@ namespace System
                     }
                     else if (hostType == Flags.IPv6HostType)
                     {
-                        host = _info.ScopeId != null ?
+                        host = _info.ScopeId is not null ?
                             string.Concat(host.AsSpan(1, host.Length - 2), _info.ScopeId) :
                             host.Substring(1, host.Length - 2);
                     }
@@ -1205,7 +1205,7 @@ namespace System
         {
             get
             {
-                return _syntax != null;
+                return _syntax is not null;
             }
         }
 
@@ -1554,7 +1554,7 @@ namespace System
 
         public override string ToString()
         {
-            if (_syntax == null)
+            if (_syntax is null)
             {
                 return _string;
             }
@@ -1840,7 +1840,7 @@ namespace System
         //
         internal UriFormatException? ParseMinimal()
         {
-            Debug.Assert(_syntax != null && !_syntax.IsSimple);
+            Debug.Assert(_syntax is not null && !_syntax.IsSimple);
             Debug.Assert((_flags & Flags.CustomParser_ParseMinimalAlreadyCalled) != 0);
             DebugAssertInCtor();
 
@@ -1867,7 +1867,7 @@ namespace System
         //
         private unsafe ParsingError PrivateParseMinimal()
         {
-            Debug.Assert(_syntax != null);
+            Debug.Assert(_syntax is not null);
             DebugAssertInCtor();
 
             int idx = (int)(_flags & Flags.IndexMask);
@@ -2083,7 +2083,7 @@ namespace System
                 // is not created/canonicalized at this point.
             }
 
-            if (IriParsing && newHost != null)
+            if (IriParsing && newHost is not null)
             {
                 // we have a new host!
                 _string = newHost;
@@ -2462,7 +2462,7 @@ namespace System
         private unsafe void GetHostViaCustomSyntax()
         {
             // A multithreading check
-            if (_info.Host != null)
+            if (_info.Host is not null)
                 return;
 
             string host = _syntax.InternalGetComponents(this, UriComponents.Host, UriFormat.UriEscaped);
@@ -2552,7 +2552,7 @@ namespace System
 
         private string GetEscapedParts(UriComponents uriParts)
         {
-            Debug.Assert(_info != null && (_flags & Flags.MinimalUriInfoSet) != 0);
+            Debug.Assert(_info is not null && (_flags & Flags.MinimalUriInfoSet) != 0);
 
             // Which Uri parts are not escaped canonically ?
             // Notice that public UriPart and private Flags must be in Sync so below code can work
@@ -2591,7 +2591,7 @@ namespace System
 
         private string GetUnescapedParts(UriComponents uriParts, UriFormat formatAs)
         {
-            Debug.Assert(_info != null && (_flags & Flags.MinimalUriInfoSet) != 0);
+            Debug.Assert(_info is not null && (_flags & Flags.MinimalUriInfoSet) != 0);
 
             // Which Uri parts are not escaped canonically ?
             // Notice that public UriComponents and private Uri.Flags must me in Sync so below code can work
@@ -4325,14 +4325,14 @@ namespace System
                 {
                     break;
                 }
-                else if (delim == '?' && c == '#' && (_syntax != null && _syntax.InFact(UriSyntaxFlags.MayHaveFragment)))
+                else if (delim == '?' && c == '#' && (_syntax is not null && _syntax.InFact(UriSyntaxFlags.MayHaveFragment)))
                 {
                     // this is a special case when deciding on Query/Fragment
                     break;
                 }
                 else if (c == '?')
                 {
-                    if (IsImplicitFile || (_syntax != null && !_syntax.InFact(UriSyntaxFlags.MayHaveQuery)
+                    if (IsImplicitFile || (_syntax is not null && !_syntax.InFact(UriSyntaxFlags.MayHaveQuery)
                         && delim != c_EOL))
                     {
                         // If found as reserved this char is not suitable for safe unescaped display
@@ -4345,7 +4345,7 @@ namespace System
                 else if (c == '#')
                 {
                     needsEscaping = true;
-                    if (IsImplicitFile || (_syntax != null && !_syntax.InFact(UriSyntaxFlags.MayHaveFragment)))
+                    if (IsImplicitFile || (_syntax is not null && !_syntax.InFact(UriSyntaxFlags.MayHaveFragment)))
                     {
                         // If found as reserved this char is not suitable for safe unescaped display
                         // Will need to escape it when both escaping and unescaping the string
@@ -4651,7 +4651,7 @@ namespace System
         done:
             pend += 2;
 
-            if (pnew == null)
+            if (pnew is null)
             {
                 //nothing was found
                 return;
@@ -5127,7 +5127,7 @@ namespace System
         [Obsolete("The method has been deprecated. Please use MakeRelativeUri(Uri uri). https://go.microsoft.com/fwlink/?linkid=14202")]
         public string MakeRelative(Uri toUri)
         {
-            if (toUri == null)
+            if (toUri is null)
                 throw new ArgumentNullException(nameof(toUri));
 
             if (IsNotAbsoluteUri || toUri.IsNotAbsoluteUri)

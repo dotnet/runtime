@@ -12,7 +12,7 @@ namespace System.IO.MemoryMappedFiles
 
         internal unsafe MemoryMappedViewStream(MemoryMappedView view)
         {
-            Debug.Assert(view != null, "view is null");
+            Debug.Assert(view is not null, "view is null");
 
             _view = view;
             Initialize(_view.ViewHandle, _view.PointerOffset, _view.Size, MemoryMappedFile.GetFileAccess(_view.Access));

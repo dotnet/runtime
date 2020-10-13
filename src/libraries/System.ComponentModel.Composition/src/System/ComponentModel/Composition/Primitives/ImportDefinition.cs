@@ -111,7 +111,7 @@ namespace System.ComponentModel.Composition.Primitives
             _isPrerequisite = isPrerequisite;
 
             //Metadata on imports was added in 4.5, prior to that it was ignored.
-            if (metadata != null)
+            if (metadata is not null)
             {
                 _metadata = metadata;
             }
@@ -130,7 +130,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get
             {
-                Debug.Assert(_contractName != null);
+                Debug.Assert(_contractName is not null);
 
                 return _contractName;
             }
@@ -160,7 +160,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get
             {
-                Debug.Assert(_metadata != null);
+                Debug.Assert(_metadata is not null);
 
                 return _metadata;
             }
@@ -201,7 +201,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get
             {
-                if (_constraint != null)
+                if (_constraint is not null)
                 {
                     return _constraint;
                 }
@@ -263,7 +263,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             Requires.NotNull(exportDefinition, nameof(exportDefinition));
 
-            if (_compiledConstraint == null)
+            if (_compiledConstraint is null)
             {
                 _compiledConstraint = Constraint.Compile();
             }

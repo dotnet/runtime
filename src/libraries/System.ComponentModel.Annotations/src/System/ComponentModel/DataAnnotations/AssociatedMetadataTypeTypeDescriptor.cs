@@ -23,7 +23,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             AssociatedMetadataType = associatedMetadataType ?? TypeDescriptorCache.GetAssociatedMetadataType(type);
             IsSelfAssociated = (type == AssociatedMetadataType);
-            if (AssociatedMetadataType != null)
+            if (AssociatedMetadataType is not null)
             {
                 TypeDescriptorCache.ValidateMetadataType(type, AssociatedMetadataType);
             }
@@ -41,7 +41,7 @@ namespace System.ComponentModel.DataAnnotations
 
         private PropertyDescriptorCollection GetPropertiesWithMetadata(PropertyDescriptorCollection originalCollection)
         {
-            if (AssociatedMetadataType == null)
+            if (AssociatedMetadataType is null)
             {
                 return originalCollection;
             }
@@ -75,7 +75,7 @@ namespace System.ComponentModel.DataAnnotations
             // calls to GetAttributes, we must be sure below to use the TD APIs to get both
             // the base and associated attributes
             AttributeCollection attributes = base.GetAttributes();
-            if (AssociatedMetadataType != null && !IsSelfAssociated)
+            if (AssociatedMetadataType is not null && !IsSelfAssociated)
             {
                 // Note that the use of TypeDescriptor.GetAttributes here opens up the possibility of
                 // infinite recursion, in the corner case of two Types referencing each other as
@@ -118,7 +118,7 @@ namespace System.ComponentModel.DataAnnotations
 
                 // Try association attribute
                 MetadataTypeAttribute attribute = (MetadataTypeAttribute)Attribute.GetCustomAttribute(type, typeof(MetadataTypeAttribute));
-                if (attribute != null)
+                if (attribute is not null)
                 {
                     associatedMetadataType = attribute.MetadataClassType;
                 }
@@ -163,7 +163,7 @@ namespace System.ComponentModel.DataAnnotations
                 BindingFlags searchFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static;
                 // Try to find a matching member on type
                 MemberInfo matchingMember = type.GetMember(memberName, allowedMemberTypes, searchFlags).FirstOrDefault();
-                if (matchingMember != null)
+                if (matchingMember is not null)
                 {
                     attributes = Attribute.GetCustomAttributes(matchingMember, true /* inherit */);
                 }

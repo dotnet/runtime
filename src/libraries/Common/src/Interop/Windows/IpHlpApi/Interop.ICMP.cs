@@ -30,7 +30,7 @@ internal static partial class Interop
                 optionsSize = 0;
                 optionsData = IntPtr.Zero;
 
-                if (options != null)
+                if (options is not null)
                 {
                     this.ttl = (byte)options.Ttl;
 

@@ -34,14 +34,14 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (key == null)
+                if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key));
                 }
                 DictionaryNode? node = head;
-                if (comparer == null)
+                if (comparer is null)
                 {
-                    while (node != null)
+                    while (node is not null)
                     {
                         object oldKey = node.key;
                         if (oldKey.Equals(key))
@@ -53,7 +53,7 @@ namespace System.Collections.Specialized
                 }
                 else
                 {
-                    while (node != null)
+                    while (node is not null)
                     {
                         object oldKey = node.key;
                         if (comparer.Compare(oldKey, key) == 0)
@@ -67,23 +67,23 @@ namespace System.Collections.Specialized
             }
             set
             {
-                if (key == null)
+                if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key));
                 }
                 version++;
                 DictionaryNode? last = null;
                 DictionaryNode? node;
-                for (node = head; node != null; node = node.next)
+                for (node = head; node is not null; node = node.next)
                 {
                     object oldKey = node.key;
-                    if ((comparer == null) ? oldKey.Equals(key) : comparer.Compare(oldKey, key) == 0)
+                    if ((comparer is null) ? oldKey.Equals(key) : comparer.Compare(oldKey, key) == 0)
                     {
                         break;
                     }
                     last = node;
                 }
-                if (node != null)
+                if (node is not null)
                 {
                     // Found it
                     node.value = value;
@@ -93,7 +93,7 @@ namespace System.Collections.Specialized
                 DictionaryNode newNode = new DictionaryNode();
                 newNode.key = key;
                 newNode.value = value;
-                if (last != null)
+                if (last is not null)
                 {
                     last.next = newNode;
                 }
@@ -157,17 +157,17 @@ namespace System.Collections.Specialized
 
         public void Add(object key, object? value)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
             version++;
             DictionaryNode? last = null;
 
-            for (DictionaryNode? node = head; node != null; node = node.next)
+            for (DictionaryNode? node = head; node is not null; node = node.next)
             {
                 object oldKey = node.key;
-                if ((comparer == null) ? oldKey.Equals(key) : comparer.Compare(oldKey, key) == 0)
+                if ((comparer is null) ? oldKey.Equals(key) : comparer.Compare(oldKey, key) == 0)
                 {
                     throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key));
                 }
@@ -177,7 +177,7 @@ namespace System.Collections.Specialized
             DictionaryNode newNode = new DictionaryNode();
             newNode.key = key;
             newNode.value = value;
-            if (last != null)
+            if (last is not null)
             {
                 last.next = newNode;
             }
@@ -197,14 +197,14 @@ namespace System.Collections.Specialized
 
         public bool Contains(object key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            for (DictionaryNode? node = head; node != null; node = node.next)
+            for (DictionaryNode? node = head; node is not null; node = node.next)
             {
                 object oldKey = node.key;
-                if ((comparer == null) ? oldKey.Equals(key) : comparer.Compare(oldKey, key) == 0)
+                if ((comparer is null) ? oldKey.Equals(key) : comparer.Compare(oldKey, key) == 0)
                 {
                     return true;
                 }
@@ -214,7 +214,7 @@ namespace System.Collections.Specialized
 
         public void CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
@@ -222,7 +222,7 @@ namespace System.Collections.Specialized
             if (array.Length - index < count)
                 throw new ArgumentException(SR.Arg_InsufficientSpace);
 
-            for (DictionaryNode? node = head; node != null; node = node.next)
+            for (DictionaryNode? node = head; node is not null; node = node.next)
             {
                 array.SetValue(new DictionaryEntry(node.key, node.value), index);
                 index++;
@@ -241,23 +241,23 @@ namespace System.Collections.Specialized
 
         public void Remove(object key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
             version++;
             DictionaryNode? last = null;
             DictionaryNode? node;
-            for (node = head; node != null; node = node.next)
+            for (node = head; node is not null; node = node.next)
             {
                 object oldKey = node.key;
-                if ((comparer == null) ? oldKey.Equals(key) : comparer.Compare(oldKey, key) == 0)
+                if ((comparer is null) ? oldKey.Equals(key) : comparer.Compare(oldKey, key) == 0)
                 {
                     break;
                 }
                 last = node;
             }
-            if (node == null)
+            if (node is null)
             {
                 return;
             }
@@ -267,7 +267,7 @@ namespace System.Collections.Specialized
             }
             else
             {
-                Debug.Assert(last != null);
+                Debug.Assert(last is not null);
                 last.next = node.next;
             }
             count--;
@@ -301,7 +301,7 @@ namespace System.Collections.Specialized
             {
                 get
                 {
-                    if (_current == null)
+                    if (_current is null)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
@@ -313,7 +313,7 @@ namespace System.Collections.Specialized
             {
                 get
                 {
-                    if (_current == null)
+                    if (_current is null)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
@@ -325,7 +325,7 @@ namespace System.Collections.Specialized
             {
                 get
                 {
-                    if (_current == null)
+                    if (_current is null)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
@@ -344,11 +344,11 @@ namespace System.Collections.Specialized
                     _current = _list.head;
                     _start = false;
                 }
-                else if (_current != null)
+                else if (_current is not null)
                 {
                     _current = _current.next;
                 }
-                return (_current != null);
+                return (_current is not null);
             }
 
             public void Reset()
@@ -375,12 +375,12 @@ namespace System.Collections.Specialized
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array == null)
+                if (array is null)
                     throw new ArgumentNullException(nameof(array));
                 if (index < 0)
                     throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
 
-                for (DictionaryNode? node = _list.head; node != null; node = node.next)
+                for (DictionaryNode? node = _list.head; node is not null; node = node.next)
                 {
                     array.SetValue(_isKeys ? node.key : node.value, index);
                     index++;
@@ -392,7 +392,7 @@ namespace System.Collections.Specialized
                 get
                 {
                     int count = 0;
-                    for (DictionaryNode? node = _list.head; node != null; node = node.next)
+                    for (DictionaryNode? node = _list.head; node is not null; node = node.next)
                     {
                         count++;
                     }
@@ -443,7 +443,7 @@ namespace System.Collections.Specialized
                 {
                     get
                     {
-                        if (_current == null)
+                        if (_current is null)
                         {
                             throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                         }
@@ -462,11 +462,11 @@ namespace System.Collections.Specialized
                         _current = _list.head;
                         _start = false;
                     }
-                    else if (_current != null)
+                    else if (_current is not null)
                     {
                         _current = _current.next;
                     }
-                    return (_current != null);
+                    return (_current is not null);
                 }
 
                 public void Reset()

@@ -10,7 +10,7 @@ namespace System.Threading.Tasks
     {
         public static readonly AsyncCallback Callback = asyncResult =>
         {
-            Debug.Assert(asyncResult != null);
+            Debug.Assert(asyncResult is not null);
             Debug.Assert(asyncResult.IsCompleted);
             Debug.Assert(asyncResult.AsyncState is BeginEndAwaitableAdapter);
 

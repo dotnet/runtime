@@ -20,9 +20,9 @@ namespace System.Net.Sockets
 
         public void CompletionCallback(int numBytes, byte[]? socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError errorCode)
         {
-            if (_socketAddress != null)
+            if (_socketAddress is not null)
             {
-                Debug.Assert(socketAddress == null || _socketAddress.Buffer == socketAddress, $"Unexpected socket address: {socketAddress}");
+                Debug.Assert(socketAddress is null || _socketAddress.Buffer == socketAddress, $"Unexpected socket address: {socketAddress}");
                 _socketAddressSize = socketAddressSize;
             }
 

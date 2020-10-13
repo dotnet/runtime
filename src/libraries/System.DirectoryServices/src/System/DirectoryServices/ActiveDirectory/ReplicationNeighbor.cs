@@ -49,7 +49,7 @@ namespace System.DirectoryServices.ActiveDirectory
             _sourceServerDN = Marshal.PtrToStringUni(neighbor.pszSourceDsaDN);
 
             string transportDN = Marshal.PtrToStringUni(neighbor.pszAsyncIntersiteTransportDN);
-            if (transportDN != null)
+            if (transportDN is not null)
             {
                 string rdn = Utils.GetRdnFromDN(transportDN);
                 string transport = (Utils.GetDNComponents(rdn))[0].Value;
@@ -79,14 +79,14 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (_sourceServer == null)
+                if (_sourceServer is null)
                 {
                     // check whether we have got it before
                     if (_nameTable.Contains(SourceInvocationId))
                     {
                         _sourceServer = (string)_nameTable[SourceInvocationId];
                     }
-                    else if (_sourceServerDN != null)
+                    else if (_sourceServerDN is not null)
                     {
                         _sourceServer = Utils.GetServerNameFromInvocationID(_sourceServerDN, SourceInvocationId, _server);
                         // add it to the hashtable

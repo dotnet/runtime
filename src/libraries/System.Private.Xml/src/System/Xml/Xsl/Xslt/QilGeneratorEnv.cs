@@ -23,7 +23,7 @@ namespace System.Xml.Xsl.Xslt
         {
             public void ReportError(string res, params string?[]? args)
             {
-                Debug.Assert(args == null || args.Length == 0, "Error message must already be composed in res");
+                Debug.Assert(args is null || args.Length == 0, "Error message must already be composed in res");
                 throw new XslLoadException(SR.Xml_UserException, res);
             }
 
@@ -73,12 +73,12 @@ namespace System.Xml.Xsl.Xslt
                 throw new XslLoadException(SR.Xslt_VariablesNotAllowed);
             }
             string ns = ResolvePrefixThrow(/*ignoreDefaultNs:*/true, prefix);
-            Debug.Assert(ns != null);
+            Debug.Assert(ns is not null);
 
             // Look up in params and variables of the current scope and all outer ones
             QilNode? var = _scope.LookupVariable(name, ns);
 
-            if (var == null)
+            if (var is null)
             {
                 throw new XslLoadException(SR.Xslt_InvalidVariable, Compiler.ConstructQName(prefix, name));
             }
@@ -140,7 +140,7 @@ namespace System.Xml.Xsl.Xslt
             else
             {
                 string ns = ResolvePrefixThrow(/*ignoreDefaultNs:*/true, prefix);
-                Debug.Assert(ns != null);
+                Debug.Assert(ns is not null);
                 if (ns == XmlReservedNs.NsMsxsl)
                 {
                     if (name == "node-set")
@@ -213,7 +213,7 @@ namespace System.Xml.Xsl.Xslt
                 if (_compiler.Settings.EnableScript)
                 {
                     XmlExtensionFunction? scrFunc = _compiler.Scripts.ResolveFunction(name, ns, args.Count, (IErrorHelper)this);
-                    if (scrFunc != null)
+                    if (scrFunc is not null)
                     {
                         return GenerateScriptCall(_f.QName(name, ns, prefix), scrFunc, args);
                     }
@@ -261,7 +261,7 @@ namespace System.Xml.Xsl.Xslt
             else
             {
                 string? ns = _scope.LookupNamespace(prefix);
-                if (ns == null)
+                if (ns is null)
                 {
                     if (prefix.Length != 0)
                     {
@@ -422,7 +422,7 @@ namespace System.Xml.Xsl.Xslt
             }
             else
             {
-                if (_generalKey == null)
+                if (_generalKey is null)
                 {
                     _generalKey = CreateGeneralKeyFunction();
                 }
@@ -436,7 +436,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileSingleKey(List<Key> defList, QilNode key, IFocus env)
         {
-            Debug.Assert(defList != null && defList.Count > 0);
+            Debug.Assert(defList is not null && defList.Count > 0);
             if (defList.Count == 1)
             {
                 return _f.Invoke(defList[0].Function!, _f.ActualParameterList(env.GetCurrent()!, key));
@@ -453,7 +453,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileSingleKey(List<Key> defList, QilIterator key, QilIterator context)
         {
-            Debug.Assert(defList != null && defList.Count > 0);
+            Debug.Assert(defList is not null && defList.Count > 0);
             QilList result = _f.BaseFactory.Sequence();
             QilNode? keyRef = null;
 
@@ -511,14 +511,14 @@ namespace System.Xml.Xsl.Xslt
             else
             {
                 u = _f.Let(uris);
-                j = (baseNode != null) ? _f.Let(baseNode) : null;
+                j = (baseNode is not null) ? _f.Let(baseNode) : null;
                 result = _f.Conditional(_f.Not(_f.IsType(u, T.AnyAtomicType)),
                     _f.DocOrderDistinct(_f.Loop(i = _f.For(_f.TypeAssert(u, T.NodeS)),
                         CompileSingleDocument(_f.ConvertToString(i), j ?? i)
                     )),
                     CompileSingleDocument(_f.XsltConvert(u, T.StringX), j)
                 );
-                result = (baseNode != null) ? _f.Loop(j!, result) : result;
+                result = (baseNode is not null) ? _f.Loop(j!, result) : result;
                 result = _f.Loop(u, result);
             }
             return result;
@@ -529,7 +529,7 @@ namespace System.Xml.Xsl.Xslt
             _f.CheckString(uri);
             QilNode baseUri;
 
-            if (baseNode == null)
+            if (baseNode is null)
             {
                 baseUri = _f.String(_lastScope!.SourceLine!.Uri);
             }
@@ -560,7 +560,7 @@ namespace System.Xml.Xsl.Xslt
             _f.CheckString(formatPicture);
             XmlQualifiedName? resolvedName;
 
-            if (formatName == null)
+            if (formatName is null)
             {
                 resolvedName = new XmlQualifiedName();
                 // formatName must be non-null in the f.InvokeFormatNumberDynamic() call below
@@ -579,7 +579,7 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            if (resolvedName != null)
+            if (resolvedName is not null)
             {
                 DecimalFormatDecl format;
                 if (_compiler.DecimalFormats.Contains(resolvedName))

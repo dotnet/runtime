@@ -115,12 +115,12 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if (destinationType == typeof(string) && value != null)
+            if (destinationType == typeof(string) && value is not null)
             {
                 // Raise an argument exception if the value isn't defined and if
                 // the enum isn't a flags style.
@@ -132,7 +132,7 @@ namespace System.ComponentModel
                 return Enum.Format(EnumType, value, "G");
             }
 
-            if (destinationType == typeof(InstanceDescriptor) && value != null)
+            if (destinationType == typeof(InstanceDescriptor) && value is not null)
             {
                 string enumName = ConvertToInvariantString(context, value);
 
@@ -149,7 +149,7 @@ namespace System.ComponentModel
                         object convertedValue = ((IConvertible)value).ToType(underlyingType, culture);
 
                         MethodInfo method = typeof(Enum).GetMethod("ToObject", new Type[] { typeof(Type), underlyingType });
-                        if (method != null)
+                        if (method is not null)
                         {
                             return new InstanceDescriptor(method, new object[] { EnumType, convertedValue });
                         }
@@ -158,14 +158,14 @@ namespace System.ComponentModel
                 else
                 {
                     FieldInfo info = EnumType.GetField(enumName);
-                    if (info != null)
+                    if (info is not null)
                     {
                         return new InstanceDescriptor(info, null);
                     }
                 }
             }
 
-            if (destinationType == typeof(Enum[]) && value != null)
+            if (destinationType == typeof(Enum[]) && value is not null)
             {
                 if (EnumType.IsDefined(typeof(FlagsAttribute), false))
                 {
@@ -223,7 +223,7 @@ namespace System.ComponentModel
         /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
-            if (Values == null)
+            if (Values is null)
             {
                 // We need to get the enum values in this rather round-about way so we can filter
                 // out fields marked Browsable(false). Note that if multiple fields have the same value,
@@ -233,12 +233,12 @@ namespace System.ComponentModel
                 FieldInfo[] fields = reflectType.GetFields(BindingFlags.Public | BindingFlags.Static);
                 ArrayList objValues = null;
 
-                if (fields != null && fields.Length > 0)
+                if (fields is not null && fields.Length > 0)
                 {
                     objValues = new ArrayList(fields.Length);
                 }
 
-                if (objValues != null)
+                if (objValues is not null)
                 {
                     foreach (FieldInfo field in fields)
                     {
@@ -248,13 +248,13 @@ namespace System.ComponentModel
                             browsableAttr = attr as BrowsableAttribute;
                         }
 
-                        if (browsableAttr == null || browsableAttr.Browsable)
+                        if (browsableAttr is null || browsableAttr.Browsable)
                         {
                             object value = null;
 
                             try
                             {
-                                if (field.Name != null)
+                                if (field.Name is not null)
                                 {
                                     value = Enum.Parse(EnumType, field.Name);
                                 }
@@ -264,7 +264,7 @@ namespace System.ComponentModel
                                 // Hmm, for some reason, the parse threw. Let us ignore this value.
                             }
 
-                            if (value != null)
+                            if (value is not null)
                             {
                                 objValues.Add(value);
                             }
@@ -272,7 +272,7 @@ namespace System.ComponentModel
                     }
 
                     IComparer comparer = Comparer;
-                    if (comparer != null)
+                    if (comparer is not null)
                     {
                         objValues.Sort(comparer);
                     }

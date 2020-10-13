@@ -102,7 +102,7 @@ namespace System.Data.Odbc
             //something as simple as the following code would take two hits.  It's nice not to
             //have to take the hit when you know what your doing.
             //
-            //  if (cache[i] == null)
+            //  if (cache[i] is null)
             //      ....
             //  return cache[i];
 
@@ -115,7 +115,7 @@ namespace System.Data.Odbc
                 //  retreive all the value in between so they can go back to values they've skipped
                 for (int c = 0; c < i; c++)
                 {
-                    if (values[c] == null)
+                    if (values[c] is null)
                     {
                         values[c] = _record.GetValue(c);
                     }
@@ -126,7 +126,7 @@ namespace System.Data.Odbc
 
         internal DbSchemaInfo GetSchema(int i)
         {
-            if (_schema == null)
+            if (_schema is null)
             {
                 _schema = new DbSchemaInfo[Count];
             }

@@ -120,10 +120,10 @@ namespace System.IO.Compression
         private void UpdateSize()
         {
             _size = 0;
-            if (_uncompressedSize != null) _size += 8;
-            if (_compressedSize != null) _size += 8;
-            if (_localHeaderOffset != null) _size += 8;
-            if (_startDiskNumber != null) _size += 4;
+            if (_uncompressedSize is not null) _size += 8;
+            if (_compressedSize is not null) _size += 8;
+            if (_localHeaderOffset is not null) _size += 8;
+            if (_startDiskNumber is not null) _size += 4;
         }
 
         // There is a small chance that something very weird could happen here. The code calling into this function
@@ -221,7 +221,7 @@ namespace System.IO.Compression
             }
             finally
             {
-                if (ms != null)
+                if (ms is not null)
                     ms.Dispose();
             }
         }
@@ -278,10 +278,10 @@ namespace System.IO.Compression
             BinaryWriter writer = new BinaryWriter(stream);
             writer.Write(TagConstant);
             writer.Write(_size);
-            if (_uncompressedSize != null) writer.Write(_uncompressedSize.Value);
-            if (_compressedSize != null) writer.Write(_compressedSize.Value);
-            if (_localHeaderOffset != null) writer.Write(_localHeaderOffset.Value);
-            if (_startDiskNumber != null) writer.Write(_startDiskNumber.Value);
+            if (_uncompressedSize is not null) writer.Write(_uncompressedSize.Value);
+            if (_compressedSize is not null) writer.Write(_compressedSize.Value);
+            if (_localHeaderOffset is not null) writer.Write(_localHeaderOffset.Value);
+            if (_startDiskNumber is not null) writer.Write(_startDiskNumber.Value);
         }
     }
 
@@ -521,16 +521,16 @@ namespace System.IO.Compression
                 header.FileComment = null;
             }
 
-            header.UncompressedSize = zip64.UncompressedSize == null
+            header.UncompressedSize = zip64.UncompressedSize is null
                                                     ? uncompressedSizeSmall
                                                     : zip64.UncompressedSize.Value;
-            header.CompressedSize = zip64.CompressedSize == null
+            header.CompressedSize = zip64.CompressedSize is null
                                                     ? compressedSizeSmall
                                                     : zip64.CompressedSize.Value;
-            header.RelativeOffsetOfLocalHeader = zip64.LocalHeaderOffset == null
+            header.RelativeOffsetOfLocalHeader = zip64.LocalHeaderOffset is null
                                                     ? relativeOffsetOfLocalHeaderSmall
                                                     : zip64.LocalHeaderOffset.Value;
-            header.DiskNumberStart = zip64.StartDiskNumber == null
+            header.DiskNumberStart = zip64.StartDiskNumber is null
                                                     ? diskNumberStartSmall
                                                     : zip64.StartDiskNumber.Value;
 
@@ -580,10 +580,10 @@ namespace System.IO.Compression
             writer.Write(startOfCentralDirectoryTruncated);
 
             // Should be valid because of how we read archiveComment in TryReadBlock:
-            Debug.Assert((archiveComment == null) || (archiveComment.Length <= ZipFileCommentMaxLength));
+            Debug.Assert((archiveComment is null) || (archiveComment.Length <= ZipFileCommentMaxLength));
 
-            writer.Write(archiveComment != null ? (ushort)archiveComment.Length : (ushort)0); // zip file comment length
-            if (archiveComment != null)
+            writer.Write(archiveComment is not null ? (ushort)archiveComment.Length : (ushort)0); // zip file comment length
+            if (archiveComment is not null)
                 writer.Write(archiveComment);
         }
 

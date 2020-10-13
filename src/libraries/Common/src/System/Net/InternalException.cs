@@ -22,7 +22,7 @@ namespace System.Net
             }
         }
 
-        public override string Message => _unexpectedValue != null ?
+        public override string Message => _unexpectedValue is not null ?
             base.Message + " " + _unexpectedValue :
             base.Message;
     }

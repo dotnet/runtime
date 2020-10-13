@@ -80,7 +80,7 @@ namespace System.IO.Pipes
         /// <param name="safePipeHandle">The handle to validate.</param>
         internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
-            if (safePipeHandle.NamedPipeSocket == null)
+            if (safePipeHandle.NamedPipeSocket is null)
             {
                 Interop.Sys.FileStatus status;
                 int result = CheckPipeCall(Interop.Sys.FStat(safePipeHandle, out status));
@@ -109,12 +109,12 @@ namespace System.IO.Pipes
 
         private unsafe int ReadCore(Span<byte> buffer)
         {
-            Debug.Assert(_handle != null);
+            Debug.Assert(_handle is not null);
             DebugAssertHandleValid(_handle);
 
             // For named pipes, receive on the socket.
             Socket? socket = _handle.NamedPipeSocket;
-            if (socket != null)
+            if (socket is not null)
             {
                 // For a blocking socket, we could simply use the same Read syscall as is done
                 // for reading an anonymous pipe.  However, for a non-blocking socket, Read could
@@ -141,12 +141,12 @@ namespace System.IO.Pipes
 
         private unsafe void WriteCore(ReadOnlySpan<byte> buffer)
         {
-            Debug.Assert(_handle != null);
+            Debug.Assert(_handle is not null);
             DebugAssertHandleValid(_handle);
 
             // For named pipes, send to the socket.
             Socket? socket = _handle.NamedPipeSocket;
-            if (socket != null)
+            if (socket is not null)
             {
                 // For a blocking socket, we could simply use the same Write syscall as is done
                 // for writing to anonymous pipe.  However, for a non-blocking socket, Write could
@@ -378,7 +378,7 @@ namespace System.IO.Pipes
 
             // If we have a handle, get the capacity of the pipe (there's no distinction between in/out direction).
             // If we don't, just return the buffer size that was passed to the constructor.
-            return _handle != null ?
+            return _handle is not null ?
                 CheckPipeCall(Interop.Sys.Fcntl.GetPipeSz(_handle)) :
                 (int)_outBufferSize;
         }

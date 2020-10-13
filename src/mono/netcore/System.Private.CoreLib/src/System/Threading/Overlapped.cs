@@ -27,7 +27,7 @@ namespace System.Threading
         private static void IOCompletionCallback_Context(object? state)
         {
             _IOCompletionCallback helper = (_IOCompletionCallback)state!;
-            Debug.Assert(helper != null, "_IOCompletionCallback cannot be null");
+            Debug.Assert(helper is not null, "_IOCompletionCallback cannot be null");
             helper._ioCompletionCallback(helper._errorCode, helper._numBytes, helper._pNativeOverlapped);
         }
 
@@ -56,7 +56,7 @@ namespace System.Threading
                 //Quickly check the VM again, to see if a packet has arrived.
                 //OverlappedData.CheckVMForIOPacket(out pOVERLAP, out errorCode, out numBytes);
                 pNativeOverlapped = null;
-            } while (pNativeOverlapped != null);
+            } while (pNativeOverlapped is not null);
         }
     }
 
@@ -78,21 +78,21 @@ namespace System.Threading
 
         internal ref IAsyncResult? AsyncResult => ref _asyncResult;
 
-        internal ref int OffsetLow => ref (_pNativeOverlapped != null) ? ref _pNativeOverlapped->OffsetLow : ref _offsetLow;
-        internal ref int OffsetHigh => ref (_pNativeOverlapped != null) ? ref _pNativeOverlapped->OffsetHigh : ref _offsetHigh;
-        internal ref IntPtr EventHandle => ref (_pNativeOverlapped != null) ? ref _pNativeOverlapped->EventHandle : ref _eventHandle;
+        internal ref int OffsetLow => ref (_pNativeOverlapped is not null) ? ref _pNativeOverlapped->OffsetLow : ref _offsetLow;
+        internal ref int OffsetHigh => ref (_pNativeOverlapped is not null) ? ref _pNativeOverlapped->OffsetHigh : ref _offsetHigh;
+        internal ref IntPtr EventHandle => ref (_pNativeOverlapped is not null) ? ref _pNativeOverlapped->EventHandle : ref _eventHandle;
 
         internal unsafe NativeOverlapped* Pack(IOCompletionCallback? iocb, object? userData)
         {
-            if (_pNativeOverlapped != null)
+            if (_pNativeOverlapped is not null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_Overlapped_Pack);
             }
 
-            if (iocb != null)
+            if (iocb is not null)
             {
                 ExecutionContext? ec = ExecutionContext.Capture();
-                _callback = (ec != null && !ec.IsDefault) ? new _IOCompletionCallback(iocb, ec) : (object)iocb;
+                _callback = (ec is not null && !ec.IsDefault) ? new _IOCompletionCallback(iocb, ec) : (object)iocb;
             }
             else
             {
@@ -104,7 +104,7 @@ namespace System.Threading
 
         internal unsafe NativeOverlapped* UnsafePack(IOCompletionCallback? iocb, object? userData)
         {
-            if (_pNativeOverlapped != null)
+            if (_pNativeOverlapped is not null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_Overlapped_Pack);
             }
@@ -115,12 +115,12 @@ namespace System.Threading
 
         private unsafe NativeOverlapped* AllocateNativeOverlapped()
         {
-            Debug.Assert(_pinnedData == null);
+            Debug.Assert(_pinnedData is null);
 
             bool success = false;
             try
             {
-                if (_userObject != null)
+                if (_userObject is not null)
                 {
                     if (_userObject.GetType() == typeof(object[]))
                     {
@@ -171,7 +171,7 @@ namespace System.Threading
 
         private void FreeNativeOverlapped()
         {
-            if (_pinnedData != null)
+            if (_pinnedData is not null)
             {
                 for (int i = 0; i < _pinnedData.Length; i++)
                 {
@@ -183,7 +183,7 @@ namespace System.Threading
                 _pinnedData = null;
             }
 
-            if (_pNativeOverlapped != null)
+            if (_pNativeOverlapped is not null)
             {
                 GCHandle handle = *(GCHandle*)(_pNativeOverlapped + 1);
                 if (handle.IsAllocated)
@@ -298,7 +298,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe Overlapped Unpack(NativeOverlapped* nativeOverlappedPtr)
         {
-            if (nativeOverlappedPtr == null)
+            if (nativeOverlappedPtr is null)
                 throw new ArgumentNullException(nameof(nativeOverlappedPtr));
 
             return OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped!;
@@ -307,7 +307,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe void Free(NativeOverlapped* nativeOverlappedPtr)
         {
-            if (nativeOverlappedPtr == null)
+            if (nativeOverlappedPtr is null)
                 throw new ArgumentNullException(nameof(nativeOverlappedPtr));
 
             OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped!._overlappedData = null!;

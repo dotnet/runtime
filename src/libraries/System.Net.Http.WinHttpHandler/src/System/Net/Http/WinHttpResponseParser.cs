@@ -139,12 +139,12 @@ namespace System.Net.Http
         {
             const int StackLimit = 128;
 
-            Debug.Assert(buffer == null || (buffer != null && buffer.Length > StackLimit));
+            Debug.Assert(buffer is null || (buffer is not null && buffer.Length > StackLimit));
 
             int bufferLength;
             uint originalIndex = index;
 
-            if (buffer == null)
+            if (buffer is null)
             {
                 bufferLength = StackLimit;
                 char* pBuffer = stackalloc char[bufferLength];
@@ -194,7 +194,7 @@ namespace System.Net.Http
         /// </summary>
         private static unsafe int GetResponseHeader(SafeWinHttpHandle requestHandle, uint infoLevel, char[] buffer)
         {
-            Debug.Assert(buffer != null, "buffer must not be null.");
+            Debug.Assert(buffer is not null, "buffer must not be null.");
             Debug.Assert(buffer.Length > 0, "buffer must not be empty.");
 
             int bufferLength = buffer.Length;
@@ -281,7 +281,7 @@ namespace System.Net.Http
 
             string knownReasonPhrase = HttpStatusDescription.Get(statusCode);
 
-            return (knownReasonPhrase != null && knownReasonPhrase.AsSpan().SequenceEqual(buffer.AsSpan(0, bufferLength))) ?
+            return (knownReasonPhrase is not null && knownReasonPhrase.AsSpan().SequenceEqual(buffer.AsSpan(0, bufferLength))) ?
                 knownReasonPhrase :
                 new string(buffer, 0, bufferLength);
         }

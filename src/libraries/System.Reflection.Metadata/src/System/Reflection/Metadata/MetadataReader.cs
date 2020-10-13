@@ -80,12 +80,12 @@ namespace System.Reflection.Metadata
                 Throw.ArgumentOutOfRange(nameof(length));
             }
 
-            if (metadata == null)
+            if (metadata is null)
             {
                 Throw.ArgumentNull(nameof(metadata));
             }
 
-            if (utf8Decoder == null)
+            if (utf8Decoder is null)
             {
                 utf8Decoder = MetadataStringDecoder.DefaultUTF8;
             }
@@ -750,7 +750,7 @@ namespace System.Reflection.Metadata
             // Type-system metadata tables may be stored in a separate (external) metadata file.
             // We need to use the row counts of the external tables when referencing them.
             // Debug tables are local to the current metadata image and type system metadata tables are external and precede all debug tables.
-            var combinedRowCounts = (externalRowCountsOpt != null) ? CombineRowCounts(rowCounts, externalRowCountsOpt, firstLocalTableIndex: TableIndex.Document) : rowCounts;
+            var combinedRowCounts = (externalRowCountsOpt is not null) ? CombineRowCounts(rowCounts, externalRowCountsOpt, firstLocalTableIndex: TableIndex.Document) : rowCounts;
 
             int methodRefSizeCombined = GetReferenceSize(combinedRowCounts, TableIndex.MethodDef);
             int hasCustomDebugInformationRefSizeCombined = ComputeCodedTokenSize(HasCustomDebugInformationTag.LargeRowSize, combinedRowCounts, HasCustomDebugInformationTag.TablesReferenced);
@@ -1110,7 +1110,7 @@ namespace System.Reflection.Metadata
 
         public ModuleDefinition GetModuleDefinition()
         {
-            if (_debugMetadataHeader != null)
+            if (_debugMetadataHeader is not null)
             {
                 throw new InvalidOperationException(SR.StandaloneDebugMetadataImageDoesNotContainModuleTable);
             }
@@ -1463,10 +1463,10 @@ namespace System.Reflection.Metadata
         /// </summary>
         internal ImmutableArray<TypeDefinitionHandle> GetNestedTypes(TypeDefinitionHandle typeDef)
         {
-            if (_lazyNestedTypesMap == null)
+            if (_lazyNestedTypesMap is null)
             {
                 InitializeNestedTypesMap();
-                Debug.Assert(_lazyNestedTypesMap != null);
+                Debug.Assert(_lazyNestedTypesMap is not null);
             }
 
             ImmutableArray<TypeDefinitionHandle> nestedTypes;

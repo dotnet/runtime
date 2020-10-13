@@ -42,7 +42,7 @@ namespace System.Xml.Schema
 
         internal void BuildNamespaceList(string? targetNamespace)
         {
-            if (_ns != null)
+            if (_ns is not null)
             {
                 _namespaceList = new NamespaceList(_ns, targetNamespace!);
             }
@@ -54,7 +54,7 @@ namespace System.Xml.Schema
 
         internal void BuildNamespaceListV1Compat(string targetNamespace)
         {
-            if (_ns != null)
+            if (_ns is not null)
             {
                 _namespaceList = new NamespaceListV1Compat(_ns, targetNamespace);
             }
@@ -77,7 +77,7 @@ namespace System.Xml.Schema
         internal static XmlSchemaAnyAttribute? Intersection(XmlSchemaAnyAttribute o1, XmlSchemaAnyAttribute o2, bool v1Compat)
         {
             NamespaceList? nsl = NamespaceList.Intersection(o1.NamespaceList!, o2.NamespaceList!, v1Compat);
-            if (nsl != null)
+            if (nsl is not null)
             {
                 XmlSchemaAnyAttribute anyAttribute = new XmlSchemaAnyAttribute();
                 anyAttribute._namespaceList = nsl;
@@ -95,7 +95,7 @@ namespace System.Xml.Schema
         internal static XmlSchemaAnyAttribute? Union(XmlSchemaAnyAttribute o1, XmlSchemaAnyAttribute o2, bool v1Compat)
         {
             NamespaceList? nsl = NamespaceList.Union(o1.NamespaceList!, o2.NamespaceList!, v1Compat);
-            if (nsl != null)
+            if (nsl is not null)
             {
                 XmlSchemaAnyAttribute anyAttribute = new XmlSchemaAnyAttribute();
                 anyAttribute._namespaceList = nsl;

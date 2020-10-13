@@ -89,7 +89,7 @@ namespace System.Dynamic
 
             DynamicMetaObject binding = Bind(target, metaArgs);
 
-            if (binding == null)
+            if (binding is null)
             {
                 throw System.Linq.Expressions.Error.BindingCannotBeNull();
             }
@@ -190,7 +190,7 @@ namespace System.Dynamic
         {
             ContractUtils.RequiresNotNull(target, nameof(target));
 
-            if (args == null)
+            if (args is null)
             {
                 return MakeDeferred(target.Restrictions, target);
             }

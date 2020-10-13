@@ -127,7 +127,7 @@ namespace System.Runtime.Serialization
         bool IXmlLineInfo.HasLineInfo()
         {
             IXmlLineInfo? xmlLineInfo = InnerReader as IXmlLineInfo;
-            return (xmlLineInfo == null) ? _xmlReader.HasLineInfo() : xmlLineInfo.HasLineInfo();
+            return (xmlLineInfo is null) ? _xmlReader.HasLineInfo() : xmlLineInfo.HasLineInfo();
         }
 
         int IXmlLineInfo.LineNumber
@@ -135,7 +135,7 @@ namespace System.Runtime.Serialization
             get
             {
                 IXmlLineInfo? xmlLineInfo = InnerReader as IXmlLineInfo;
-                return (xmlLineInfo == null) ? _xmlReader.LineNumber : xmlLineInfo.LineNumber;
+                return (xmlLineInfo is null) ? _xmlReader.LineNumber : xmlLineInfo.LineNumber;
             }
         }
 
@@ -144,7 +144,7 @@ namespace System.Runtime.Serialization
             get
             {
                 IXmlLineInfo? xmlLineInfo = InnerReader as IXmlLineInfo;
-                return (xmlLineInfo == null) ? _xmlReader.LinePosition : xmlLineInfo.LinePosition;
+                return (xmlLineInfo is null) ? _xmlReader.LinePosition : xmlLineInfo.LinePosition;
             }
         }
     }

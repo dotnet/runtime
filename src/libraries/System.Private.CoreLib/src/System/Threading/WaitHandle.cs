@@ -51,7 +51,7 @@ namespace System.Threading
         [Obsolete("Use the SafeWaitHandle property instead.")]
         public virtual IntPtr Handle
         {
-            get => _waitHandle == null ? InvalidHandle : _waitHandle.DangerousGetHandle();
+            get => _waitHandle is null ? InvalidHandle : _waitHandle.DangerousGetHandle();
             set
             {
                 if (value == InvalidHandle)
@@ -62,7 +62,7 @@ namespace System.Threading
                     // ideally do these things:
                     // *) Expose a settable SafeHandle property on WaitHandle.
                     // *) Expose a settable OwnsHandle property on SafeHandle.
-                    if (_waitHandle != null)
+                    if (_waitHandle is not null)
                     {
                         _waitHandle.SetHandleAsInvalid();
                         _waitHandle = null;
@@ -135,7 +135,7 @@ namespace System.Threading
                 waitHandle.DangerousAddRef(ref success);
 
                 SynchronizationContext? context = SynchronizationContext.Current;
-                if (context != null && context.IsWaitNotificationRequired())
+                if (context is not null && context.IsWaitNotificationRequired())
                 {
                     waitResult = context.Wait(new[] { waitHandle.DangerousGetHandle() }, false, millisecondsTimeout);
                 }
@@ -169,7 +169,7 @@ namespace System.Threading
             // t_safeWaitHandlesForRent can be null when it was not initialized yet or
             // if a re-entrant wait is performed and the array is already rented. In
             // that case we just allocate a new one and reuse it as necessary.
-            int currentLength = (safeWaitHandles != null) ? safeWaitHandles.Length : 0;
+            int currentLength = (safeWaitHandles is not null) ? safeWaitHandles.Length : 0;
             if (currentLength < capacity)
             {
                 safeWaitHandles = new SafeWaitHandle[Math.Max(capacity,
@@ -202,7 +202,7 @@ namespace System.Threading
                 for (int i = 0; i < waitHandles.Length; ++i)
                 {
                     WaitHandle waitHandle = waitHandles[i];
-                    if (waitHandle == null)
+                    if (waitHandle is null)
                     {
                         throw new ArgumentNullException("waitHandles[" + i + ']', SR.ArgumentNull_ArrayElement);
                     }
@@ -223,7 +223,7 @@ namespace System.Threading
                 for (int i = 0; i < waitHandles.Length; ++i)
                 {
                     SafeWaitHandle? safeWaitHandle = safeWaitHandles[i];
-                    if (safeWaitHandle == null)
+                    if (safeWaitHandle is null)
                     {
                         break;
                     }
@@ -238,7 +238,7 @@ namespace System.Threading
 
                 if (!lastSuccess)
                 {
-                    Debug.Assert(lastSafeWaitHandle != null);
+                    Debug.Assert(lastSafeWaitHandle is not null);
                     lastSafeWaitHandle.DangerousRelease();
                 }
 
@@ -248,7 +248,7 @@ namespace System.Threading
 
         private static int WaitMultiple(WaitHandle[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
-            if (waitHandles == null)
+            if (waitHandles is null)
             {
                 throw new ArgumentNullException(nameof(waitHandles), SR.ArgumentNull_Waithandles);
             }
@@ -272,7 +272,7 @@ namespace System.Threading
             }
 
             SynchronizationContext? context = SynchronizationContext.Current;
-            bool useWaitContext = context != null && context.IsWaitNotificationRequired();
+            bool useWaitContext = context is not null && context.IsWaitNotificationRequired();
             SafeWaitHandle?[]? safeWaitHandles = RentSafeWaitHandleArray(waitHandles.Length);
 
             try
@@ -311,7 +311,7 @@ namespace System.Threading
             {
                 for (int i = 0; i < waitHandles.Length; ++i)
                 {
-                    if (safeWaitHandles[i] != null)
+                    if (safeWaitHandles[i] is not null)
                     {
                         safeWaitHandles[i]!.DangerousRelease(); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                         safeWaitHandles[i] = null;
@@ -324,11 +324,11 @@ namespace System.Threading
 
         private static bool SignalAndWait(WaitHandle toSignal, WaitHandle toWaitOn, int millisecondsTimeout)
         {
-            if (toSignal == null)
+            if (toSignal is null)
             {
                 throw new ArgumentNullException(nameof(toSignal));
             }
-            if (toWaitOn == null)
+            if (toWaitOn is null)
             {
                 throw new ArgumentNullException(nameof(toWaitOn));
             }
@@ -341,7 +341,7 @@ namespace System.Threading
             // to ensure that one instance is used in all places in this method
             SafeWaitHandle? safeWaitHandleToSignal = toSignal._waitHandle;
             SafeWaitHandle? safeWaitHandleToWaitOn = toWaitOn._waitHandle;
-            if (safeWaitHandleToSignal == null || safeWaitHandleToWaitOn == null)
+            if (safeWaitHandleToSignal is null || safeWaitHandleToWaitOn is null)
             {
                 // Throw ObjectDisposedException for backward compatibility even though it is not be representative of the issue
                 throw new ObjectDisposedException(null, SR.ObjectDisposed_Generic);

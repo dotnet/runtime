@@ -66,7 +66,7 @@ namespace System.DirectoryServices
         public DirectoryEntry Find(string name, string schemaClassName)
         {
             CheckIsContainer();
-            // Note: schemaClassName == null does not work for IIS: provider.
+            // Note: schemaClassName is null does not work for IIS: provider.
             object o = null;
             try
             {
@@ -123,10 +123,10 @@ namespace System.DirectoryServices
             {
                 get
                 {
-                    if (_enumVariant == null)
+                    if (_enumVariant is null)
                         throw new InvalidOperationException(SR.DSNoCurrentChild);
 
-                    if (_currentEntry == null)
+                    if (_currentEntry is null)
                         _currentEntry = new DirectoryEntry(_enumVariant.GetValue(), _container.UsePropertyCache, _container.GetUsername(), _container.GetPassword(), _container.AuthenticationType);
 
                     return _currentEntry;
@@ -139,7 +139,7 @@ namespace System.DirectoryServices
             /// </devdoc>
             public bool MoveNext()
             {
-                if (_enumVariant == null)
+                if (_enumVariant is null)
                     return false;
 
                 _currentEntry = null;
@@ -151,7 +151,7 @@ namespace System.DirectoryServices
             /// </devdoc>
             public void Reset()
             {
-                if (_enumVariant != null)
+                if (_enumVariant is not null)
                 {
                     try
                     {

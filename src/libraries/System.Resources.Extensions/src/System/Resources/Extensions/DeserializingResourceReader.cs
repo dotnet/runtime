@@ -37,7 +37,7 @@ namespace System.Resources.Extensions
         // Issue https://github.com/dotnet/runtime/issues/39292 tracks finding an alternative to BinaryFormatter
         private object ReadBinaryFormattedObject()
         {
-            if (_formatter == null)
+            if (_formatter is null)
             {
                 _formatter = new BinaryFormatter()
                 {
@@ -56,7 +56,7 @@ namespace System.Resources.Extensions
                 Type? type = null;
 
                 // determine if we have a mangled generic type name
-                if (typeName != null && assemblyName != null && !AreBracketsBalanced(typeName))
+                if (typeName is not null && assemblyName is not null && !AreBracketsBalanced(typeName))
                 {
                     // undo the mangling that may have happened with .NETFramework's
                     // incorrect ResXSerialization binder.
@@ -163,7 +163,7 @@ namespace System.Resources.Extensions
 
                         TypeConverter converter = TypeDescriptor.GetConverter(type);
 
-                        if (converter == null)
+                        if (converter is null)
                         {
                             throw new TypeLoadException(SR.Format(SR.TypeLoadException_CannotLoadConverter, type));
                         }
@@ -177,7 +177,7 @@ namespace System.Resources.Extensions
 
                         TypeConverter converter = TypeDescriptor.GetConverter(type);
 
-                        if (converter == null)
+                        if (converter is null)
                         {
                             throw new TypeLoadException(SR.Format(SR.TypeLoadException_CannotLoadConverter, type));
                         }

@@ -57,7 +57,7 @@ namespace System.DirectoryServices.ActiveDirectory
             this.replicaName = adamHostName;
             string portNumber;
             Utils.SplitServerNameAndPortNumber(context.Name, out portNumber);
-            if (portNumber != null)
+            if (portNumber is not null)
             {
                 this.replicaName = this.replicaName + ":" + portNumber;
             }
@@ -113,7 +113,7 @@ namespace System.DirectoryServices.ActiveDirectory
             string dnsHostName = null;
 
             // check that the context is not null
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -166,7 +166,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static AdamInstance FindOne(DirectoryContext context, string partitionName)
         {
             // validate parameters (partitionName validated by the call to ConfigSet)
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -177,7 +177,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.TargetShouldBeConfigSet, nameof(context));
             }
 
-            if (partitionName == null)
+            if (partitionName is null)
             {
                 throw new ArgumentNullException(nameof(partitionName));
             }
@@ -198,7 +198,7 @@ namespace System.DirectoryServices.ActiveDirectory
             AdamInstanceCollection adamInstanceCollection = null;
 
             // validate parameters (partitionName validated by the call to ConfigSet)
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -209,7 +209,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.TargetShouldBeConfigSet, nameof(context));
             }
 
-            if (partitionName == null)
+            if (partitionName is null)
             {
                 throw new ArgumentNullException(nameof(partitionName));
             }
@@ -299,7 +299,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (roleObjectEntry != null)
+                if (roleObjectEntry is not null)
                 {
                     roleObjectEntry.Dispose();
                 }
@@ -330,7 +330,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (partition == null)
+            if (partition is null)
                 throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
@@ -364,7 +364,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (partition == null)
+            if (partition is null)
                 throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
@@ -403,7 +403,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (objectPath == null)
+            if (objectPath is null)
                 throw new ArgumentNullException(nameof(objectPath));
 
             if (objectPath.Length == 0)
@@ -420,13 +420,13 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (partition == null)
+            if (partition is null)
                 throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(partition));
 
-            if (sourceServer == null)
+            if (sourceServer is null)
                 throw new ArgumentNullException(nameof(sourceServer));
 
             if (sourceServer.Length == 0)
@@ -442,7 +442,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (partition == null)
+            if (partition is null)
                 throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
@@ -458,7 +458,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (partition == null)
+            if (partition is null)
                 throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
@@ -501,7 +501,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_currentConfigSet == null)
+                if (_currentConfigSet is null)
                 {
                     DirectoryContext configSetContext = Utils.GetNewDirectoryContext(Name, DirectoryContextType.DirectoryServer, context);
                     _currentConfigSet = ConfigurationSet.GetConfigurationSet(configSetContext);
@@ -515,7 +515,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedHostName == null)
+                if (_cachedHostName is null)
                 {
                     DirectoryEntry serverEntry = directoryEntryMgr.GetCachedDirectoryEntry(ServerObjectName);
                     _cachedHostName = (string)PropertyManager.GetPropertyValue(context, serverEntry, PropertyManager.DnsHostName);
@@ -564,7 +564,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 try
                 {
-                    if (_cachedRoles == null)
+                    if (_cachedRoles is null)
                     {
                         // check for the fsmoRoleOwner attribute on the Config and Schema objects
                         ArrayList roleList = new ArrayList();
@@ -591,11 +591,11 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (schemaEntry != null)
+                    if (schemaEntry is not null)
                     {
                         schemaEntry.Dispose();
                     }
-                    if (partitionsEntry != null)
+                    if (partitionsEntry is not null)
                     {
                         partitionsEntry.Dispose();
                     }
@@ -615,7 +615,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     try
                     {
                         ntdsaEntry.RefreshCache();
-                        if (ntdsaEntry.Properties[PropertyManager.MsDSDefaultNamingContext].Value == null)
+                        if (ntdsaEntry.Properties[PropertyManager.MsDSDefaultNamingContext].Value is null)
                         {
                             // property has not been set
                             _cachedDefaultPartition = null;
@@ -638,7 +638,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 CheckIfDisposed();
 
                 DirectoryEntry ntdsaEntry = directoryEntryMgr.GetCachedDirectoryEntry(NtdsaObjectName);
-                if (value == null)
+                if (value is null)
                 {
                     if (ntdsaEntry.Properties.Contains(PropertyManager.MsDSDefaultNamingContext))
                     {
@@ -690,7 +690,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (cachedSiteName == null)
+                if (cachedSiteName is null)
                 {
                     DirectoryEntry siteEntry = DirectoryEntryManager.GetDirectoryEntry(context, SiteObjectName);
                     try
@@ -711,7 +711,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (cachedSiteObjectName == null)
+                if (cachedSiteObjectName is null)
                 {
                     // get the site object name from the server object name
                     // CN=server1,CN=Servers,CN=Site1,CN=Sites
@@ -737,7 +737,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (cachedServerObjectName == null)
+                if (cachedServerObjectName is null)
                 {
                     DirectoryEntry rootDSE = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
                     try
@@ -762,7 +762,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (cachedNtdsaObjectName == null)
+                if (cachedNtdsaObjectName is null)
                 {
                     DirectoryEntry rootDSE = DirectoryEntryManager.GetDirectoryEntry(context, WellKnownDN.RootDSE);
                     try

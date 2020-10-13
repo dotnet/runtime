@@ -333,8 +333,8 @@ namespace System.Management
                 //to find out whether this is a class enumeration or instance enumeration and call CreateInstanceEnum/
                 //CreateClassEnum appropriately, because with ExecQuery we can't do a deep enumeration.
                 if ((query.GetType() == typeof(SelectQuery)) &&
-                    (((SelectQuery)query).Condition == null) &&
-                    (((SelectQuery)query).SelectedProperties == null) &&
+                    (((SelectQuery)query).Condition is null) &&
+                    (((SelectQuery)query).SelectedProperties is null) &&
                     (options.EnumerateDeep == true))
                 {
                     //Need to make sure that we're not passing invalid flags to enumeration APIs.
@@ -426,8 +426,8 @@ namespace System.Management
                 //to find out whether this is a class enumeration or instance enumeration and call CreateInstanceEnum/
                 //CreateClassEnum appropriately, because with ExecQuery we can't do a deep enumeration.
                 if ((query.GetType() == typeof(SelectQuery)) &&
-                    (((SelectQuery)query).Condition == null) &&
-                    (((SelectQuery)query).SelectedProperties == null) &&
+                    (((SelectQuery)query).Condition is null) &&
+                    (((SelectQuery)query).SelectedProperties is null) &&
                     (options.EnumerateDeep == true))
                 {
                     //Need to make sure that we're not passing invalid flags to enumeration APIs.

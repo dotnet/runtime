@@ -18,12 +18,12 @@ namespace System.Reflection
                 throw new FileLoadException();
 
             StringBuilder sb = new StringBuilder();
-            if (name != null)
+            if (name is not null)
             {
                 sb.AppendQuoted(name);
             }
 
-            if (version != null)
+            if (version is not null)
             {
                 Version canonicalizedVersion = version.CanonicalizeVersion();
                 if (canonicalizedVersion.Major != ushort.MaxValue)
@@ -51,7 +51,7 @@ namespace System.Reflection
                 }
             }
 
-            if (cultureName != null)
+            if (cultureName is not null)
             {
                 if (cultureName.Length == 0)
                     cultureName = "neutral";
@@ -59,7 +59,7 @@ namespace System.Reflection
                 sb.AppendQuoted(cultureName);
             }
 
-            if (pkt != null)
+            if (pkt is not null)
             {
                 if (pkt.Length > PUBLIC_KEY_TOKEN_LEN)
                     throw new ArgumentException();

@@ -98,12 +98,12 @@ namespace System.Xml.Xsl.XsltOld
                 input.ToParent();
             }
 
-            if (version == null)
+            if (version is null)
             {
                 throw XsltException.Create(SR.Xslt_MissingAttribute, "version");
             }
 
-            if (badAttribute != null && !compiler.ForwardCompatibility)
+            if (badAttribute is not null && !compiler.ForwardCompatibility)
             {
                 throw XsltException.Create(SR.Xslt_InvalidAttribute, badAttribute, element);
             }
@@ -136,7 +136,7 @@ namespace System.Xml.Xsl.XsltOld
                 input.ToParent();
             }
 
-            if (version == null)
+            if (version is null)
             {
                 if (Ref.Equal(input.LocalName, input.Atoms.Stylesheet) &&
                     input.NamespaceURI == XmlReservedNs.NsWdXsl)
@@ -227,7 +227,7 @@ namespace System.Xml.Xsl.XsltOld
             for (int i = imports.Count - 1; 0 <= i; i--)
             {   // Imports should be compiled in reverse order
                 Uri? uri = imports[i] as Uri;
-                Debug.Assert(uri != null);
+                Debug.Assert(uri is not null);
                 imports[i] = CompileImport(compiler, uri, ++_maxid);
             }
             compiler.Stylesheetid = saveStylesheetId;
@@ -355,7 +355,7 @@ namespace System.Xml.Xsl.XsltOld
 
             CheckRequiredAttribute(compiler, MatchKey != Compiler.InvalidQueryKey, "match");
             CheckRequiredAttribute(compiler, UseKey != Compiler.InvalidQueryKey, "use");
-            CheckRequiredAttribute(compiler, Name != null, "name");
+            CheckRequiredAttribute(compiler, Name is not null, "name");
             // It is a breaking change to check for emptiness, SQLBUDT 324364
             //CheckEmpty(compiler);
 
@@ -435,7 +435,7 @@ namespace System.Xml.Xsl.XsltOld
                 input.ToParent();
             }
             info.NegativeInfinitySymbol = string.Concat(info.NegativeSign, info.PositiveInfinitySymbol);
-            if (Name == null)
+            if (Name is null)
             {
                 Name = new XmlQualifiedName();
             }
@@ -570,7 +570,7 @@ namespace System.Xml.Xsl.XsltOld
                                 else if (Ref.Equal(name, input.Atoms.Variable))
                                 {
                                     VariableAction? action = compiler.CreateVariableAction(VariableType.GlobalVariable);
-                                    if (action != null)
+                                    if (action is not null)
                                     {
                                         AddAction(action);
                                     }
@@ -578,7 +578,7 @@ namespace System.Xml.Xsl.XsltOld
                                 else if (Ref.Equal(name, input.Atoms.Param))
                                 {
                                     VariableAction? action = compiler.CreateVariableAction(VariableType.GlobalParameter);
-                                    if (action != null)
+                                    if (action is not null)
                                     {
                                         AddAction(action);
                                     }
@@ -759,7 +759,7 @@ namespace System.Xml.Xsl.XsltOld
                     throw compiler.UnexpectedKeyword();
             }
 
-            Debug.Assert(action != null);
+            Debug.Assert(action is not null);
 
             AddAction(action);
         }
@@ -861,7 +861,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddAction(Action? action)
         {
-            if (this.containedActions == null)
+            if (this.containedActions is null)
             {
                 this.containedActions = new ArrayList();
             }
@@ -872,7 +872,7 @@ namespace System.Xml.Xsl.XsltOld
         [MemberNotNull(nameof(lastCopyCodeAction))]
         private void EnsureCopyCodeAction()
         {
-            if (lastCopyCodeAction == null)
+            if (lastCopyCodeAction is null)
             {
                 CopyCodeAction copyCode = new CopyCodeAction();
                 AddAction(copyCode);
@@ -943,7 +943,7 @@ namespace System.Xml.Xsl.XsltOld
                 while (input.MoveToNextAttribute());
                 input.ToParent();
             }
-            if (implementsNamespace == null)
+            if (implementsNamespace is null)
             {
                 throw XsltException.Create(SR.Xslt_MissingAttribute, input.Atoms.ImplementsPrefix);
             }
@@ -957,12 +957,12 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             switch (frame.State)
             {
                 case Initialized:
-                    if (this.containedActions != null && this.containedActions.Count > 0)
+                    if (this.containedActions is not null && this.containedActions.Count > 0)
                     {
                         processor.PushActionFrame(frame);
                         frame.State = ProcessingChildren;
@@ -985,9 +985,9 @@ namespace System.Xml.Xsl.XsltOld
 
         internal Action? GetAction(int actionIndex)
         {
-            Debug.Assert(actionIndex == 0 || this.containedActions != null);
+            Debug.Assert(actionIndex == 0 || this.containedActions is not null);
 
-            if (this.containedActions != null && actionIndex < this.containedActions.Count)
+            if (this.containedActions is not null && actionIndex < this.containedActions.Count)
             {
                 return (Action)this.containedActions[actionIndex]!;
             }
@@ -999,12 +999,12 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void CheckDuplicateParams(XmlQualifiedName name)
         {
-            if (this.containedActions != null)
+            if (this.containedActions is not null)
             {
                 foreach (CompiledAction action in this.containedActions)
                 {
                     WithParamAction? param = action as WithParamAction;
-                    if (param != null && param.Name == name)
+                    if (param is not null && param.Name == name)
                     {
                         throw XsltException.Create(SR.Xslt_DuplicateWithParam, name.ToString());
                     }
@@ -1014,7 +1014,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void ReplaceNamespaceAlias(Compiler compiler)
         {
-            if (this.containedActions == null)
+            if (this.containedActions is null)
             {
                 return;
             }

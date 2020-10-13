@@ -168,7 +168,7 @@ namespace System.ComponentModel.Composition.Primitives
 
             _requiredTypeIdentity = requiredTypeIdentity;
 
-            if (requiredMetadata != null)
+            if (requiredMetadata is not null)
             {
                 _requiredMetadata = requiredMetadata;
             }
@@ -212,7 +212,7 @@ namespace System.ComponentModel.Composition.Primitives
                 // NOTE : unlike other arguments, we validate this one as late as possible, because its validation may lead to type loading
                 ValidateRequiredMetadata();
 
-                Debug.Assert(_requiredMetadata != null);
+                Debug.Assert(_requiredMetadata is not null);
                 return _requiredMetadata;
             }
         }
@@ -223,7 +223,7 @@ namespace System.ComponentModel.Composition.Primitives
             {
                 foreach (KeyValuePair<string, Type> metadataItem in _requiredMetadata)
                 {
-                    if ((metadataItem.Key == null) || (metadataItem.Value == null))
+                    if ((metadataItem.Key is null) || (metadataItem.Value is null))
                     {
                         throw new InvalidOperationException(
                             SR.Format(SR.Argument_NullElement, "requiredMetadata"));
@@ -273,7 +273,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get
             {
-                if (_constraint == null)
+                if (_constraint is null)
                 {
                     _constraint = ConstraintServices.CreateConstraint(ContractName, RequiredTypeIdentity, RequiredMetadata, RequiredCreationPolicy);
                 }
@@ -336,7 +336,7 @@ namespace System.ComponentModel.Composition.Primitives
                     return false;
                 }
 
-                if (metadataValue != null)
+                if (metadataValue is not null)
                 {
                     // the metadata value is not null, we can rely on IsInstanceOfType to do the right thing
                     if (!metadataValueType.IsInstanceOfType(metadataValue))

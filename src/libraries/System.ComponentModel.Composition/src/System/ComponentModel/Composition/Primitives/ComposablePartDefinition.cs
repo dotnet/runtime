@@ -115,13 +115,13 @@ namespace System.ComponentModel.Composition.Primitives
                 if (definition.IsConstraintSatisfiedBy(export))
                 {
                     matchesFound = true;
-                    if (singleExport == null)
+                    if (singleExport is null)
                     {
                         singleExport = new Tuple<ComposablePartDefinition, ExportDefinition>(this, export);
                     }
                     else
                     {
-                        if (multipleExports == null)
+                        if (multipleExports is null)
                         {
                             multipleExports = new List<Tuple<ComposablePartDefinition, ExportDefinition>>();
                             multipleExports.Add(singleExport);
@@ -136,7 +136,7 @@ namespace System.ComponentModel.Composition.Primitives
                 return false;
             }
 
-            if (multipleExports != null)
+            if (multipleExports is not null)
             {
                 multipleMatches = multipleExports;
             }

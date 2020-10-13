@@ -68,7 +68,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public HelpKeywordAttribute(Type t)
         {
-            if (t == null)
+            if (t is null)
             {
                 throw new ArgumentNullException(nameof(t));
             }
@@ -90,7 +90,7 @@ namespace System.ComponentModel.Design
             {
                 return true;
             }
-            if ((obj != null) && (obj is HelpKeywordAttribute))
+            if ((obj is not null) && (obj is HelpKeywordAttribute))
             {
                 return ((HelpKeywordAttribute)obj).HelpKeyword == HelpKeyword;
             }

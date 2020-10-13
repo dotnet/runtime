@@ -149,11 +149,11 @@ namespace System.Net
 
             public bool AreParametersAcceptableForCaching()
             {
-                return Credentials == null
+                return Credentials is null
                     && ReferenceEquals(Proxy, DefaultWebProxy)
-                    && ServerCertificateValidationCallback == null
-                    && ClientCertificates == null
-                    && CookieContainer == null;
+                    && ServerCertificateValidationCallback is null
+                    && ClientCertificates is null
+                    && CookieContainer is null;
             }
         }
 
@@ -345,7 +345,7 @@ namespace System.Net
             get
             {
                 Uri hostUri = _hostUri ?? Address;
-                return (_hostUri == null || !_hostHasPort) && Address.IsDefaultPort ?
+                return (_hostUri is null || !_hostHasPort) && Address.IsDefaultPort ?
                     hostUri.Host :
                     hostUri.Host + ":" + hostUri.Port;
             }
@@ -355,7 +355,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_writestarted);
                 }
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -849,7 +849,7 @@ namespace System.Net
         {
             get
             {
-                return (_sendRequestTask != null) && (_sendRequestTask.IsCompletedSuccessfully);
+                return (_sendRequestTask is not null) && (_sendRequestTask.IsCompletedSuccessfully);
             }
         }
 
@@ -973,20 +973,20 @@ namespace System.Net
             // already in the terminal state and the callback has already been invoked
             // via the async task continuation.
 
-            if (_responseOperation != null)
+            if (_responseOperation is not null)
             {
-                if (_responseOperation.TrySetCanceled() && _responseCallback != null)
+                if (_responseOperation.TrySetCanceled() && _responseCallback is not null)
                 {
                     _responseCallback(_responseOperation.Task);
                 }
 
                 // Cancel the underlying send operation.
-                Debug.Assert(_sendRequestCts != null);
+                Debug.Assert(_sendRequestCts is not null);
                 _sendRequestCts.Cancel();
             }
-            else if (_requestStreamOperation != null)
+            else if (_requestStreamOperation is not null)
             {
-                if (_requestStreamOperation.TrySetCanceled() && _requestStreamCallback != null)
+                if (_requestStreamOperation.TrySetCanceled() && _requestStreamCallback is not null)
                 {
                     _requestStreamCallback(_requestStreamOperation.Task);
                 }
@@ -1086,7 +1086,7 @@ namespace System.Net
         {
             CheckAbort();
 
-            if (asyncResult == null || !(asyncResult is Task<Stream>))
+            if (asyncResult is null || !(asyncResult is Task<Stream>))
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
@@ -1123,13 +1123,13 @@ namespace System.Net
             try
             {
                 client = GetCachedOrCreateHttpClient(out disposeRequired);
-                if (_requestStream != null)
+                if (_requestStream is not null)
                 {
                     ArraySegment<byte> bytes = _requestStream.GetBuffer();
                     request.Content = new ByteArrayContent(bytes.Array!, bytes.Offset, bytes.Count);
                 }
 
-                if (_hostUri != null)
+                if (_hostUri is not null)
                 {
                     request.Headers.Host = Host;
                 }
@@ -1143,7 +1143,7 @@ namespace System.Net
                     // are only allowed in the request headers collection and not in the request content headers collection.
                     if (IsWellKnownContentHeader(headerName))
                     {
-                        if (request.Content == null)
+                        if (request.Content is null)
                         {
                             // Create empty content so that we can send the entity-body header.
                             request.Content = new ByteArrayContent(Array.Empty<byte>());
@@ -1219,7 +1219,7 @@ namespace System.Net
         {
             CheckAbort();
 
-            if (asyncResult == null || !(asyncResult is Task<WebResponse>))
+            if (asyncResult is null || !(asyncResult is Task<WebResponse>))
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
@@ -1301,7 +1301,7 @@ namespace System.Net
             // Do some range checking before assembling the header
             //
 
-            if (rangeSpecifier == null)
+            if (rangeSpecifier is null)
             {
                 throw new ArgumentNullException(nameof(rangeSpecifier));
             }
@@ -1330,7 +1330,7 @@ namespace System.Net
 
         public void AddRange(string rangeSpecifier, long range)
         {
-            if (rangeSpecifier == null)
+            if (rangeSpecifier is null)
             {
                 throw new ArgumentNullException(nameof(rangeSpecifier));
             }
@@ -1348,7 +1348,7 @@ namespace System.Net
         {
             string? curRange = _webHeaderCollection[HttpKnownHeaderNames.Range];
 
-            if ((curRange == null) || (curRange.Length == 0))
+            if ((curRange is null) || (curRange.Length == 0))
             {
                 curRange = rangeSpecifier + "=";
             }
@@ -1361,7 +1361,7 @@ namespace System.Net
                 curRange = string.Empty;
             }
             curRange += from.ToString();
-            if (to != null)
+            if (to is not null)
             {
                 curRange += "-" + to;
             }
@@ -1373,7 +1373,7 @@ namespace System.Net
         {
             get
             {
-                return _sendRequestTask != null;
+                return _sendRequestTask is not null;
             }
         }
 
@@ -1415,7 +1415,7 @@ namespace System.Net
         {
             string? headerValue = _webHeaderCollection[headerName];
 
-            if (headerValue == null)
+            if (headerValue is null)
             {
                 return DateTime.MinValue; // MinValue means header is not present
             }
@@ -1449,11 +1449,11 @@ namespace System.Net
             if (parameters.AreParametersAcceptableForCaching())
             {
                 disposeRequired = false;
-                if (s_cachedHttpClient == null)
+                if (s_cachedHttpClient is null)
                 {
                     lock (s_syncRoot)
                     {
-                        if (s_cachedHttpClient == null)
+                        if (s_cachedHttpClient is null)
                         {
                             s_cachedHttpClientParameters = parameters;
                             s_cachedHttpClient = CreateHttpClient(parameters, null);
@@ -1487,7 +1487,7 @@ namespace System.Net
                 handler.PreAuthenticate = parameters.PreAuthenticate;
                 client.Timeout = parameters.Timeout;
 
-                if (parameters.CookieContainer != null)
+                if (parameters.CookieContainer is not null)
                 {
                     handler.CookieContainer = parameters.CookieContainer;
                     Debug.Assert(handler.UseCookies); // Default of handler.UseCookies is true.
@@ -1498,10 +1498,10 @@ namespace System.Net
                 }
 
                 Debug.Assert(handler.UseProxy); // Default of handler.UseProxy is true.
-                Debug.Assert(handler.Proxy == null); // Default of handler.Proxy is null.
+                Debug.Assert(handler.Proxy is null); // Default of handler.Proxy is null.
 
                 // HttpClientHandler default is to use a proxy which is the system proxy.
-                // This is indicated by the properties 'UseProxy == true' and 'Proxy == null'.
+                // This is indicated by the properties 'UseProxy == true' and 'Proxy is null'.
                 //
                 // However, HttpWebRequest doesn't have a separate 'UseProxy' property. Instead,
                 // the default of the 'Proxy' property is a non-null IWebProxy object which is the
@@ -1510,7 +1510,7 @@ namespace System.Net
                 //
                 // So, we need to map the desired HttpWebRequest proxy settings to equivalent
                 // HttpClientHandler settings.
-                if (parameters.Proxy == null)
+                if (parameters.Proxy is null)
                 {
                     handler.UseProxy = false;
                 }
@@ -1526,7 +1526,7 @@ namespace System.Net
                     handler.DefaultProxyCredentials = parameters.Proxy.Credentials;
                 }
 
-                if (parameters.ClientCertificates != null)
+                if (parameters.ClientCertificates is not null)
                 {
                     handler.ClientCertificates.AddRange(parameters.ClientCertificates);
                 }
@@ -1535,7 +1535,7 @@ namespace System.Net
                 handler.SslProtocols = (SslProtocols)parameters.SslProtocols;
                 handler.CheckCertificateRevocationList = parameters.CheckCertificateRevocationList;
                 RemoteCertificateValidationCallback? rcvc = parameters.ServerCertificateValidationCallback;
-                if (rcvc != null)
+                if (rcvc is not null)
                 {
                     RemoteCertificateValidationCallback localRcvc = rcvc;
                     HttpWebRequest localRequest = request!;

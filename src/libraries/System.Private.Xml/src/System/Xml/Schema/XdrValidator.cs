@@ -42,7 +42,7 @@ namespace System.Xml.Schema
         private void Init()
         {
             _nsManager = reader.NamespaceManager!;
-            if (_nsManager == null)
+            if (_nsManager is null)
             {
                 _nsManager = new XmlNamespaceManager(NameTable);
                 _isProcessContents = true;
@@ -119,7 +119,7 @@ namespace System.Xml.Schema
 
         private bool IsInlineSchemaStarted
         {
-            get { return _inlineSchemaParser != null; }
+            get { return _inlineSchemaParser is not null; }
         }
 
         private void ProcessInlineSchema()
@@ -128,7 +128,7 @@ namespace System.Xml.Schema
             { // Done
                 _inlineSchemaParser.FinishParsing();
                 SchemaInfo? xdrSchema = _inlineSchemaParser.XdrSchema;
-                if (xdrSchema != null && xdrSchema.ErrorCount == 0)
+                if (xdrSchema is not null && xdrSchema.ErrorCount == 0)
                 {
                     foreach (string inlineNS in xdrSchema.TargetNamespaces.Keys)
                     {
@@ -153,7 +153,7 @@ namespace System.Xml.Schema
             }
 
             context!.ElementDecl = ThoroughGetElementDecl();
-            if (context.ElementDecl != null)
+            if (context.ElementDecl is not null)
             {
                 ValidateStartElement();
                 ValidateEndStartElement();
@@ -169,7 +169,7 @@ namespace System.Xml.Schema
                 _nsManager.PopScope();
             }
 
-            if (context!.ElementDecl != null)
+            if (context!.ElementDecl is not null)
             {
                 if (context.NeedValidateChildren)
                 {
@@ -225,7 +225,7 @@ namespace System.Xml.Schema
             }
 
             SchemaElementDecl? elementDecl = schemaInfo!.GetElementDecl(elementName);
-            if (elementDecl == null)
+            if (elementDecl is null)
             {
                 if (schemaInfo.TargetNamespaces.ContainsKey(context!.Namespace!))
                 {
@@ -237,9 +237,9 @@ namespace System.Xml.Schema
 
         private void ValidateStartElement()
         {
-            if (context!.ElementDecl != null)
+            if (context!.ElementDecl is not null)
             {
-                if (context.ElementDecl.SchemaType != null)
+                if (context.ElementDecl.SchemaType is not null)
                 {
                     reader.SchemaTypeObject = context.ElementDecl.SchemaType;
                 }
@@ -247,7 +247,7 @@ namespace System.Xml.Schema
                 {
                     reader.SchemaTypeObject = context.ElementDecl.Datatype;
                 }
-                if (reader.IsEmptyElement && !context.IsNill && context.ElementDecl.DefaultValueTyped != null)
+                if (reader.IsEmptyElement && !context.IsNill && context.ElementDecl.DefaultValueTyped is not null)
                 {
                     reader.TypedValueObject = context.ElementDecl.DefaultValueTyped;
                     context.IsNill = true; // reusing IsNill
@@ -271,14 +271,14 @@ namespace System.Xml.Schema
                     {
                         reader.SchemaTypeObject = null;
                         SchemaAttDef? attnDef = schemaInfo!.GetAttributeXdr(context.ElementDecl, QualifiedName(reader.LocalName, reader.NamespaceURI));
-                        if (attnDef != null)
+                        if (attnDef is not null)
                         {
-                            if (context.ElementDecl != null && context.ElementDecl.HasRequiredAttribute)
+                            if (context.ElementDecl is not null && context.ElementDecl.HasRequiredAttribute)
                             {
                                 _attPresence.Add(attnDef.Name, attnDef);
                             }
-                            reader.SchemaTypeObject = (attnDef.SchemaType != null) ? (object)attnDef.SchemaType : (object)attnDef.Datatype;
-                            if (attnDef.Datatype != null)
+                            reader.SchemaTypeObject = (attnDef.SchemaType is not null) ? (object)attnDef.SchemaType : (object)attnDef.Datatype;
+                            if (attnDef.Datatype is not null)
                             {
                                 string attributeValue = reader.Value;
                                 // need to check the contents of this attribute to make sure
@@ -320,7 +320,7 @@ namespace System.Xml.Schema
                 }
             }
 
-            if (context.ElementDecl.Datatype != null)
+            if (context.ElementDecl.Datatype is not null)
             {
                 checkDatatype = true;
                 hasSibling = false;
@@ -361,12 +361,12 @@ namespace System.Xml.Schema
             }
             finally
             {
-                if (reader != null)
+                if (reader is not null)
                 {
                     reader.Close();
                 }
             }
-            if (xdrSchema != null && xdrSchema.ErrorCount == 0)
+            if (xdrSchema is not null && xdrSchema.ErrorCount == 0)
             {
                 schemaInfo!.Add(xdrSchema, EventHandler);
                 SchemaCollection!.Add(uri, xdrSchema, null, false);
@@ -379,16 +379,16 @@ namespace System.Xml.Schema
             {
                 return;
             }
-            if (this.XmlResolver == null)
+            if (this.XmlResolver is null)
             {
                 return;
             }
 
             SchemaInfo? schemaInfo = null;
-            if (SchemaCollection != null)
+            if (SchemaCollection is not null)
                 schemaInfo = SchemaCollection.GetSchemaInfo(uri);
 
-            if (schemaInfo != null)
+            if (schemaInfo is not null)
             {
                 if (schemaInfo.SchemaType != SchemaType.XDR)
                 {
@@ -406,7 +406,7 @@ namespace System.Xml.Schema
 
         public override bool PreserveWhitespace
         {
-            get { return context!.ElementDecl != null ? context.ElementDecl.ContentValidator!.PreserveWhitespace : false; }
+            get { return context!.ElementDecl is not null ? context.ElementDecl.ContentValidator!.PreserveWhitespace : false; }
         }
 
         private void ProcessTokenizedType(
@@ -417,7 +417,7 @@ namespace System.Xml.Schema
             switch (ttype)
             {
                 case XmlTokenizedType.ID:
-                    if (FindId(name) != null)
+                    if (FindId(name) is not null)
                     {
                         SendValidationEvent(SR.Sch_DupId, name);
                     }
@@ -428,7 +428,7 @@ namespace System.Xml.Schema
                     break;
                 case XmlTokenizedType.IDREF:
                     object? p = FindId(name);
-                    if (p == null)
+                    if (p is null)
                     { // add it to linked list to check it later
                         _idRefListHead = new IdRefNode(_idRefListHead, name, this.PositionInfo.LineNumber, this.PositionInfo.LinePosition);
                     }
@@ -463,10 +463,10 @@ namespace System.Xml.Schema
             try
             {
                 reader.TypedValueObject = null;
-                bool isAttn = attdef != null;
+                bool isAttn = attdef is not null;
                 XmlSchemaDatatype? dtype = isAttn ? attdef!.Datatype : context!.ElementDecl!.Datatype;
 
-                if (dtype == null)
+                if (dtype is null)
                 {
                     return; // no reason to check
                 }
@@ -517,7 +517,7 @@ namespace System.Xml.Schema
                         SendValidationEvent(SR.Sch_MinLengthConstraintFailed, value);
                     }
                 }
-                if (decl.Values != null && !decl.CheckEnumeration(typedValue))
+                if (decl.Values is not null && !decl.CheckEnumeration(typedValue))
                 {
                     if (dtype.TokenizedType == XmlTokenizedType.NOTATION)
                     {
@@ -542,7 +542,7 @@ namespace System.Xml.Schema
             }
             catch (XmlSchemaException)
             {
-                if (attdef != null)
+                if (attdef is not null)
                 {
                     SendValidationEvent(SR.Sch_AttributeValueDataType, attdef.Name.ToString());
                 }
@@ -569,7 +569,7 @@ namespace System.Xml.Schema
             try
             {
                 XmlSchemaDatatype dtype = attdef.Datatype;
-                if (dtype == null)
+                if (dtype is null)
                 {
                     return; // no reason to check
                 }
@@ -606,7 +606,7 @@ namespace System.Xml.Schema
                     if (!attdef.CheckEnumeration(typedValue))
                     {
                         XmlSchemaException e = new XmlSchemaException(SR.Sch_EnumerationValue, typedValue.ToString(), baseUri, lineNo, linePos);
-                        if (eventhandler != null)
+                        if (eventhandler is not null)
                         {
                             eventhandler(sender, new ValidationEventArgs(e));
                         }
@@ -625,7 +625,7 @@ namespace System.Xml.Schema
 #endif
             {
                 XmlSchemaException e = new XmlSchemaException(SR.Sch_AttributeDefaultDataType, attdef.Name.ToString(), baseUri, lineNo, linePos);
-                if (eventhandler != null)
+                if (eventhandler is not null)
                 {
                     eventhandler(sender, new ValidationEventArgs(e));
                 }
@@ -641,7 +641,7 @@ namespace System.Xml.Schema
             // Note: It used to be true that we only called this if _fValidate was true,
             // but due to the fact that you can now dynamically type somethign as an ID
             // that is no longer true.
-            if (_IDs == null)
+            if (_IDs is null)
             {
                 _IDs = new Hashtable();
             }
@@ -651,13 +651,13 @@ namespace System.Xml.Schema
 
         public override object? FindId(string name)
         {
-            return _IDs == null ? null : _IDs[name];
+            return _IDs is null ? null : _IDs[name];
         }
 
         private void Push(XmlQualifiedName elementName)
         {
             context = (ValidationState)_validationStack.Push();
-            if (context == null)
+            if (context is null)
             {
                 context = new ValidationState();
                 _validationStack.AddToTop(context);
@@ -682,9 +682,9 @@ namespace System.Xml.Schema
         private void CheckForwardRefs()
         {
             IdRefNode? next = _idRefListHead;
-            while (next != null)
+            while (next is not null)
             {
-                if (FindId(next.Id) == null)
+                if (FindId(next.Id) is null)
                 {
                     SendValidationEvent(new XmlSchemaException(SR.Sch_UndeclaredId, next.Id, reader.BaseURI, next.LineNo, next.LinePos));
                 }

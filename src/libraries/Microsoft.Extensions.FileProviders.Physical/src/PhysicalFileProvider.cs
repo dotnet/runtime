@@ -87,11 +87,11 @@ namespace Microsoft.Extensions.FileProviders
         {
             get
             {
-                if (_fileWatcher != null)
+                if (_fileWatcher is not null)
                 {
                     return false;
                 }
-                if (_usePollingFileWatcher == null)
+                if (_usePollingFileWatcher is null)
                 {
                     ReadPollingEnvironmentVariables();
                 }
@@ -99,7 +99,7 @@ namespace Microsoft.Extensions.FileProviders
             }
             set
             {
-                if (_fileWatcher != null)
+                if (_fileWatcher is not null)
                 {
                     throw new InvalidOperationException($"Cannot modify {nameof(UsePollingFileWatcher)} once file watcher has been initialized.");
                 }
@@ -126,7 +126,7 @@ namespace Microsoft.Extensions.FileProviders
         {
             get
             {
-                if (_useActivePolling == null)
+                if (_useActivePolling is null)
                 {
                     ReadPollingEnvironmentVariables();
                 }
@@ -257,7 +257,7 @@ namespace Microsoft.Extensions.FileProviders
             }
 
             string fullPath = GetFullPath(subpath);
-            if (fullPath == null)
+            if (fullPath is null)
             {
                 return new NotFoundFileInfo(subpath);
             }
@@ -284,7 +284,7 @@ namespace Microsoft.Extensions.FileProviders
         {
             try
             {
-                if (subpath == null || PathUtils.HasInvalidPathChars(subpath))
+                if (subpath is null || PathUtils.HasInvalidPathChars(subpath))
                 {
                     return NotFoundDirectoryContents.Singleton;
                 }
@@ -299,7 +299,7 @@ namespace Microsoft.Extensions.FileProviders
                 }
 
                 string fullPath = GetFullPath(subpath);
-                if (fullPath == null || !Directory.Exists(fullPath))
+                if (fullPath is null || !Directory.Exists(fullPath))
                 {
                     return NotFoundDirectoryContents.Singleton;
                 }
@@ -331,7 +331,7 @@ namespace Microsoft.Extensions.FileProviders
         /// </returns>
         public IChangeToken Watch(string filter)
         {
-            if (filter == null || PathUtils.HasInvalidFilterChars(filter))
+            if (filter is null || PathUtils.HasInvalidFilterChars(filter))
             {
                 return NullChangeToken.Singleton;
             }

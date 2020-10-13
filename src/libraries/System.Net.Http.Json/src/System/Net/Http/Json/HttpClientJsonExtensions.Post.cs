@@ -11,7 +11,7 @@ namespace System.Net.Http.Json
     {
         public static Task<HttpResponseMessage> PostAsJsonAsync<TValue>(this HttpClient client, string? requestUri, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -22,7 +22,7 @@ namespace System.Net.Http.Json
 
         public static Task<HttpResponseMessage> PostAsJsonAsync<TValue>(this HttpClient client, Uri? requestUri, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }

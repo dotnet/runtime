@@ -41,7 +41,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XmlQueryStaticData(XmlWriterSettings defaultWriterSettings, IList<WhitespaceRule> whitespaceRules, StaticDataManager staticData)
         {
-            Debug.Assert(defaultWriterSettings != null && staticData != null);
+            Debug.Assert(defaultWriterSettings is not null && staticData is not null);
             _defaultWriterSettings = defaultWriterSettings;
             _whitespaceRules = whitespaceRules;
             _names = staticData.Names;
@@ -203,7 +203,7 @@ namespace System.Xml.Xsl.Runtime
             _defaultWriterSettings.GetObjectData(dataWriter);
 
             // IList<WhitespaceRule> whitespaceRules;
-            if (_whitespaceRules == null)
+            if (_whitespaceRules is null)
             {
                 dataWriter.Write(0);
             }
@@ -217,7 +217,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // string[] names;
-            if (_names == null)
+            if (_names is null)
             {
                 dataWriter.Write(0);
             }
@@ -231,7 +231,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // StringPair[][] prefixMappingsList;
-            if (_prefixMappingsList == null)
+            if (_prefixMappingsList is null)
             {
                 dataWriter.Write(0);
             }
@@ -250,7 +250,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // Int32Pair[] filters;
-            if (_filters == null)
+            if (_filters is null)
             {
                 dataWriter.Write(0);
             }
@@ -265,7 +265,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // XmlQueryType[] types;
-            if (_types == null)
+            if (_types is null)
             {
                 dataWriter.Write(0);
             }
@@ -279,7 +279,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // XmlCollation[] collations;
-            if (_collations == null)
+            if (_collations is null)
             {
                 dataWriter.Write(0);
             }
@@ -293,7 +293,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // string[] globalNames;
-            if (_globalNames == null)
+            if (_globalNames is null)
             {
                 dataWriter.Write(0);
             }
@@ -307,7 +307,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // EarlyBoundInfo[] earlyBound;
-            if (_earlyBound == null)
+            if (_earlyBound is null)
             {
                 dataWriter.Write(0);
                 ebTypes = null;
@@ -443,8 +443,8 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void WriteStringQ(string value)
         {
-            Write(value != null);
-            if (value != null)
+            Write(value is not null);
+            if (value is not null)
             {
                 Write(value);
             }

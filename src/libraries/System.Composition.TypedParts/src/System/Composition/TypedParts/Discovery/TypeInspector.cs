@@ -28,7 +28,7 @@ namespace System.Composition.TypedParts.Discovery
         {
             part = null;
 
-            if (type.IsAbstract || !type.IsClass || _attributeContext.GetDeclaredAttribute<PartNotDiscoverableAttribute>(type.AsType(), type) != null)
+            if (type.IsAbstract || !type.IsClass || _attributeContext.GetDeclaredAttribute<PartNotDiscoverableAttribute>(type.AsType(), type) is not null)
                 return false;
 
             foreach (var export in DiscoverExports(type))
@@ -37,7 +37,7 @@ namespace System.Composition.TypedParts.Discovery
                 part.AddDiscoveredExport(export);
             }
 
-            return part != null;
+            return part is not null;
         }
 
         private IEnumerable<DiscoveredExport> DiscoverExports(TypeInfo partType)
@@ -107,7 +107,7 @@ namespace System.Composition.TypedParts.Discovery
                     continue;
 
                 var ema = attribute as ExportMetadataAttribute;
-                if (ema != null)
+                if (ema is not null)
                 {
                     var valueType = ema.Value?.GetType() ?? typeof(object);
                     AddMetadata(metadata, ema.Name, valueType, ema.Value);
@@ -129,7 +129,7 @@ namespace System.Composition.TypedParts.Discovery
             }
 
             var existingArray = existingValue as Array;
-            if (existingArray != null)
+            if (existingArray is not null)
             {
                 var newArray = Array.CreateInstance(valueType, existingArray.Length + 1);
                 Array.Copy(existingArray, newArray, existingArray.Length);
@@ -150,7 +150,7 @@ namespace System.Composition.TypedParts.Discovery
             var attrType = attribute.GetType();
 
             // Note, we don't support ReflectionContext in this scenario as
-            if (attrType.GetTypeInfo().GetCustomAttribute<MetadataAttributeAttribute>(true) == null)
+            if (attrType.GetTypeInfo().GetCustomAttribute<MetadataAttributeAttribute>(true) is null)
                 return;
 
             foreach (var prop in attrType
@@ -214,7 +214,7 @@ namespace System.Composition.TypedParts.Discovery
                 yield return ifce.GetTypeInfo();
 
             var b = exportingMemberType;
-            while (b != null)
+            while (b is not null)
             {
                 yield return b;
                 b = b.BaseType?.GetTypeInfo();

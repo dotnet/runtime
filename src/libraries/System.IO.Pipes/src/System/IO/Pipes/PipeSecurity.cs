@@ -19,7 +19,7 @@ namespace System.IO.Pipes
 
         public void AddAccessRule(PipeAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
                 throw new ArgumentNullException(nameof(rule));
 
             base.AddAccessRule(rule);
@@ -27,7 +27,7 @@ namespace System.IO.Pipes
 
         public void SetAccessRule(PipeAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
                 throw new ArgumentNullException(nameof(rule));
 
             base.SetAccessRule(rule);
@@ -35,7 +35,7 @@ namespace System.IO.Pipes
 
         public void ResetAccessRule(PipeAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
                 throw new ArgumentNullException(nameof(rule));
 
             base.ResetAccessRule(rule);
@@ -43,7 +43,7 @@ namespace System.IO.Pipes
 
         public bool RemoveAccessRule(PipeAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -56,7 +56,7 @@ namespace System.IO.Pipes
             {
                 PipeAccessRule? fsrule = rules[i] as PipeAccessRule;
 
-                if ((fsrule != null) && (fsrule.PipeAccessRights == rule.PipeAccessRights)
+                if ((fsrule is not null) && (fsrule.PipeAccessRights == rule.PipeAccessRights)
                         && (fsrule.IdentityReference == rule.IdentityReference)
                         && (fsrule.AccessControlType == rule.AccessControlType))
                 {
@@ -84,7 +84,7 @@ namespace System.IO.Pipes
 
         public void RemoveAccessRuleSpecific(PipeAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -98,7 +98,7 @@ namespace System.IO.Pipes
             {
                 PipeAccessRule? fsrule = rules[i] as PipeAccessRule;
 
-                if ((fsrule != null) && (fsrule.PipeAccessRights == rule.PipeAccessRights)
+                if ((fsrule is not null) && (fsrule.PipeAccessRights == rule.PipeAccessRights)
                     && (fsrule.IdentityReference == rule.IdentityReference)
                     && (fsrule.AccessControlType == rule.AccessControlType))
                 {

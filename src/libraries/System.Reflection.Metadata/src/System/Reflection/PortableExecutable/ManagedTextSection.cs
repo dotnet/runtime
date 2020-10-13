@@ -265,7 +265,7 @@ namespace System.Reflection.PortableExecutable
             builder.LinkSuffix(metadataBuilder);
 
             // managed resources:
-            if (resourceBuilderOpt != null)
+            if (resourceBuilderOpt is not null)
             {
                 builder.LinkSuffix(resourceBuilderOpt);
             }
@@ -278,7 +278,7 @@ namespace System.Reflection.PortableExecutable
             new BlobWriter(strongNameSignature).WriteBytes(0, StrongNameSignatureSize);
 
             // debug directory and data:
-            if (debugDataBuilderOpt != null)
+            if (debugDataBuilderOpt is not null)
             {
                 builder.LinkSuffix(debugDataBuilderOpt);
             }
@@ -291,7 +291,7 @@ namespace System.Reflection.PortableExecutable
             }
 
             // mapped field data:
-            if (mappedFieldDataBuilderOpt != null)
+            if (mappedFieldDataBuilderOpt is not null)
             {
                 builder.LinkSuffix(mappedFieldDataBuilderOpt);
             }

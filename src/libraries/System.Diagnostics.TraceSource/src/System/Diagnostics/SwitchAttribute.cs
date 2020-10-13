@@ -26,7 +26,7 @@ namespace System.Diagnostics
             [MemberNotNull(nameof(_name))]
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
                 if (value.Length == 0)
                     throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(value)), nameof(value));
@@ -41,7 +41,7 @@ namespace System.Diagnostics
             [MemberNotNull(nameof(_type))]
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
                 _type = value;
             }
@@ -51,7 +51,7 @@ namespace System.Diagnostics
 
         public static SwitchAttribute[] GetAll(Assembly assembly)
         {
-            if (assembly == null)
+            if (assembly is null)
                 throw new ArgumentNullException(nameof(assembly));
 
             List<object> switchAttribs = new List<object>();

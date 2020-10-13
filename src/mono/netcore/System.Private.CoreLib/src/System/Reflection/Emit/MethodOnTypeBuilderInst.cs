@@ -104,7 +104,7 @@ namespace System.Reflection.Emit
         {
             Type type = instantiation.InternalResolve();
             MethodInfo m = type.GetMethod(base_method);
-            if (method_arguments != null)
+            if (method_arguments is not null)
             {
                 var args = new Type[method_arguments.Length];
                 for (int i = 0; i < method_arguments.Length; ++i)
@@ -246,10 +246,10 @@ namespace System.Reflection.Emit
 
         public override MethodInfo MakeGenericMethod(params Type[] methodInstantiation)
         {
-            if (!base_method.IsGenericMethodDefinition || (method_arguments != null))
+            if (!base_method.IsGenericMethodDefinition || (method_arguments is not null))
                 throw new InvalidOperationException("Method is not a generic method definition");
 
-            if (methodInstantiation == null)
+            if (methodInstantiation is null)
                 throw new ArgumentNullException(nameof(methodInstantiation));
 
             if (base_method.GetGenericArguments().Length != methodInstantiation.Length)
@@ -257,7 +257,7 @@ namespace System.Reflection.Emit
 
             foreach (Type type in methodInstantiation)
             {
-                if (type == null)
+                if (type is null)
                     throw new ArgumentNullException(nameof(methodInstantiation));
             }
 
@@ -287,7 +287,7 @@ namespace System.Reflection.Emit
                     return true;
                 if (!base_method.IsGenericMethodDefinition)
                     throw new NotSupportedException();
-                if (method_arguments == null)
+                if (method_arguments is null)
                     return true;
                 foreach (Type t in method_arguments)
                 {
@@ -302,7 +302,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                return base_method.IsGenericMethodDefinition && method_arguments == null;
+                return base_method.IsGenericMethodDefinition && method_arguments is null;
             }
         }
 

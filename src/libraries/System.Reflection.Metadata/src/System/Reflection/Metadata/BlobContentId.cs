@@ -27,7 +27,7 @@ namespace System.Reflection.Metadata
 
         public unsafe BlobContentId(byte[] id)
         {
-            if (id == null)
+            if (id is null)
             {
                 throw new ArgumentNullException(nameof(id));
             }
@@ -56,7 +56,7 @@ namespace System.Reflection.Metadata
         {
             const int minHashSize = 20;
 
-            if (hashCode == null)
+            if (hashCode is null)
             {
                 throw new ArgumentNullException(nameof(hashCode));
             }

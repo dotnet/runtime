@@ -48,7 +48,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             switch (frame.State)
             {
@@ -57,7 +57,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         throw XsltException.Create(SR.Xslt_UnknownExtensionElement, _name);
                     }
-                    if (this.containedActions != null && this.containedActions.Count > 0)
+                    if (this.containedActions is not null && this.containedActions.Count > 0)
                     {
                         processor.PushActionFrame(frame);
                         frame.State = ProcessingChildren;

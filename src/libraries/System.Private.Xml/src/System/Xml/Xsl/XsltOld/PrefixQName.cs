@@ -33,7 +33,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public static void ParseQualifiedName(string qname, out string prefix, out string local)
         {
-            Debug.Assert(qname != null);
+            Debug.Assert(qname is not null);
             prefix = string.Empty;
             local = string.Empty;
 

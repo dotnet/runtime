@@ -88,10 +88,10 @@ namespace System.Net
             {
                 bool doThrow = true;
                 WebException? webException = exception as WebException;
-                if (webException != null)
+                if (webException is not null)
                 {
                     FtpWebResponse? response = webException.Response as FtpWebResponse;
-                    if (response != null)
+                    if (response is not null)
                     {
                         if (!_isFullyRead
                             && response.StatusCode == FtpStatusCode.ConnectionClosed)

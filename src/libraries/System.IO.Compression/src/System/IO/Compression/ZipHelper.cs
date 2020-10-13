@@ -19,7 +19,7 @@ namespace System.IO.Compression
 
         internal static bool RequiresUnicode(string test)
         {
-            Debug.Assert(test != null);
+            Debug.Assert(test is not null);
 
             foreach (char c in test)
             {

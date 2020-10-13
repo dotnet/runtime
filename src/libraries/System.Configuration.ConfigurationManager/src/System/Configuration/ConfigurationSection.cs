@@ -45,8 +45,8 @@ namespace System.Configuration
         protected internal virtual string SerializeSection(ConfigurationElement parentElement, string name,
             ConfigurationSaveMode saveMode)
         {
-            if ((CurrentConfiguration != null) &&
-                (CurrentConfiguration.TargetFramework != null) &&
+            if ((CurrentConfiguration is not null) &&
+                (CurrentConfiguration.TargetFramework is not null) &&
                 !ShouldSerializeSectionInTargetVersion(CurrentConfiguration.TargetFramework))
                 return string.Empty;
 
@@ -65,12 +65,12 @@ namespace System.Configuration
 
             tempElement.DataToWriteInternal = saveMode != ConfigurationSaveMode.Minimal;
 
-            if ((CurrentConfiguration != null) && (CurrentConfiguration.TargetFramework != null))
+            if ((CurrentConfiguration is not null) && (CurrentConfiguration.TargetFramework is not null))
                 _configRecord.SectionsStack.Push(this);
 
             tempElement.SerializeToXmlElement(writer, name);
 
-            if ((CurrentConfiguration != null) && (CurrentConfiguration.TargetFramework != null))
+            if ((CurrentConfiguration is not null) && (CurrentConfiguration.TargetFramework is not null))
                 _configRecord.SectionsStack.Pop();
 
             writer.Flush();

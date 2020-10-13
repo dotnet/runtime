@@ -39,7 +39,7 @@ namespace System.ComponentModel
             get
             {
                 string ownerName = null;
-                if (Owner != null && Owner.Site != null)
+                if (Owner is not null && Owner.Site is not null)
                 {
                     if (Owner.Site is INestedSite nestedOwnerSite)
                     {
@@ -60,7 +60,7 @@ namespace System.ComponentModel
         /// </summary>
         protected override ISite CreateSite(IComponent component, string name)
         {
-            if (component == null)
+            if (component is null)
             {
                 throw new ArgumentNullException(nameof(component));
             }
@@ -128,7 +128,7 @@ namespace System.ComponentModel
                 get
                 {
                     IComponent owner = ((NestedContainer)Container).Owner;
-                    if (owner != null && owner.Site != null)
+                    if (owner is not null && owner.Site is not null)
                     {
                         return owner.Site.DesignMode;
                     }
@@ -140,11 +140,11 @@ namespace System.ComponentModel
             {
                 get
                 {
-                    if (_name != null)
+                    if (_name is not null)
                     {
                         string ownerName = ((NestedContainer)Container).OwnerName;
                         string childName = _name;
-                        if (ownerName != null)
+                        if (ownerName is not null)
                         {
                             childName = ownerName + "." + childName;
                         }
@@ -162,7 +162,7 @@ namespace System.ComponentModel
                 get => _name;
                 set
                 {
-                    if (value == null || _name == null || !value.Equals(_name))
+                    if (value is null || _name is null || !value.Equals(_name))
                     {
                         ((NestedContainer)Container).ValidateName(Component, value);
                         _name = value;

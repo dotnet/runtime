@@ -20,7 +20,7 @@ namespace System.Xml
 
         internal XmlElement(XmlName name, bool empty, XmlDocument doc) : base(doc)
         {
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
             this.parentNode = null;
             if (!doc.IsLoading)
             {
@@ -51,7 +51,7 @@ namespace System.Xml
         // Creates a duplicate of this node.
         public override XmlNode CloneNode(bool deep)
         {
-            Debug.Assert(OwnerDocument != null);
+            Debug.Assert(OwnerDocument is not null);
             XmlDocument doc = OwnerDocument;
             bool OrigLoadingStatus = doc.IsLoading;
             doc.IsLoading = true;
@@ -66,7 +66,7 @@ namespace System.Xml
                 {
                     XmlAttribute newAttr = (XmlAttribute)(attr.CloneNode(true));
                     XmlUnspecifiedAttribute? unspecAttr = newAttr as XmlUnspecifiedAttribute;
-                    if (unspecAttr != null && attr.Specified == false)
+                    if (unspecAttr is not null && attr.Specified == false)
                     {
                         unspecAttr.SetSpecified(false);
                     }
@@ -138,14 +138,14 @@ namespace System.Xml
         {
             XmlNodeChangedEventArgs? args = doc.GetInsertEventArgsForLoad(newChild, this);
 
-            if (args != null)
+            if (args is not null)
                 doc.BeforeEvent(args);
 
             XmlLinkedNode newNode = (XmlLinkedNode)newChild;
 
-            if (_lastChild == null
+            if (_lastChild is null
                 || _lastChild == this)
-            { // if LastNode == null
+            { // if LastNode is null
                 newNode.next = newNode;
                 _lastChild = newNode; // LastNode = newNode;
                 newNode.SetParentForLoad(this);
@@ -167,7 +167,7 @@ namespace System.Xml
                 }
             }
 
-            if (args != null)
+            if (args is not null)
                 doc.AfterEvent(args);
 
             return newNode;
@@ -238,11 +238,11 @@ namespace System.Xml
         {
             get
             {
-                if (_attributes == null)
+                if (_attributes is null)
                 {
                     lock (OwnerDocument.objLock)
                     {
-                        if (_attributes == null)
+                        if (_attributes is null)
                         {
                             _attributes = new XmlAttributeCollection(this);
                         }
@@ -259,7 +259,7 @@ namespace System.Xml
         {
             get
             {
-                if (_attributes == null)
+                if (_attributes is null)
                     return false;
                 else
                     return _attributes.Count > 0;
@@ -270,7 +270,7 @@ namespace System.Xml
         public virtual string GetAttribute(string name)
         {
             XmlAttribute? attr = GetAttributeNode(name);
-            if (attr != null)
+            if (attr is not null)
                 return attr.Value;
 
             return string.Empty;
@@ -281,7 +281,7 @@ namespace System.Xml
         public virtual void SetAttribute(string name, string? value)
         {
             XmlAttribute? attr = GetAttributeNode(name);
-            if (attr == null)
+            if (attr is null)
             {
                 attr = OwnerDocument.CreateAttribute(name);
                 attr.Value = value;
@@ -311,7 +311,7 @@ namespace System.Xml
         // Adds the specified XmlAttribute.
         public virtual XmlAttribute? SetAttributeNode(XmlAttribute newAttr)
         {
-            if (newAttr.OwnerElement != null)
+            if (newAttr.OwnerElement is not null)
                 throw new InvalidOperationException(SR.Xdom_Attr_InUse);
 
             return (XmlAttribute)Attributes.SetNamedItem(newAttr);
@@ -340,7 +340,7 @@ namespace System.Xml
         public virtual string GetAttribute(string localName, string? namespaceURI)
         {
             XmlAttribute? attr = GetAttributeNode(localName, namespaceURI);
-            if (attr != null)
+            if (attr is not null)
                 return attr.Value;
 
             return string.Empty;
@@ -352,7 +352,7 @@ namespace System.Xml
         public virtual string? SetAttribute(string localName, string? namespaceURI, string? value)
         {
             XmlAttribute? attr = GetAttributeNode(localName, namespaceURI);
-            if (attr == null)
+            if (attr is null)
             {
                 attr = OwnerDocument.CreateAttribute(string.Empty, localName, namespaceURI);
                 attr.Value = value;
@@ -384,7 +384,7 @@ namespace System.Xml
         public virtual XmlAttribute SetAttributeNode(string localName, string? namespaceURI)
         {
             XmlAttribute? attr = GetAttributeNode(localName, namespaceURI);
-            if (attr == null)
+            if (attr is null)
             {
                 attr = OwnerDocument.CreateAttribute(string.Empty, localName, namespaceURI);
                 Attributes.InternalAppendAttribute(attr);
@@ -416,14 +416,14 @@ namespace System.Xml
         // Determines whether the current node has the specified attribute.
         public virtual bool HasAttribute(string name)
         {
-            return GetAttributeNode(name) != null;
+            return GetAttributeNode(name) is not null;
         }
 
         // Determines whether the current node has the specified
         // attribute from the specified namespace.
         public virtual bool HasAttribute(string localName, string? namespaceURI)
         {
-            return GetAttributeNode(localName, namespaceURI) != null;
+            return GetAttributeNode(localName, namespaceURI) is not null;
         }
 
         // Saves the current node to the specified XmlWriter.
@@ -461,7 +461,7 @@ namespace System.Xml
             {
                 e = n as XmlElement;
                 // Only use the inlined write logic for XmlElement, not for derived classes
-                if (e != null && e.GetType() == typeof(XmlElement))
+                if (e is not null && e.GetType() == typeof(XmlElement))
                 {
                     // Write the element
                     e.WriteStartElement(writer);
@@ -471,7 +471,7 @@ namespace System.Xml
                         // No content; use a short end element <a />
                         writer.WriteEndElement();
                     }
-                    else if (e._lastChild == null)
+                    else if (e._lastChild is null)
                     {
                         // No actual content; use a full end element <a></a>
                         writer.WriteFullEndElement();
@@ -480,7 +480,7 @@ namespace System.Xml
                     {
                         // There are child node(s); move to first child
                         n = e.FirstChild;
-                        Debug.Assert(n != null);
+                        Debug.Assert(n is not null);
                         continue;
                     }
                 }
@@ -494,7 +494,7 @@ namespace System.Xml
                 while (n != root && n == n.ParentNode!.LastChild)
                 {
                     n = n.ParentNode;
-                    Debug.Assert(n != null);
+                    Debug.Assert(n is not null);
                     writer.WriteFullEndElement();
                 }
 
@@ -502,7 +502,7 @@ namespace System.Xml
                     break;
 
                 n = n.NextSibling;
-                Debug.Assert(n != null);
+                Debug.Assert(n is not null);
             }
         }
 
@@ -525,7 +525,7 @@ namespace System.Xml
         // Saves all the children of the node to the specified XmlWriter.
         public override void WriteContentTo(XmlWriter w)
         {
-            for (XmlNode? node = FirstChild; node != null; node = node.NextSibling)
+            for (XmlNode? node = FirstChild; node is not null; node = node.NextSibling)
             {
                 node.WriteTo(w);
             }
@@ -599,7 +599,7 @@ namespace System.Xml
             set
             {
                 XmlLinkedNode? linkedNode = LastNode;
-                if (linkedNode != null && //there is one child
+                if (linkedNode is not null && //there is one child
                     linkedNode.NodeType == XmlNodeType.Text && //which is text node
                     linkedNode.next == linkedNode) // and it is the only child
                 {
@@ -618,7 +618,7 @@ namespace System.Xml
         {
             get
             {
-                if (this.parentNode != null
+                if (this.parentNode is not null
                     && this.parentNode.LastNode != this)
                     return next;
 
@@ -641,7 +641,7 @@ namespace System.Xml
                 return string.Empty;
 
             XmlAttribute? attr = GetAttributeNode(localName, ns);
-            if (attr != null)
+            if (attr is not null)
                 return attr.Value;
 
             return string.Empty;

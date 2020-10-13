@@ -40,10 +40,10 @@ namespace System.Net.Http.Headers
 
         private RangeHeaderValue(RangeHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _unit = source._unit;
-            if (source._ranges != null)
+            if (source._ranges is not null)
             {
                 foreach (RangeItemHeaderValue range in source._ranges)
                 {
@@ -58,7 +58,7 @@ namespace System.Net.Http.Headers
             sb.Append(_unit);
             sb.Append('=');
 
-            if (_ranges != null)
+            if (_ranges is not null)
             {
                 bool first = true;
                 foreach (RangeItemHeaderValue range in _ranges)
@@ -85,7 +85,7 @@ namespace System.Net.Http.Headers
         {
             RangeHeaderValue? other = obj as RangeHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -98,7 +98,7 @@ namespace System.Net.Http.Headers
         {
             int result = StringComparer.OrdinalIgnoreCase.GetHashCode(_unit);
 
-            if (_ranges != null)
+            if (_ranges is not null)
             {
                 foreach (RangeItemHeaderValue range in _ranges)
                 {

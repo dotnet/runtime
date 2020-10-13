@@ -30,12 +30,12 @@ namespace System.Text
 
         internal static int GetCodePageFromName(string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             object? codePageObj = s_nameToCodePage[name];
 
-            if (codePageObj != null)
+            if (codePageObj is not null)
             {
                 return (int)codePageObj;
             }
@@ -135,7 +135,7 @@ namespace System.Text
 
         internal static EncodingInfo[] GetEncodings(Dictionary<int, EncodingInfo> encodingInfoList)
         {
-            Debug.Assert(encodingInfoList != null);
+            Debug.Assert(encodingInfoList is not null);
             ushort[] mappedCodePages = s_mappedCodePages;
             string webNames = s_webNames;
             int[] webNameIndices = s_webNameIndices;
@@ -176,7 +176,7 @@ namespace System.Text
 
         internal static CodePageDataItem? GetCodePageDataItem(int codePage)
         {
-            if (s_codePageToCodePageData == null)
+            if (s_codePageToCodePageData is null)
             {
                 Interlocked.CompareExchange<CodePageDataItem?[]?>(ref s_codePageToCodePageData, new CodePageDataItem[s_mappedCodePages.Length], null);
             }
@@ -214,7 +214,7 @@ namespace System.Text
             }
 
             CodePageDataItem? data = s_codePageToCodePageData[index];
-            if (data == null)
+            if (data is null)
             {
                 Interlocked.CompareExchange<CodePageDataItem?>(ref s_codePageToCodePageData[index], InternalGetCodePageDataItem(codePage, index), null);
                 data = s_codePageToCodePageData[index];

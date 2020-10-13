@@ -66,19 +66,19 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public BlockExpression Update(IEnumerable<ParameterExpression>? variables, IEnumerable<Expression> expressions)
         {
-            if (expressions != null)
+            if (expressions is not null)
             {
                 // Ensure variables is safe to enumerate twice.
                 // (If this means a second call to ToReadOnly it will return quickly).
                 ICollection<ParameterExpression>? vars;
-                if (variables == null)
+                if (variables is null)
                 {
                     vars = null;
                 }
                 else
                 {
                     vars = variables as ICollection<ParameterExpression>;
-                    if (vars == null)
+                    if (vars is null)
                     {
                         variables = vars = variables.ToReadOnly();
                     }
@@ -89,7 +89,7 @@ namespace System.Linq.Expressions
                     // Ensure expressions is safe to enumerate twice.
                     // (If this means a second call to ToReadOnly it will return quickly).
                     ICollection<Expression>? exps = expressions as ICollection<Expression>;
-                    if (exps == null)
+                    if (exps is null)
                     {
                         expressions = exps = expressions.ToReadOnly();
                     }
@@ -104,7 +104,7 @@ namespace System.Linq.Expressions
         }
 
         internal virtual bool SameVariables(ICollection<ParameterExpression>? variables) =>
-            variables == null || variables.Count == 0;
+            variables is null || variables.Count == 0;
 
         [ExcludeFromCodeCoverage(Justification = "Unreachable")]
         internal virtual bool SameExpressions(ICollection<Expression> expressions)
@@ -207,7 +207,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameExpressions(ICollection<Expression> expressions)
         {
-            Debug.Assert(expressions != null);
+            Debug.Assert(expressions is not null);
             if (expressions.Count == 2)
             {
                 if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
@@ -238,9 +238,9 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
-            Debug.Assert(args != null);
+            Debug.Assert(args is not null);
             Debug.Assert(args.Length == 2);
-            Debug.Assert(variables == null || variables.Count == 0);
+            Debug.Assert(variables is null || variables.Count == 0);
 
             return new Block2(args[0], args[1]);
         }
@@ -260,7 +260,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameExpressions(ICollection<Expression> expressions)
         {
-            Debug.Assert(expressions != null);
+            Debug.Assert(expressions is not null);
             if (expressions.Count == 3)
             {
                 if (_arg0 is ReadOnlyCollection<Expression>  alreadyCollection)
@@ -304,9 +304,9 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
-            Debug.Assert(args != null);
+            Debug.Assert(args is not null);
             Debug.Assert(args.Length == 3);
-            Debug.Assert(variables == null || variables.Count == 0);
+            Debug.Assert(variables is null || variables.Count == 0);
 
             return new Block3(args[0], args[1], args[2]);
         }
@@ -327,7 +327,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameExpressions(ICollection<Expression> expressions)
         {
-            Debug.Assert(expressions != null);
+            Debug.Assert(expressions is not null);
             if (expressions.Count == 4)
             {
                 if (_arg0 is ReadOnlyCollection<Expression>  alreadyCollection)
@@ -376,9 +376,9 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
-            Debug.Assert(args != null);
+            Debug.Assert(args is not null);
             Debug.Assert(args.Length == 4);
-            Debug.Assert(variables == null || variables.Count == 0);
+            Debug.Assert(variables is null || variables.Count == 0);
 
             return new Block4(args[0], args[1], args[2], args[3]);
         }
@@ -411,7 +411,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameExpressions(ICollection<Expression> expressions)
         {
-            Debug.Assert(expressions != null);
+            Debug.Assert(expressions is not null);
             if (expressions.Count == 5)
             {
                 if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
@@ -454,9 +454,9 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
-            Debug.Assert(args != null);
+            Debug.Assert(args is not null);
             Debug.Assert(args.Length == 5);
-            Debug.Assert(variables == null || variables.Count == 0);
+            Debug.Assert(variables is null || variables.Count == 0);
 
             return new Block5(args[0], args[1], args[2], args[3], args[4]);
         }
@@ -492,8 +492,8 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[] args)
         {
-            Debug.Assert(variables == null || variables.Count == 0);
-            Debug.Assert(args != null);
+            Debug.Assert(variables is null || variables.Count == 0);
+            Debug.Assert(args is not null);
 
             return new BlockN(args);
         }
@@ -521,7 +521,7 @@ namespace System.Linq.Expressions
         // Used for rewrite of the nodes to either reuse existing set of variables if not rewritten.
         internal IReadOnlyList<ParameterExpression> ReuseOrValidateVariables(ReadOnlyCollection<ParameterExpression>? variables)
         {
-            if (variables != null && variables != VariablesList)
+            if (variables is not null && variables != VariablesList)
             {
                 // Need to validate the new variables (uniqueness, not byref)
                 ValidateVariables(variables, nameof(variables));
@@ -551,7 +551,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameExpressions(ICollection<Expression> expressions)
         {
-            Debug.Assert(expressions != null);
+            Debug.Assert(expressions is not null);
             if (expressions.Count == 1)
             {
                 if (_body is ReadOnlyCollection<Expression> alreadyCollection)
@@ -585,14 +585,14 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[]? args)
         {
-            if (args == null)
+            if (args is null)
             {
                 Debug.Assert(variables!.Count == Variables.Count);
                 ValidateVariables(variables, nameof(variables));
                 return new Scope1(variables, _body);
             }
             Debug.Assert(args.Length == 1);
-            Debug.Assert(variables == null || variables.Count == Variables.Count);
+            Debug.Assert(variables is null || variables.Count == Variables.Count);
 
             return new Scope1(ReuseOrValidateVariables(variables), args[0]);
         }
@@ -624,14 +624,14 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[]? args)
         {
-            if (args == null)
+            if (args is null)
             {
                 Debug.Assert(variables!.Count == Variables.Count);
                 ValidateVariables(variables, nameof(variables));
                 return new ScopeN(variables, _body);
             }
             Debug.Assert(args.Length == ExpressionCount);
-            Debug.Assert(variables == null || variables.Count == Variables.Count);
+            Debug.Assert(variables is null || variables.Count == Variables.Count);
 
             return new ScopeN(ReuseOrValidateVariables(variables), args);
         }
@@ -649,14 +649,14 @@ namespace System.Linq.Expressions
 
         internal override BlockExpression Rewrite(ReadOnlyCollection<ParameterExpression>? variables, Expression[]? args)
         {
-            if (args == null)
+            if (args is null)
             {
                 Debug.Assert(variables!.Count == Variables.Count);
                 ValidateVariables(variables, nameof(variables));
                 return new ScopeWithType(variables, Body, Type);
             }
             Debug.Assert(args.Length == ExpressionCount);
-            Debug.Assert(variables == null || variables.Count == Variables.Count);
+            Debug.Assert(variables is null || variables.Count == Variables.Count);
 
             return new ScopeWithType(ReuseOrValidateVariables(variables), args, Type);
         }
@@ -1028,7 +1028,7 @@ namespace System.Linq.Expressions
         {
             ValidateVariables(variables, nameof(variables));
 
-            if (type != null)
+            if (type is not null)
             {
                 if (expressions.Count == 0)
                 {

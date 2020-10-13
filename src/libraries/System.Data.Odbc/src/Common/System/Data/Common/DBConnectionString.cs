@@ -296,8 +296,8 @@ namespace System.Data.Common
         [Conditional("DEBUG")]
         private void ValidateCombinedSet(DBConnectionString? componentSet, DBConnectionString combinedSet)
         {
-            Debug.Assert(combinedSet != null, "The combined connection string should not be null");
-            if ((componentSet != null) && (combinedSet._restrictionValues != null) && (componentSet._restrictionValues != null))
+            Debug.Assert(combinedSet is not null, "The combined connection string should not be null");
+            if ((componentSet is not null) && (combinedSet._restrictionValues is not null) && (componentSet._restrictionValues is not null))
             {
                 if (componentSet._behavior == KeyRestrictionBehavior.AllowOnly)
                 {
@@ -305,7 +305,7 @@ namespace System.Data.Common
                     {
                         // Component==Allow, Combined==Allow
                         // All values in the Combined Set should also be in the Component Set
-                        // Combined - Component == null
+                        // Combined - Component is null
                         Debug.Assert(!combinedSet._restrictionValues.Except(componentSet._restrictionValues).Any(), "Combined set allows values not allowed by component set");
                     }
                     else if (combinedSet._behavior == KeyRestrictionBehavior.PreventUsage)
@@ -324,14 +324,14 @@ namespace System.Data.Common
                     {
                         // Component==PreventUsage, Combined==Allow
                         // There shouldn't be any of the values from the Component Set in the Combined Set
-                        // Intersect(Component, Combined) == null
+                        // Intersect(Component, Combined) is null
                         Debug.Assert(!combinedSet._restrictionValues.Intersect(componentSet._restrictionValues).Any(), "Combined values allows values prevented by component set");
                     }
                     else if (combinedSet._behavior == KeyRestrictionBehavior.PreventUsage)
                     {
                         // Component==PreventUsage, Combined==PreventUsage
                         // All values in the Component Set should also be in the Combined Set
-                        // Component - Combined == null
+                        // Component - Combined is null
                         Debug.Assert(!componentSet._restrictionValues.Except(combinedSet._restrictionValues).Any(), "Combined values does not prevent all of the values prevented by the component set");
                     }
                     else
@@ -428,7 +428,7 @@ namespace System.Data.Common
                 }
             }
             string[]? restrictionValues = null;
-            if (newlist != null)
+            if (newlist is not null)
             {
                 restrictionValues = newlist.ToArray();
             }

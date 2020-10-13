@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="providers">The <see cref="IConfigurationProvider"/>s for this configuration.</param>
         public ConfigurationRoot(IList<IConfigurationProvider> providers)
         {
-            if (providers == null)
+            if (providers is null)
             {
                 throw new ArgumentNullException(nameof(providers));
             }

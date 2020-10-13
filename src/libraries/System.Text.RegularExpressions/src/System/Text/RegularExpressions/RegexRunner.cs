@@ -204,7 +204,7 @@ namespace System.Text.RegularExpressions
                 if (runtextpos == stoppos)
                 {
                     runtext = null; // drop reference to text to avoid keeping it alive in a cache
-                    if (runmatch != null) runmatch.Text = null!;
+                    if (runmatch is not null) runmatch.Text = null!;
                     return Match.Empty;
                 }
 
@@ -357,7 +357,7 @@ namespace System.Text.RegularExpressions
                 if (runtextpos == stoppos)
                 {
                     runtext = null; // drop reference to text to avoid keeping it alive in a cache
-                    if (runmatch != null)
+                    if (runmatch is not null)
                     {
                         runmatch.Text = null!;
                     }
@@ -454,7 +454,7 @@ namespace System.Text.RegularExpressions
             // If there is an alloc failure in the middle of the three allocations,
             // we may still return to reuse this instance, and we want to behave
             // as if the allocations didn't occur.
-            if (runcrawl != null)
+            if (runcrawl is not null)
             {
                 runtrackpos = runtrack!.Length;
                 runstackpos = runstack!.Length;

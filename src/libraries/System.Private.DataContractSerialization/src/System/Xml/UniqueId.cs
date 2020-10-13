@@ -62,7 +62,7 @@ namespace System.Xml
 
         public unsafe UniqueId(byte[] guid, int offset)
         {
-            if (guid == null)
+            if (guid is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(guid)));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
@@ -79,7 +79,7 @@ namespace System.Xml
 
         public unsafe UniqueId(string value)
         {
-            if (value == null)
+            if (value is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
             if (value.Length == 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new FormatException(SR.XmlInvalidUniqueId));
@@ -92,7 +92,7 @@ namespace System.Xml
 
         public unsafe UniqueId(char[] chars, int offset, int count)
         {
-            if (chars == null)
+            if (chars is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(chars)));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
@@ -119,7 +119,7 @@ namespace System.Xml
         {
             get
             {
-                if (_s != null)
+                if (_s is not null)
                     return _s.Length;
 
                 return uuidLength;
@@ -200,7 +200,7 @@ namespace System.Xml
         {
             int count = CharArrayLength;
 
-            if (chars == null)
+            if (chars is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(chars)));
 
             if (offset < 0)
@@ -211,7 +211,7 @@ namespace System.Xml
             if (count > chars.Length - offset)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(chars), SR.Format(SR.XmlArrayTooSmallOutput, count)));
 
-            if (_s != null)
+            if (_s is not null)
             {
                 _s.CopyTo(0, chars, offset, count);
             }
@@ -278,7 +278,7 @@ namespace System.Xml
             if (!IsGuid)
                 return false;
 
-            if (buffer == null)
+            if (buffer is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(buffer)));
 
             if (offset < 0)
@@ -300,7 +300,7 @@ namespace System.Xml
 
         public unsafe override string ToString()
         {
-            if (_s == null)
+            if (_s is null)
             {
                 int length = CharArrayLength;
                 char[] chars = new char[length];

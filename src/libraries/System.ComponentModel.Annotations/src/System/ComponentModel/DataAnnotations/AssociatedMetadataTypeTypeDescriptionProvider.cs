@@ -34,7 +34,7 @@ namespace System.ComponentModel.DataAnnotations
         public AssociatedMetadataTypeTypeDescriptionProvider(Type type, Type associatedMetadataType)
             : this(type)
         {
-            if (associatedMetadataType == null)
+            if (associatedMetadataType is null)
             {
                 throw new ArgumentNullException(nameof(associatedMetadataType));
             }

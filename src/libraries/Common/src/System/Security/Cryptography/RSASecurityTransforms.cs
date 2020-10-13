@@ -80,7 +80,7 @@ namespace System.Security.Cryptography
 
                     ThrowIfDisposed();
 
-                    if (_keys != null)
+                    if (_keys is not null)
                     {
                         _keys.Dispose();
                         _keys = null;
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
                 const string ExportPassword = "DotnetExportPassphrase";
                 SecKeyPair keys = GetKeys();
 
-                if (includePrivateParameters && keys.PrivateKey == null)
+                if (includePrivateParameters && keys.PrivateKey is null)
                 {
                     throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
                 }
@@ -155,7 +155,7 @@ namespace System.Security.Cryptography
                 ValidateParameters(parameters);
                 ThrowIfDisposed();
 
-                bool isPrivateKey = parameters.D != null;
+                bool isPrivateKey = parameters.D is not null;
 
                 if (isPrivateKey)
                 {
@@ -264,11 +264,11 @@ namespace System.Security.Cryptography
 
             public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
             {
-                if (data == null)
+                if (data is null)
                 {
                     throw new ArgumentNullException(nameof(data));
                 }
-                if (padding == null)
+                if (padding is null)
                 {
                     throw new ArgumentNullException(nameof(padding));
                 }
@@ -291,7 +291,7 @@ namespace System.Security.Cryptography
 
             public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
             {
-                if (padding == null)
+                if (padding is null)
                 {
                     throw new ArgumentNullException(nameof(padding));
                 }
@@ -344,7 +344,7 @@ namespace System.Security.Cryptography
 
                 try
                 {
-                    if (processor != null)
+                    if (processor is not null)
                     {
                         processor.PadOaep(data, tmp);
                     }
@@ -369,18 +369,18 @@ namespace System.Security.Cryptography
 
             public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
             {
-                if (data == null)
+                if (data is null)
                 {
                     throw new ArgumentNullException(nameof(data));
                 }
-                if (padding == null)
+                if (padding is null)
                 {
                     throw new ArgumentNullException(nameof(padding));
                 }
 
                 SecKeyPair keys = GetKeys();
 
-                if (keys.PrivateKey == null)
+                if (keys.PrivateKey is null)
                 {
                     throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                 }
@@ -420,14 +420,14 @@ namespace System.Security.Cryptography
 
             public override bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
             {
-                if (padding == null)
+                if (padding is null)
                 {
                     throw new ArgumentNullException(nameof(padding));
                 }
 
                 SecKeyPair keys = GetKeys();
 
-                if (keys.PrivateKey == null)
+                if (keys.PrivateKey is null)
                 {
                     throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                 }
@@ -442,7 +442,7 @@ namespace System.Security.Cryptography
                 RSAEncryptionPadding padding,
                 out int bytesWritten)
             {
-                Debug.Assert(privateKey != null);
+                Debug.Assert(privateKey is not null);
 
                 if (padding.Mode != RSAEncryptionPaddingMode.Pkcs1 &&
                     padding.Mode != RSAEncryptionPaddingMode.Oaep)
@@ -490,11 +490,11 @@ namespace System.Security.Cryptography
 
             public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
-                if (hash == null)
+                if (hash is null)
                     throw new ArgumentNullException(nameof(hash));
                 if (string.IsNullOrEmpty(hashAlgorithm.Name))
                     throw HashAlgorithmNameNullOrEmpty();
-                if (padding == null)
+                if (padding is null)
                     throw new ArgumentNullException(nameof(padding));
 
                 ThrowIfDisposed();
@@ -503,7 +503,7 @@ namespace System.Security.Cryptography
                 {
                     SecKeyPair keys = GetKeys();
 
-                    if (keys.PrivateKey == null)
+                    if (keys.PrivateKey is null)
                     {
                         throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
@@ -550,7 +550,7 @@ namespace System.Security.Cryptography
                 {
                     throw HashAlgorithmNameNullOrEmpty();
                 }
-                if (padding == null)
+                if (padding is null)
                 {
                     throw new ArgumentNullException(nameof(padding));
                 }
@@ -570,7 +570,7 @@ namespace System.Security.Cryptography
 
                 SecKeyPair keys = GetKeys();
 
-                if (keys.PrivateKey == null)
+                if (keys.PrivateKey is null)
                 {
                     throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                 }
@@ -578,7 +578,7 @@ namespace System.Security.Cryptography
                 int keySize = KeySize;
                 int rsaSize = RsaPaddingProcessor.BytesRequiredForBitCount(keySize);
 
-                if (processor == null)
+                if (processor is null)
                 {
                     Interop.AppleCrypto.PAL_HashAlgorithm palAlgId =
                         PalAlgorithmFromAlgorithmName(hashAlgorithm, out int expectedSize);
@@ -638,11 +638,11 @@ namespace System.Security.Cryptography
                 HashAlgorithmName hashAlgorithm,
                 RSASignaturePadding padding)
             {
-                if (hash == null)
+                if (hash is null)
                 {
                     throw new ArgumentNullException(nameof(hash));
                 }
-                if (signature == null)
+                if (signature is null)
                 {
                     throw new ArgumentNullException(nameof(signature));
                 }
@@ -656,7 +656,7 @@ namespace System.Security.Cryptography
                 {
                     throw HashAlgorithmNameNullOrEmpty();
                 }
-                if (padding == null)
+                if (padding is null)
                 {
                     throw new ArgumentNullException(nameof(padding));
                 }
@@ -728,7 +728,7 @@ namespace System.Security.Cryptography
             {
                 if (disposing)
                 {
-                    if (_keys != null)
+                    if (_keys is not null)
                     {
                         // Do not set _keys to null, in order to prevent rehydration.
                         _keys.Dispose();
@@ -775,7 +775,7 @@ namespace System.Security.Cryptography
             {
                 SecKeyPair? current = _keys;
 
-                if (current != null && current.PublicKey == null)
+                if (current is not null && current.PublicKey is null)
                 {
                     throw new ObjectDisposedException(nameof(RSA));
                 }
@@ -786,7 +786,7 @@ namespace System.Security.Cryptography
                 ThrowIfDisposed();
                 SecKeyPair? current = _keys;
 
-                if (current != null)
+                if (current is not null)
                 {
                     return current;
                 }
@@ -809,7 +809,7 @@ namespace System.Security.Cryptography
                 _keys = newKeyPair;
                 current?.Dispose();
 
-                if (newKeyPair != null)
+                if (newKeyPair is not null)
                 {
                     KeySizeValue = Interop.AppleCrypto.GetSimpleKeySizeInBits(newKeyPair.PublicKey);
                 }
@@ -820,7 +820,7 @@ namespace System.Security.Cryptography
                 AsnWriter keyWriter;
                 bool hasPrivateKey;
 
-                if (parameters.D != null)
+                if (parameters.D is not null)
                 {
                     keyWriter = RSAKeyFormatHelper.WritePkcs1PrivateKey(parameters);
                     hasPrivateKey = true;
@@ -854,7 +854,7 @@ namespace System.Security.Cryptography
 
             private static void ValidateParameters(in RSAParameters parameters)
             {
-                if (parameters.Modulus == null || parameters.Exponent == null)
+                if (parameters.Modulus is null || parameters.Exponent is null)
                     throw new CryptographicException(SR.Argument_InvalidValue);
 
                 if (!HasConsistentPrivateKey(parameters))
@@ -863,24 +863,24 @@ namespace System.Security.Cryptography
 
             private static bool HasConsistentPrivateKey(in RSAParameters parameters)
             {
-                if (parameters.D == null)
+                if (parameters.D is null)
                 {
-                    if (parameters.P != null ||
-                        parameters.DP != null ||
-                        parameters.Q != null ||
-                        parameters.DQ != null ||
-                        parameters.InverseQ != null)
+                    if (parameters.P is not null ||
+                        parameters.DP is not null ||
+                        parameters.Q is not null ||
+                        parameters.DQ is not null ||
+                        parameters.InverseQ is not null)
                     {
                         return false;
                     }
                 }
                 else
                 {
-                    if (parameters.P == null ||
-                        parameters.DP == null ||
-                        parameters.Q == null ||
-                        parameters.DQ == null ||
-                        parameters.InverseQ == null)
+                    if (parameters.P is null ||
+                        parameters.DP is null ||
+                        parameters.Q is null ||
+                        parameters.DQ is null ||
+                        parameters.InverseQ is null)
                     {
                         return false;
                     }

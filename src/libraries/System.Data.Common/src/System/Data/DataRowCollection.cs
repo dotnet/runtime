@@ -75,7 +75,7 @@ namespace System.Data
               // get into trouble if table has JUST a nested parent? how about multi parent!
                 if (pos < _list.Count)
                 {
-                    if (_list[pos] != null)
+                    if (_list[pos] is not null)
                     {
                         throw ExceptionBuilder.RowInsertTwice(pos, _table.TableName);
                     }
@@ -157,13 +157,13 @@ namespace System.Data
         /// Gets a value indicating whether the primary key of any row in the
         /// collection contains the specified value.
         /// </summary>
-        public bool Contains(object? key) => (_table.FindByPrimaryKey(key) != null);
+        public bool Contains(object? key) => (_table.FindByPrimaryKey(key) is not null);
 
         /// <summary>
         /// Gets a value indicating if the <see cref='System.Data.DataRow'/> with
         /// the specified primary key values exists.
         /// </summary>
-        public bool Contains(object?[] keys) => (_table.FindByPrimaryKey(keys) != null);
+        public bool Contains(object?[] keys) => (_table.FindByPrimaryKey(keys) is not null);
 
         public override void CopyTo(Array ar, int index) => _list.CopyTo(ar, index);
 

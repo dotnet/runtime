@@ -158,7 +158,7 @@ namespace System.Collections
                 {
                     return ((CompatibleComparer)_keycomparer).HashCodeProvider;
                 }
-                else if (_keycomparer == null)
+                else if (_keycomparer is null)
                 {
                     return null;
                 }
@@ -173,7 +173,7 @@ namespace System.Collections
                 {
                     _keycomparer = new CompatibleComparer(value, keyComparer.Comparer);
                 }
-                else if (_keycomparer == null)
+                else if (_keycomparer is null)
                 {
                     _keycomparer = new CompatibleComparer(value, (IComparer?)null);
                 }
@@ -193,7 +193,7 @@ namespace System.Collections
                 {
                     return ((CompatibleComparer)_keycomparer).Comparer;
                 }
-                else if (_keycomparer == null)
+                else if (_keycomparer is null)
                 {
                     return null;
                 }
@@ -208,7 +208,7 @@ namespace System.Collections
                 {
                     _keycomparer = new CompatibleComparer(keyComparer.HashCodeProvider, value);
                 }
-                else if (_keycomparer == null)
+                else if (_keycomparer is null)
                 {
                     _keycomparer = new CompatibleComparer((IHashCodeProvider?)null, value);
                 }
@@ -335,7 +335,7 @@ namespace System.Collections
         public Hashtable(int capacity, float loadFactor, IHashCodeProvider? hcp, IComparer? comparer)
             : this(capacity, loadFactor)
         {
-            if (hcp != null || comparer != null)
+            if (hcp is not null || comparer is not null)
             {
                 _keycomparer = new CompatibleComparer(hcp, comparer);
             }
@@ -343,9 +343,9 @@ namespace System.Collections
 
         [Obsolete("Please use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
         public Hashtable(IDictionary d, float loadFactor, IHashCodeProvider? hcp, IComparer? comparer)
-            : this(d != null ? d.Count : 0, loadFactor, hcp, comparer)
+            : this(d is not null ? d.Count : 0, loadFactor, hcp, comparer)
         {
-            if (d == null)
+            if (d is null)
                 throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
 
             IDictionaryEnumerator e = d.GetEnumerator();
@@ -354,9 +354,9 @@ namespace System.Collections
         }
 
         public Hashtable(IDictionary d, float loadFactor, IEqualityComparer? equalityComparer)
-            : this(d != null ? d.Count : 0, loadFactor, equalityComparer)
+            : this(d is not null ? d.Count : 0, loadFactor, equalityComparer)
         {
-            if (d == null)
+            if (d is null)
                 throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
 
             IDictionaryEnumerator e = d.GetEnumerator();
@@ -454,7 +454,7 @@ namespace System.Collections
             {
                 bucket--;
                 object? keyv = lbuckets[bucket].key;
-                if ((keyv != null) && (keyv != lbuckets))
+                if ((keyv is not null) && (keyv != lbuckets))
                 {
                     ht[keyv] = lbuckets[bucket].val;
                 }
@@ -474,7 +474,7 @@ namespace System.Collections
         //
         public virtual bool ContainsKey(object key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
@@ -489,7 +489,7 @@ namespace System.Collections
             do
             {
                 b = lbuckets[bucketNumber];
-                if (b.key == null)
+                if (b.key is null)
                 {
                     return false;
                 }
@@ -509,11 +509,11 @@ namespace System.Collections
         //
         public virtual bool ContainsValue(object? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 for (int i = _buckets.Length; --i >= 0;)
                 {
-                    if (_buckets[i].key != null && _buckets[i].key != _buckets && _buckets[i].val == null)
+                    if (_buckets[i].key is not null && _buckets[i].key != _buckets && _buckets[i].val is null)
                         return true;
                 }
             }
@@ -522,7 +522,7 @@ namespace System.Collections
                 for (int i = _buckets.Length; --i >= 0;)
                 {
                     object? val = _buckets[i].val;
-                    if (val != null && val.Equals(value))
+                    if (val is not null && val.Equals(value))
                         return true;
                 }
             }
@@ -534,14 +534,14 @@ namespace System.Collections
         // the KeyCollection class.
         private void CopyKeys(Array array, int arrayIndex)
         {
-            Debug.Assert(array != null);
+            Debug.Assert(array is not null);
             Debug.Assert(array.Rank == 1);
 
             bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
                 object? keyv = lbuckets[i].key;
-                if ((keyv != null) && (keyv != _buckets))
+                if ((keyv is not null) && (keyv != _buckets))
                 {
                     array.SetValue(keyv, arrayIndex++);
                 }
@@ -553,14 +553,14 @@ namespace System.Collections
         // the KeyCollection class.
         private void CopyEntries(Array array, int arrayIndex)
         {
-            Debug.Assert(array != null);
+            Debug.Assert(array is not null);
             Debug.Assert(array.Rank == 1);
 
             bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
                 object? keyv = lbuckets[i].key;
-                if ((keyv != null) && (keyv != _buckets))
+                if ((keyv is not null) && (keyv != _buckets))
                 {
                     DictionaryEntry entry = new DictionaryEntry(keyv, lbuckets[i].val);
                     array.SetValue(entry, arrayIndex++);
@@ -572,7 +572,7 @@ namespace System.Collections
         // a given index.  Note that this only copies values, and not keys.
         public virtual void CopyTo(Array array, int arrayIndex)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Array);
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -596,7 +596,7 @@ namespace System.Collections
             for (int i = lbuckets.Length; --i >= 0;)
             {
                 object? keyv = lbuckets[i].key;
-                if ((keyv != null) && (keyv != _buckets))
+                if ((keyv is not null) && (keyv != _buckets))
                 {
                     array[index++] = new KeyValuePairs(keyv, lbuckets[i].val);
                 }
@@ -610,14 +610,14 @@ namespace System.Collections
         // the ValueCollection class.
         private void CopyValues(Array array, int arrayIndex)
         {
-            Debug.Assert(array != null);
+            Debug.Assert(array is not null);
             Debug.Assert(array.Rank == 1);
 
             bucket[] lbuckets = _buckets;
             for (int i = lbuckets.Length; --i >= 0;)
             {
                 object? keyv = lbuckets[i].key;
-                if ((keyv != null) && (keyv != _buckets))
+                if ((keyv is not null) && (keyv != _buckets))
                 {
                     array.SetValue(lbuckets[i].val, arrayIndex++);
                 }
@@ -631,7 +631,7 @@ namespace System.Collections
         {
             get
             {
-                if (key == null)
+                if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 }
@@ -677,7 +677,7 @@ namespace System.Collections
                         spin.SpinOnce();
                     }
 
-                    if (b.key == null)
+                    if (b.key is null)
                     {
                         return null;
                     }
@@ -736,7 +736,7 @@ namespace System.Collections
             for (nb = 0; nb < _buckets.Length; nb++)
             {
                 bucket oldb = _buckets[nb];
-                if ((oldb.key != null) && (oldb.key != _buckets))
+                if ((oldb.key is not null) && (oldb.key != _buckets))
                 {
                     int hashcode = oldb.hash_coll & 0x7FFFFFFF;
                     putEntry(newBuckets, oldb.key, oldb.val, hashcode);
@@ -778,7 +778,7 @@ namespace System.Collections
         // instance.  Otherwise, it calls hcp.GetHashCode(obj).
         protected virtual int GetHash(object key)
         {
-            if (_keycomparer != null)
+            if (_keycomparer is not null)
                 return _keycomparer.GetHashCode(key);
             return key.GetHashCode();
         }
@@ -797,7 +797,7 @@ namespace System.Collections
         //
         protected virtual bool KeyEquals(object? item, object key)
         {
-            Debug.Assert(key != null, "key can't be null here!");
+            Debug.Assert(key is not null, "key can't be null here!");
             if (object.ReferenceEquals(_buckets, item))
             {
                 return false;
@@ -806,9 +806,9 @@ namespace System.Collections
             if (object.ReferenceEquals(item, key))
                 return true;
 
-            if (_keycomparer != null)
+            if (_keycomparer is not null)
                 return _keycomparer.Equals(item, key);
-            return item == null ? false : item.Equals(key);
+            return item is null ? false : item.Equals(key);
         }
 
         // Returns a collection representing the keys of this hashtable. The order
@@ -839,7 +839,7 @@ namespace System.Collections
         // exists in the hashtable, an exception is thrown.
         private void Insert(object key, object? nvalue, bool add)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
@@ -872,7 +872,7 @@ namespace System.Collections
                 // Insert the key/value pair into this bucket if this bucket is empty and has never contained an entry
                 // OR
                 // This bucket once contained an entry but there has never been a collision
-                if ((_buckets[bucketNumber].key == null) ||
+                if ((_buckets[bucketNumber].key is null) ||
                     (_buckets[bucketNumber].key == _buckets && ((_buckets[bucketNumber].hash_coll & unchecked(0x80000000)) == 0)))
                 {
                     // If we have found an available bucket that has never had a collision, but we've seen an available
@@ -957,7 +957,7 @@ namespace System.Collections
             int bucketNumber = (int)(seed % (uint)newBuckets.Length);
             while (true)
             {
-                if ((newBuckets[bucketNumber].key == null) || (newBuckets[bucketNumber].key == _buckets))
+                if ((newBuckets[bucketNumber].key is null) || (newBuckets[bucketNumber].key == _buckets))
                 {
                     newBuckets[bucketNumber].val = nvalue;
                     newBuckets[bucketNumber].key = key;
@@ -980,7 +980,7 @@ namespace System.Collections
         //
         public virtual void Remove(object key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
@@ -1031,14 +1031,14 @@ namespace System.Collections
         //
         public static Hashtable Synchronized(Hashtable table)
         {
-            if (table == null)
+            if (table is null)
                 throw new ArgumentNullException(nameof(table));
             return new SyncHashtable(table);
         }
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
+            if (info is null)
             {
                 throw new ArgumentNullException(nameof(info));
             }
@@ -1062,7 +1062,7 @@ namespace System.Collections
 #pragma warning disable 618
                 IEqualityComparer? keyComparerForSerilization = _keycomparer;
 
-                if (keyComparerForSerilization == null)
+                if (keyComparerForSerilization is null)
                 {
                     info.AddValue(ComparerName, null, typeof(IComparer));
                     info.AddValue(HashCodeProviderName, null, typeof(IHashCodeProvider));
@@ -1101,7 +1101,7 @@ namespace System.Collections
         //
         public virtual void OnDeserialization(object? sender)
         {
-            if (_buckets != null)
+            if (_buckets is not null)
             {
                 // Somebody had a dependency on this hashtable and fixed us up before the ObjectManager got to it.
                 return;
@@ -1109,7 +1109,7 @@ namespace System.Collections
 
             HashHelpers.SerializationInfoTable.TryGetValue(this, out SerializationInfo? siInfo);
 
-            if (siInfo == null)
+            if (siInfo is null)
             {
                 throw new SerializationException(SR.Serialization_InvalidOnDeser);
             }
@@ -1159,18 +1159,18 @@ namespace System.Collections
             _loadsize = (int)(_loadFactor * hashsize);
 
             // V1 object doesn't has _keycomparer field.
-            if ((_keycomparer == null) && ((c != null) || (hcp != null)))
+            if ((_keycomparer is null) && ((c is not null) || (hcp is not null)))
             {
                 _keycomparer = new CompatibleComparer(hcp, c);
             }
 
             _buckets = new bucket[hashsize];
 
-            if (serKeys == null)
+            if (serKeys is null)
             {
                 throw new SerializationException(SR.Serialization_MissingKeys);
             }
-            if (serValues == null)
+            if (serValues is null)
             {
                 throw new SerializationException(SR.Serialization_MissingValues);
             }
@@ -1180,7 +1180,7 @@ namespace System.Collections
             }
             for (int i = 0; i < serKeys.Length; i++)
             {
-                if (serKeys[i] == null)
+                if (serKeys[i] is null)
                 {
                     throw new SerializationException(SR.Serialization_NullKey);
                 }
@@ -1205,7 +1205,7 @@ namespace System.Collections
 
             public virtual void CopyTo(Array array, int arrayIndex)
             {
-                if (array == null)
+                if (array is null)
                     throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -1241,7 +1241,7 @@ namespace System.Collections
 
             public virtual void CopyTo(Array array, int arrayIndex)
             {
-                if (array == null)
+                if (array is null)
                     throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -1329,7 +1329,7 @@ namespace System.Collections
 
             public override bool ContainsKey(object key)
             {
-                if (key == null)
+                if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 }
@@ -1459,7 +1459,7 @@ namespace System.Collections
                 {
                     _bucket--;
                     object? keyv = _hashtable._buckets[_bucket].key;
-                    if ((keyv != null) && (keyv != _hashtable._buckets))
+                    if ((keyv is not null) && (keyv != _hashtable._buckets))
                     {
                         _currentKey = keyv;
                         _currentValue = _hashtable._buckets[_bucket].val;
@@ -1525,7 +1525,7 @@ namespace System.Collections
 
             public HashtableDebugView(Hashtable hashtable)
             {
-                if (hashtable == null)
+                if (hashtable is null)
                 {
                     throw new ArgumentNullException(nameof(hashtable));
                 }

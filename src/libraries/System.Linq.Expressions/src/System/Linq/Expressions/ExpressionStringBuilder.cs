@@ -34,7 +34,7 @@ namespace System.Linq.Expressions
 
         private int GetId(object o)
         {
-            if (_ids == null)
+            if (_ids is null)
             {
                 _ids = new Dictionary<object, int>();
             }
@@ -70,7 +70,7 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static string ExpressionToString(Expression node)
         {
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
             ExpressionStringBuilder esb = new ExpressionStringBuilder();
             esb.Visit(node);
             return esb.ToString();
@@ -78,7 +78,7 @@ namespace System.Linq.Expressions
 
         internal static string CatchBlockToString(CatchBlock node)
         {
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
             ExpressionStringBuilder esb = new ExpressionStringBuilder();
             esb.VisitCatchBlock(node);
             return esb.ToString();
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions
 
         internal static string SwitchCaseToString(SwitchCase node)
         {
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
             ExpressionStringBuilder esb = new ExpressionStringBuilder();
             esb.VisitSwitchCase(node);
             return esb.ToString();
@@ -97,7 +97,7 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static string MemberBindingToString(MemberBinding node)
         {
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
             ExpressionStringBuilder esb = new ExpressionStringBuilder();
             esb.VisitMemberBinding(node);
             return esb.ToString();
@@ -108,7 +108,7 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static string ElementInitBindingToString(ElementInit node)
         {
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
             ExpressionStringBuilder esb = new ExpressionStringBuilder();
             esb.VisitElementInit(node);
             return esb.ToString();
@@ -122,7 +122,7 @@ namespace System.Linq.Expressions
         private void VisitExpressions<T>(char open, ReadOnlyCollection<T> expressions, char close, string seperator) where T : Expression
         {
             Out(open);
-            if (expressions != null)
+            if (expressions is not null)
             {
                 bool isFirst = true;
                 foreach (T e in expressions)
@@ -351,7 +351,7 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitConstant(ConstantExpression node)
         {
-            if (node.Value != null)
+            if (node.Value is not null)
             {
                 string? sValue = node.Value.ToString();
                 if (node.Value is string)
@@ -402,7 +402,7 @@ namespace System.Linq.Expressions
         // Prints ".instanceField" or "declaringType.staticField"
         private void OutMember(Expression? instance, MemberInfo member)
         {
-            if (instance != null)
+            if (instance is not null)
             {
                 Visit(instance);
             }
@@ -524,13 +524,13 @@ namespace System.Linq.Expressions
             int start = 0;
             Expression? ob = node.Object;
 
-            if (node.Method.GetCustomAttribute(typeof(ExtensionAttribute)) != null)
+            if (node.Method.GetCustomAttribute(typeof(ExtensionAttribute)) is not null)
             {
                 start = 1;
                 ob = node.GetArgument(0);
             }
 
-            if (ob != null)
+            if (ob is not null)
             {
                 Visit(ob);
                 Out('.');
@@ -578,7 +578,7 @@ namespace System.Linq.Expressions
                 {
                     Out(", ");
                 }
-                if (members != null)
+                if (members is not null)
                 {
                     string name = members[i].Name;
                     Out(name);
@@ -706,7 +706,7 @@ namespace System.Linq.Expressions
             Out(op);
             Out(' ');
             DumpLabel(node.Target);
-            if (node.Value != null)
+            if (node.Value is not null)
             {
                 Out(" (");
                 Visit(node.Value);
@@ -759,16 +759,16 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitIndex(IndexExpression node)
         {
-            if (node.Object != null)
+            if (node.Object is not null)
             {
                 Visit(node.Object);
             }
             else
             {
-                Debug.Assert(node.Indexer != null);
+                Debug.Assert(node.Indexer is not null);
                 Out(node.Indexer.DeclaringType!.Name);
             }
-            if (node.Indexer != null)
+            if (node.Indexer is not null)
             {
                 Out('.');
                 Out(node.Indexer.Name);

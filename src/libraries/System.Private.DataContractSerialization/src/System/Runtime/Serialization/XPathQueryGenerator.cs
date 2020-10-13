@@ -25,11 +25,11 @@ namespace System.Runtime.Serialization
         // Here you can provide your own root element Xpath which will replace the Xpath of the top level element
         public static string CreateFromDataContractSerializer(Type type, MemberInfo[] pathToMember, StringBuilder? rootElementXpath, out XmlNamespaceManager namespaces)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
             }
-            if (pathToMember == null)
+            if (pathToMember is null)
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(pathToMember)));
             }
@@ -37,7 +37,7 @@ namespace System.Runtime.Serialization
             DataContract currentContract = DataContract.GetDataContract(type);
             ExportContext context;
 
-            if (rootElementXpath == null)
+            if (rootElementXpath is null)
             {
                 context = new ExportContext(currentContract);
             }
@@ -81,14 +81,14 @@ namespace System.Runtime.Serialization
 
         private static IEnumerable<DataMember> GetDataMembers(ClassDataContract contract)
         {
-            if (contract.BaseContract != null)
+            if (contract.BaseContract is not null)
             {
                 foreach (DataMember baseClassMember in GetDataMembers(contract.BaseContract))
                 {
                     yield return baseClassMember;
                 }
             }
-            if (contract.Members != null)
+            if (contract.Members is not null)
             {
                 foreach (DataMember member in contract.Members)
                 {
@@ -140,7 +140,7 @@ namespace System.Runtime.Serialization
             public string SetNamespace(string ns)
             {
                 string? prefix = _namespaces.LookupPrefix(ns);
-                if (prefix == null || prefix.Length == 0)
+                if (prefix is null || prefix.Length == 0)
                 {
                     prefix = "xg" + (_nextPrefix++).ToString(NumberFormatInfo.InvariantInfo);
                     Namespaces.AddNamespace(prefix, ns);

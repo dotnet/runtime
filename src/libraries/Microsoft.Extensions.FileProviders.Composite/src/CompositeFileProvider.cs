@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.FileProviders
         /// <param name="fileProviders">The collection of <see cref="IFileProvider" /></param>
         public CompositeFileProvider(IEnumerable<IFileProvider> fileProviders)
         {
-            if (fileProviders == null)
+            if (fileProviders is null)
             {
                 throw new ArgumentNullException(nameof(fileProviders));
             }
@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.FileProviders
             foreach (IFileProvider fileProvider in _fileProviders)
             {
                 IFileInfo fileInfo = fileProvider.GetFileInfo(subpath);
-                if (fileInfo != null && fileInfo.Exists)
+                if (fileInfo is not null && fileInfo.Exists)
                 {
                     return fileInfo;
                 }
@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.FileProviders
             foreach (IFileProvider fileProvider in _fileProviders)
             {
                 IChangeToken changeToken = fileProvider.Watch(pattern);
-                if (changeToken != null)
+                if (changeToken is not null)
                 {
                     changeTokens.Add(changeToken);
                 }

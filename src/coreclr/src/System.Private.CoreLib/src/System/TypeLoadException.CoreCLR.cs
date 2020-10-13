@@ -28,9 +28,9 @@ namespace System
 
         private void SetMessageField()
         {
-            if (_message == null)
+            if (_message is null)
             {
-                if (_className == null && _resourceId == 0)
+                if (_className is null && _resourceId == 0)
                 {
                     _message = SR.Arg_TypeLoadException;
                 }

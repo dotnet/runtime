@@ -49,8 +49,8 @@ namespace System.Data
         /// </summary>
         internal void Add(Func<T, object> keySelector, Comparison<object> compare, bool isOrderBy)
         {
-            Debug.Assert(keySelector != null);
-            Debug.Assert(compare != null);
+            Debug.Assert(keySelector is not null);
+            Debug.Assert(compare is not null);
             // Inputs are assumed to be valid. The burden for ensuring it is on the caller.
 
             if (isOrderBy)
@@ -61,8 +61,8 @@ namespace System.Data
             else
             {
                 // ThenBy can only be called after OrderBy
-                Debug.Assert(_currentSelector != null);
-                Debug.Assert(_currentComparer != null);
+                Debug.Assert(_currentSelector is not null);
+                Debug.Assert(_currentComparer is not null);
 
                 _currentSelector = _selectors.AddAfter(_currentSelector, keySelector);
                 _currentComparer = _comparers.AddAfter(_currentComparer, compare);
@@ -94,7 +94,7 @@ namespace System.Data
         /// <returns>Comparison result of the combined Sort comparer expression</returns>
         public int Compare(List<object>? a, List<object>? b)
         {
-            Debug.Assert(a != null && b != null && a.Count == Count);
+            Debug.Assert(a is not null && b is not null && a.Count == Count);
 
             int i = 0;
             foreach (Comparison<object> compare in _comparers)

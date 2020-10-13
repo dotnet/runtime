@@ -101,7 +101,7 @@ namespace System.Net.Security
             _userCertificateValidationCallback = userCertificateValidationCallback;
             _userCertificateSelectionCallback = userCertificateSelectionCallback;
             _encryptionPolicy = encryptionPolicy;
-            _certSelectionDelegate = userCertificateSelectionCallback == null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
+            _certSelectionDelegate = userCertificateSelectionCallback is null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
 
             _innerStream = innerStream;
 
@@ -112,7 +112,7 @@ namespace System.Net.Security
         {
             get
             {
-                if (_context == null)
+                if (_context is null)
                     return default;
 
                 return _context.NegotiatedApplicationProtocol;
@@ -121,11 +121,11 @@ namespace System.Net.Security
 
         private void SetAndVerifyValidationCallback(RemoteCertificateValidationCallback? callback)
         {
-            if (_userCertificateValidationCallback == null)
+            if (_userCertificateValidationCallback is null)
             {
                 _userCertificateValidationCallback = callback;
             }
-            else if (callback != null && _userCertificateValidationCallback != callback)
+            else if (callback is not null && _userCertificateValidationCallback != callback)
             {
                 throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(RemoteCertificateValidationCallback)));
             }
@@ -133,12 +133,12 @@ namespace System.Net.Security
 
         private void SetAndVerifySelectionCallback(LocalCertificateSelectionCallback? callback)
         {
-            if (_userCertificateSelectionCallback == null)
+            if (_userCertificateSelectionCallback is null)
             {
                 _userCertificateSelectionCallback = callback;
-                _certSelectionDelegate = _userCertificateSelectionCallback == null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
+                _certSelectionDelegate = _userCertificateSelectionCallback is null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
             }
-            else if (callback != null && _userCertificateSelectionCallback != callback)
+            else if (callback is not null && _userCertificateSelectionCallback != callback)
             {
                 throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(LocalCertificateSelectionCallback)));
             }
@@ -153,13 +153,13 @@ namespace System.Net.Security
 
         private SslAuthenticationOptions CreateAuthenticationOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
-            if (sslServerAuthenticationOptions.ServerCertificate == null && sslServerAuthenticationOptions.ServerCertificateContext == null &&
-                    sslServerAuthenticationOptions.ServerCertificateSelectionCallback == null && _certSelectionDelegate == null)
+            if (sslServerAuthenticationOptions.ServerCertificate is null && sslServerAuthenticationOptions.ServerCertificateContext is null &&
+                    sslServerAuthenticationOptions.ServerCertificateSelectionCallback is null && _certSelectionDelegate is null)
             {
                 throw new ArgumentNullException(nameof(sslServerAuthenticationOptions.ServerCertificate));
             }
 
-            if ((sslServerAuthenticationOptions.ServerCertificate != null || sslServerAuthenticationOptions.ServerCertificateContext != null || _certSelectionDelegate != null) && sslServerAuthenticationOptions.ServerCertificateSelectionCallback != null)
+            if ((sslServerAuthenticationOptions.ServerCertificate is not null || sslServerAuthenticationOptions.ServerCertificateContext is not null || _certSelectionDelegate is not null) && sslServerAuthenticationOptions.ServerCertificateSelectionCallback is not null)
             {
                 throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(ServerCertificateSelectionCallback)));
             }
@@ -167,7 +167,7 @@ namespace System.Net.Security
             var authOptions = new SslAuthenticationOptions(sslServerAuthenticationOptions);
 
             _userServerCertificateSelectionCallback = sslServerAuthenticationOptions.ServerCertificateSelectionCallback;
-            authOptions.ServerCertSelectionDelegate = _userServerCertificateSelectionCallback == null ? null : new ServerCertSelectionCallback(ServerCertSelectionCallbackWrapper);
+            authOptions.ServerCertSelectionDelegate = _userServerCertificateSelectionCallback is null ? null : new ServerCertSelectionCallback(ServerCertSelectionCallbackWrapper);
 
             authOptions.CertValidationDelegate = _userCertificateValidationCallback;
             authOptions.CertSelectionDelegate = _certSelectionDelegate;
@@ -285,7 +285,7 @@ namespace System.Net.Security
 
         public void AuthenticateAsClient(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
-            if (sslClientAuthenticationOptions == null)
+            if (sslClientAuthenticationOptions is null)
             {
                 throw new ArgumentNullException(nameof(sslClientAuthenticationOptions));
             }
@@ -323,7 +323,7 @@ namespace System.Net.Security
 
         public void AuthenticateAsServer(SslServerAuthenticationOptions sslServerAuthenticationOptions)
         {
-            if (sslServerAuthenticationOptions == null)
+            if (sslServerAuthenticationOptions is null)
             {
                 throw new ArgumentNullException(nameof(sslServerAuthenticationOptions));
             }
@@ -356,7 +356,7 @@ namespace System.Net.Security
 
         public Task AuthenticateAsClientAsync(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
         {
-            if (sslClientAuthenticationOptions == null)
+            if (sslClientAuthenticationOptions is null)
             {
                 throw new ArgumentNullException(nameof(sslClientAuthenticationOptions));
             }
@@ -411,7 +411,7 @@ namespace System.Net.Security
 
         public Task AuthenticateAsServerAsync(SslServerAuthenticationOptions sslServerAuthenticationOptions, CancellationToken cancellationToken = default)
         {
-            if (sslServerAuthenticationOptions == null)
+            if (sslServerAuthenticationOptions is null)
             {
                 throw new ArgumentNullException(nameof(sslServerAuthenticationOptions));
             }
@@ -446,7 +446,7 @@ namespace System.Net.Security
         }
         #endregion
 
-        public override bool IsAuthenticated => _context != null && _context.IsValidContext && _exception == null && _handshakeCompleted;
+        public override bool IsAuthenticated => _context is not null && _context.IsValidContext && _exception is null && _handshakeCompleted;
 
         public override bool IsMutuallyAuthenticated
         {
@@ -454,7 +454,7 @@ namespace System.Net.Security
             {
                 return
                     IsAuthenticated &&
-                    (_context!.IsServer ? _context.LocalServerCertificate : _context.LocalClientCertificate) != null &&
+                    (_context!.IsServer ? _context.LocalServerCertificate : _context.LocalClientCertificate) is not null &&
                     _context.IsRemoteCertificateAvailable; /* does not work: Context.IsMutualAuthFlag;*/
             }
         }
@@ -463,7 +463,7 @@ namespace System.Net.Security
 
         public override bool IsSigned => IsAuthenticated;
 
-        public override bool IsServer => _context != null && _context.IsServer;
+        public override bool IsServer => _context is not null && _context.IsServer;
 
         public virtual SslProtocols SslProtocol
         {
@@ -478,7 +478,7 @@ namespace System.Net.Security
         private SslProtocols GetSslProtocolInternal()
         {
             SslConnectionInfo? info = _context!.ConnectionInfo;
-            if (info == null)
+            if (info is null)
             {
                 return SslProtocols.None;
             }
@@ -522,7 +522,7 @@ namespace System.Net.Security
             return ret;
         }
 
-        public virtual bool CheckCertRevocationStatus => _context != null && _context.CheckCertRevocationStatus != X509RevocationMode.NoCheck;
+        public virtual bool CheckCertRevocationStatus => _context is not null && _context.CheckCertRevocationStatus != X509RevocationMode.NoCheck;
 
         //
         // This will return selected local cert for both client/server streams
@@ -561,7 +561,7 @@ namespace System.Net.Security
             {
                 ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
-                if (info == null)
+                if (info is null)
                 {
                     return CipherAlgorithmType.None;
                 }
@@ -575,7 +575,7 @@ namespace System.Net.Security
             {
                 ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
-                if (info == null)
+                if (info is null)
                 {
                     return 0;
                 }
@@ -590,7 +590,7 @@ namespace System.Net.Security
             {
                 ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
-                if (info == null)
+                if (info is null)
                 {
                     return (HashAlgorithmType)0;
                 }
@@ -604,7 +604,7 @@ namespace System.Net.Security
             {
                 ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
-                if (info == null)
+                if (info is null)
                 {
                     return 0;
                 }
@@ -619,7 +619,7 @@ namespace System.Net.Security
             {
                 ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
-                if (info == null)
+                if (info is null)
                 {
                     return (ExchangeAlgorithmType)0;
                 }
@@ -634,7 +634,7 @@ namespace System.Net.Security
             {
                 ThrowIfExceptionalOrNotHandshake();
                 SslConnectionInfo? info = _context!.ConnectionInfo;
-                if (info == null)
+                if (info is null)
                 {
                     return 0;
                 }
@@ -647,7 +647,7 @@ namespace System.Net.Security
         {
             get
             {
-                return _sslAuthenticationOptions != null ? _sslAuthenticationOptions.TargetHost : string.Empty;
+                return _sslAuthenticationOptions is not null ? _sslAuthenticationOptions.TargetHost : string.Empty;
             }
         }
 
@@ -824,7 +824,7 @@ namespace System.Net.Security
         private void ThrowIfExceptional()
         {
             ExceptionDispatchInfo? e = _exception;
-            if (e != null)
+            if (e is not null)
             {
                 ThrowExceptional(e);
             }
@@ -860,7 +860,7 @@ namespace System.Net.Security
         {
             ThrowIfExceptional();
 
-            if (!IsAuthenticated && _context?.ConnectionInfo == null)
+            if (!IsAuthenticated && _context?.ConnectionInfo is null)
             {
                 ThrowNotAuthenticated();
             }

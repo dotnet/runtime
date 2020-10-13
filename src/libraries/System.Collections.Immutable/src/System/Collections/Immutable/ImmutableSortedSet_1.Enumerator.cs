@@ -91,7 +91,7 @@ namespace System.Collections.Immutable
                 _builder = builder;
                 _current = null;
                 _reverse = reverse;
-                _enumeratingBuilderVersion = builder != null ? builder.Version : -1;
+                _enumeratingBuilderVersion = builder is not null ? builder.Version : -1;
                 _poolUserId = SecureObjectPool.NewId();
                 _stack = null;
                 if (!s_enumeratingStacks.TryTake(this, out _stack))
@@ -116,7 +116,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     this.ThrowIfDisposed();
-                    if (_current != null)
+                    if (_current is not null)
                     {
                         return _current.Value;
                     }
@@ -140,7 +140,7 @@ namespace System.Collections.Immutable
             {
                 _root = null!;
                 _current = null;
-                if (_stack != null && _stack.TryUse(ref this, out Stack<RefAsValueType<Node>>? stack))
+                if (_stack is not null && _stack.TryUse(ref this, out Stack<RefAsValueType<Node>>? stack))
                 {
                     stack.ClearFastWhenEmpty();
                     s_enumeratingStacks.TryAdd(this, _stack!);
@@ -179,7 +179,7 @@ namespace System.Collections.Immutable
             {
                 this.ThrowIfDisposed();
 
-                _enumeratingBuilderVersion = _builder != null ? _builder.Version : -1;
+                _enumeratingBuilderVersion = _builder is not null ? _builder.Version : -1;
                 _current = null;
                 var stack = _stack!.Use(ref this);
                 stack.ClearFastWhenEmpty();
@@ -197,7 +197,7 @@ namespace System.Collections.Immutable
                 // For enumerators of empty collections, there isn't any natural
                 // way to know when a copy of the struct has been disposed of.
 
-                if (_root == null || (_stack != null && !_stack.IsOwned(ref this)))
+                if (_root is null || (_stack is not null && !_stack.IsOwned(ref this)))
                 {
                     Requires.FailObjectDisposed(this);
                 }
@@ -209,7 +209,7 @@ namespace System.Collections.Immutable
             /// <exception cref="System.InvalidOperationException">Thrown if the collection has changed.</exception>
             private void ThrowIfChanged()
             {
-                if (_builder != null && _builder.Version != _enumeratingBuilderVersion)
+                if (_builder is not null && _builder.Version != _enumeratingBuilderVersion)
                 {
                     throw new InvalidOperationException(SR.CollectionModifiedDuringEnumeration);
                 }

@@ -209,7 +209,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 CryptographicOperations.ZeroMemory(I);
 
-                if (IRented != null)
+                if (IRented is not null)
                 {
                     CryptoPool.Return(IRented, clearSize: 0);
                 }

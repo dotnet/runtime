@@ -47,7 +47,7 @@ namespace System
 
                     lock (s_syncObject) // Ensures In and InputEncoding are synchronized.
                     {
-                        if (s_in == null)
+                        if (s_in is null)
                         {
                             Volatile.Write(ref s_in, ConsolePal.GetOrCreateReader());
                         }
@@ -63,11 +63,11 @@ namespace System
             get
             {
                 Encoding? encoding = Volatile.Read(ref s_inputEncoding);
-                if (encoding == null)
+                if (encoding is null)
                 {
                     lock (s_syncObject)
                     {
-                        if (s_inputEncoding == null)
+                        if (s_inputEncoding is null)
                         {
                             Volatile.Write(ref s_inputEncoding, ConsolePal.InputEncoding);
                         }
@@ -100,11 +100,11 @@ namespace System
             get
             {
                 Encoding? encoding = Volatile.Read(ref s_outputEncoding);
-                if (encoding == null)
+                if (encoding is null)
                 {
                     lock (s_syncObject)
                     {
-                        if (s_outputEncoding == null)
+                        if (s_outputEncoding is null)
                         {
                             Volatile.Write(ref s_outputEncoding, ConsolePal.OutputEncoding);
                         }
@@ -125,12 +125,12 @@ namespace System
                     // Before changing the code page we need to flush the data
                     // if Out hasn't been redirected. Also, have the next call to
                     // s_out reinitialize the console code page.
-                    if (s_out != null && !s_isOutTextWriterRedirected)
+                    if (s_out is not null && !s_isOutTextWriterRedirected)
                     {
                         s_out.Flush();
                         Volatile.Write(ref s_out, null!);
                     }
-                    if (s_error != null && !s_isErrorTextWriterRedirected)
+                    if (s_error is not null && !s_isErrorTextWriterRedirected)
                     {
                         s_error.Flush();
                         Volatile.Write(ref s_error, null!);
@@ -185,7 +185,7 @@ namespace System
                 {
                     lock (s_syncObject) // Ensures Out and OutputEncoding are synchronized.
                     {
-                        if (s_out == null)
+                        if (s_out is null)
                         {
                             Volatile.Write(ref s_out, CreateOutputWriter(OpenStandardOutput()));
                         }
@@ -205,7 +205,7 @@ namespace System
                 {
                     lock (s_syncObject) // Ensures Error and OutputEncoding are synchronized.
                     {
-                        if (s_error == null)
+                        if (s_error is null)
                         {
                             Volatile.Write(ref s_error, CreateOutputWriter(OpenStandardError()));
                         }
@@ -494,7 +494,7 @@ namespace System
                     s_cancelCallbacks += value;
 
                     // If we haven't registered our control-C handler, do it.
-                    if (s_registrar == null)
+                    if (s_registrar is null)
                     {
                         s_registrar = new ConsolePal.ControlCHandlerRegistrar();
                         s_registrar.Register();
@@ -506,7 +506,7 @@ namespace System
                 lock (s_syncObject)
                 {
                     s_cancelCallbacks -= value;
-                    if (s_registrar != null && s_cancelCallbacks == null)
+                    if (s_registrar is not null && s_cancelCallbacks is null)
                     {
                         s_registrar.Unregister();
                         s_registrar = null;
@@ -604,7 +604,7 @@ namespace System
 
         private static void CheckNonNull(object obj, string paramName)
         {
-            if (obj == null)
+            if (obj is null)
                 throw new ArgumentNullException(paramName);
         }
 
@@ -736,7 +736,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void WriteLine(string format, params object?[]? arg)
         {
-            if (arg == null)                       // avoid ArgumentNullException from String.Format
+            if (arg is null)                       // avoid ArgumentNullException from String.Format
                 Out.WriteLine(format, null, null); // faster than Out.WriteLine(format, (Object)arg);
             else
                 Out.WriteLine(format, arg);
@@ -763,7 +763,7 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.NoInlining)]
         public static void Write(string format, params object?[]? arg)
         {
-            if (arg == null)                   // avoid ArgumentNullException from String.Format
+            if (arg is null)                   // avoid ArgumentNullException from String.Format
                 Out.Write(format, null, null); // faster than Out.Write(format, (Object)arg);
             else
                 Out.Write(format, arg);
@@ -852,7 +852,7 @@ namespace System
         internal static bool HandleBreakEvent(ConsoleSpecialKey controlKey)
         {
             ConsoleCancelEventHandler? handler = s_cancelCallbacks;
-            if (handler == null)
+            if (handler is null)
             {
                 return false;
             }

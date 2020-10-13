@@ -33,7 +33,7 @@ namespace System.Threading.Channels
             {
                 tcs.TrySetCanceled(oce.CancellationToken);
             }
-            else if (error != null && error != s_doneWritingSentinel)
+            else if (error is not null && error != s_doneWritingSentinel)
             {
                 tcs.TrySetException(error);
             }
@@ -49,7 +49,7 @@ namespace System.Threading.Channels
         /// <returns>The failed task.</returns>
         internal static ValueTask<T> GetInvalidCompletionValueTask<T>(Exception error)
         {
-            Debug.Assert(error != null);
+            Debug.Assert(error is not null);
 
             Task<T> t =
                 error == s_doneWritingSentinel ? Task.FromException<T>(CreateInvalidCompletionException()) :
@@ -62,7 +62,7 @@ namespace System.Threading.Channels
         internal static void QueueWaiter(ref AsyncOperation<bool>? tail, AsyncOperation<bool> waiter)
         {
             AsyncOperation<bool>? c = tail;
-            if (c == null)
+            if (c is null)
             {
                 waiter.Next = waiter;
             }
@@ -77,7 +77,7 @@ namespace System.Threading.Channels
         internal static void WakeUpWaiters(ref AsyncOperation<bool>? listTail, bool result, Exception? error = null)
         {
             AsyncOperation<bool>? tail = listTail;
-            if (tail != null)
+            if (tail is not null)
             {
                 listTail = null;
 
@@ -88,7 +88,7 @@ namespace System.Threading.Channels
                     AsyncOperation<bool> next = c.Next!;
                     c.Next = null;
 
-                    bool completed = error != null ? c.TrySetException(error) : c.TrySetResult(result);
+                    bool completed = error is not null ? c.TrySetException(error) : c.TrySetResult(result);
                     Debug.Assert(completed || c.CancellationToken.CanBeCanceled);
 
                     c = next;
@@ -102,7 +102,7 @@ namespace System.Threading.Channels
         /// <param name="error">The error with which to complete each operations.</param>
         internal static void FailOperations<T, TInner>(Deque<T> operations, Exception error) where T : AsyncOperation<TInner>
         {
-            Debug.Assert(error != null);
+            Debug.Assert(error is not null);
             while (!operations.IsEmpty)
             {
                 operations.DequeueHead().TrySetException(error);
@@ -112,7 +112,7 @@ namespace System.Threading.Channels
         /// <summary>Creates and returns an exception object to indicate that a channel has been closed.</summary>
         internal static Exception CreateInvalidCompletionException(Exception? inner = null) =>
             inner is OperationCanceledException ? inner :
-            inner != null && inner != s_doneWritingSentinel ? new ChannelClosedException(inner) :
+            inner is not null && inner != s_doneWritingSentinel ? new ChannelClosedException(inner) :
             new ChannelClosedException();
     }
 }

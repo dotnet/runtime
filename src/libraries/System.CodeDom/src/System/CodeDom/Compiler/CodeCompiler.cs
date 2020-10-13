@@ -10,7 +10,7 @@ namespace System.CodeDom.Compiler
     {
         CompilerResults ICodeCompiler.CompileAssemblyFromDom(CompilerParameters options, CodeCompileUnit e)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -27,7 +27,7 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromFile(CompilerParameters options, string fileName)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -44,7 +44,7 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromSource(CompilerParameters options, string source)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -61,7 +61,7 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromSourceBatch(CompilerParameters options, string[] sources)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -78,11 +78,11 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromFileBatch(CompilerParameters options, string[] fileNames)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (fileNames == null)
+            if (fileNames is null)
             {
                 throw new ArgumentNullException(nameof(fileNames));
             }
@@ -105,7 +105,7 @@ namespace System.CodeDom.Compiler
 
         CompilerResults ICodeCompiler.CompileAssemblyFromDomBatch(CompilerParameters options, CodeCompileUnit[] ea)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -126,7 +126,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromDom(CompilerParameters options, CodeCompileUnit e)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -136,11 +136,11 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromFile(CompilerParameters options, string fileName)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (fileName == null)
+            if (fileName is null)
             {
                 throw new ArgumentNullException(nameof(fileName));
             }
@@ -153,7 +153,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromSource(CompilerParameters options, string source)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -163,11 +163,11 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromDomBatch(CompilerParameters options, CodeCompileUnit[] ea)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (ea == null)
+            if (ea is null)
             {
                 throw new ArgumentNullException(nameof(ea));
             }
@@ -176,7 +176,7 @@ namespace System.CodeDom.Compiler
 
             for (int i = 0; i < ea.Length; i++)
             {
-                if (ea[i] == null)
+                if (ea[i] is null)
                 {
                     continue; // the other two batch methods just work if one element is null, so we'll match that.
                 }
@@ -210,11 +210,11 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromFileBatch(CompilerParameters options, string[] fileNames)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (fileNames == null)
+            if (fileNames is null)
             {
                 throw new ArgumentNullException(nameof(fileNames));
             }
@@ -242,11 +242,11 @@ namespace System.CodeDom.Compiler
 
         protected virtual CompilerResults FromSourceBatch(CompilerParameters options, string[] sources)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
-            if (sources == null)
+            if (sources is null)
             {
                 throw new ArgumentNullException(nameof(sources));
             }
@@ -270,7 +270,7 @@ namespace System.CodeDom.Compiler
 
         protected static string JoinStringArray(string[] sa, string separator)
         {
-            if (sa == null || sa.Length == 0)
+            if (sa is null || sa.Length == 0)
             {
                 return string.Empty;
             }

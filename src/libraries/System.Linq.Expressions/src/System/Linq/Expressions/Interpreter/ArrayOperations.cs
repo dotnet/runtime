@@ -152,7 +152,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             // If the value is null, unbox and cast to throw an InvalidOperationException
             // that .NET Framework throws.
-            return (val == null) ? (int)(int?)val! : Convert.ToInt32(val);
+            return (val is null) ? (int)(int?)val! : Convert.ToInt32(val);
         }
     }
 }

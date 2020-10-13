@@ -131,7 +131,7 @@ namespace System.Configuration
 
         private void ReleaseResources()
         {
-            if (Reader != null)
+            if (Reader is not null)
             {
                 // closing _reader will also close underlying _stream
                 Reader.Close();
@@ -142,7 +142,7 @@ namespace System.Configuration
 
             _stream = null;
 
-            if (_cachedStringWriter != null)
+            if (_cachedStringWriter is not null)
             {
                 _cachedStringWriter.Close();
                 _cachedStringWriter = null;
@@ -256,7 +256,7 @@ namespace System.Configuration
         /// </summary>
         internal bool VerifyRequiredAttribute(object requiredAttribute, string attrName, ExceptionAction action)
         {
-            if (requiredAttribute == null)
+            if (requiredAttribute is null)
             {
                 AddErrorRequiredAttribute(attrName, action);
                 return false;
@@ -792,7 +792,7 @@ namespace System.Configuration
             nodeType = Reader.NodeType;
 
             // Close the node we are copying.
-            if (close != null)
+            if (close is not null)
             {
                 // Find the position of the close string, for example:
                 //          <element      >  <subElement />
@@ -873,12 +873,12 @@ namespace System.Configuration
             // If the element is empty, determine if a new end element is needed.
             if (Reader.IsEmptyElement)
             {
-                if ((updatedStartElement == null) && needsChildren) updatedStartElement = RetrieveFullOpenElementTag();
+                if ((updatedStartElement is null) && needsChildren) updatedStartElement = RetrieveFullOpenElementTag();
 
-                needsEndElement = updatedStartElement != null;
+                needsEndElement = updatedStartElement is not null;
             }
 
-            if (updatedStartElement == null)
+            if (updatedStartElement is null)
             {
                 // If no changes to the start element are required, just copy it.
                 CopyXmlNode(utilWriter);
@@ -920,7 +920,7 @@ namespace System.Configuration
         // otherwise reuse the existing buffer.
         private void ResetCachedStringWriter()
         {
-            if (_cachedStringWriter == null)
+            if (_cachedStringWriter is null)
                 _cachedStringWriter = new StringWriter(new StringBuilder(64), CultureInfo.InvariantCulture);
             else _cachedStringWriter.GetStringBuilder().Length = 0;
         }

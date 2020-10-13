@@ -23,7 +23,7 @@ namespace System.Diagnostics
 
                 List<Exception>? result = KillTree();
 
-                if (result != null && result.Count != 0)
+                if (result is not null && result.Count != 0)
                     throw new AggregateException(SR.KillEntireProcessTree_TerminationIncomplete, result);
             }
         }
@@ -67,7 +67,7 @@ namespace System.Diagnostics
         /// </summary>
         private IReadOnlyList<Process> GetChildProcesses(Process[]? processes = null)
         {
-            bool internallyInitializedProcesses = processes == null;
+            bool internallyInitializedProcesses = processes is null;
             processes = processes ?? GetProcesses();
 
             List<Process> childProcesses = new List<Process>();

@@ -35,12 +35,12 @@ namespace Internal.Cryptography
         public bool IsKeyGeneratedNamedCurve()
         {
             ThrowIfDisposed();
-            return (_lazyKey != null && _lazyKey.IsECNamedCurve());
+            return (_lazyKey is not null && _lazyKey.IsECNamedCurve());
         }
 
         public void DisposeKey()
         {
-            if (_lazyKey != null)
+            if (_lazyKey is not null)
             {
                 _lazyKey.Dispose();
                 _lazyKey = null;
@@ -52,14 +52,14 @@ namespace Internal.Cryptography
             ThrowIfDisposed();
 
             // If our key size was changed, we need to generate a new key.
-            if (_lazyKey != null)
+            if (_lazyKey is not null)
             {
                 if (_lazyKey.KeySize != keySize)
                     DisposeKey();
             }
 
             // If we don't have a key yet, we need to generate one now.
-            if (_lazyKey == null)
+            if (_lazyKey is null)
             {
                 CngKeyCreationParameters creationParameters = new CngKeyCreationParameters()
                 {
@@ -79,7 +79,7 @@ namespace Internal.Cryptography
         {
             ThrowIfDisposed();
 
-            if (_lazyKey != null)
+            if (_lazyKey is not null)
             {
                 return _lazyKey;
             }
@@ -133,7 +133,7 @@ namespace Internal.Cryptography
 
         public void SetKey(CngKey key)
         {
-            Debug.Assert(key != null);
+            Debug.Assert(key is not null);
             ThrowIfDisposed();
 
             // If we already have a key, clear it out.

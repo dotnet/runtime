@@ -29,7 +29,7 @@ namespace System.Diagnostics
 
         public void StartLogicalOperation(object operationId)
         {
-            if (operationId == null)
+            if (operationId is null)
             {
                 throw new ArgumentNullException(nameof(operationId));
             }
@@ -43,7 +43,7 @@ namespace System.Diagnostics
             {
                 Value = value;
                 Prev = prev;
-                Count = prev != null ? prev.Count + 1 : 1;
+                Count = prev is not null ? prev.Count + 1 : 1;
             }
 
             internal int Count { get; }
@@ -57,7 +57,7 @@ namespace System.Diagnostics
 
             internal AsyncLocalStackWrapper(AsyncLocal<StackNode?> stack)
             {
-                Debug.Assert(stack != null);
+                Debug.Assert(stack is not null);
                 _stack = stack;
             }
 
@@ -73,11 +73,11 @@ namespace System.Diagnostics
 
             public override bool Contains(object? obj)
             {
-                for (StackNode? n = _stack.Value; n != null; n = n.Prev)
+                for (StackNode? n = _stack.Value; n is not null; n = n.Prev)
                 {
-                    if (obj == null)
+                    if (obj is null)
                     {
-                        if (n.Value == null) return true;
+                        if (n.Value is null) return true;
                     }
                     else if (obj.Equals(n.Value))
                     {
@@ -89,7 +89,7 @@ namespace System.Diagnostics
 
             public override void CopyTo(Array array, int index)
             {
-                for (StackNode? n = _stack.Value; n != null; n = n.Prev)
+                for (StackNode? n = _stack.Value; n is not null; n = n.Prev)
                 {
                     array.SetValue(n.Value, index++);
                 }
@@ -97,7 +97,7 @@ namespace System.Diagnostics
 
             private IEnumerator GetEnumerator(StackNode? n)
             {
-                while (n != null)
+                while (n is not null)
                 {
                     yield return n.Value;
                     n = n.Prev;
@@ -107,7 +107,7 @@ namespace System.Diagnostics
             public override object? Pop()
             {
                 StackNode? n = _stack.Value;
-                if (n == null)
+                if (n is null)
                 {
                     base.Pop(); // used to throw proper exception
                 }
@@ -123,7 +123,7 @@ namespace System.Diagnostics
             public override object?[] ToArray()
             {
                 StackNode? n = _stack.Value;
-                if (n == null)
+                if (n is null)
                 {
                     return Array.Empty<object>();
                 }
@@ -134,7 +134,7 @@ namespace System.Diagnostics
                     results.Add(n.Value);
                     n = n.Prev;
                 }
-                while (n != null);
+                while (n is not null);
                 return results.ToArray();
             }
         }

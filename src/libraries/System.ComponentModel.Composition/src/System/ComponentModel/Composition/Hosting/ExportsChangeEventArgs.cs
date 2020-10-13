@@ -63,7 +63,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Debug.Assert(_addedExports != null);
+                Debug.Assert(_addedExports is not null);
 
                 return _addedExports;
             }
@@ -80,7 +80,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Debug.Assert(_removedExports != null);
+                Debug.Assert(_removedExports is not null);
 
                 return _removedExports;
             }
@@ -97,7 +97,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                if (_changedContractNames == null)
+                if (_changedContractNames is null)
                 {
                     _changedContractNames = AddedExports
                         .Concat(RemovedExports)

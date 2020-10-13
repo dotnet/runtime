@@ -57,7 +57,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             SignatureAlgorithm.Encode(writer);
             writer.WriteOctetString(SignatureValue.Span);
 
-            if (UnsignedAttributes != null)
+            if (UnsignedAttributes is not null)
             {
 
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 1));

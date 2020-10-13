@@ -19,7 +19,7 @@ internal static partial class Interop
             // First try to get the path into a buffer on the stack
             byte* stackBuf = stackalloc byte[StackLimit];
             string? result = GetCwdHelper(stackBuf, StackLimit);
-            if (result != null)
+            if (result is not null)
             {
                 return result;
             }
@@ -35,7 +35,7 @@ internal static partial class Interop
                     fixed (byte* ptr = &buf[0])
                     {
                         result = GetCwdHelper(ptr, buf.Length);
-                        if (result != null)
+                        if (result is not null)
                         {
                             return result;
                         }
@@ -54,7 +54,7 @@ internal static partial class Interop
             byte* result = GetCwd(ptr, bufferSize);
 
             // If it returned non-null, the null-terminated path is in the buffer
-            if (result != null)
+            if (result is not null)
             {
                 return Marshal.PtrToStringAnsi((IntPtr)ptr);
             }

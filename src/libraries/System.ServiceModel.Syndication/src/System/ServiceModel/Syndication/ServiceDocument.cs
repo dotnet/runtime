@@ -18,7 +18,7 @@ namespace System.ServiceModel.Syndication
 
         public ServiceDocument(IEnumerable<Workspace> workspaces)
         {
-            if (workspaces != null)
+            if (workspaces is not null)
             {
                 _workspaces = new NullNotAllowedCollection<Workspace>();
                 foreach (Workspace workspace in workspaces)

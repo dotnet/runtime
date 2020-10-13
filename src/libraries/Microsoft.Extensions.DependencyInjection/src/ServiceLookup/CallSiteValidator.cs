@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public void ValidateCallSite(ServiceCallSite callSite)
         {
             Type scoped = VisitCallSite(callSite, default);
-            if (scoped != null)
+            if (scoped is not null)
             {
                 _scopedServices[callSite.ServiceType] = scoped;
             }
@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             foreach (ServiceCallSite parameterCallSite in constructorCallSite.ParameterCallSites)
             {
                 Type scoped =  VisitCallSite(parameterCallSite, state);
-                if (result == null)
+                if (result is null)
                 {
                     result = scoped;
                 }
@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             foreach (ServiceCallSite serviceCallSite in enumerableCallSite.ServiceCallSites)
             {
                 Type scoped = VisitCallSite(serviceCallSite, state);
-                if (result == null)
+                if (result is null)
                 {
                     result = scoped;
                 }
@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 return null;
             }
-            if (state.Singleton != null)
+            if (state.Singleton is not null)
             {
                 throw new InvalidOperationException(SR.Format(SR.ScopedInSingletonException,
                     scopedCallSite.ServiceType,

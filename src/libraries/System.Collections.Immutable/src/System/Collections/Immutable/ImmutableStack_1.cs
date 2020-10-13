@@ -49,7 +49,7 @@ namespace System.Collections.Immutable
         /// <param name="tail">The rest of the elements on the stack.</param>
         private ImmutableStack(T head, ImmutableStack<T> tail)
         {
-            Debug.Assert(tail != null);
+            Debug.Assert(tail is not null);
 
             _head = head;
             _tail = tail;
@@ -92,7 +92,7 @@ namespace System.Collections.Immutable
         /// </value>
         public bool IsEmpty
         {
-            get { return _tail == null; }
+            get { return _tail is null; }
         }
 
         /// <summary>
@@ -163,7 +163,7 @@ namespace System.Collections.Immutable
                 throw new InvalidOperationException(SR.InvalidEmptyOperation);
             }
 
-            Debug.Assert(_tail != null);
+            Debug.Assert(_tail is not null);
             return _tail;
         }
 
@@ -237,7 +237,7 @@ namespace System.Collections.Immutable
                 r = r.Push(f.Peek());
             }
 
-            Debug.Assert(r != null);
+            Debug.Assert(r is not null);
             Debug.Assert(r.IsEmpty == IsEmpty);
             return r;
         }

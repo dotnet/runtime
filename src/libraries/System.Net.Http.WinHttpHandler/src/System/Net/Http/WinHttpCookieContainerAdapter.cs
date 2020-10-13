@@ -20,7 +20,7 @@ namespace System.Net.Http
             CookieContainer cookieContainer = state.Handler.CookieContainer;
 
             Debug.Assert(state.Handler.CookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer);
-            Debug.Assert(cookieContainer != null);
+            Debug.Assert(cookieContainer is not null);
 
             // Get 'Set-Cookie' headers from response.
             char[] buffer = null;
@@ -82,7 +82,7 @@ namespace System.Net.Http
         {
             string cookieHeader = null;
 
-            Debug.Assert(cookies != null);
+            Debug.Assert(cookies is not null);
 
             string cookieValues = cookies.GetCookieHeader(uri);
             if (!string.IsNullOrEmpty(cookieValues))

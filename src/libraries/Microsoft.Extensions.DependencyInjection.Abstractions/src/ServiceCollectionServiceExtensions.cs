@@ -26,17 +26,17 @@ namespace Microsoft.Extensions.DependencyInjection
             Type serviceType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            if (implementationType == null)
+            if (implementationType is null)
             {
                 throw new ArgumentNullException(nameof(implementationType));
             }
@@ -59,17 +59,17 @@ namespace Microsoft.Extensions.DependencyInjection
             Type serviceType,
             Func<IServiceProvider, object> implementationFactory)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -111,12 +111,12 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serviceType)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddTransient<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
             where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -158,12 +158,12 @@ namespace Microsoft.Extensions.DependencyInjection
             Func<IServiceProvider, TService> implementationFactory)
             where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -189,12 +189,12 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -217,17 +217,17 @@ namespace Microsoft.Extensions.DependencyInjection
             Type serviceType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            if (implementationType == null)
+            if (implementationType is null)
             {
                 throw new ArgumentNullException(nameof(implementationType));
             }
@@ -250,17 +250,17 @@ namespace Microsoft.Extensions.DependencyInjection
             Type serviceType,
             Func<IServiceProvider, object> implementationFactory)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -282,7 +282,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -302,12 +302,12 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serviceType)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
@@ -326,7 +326,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddScoped<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
             where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -349,12 +349,12 @@ namespace Microsoft.Extensions.DependencyInjection
             Func<IServiceProvider, TService> implementationFactory)
             where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -380,12 +380,12 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -409,17 +409,17 @@ namespace Microsoft.Extensions.DependencyInjection
             Type serviceType,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            if (implementationType == null)
+            if (implementationType is null)
             {
                 throw new ArgumentNullException(nameof(implementationType));
             }
@@ -442,17 +442,17 @@ namespace Microsoft.Extensions.DependencyInjection
             Type serviceType,
             Func<IServiceProvider, object> implementationFactory)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -474,7 +474,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -494,12 +494,12 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type serviceType)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
@@ -518,7 +518,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection AddSingleton<[DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] TService>(this IServiceCollection services)
             where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -541,12 +541,12 @@ namespace Microsoft.Extensions.DependencyInjection
             Func<IServiceProvider, TService> implementationFactory)
             where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -572,12 +572,12 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -600,17 +600,17 @@ namespace Microsoft.Extensions.DependencyInjection
             Type serviceType,
             object implementationInstance)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            if (implementationInstance == null)
+            if (implementationInstance is null)
             {
                 throw new ArgumentNullException(nameof(implementationInstance));
             }
@@ -634,12 +634,12 @@ namespace Microsoft.Extensions.DependencyInjection
             TService implementationInstance)
             where TService : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (implementationInstance == null)
+            if (implementationInstance is null)
             {
                 throw new ArgumentNullException(nameof(implementationInstance));
             }

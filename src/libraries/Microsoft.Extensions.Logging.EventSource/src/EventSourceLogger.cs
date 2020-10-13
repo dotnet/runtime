@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Logging.EventSource
             if (_eventSource.IsEnabled(EventLevel.Critical, LoggingEventSource.Keywords.JsonMessage))
             {
                 string exceptionJson = "{}";
-                if (exception != null)
+                if (exception is not null)
                 {
                     ExceptionInfo exceptionInfo = GetExceptionInfo(exception);
                     KeyValuePair<string, string>[] exceptionInfoData = new[]
@@ -187,7 +187,7 @@ namespace Microsoft.Extensions.Logging.EventSource
         /// <remarks>ETW does not support a concept of a null value. So we use an un-initialized object if there is no exception in the event data.</remarks>
         private ExceptionInfo GetExceptionInfo(Exception exception)
         {
-            return exception != null ? new ExceptionInfo(exception) : ExceptionInfo.Empty;
+            return exception is not null ? new ExceptionInfo(exception) : ExceptionInfo.Empty;
         }
 
         /// <summary>

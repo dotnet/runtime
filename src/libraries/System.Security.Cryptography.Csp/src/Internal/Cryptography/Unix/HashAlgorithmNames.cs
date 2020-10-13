@@ -23,7 +23,7 @@ namespace Internal.Cryptography
         // For backwards compat with CapiHelper.ObjToHashAlgorithm, use "hashAlg" as name
         public static HashAlgorithmName ObjToHashAlgorithmName(object hashAlg)
         {
-            if (hashAlg == null)
+            if (hashAlg is null)
                 throw new ArgumentNullException(nameof(hashAlg));
 
             HashAlgorithmName? name = null;
@@ -53,7 +53,7 @@ namespace Internal.Cryptography
         {
             HashAlgorithmName? name = null;
 
-            if (nameOrOid == null)
+            if (nameOrOid is null)
             {
                 // Default Algorithm Id is CALG_SHA1
                 name = HashAlgorithmName.SHA1;
@@ -61,7 +61,7 @@ namespace Internal.Cryptography
             else
             {
                 string? oidValue = CryptoConfig.MapNameToOID(nameOrOid);
-                if (oidValue == null)
+                if (oidValue is null)
                     oidValue = nameOrOid; // we were probably passed an OID value directly
 
                 name = OidToHashAlgorithmName(oidValue);

@@ -144,7 +144,7 @@ namespace System.Management
         /// </value>
         public string Name
         {
-            get { return methodName != null ? methodName : ""; }
+            get { return methodName is not null ? methodName : ""; }
         }
 
         /// <summary>
@@ -244,7 +244,7 @@ namespace System.Management
         {
             get
             {
-                if (qualifiers == null)
+                if (qualifiers is null)
                     qualifiers = new QualifierDataCollection(parent, methodName, QualifierType.MethodQualifier);
                 return qualifiers;
             }

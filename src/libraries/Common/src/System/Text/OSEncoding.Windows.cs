@@ -20,7 +20,7 @@ namespace System.Text
 
         public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
-            if (chars == null)
+            if (chars is null)
                 throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
@@ -41,7 +41,7 @@ namespace System.Text
         public override unsafe int GetByteCount(string s)
         {
             // Validate input
-            if (s == null)
+            if (s is null)
                 throw new ArgumentNullException(nameof(s));
 
             if (s.Length == 0)
@@ -55,8 +55,8 @@ namespace System.Text
 
         public override unsafe int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
-            if (s == null || bytes == null)
-                throw new ArgumentNullException(s == null ? nameof(s) : nameof(bytes), SR.ArgumentNull_Array);
+            if (s is null || bytes is null)
+                throw new ArgumentNullException(s is null ? nameof(s) : nameof(bytes), SR.ArgumentNull_Array);
 
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -84,8 +84,8 @@ namespace System.Text
 
         public override unsafe int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes), SR.ArgumentNull_Array);
+            if (chars is null || bytes is null)
+                throw new ArgumentNullException(chars is null ? nameof(chars) : nameof(bytes), SR.ArgumentNull_Array);
 
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -113,7 +113,7 @@ namespace System.Text
 
         public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
@@ -133,8 +133,8 @@ namespace System.Text
 
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
+            if (bytes is null || chars is null)
+                throw new ArgumentNullException(bytes is null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
 
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -187,7 +187,7 @@ namespace System.Text
         {
             get
             {
-                if (_encodingName == null)
+                if (_encodingName is null)
                 {
                     _encodingName = "Codepage - " + _codePage.ToString();
                 }

@@ -77,7 +77,7 @@ namespace System.Management
             if ((status & 0x80000000) == 0) //success
             {
                 qualifierValue = null; //Make sure it's null so that we don't leak !
-                if (qualifierSet != null)
+                if (qualifierSet is not null)
                     status = qualifierSet.Get_(qualifierName, 0, ref qualifierValue, ref qualifierFlavor);
             }
 
@@ -148,7 +148,7 @@ namespace System.Management
         /// </value>
         public string Name
         {
-            get { return qualifierName != null ? qualifierName : ""; }
+            get { return qualifierName is not null ? qualifierName : ""; }
         }
 
         /// <summary>

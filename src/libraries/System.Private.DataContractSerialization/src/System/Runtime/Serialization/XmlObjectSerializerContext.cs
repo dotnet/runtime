@@ -98,7 +98,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_knownTypeResolver == null)
+                if (_knownTypeResolver is null)
                 {
                     _knownTypeResolver = new KnownTypeDataContractResolver(this);
                 }
@@ -175,7 +175,7 @@ namespace System.Runtime.Serialization
         private DataContract? GetDataContractFromSerializerKnownTypes(XmlQualifiedName qname)
         {
             DataContractDictionary? serializerKnownDataContracts = this.SerializerKnownDataContracts;
-            if (serializerKnownDataContracts == null)
+            if (serializerKnownDataContracts is null)
                 return null;
             DataContract? outDataContract;
             return serializerKnownDataContracts.TryGetValue(qname, out outDataContract) ? outDataContract : null;
@@ -183,13 +183,13 @@ namespace System.Runtime.Serialization
 
         internal static DataContractDictionary? GetDataContractsForKnownTypes(IList<Type> knownTypeList)
         {
-            if (knownTypeList == null) return null;
+            if (knownTypeList is null) return null;
             DataContractDictionary dataContracts = new DataContractDictionary();
             Dictionary<Type, Type> typesChecked = new Dictionary<Type, Type>();
             for (int i = 0; i < knownTypeList.Count; i++)
             {
                 Type knownType = knownTypeList[i];
-                if (knownType == null)
+                if (knownType is null)
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.NullKnownType, "knownTypes")));
 
                 DataContract.CheckAndAdd(knownType, typesChecked, ref dataContracts);
@@ -200,7 +200,7 @@ namespace System.Runtime.Serialization
         internal bool IsKnownType(DataContract dataContract, DataContractDictionary? knownDataContracts, Type? declaredType)
         {
             bool knownTypesAddedInCurrentScope = false;
-            if (knownDataContracts != null)
+            if (knownDataContracts is not null)
             {
                 scopedKnownTypes.Push(knownDataContracts);
                 knownTypesAddedInCurrentScope = true;
@@ -218,22 +218,22 @@ namespace System.Runtime.Serialization
         internal bool IsKnownType(DataContract dataContract, Type? declaredType)
         {
             DataContract? knownContract = ResolveDataContractFromKnownTypes(dataContract.StableName.Name, dataContract.StableName.Namespace, null /*memberTypeContract*/, declaredType);
-            return knownContract != null && knownContract.UnderlyingType == dataContract.UnderlyingType;
+            return knownContract is not null && knownContract.UnderlyingType == dataContract.UnderlyingType;
         }
 
         internal Type? ResolveNameFromKnownTypes(XmlQualifiedName typeName)
         {
             DataContract? dataContract = ResolveDataContractFromKnownTypes(typeName);
-            return dataContract == null ? null : dataContract.UnderlyingType;
+            return dataContract is null ? null : dataContract.UnderlyingType;
         }
 
         private DataContract? ResolveDataContractFromKnownTypes(XmlQualifiedName typeName)
         {
             DataContract? dataContract = PrimitiveDataContract.GetPrimitiveDataContract(typeName.Name, typeName.Namespace);
-            if (dataContract == null)
+            if (dataContract is null)
             {
                 dataContract = scopedKnownTypes.GetDataContract(typeName);
-                if (dataContract == null)
+                if (dataContract is null)
                 {
                     dataContract = GetDataContractFromSerializerKnownTypes(typeName);
                 }
@@ -245,31 +245,31 @@ namespace System.Runtime.Serialization
         {
             XmlQualifiedName qname = new XmlQualifiedName(typeName, typeNs);
             DataContract? dataContract;
-            if (_dataContractResolver == null)
+            if (_dataContractResolver is null)
             {
                 dataContract = ResolveDataContractFromKnownTypes(qname);
             }
             else
             {
                 Type? dataContractType = _dataContractResolver.ResolveName(typeName, typeNs, declaredType, KnownTypeResolver);
-                dataContract = dataContractType == null ? null : GetDataContract(dataContractType);
+                dataContract = dataContractType is null ? null : GetDataContract(dataContractType);
             }
-            if (dataContract == null)
+            if (dataContract is null)
             {
-                if (memberTypeContract != null
+                if (memberTypeContract is not null
                     && !memberTypeContract.UnderlyingType.IsInterface
                     && memberTypeContract.StableName == qname)
                 {
                     dataContract = memberTypeContract;
                 }
-                if (dataContract == null && rootTypeDataContract != null)
+                if (dataContract is null && rootTypeDataContract is not null)
                 {
                     if (rootTypeDataContract.StableName == qname)
                         dataContract = rootTypeDataContract;
                     else
                     {
                         CollectionDataContract? collectionContract = rootTypeDataContract as CollectionDataContract;
-                        while (collectionContract != null)
+                        while (collectionContract is not null)
                         {
                             DataContract itemContract = GetDataContract(GetSurrogatedType(collectionContract.ItemType));
                             if (itemContract.StableName == qname)
@@ -287,7 +287,7 @@ namespace System.Runtime.Serialization
 
         internal void PushKnownTypes(DataContract dc)
         {
-            if (dc != null && dc.KnownDataContracts != null)
+            if (dc is not null && dc.KnownDataContracts is not null)
             {
                 scopedKnownTypes.Push(dc.KnownDataContracts);
             }
@@ -295,7 +295,7 @@ namespace System.Runtime.Serialization
 
         internal void PopKnownTypes(DataContract dc)
         {
-            if (dc != null && dc.KnownDataContracts != null)
+            if (dc is not null && dc.KnownDataContracts is not null)
             {
                 scopedKnownTypes.Pop();
             }

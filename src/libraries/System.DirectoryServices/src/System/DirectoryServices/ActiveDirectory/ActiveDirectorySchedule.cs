@@ -57,7 +57,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectorySchedule(ActiveDirectorySchedule schedule) : this()
         {
-            if (schedule == null)
+            if (schedule is null)
                 throw new ArgumentNullException(nameof(schedule));
 
             bool[] tmpSchedule = schedule._scheduleArray;
@@ -84,7 +84,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 ValidateRawArray(value);
@@ -126,7 +126,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void SetSchedule(DayOfWeek[] days, HourOfDay fromHour, MinuteOfHour fromMinute, HourOfDay toHour, MinuteOfHour toMinute)
         {
-            if (days == null)
+            if (days is null)
                 throw new ArgumentNullException(nameof(days));
 
             for (int i = 0; i < days.Length; i++)

@@ -19,7 +19,7 @@ namespace Microsoft.VisualBasic
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
             string name = value as string;
-            if (name != null)
+            if (name is not null)
             {
                 string[] names = Names;
                 for (int i = 0; i < names.Length; i++)
@@ -36,7 +36,7 @@ namespace Microsoft.VisualBasic
 
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }

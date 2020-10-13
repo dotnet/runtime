@@ -74,12 +74,12 @@ namespace System.IO.Ports
         {
             add
             {
-                bool wasNull = _dataReceived == null;
+                bool wasNull = _dataReceived is null;
                 _dataReceived += value;
 
                 if (wasNull)
                 {
-                    if (_internalSerialStream != null)
+                    if (_internalSerialStream is not null)
                     {
                         _internalSerialStream.DataReceived += _dataReceivedHandler;
                     }
@@ -89,9 +89,9 @@ namespace System.IO.Ports
             {
                 _dataReceived -= value;
 
-                if (_dataReceived == null)
+                if (_dataReceived is null)
                 {
-                    if (_internalSerialStream != null)
+                    if (_internalSerialStream is not null)
                     {
                         _internalSerialStream.DataReceived -= _dataReceivedHandler;
                     }
@@ -267,7 +267,7 @@ namespace System.IO.Ports
             }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(Encoding));
 
                 // Limit the encodings we support to some known ones.  The code pages < 50000 represent all of the single-byte
@@ -307,7 +307,7 @@ namespace System.IO.Ports
         public bool IsOpen
         {
             // true only if the Open() method successfully called on this SerialPort object, without Close() being called more recently.
-            get { return (_internalSerialStream != null && _internalSerialStream.IsOpen); }
+            get { return (_internalSerialStream is not null && _internalSerialStream.IsOpen); }
         }
 
         public string NewLine
@@ -315,7 +315,7 @@ namespace System.IO.Ports
             get { return _newLine; }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(NewLine));
                 if (value.Length == 0)
                     throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(NewLine)), nameof(NewLine));
@@ -362,7 +362,7 @@ namespace System.IO.Ports
             }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(PortName));
                 if (value.Length == 0)
                     throw new ArgumentException(SR.PortNameEmpty_String, nameof(PortName));
@@ -603,7 +603,7 @@ namespace System.IO.Ports
             _internalSerialStream.ErrorReceived += new SerialErrorReceivedEventHandler(CatchErrorEvents);
             _internalSerialStream.PinChanged += new SerialPinChangedEventHandler(CatchPinChangedEvents);
 
-            if (_dataReceived != null)
+            if (_dataReceived is not null)
             {
                 _internalSerialStream.DataReceived += _dataReceivedHandler;
             }
@@ -622,7 +622,7 @@ namespace System.IO.Ports
         {
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
@@ -763,7 +763,7 @@ namespace System.IO.Ports
         {
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
@@ -778,7 +778,7 @@ namespace System.IO.Ports
         private int InternalRead(char[] buffer, int offset, int count, int timeout, bool countMultiByteCharsAsOne)
         {
             Debug.Assert(IsOpen, "port not open!");
-            Debug.Assert(buffer != null, "invalid buffer!");
+            Debug.Assert(buffer is not null, "invalid buffer!");
             Debug.Assert(offset >= 0, "invalid offset!");
             Debug.Assert(count >= 0, "invalid count!");
             Debug.Assert(buffer.Length - offset >= count, "invalid offset/count!");
@@ -857,7 +857,7 @@ namespace System.IO.Ports
             // funky fallbacks that would make it not single byte
             DecoderReplacementFallback fallback = _encoding.DecoderFallback as DecoderReplacementFallback;
             if (_encoding.IsSingleByte && _encoding.GetMaxCharCount(bytesToRead) == bytesToRead &&
-                fallback != null && fallback.MaxCharCount == 1)
+                fallback is not null && fallback.MaxCharCount == 1)
             {
                 // kill ASCII/ANSI encoding easily.
                 // read at least one and at most *count* characters
@@ -1006,7 +1006,7 @@ namespace System.IO.Ports
         {
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
             if (value.Length == 0)
                 throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(value)), nameof(value));
@@ -1024,7 +1024,7 @@ namespace System.IO.Ports
 
             _readLen += _internalSerialStream.Read(_inBuffer, _readLen, bytesInStream);
 
-            if (_singleCharBuffer == null)
+            if (_singleCharBuffer is null)
             {
                 // This is somewhat of an approximate guesstimate to get the max char[] size needed to encode a single character
                 _singleCharBuffer = new char[_maxByteCountForSingleChar];
@@ -1127,7 +1127,7 @@ namespace System.IO.Ports
         {
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
-            if (text == null)
+            if (text is null)
                 throw new ArgumentNullException(nameof(text));
             if (text.Length == 0) return;
             byte[] bytesToWrite;
@@ -1143,7 +1143,7 @@ namespace System.IO.Ports
         {
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
@@ -1163,7 +1163,7 @@ namespace System.IO.Ports
         {
             if (!IsOpen)
                 throw new InvalidOperationException(SR.Port_not_open);
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
@@ -1191,7 +1191,7 @@ namespace System.IO.Ports
             SerialErrorReceivedEventHandler eventHandler = ErrorReceived;
             SerialStream stream = _internalSerialStream;
 
-            if ((eventHandler != null) && (stream != null))
+            if ((eventHandler is not null) && (stream is not null))
             {
                 lock (stream)
                 {
@@ -1206,7 +1206,7 @@ namespace System.IO.Ports
             SerialPinChangedEventHandler eventHandler = PinChanged;
             SerialStream stream = _internalSerialStream;
 
-            if ((eventHandler != null) && (stream != null))
+            if ((eventHandler is not null) && (stream is not null))
             {
                 lock (stream)
                 {
@@ -1221,7 +1221,7 @@ namespace System.IO.Ports
             SerialDataReceivedEventHandler eventHandler = _dataReceived;
             SerialStream stream = _internalSerialStream;
 
-            if ((eventHandler != null) && (stream != null))
+            if ((eventHandler is not null) && (stream is not null))
             {
                 lock (stream)
                 {

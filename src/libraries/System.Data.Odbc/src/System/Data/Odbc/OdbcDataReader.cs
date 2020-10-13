@@ -58,7 +58,7 @@ namespace System.Data.Odbc
 
         internal OdbcDataReader(OdbcCommand command, CMDWrapper cmdWrapper, CommandBehavior commandbehavior)
         {
-            Debug.Assert(command != null, "Command null on OdbcDataReader ctor");
+            Debug.Assert(command is not null, "Command null on OdbcDataReader ctor");
             _command = command;
             _commandBehavior = commandbehavior;
             _cmdText = command.CommandText;    // get a copy in case the command text on the command is changed ...
@@ -128,7 +128,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                if (_command != null)
+                if (_command is not null)
                 {
                     return _command.Canceling;
                 }
@@ -140,7 +140,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                if (_command != null)
+                if (_command is not null)
                 {
                     return !_command.Canceling;
                 }
@@ -320,7 +320,7 @@ namespace System.Data.Odbc
             Exception? error = null;
 
             CMDWrapper? wrapper = _cmdWrapper;
-            if (null != wrapper && wrapper.StatementHandle != null)
+            if (null != wrapper && wrapper.StatementHandle is not null)
             {
                 // disposing
                 // true to release both managed and unmanaged resources; false to release only unmanaged resources.
@@ -403,7 +403,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._typename == null)
+                if (info._typename is null)
                 {
                     info._typename = GetColAttributeStr(i, ODBC32.SQL_DESC.TYPE_NAME, ODBC32.SQL_COLUMN.TYPE_NAME, ODBC32.HANDLER.THROW)!;
                 }
@@ -422,7 +422,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._type == null)
+                if (info._type is null)
                 {
                     info._type = GetSqlType(i)._type;
                 }
@@ -436,7 +436,7 @@ namespace System.Data.Odbc
             if (null != _dataCache)
             {
                 DbSchemaInfo info = _dataCache.GetSchema(i);
-                if (info._name == null)
+                if (info._name is null)
                 {
                     info._name = GetColAttributeStr(i, ODBC32.SQL_DESC.NAME, ODBC32.SQL_COLUMN.NAME, ODBC32.HANDLER.THROW);
                     if (null == info._name)
@@ -545,7 +545,7 @@ namespace System.Data.Odbc
                     //will work), and then query for a speicial SQLServer specific attribute.
                     if (_isRead)
                     {
-                        if (_dataCache!.AccessIndex(i) == null)
+                        if (_dataCache!.AccessIndex(i) is null)
                         {
                             int dummy;
                             bool isNotDbNull = QueryFieldInfo(i, ODBC32.SQL_C.BINARY, out dummy);
@@ -573,7 +573,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     _dataCache[i] = GetValue(i, GetSqlType(i));
                 }
@@ -651,7 +651,7 @@ namespace System.Data.Odbc
             // only in case of SequentialAccess with variable length data types (case 3), we will use GetData with zero length.
 
             object? cachedObj = _dataCache![i];
-            if (cachedObj != null)
+            if (cachedObj is not null)
             {
                 // case 4 - if cached object was created before, use it
                 return Convert.IsDBNull(cachedObj);
@@ -686,7 +686,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.UTINYINT))
                     {
@@ -706,7 +706,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.WCHAR))
                     {
@@ -726,7 +726,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.SSHORT))
                     {
@@ -746,7 +746,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.SLONG))
                     {
@@ -773,7 +773,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.WCHAR))
                     {
@@ -794,7 +794,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.BIT))
                     {
@@ -814,7 +814,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.REAL))
                     {
@@ -835,7 +835,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.TYPE_DATE))
                     {
@@ -856,7 +856,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.TYPE_TIMESTAMP))
                     {
@@ -884,7 +884,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.WCHAR))
                     {
@@ -914,7 +914,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.DOUBLE))
                     {
@@ -935,7 +935,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.GUID))
                     {
@@ -956,7 +956,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     // Obtain _ALL_ the characters
                     // Note: We can bind directly as WCHAR in ODBC and the DM will convert to and
@@ -1063,7 +1063,7 @@ namespace System.Data.Odbc
         {
             if (_isRead)
             {
-                if (_dataCache!.AccessIndex(i) == null)
+                if (_dataCache!.AccessIndex(i) is null)
                 {
                     if (GetData(i, ODBC32.SQL_C.TYPE_TIME))
                     {
@@ -1143,7 +1143,7 @@ namespace System.Data.Odbc
 
             bool isRandomAccess = !IsCommandBehavior(CommandBehavior.SequentialAccess);
 
-            if (isRandomAccess || (cachedObj != null))
+            if (isRandomAccess || (cachedObj is not null))
             {
                 // random access (cases 1 or 2) and sequential access with cache (case 3)
                 // preserve the original behavior as before the fix
@@ -1155,7 +1155,7 @@ namespace System.Data.Odbc
                     throw ADP.ArgumentOutOfRange(nameof(dataIndex));
                 }
 
-                if (cachedObj == null)
+                if (cachedObj is null)
                 {
                     // case 1, get the value and cache it
                     // internalGetString/internalGetBytes will get the entire value and cache it,
@@ -1164,12 +1164,12 @@ namespace System.Data.Odbc
                     if (isCharsBuffer)
                     {
                         cachedObj = (string)internalGetString(i);
-                        Debug.Assert((cachedObj != null), "internalGetString should always return non-null or raise exception");
+                        Debug.Assert((cachedObj is not null), "internalGetString should always return non-null or raise exception");
                     }
                     else
                     {
                         cachedObj = (byte[])internalGetBytes(i);
-                        Debug.Assert((cachedObj != null), "internalGetBytes should always return non-null or raise exception");
+                        Debug.Assert((cachedObj is not null), "internalGetBytes should always return non-null or raise exception");
                     }
 
                     // continue to case 2
@@ -1180,7 +1180,7 @@ namespace System.Data.Odbc
                 int cachedObjectLength = isCharsBuffer ? ((string)cachedObj).Length : ((byte[])cachedObj).Length;
 
                 // the user can ask for the length of the field by passing in a null pointer for the buffer
-                if (buffer == null)
+                if (buffer is null)
                 {
                     // return the length if that's all what user needs
                     return cachedObjectLength;
@@ -1224,7 +1224,7 @@ namespace System.Data.Odbc
                 // regressions
 
                 // the user can ask for the length of the field by passing in a null pointer for the buffer
-                if (buffer == null)
+                if (buffer is null)
                 {
                     // Get len. of remaining data from provider
                     ODBC32.SQL_C sqlctype;
@@ -1285,7 +1285,7 @@ namespace System.Data.Odbc
                 }
                 else
                 {
-                    // buffer != null, read the data
+                    // buffer is not null, read the data
 
                     // check if user tries to read data that was already received
                     // if yes, this violates 'sequential access'
@@ -1360,7 +1360,7 @@ namespace System.Data.Odbc
             Debug.Assert(bytesOrCharsLength >= 0, "Negative number of bytes or chars to read");
 
             // validated by the caller
-            Debug.Assert(buffer == null || bytesOrCharsLength <= (buffer.Length - bufferIndex), "Not enough space in user's buffer");
+            Debug.Assert(buffer is null || bytesOrCharsLength <= (buffer.Length - bufferIndex), "Not enough space in user's buffer");
 
             int totalBytesOrCharsRead = 0;
 
@@ -1448,7 +1448,7 @@ namespace System.Data.Odbc
                 if (isCharsBuffer)
                 {
                     int cchRead = cbRead / 2;
-                    if (buffer != null)
+                    if (buffer is not null)
                     {
                         internalNativeBuffer.ReadChars(0, (char[])buffer, bufferIndex, cchRead);
                         bufferIndex += cchRead;
@@ -1457,7 +1457,7 @@ namespace System.Data.Odbc
                 }
                 else
                 {
-                    if (buffer != null)
+                    if (buffer is not null)
                     {
                         internalNativeBuffer.ReadBytes(0, (byte[])buffer, bufferIndex, cbRead);
                         bufferIndex += cbRead;
@@ -1477,7 +1477,7 @@ namespace System.Data.Odbc
 
         private object internalGetBytes(int i)
         {
-            if (_dataCache!.AccessIndex(i) == null)
+            if (_dataCache!.AccessIndex(i) is null)
             {
                 // Obtain _ALL_ the bytes...
                 // The first time GetData returns the true length (so we have to min it).
@@ -1555,7 +1555,7 @@ namespace System.Data.Odbc
             ODBC32.RetCode retcode;
 
             // protect against dead connection, dead or canceling command.
-            if ((Connection == null) || _cmdWrapper!.Canceling)
+            if ((Connection is null) || _cmdWrapper!.Canceling)
             {
                 return -1;
             }
@@ -1612,7 +1612,7 @@ namespace System.Data.Odbc
             OdbcStatementHandle? stmt = StatementHandle;
 
             // protect against dead connection
-            if (Connection == null || _cmdWrapper!.Canceling || stmt == null)
+            if (Connection is null || _cmdWrapper!.Canceling || stmt is null)
             {
                 return "";
             }
@@ -1656,7 +1656,7 @@ namespace System.Data.Odbc
             int numericAttribute = 0;
 
             // protect against dead connection, dead or canceling command.
-            if ((Connection == null) || _cmdWrapper!.Canceling)
+            if ((Connection is null) || _cmdWrapper!.Canceling)
             {
                 return "";
             }
@@ -1748,7 +1748,7 @@ namespace System.Data.Odbc
             Debug.Assert(null != StatementHandle, "Statement handle is null in DateReader");
 
             // see notes on ODBC32.RetCode.NO_DATA case below.
-            Debug.Assert(_dataCache == null || !Convert.IsDBNull(_dataCache[i]), "Cannot call GetData without checking for cache first!");
+            Debug.Assert(_dataCache is null || !Convert.IsDBNull(_dataCache[i]), "Cannot call GetData without checking for cache first!");
 
             // Never call GetData with anything larger than _buffer.Length-2.
             // We keep reallocating native buffers and it kills performance!!!
@@ -2172,7 +2172,7 @@ namespace System.Data.Odbc
             // fill in as much as possible.
             if (IsCommandBehavior(CommandBehavior.KeyInfo))
             {
-                if ((qrytables != null) && (qrytables.Count > 0))
+                if ((qrytables is not null) && (qrytables.Count > 0))
                 {
                     List<string>.Enumerator tablesEnum = qrytables.GetEnumerator();
                     QualifiedTableName qualifiedTableName = new QualifiedTableName(Connection.QuoteChar(ADP.GetSchemaTable));
@@ -2264,7 +2264,7 @@ namespace System.Data.Odbc
             {
                 return schematable;
             }
-            if (_metadata == null)
+            if (_metadata is null)
             {
                 BuildMetaDataInfo();
             }
@@ -2328,7 +2328,7 @@ namespace System.Data.Odbc
 
         internal int RetrieveKeyInfo(bool needkeyinfo, QualifiedTableName qualifiedTableName, bool quoted)
         {
-            Debug.Assert(_metadata != null);
+            Debug.Assert(_metadata is not null);
 
             ODBC32.RetCode retcode;
             string columnname;
@@ -2336,7 +2336,7 @@ namespace System.Data.Odbc
             int keyColumns = 0;
             IntPtr cbActual = IntPtr.Zero;
 
-            if (IsClosed || (_cmdWrapper == null))
+            if (IsClosed || (_cmdWrapper is null))
             {
                 return 0;     // Can't do anything without a second handle
             }
@@ -2385,7 +2385,7 @@ namespace System.Data.Odbc
                                     _metadata[ordinal].isNullable = false;
                                     _metadata[ordinal].baseTableName = qualifiedTableName.Table;
 
-                                    if (_metadata[ordinal].baseColumnName == null)
+                                    if (_metadata[ordinal].baseColumnName is null)
                                     {
                                         _metadata[ordinal].baseColumnName = columnname;
                                     }
@@ -2460,7 +2460,7 @@ namespace System.Data.Odbc
                         if (ordinal != -1)
                         {
                             _metadata[ordinal].isRowVersion = true;
-                            if (_metadata[ordinal].baseColumnName == null)
+                            if (_metadata[ordinal].baseColumnName is null)
                             {
                                 _metadata[ordinal].baseColumnName = columnname;
                             }
@@ -2498,7 +2498,7 @@ namespace System.Data.Odbc
         // Uses SQLStatistics to retrieve key information for a table
         private int RetrieveKeyInfoFromStatistics(QualifiedTableName qualifiedTableName, bool quoted)
         {
-            Debug.Assert(_metadata != null);
+            Debug.Assert(_metadata is not null);
 
             ODBC32.RetCode retcode;
             string columnname = string.Empty;
@@ -2663,11 +2663,11 @@ namespace System.Data.Odbc
                         // test test test - we don't know if this is nulalble or not so why do we want to set it to a value?
                         _metadata[indexordinal].isNullable = false;
                         _metadata[indexordinal].isUnique = true;
-                        if (_metadata[indexordinal].baseTableName == null)
+                        if (_metadata[indexordinal].baseTableName is null)
                         {
                             _metadata[indexordinal].baseTableName = qualifiedTableName.Table;
                         }
-                        if (_metadata[indexordinal].baseColumnName == null)
+                        if (_metadata[indexordinal].baseColumnName is null)
                         {
                             _metadata[indexordinal].baseColumnName = columnname;
                         }
@@ -2709,12 +2709,12 @@ namespace System.Data.Odbc
             {
                 return -1;
             }
-            if (_metadata != null)
+            if (_metadata is not null)
             {
                 int count = FieldCount;
                 for (int i = 0; i < count; i++)
                 {
-                    if ((_metadata[i].baseColumnName != null) &&
+                    if ((_metadata[i].baseColumnName is not null) &&
                         (columnname == _metadata[i].baseColumnName))
                     {
                         if (!string.IsNullOrEmpty(tablename))
@@ -2743,7 +2743,7 @@ namespace System.Data.Odbc
 
         internal string? GetTableNameFromCommandText()
         {
-            if (_command == null)
+            if (_command is null)
             {
                 return null;
             }
@@ -2804,7 +2804,7 @@ namespace System.Data.Odbc
 
             for (int i = 0; i < count; i++)
             {
-                if (_metadata![i].baseTableName == null)
+                if (_metadata![i].baseTableName is null)
                 {
                     _metadata[i].baseTableName = qualifiedTableName.Table;
                     _metadata[i].baseSchemaName = qualifiedTableName.Schema;
@@ -2878,7 +2878,7 @@ namespace System.Data.Odbc
 
             private string? UnQuote(string? str)
             {
-                if ((str != null) && (str.Length > 0))
+                if ((str is not null) && (str.Length > 0))
                 {
                     char quoteChar = _quoteChar[0];
                     if (str[0] == quoteChar)
@@ -2923,7 +2923,7 @@ namespace System.Data.Odbc
                         // does the part begin with a quotePrefix?
                         if (useQuotes && (name.IndexOf(quotePrefix!, currentPos, quotePrefix!.Length, StringComparison.Ordinal) == currentPos))
                         {
-                            Debug.Assert(quotePrefix != null && quoteSuffix != null);
+                            Debug.Assert(quotePrefix is not null && quoteSuffix is not null);
 
                             currentPos += quotePrefix.Length; // move past the quotePrefix
 

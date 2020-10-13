@@ -37,7 +37,7 @@ namespace System.IO.Pipelines
             {
                 lock (_lockObject)
                 {
-                    if (_internalTokenSource == null)
+                    if (_internalTokenSource is null)
                     {
                         _internalTokenSource = new CancellationTokenSource();
                     }
@@ -50,7 +50,7 @@ namespace System.IO.Pipelines
         {
             InnerStream = writingStream ?? throw new ArgumentNullException(nameof(writingStream));
 
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -118,7 +118,7 @@ namespace System.IO.Pipelines
 
         private void AllocateMemory(int sizeHint)
         {
-            if (_head == null)
+            if (_head is null)
             {
                 // We need to allocate memory to write since nobody has written before
                 BufferSegment newSegment = AllocateSegment(sizeHint);
@@ -129,7 +129,7 @@ namespace System.IO.Pipelines
             }
             else
             {
-                Debug.Assert(_tail != null);
+                Debug.Assert(_tail is not null);
                 int bytesLeftInBuffer = _tailMemory.Length;
 
                 if (bytesLeftInBuffer == 0 || bytesLeftInBuffer < sizeHint)
@@ -215,7 +215,7 @@ namespace System.IO.Pipelines
 
             _isCompleted = true;
 
-            FlushInternal(writeToStream: exception == null);
+            FlushInternal(writeToStream: exception is null);
 
             _internalTokenSource?.Dispose();
 
@@ -234,7 +234,7 @@ namespace System.IO.Pipelines
 
             _isCompleted = true;
 
-            await FlushAsyncInternal(writeToStream: exception == null).ConfigureAwait(false);
+            await FlushAsyncInternal(writeToStream: exception is null).ConfigureAwait(false);
 
             _internalTokenSource?.Dispose();
 
@@ -276,7 +276,7 @@ namespace System.IO.Pipelines
 
             if (_tailBytesBuffered > 0)
             {
-                Debug.Assert(_tail != null);
+                Debug.Assert(_tail is not null);
 
                 // Update any buffered data
                 _tail.End += _tailBytesBuffered;
@@ -289,7 +289,7 @@ namespace System.IO.Pipelines
                 try
                 {
                     BufferSegment? segment = _head;
-                    while (segment != null)
+                    while (segment is not null)
                     {
                         BufferSegment returnSegment = segment;
                         segment = segment.NextSegment;
@@ -344,7 +344,7 @@ namespace System.IO.Pipelines
             // and flush the result.
             if (_tailBytesBuffered > 0)
             {
-                Debug.Assert(_tail != null);
+                Debug.Assert(_tail is not null);
 
                 // Update any buffered data
                 _tail.End += _tailBytesBuffered;
@@ -352,7 +352,7 @@ namespace System.IO.Pipelines
             }
 
             BufferSegment? segment = _head;
-            while (segment != null)
+            while (segment is not null)
             {
                 BufferSegment returnSegment = segment;
                 segment = segment.NextSegment;

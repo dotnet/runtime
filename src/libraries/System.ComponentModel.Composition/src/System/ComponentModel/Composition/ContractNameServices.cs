@@ -43,7 +43,7 @@ namespace System.ComponentModel.Composition
 
         internal static string GetTypeIdentity(Type type, bool formatGenericName)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -146,7 +146,7 @@ namespace System.ComponentModel.Composition
             //
             // Writes non-generic type
             //
-            if (type.DeclaringType != null)
+            if (type.DeclaringType is not null)
             {
                 WriteType(typeName, type.DeclaringType, formatGenericName);
                 typeName.Append(NestedClassSeparator);
@@ -226,7 +226,7 @@ namespace System.ComponentModel.Composition
             // genericTypeArguments contains type arguments obtained from the most nested type
             // isDefinition parameter indicates if we are dealing with generic type definition
             //
-            if (type.DeclaringType != null)
+            if (type.DeclaringType is not null)
             {
                 if (type.DeclaringType.IsGenericType)
                 {
@@ -338,7 +338,7 @@ namespace System.ComponentModel.Composition
 
         private static int GetGenericArity(Type type)
         {
-            if (type.DeclaringType == null)
+            if (type.DeclaringType is null)
             {
                 return type.GetGenericArguments().Length;
             }

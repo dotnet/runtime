@@ -34,7 +34,7 @@ namespace System.Net
                     Interop.Crypt32.CERT_CONTEXT* next =
                         Interop.Crypt32.CertEnumCertificatesInStore(context.hCertStore, last);
 
-                    if (next == null)
+                    if (next is null)
                     {
                         break;
                     }

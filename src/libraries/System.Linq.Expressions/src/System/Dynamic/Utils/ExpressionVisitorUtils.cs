@@ -15,7 +15,7 @@ namespace System.Dynamic.Utils
                 Expression curNode = block.GetExpression(i);
                 Expression node = visitor.Visit(curNode);
 
-                if (newNodes != null)
+                if (newNodes is not null)
                 {
                     newNodes[i] = node;
                 }
@@ -40,7 +40,7 @@ namespace System.Dynamic.Utils
                 ParameterExpression curNode = nodes.GetParameter(i);
                 ParameterExpression node = visitor.VisitAndConvert(curNode, callerName);
 
-                if (newNodes != null)
+                if (newNodes is not null)
                 {
                     newNodes[i] = node;
                 }
@@ -65,7 +65,7 @@ namespace System.Dynamic.Utils
                 Expression curNode = nodes.GetArgument(i);
                 Expression node = visitor.Visit(curNode);
 
-                if (newNodes != null)
+                if (newNodes is not null)
                 {
                     newNodes[i] = node;
                 }

@@ -18,7 +18,7 @@ namespace System.Globalization
 
         internal TextElementEnumerator(string str, int startIndex)
         {
-            Debug.Assert(str != null, "TextElementEnumerator(): str != null");
+            Debug.Assert(str is not null, "TextElementEnumerator(): str is not null");
             Debug.Assert(startIndex >= 0 && startIndex <= str.Length, "TextElementEnumerator(): startIndex >= 0 && startIndex <= str.Length");
 
             _str = str;

@@ -52,17 +52,17 @@ namespace System.Net.Security
         {
             ThrowIfExceptional();
 
-            if (_context != null && _context.IsValidContext)
+            if (_context is not null && _context.IsValidContext)
             {
                 throw new InvalidOperationException(SR.net_auth_reauth);
             }
 
-            if (_context != null && IsServer)
+            if (_context is not null && IsServer)
             {
                 throw new InvalidOperationException(SR.net_auth_client_server);
             }
 
-            if (sslClientAuthenticationOptions.TargetHost == null)
+            if (sslClientAuthenticationOptions.TargetHost is null)
             {
                 throw new ArgumentNullException(nameof(sslClientAuthenticationOptions.TargetHost));
             }
@@ -83,12 +83,12 @@ namespace System.Net.Security
         {
             ThrowIfExceptional();
 
-            if (_context != null && _context.IsValidContext)
+            if (_context is not null && _context.IsValidContext)
             {
                 throw new InvalidOperationException(SR.net_auth_reauth);
             }
 
-            if (_context != null && !IsServer)
+            if (_context is not null && !IsServer)
             {
                 throw new InvalidOperationException(SR.net_auth_client_server);
             }
@@ -106,7 +106,7 @@ namespace System.Net.Security
             }
         }
 
-        private bool RemoteCertRequired => _context == null || _context.RemoteCertRequired;
+        private bool RemoteCertRequired => _context is null || _context.RemoteCertRequired;
 
         private object? SyncLock => _context;
 
@@ -114,9 +114,9 @@ namespace System.Net.Security
 
         private void SetException(Exception e)
         {
-            Debug.Assert(e != null, $"Expected non-null Exception to be passed to {nameof(SetException)}");
+            Debug.Assert(e is not null, $"Expected non-null Exception to be passed to {nameof(SetException)}");
 
-            if (_exception == null)
+            if (_exception is null)
             {
                 _exception = ExceptionDispatchInfo.Capture(e);
             }
@@ -139,7 +139,7 @@ namespace System.Net.Security
             if (Interlocked.CompareExchange(ref _nestedRead, 1, 0) == 0)
             {
                 byte[]? buffer = _internalBuffer;
-                if (buffer != null)
+                if (buffer is not null)
                 {
                     _internalBuffer = null;
                     _internalBufferCount = 0;
@@ -148,7 +148,7 @@ namespace System.Net.Security
                 }
             }
 
-            if (_internalBuffer == null)
+            if (_internalBuffer is null)
             {
                 // Suppress finalizer if the read buffer was returned.
                 GC.SuppressFinalize(this);
@@ -170,7 +170,7 @@ namespace System.Net.Security
 
             lock (_handshakeLock)
             {
-                if (_handshakeWaiter != null)
+                if (_handshakeWaiter is not null)
                 {
                     outSize = 0;
                     // avoid waiting under lock.
@@ -310,7 +310,7 @@ namespace System.Net.Security
             ProtocolToken message;
             bool handshakeCompleted = false;
 
-            if (reAuthenticationData == null)
+            if (reAuthenticationData is null)
             {
                 // prevent nesting only when authentication functions are called explicitly. e.g. handle renegotiation transparently.
                 if (Interlocked.Exchange(ref _nestedAuth, 1) == 1)
@@ -369,7 +369,7 @@ namespace System.Net.Security
                         size = payload.Length;
                     }
 
-                    if (payload != null && size > 0)
+                    if (payload is not null && size > 0)
                     {
                         // If there is message send it out even if call failed. It may contain TLS Alert.
                         await adapter.WriteAsync(payload!, 0, size).ConfigureAwait(false);
@@ -410,7 +410,7 @@ namespace System.Net.Security
                 ProtocolToken? alertToken = null;
                 if (!CompleteHandshake(ref alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus))
                 {
-                    if (_sslAuthenticationOptions!.CertValidationDelegate != null)
+                    if (_sslAuthenticationOptions!.CertValidationDelegate is not null)
                     {
                         // there may be some chain errors but the decision was made by custom callback. Details should be tracing if enabled.
                         SendAuthResetSignal(alertToken, ExceptionDispatchInfo.Capture(new AuthenticationException(SR.net_ssl_io_cert_custom_validation, null)));
@@ -430,7 +430,7 @@ namespace System.Net.Security
             finally
             {
                 _handshakeBuffer.Dispose();
-                if (reAuthenticationData == null)
+                if (reAuthenticationData is null)
                 {
                     _nestedAuth = 0;
                 }
@@ -499,8 +499,8 @@ namespace System.Net.Security
             else if (_lastFrame.Header.Type == TlsContentType.Handshake)
             {
                 if (_handshakeBuffer.ActiveReadOnlySpan[TlsFrameHelper.HeaderSize] == (byte)TlsHandshakeType.ClientHello &&
-                    (_sslAuthenticationOptions!.ServerCertSelectionDelegate != null ||
-                    _sslAuthenticationOptions!.ServerOptionDelegate != null))
+                    (_sslAuthenticationOptions!.ServerCertSelectionDelegate is not null ||
+                    _sslAuthenticationOptions!.ServerOptionDelegate is not null))
                 {
                     TlsFrameHelper.ProcessingOptions options = NetEventSource.Log.IsEnabled() ?
                                                                 TlsFrameHelper.ProcessingOptions.All :
@@ -515,12 +515,12 @@ namespace System.Net.Security
                     if (_lastFrame.HandshakeType == TlsHandshakeType.ClientHello)
                     {
                         // SNI if it exist. Even if we could not parse the hello, we can fall-back to default certificate.
-                        if (_lastFrame.TargetName != null)
+                        if (_lastFrame.TargetName is not null)
                         {
                             _sslAuthenticationOptions!.TargetHost = _lastFrame.TargetName;
                         }
 
-                        if (_sslAuthenticationOptions.ServerOptionDelegate != null)
+                        if (_sslAuthenticationOptions.ServerOptionDelegate is not null)
                         {
                             SslServerAuthenticationOptions userOptions =
                                 await _sslAuthenticationOptions.ServerOptionDelegate(this, new SslClientHelloInfo(_sslAuthenticationOptions.TargetHost, _lastFrame.SupportedVersions),
@@ -584,7 +584,7 @@ namespace System.Net.Security
         {
             SetException(exception.SourceException);
 
-            if (message == null || message.Size == 0)
+            if (message is null || message.Size == 0)
             {
                 //
                 // We don't have an alert to send so cannot retry and fail prematurely.
@@ -649,7 +649,7 @@ namespace System.Net.Security
                 }
 
                 TaskCompletionSource<bool>? waiter = _handshakeWaiter;
-                if (waiter != null)
+                if (waiter is not null)
                 {
                     Task waiterTask = writeAdapter.WaitAsync(waiter);
                     // We finished synchronously waiting for renegotiation. We can try again immediately.
@@ -710,7 +710,7 @@ namespace System.Net.Security
                 }
                 finally
                 {
-                    if (bufferToReturn != null)
+                    if (bufferToReturn is not null)
                     {
                         ArrayPool<byte>.Shared.Return(bufferToReturn);
                     }
@@ -735,7 +735,7 @@ namespace System.Net.Security
         //
         private void ValidateParameters(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -765,7 +765,7 @@ namespace System.Net.Security
         // actually contains no decrypted or encrypted bytes
         private void ReturnReadBufferIfEmpty()
         {
-            if (_internalBuffer != null && _decryptedBytesCount == 0 && _internalBufferCount == 0)
+            if (_internalBuffer is not null && _decryptedBytesCount == 0 && _internalBufferCount == 0)
             {
                 ArrayPool<byte>.Shared.Return(_internalBuffer);
                 _internalBuffer = null;
@@ -885,7 +885,7 @@ namespace System.Net.Security
                         if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
                         {
                             // We determine above that we will not process it.
-                            if (_handshakeWaiter == null)
+                            if (_handshakeWaiter is null)
                             {
                                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Fail(this, "Renegotiation was requested but it is disallowed");
                                 throw new IOException(SR.net_ssl_io_renego);
@@ -1061,7 +1061,7 @@ namespace System.Net.Security
         {
             Debug.Assert(_decryptedBytesCount == 0);
 
-            if (_internalBuffer == null)
+            if (_internalBuffer is null)
             {
                 _internalBuffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
             }
@@ -1077,11 +1077,11 @@ namespace System.Net.Security
 
         private static byte[] EnsureBufferSize(byte[] buffer, int copyCount, int size)
         {
-            if (buffer == null || buffer.Length < size)
+            if (buffer is null || buffer.Length < size)
             {
                 byte[]? saved = buffer;
                 buffer = new byte[size];
-                if (saved != null && copyCount != 0)
+                if (saved is not null && copyCount != 0)
                 {
                     Buffer.BlockCopy(saved, 0, buffer, 0, copyCount);
                 }

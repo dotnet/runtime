@@ -19,7 +19,7 @@ namespace System.Diagnostics
 
         public static DebugProvider SetProvider(DebugProvider provider)
         {
-            if (provider == null)
+            if (provider is null)
                 throw new ArgumentNullException(nameof(provider));
 
             return Interlocked.Exchange(ref s_provider, provider);
@@ -146,7 +146,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("DEBUG")]
         public static void WriteLine(string? message, string? category)
         {
-            if (category == null)
+            if (category is null)
             {
                 WriteLine(message);
             }
@@ -163,7 +163,7 @@ namespace System.Diagnostics
         [System.Diagnostics.Conditional("DEBUG")]
         public static void Write(string? message, string? category)
         {
-            if (category == null)
+            if (category is null)
             {
                 Write(message);
             }

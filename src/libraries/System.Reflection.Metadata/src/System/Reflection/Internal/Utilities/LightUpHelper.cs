@@ -24,7 +24,7 @@ namespace System.Reflection.Internal
                     // profile. It can still be thrown even when throwOnError is false.
                 }
 
-                if (type != null)
+                if (type is not null)
                 {
                     return type;
                 }

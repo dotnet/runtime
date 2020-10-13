@@ -97,7 +97,7 @@ namespace System.Text.RegularExpressions
         public Match NextMatch()
         {
             Regex? r = _regex;
-            return r != null ?
+            return r is not null ?
                 r.Run(false, Length, Text, _textbeg, _textend - _textbeg, _textpos)! :
                 this;
         }
@@ -335,7 +335,7 @@ namespace System.Text.RegularExpressions
 
 #if DEBUG
         [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal bool IsDebug => _regex != null && _regex.IsDebug;
+        internal bool IsDebug => _regex is not null && _regex.IsDebug;
 
         internal virtual void Dump()
         {
@@ -379,7 +379,7 @@ namespace System.Text.RegularExpressions
         [ExcludeFromCodeCoverage(Justification = "Debug only")]
         internal override void Dump()
         {
-            if (_caps != null)
+            if (_caps is not null)
             {
                 foreach (object? entry in _caps)
                 {

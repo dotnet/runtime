@@ -620,7 +620,7 @@ namespace System.Data.Odbc
 
         internal void PrepareForBind(OdbcCommand command, short ordinal, ref int parameterBufferSize)
         {
-            Debug.Assert(command.Connection != null);
+            Debug.Assert(command.Connection is not null);
 
             // make a snapshot of the current properties. Properties may change while we work on them
             //
@@ -790,7 +790,7 @@ namespace System.Data.Odbc
 
         internal void Bind(OdbcStatementHandle hstmt, OdbcCommand command, short ordinal, CNativeBuffer parameterBuffer, bool allowReentrance)
         {
-            Debug.Assert(command.Connection != null);
+            Debug.Assert(command.Connection is not null);
 
             ODBC32.RetCode retcode;
             ODBC32.SQL_C sql_c_type = _prepared_Sql_C_Type;

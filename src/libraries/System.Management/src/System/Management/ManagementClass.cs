@@ -383,7 +383,7 @@ namespace System.Management
             {
                 Initialize(true);
 
-                if (methods == null)
+                if (methods is null)
                     methods = new MethodDataCollection(this);
 
                 return methods;
@@ -476,7 +476,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
             }
 
@@ -607,7 +607,7 @@ namespace System.Management
                 ClassName, o.Flags, o.GetContext(), sink.Stub);
 
 
-            if (securityHandler != null)
+            if (securityHandler is not null)
                 securityHandler.Reset();
 
             if (status < 0)
@@ -694,7 +694,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
             }
 
@@ -761,7 +761,7 @@ namespace System.Management
                 ClassName, o.Flags, o.GetContext(), sink.Stub);
 
 
-            if (securityHandler != null)
+            if (securityHandler is not null)
                 securityHandler.Reset();
 
             if (status < 0)
@@ -1052,7 +1052,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
             }
 
@@ -1156,7 +1156,7 @@ namespace System.Management
                     q.QueryLanguage, q.QueryString, o.Flags, o.GetContext(), sink.Stub);
 
 
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
 
                 if (status < 0)
@@ -1251,7 +1251,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
             }
 
@@ -1344,7 +1344,7 @@ namespace System.Management
                     q.QueryLanguage, q.QueryString, o.Flags, o.GetContext(), sink.Stub);
 
 
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
 
                 if (status < 0)

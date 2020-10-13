@@ -7,7 +7,7 @@ namespace System.Reflection
     {
         internal bool HasSameMetadataDefinitionAsCore<TOther>(MemberInfo other) where TOther : MemberInfo
         {
-            if (other == null)
+            if (other is null)
                 throw new ArgumentNullException(nameof(other));
 
             // Ensure that "other" is a runtime-implemented MemberInfo. Do this check before calling any methods on it!

@@ -27,7 +27,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private string? ParseLang(string? value)
         {
-            if (value == null)
+            if (value is null)
             { // Avt is not constant, or attribute wasn't defined
                 return null;
             }
@@ -36,7 +36,7 @@ namespace System.Xml.Xsl.XsltOld
             // change exception types for some stylesheets.
             CultureInfo cultInfo = new CultureInfo(value);
             if (!XmlComplianceUtil.IsValidLanguageID(value.ToCharArray(), 0, value.Length)
-                && (value.Length == 0 || cultInfo == null)
+                && (value.Length == 0 || cultInfo is null)
             )
             {
                 if (_forwardCompatibility)
@@ -50,7 +50,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private XmlDataType ParseDataType(string? value, InputScopeManager manager)
         {
-            if (value == null)
+            if (value is null)
             { // Avt is not constant, or attribute wasn't defined
                 return XmlDataType.Text;
             }
@@ -74,7 +74,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private XmlSortOrder ParseOrder(string? value)
         {
-            if (value == null)
+            if (value is null)
             { // Avt is not constant, or attribute wasn't defined
                 return XmlSortOrder.Ascending;
             }
@@ -95,7 +95,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private XmlCaseOrder ParseCaseOrder(string? value)
         {
-            if (value == null)
+            if (value is null)
             { // Avt is not constant, or attribute wasn't defined
                 return XmlCaseOrder.None;
             }
@@ -131,7 +131,7 @@ namespace System.Xml.Xsl.XsltOld
             _order = ParseOrder(PrecalculateAvt(ref _orderAvt));
             _caseOrder = ParseCaseOrder(PrecalculateAvt(ref _caseOrderAvt));
 
-            if (_langAvt == null && _dataTypeAvt == null && _orderAvt == null && _caseOrderAvt == null)
+            if (_langAvt is null && _dataTypeAvt is null && _orderAvt is null && _caseOrderAvt is null)
             {
                 _sort = new Sort(_selectKey, _lang, _dataType, _order, _caseOrder);
             }
@@ -171,17 +171,17 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
             Debug.Assert(frame.State == Initialized);
 
-            processor.AddSort(_sort != null ?
+            processor.AddSort(_sort is not null ?
                 _sort :
                 new Sort(
                     _selectKey,
-                    _langAvt == null ? _lang : ParseLang(_langAvt.Evaluate(processor, frame)),
-                    _dataTypeAvt == null ? _dataType : ParseDataType(_dataTypeAvt.Evaluate(processor, frame), _manager!),
-                    _orderAvt == null ? _order : ParseOrder(_orderAvt.Evaluate(processor, frame)),
-                    _caseOrderAvt == null ? _caseOrder : ParseCaseOrder(_caseOrderAvt.Evaluate(processor, frame))
+                    _langAvt is null ? _lang : ParseLang(_langAvt.Evaluate(processor, frame)),
+                    _dataTypeAvt is null ? _dataType : ParseDataType(_dataTypeAvt.Evaluate(processor, frame), _manager!),
+                    _orderAvt is null ? _order : ParseOrder(_orderAvt.Evaluate(processor, frame)),
+                    _caseOrderAvt is null ? _caseOrder : ParseCaseOrder(_caseOrderAvt.Evaluate(processor, frame))
                 )
             );
             frame.Finished();

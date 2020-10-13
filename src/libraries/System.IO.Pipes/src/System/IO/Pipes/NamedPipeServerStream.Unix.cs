@@ -25,7 +25,7 @@ namespace System.IO.Pipes
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
                 HandleInheritability inheritability)
         {
-            Debug.Assert(pipeName != null && pipeName.Length != 0, "fullPipeName is null or empty");
+            Debug.Assert(pipeName is not null && pipeName.Length != 0, "fullPipeName is null or empty");
             Debug.Assert(direction >= PipeDirection.In && direction <= PipeDirection.InOut, "invalid pipe direction");
             Debug.Assert(inBufferSize >= 0, "inBufferSize is negative");
             Debug.Assert(outBufferSize >= 0, "outBufferSize is negative");
@@ -135,13 +135,13 @@ namespace System.IO.Pipes
             CheckWriteOperations();
 
             SafeHandle? handle = InternalHandle?.NamedPipeSocketHandle;
-            if (handle == null)
+            if (handle is null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }
 
             string name = Interop.Sys.GetPeerUserName(handle);
-            if (name != null)
+            if (name is not null)
             {
                 return name;
             }
@@ -174,7 +174,7 @@ namespace System.IO.Pipes
         {
             CheckWriteOperations();
             SafeHandle? handle = InternalHandle?.NamedPipeSocketHandle;
-            if (handle == null)
+            if (handle is null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }

@@ -40,7 +40,7 @@ namespace System.Reflection.Metadata
 
         internal BlobReader(MemoryBlock block)
         {
-            Debug.Assert(block.Length >= 0 && (block.Pointer != null || block.Length == 0));
+            Debug.Assert(block.Length >= 0 && (block.Pointer is not null || block.Length == 0));
             _block = block;
             _currentPointer = block.Pointer;
             _endPointer = block.Pointer + block.Length;
@@ -48,7 +48,7 @@ namespace System.Reflection.Metadata
 
         internal string GetDebuggerDisplay()
         {
-            if (_block.Pointer == null)
+            if (_block.Pointer is null)
             {
                 return "<null>";
             }

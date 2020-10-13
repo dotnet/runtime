@@ -18,7 +18,7 @@ namespace System.ComponentModel
 
         protected void RaiseExceptionIfNecessary()
         {
-            if (Error != null)
+            if (Error is not null)
             {
                 throw new TargetInvocationException(SR.Async_ExceptionOccurred, Error);
             }

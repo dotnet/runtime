@@ -18,8 +18,8 @@ namespace System.Xml
 
         internal XmlAttribute(XmlName name, XmlDocument doc) : base(doc)
         {
-            Debug.Assert(name != null);
-            Debug.Assert(doc != null);
+            Debug.Assert(name is not null);
+            Debug.Assert(doc is not null);
             this.parentNode = null;
             if (!doc.IsLoading)
             {
@@ -51,7 +51,7 @@ namespace System.Xml
         public override XmlNode CloneNode(bool deep)
         {
             // CloneNode for attributes is deep irrespective of parameter 'deep' value
-            Debug.Assert(OwnerDocument != null);
+            Debug.Assert(OwnerDocument is not null);
             XmlDocument doc = OwnerDocument;
             XmlAttribute attr = doc.CreateAttribute(Prefix, LocalName, NamespaceURI);
             attr.CopyChildren(doc, this, true);
@@ -140,10 +140,10 @@ namespace System.Xml
         internal bool PrepareOwnerElementInElementIdAttrMap()
         {
             XmlDocument ownerDocument = OwnerDocument;
-            if (ownerDocument.DtdSchemaInfo != null)
+            if (ownerDocument.DtdSchemaInfo is not null)
             { // DTD exists
                 XmlElement? ownerElement = OwnerElement;
-                if (ownerElement != null)
+                if (ownerElement is not null)
                 {
                     return ownerElement.Attributes.PrepareParentInElementIdAttrMap(Prefix, LocalName);
                 }
@@ -155,7 +155,7 @@ namespace System.Xml
         internal void ResetOwnerElementInElementIdAttrMap(string oldInnerText)
         {
             XmlElement? ownerElement = OwnerElement;
-            if (ownerElement != null)
+            if (ownerElement is not null)
             {
                 ownerElement.Attributes.ResetParentInElementIdAttrMap(oldInnerText, InnerText);
             }
@@ -171,13 +171,13 @@ namespace System.Xml
         {
             XmlNodeChangedEventArgs? args = doc.GetInsertEventArgsForLoad(newChild, this);
 
-            if (args != null)
+            if (args is not null)
                 doc.BeforeEvent(args);
 
             XmlLinkedNode newNode = (XmlLinkedNode)newChild;
 
-            if (_lastChild == null)
-            { // if LastNode == null
+            if (_lastChild is null)
+            { // if LastNode is null
                 newNode.next = newNode;
                 _lastChild = newNode;
                 newNode.SetParentForLoad(this);
@@ -199,7 +199,7 @@ namespace System.Xml
                 }
             }
 
-            if (args != null)
+            if (args is not null)
                 doc.AfterEvent(args);
 
             return newNode;
@@ -355,7 +355,7 @@ namespace System.Xml
         // Saves all the children of the node to the specified XmlWriter.
         public override void WriteContentTo(XmlWriter w)
         {
-            for (XmlNode? node = FirstChild; node != null; node = node.NextSibling)
+            for (XmlNode? node = FirstChild; node is not null; node = node.NextSibling)
             {
                 node.WriteTo(w);
             }
@@ -365,7 +365,7 @@ namespace System.Xml
         {
             get
             {
-                if (OwnerElement != null)
+                if (OwnerElement is not null)
                     return OwnerElement.BaseURI;
                 return string.Empty;
             }
@@ -380,7 +380,7 @@ namespace System.Xml
         {
             get
             {
-                if (OwnerElement != null)
+                if (OwnerElement is not null)
                     return OwnerElement.XmlSpace;
                 return XmlSpace.None;
             }
@@ -390,7 +390,7 @@ namespace System.Xml
         {
             get
             {
-                if (OwnerElement != null)
+                if (OwnerElement is not null)
                     return OwnerElement.XmlLang;
                 return string.Empty;
             }

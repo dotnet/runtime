@@ -40,7 +40,7 @@ namespace System.Xml
 
         public override void SetValue(string value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -179,7 +179,7 @@ namespace System.Xml
                     case XmlNodeType.SignificantWhitespace:
                         return ValueText;
                     default:
-                        Debug.Assert(_source.Value != null);
+                        Debug.Assert(_source.Value is not null);
                         // TODO-NULLABLE: Consider switching this.Value to nullable even if that implies switching it in the base type.
                         // Also consider the following:
                         //   * this.SetValue() does not accept null.
@@ -194,7 +194,7 @@ namespace System.Xml
             get
             {
                 XmlElement? element = _document.DocumentElement;
-                if (element != null)
+                if (element is not null)
                 {
                     return element.InnerText;
                 }
@@ -210,7 +210,7 @@ namespace System.Xml
 
                 string? value = _source.Value;
                 XmlNode? nextSibling = NextSibling(_source);
-                if (nextSibling != null
+                if (nextSibling is not null
                     && nextSibling.IsText)
                 {
                     StringBuilder builder = new StringBuilder(value);
@@ -219,13 +219,13 @@ namespace System.Xml
                         builder.Append(nextSibling.Value);
                         nextSibling = NextSibling(nextSibling);
                     }
-                    while (nextSibling != null
+                    while (nextSibling is not null
                            && nextSibling.IsText);
                     value = builder.ToString();
                 }
                 // TODO-NULLABLE: Consider making this nullable given that _source.Value is nullable,
-                // OR we could change this getter to return string.Empty if _source.Value == null.
-                Debug.Assert(value != null);
+                // OR we could change this getter to return string.Empty if _source.Value is null.
+                Debug.Assert(value is not null);
                 return value;
             }
         }
@@ -371,7 +371,7 @@ namespace System.Xml
         public override string GetNamespace(string name)
         {
             XmlNode? node = _source;
-            while (node != null
+            while (node is not null
                    && node.NodeType != XmlNodeType.Element)
             {
                 if (node is XmlAttribute attribute)
@@ -385,10 +385,10 @@ namespace System.Xml
             }
 
             XmlElement? element = node as XmlElement;
-            if (element != null)
+            if (element is not null)
             {
                 string localName;
-                if (name != null
+                if (name is not null
                     && name.Length != 0)
                 {
                     localName = name;
@@ -402,13 +402,13 @@ namespace System.Xml
                 do
                 {
                     XmlAttribute? attribute = element.GetAttributeNode(localName, namespaceUri);
-                    if (attribute != null)
+                    if (attribute is not null)
                     {
                         return attribute.Value;
                     }
                     element = element.ParentNode as XmlElement;
                 }
-                while (element != null);
+                while (element is not null);
             }
 
             if (name == _document.strXml)
@@ -429,10 +429,10 @@ namespace System.Xml
                 return false;
             }
             XmlElement? element = _source as XmlElement;
-            if (element != null)
+            if (element is not null)
             {
                 string localName;
-                if (name != null
+                if (name is not null
                     && name.Length != 0)
                 {
                     localName = name;
@@ -446,7 +446,7 @@ namespace System.Xml
                 do
                 {
                     XmlAttribute? attribute = element.GetAttributeNode(localName, namespaceUri);
-                    if (attribute != null)
+                    if (attribute is not null)
                     {
                         _namespaceParent = (XmlElement)_source;
                         _source = attribute;
@@ -454,7 +454,7 @@ namespace System.Xml
                     }
                     element = element.ParentNode as XmlElement;
                 }
-                while (element != null);
+                while (element is not null);
 
                 if (name == _document.strXml)
                 {
@@ -532,7 +532,7 @@ namespace System.Xml
 
         private static bool MoveToFirstNamespaceLocal(XmlAttributeCollection attributes, ref int index)
         {
-            Debug.Assert(attributes != null);
+            Debug.Assert(attributes is not null);
             for (int i = attributes.Count - 1; i >= 0; i--)
             {
                 XmlAttribute attribute = attributes[i];
@@ -552,9 +552,9 @@ namespace System.Xml
                 return true;
             }
 
-            Debug.Assert(attributes != null && attributes.parent != null);
+            Debug.Assert(attributes is not null && attributes.parent is not null);
             XmlElement? element = attributes.parent.ParentNode as XmlElement;
-            while (element != null)
+            while (element is not null)
             {
                 if (element.HasAttributes)
                 {
@@ -583,7 +583,7 @@ namespace System.Xml
             {
                 return false;
             }
-            Debug.Assert(_namespaceParent != null);
+            Debug.Assert(_namespaceParent is not null);
             switch (scope)
             {
                 case XPathNamespaceScope.Local:
@@ -645,7 +645,7 @@ namespace System.Xml
 
         private static bool MoveToNextNamespaceLocal(XmlAttributeCollection attributes, ref int index)
         {
-            Debug.Assert(attributes != null);
+            Debug.Assert(attributes is not null);
             Debug.Assert(0 <= index && index < attributes.Count);
             for (int i = index - 1; i >= 0; i--)
             {
@@ -666,9 +666,9 @@ namespace System.Xml
                 return true;
             }
 
-            Debug.Assert(attributes != null && attributes.parent != null);
+            Debug.Assert(attributes is not null && attributes.parent is not null);
             XmlElement? element = attributes.parent.ParentNode as XmlElement;
-            while (element != null)
+            while (element is not null)
             {
                 if (element.HasAttributes)
                 {
@@ -687,11 +687,11 @@ namespace System.Xml
         {
             XmlElement? current = bottom;
             string namespaceUri = _document.strReservedXmlns;
-            while (current != null
+            while (current is not null
                    && current != top)
             {
                 XmlAttribute? attribute = current.GetAttributeNode(localName, namespaceUri);
-                if (attribute != null)
+                if (attribute is not null)
                 {
                     return true;
                 }
@@ -703,7 +703,7 @@ namespace System.Xml
         public override string? LookupNamespace(string prefix)
         {
             string? ns = base.LookupNamespace(prefix);
-            if (ns != null)
+            if (ns is not null)
             {
                 ns = this.NameTable.Add(ns);
             }
@@ -713,7 +713,7 @@ namespace System.Xml
         public override bool MoveToNext()
         {
             XmlNode? sibling = NextSibling(_source);
-            if (sibling == null)
+            if (sibling is null)
             {
                 return false;
             }
@@ -722,18 +722,18 @@ namespace System.Xml
                 if (_source.IsText)
                 {
                     sibling = NextSibling(TextEnd(sibling));
-                    if (sibling == null)
+                    if (sibling is null)
                     {
                         return false;
                     }
                 }
             }
             XmlNode? parent = ParentNode(sibling);
-            Debug.Assert(parent != null);
+            Debug.Assert(parent is not null);
             while (!IsValidChild(parent, sibling))
             {
                 sibling = NextSibling(sibling);
-                if (sibling == null)
+                if (sibling is null)
                 {
                     return false;
                 }
@@ -745,7 +745,7 @@ namespace System.Xml
         public override bool MoveToPrevious()
         {
             XmlNode? sibling = PreviousSibling(_source);
-            if (sibling == null)
+            if (sibling is null)
             {
                 return false;
             }
@@ -754,7 +754,7 @@ namespace System.Xml
                 if (_source.IsText)
                 {
                     sibling = PreviousSibling(TextStart(sibling));
-                    if (sibling == null)
+                    if (sibling is null)
                     {
                         return false;
                     }
@@ -765,11 +765,11 @@ namespace System.Xml
                 }
             }
             XmlNode? parent = ParentNode(sibling);
-            Debug.Assert(parent != null);
+            Debug.Assert(parent is not null);
             while (!IsValidChild(parent, sibling))
             {
                 sibling = PreviousSibling(sibling);
-                if (sibling == null)
+                if (sibling is null)
                 {
                     return false;
                 }
@@ -788,16 +788,16 @@ namespace System.Xml
                 return false;
             }
             XmlNode? parent = ParentNode(_source);
-            if (parent == null)
+            if (parent is null)
             {
                 return false;
             }
             XmlNode? sibling = FirstChild(parent);
-            Debug.Assert(sibling != null);
+            Debug.Assert(sibling is not null);
             while (!IsValidChild(parent, sibling))
             {
                 sibling = NextSibling(sibling);
-                if (sibling == null)
+                if (sibling is null)
                 {
                     return false;
                 }
@@ -813,7 +813,7 @@ namespace System.Xml
             {
                 case XmlNodeType.Element:
                     child = FirstChild(_source);
-                    if (child == null)
+                    if (child is null)
                     {
                         return false;
                     }
@@ -821,14 +821,14 @@ namespace System.Xml
                 case XmlNodeType.DocumentFragment:
                 case XmlNodeType.Document:
                     child = FirstChild(_source);
-                    if (child == null)
+                    if (child is null)
                     {
                         return false;
                     }
                     while (!IsValidChild(_source, child))
                     {
                         child = NextSibling(child);
-                        if (child == null)
+                        if (child is null)
                         {
                             return false;
                         }
@@ -844,7 +844,7 @@ namespace System.Xml
         public override bool MoveToParent()
         {
             XmlNode? parent = ParentNode(_source);
-            if (parent != null)
+            if (parent is not null)
             {
                 _source = parent;
                 return true;
@@ -852,7 +852,7 @@ namespace System.Xml
             if (_source is XmlAttribute attribute)
             {
                 parent = attribute.IsNamespace ? _namespaceParent : attribute.OwnerElement;
-                if (parent != null)
+                if (parent is not null)
                 {
                     _source = parent;
                     _namespaceParent = null;
@@ -867,14 +867,14 @@ namespace System.Xml
             while (true)
             {
                 XmlNode? parent = _source.ParentNode;
-                if (parent == null)
+                if (parent is null)
                 {
                     if (!(_source is XmlAttribute attribute))
                     {
                         break;
                     }
                     parent = attribute.IsNamespace ? _namespaceParent : attribute.OwnerElement;
-                    if (parent == null)
+                    if (parent is null)
                     {
                         break;
                     }
@@ -900,7 +900,7 @@ namespace System.Xml
         public override bool MoveToId(string id)
         {
             XmlElement? element = _document.GetElementById(id);
-            if (element != null)
+            if (element is not null)
             {
                 _source = element;
                 _namespaceParent = null;
@@ -917,7 +917,7 @@ namespace System.Xml
             }
 
             XmlNode? child = FirstChild(_source);
-            if (child != null)
+            if (child is not null)
             {
                 do
                 {
@@ -930,7 +930,7 @@ namespace System.Xml
                     }
                     child = NextSibling(child);
                 }
-                while (child != null);
+                while (child is not null);
             }
             return false;
         }
@@ -943,7 +943,7 @@ namespace System.Xml
             }
 
             XmlNode? child = FirstChild(_source);
-            if (child != null)
+            if (child is not null)
             {
                 int mask = GetContentKindMask(type);
                 if (mask == 0)
@@ -959,7 +959,7 @@ namespace System.Xml
                     }
                     child = NextSibling(child);
                 }
-                while (child != null);
+                while (child is not null);
             }
             return false;
         }
@@ -990,7 +990,7 @@ namespace System.Xml
             if (following.NodeType == XmlNodeType.Attribute)
             {
                 following = ((XmlAttribute)following).OwnerElement;
-                if (following == null)
+                if (following is null)
                 {
                     return false;
                 }
@@ -998,7 +998,7 @@ namespace System.Xml
             do
             {
                 XmlNode? firstChild = following.FirstChild;
-                if (firstChild != null)
+                if (firstChild is not null)
                 {
                     following = firstChild;
                 }
@@ -1007,7 +1007,7 @@ namespace System.Xml
                     while (true)
                     {
                         XmlNode? nextSibling = following.NextSibling;
-                        if (nextSibling != null)
+                        if (nextSibling is not null)
                         {
                             following = nextSibling;
                             break;
@@ -1015,7 +1015,7 @@ namespace System.Xml
                         else
                         {
                             XmlNode? parent = following.ParentNode;
-                            if (parent != null)
+                            if (parent is not null)
                             {
                                 following = parent;
                             }
@@ -1071,7 +1071,7 @@ namespace System.Xml
             {
                 case XmlNodeType.Attribute:
                     following = ((XmlAttribute)following).OwnerElement;
-                    if (following == null)
+                    if (following is null)
                     {
                         return false;
                     }
@@ -1086,7 +1086,7 @@ namespace System.Xml
             do
             {
                 XmlNode? firstChild = following.FirstChild;
-                if (firstChild != null)
+                if (firstChild is not null)
                 {
                     following = firstChild;
                 }
@@ -1095,7 +1095,7 @@ namespace System.Xml
                     while (true)
                     {
                         XmlNode? nextSibling = following.NextSibling;
-                        if (nextSibling != null)
+                        if (nextSibling is not null)
                         {
                             following = nextSibling;
                             break;
@@ -1103,7 +1103,7 @@ namespace System.Xml
                         else
                         {
                             XmlNode? parent = following.ParentNode;
-                            if (parent != null)
+                            if (parent is not null)
                             {
                                 following = parent;
                             }
@@ -1128,7 +1128,7 @@ namespace System.Xml
         public override bool MoveToNext(string localName, string namespaceUri)
         {
             XmlNode? sibling = NextSibling(_source);
-            if (sibling == null)
+            if (sibling is null)
             {
                 return false;
             }
@@ -1143,14 +1143,14 @@ namespace System.Xml
                 }
                 sibling = NextSibling(sibling);
             }
-            while (sibling != null);
+            while (sibling is not null);
             return false;
         }
 
         public override bool MoveToNext(XPathNodeType type)
         {
             XmlNode? sibling = NextSibling(_source);
-            if (sibling == null)
+            if (sibling is null)
             {
                 return false;
             }
@@ -1158,7 +1158,7 @@ namespace System.Xml
                 && _source.IsText)
             {
                 sibling = NextSibling(TextEnd(sibling));
-                if (sibling == null)
+                if (sibling is null)
                 {
                     return false;
                 }
@@ -1178,7 +1178,7 @@ namespace System.Xml
                 }
                 sibling = NextSibling(sibling);
             }
-            while (sibling != null);
+            while (sibling is not null);
             return false;
         }
 
@@ -1191,7 +1191,7 @@ namespace System.Xml
                 {
                     case XmlNodeType.Element:
                         child = FirstChild(_source);
-                        if (child == null)
+                        if (child is null)
                         {
                             return false;
                         }
@@ -1199,14 +1199,14 @@ namespace System.Xml
                     case XmlNodeType.DocumentFragment:
                     case XmlNodeType.Document:
                         child = FirstChild(_source);
-                        if (child == null)
+                        if (child is null)
                         {
                             return false;
                         }
                         while (!IsValidChild(_source, child))
                         {
                             child = NextSibling(child);
-                            if (child == null)
+                            if (child is null)
                             {
                                 return false;
                             }
@@ -1260,23 +1260,23 @@ namespace System.Xml
             {
                 ownerDocument = _source.OwnerDocument;
 
-                if (schemas != null)
+                if (schemas is not null)
                 {
                     throw new ArgumentException(SR.Format(SR.XPathDocument_SchemaSetNotAllowed, null));
                 }
             }
-            if (schemas == null && ownerDocument != null)
+            if (schemas is null && ownerDocument is not null)
             {
                 schemas = ownerDocument.Schemas;
             }
 
-            if (schemas == null || schemas.Count == 0)
+            if (schemas is null || schemas.Count == 0)
             {
                 throw new InvalidOperationException(SR.XmlDocument_NoSchemaInfo);
             }
 
             // DocumentSchemaValidator assumes that ownedDocument can never be null.
-            Debug.Assert(ownerDocument != null);
+            Debug.Assert(ownerDocument is not null);
             DocumentSchemaValidator validator = new DocumentSchemaValidator(ownerDocument, schemas, validationEventHandler);
             validator.PsviAugmentation = false;
             return validator.Validate(_source);
@@ -1285,7 +1285,7 @@ namespace System.Xml
         private static XmlNode? OwnerNode(XmlNode node)
         {
             XmlNode? parent = node.ParentNode;
-            if (parent != null)
+            if (parent is not null)
             {
                 return parent;
             }
@@ -1300,7 +1300,7 @@ namespace System.Xml
         {
             int depth = 0;
             XmlNode? owner = OwnerNode(node);
-            while (owner != null)
+            while (owner is not null)
             {
                 depth++;
                 owner = OwnerNode(owner);
@@ -1312,8 +1312,8 @@ namespace System.Xml
         //the returned value is node2's position corresponding to node1
         private XmlNodeOrder Compare(XmlNode node1, XmlNode node2)
         {
-            Debug.Assert(node1 != null);
-            Debug.Assert(node2 != null);
+            Debug.Assert(node1 is not null);
+            Debug.Assert(node2 is not null);
             Debug.Assert(node1 != node2, "Should be handled by ComparePosition()");
             //Attribute nodes come before other children nodes except namespace nodes
             Debug.Assert(OwnerNode(node1) == OwnerNode(node2));
@@ -1322,7 +1322,7 @@ namespace System.Xml
                 if (node2.XPNodeType == XPathNodeType.Attribute)
                 {
                     XmlElement? element = ((XmlAttribute)node1).OwnerElement;
-                    Debug.Assert(element != null);
+                    Debug.Assert(element is not null);
                     if (element.HasAttributes)
                     {
                         XmlAttributeCollection attributes = element.Attributes;
@@ -1353,9 +1353,9 @@ namespace System.Xml
 
             //neither of the node is Namespace node or Attribute node
             XmlNode? nextNode = node1.NextSibling;
-            while (nextNode != null && nextNode != node2)
+            while (nextNode is not null && nextNode != node2)
                 nextNode = nextNode.NextSibling;
-            if (nextNode == null)
+            if (nextNode is null)
                 //didn't meet node2 in the path to the end, thus it has to be in the front of node1
                 return XmlNodeOrder.After;
             else
@@ -1379,8 +1379,8 @@ namespace System.Xml
                 return XmlNodeOrder.Same;
             }
 
-            if (_namespaceParent != null
-                || that._namespaceParent != null)
+            if (_namespaceParent is not null
+                || that._namespaceParent is not null)
             {
                 return base.ComparePosition(other);
             }
@@ -1392,7 +1392,7 @@ namespace System.Xml
             XmlNode? parent2 = OwnerNode(node2);
             if (parent1 == parent2)
             {
-                if (parent1 == null)
+                if (parent1 is null)
                 {
                     return XmlNodeOrder.Unknown;
                 }
@@ -1407,7 +1407,7 @@ namespace System.Xml
             int depth2 = GetDepth(node2);
             if (depth2 > depth1)
             {
-                while (node2 != null
+                while (node2 is not null
                        && depth2 > depth1)
                 {
                     node2 = OwnerNode(node2);
@@ -1417,12 +1417,12 @@ namespace System.Xml
                 {
                     return XmlNodeOrder.Before;
                 }
-                Debug.Assert(node2 != null);
+                Debug.Assert(node2 is not null);
                 parent2 = OwnerNode(node2);
             }
             else if (depth1 > depth2)
             {
-                while (node1 != null
+                while (node1 is not null
                        && depth1 > depth2)
                 {
                     node1 = OwnerNode(node1);
@@ -1432,12 +1432,12 @@ namespace System.Xml
                 {
                     return XmlNodeOrder.After;
                 }
-                Debug.Assert(node1 != null);
+                Debug.Assert(node1 is not null);
                 parent1 = OwnerNode(node1);
             }
 
-            while (parent1 != null
-                   && parent2 != null)
+            while (parent1 is not null
+                   && parent2 is not null)
             {
                 if (parent1 == parent2)
                 {
@@ -1458,13 +1458,13 @@ namespace System.Xml
         public override XPathNodeIterator SelectDescendants(string localName, string namespaceURI, bool matchSelf)
         {
             string? nsAtom = _document.NameTable.Get(namespaceURI);
-            if (nsAtom == null || _source.NodeType == XmlNodeType.Attribute)
+            if (nsAtom is null || _source.NodeType == XmlNodeType.Attribute)
                 return new DocumentXPathNodeIterator_Empty(this);
 
             Debug.Assert(this.NodeType != XPathNodeType.Attribute && this.NodeType != XPathNodeType.Namespace && this.NodeType != XPathNodeType.All);
 
             string? localNameAtom = _document.NameTable.Get(localName);
-            if (localNameAtom == null)
+            if (localNameAtom is null)
                 return new DocumentXPathNodeIterator_Empty(this);
 
             if (localNameAtom.Length == 0)
@@ -1604,7 +1604,7 @@ namespace System.Xml
         {
             if (!(lastSiblingToReplace is DocumentXPathNavigator that))
             {
-                if (lastSiblingToReplace == null)
+                if (lastSiblingToReplace is null)
                 {
                     throw new ArgumentNullException(nameof(lastSiblingToReplace));
                 }
@@ -1661,7 +1661,7 @@ namespace System.Xml
         {
             if (!(lastSiblingToDelete is DocumentXPathNavigator that))
             {
-                if (lastSiblingToDelete == null)
+                if (lastSiblingToDelete is null)
                 {
                     throw new ArgumentNullException(nameof(lastSiblingToDelete));
                 }
@@ -1689,7 +1689,7 @@ namespace System.Xml
                         }
                         XmlNode? parent = OwnerNode(attribute);
                         DeleteAttribute(attribute, _attributeIndex);
-                        if (parent != null)
+                        if (parent is not null)
                         {
                             ResetPosition(parent);
                         }
@@ -1705,7 +1705,7 @@ namespace System.Xml
                     case XmlNodeType.Comment:
                         parent = OwnerNode(node);
                         DeleteToFollowingSibling(node, end);
-                        if (parent != null)
+                        if (parent is not null)
                         {
                             ResetPosition(parent);
                         }
@@ -1726,7 +1726,7 @@ namespace System.Xml
                 }
                 XmlNode? parent = OwnerNode(node);
                 DeleteToFollowingSibling(node, end);
-                if (parent != null)
+                if (parent is not null)
                 {
                     ResetPosition(parent);
                 }
@@ -1748,7 +1748,7 @@ namespace System.Xml
                     }
                     XmlNode? parent = OwnerNode(attribute);
                     DeleteAttribute(attribute, _attributeIndex);
-                    if (parent != null)
+                    if (parent is not null)
                     {
                         ResetPosition(parent);
                     }
@@ -1767,7 +1767,7 @@ namespace System.Xml
                 case XmlNodeType.Comment:
                     parent = OwnerNode(node);
                     DeleteToFollowingSibling(node, end);
-                    if (parent != null)
+                    if (parent is not null)
                     {
                         ResetPosition(parent);
                     }
@@ -1797,7 +1797,7 @@ namespace System.Xml
         {
             XmlNode? parent = node.ParentNode;
 
-            if (parent == null)
+            if (parent is null)
             {
                 throw new InvalidOperationException(SR.Xpn_MissingParent);
             }
@@ -1808,7 +1808,7 @@ namespace System.Xml
             }
             while (node != end)
             {
-                Debug.Assert(node != null, "This method needs to be called with the beforehand check of NextSibling being not null from node to end");
+                Debug.Assert(node is not null, "This method needs to be called with the beforehand check of NextSibling being not null from node to end");
                 XmlNode temp = node;
                 node = node.NextSibling!;
                 parent.RemoveChild(temp);
@@ -1821,7 +1821,7 @@ namespace System.Xml
             XmlNamespaceManager namespaceManager = new XmlNamespaceManager(document.NameTable);
             List<XmlElement> elements = new List<XmlElement>();
 
-            while (node != null)
+            while (node is not null)
             {
                 if (node is XmlElement element
                     && element.HasAttributes)
@@ -1850,13 +1850,13 @@ namespace System.Xml
         [MemberNotNull(nameof(_source))]
         internal void ResetPosition(XmlNode node)
         {
-            Debug.Assert(node != null, "Undefined navigator position");
+            Debug.Assert(node is not null, "Undefined navigator position");
             Debug.Assert(node == _document || node.OwnerDocument == _document, "Navigator switched documents");
             _source = node;
             if (node is XmlAttribute attribute)
             {
                 XmlElement? element = attribute.OwnerElement;
-                if (element != null)
+                if (element is not null)
                 {
                     ResetAttributePosition(attribute, element.Attributes, out _attributeIndex);
                     if (attribute.IsNamespace)
@@ -1869,7 +1869,7 @@ namespace System.Xml
 
         private static bool ResetAttributePosition(XmlAttribute attribute, [NotNullWhen(true)] XmlAttributeCollection? attributes, out int index)
         {
-            if (attributes != null)
+            if (attributes is not null)
             {
                 for (int i = 0; i < attributes.Count; i++)
                 {
@@ -1887,7 +1887,7 @@ namespace System.Xml
         private static bool CheckAttributePosition(XmlAttribute attribute, [NotNullWhen(true)] out XmlAttributeCollection? attributes, int index)
         {
             XmlElement? element = attribute.OwnerElement;
-            if (element != null)
+            if (element is not null)
             {
                 attributes = element.Attributes;
                 if (index >= 0
@@ -1907,7 +1907,7 @@ namespace System.Xml
         private void CalibrateText()
         {
             XmlNode? text = PreviousText(_source);
-            while (text != null)
+            while (text is not null)
             {
                 ResetPosition(text);
                 text = PreviousText(text);
@@ -1927,7 +1927,7 @@ namespace System.Xml
 
         private XmlNode? ParentNodeTail(XmlNode? parent)
         {
-            while (parent != null
+            while (parent is not null
                    && parent.NodeType == XmlNodeType.EntityReference)
             {
                 parent = parent.ParentNode;
@@ -1948,7 +1948,7 @@ namespace System.Xml
 
         private XmlNode? FirstChildTail(XmlNode? child)
         {
-            while (child != null
+            while (child is not null
                    && child.NodeType == XmlNodeType.EntityReference)
             {
                 child = child.FirstChild;
@@ -1970,17 +1970,17 @@ namespace System.Xml
         private XmlNode? NextSiblingTail(XmlNode node, XmlNode? sibling)
         {
             XmlNode? current = node;
-            while (sibling == null)
+            while (sibling is null)
             {
                 current = current.ParentNode;
-                if (current == null
+                if (current is null
                     || current.NodeType != XmlNodeType.EntityReference)
                 {
                     return null;
                 }
                 sibling = current.NextSibling;
             }
-            while (sibling != null
+            while (sibling is not null
                    && sibling.NodeType == XmlNodeType.EntityReference)
             {
                 sibling = sibling.FirstChild;
@@ -2002,17 +2002,17 @@ namespace System.Xml
         private XmlNode? PreviousSiblingTail(XmlNode node, XmlNode? sibling)
         {
             XmlNode? current = node;
-            while (sibling == null)
+            while (sibling is null)
             {
                 current = current.ParentNode;
-                if (current == null
+                if (current is null
                     || current.NodeType != XmlNodeType.EntityReference)
                 {
                     return null;
                 }
                 sibling = current.PreviousSibling;
             }
-            while (sibling != null
+            while (sibling is not null
                    && sibling.NodeType == XmlNodeType.EntityReference)
             {
                 sibling = sibling.LastChild;
@@ -2033,7 +2033,7 @@ namespace System.Xml
 
         private XmlNode? PreviousTextTail(XmlNode node, XmlNode? text)
         {
-            if (text != null)
+            if (text is not null)
             {
                 return text;
             }
@@ -2043,17 +2043,17 @@ namespace System.Xml
             }
             XmlNode? sibling = node.PreviousSibling;
             XmlNode? current = node;
-            while (sibling == null)
+            while (sibling is null)
             {
                 current = current.ParentNode;
-                if (current == null
+                if (current is null
                     || current.NodeType != XmlNodeType.EntityReference)
                 {
                     return null;
                 }
                 sibling = current.PreviousSibling;
             }
-            while (sibling != null)
+            while (sibling is not null)
             {
                 switch (sibling.NodeType)
                 {
@@ -2078,7 +2078,7 @@ namespace System.Xml
             while (true)
             {
                 currentLeft = currentLeft.NextSibling;
-                if (currentLeft == null)
+                if (currentLeft is null)
                 {
                     break;
                 }
@@ -2095,14 +2095,14 @@ namespace System.Xml
             while (true)
             {
                 XmlNode? parent = bottom.ParentNode;
-                if (parent == null)
+                if (parent is null)
                 {
                     if (!(bottom is XmlAttribute attribute))
                     {
                         break;
                     }
                     parent = attribute.OwnerElement;
-                    if (parent == null)
+                    if (parent is null)
                     {
                         break;
                     }
@@ -2160,7 +2160,7 @@ namespace System.Xml
                 start = current;
                 current = PreviousSibling(current);
             }
-            while (current != null
+            while (current is not null
                    && current.IsText);
             return start;
         }
@@ -2175,7 +2175,7 @@ namespace System.Xml
                 end = current;
                 current = NextSibling(current);
             }
-            while (current != null
+            while (current is not null
                    && current.IsText);
             return end;
         }
@@ -2287,7 +2287,7 @@ namespace System.Xml
 
         protected override bool Match(XmlNode node)
         {
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
             return (node.NodeType == XmlNodeType.Element);
         }
     }
@@ -2343,7 +2343,7 @@ namespace System.Xml
 
         protected override bool Match(XmlNode node)
         {
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
             Debug.Assert(node.NodeType == XmlNodeType.Element);
             return Ref.Equal(node.NamespaceURI, _nsAtom);
         }
@@ -2408,7 +2408,7 @@ namespace System.Xml
 
         protected override bool Match(XmlNode node)
         {
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
             Debug.Assert(node.NodeType == XmlNodeType.Element);
             return Ref.Equal(node.LocalName, localNameAtom) && Ref.Equal(node.NamespaceURI, nsAtom);
         }

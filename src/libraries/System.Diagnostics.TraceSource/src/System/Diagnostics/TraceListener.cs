@@ -46,7 +46,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_attributes == null)
+                if (_attributes is null)
                     _attributes = new StringDictionary();
                 return _attributes;
             }
@@ -204,7 +204,7 @@ namespace System.Diagnostics
             failMessage.Append(SR.TraceListenerFail);
             failMessage.Append(' ');
             failMessage.Append(message);
-            if (detailMessage != null)
+            if (detailMessage is not null)
             {
                 failMessage.Append(' ');
                 failMessage.Append(detailMessage);
@@ -225,10 +225,10 @@ namespace System.Diagnostics
         /// </devdoc>
         public virtual void Write(object? o)
         {
-            if (Filter != null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, null, null, o))
+            if (Filter is not null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, null, null, o))
                 return;
 
-            if (o == null) return;
+            if (o is null) return;
             Write(o.ToString());
         }
 
@@ -239,13 +239,13 @@ namespace System.Diagnostics
         /// </devdoc>
         public virtual void Write(string? message, string? category)
         {
-            if (Filter != null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, message))
+            if (Filter is not null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, message))
                 return;
 
-            if (category == null)
+            if (category is null)
                 Write(message);
             else
-                Write(category + ": " + ((message == null) ? string.Empty : message));
+                Write(category + ": " + ((message is null) ? string.Empty : message));
         }
 
         /// <devdoc>
@@ -255,13 +255,13 @@ namespace System.Diagnostics
         /// </devdoc>
         public virtual void Write(object? o, string? category)
         {
-            if (Filter != null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, category, null, o))
+            if (Filter is not null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, category, null, o))
                 return;
 
-            if (category == null)
+            if (category is null)
                 Write(o);
             else
-                Write(o == null ? "" : o.ToString(), category);
+                Write(o is null ? "" : o.ToString(), category);
         }
 
         /// <devdoc>
@@ -300,10 +300,10 @@ namespace System.Diagnostics
         /// </devdoc>
         public virtual void WriteLine(object? o)
         {
-            if (Filter != null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, null, null, o))
+            if (Filter is not null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, null, null, o))
                 return;
 
-            WriteLine(o == null ? "" : o.ToString());
+            WriteLine(o is null ? "" : o.ToString());
         }
 
         /// <devdoc>
@@ -313,12 +313,12 @@ namespace System.Diagnostics
         /// </devdoc>
         public virtual void WriteLine(string? message, string? category)
         {
-            if (Filter != null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, message))
+            if (Filter is not null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, message))
                 return;
-            if (category == null)
+            if (category is null)
                 WriteLine(message);
             else
-                WriteLine(category + ": " + ((message == null) ? string.Empty : message));
+                WriteLine(category + ": " + ((message is null) ? string.Empty : message));
         }
 
         /// <devdoc>
@@ -330,10 +330,10 @@ namespace System.Diagnostics
         /// </devdoc>
         public virtual void WriteLine(object? o, string? category)
         {
-            if (Filter != null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, category, null, o))
+            if (Filter is not null && !Filter.ShouldTrace(null, "", TraceEventType.Verbose, 0, category, null, o))
                 return;
 
-            WriteLine(o == null ? "" : o.ToString(), category);
+            WriteLine(o is null ? "" : o.ToString(), category);
         }
 
 
@@ -341,12 +341,12 @@ namespace System.Diagnostics
 
         public virtual void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, object? data)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, data))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, data))
                 return;
 
             WriteHeader(source, eventType, id);
             string? datastring = string.Empty;
-            if (data != null)
+            if (data is not null)
                 datastring = data.ToString();
 
             WriteLine(datastring);
@@ -355,20 +355,20 @@ namespace System.Diagnostics
 
         public virtual void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, params object?[]? data)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
                 return;
 
             WriteHeader(source, eventType, id);
 
             StringBuilder sb = new StringBuilder();
-            if (data != null)
+            if (data is not null)
             {
                 for (int i = 0; i < data.Length; i++)
                 {
                     if (i != 0)
                         sb.Append(", ");
 
-                    if (data[i] != null)
+                    if (data[i] is not null)
                         sb.Append(data[i]!.ToString());
                 }
             }
@@ -385,7 +385,7 @@ namespace System.Diagnostics
         // All other TraceEvent methods come through this one.
         public virtual void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string? message)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, message))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, eventType, id, message))
                 return;
 
             WriteHeader(source, eventType, id);
@@ -396,11 +396,11 @@ namespace System.Diagnostics
 
         public virtual void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object?[]? args)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args))
                 return;
 
             WriteHeader(source, eventType, id);
-            if (args != null)
+            if (args is not null)
                 WriteLine(string.Format(CultureInfo.InvariantCulture, format, args));
             else
                 WriteLine(format);
@@ -415,7 +415,7 @@ namespace System.Diagnostics
 
         private void WriteFooter(TraceEventCache? eventCache)
         {
-            if (eventCache == null)
+            if (eventCache is null)
                 return;
 
             _indentLevel++;

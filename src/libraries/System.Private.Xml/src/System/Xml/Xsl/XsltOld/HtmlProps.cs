@@ -48,7 +48,7 @@ namespace System.Xml.Xsl.XsltOld
             HtmlElementProps? result = (HtmlElementProps?)s_table[name];
             return result;
             // We can do this but in case of Xml/Html mixed output this doesn't have big sence.
-            //            return result != null ?  result : s_otherElements;
+            //            return result is not null ?  result : s_otherElements;
         }
 
         private static Hashtable CreatePropsTable()
@@ -159,7 +159,7 @@ namespace System.Xml.Xsl.XsltOld
             HtmlAttributeProps? result = (HtmlAttributeProps?)s_table[name];
             return result;
             // We can do this but in case of Xml/Html mixed output this doesn't have big sence.
-            //          return result != null ?  result : s_otherElements;
+            //          return result is not null ?  result : s_otherElements;
         }
 
         private static Hashtable CreatePropsTable()

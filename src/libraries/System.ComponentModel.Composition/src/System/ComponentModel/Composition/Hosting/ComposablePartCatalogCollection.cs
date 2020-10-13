@@ -276,7 +276,7 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                     finally
                     {
-                        if (catalogs != null)
+                        if (catalogs is not null)
                         {
                             UnsubscribeFromCatalogNotifications(catalogs);
                             catalogs.ForEach(catalog => catalog.Dispose());
@@ -295,13 +295,13 @@ namespace System.ComponentModel.Composition.Hosting
             Lazy<IEnumerable<ComposablePartDefinition>>? addedDefinitions,
             Lazy<IEnumerable<ComposablePartDefinition>>? removedDefinitions)
         {
-            if (_onChanged == null || Changed == null)
+            if (_onChanged is null || Changed is null)
             {
                 return;
             }
 
-            var added = (addedDefinitions == null ? Enumerable.Empty<ComposablePartDefinition>() : addedDefinitions.Value);
-            var removed = (removedDefinitions == null ? Enumerable.Empty<ComposablePartDefinition>() : removedDefinitions.Value);
+            var added = (addedDefinitions is null ? Enumerable.Empty<ComposablePartDefinition>() : addedDefinitions.Value);
+            var removed = (removedDefinitions is null ? Enumerable.Empty<ComposablePartDefinition>() : removedDefinitions.Value);
 
             _onChanged.Invoke(new ComposablePartCatalogChangeEventArgs(added, removed, null));
         }
@@ -309,7 +309,7 @@ namespace System.ComponentModel.Composition.Hosting
         public void OnChanged(object sender, ComposablePartCatalogChangeEventArgs e)
         {
             var changedEvent = Changed;
-            if (changedEvent != null)
+            if (changedEvent is not null)
             {
                 changedEvent(sender, e);
             }
@@ -320,12 +320,12 @@ namespace System.ComponentModel.Composition.Hosting
            Lazy<IEnumerable<ComposablePartDefinition>>? removedDefinitions,
            AtomicComposition? atomicComposition)
         {
-            if (_onChanging == null || Changing == null)
+            if (_onChanging is null || Changing is null)
             {
                 return;
             }
-            var added = (addedDefinitions == null ? Enumerable.Empty<ComposablePartDefinition>() : addedDefinitions.Value);
-            var removed = (removedDefinitions == null ? Enumerable.Empty<ComposablePartDefinition>() : removedDefinitions.Value);
+            var added = (addedDefinitions is null ? Enumerable.Empty<ComposablePartDefinition>() : addedDefinitions.Value);
+            var removed = (removedDefinitions is null ? Enumerable.Empty<ComposablePartDefinition>() : removedDefinitions.Value);
 
             _onChanging.Invoke(new ComposablePartCatalogChangeEventArgs(added, removed, atomicComposition));
         }
@@ -333,7 +333,7 @@ namespace System.ComponentModel.Composition.Hosting
         public void OnChanging(object sender, ComposablePartCatalogChangeEventArgs e)
         {
             var changingEvent = Changing;
-            if (changingEvent != null)
+            if (changingEvent is not null)
             {
                 changingEvent(sender, e);
             }
@@ -341,7 +341,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void OnContainedCatalogChanged(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
-            if (_onChanged == null || Changed == null)
+            if (_onChanged is null || Changed is null)
             {
                 return;
             }
@@ -351,7 +351,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void OnContainedCatalogChanging(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
-            if (_onChanging == null || Changing == null)
+            if (_onChanging is null || Changing is null)
             {
                 return;
             }

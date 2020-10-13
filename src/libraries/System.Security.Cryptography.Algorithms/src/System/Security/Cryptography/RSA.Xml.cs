@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
         {
             byte[]? ret = XmlKeyHelper.ReadCryptoBinary(ref state, name, sizeHint);
 
-            if (ret == null)
+            if (ret is null)
             {
                 throw new CryptographicException(
                     SR.Format(SR.Cryptography_InvalidFromXmlString, nameof(RSA), name));

@@ -38,7 +38,7 @@ namespace System.Xml.Schema
 
         internal override XmlSchemaObject Clone()
         {
-            if (_memberTypes != null && _memberTypes.Length > 0)
+            if (_memberTypes is not null && _memberTypes.Length > 0)
             { //Only if the union has MemberTypes defined
                 XmlSchemaSimpleTypeUnion newUnion = (XmlSchemaSimpleTypeUnion)MemberwiseClone();
                 XmlQualifiedName[] newQNames = new XmlQualifiedName[_memberTypes.Length];

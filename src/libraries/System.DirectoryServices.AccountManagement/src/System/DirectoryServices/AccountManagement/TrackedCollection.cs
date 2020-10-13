@@ -19,7 +19,7 @@ namespace System.DirectoryServices.AccountManagement
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
 
             if (array.Rank != 1)

@@ -30,7 +30,7 @@ namespace System.ComponentModel
         /// </summary>
         protected virtual string GetCultureName(CultureInfo culture)
         {
-            if (culture == null)
+            if (culture is null)
             {
                 throw new ArgumentNullException(nameof(culture));
             }
@@ -73,7 +73,7 @@ namespace System.ComponentModel
                 }
 
                 string defaultCultureString = DefaultCultureString;
-                if (culture != null && culture.Equals(CultureInfo.InvariantCulture))
+                if (culture is not null && culture.Equals(CultureInfo.InvariantCulture))
                 {
                     defaultCultureString = DefaultInvariantCultureString;
                 }
@@ -86,11 +86,11 @@ namespace System.ComponentModel
                 }
 
                 // Now look in our set of installed cultures.
-                if (retVal == null)
+                if (retVal is null)
                 {
                     foreach (CultureInfo info in GetStandardValues(context))
                     {
-                        if (info != null && string.Equals(GetCultureName(info), text, StringComparison.Ordinal))
+                        if (info is not null && string.Equals(GetCultureName(info), text, StringComparison.Ordinal))
                         {
                             retVal = info;
                             break;
@@ -99,7 +99,7 @@ namespace System.ComponentModel
                 }
 
                 // Now try to create a new culture info from this value.
-                if (retVal == null)
+                if (retVal is null)
                 {
                     try
                     {
@@ -111,11 +111,11 @@ namespace System.ComponentModel
                 }
 
                 // Finally, try to find a partial match.
-                if (retVal == null)
+                if (retVal is null)
                 {
                     foreach (CultureInfo info in _values)
                     {
-                        if (info != null && GetCultureName(info).StartsWith(text, StringComparison.CurrentCulture))
+                        if (info is not null && GetCultureName(info).StartsWith(text, StringComparison.CurrentCulture))
                         {
                             retVal = info;
                             break;
@@ -124,7 +124,7 @@ namespace System.ComponentModel
                 }
 
                 // No good. We can't support it.
-                if (retVal == null)
+                if (retVal is null)
                 {
                     throw new ArgumentException(SR.Format(SR.CultureInfoConverterInvalidCulture, (string)value), nameof(value));
                 }
@@ -143,12 +143,12 @@ namespace System.ComponentModel
             if (destinationType == typeof(string))
             {
                 string defaultCultureString = DefaultCultureString;
-                if (culture != null && culture.Equals(CultureInfo.InvariantCulture))
+                if (culture is not null && culture.Equals(CultureInfo.InvariantCulture))
                 {
                     defaultCultureString = DefaultInvariantCultureString;
                 }
 
-                if (value == null || value == CultureInfo.InvariantCulture)
+                if (value is null || value == CultureInfo.InvariantCulture)
                 {
                     return defaultCultureString;
                 }
@@ -174,7 +174,7 @@ namespace System.ComponentModel
         /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
-            if (_values == null)
+            if (_values is null)
             {
                 CultureInfo[] installedCultures = CultureInfo.GetCultures(CultureTypes.SpecificCultures | CultureTypes.NeutralCultures);
                 int invariantIndex = Array.IndexOf(installedCultures, CultureInfo.InvariantCulture);
@@ -193,8 +193,8 @@ namespace System.ComponentModel
 
                 Array.Copy(installedCultures, array, installedCultures.Length);
                 Array.Sort(array, new CultureComparer(this));
-                Debug.Assert(array[0] == null);
-                if (array[0] == null)
+                Debug.Assert(array[0] is null);
+                if (array[0] is null)
                 {
                     //we replace null with the real default culture because there are code paths
                     // where the propgrid will send values from this returned array directly -- instead
@@ -230,16 +230,16 @@ namespace System.ComponentModel
 
             public CultureComparer(CultureInfoConverter cultureConverter)
             {
-                Debug.Assert(cultureConverter != null);
+                Debug.Assert(cultureConverter is not null);
                 _converter = cultureConverter;
             }
 
             public int Compare(object item1, object item2)
             {
-                if (item1 == null)
+                if (item1 is null)
                 {
                     // If both are null, then they are equal.
-                    if (item2 == null)
+                    if (item2 is null)
                     {
                         return 0;
                     }
@@ -248,7 +248,7 @@ namespace System.ComponentModel
                     return -1;
                 }
 
-                if (item2 == null)
+                if (item2 is null)
                 {
                     // item2 is null, so item 1 is greater.
                     return 1;

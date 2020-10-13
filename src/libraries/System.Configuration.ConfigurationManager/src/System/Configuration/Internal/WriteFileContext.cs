@@ -72,7 +72,7 @@ namespace System.Configuration.Internal
                 }
                 else
                 {
-                    if (_templateFilename != null)
+                    if (_templateFilename is not null)
                     {
                         // Copy Acl from template file
                         DuplicateTemplateAttributes(_templateFilename, TempNewFilename);

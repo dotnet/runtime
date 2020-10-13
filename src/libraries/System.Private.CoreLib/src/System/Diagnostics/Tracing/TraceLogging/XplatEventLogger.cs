@@ -74,7 +74,7 @@ namespace System.Diagnostics.Tracing
 
         private static string Serialize(ReadOnlyCollection<string>? payloadName, ReadOnlyCollection<object?>? payload, string? eventMessage)
         {
-            if (payloadName == null || payload == null)
+            if (payloadName is null || payload is null)
                 return string.Empty;
 
             if (payloadName.Count == 0 || payload.Count == 0)
@@ -131,7 +131,7 @@ namespace System.Diagnostics.Tracing
                     }
                     default:
                     {
-                        if (payload[i] != null)
+                        if (payload[i] is not null)
                         {
                             sb.Append(payload[i]!.ToString()); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                         }
@@ -145,8 +145,8 @@ namespace System.Diagnostics.Tracing
 
         private static void AppendByteArrayAsHexString(StringBuilder builder, byte[] byteArray)
         {
-            Debug.Assert(builder != null);
-            Debug.Assert(byteArray != null);
+            Debug.Assert(builder is not null);
+            Debug.Assert(byteArray is not null);
 
             ReadOnlySpan<char> hexFormat = "X2";
             Span<char> hex = stackalloc char[2];
@@ -185,7 +185,7 @@ namespace System.Diagnostics.Tracing
         private static void LogOnEventWritten(EventWrittenEventArgs eventData)
         {
             string payload = "";
-            if (eventData.Payload != null)
+            if (eventData.Payload is not null)
             {
                 try
                 {

@@ -133,7 +133,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public void SetPassword(string newPassword)
         {
-            if (newPassword == null)
+            if (newPassword is null)
                 throw new ArgumentNullException(nameof(newPassword));
 
             // If we're not persisted, we just save up the change until we're Saved
@@ -151,10 +151,10 @@ namespace System.DirectoryServices.AccountManagement
 
         public void ChangePassword(string oldPassword, string newPassword)
         {
-            if (oldPassword == null)
+            if (oldPassword is null)
                 throw new ArgumentNullException(nameof(oldPassword));
 
-            if (newPassword == null)
+            if (newPassword is null)
                 throw new ArgumentNullException(nameof(newPassword));
 
             // While you can reset the password on an unpersisted principal (and it will be used as the initial password
@@ -240,7 +240,7 @@ namespace System.DirectoryServices.AccountManagement
 
         internal void LoadValueIntoProperty(string propertyName, object value)
         {
-            if (value != null)
+            if (value is not null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PasswordInfo", "LoadValueIntoProperty: name=" + propertyName + " value=" + value.ToString());
             }
@@ -307,7 +307,7 @@ namespace System.DirectoryServices.AccountManagement
                     return _allowReversiblePasswordEncryptionChanged == LoadState.Changed;
 
                 case (PropertyNames.PwdInfoPassword):
-                    return (_storedNewPassword != null);
+                    return (_storedNewPassword is not null);
 
                 case (PropertyNames.PwdInfoExpireImmediately):
                     return (_expirePasswordImmediately != false);

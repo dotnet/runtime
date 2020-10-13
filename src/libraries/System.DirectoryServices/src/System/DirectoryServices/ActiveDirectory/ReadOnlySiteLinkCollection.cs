@@ -16,7 +16,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ActiveDirectorySiteLink link)
         {
-            if (link == null)
+            if (link is null)
                 throw new ArgumentNullException(nameof(link));
 
             string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
@@ -36,7 +36,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ActiveDirectorySiteLink link)
         {
-            if (link == null)
+            if (link is null)
                 throw new ArgumentNullException(nameof(link));
 
             string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);

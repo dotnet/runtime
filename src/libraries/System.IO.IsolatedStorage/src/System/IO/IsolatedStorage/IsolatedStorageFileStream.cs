@@ -82,7 +82,7 @@ namespace System.IO.IsolatedStorage
         // If IsolatedStorageFile is null, then we default to using a file that is scoped by user, appdomain, and assembly.
         private static InitialiationData InitializeFileStream(string path, FileMode mode, FileAccess access, FileShare share, int bufferSize, IsolatedStorageFile? isf)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             if ((path.Length == 0) || path.Equals(BackSlash))
@@ -90,7 +90,7 @@ namespace System.IO.IsolatedStorage
                    SR.IsolatedStorage_Path);
 
             bool createdStore = false;
-            if (isf == null)
+            if (isf is null)
             {
                 isf = IsolatedStorageFile.GetUserStoreForDomain();
                 createdStore = true;
@@ -206,7 +206,7 @@ namespace System.IO.IsolatedStorage
             {
                 if (disposing)
                 {
-                    if (_fs != null)
+                    if (_fs is not null)
                         _fs.Dispose();
                 }
             }
@@ -220,7 +220,7 @@ namespace System.IO.IsolatedStorage
         {
             return
                 GetType() != typeof(IsolatedStorageFileStream) ? base.DisposeAsync() :
-                _fs != null ? _fs.DisposeAsync() :
+                _fs is not null ? _fs.DisposeAsync() :
                 default;
         }
 

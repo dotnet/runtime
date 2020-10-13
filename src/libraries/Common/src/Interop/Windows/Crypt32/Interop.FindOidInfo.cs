@@ -52,7 +52,7 @@ internal static partial class Interop
         internal static CRYPT_OID_INFO FindOidInfo(CryptOidInfoKeyType keyType, string key, OidGroup group, bool fallBackToAllGroups)
         {
             const OidGroup CRYPT_OID_DISABLE_SEARCH_DS_FLAG = unchecked((OidGroup)0x80000000);
-            Debug.Assert(key != null);
+            Debug.Assert(key is not null);
 
             IntPtr rawKey = IntPtr.Zero;
 

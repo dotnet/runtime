@@ -26,7 +26,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             {
                 case MemberTypes.Property:
                     PropertyInfo property = (PropertyInfo)member;
-                    if (property == null)
+                    if (property is null)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
@@ -75,7 +75,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public MemberInfo[] GetAccessors()
         {
-            if ((_accessors == null) && (_accessorsCreator != null))
+            if ((_accessors is null) && (_accessorsCreator is not null))
             {
                 MemberInfo[] accessors = _accessorsCreator.Invoke();
 
@@ -93,13 +93,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public override int GetHashCode()
         {
-            if (_accessorsCreator != null)
+            if (_accessorsCreator is not null)
             {
                 return MemberType.GetHashCode() ^ _accessorsCreator.GetHashCode();
             }
             else
             {
-                if (_accessors == null || _accessors[0] == null)
+                if (_accessors is null || _accessors[0] is null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
@@ -118,13 +118,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
 
             // if any of the lazy memebers create accessors in a delay-loaded fashion, we simply compare the creators
-            if ((_accessorsCreator != null) || (that._accessorsCreator != null))
+            if ((_accessorsCreator is not null) || (that._accessorsCreator is not null))
             {
                 return object.Equals(_accessorsCreator, that._accessorsCreator);
             }
 
             // we are dealing with explicitly passed accessors in both cases
-            if (_accessors == null || that._accessors == null)
+            if (_accessors is null || that._accessors is null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
@@ -149,13 +149,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private static bool AreAccessorsValid(MemberTypes memberType, MemberInfo[] accessors, out string errorMessage)
         {
             errorMessage = string.Empty;
-            if (accessors == null)
+            if (accessors is null)
             {
                 errorMessage = SR.LazyMemberInfo_AccessorsNull;
                 return false;
             }
 
-            if (accessors.All(accessor => accessor == null))
+            if (accessors.All(accessor => accessor is null))
             {
                 errorMessage = SR.LazyMemberInfo_NoAccessors;
                 return false;
@@ -170,7 +170,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                         return false;
                     }
 
-                    if (accessors.Where(accessor => (accessor != null) && (accessor.MemberType != MemberTypes.Method)).Any())
+                    if (accessors.Where(accessor => (accessor is not null) && (accessor.MemberType != MemberTypes.Method)).Any())
                     {
                         errorMessage = SR.LazyMemberinfo_InvalidPropertyAccessors_AccessorType;
                         return false;
@@ -185,7 +185,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                         return false;
                     }
 
-                    if (accessors.Where(accessor => (accessor != null) && (accessor.MemberType != MemberTypes.Method)).Any())
+                    if (accessors.Where(accessor => (accessor is not null) && (accessor.MemberType != MemberTypes.Method)).Any())
                     {
                         errorMessage = SR.LazyMemberinfo_InvalidEventAccessors_AccessorType;
                         return false;

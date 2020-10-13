@@ -20,7 +20,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> AsSpan<T>(this T[]? array, int start)
         {
-            if (array == null)
+            if (array is null)
             {
                 if (start != 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
@@ -40,7 +40,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> AsSpan<T>(this T[]? array, Index startIndex)
         {
-            if (array == null)
+            if (array is null)
             {
                 if (!startIndex.Equals(Index.Start))
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
@@ -64,7 +64,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Span<T> AsSpan<T>(this T[]? array, Range range)
         {
-            if (array == null)
+            if (array is null)
             {
                 Index startIndex = range.Start;
                 Index endIndex = range.End;
@@ -90,7 +90,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<char> AsSpan(this string? text)
         {
-            if (text == null)
+            if (text is null)
                 return default;
 
             return new ReadOnlySpan<char>(ref text.GetRawStringData(), text.Length);
@@ -108,7 +108,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<char> AsSpan(this string? text, int start)
         {
-            if (text == null)
+            if (text is null)
             {
                 if (start != 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
@@ -134,7 +134,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ReadOnlySpan<char> AsSpan(this string? text, int start, int length)
         {
-            if (text == null)
+            if (text is null)
             {
                 if (start != 0 || length != 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
@@ -158,7 +158,7 @@ namespace System
         /// <remarks>Returns default when <paramref name="text"/> is null.</remarks>
         public static ReadOnlyMemory<char> AsMemory(this string? text)
         {
-            if (text == null)
+            if (text is null)
                 return default;
 
             return new ReadOnlyMemory<char>(text, 0, text.Length);
@@ -173,7 +173,7 @@ namespace System
         /// </exception>
         public static ReadOnlyMemory<char> AsMemory(this string? text, int start)
         {
-            if (text == null)
+            if (text is null)
             {
                 if (start != 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
@@ -191,7 +191,7 @@ namespace System
         /// <param name="startIndex">The index at which to begin this slice.</param>
         public static ReadOnlyMemory<char> AsMemory(this string? text, Index startIndex)
         {
-            if (text == null)
+            if (text is null)
             {
                 if (!startIndex.Equals(Index.Start))
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
@@ -216,7 +216,7 @@ namespace System
         /// </exception>
         public static ReadOnlyMemory<char> AsMemory(this string? text, int start, int length)
         {
-            if (text == null)
+            if (text is null)
             {
                 if (start != 0 || length != 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.start);
@@ -240,7 +240,7 @@ namespace System
         /// <param name="range">The range used to indicate the start and length of the sliced string.</param>
         public static ReadOnlyMemory<char> AsMemory(this string? text, Range range)
         {
-            if (text == null)
+            if (text is null)
             {
                 Index startIndex = range.Start;
                 Index endIndex = range.End;
@@ -1275,7 +1275,7 @@ namespace System
         /// </summary>
         public static Memory<T> AsMemory<T>(this T[]? array, Index startIndex)
         {
-            if (array == null)
+            if (array is null)
             {
                 if (!startIndex.Equals(Index.Start))
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
@@ -1307,7 +1307,7 @@ namespace System
         /// </summary>
         public static Memory<T> AsMemory<T>(this T[]? array, Range range)
         {
-            if (array == null)
+            if (array is null)
             {
                 Index startIndex = range.Start;
                 Index endIndex = range.End;
@@ -1769,7 +1769,7 @@ namespace System
             this ReadOnlySpan<T> span, T value, TComparer comparer)
             where TComparer : IComparer<T>
         {
-            if (comparer == null)
+            if (comparer is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
 
             var comparable = new SpanHelpers.ComparerComparable<T, TComparer>(
@@ -1824,7 +1824,7 @@ namespace System
         /// <exception cref="ArgumentNullException"><paramref name="comparison"/> is null.</exception>
         public static void Sort<T>(this Span<T> span, Comparison<T> comparison)
         {
-            if (comparison == null)
+            if (comparison is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
 
             if (span.Length > 1)
@@ -1898,7 +1898,7 @@ namespace System
         /// </exception>
         public static void Sort<TKey, TValue>(this Span<TKey> keys, Span<TValue> items, Comparison<TKey> comparison)
         {
-            if (comparison == null)
+            if (comparison is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             if (keys.Length != items.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_SpansMustHaveSameLength);

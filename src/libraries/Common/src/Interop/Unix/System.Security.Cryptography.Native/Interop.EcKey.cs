@@ -16,7 +16,7 @@ internal static partial class Interop
         internal static SafeEcKeyHandle? EcKeyCreateByOid(string oid)
         {
             SafeEcKeyHandle handle = CryptoNative_EcKeyCreateByOid(oid);
-            if (handle == null || handle.IsInvalid)
+            if (handle is null || handle.IsInvalid)
             {
                 ErrClearError();
             }

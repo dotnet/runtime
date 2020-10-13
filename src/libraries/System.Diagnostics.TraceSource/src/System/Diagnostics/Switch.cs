@@ -35,7 +35,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_initializedLock == null)
+                if (_initializedLock is null)
                 {
                     object o = new object();
                     Interlocked.CompareExchange<object?>(ref _initializedLock, o, null);
@@ -57,7 +57,7 @@ namespace System.Diagnostics
         {
             // displayName is used as a hashtable key, so it can never
             // be null.
-            if (displayName == null) displayName = string.Empty;
+            if (displayName is null) displayName = string.Empty;
 
             _displayName = displayName;
             _description = description;
@@ -82,7 +82,7 @@ namespace System.Diagnostics
                     for (int i = 0; i < s_switches.Count; i++)
                     {
                         Switch? s = ((Switch?)s_switches[i].Target);
-                        if (s != null)
+                        if (s is not null)
                         {
                             buffer.Add(s_switches[i]);
                         }
@@ -116,7 +116,7 @@ namespace System.Diagnostics
         {
             get
             {
-                return (_description == null) ? string.Empty : _description;
+                return (_description is null) ? string.Empty : _description;
             }
         }
 
@@ -125,7 +125,7 @@ namespace System.Diagnostics
             get
             {
                 Initialize();
-                if (_attributes == null)
+                if (_attributes is null)
                     _attributes = new StringDictionary();
                 return _attributes;
             }
@@ -237,7 +237,7 @@ namespace System.Diagnostics
                 for (int i = 0; i < s_switches.Count; i++)
                 {
                     Switch? swtch = ((Switch?)s_switches[i].Target);
-                    if (swtch != null)
+                    if (swtch is not null)
                     {
                         swtch.Refresh();
                     }

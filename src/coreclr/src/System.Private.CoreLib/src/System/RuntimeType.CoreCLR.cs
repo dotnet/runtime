@@ -80,7 +80,7 @@ namespace System
                 get
                 {
                     Debug.Assert(index < Count);
-                    return (_items != null) ? _items[index] : _item;
+                    return (_items is not null) ? _items[index] : _item;
                 }
             }
 
@@ -241,7 +241,7 @@ namespace System
                     // ok; we'll handle any concurrency issues in the later call to Insert.
 
                     T?[]? allMembersLocal = m_allMembers;
-                    if (allMembersLocal != null)
+                    if (allMembersLocal is not null)
                     {
                         // if not a Method or a Constructor, fall through
                         if (cacheType == CacheType.Method)
@@ -313,7 +313,7 @@ namespace System
                     // issues in the later call to Insert.
 
                     T?[]? allMembersLocal = m_allMembers;
-                    if (allMembersLocal != null)
+                    if (allMembersLocal is not null)
                     {
                         foreach (T? candidate in allMembersLocal)
                         {
@@ -445,7 +445,7 @@ namespace System
                                     // Ensure we always return a list that has
                                     // been merged with the global list.
                                     T[]? cachedList = m_csMemberInfos[name!];
-                                    if (cachedList == null)
+                                    if (cachedList is null)
                                     {
                                         MergeWithGlobalList(list);
                                         m_csMemberInfos[name!] = list;
@@ -460,7 +460,7 @@ namespace System
                                     // Ensure we always return a list that has
                                     // been merged with the global list.
                                     T[]? cachedList = m_cisMemberInfos[name!];
-                                    if (cachedList == null)
+                                    if (cachedList is null)
                                     {
                                         MergeWithGlobalList(list);
                                         m_cisMemberInfos[name!] = list;
@@ -479,7 +479,7 @@ namespace System
                                     int memberCount = m_allMembers!.Length;
                                     while (memberCount > 0)
                                     {
-                                        if (m_allMembers[memberCount - 1] != null)
+                                        if (m_allMembers[memberCount - 1] is not null)
                                             break;
                                         memberCount--;
                                     }
@@ -510,7 +510,7 @@ namespace System
                 {
                     T[]? cachedMembers = m_allMembers;
 
-                    if (cachedMembers == null)
+                    if (cachedMembers is null)
                     {
                         m_allMembers = list;
                         return;
@@ -528,7 +528,7 @@ namespace System
                         for (cachedIndex = 0; cachedIndex < cachedCount; cachedIndex++)
                         {
                             T cachedMemberInfo = cachedMembers[cachedIndex];
-                            if (cachedMemberInfo == null)
+                            if (cachedMemberInfo is null)
                                 break;
 
                             if (newMemberInfo.CacheEquals(cachedMemberInfo))
@@ -571,7 +571,7 @@ namespace System
                                 cachedMembers = cachedMembers2;
                             }
 
-                            Debug.Assert(cachedMembers![freeSlotIndex] == null);
+                            Debug.Assert(cachedMembers![freeSlotIndex] is null);
                             Volatile.Write(ref cachedMembers[freeSlotIndex], newMemberInfo); // value may be read outside of lock
                             freeSlotIndex++;
                         }
@@ -588,7 +588,7 @@ namespace System
                     ListBuilder<RuntimeMethodInfo> list = default;
 
                     RuntimeType declaringType = ReflectedType;
-                    Debug.Assert(declaringType != null);
+                    Debug.Assert(declaringType is not null);
 
                     if (RuntimeTypeHandle.IsInterface(declaringType))
                     {
@@ -747,7 +747,7 @@ namespace System
                             }
 
                             declaringType = RuntimeTypeHandle.GetBaseType(declaringType);
-                        } while (declaringType != null);
+                        } while (declaringType is not null);
                         #endregion
                     }
 
@@ -819,7 +819,7 @@ namespace System
                     while (RuntimeTypeHandle.IsGenericVariable(declaringType))
                         declaringType = declaringType.GetBaseType()!;
 
-                    while (declaringType != null)
+                    while (declaringType is not null)
                     {
                         PopulateRtFields(filter, declaringType, ref list);
 
@@ -845,7 +845,7 @@ namespace System
                     {
                         Type[]? interfaces = RuntimeTypeHandle.GetInterfaces(ReflectedType);
 
-                        if (interfaces != null)
+                        if (interfaces is not null)
                         {
                             for (int i = 0; i < interfaces.Length; i++)
                             {
@@ -882,8 +882,8 @@ namespace System
                 private unsafe void PopulateRtFields(Filter filter,
                     IntPtr* ppFieldHandles, int count, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
-                    Debug.Assert(declaringType != null);
-                    Debug.Assert(ReflectedType != null);
+                    Debug.Assert(declaringType is not null);
+                    Debug.Assert(ReflectedType is not null);
 
                     bool needsStaticFieldForGeneric = RuntimeTypeHandle.HasInstantiation(declaringType) && !RuntimeTypeHandle.ContainsGenericVariables(declaringType);
                     bool isInherited = declaringType != ReflectedType;
@@ -934,8 +934,8 @@ namespace System
 
                 private void PopulateLiteralFields(Filter filter, RuntimeType declaringType, ref ListBuilder<RuntimeFieldInfo> list)
                 {
-                    Debug.Assert(declaringType != null);
-                    Debug.Assert(ReflectedType != null);
+                    Debug.Assert(declaringType is not null);
+                    Debug.Assert(ReflectedType is not null);
 
                     int tkDeclaringType = RuntimeTypeHandle.GetToken(declaringType);
 
@@ -1019,7 +1019,7 @@ namespace System
                     {
                         Type[]? ifaces = RuntimeTypeHandle.GetInterfaces(declaringType);
 
-                        if (ifaces != null)
+                        if (ifaces is not null)
                         {
                             for (int i = 0; i < ifaces.Length; i++)
                             {
@@ -1134,7 +1134,7 @@ namespace System
 
                 private RuntimeEventInfo[] PopulateEvents(Filter filter)
                 {
-                    Debug.Assert(ReflectedType != null);
+                    Debug.Assert(ReflectedType is not null);
 
                     // Do not create the dictionary if we are filtering the properties by name already
                     Dictionary<string, RuntimeEventInfo>? csEventInfos = filter.CaseSensitive() ? null :
@@ -1149,7 +1149,7 @@ namespace System
                             declaringType = declaringType.GetBaseType()!;
 
                         // Populate associates off of the class hierarchy
-                        while (declaringType != null)
+                        while (declaringType is not null)
                         {
                             PopulateEvents(filter, declaringType, csEventInfos, ref list);
                             declaringType = RuntimeTypeHandle.GetBaseType(declaringType);
@@ -1201,7 +1201,7 @@ namespace System
                         #endregion
 
                         #region Remove Duplicates
-                        if (csEventInfos != null)
+                        if (csEventInfos is not null)
                         {
                             string name = eventInfo.Name;
 
@@ -1223,13 +1223,13 @@ namespace System
 
                 private RuntimePropertyInfo[] PopulateProperties(Filter filter)
                 {
-                    Debug.Assert(ReflectedType != null);
+                    Debug.Assert(ReflectedType is not null);
 
                     // m_csMemberInfos can be null at this point. It will be initialized when Insert
                     // is called in Populate after this returns.
 
                     RuntimeType declaringType = ReflectedType;
-                    Debug.Assert(declaringType != null);
+                    Debug.Assert(declaringType is not null);
 
                     ListBuilder<RuntimePropertyInfo> list = default;
 
@@ -1250,7 +1250,7 @@ namespace System
                         {
                             PopulateProperties(filter, declaringType, csPropertyInfos, usedSlots, ref list);
                             declaringType = RuntimeTypeHandle.GetBaseType(declaringType);
-                        } while (declaringType != null);
+                        } while (declaringType is not null);
                     }
                     else
                     {
@@ -1282,8 +1282,8 @@ namespace System
 
                     int numVirtuals = RuntimeTypeHandle.GetNumVirtuals(declaringType);
 
-                    Debug.Assert((declaringType.IsInterface && usedSlots == null && csPropertyInfos == null) ||
-                                    (!declaringType.IsInterface && usedSlots != null && usedSlots.Length >= numVirtuals));
+                    Debug.Assert((declaringType.IsInterface && usedSlots is null && csPropertyInfos is null) ||
+                                    (!declaringType.IsInterface && usedSlots is not null && usedSlots.Length >= numVirtuals));
 
                     for (int i = 0; i < tkProperties.Length; i++)
                     {
@@ -1311,7 +1311,7 @@ namespace System
                             tkProperty, declaringType, m_runtimeTypeCache, out bool isPrivate);
 
                         // If this is a class, not an interface
-                        if (usedSlots != null)
+                        if (usedSlots is not null)
                         {
                             #region Remove Privates
                             if (declaringType != ReflectedType && isPrivate)
@@ -1331,7 +1331,7 @@ namespace System
                             // It is not logical for the getter to be virtual but not the setter.
 
                             MethodInfo? associateMethod = propertyInfo.GetGetMethod() ?? propertyInfo.GetSetMethod();
-                            if (associateMethod != null)
+                            if (associateMethod is not null)
                             {
                                 int slot = RuntimeMethodHandle.GetSlot((RuntimeMethodInfo)associateMethod);
 
@@ -1351,7 +1351,7 @@ namespace System
                             // For backward compatibility, even if the vtable slots don't match, we will still treat
                             // a property as duplicate if the names and signatures match.
 
-                            if (csPropertyInfos != null)
+                            if (csPropertyInfos is not null)
                             {
                                 string name = propertyInfo.Name;
                                 if (!csPropertyInfos.TryGetValue(name, out List<RuntimePropertyInfo>? cache))
@@ -1369,7 +1369,7 @@ namespace System
                                     }
                                 }
 
-                                if (cache == null)
+                                if (cache is null)
                                     continue;
 
                                 cache.Add(propertyInfo);
@@ -1474,7 +1474,7 @@ namespace System
             {
                 MemberInfoCache<T>? existingCache = m_cache;
 
-                if (existingCache == null)
+                if (existingCache is null)
                 {
                     MemberInfoCache<T> newCache = new MemberInfoCache<T>(this);
                     existingCache = Interlocked.CompareExchange(ref m_cache, newCache, null);
@@ -1531,7 +1531,7 @@ namespace System
             internal string GetNameSpace()
             {
                 // @Optimization - Use ConstructName to populate m_namespace
-                if (m_namespace == null)
+                if (m_namespace is null)
                 {
                     Type type = m_runtimeType;
                     type = type.GetRootElementType();
@@ -1553,7 +1553,7 @@ namespace System
 
             internal RuntimeType? GetEnclosingType()
             {
-                if (m_enclosingType == null)
+                if (m_enclosingType is null)
                 {
                     // Use void as a marker of null enclosing type
                     RuntimeType enclosingType = RuntimeTypeHandle.GetDeclaringType(GetRuntimeType());
@@ -1572,11 +1572,11 @@ namespace System
 
             internal string? GetDefaultMemberName()
             {
-                if (m_defaultMemberName == null)
+                if (m_defaultMemberName is null)
                 {
                     CustomAttributeData? attr = null;
                     Type DefaultMemberAttrType = typeof(DefaultMemberAttribute);
-                    for (RuntimeType? t = m_runtimeType; t != null; t = t.GetBaseType())
+                    for (RuntimeType? t = m_runtimeType; t is not null; t = t.GetBaseType())
                     {
                         IList<CustomAttributeData> attrs = CustomAttributeData.GetCustomAttributes(t);
                         for (int i = 0; i < attrs.Count; i++)
@@ -1588,7 +1588,7 @@ namespace System
                             }
                         }
 
-                        if (attr != null)
+                        if (attr is not null)
                         {
                             m_defaultMemberName = attr.ConstructorArguments[0].Value as string;
                             break;
@@ -1612,7 +1612,7 @@ namespace System
                     RuntimeMethodHandle.GetAttributes(genericMethod), (BindingFlags)(-1), la);
 
                 RuntimeMethodInfo crmi;
-                if (la != null)
+                if (la is not null)
                 {
                     crmi = la.m_methodInstantiations[rmi];
                 }
@@ -1620,10 +1620,10 @@ namespace System
                 {
                     crmi = s_methodInstantiations[rmi];
                 }
-                if (crmi != null)
+                if (crmi is not null)
                     return crmi;
 
-                if (s_methodInstantiationsLock == null)
+                if (s_methodInstantiationsLock is null)
                     Interlocked.CompareExchange(ref s_methodInstantiationsLock!, new object(), null);
 
                 bool lockTaken = false;
@@ -1631,17 +1631,17 @@ namespace System
                 {
                     Monitor.Enter(s_methodInstantiationsLock, ref lockTaken);
 
-                    if (la != null)
+                    if (la is not null)
                     {
                         crmi = la.m_methodInstantiations[rmi];
-                        if (crmi != null)
+                        if (crmi is not null)
                             return crmi;
                         la.m_methodInstantiations[rmi] = rmi;
                     }
                     else
                     {
                         crmi = s_methodInstantiations[rmi];
-                        if (crmi != null)
+                        if (crmi is not null)
                             return crmi;
                         s_methodInstantiations[rmi] = rmi;
                     }
@@ -1720,7 +1720,7 @@ namespace System
         internal static RuntimeType? GetType(string typeName, bool throwOnError, bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
+            if (typeName is null)
                 throw new ArgumentNullException(nameof(typeName));
 
             return RuntimeTypeHandle.GetTypeByName(
@@ -1752,7 +1752,7 @@ namespace System
             {
                 Resolver resolver = RuntimeMethodHandle.GetResolver(methodHandle);
 
-                if (resolver != null)
+                if (resolver is not null)
                     return resolver.GetDynamicMethod();
 
                 return null;
@@ -1801,7 +1801,7 @@ namespace System
 
                     RuntimeType? baseType = reflectedType;
 
-                    while (baseType != null)
+                    while (baseType is not null)
                     {
                         RuntimeType baseDefinition = baseType;
 
@@ -1814,7 +1814,7 @@ namespace System
                         baseType = baseType.GetBaseType();
                     }
 
-                    if (baseType == null)
+                    if (baseType is null)
                     {
                         // ignoring instantiation is the ReflectedType is not a subtype of the DeclaringType
                         throw new ArgumentException(SR.Format(
@@ -1895,7 +1895,7 @@ namespace System
             RuntimeFieldHandleInternal fieldHandle = field.Value;
 
             // verify the type/method relationship
-            if (reflectedType == null)
+            if (reflectedType is null)
             {
                 reflectedType = RuntimeFieldHandle.GetApproxDeclaringType(fieldHandle);
             }
@@ -1947,12 +1947,12 @@ namespace System
 
         internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments, RuntimeType[] genericParamters)
         {
-            if (genericArguments == null)
+            if (genericArguments is null)
                 throw new ArgumentNullException();
 
             for (int i = 0; i < genericArguments.Length; i++)
             {
-                if (genericArguments[i] == null)
+                if (genericArguments[i] is null)
                     throw new ArgumentNullException();
 
                 ThrowIfTypeNeverValidGenericArgument(genericArguments[i]);
@@ -1982,7 +1982,7 @@ namespace System
                 methodContext = genericArguments;
 
                 RuntimeType? declaringType = (RuntimeType?)genericMethodDefinition.DeclaringType;
-                if (declaringType != null)
+                if (declaringType is not null)
                 {
                     typeContext = declaringType.GetTypeHandleInternal().GetInstantiationInternal();
                 }
@@ -2007,7 +2007,7 @@ namespace System
             name = null;
             ns = null;
 
-            if (fullname == null)
+            if (fullname is null)
                 return;
 
             // Get namespace
@@ -2071,7 +2071,7 @@ namespace System
             prefixLookup = false;
             ignoreCase = false;
 
-            if (name != null)
+            if (name is not null)
             {
                 if ((bindingFlags & BindingFlags.IgnoreCase) != 0)
                 {
@@ -2108,7 +2108,7 @@ namespace System
         // Most of the plural GetXXX methods allow prefix lookups while the singular GetXXX methods mostly do not.
         private static bool FilterApplyPrefixLookup(MemberInfo memberInfo, string name, bool ignoreCase)
         {
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
 
             if (ignoreCase)
             {
@@ -2129,7 +2129,7 @@ namespace System
             MemberInfo memberInfo, BindingFlags bindingFlags, bool isPublic, bool isNonProtectedInternal, bool isStatic,
             string name, bool prefixLookup)
         {
-            Debug.Assert(memberInfo != null);
+            Debug.Assert(memberInfo is not null);
             Debug.Assert(name is null || (bindingFlags & BindingFlags.IgnoreCase) == 0 || (name.ToLowerInvariant().Equals(name)));
 
             // Filter by Public & Private
@@ -2189,7 +2189,7 @@ namespace System
             {
                 MethodInfo? methodInfo = memberInfo as MethodInfo;
 
-                if (methodInfo == null)
+                if (methodInfo is null)
                     return false;
 
                 if (!methodInfo.IsVirtual && !methodInfo.IsAbstract)
@@ -2211,7 +2211,7 @@ namespace System
             if (!FilterApplyBase(type, bindingFlags, isPublic, type.IsNestedAssembly, isStatic: false, name, prefixLookup))
                 return false;
 
-            if (ns != null && ns != type.Namespace)
+            if (ns is not null && ns != type.Namespace)
                 return false;
 
             return true;
@@ -2236,7 +2236,7 @@ namespace System
         private static bool FilterApplyMethodBase(
             MethodBase methodBase, BindingFlags methodFlags, BindingFlags bindingFlags, CallingConventions callConv, Type[]? argumentTypes)
         {
-            Debug.Assert(methodBase != null);
+            Debug.Assert(methodBase is not null);
 
             bindingFlags ^= BindingFlags.DeclaredOnly;
 
@@ -2257,7 +2257,7 @@ namespace System
             }
 
             // Check if argumentTypes supplied
-            if (argumentTypes != null)
+            if (argumentTypes is not null)
             {
                 ParameterInfo[] parameterInfos = methodBase.GetParametersNoCopy();
 
@@ -2396,7 +2396,7 @@ namespace System
                 if (m_cache != IntPtr.Zero)
                 {
                     object? cache = GCHandle.InternalGet(m_cache);
-                    Debug.Assert(cache == null || cache is RuntimeTypeCache);
+                    Debug.Assert(cache is null || cache is RuntimeTypeCache);
                     return Unsafe.As<RuntimeTypeCache>(cache);
                 }
                 return null;
@@ -2411,7 +2411,7 @@ namespace System
                 if (m_cache != IntPtr.Zero)
                 {
                     object? cache = GCHandle.InternalGet(m_cache);
-                    if (cache != null)
+                    if (cache is not null)
                     {
                         Debug.Assert(cache is RuntimeTypeCache);
                         return Unsafe.As<RuntimeTypeCache>(cache);
@@ -2434,15 +2434,15 @@ namespace System
             }
 
             RuntimeTypeCache? cache = (RuntimeTypeCache?)GCHandle.InternalGet(m_cache);
-            if (cache == null)
+            if (cache is null)
             {
                 cache = new RuntimeTypeCache(this);
                 RuntimeTypeCache? existingCache = (RuntimeTypeCache?)GCHandle.InternalCompareExchange(m_cache, cache, null);
-                if (existingCache != null)
+                if (existingCache is not null)
                     cache = existingCache;
             }
 
-            Debug.Assert(cache != null);
+            Debug.Assert(cache is not null);
             return cache;
         }
 
@@ -2521,7 +2521,7 @@ namespace System
                 RuntimePropertyInfo propertyInfo = cache[i];
                 if ((bindingAttr & propertyInfo.BindingFlags) == propertyInfo.BindingFlags &&
                     (!prefixLookup || FilterApplyPrefixLookup(propertyInfo, name!, ignoreCase)) &&
-                    (types == null || (propertyInfo.GetIndexParameters().Length == types.Length)))
+                    (types is null || (propertyInfo.GetIndexParameters().Length == types.Length)))
                 {
                     candidates.Add(propertyInfo);
                 }
@@ -2680,7 +2680,7 @@ namespace System
 
             RuntimeType? ifaceRtType = ifaceType as RuntimeType;
 
-            if (ifaceRtType == null)
+            if (ifaceRtType is null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType, nameof(ifaceType));
 
             RuntimeTypeHandle ifaceRtTypeHandle = ifaceRtType.GetTypeHandleInternal();
@@ -2760,7 +2760,7 @@ namespace System
             if (candidates.Count == 0)
                 return null;
 
-            if (types == null || types.Length == 0)
+            if (types is null || types.Length == 0)
             {
                 MethodInfo firstCandidate = candidates[0];
 
@@ -2768,7 +2768,7 @@ namespace System
                 {
                     return firstCandidate;
                 }
-                else if (types == null)
+                else if (types is null)
                 {
                     for (int j = 1; j < candidates.Count; j++)
                     {
@@ -2803,7 +2803,7 @@ namespace System
                 ConstructorInfo firstCandidate = candidates[0];
 
                 ParameterInfo[] parameters = firstCandidate.GetParametersNoCopy();
-                if (parameters == null || parameters.Length == 0)
+                if (parameters is null || parameters.Length == 0)
                 {
                     return firstCandidate;
                 }
@@ -2820,14 +2820,14 @@ namespace System
         protected override PropertyInfo? GetPropertyImpl(
             string name, BindingFlags bindingAttr, Binder? binder, Type? returnType, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (name is null) throw new ArgumentNullException(nameof(name));
 
             ListBuilder<PropertyInfo> candidates = GetPropertyCandidates(name, bindingAttr, types, false);
 
             if (candidates.Count == 0)
                 return null;
 
-            if (types == null || types.Length == 0)
+            if (types is null || types.Length == 0)
             {
                 // no arguments
                 if (candidates.Count == 1)
@@ -2871,7 +2871,7 @@ namespace System
                 RuntimeEventInfo eventInfo = cache[i];
                 if ((bindingAttr & eventInfo.BindingFlags) == eventInfo.BindingFlags)
                 {
-                    if (match != null)
+                    if (match is not null)
                         throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
 
                     match = eventInfo;
@@ -2899,7 +2899,7 @@ namespace System
                 RuntimeFieldInfo fieldInfo = cache[i];
                 if ((bindingAttr & fieldInfo.BindingFlags) == fieldInfo.BindingFlags)
                 {
-                    if (match != null)
+                    if (match is not null)
                     {
                         if (ReferenceEquals(fieldInfo.DeclaringType, match.DeclaringType))
                             throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
@@ -2908,7 +2908,7 @@ namespace System
                             multipleStaticFieldMatches = true;
                     }
 
-                    if (match == null || fieldInfo.DeclaringType!.IsSubclassOf(match.DeclaringType!) || match.DeclaringType!.IsInterface)
+                    if (match is null || fieldInfo.DeclaringType!.IsSubclassOf(match.DeclaringType!) || match.DeclaringType!.IsInterface)
                         match = fieldInfo;
                 }
             }
@@ -2943,7 +2943,7 @@ namespace System
                 RuntimeType iface = cache[i];
                 if (FilterApplyType(iface, bindingAttr, name, false, ns))
                 {
-                    if (match != null)
+                    if (match is not null)
                         throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
 
                     match = iface;
@@ -2972,7 +2972,7 @@ namespace System
                 RuntimeType nestedType = cache[i];
                 if (FilterApplyType(nestedType, bindingAttr, name, false, ns))
                 {
-                    if (match != null)
+                    if (match is not null)
                         throw new AmbiguousMatchException(SR.Arg_AmbiguousMatchException);
 
                     match = nestedType;
@@ -3086,7 +3086,7 @@ namespace System
 
                 IRuntimeMethodInfo declaringMethod = RuntimeTypeHandle.GetDeclaringMethod(this);
 
-                if (declaringMethod == null)
+                if (declaringMethod is null)
                     return null;
 
                 return GetMethodBase(RuntimeMethodHandle.GetDeclaringType(declaringMethod), declaringMethod);
@@ -3101,12 +3101,12 @@ namespace System
             if (type is null)
                 throw new ArgumentNullException(nameof(type));
             RuntimeType? rtType = type as RuntimeType;
-            if (rtType == null)
+            if (rtType is null)
                 return false;
 
             RuntimeType? baseType = GetBaseType();
 
-            while (baseType != null)
+            while (baseType is not null)
             {
                 if (baseType == rtType)
                     return true;
@@ -3154,7 +3154,7 @@ namespace System
                 string? fullname = FullName;
 
                 // FullName is null if this type contains generic parameters but is not a generic type definition.
-                if (fullname == null)
+                if (fullname is null)
                     return null;
 
                 return Assembly.CreateQualifiedName(Assembly.FullName, fullname);
@@ -3232,7 +3232,7 @@ namespace System
 
         public override Type MakeGenericType(Type[] instantiation)
         {
-            if (instantiation == null)
+            if (instantiation is null)
                 throw new ArgumentNullException(nameof(instantiation));
 
             RuntimeType[] instantiationRuntimeType = new RuntimeType[instantiation.Length];
@@ -3249,12 +3249,12 @@ namespace System
             for (int i = 0; i < instantiation.Length; i++)
             {
                 Type instantiationElem = instantiation[i];
-                if (instantiationElem == null)
+                if (instantiationElem is null)
                     throw new ArgumentNullException();
 
                 RuntimeType? rtInstantiationElem = instantiationElem as RuntimeType;
 
-                if (rtInstantiationElem == null)
+                if (rtInstantiationElem is null)
                 {
                     foundNonRuntimeType = true;
                     if (instantiationElem.IsSignatureType)
@@ -3380,13 +3380,13 @@ namespace System
             if (isByRef)
             {
                 RuntimeType elementType = RuntimeTypeHandle.GetElementType(this);
-                if (elementType.IsInstanceOfType(value) || value == null)
+                if (elementType.IsInstanceOfType(value) || value is null)
                 {
                     // need to create an instance of the ByRef if null was provided, but only if primitive, enum or value type
                     return AllocateValueType(elementType, value, false);
                 }
             }
-            else if (value == null)
+            else if (value is null)
                 return value;
             else if (this == s_typedRef)
                 // everything works for a typedref
@@ -3401,14 +3401,14 @@ namespace System
             {
                 RuntimeType valueType;
                 Pointer? pointer = value as Pointer;
-                if (pointer != null)
+                if (pointer is not null)
                     valueType = (RuntimeType)pointer.GetPointerType();
                 else
                     valueType = (RuntimeType)value.GetType();
 
                 if (CanValueSpecialCast(valueType, this))
                 {
-                    if (pointer != null)
+                    if (pointer is not null)
                         return pointer.GetPointerValue();
                     else
                         return value;
@@ -3424,7 +3424,7 @@ namespace System
         // Factored out of CheckValue to reduce code complexity.
         private object? TryChangeType(object value, Binder? binder, CultureInfo? culture, bool needsSpecialCast)
         {
-            if (binder != null && binder != Type.DefaultBinder)
+            if (binder is not null && binder != Type.DefaultBinder)
             {
                 value = binder.ChangeType(value, this, culture);
                 if (IsInstanceOfType(value))
@@ -3433,23 +3433,23 @@ namespace System
                 if (IsByRef)
                 {
                     RuntimeType elementType = RuntimeTypeHandle.GetElementType(this);
-                    if (elementType.IsInstanceOfType(value) || value == null)
+                    if (elementType.IsInstanceOfType(value) || value is null)
                         return AllocateValueType(elementType, value, false);
                 }
-                else if (value == null)
+                else if (value is null)
                     return value;
                 if (needsSpecialCast)
                 {
                     RuntimeType valueType;
                     Pointer? pointer = value as Pointer;
-                    if (pointer != null)
+                    if (pointer is not null)
                         valueType = (RuntimeType)pointer.GetPointerType();
                     else
                         valueType = (RuntimeType)value.GetType();
 
                     if (CanValueSpecialCast(valueType, this))
                     {
-                        if (pointer != null)
+                        if (pointer is not null)
                             return pointer.GetPointerValue();
                         else
                             return value;
@@ -3484,9 +3484,9 @@ namespace System
             }
 
             // There must not be more named parameters than provided arguments
-            if (namedParams != null)
+            if (namedParams is not null)
             {
-                if (providedArgs != null)
+                if (providedArgs is not null)
                 {
                     if (namedParams.Length > providedArgs.Length)
                         throw new ArgumentException(SR.Arg_NamedParamTooBig, nameof(namedParams));
@@ -3499,7 +3499,7 @@ namespace System
             }
 
 #if FEATURE_COMINTEROP
-            if (target != null && target.GetType().IsCOMObject)
+            if (target is not null && target.GetType().IsCOMObject)
             {
                 const BindingFlags ClassicBindingMask =
                     BindingFlags.InvokeMethod | BindingFlags.GetProperty | BindingFlags.SetProperty |
@@ -3523,13 +3523,13 @@ namespace System
                 if ((bindingFlags & BindingFlags.PutRefDispProperty) != 0 && (bindingFlags & ClassicBindingMask & ~BindingFlags.PutRefDispProperty) != 0)
                     throw new ArgumentException(SR.Arg_COMPropSetPut, nameof(bindingFlags));
 
-                if (name == null)
+                if (name is null)
                     throw new ArgumentNullException(nameof(name));
 
                 bool[]? isByRef = modifiers?[0].IsByRefArray;
 
                 // pass LCID_ENGLISH_US if no explicit culture is specified to match the behavior of VB
-                int lcid = (culture == null ? 0x0409 : culture.LCID);
+                int lcid = (culture is null ? 0x0409 : culture.LCID);
 
                 // If a request to not wrap exceptions was made, we will unwrap
                 // the TargetInvocationException since that is what will be thrown.
@@ -3547,10 +3547,10 @@ namespace System
             }
 #endif // FEATURE_COMINTEROP
 
-            if (namedParams != null && Array.IndexOf(namedParams, null!) != -1)
+            if (namedParams is not null && Array.IndexOf(namedParams, null!) != -1)
                 throw new ArgumentException(SR.Arg_NamedParamNull, nameof(namedParams));
 
-            int argCnt = (providedArgs != null) ? providedArgs.Length : 0;
+            int argCnt = (providedArgs is not null) ? providedArgs.Length : 0;
 
             binder ??= DefaultBinder;
 
@@ -3568,7 +3568,7 @@ namespace System
             if ((bindingFlags & (BindingFlags.PutDispProperty | BindingFlags.PutRefDispProperty)) != 0)
                 bindingFlags |= BindingFlags.SetProperty;
 
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0 || name.Equals("[DISPID=0]"))
@@ -3595,7 +3595,7 @@ namespace System
                 {
                     Debug.Assert(IsSetField);
 
-                    if (providedArgs == null)
+                    if (providedArgs is null)
                         throw new ArgumentNullException(nameof(providedArgs));
 
                     if ((bindingFlags & BindingFlags.GetProperty) != 0)
@@ -3609,7 +3609,7 @@ namespace System
                 FieldInfo? selFld = null;
                 FieldInfo[]? flds = GetMember(name, MemberTypes.Field, bindingFlags) as FieldInfo[];
 
-                Debug.Assert(flds != null);
+                Debug.Assert(flds is not null);
 
                 if (flds.Length == 1)
                 {
@@ -3620,7 +3620,7 @@ namespace System
                     selFld = binder.BindToField(bindingFlags, flds, IsGetField ? Empty.Value : providedArgs![0]!, culture);
                 }
 
-                if (selFld != null)
+                if (selFld is not null)
                 {
                     // Invocation on a field
                     if (selFld.FieldType.IsArray || ReferenceEquals(selFld.FieldType, typeof(Array)))
@@ -3725,12 +3725,12 @@ namespace System
                 for (int i = 0; i < semiFinalists.Length; i++)
                 {
                     MethodInfo semiFinalist = semiFinalists[i];
-                    Debug.Assert(semiFinalist != null);
+                    Debug.Assert(semiFinalist is not null);
 
                     if (!FilterApplyMethodInfo((RuntimeMethodInfo)semiFinalist, bindingFlags, CallingConventions.Any, new Type[argCnt]))
                         continue;
 
-                    if (finalist == null)
+                    if (finalist is null)
                     {
                         finalist = semiFinalist;
                     }
@@ -3741,17 +3741,17 @@ namespace System
                     }
                 }
 
-                if (results != null)
+                if (results is not null)
                 {
                     Debug.Assert(results.Count > 1);
                     finalists = results.ToArray();
                 }
             }
 
-            Debug.Assert(finalists == null || finalist != null);
+            Debug.Assert(finalists is null || finalist is not null);
 
             // BindingFlags.GetProperty or BindingFlags.SetProperty
-            if (finalist == null && isGetProperty || isSetProperty)
+            if (finalist is null && isGetProperty || isSetProperty)
             {
                 // Lookup Property
                 PropertyInfo[] semiFinalists = (GetMember(name, MemberTypes.Property, bindingFlags) as PropertyInfo[])!;
@@ -3770,13 +3770,13 @@ namespace System
                         semiFinalist = semiFinalists[i].GetGetMethod(true);
                     }
 
-                    if (semiFinalist == null)
+                    if (semiFinalist is null)
                         continue;
 
                     if (!FilterApplyMethodInfo((RuntimeMethodInfo)semiFinalist, bindingFlags, CallingConventions.Any, new Type[argCnt]))
                         continue;
 
-                    if (finalist == null)
+                    if (finalist is null)
                     {
                         finalist = semiFinalist;
                     }
@@ -3787,17 +3787,17 @@ namespace System
                     }
                 }
 
-                if (results != null)
+                if (results is not null)
                 {
                     Debug.Assert(results.Count > 1);
                     finalists = results.ToArray();
                 }
             }
 
-            if (finalist != null)
+            if (finalist is not null)
             {
                 // Invoke
-                if (finalists == null &&
+                if (finalists is null &&
                     argCnt == 0 &&
                     finalist.GetParametersNoCopy().Length == 0 &&
                     (bindingFlags & BindingFlags.OptionalParamBinding) == 0)
@@ -3813,12 +3813,12 @@ namespace System
                 try { invokeMethod = binder.BindToMethod(bindingFlags, finalists, ref providedArgs!, modifiers, culture, namedParams, out state); }
                 catch (MissingMethodException) { }
 
-                if (invokeMethod == null)
+                if (invokeMethod is null)
                     throw new MissingMethodException(FullName, name);
 
                 object? result = ((MethodInfo)invokeMethod).Invoke(target, bindingFlags, binder, providedArgs, culture);
 
-                if (state != null)
+                if (state is not null)
                     binder.ReorderArgumentArray(ref providedArgs, state);
 
                 return result;
@@ -3897,7 +3897,7 @@ namespace System
                 Type[] argsType = new Type[args.Length];
                 for (int i = 0; i < args.Length; i++)
                 {
-                    if (args[i] != null)
+                    if (args[i] is not null)
                     {
                         argsType[i] = args[i]!.GetType(); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                     }
@@ -3945,7 +3945,7 @@ namespace System
                 else
                 {
                     instance = ((ConstructorInfo)invokeMethod).Invoke(bindingAttr, binder, args, culture);
-                    if (state != null)
+                    if (state is not null)
                         binder.ReorderArgumentArray(ref args, state);
                 }
             }
@@ -4031,7 +4031,7 @@ namespace System
 
                 if (publicOnly)
                 {
-                    if (cacheEntry._ctor != null &&
+                    if (cacheEntry._ctor is not null &&
                         (cacheEntry._ctorAttributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public)
                     {
                         throw new MissingMethodException(SR.Format(SR.Arg_NoDefCTor, this));
@@ -4040,8 +4040,8 @@ namespace System
 
                 // Allocate empty object and call the default constructor if present.
                 object instance = RuntimeTypeHandle.Allocate(this);
-                Debug.Assert(cacheEntry._ctor != null || IsValueType);
-                if (cacheEntry._ctor != null)
+                Debug.Assert(cacheEntry._ctor is not null || IsValueType);
+                if (cacheEntry._ctor is not null)
                 {
                     try
                     {
@@ -4101,7 +4101,7 @@ namespace System
             Debug.Assert(
                 aArgs.Length == aArgsIsByRef.Length
                 && aArgs.Length == aArgsTypes.Length
-                && (aArgsWrapperTypes == null || aArgs.Length == aArgsWrapperTypes.Length), "Input arrays should all be of the same length");
+                && (aArgsWrapperTypes is null || aArgs.Length == aArgsWrapperTypes.Length), "Input arrays should all be of the same length");
 
             int cArgs = aArgs.Length;
 
@@ -4117,7 +4117,7 @@ namespace System
                 }
 
                 aParamMod = new ParameterModifier[] { paramMod };
-                if (aArgsWrapperTypes != null)
+                if (aArgsWrapperTypes is not null)
                 {
                     WrapArgsForInvokeCall(aArgs, aArgsWrapperTypes);
                 }
@@ -4132,7 +4132,7 @@ namespace System
             for (int i = 0; i < cArgs; i++)
             {
                 // Determine if the parameter is ByRef.
-                if (aParamMod![0][i] && aArgs[i] != null)
+                if (aParamMod![0][i] && aArgs[i] is not null)
                 {
                     Type argType = aArgsTypes[i];
                     if (!ReferenceEquals(argType, aArgs[i].GetType()))
@@ -4143,7 +4143,7 @@ namespace System
             }
 
             // If the return type is _not_ of the proper type, then convert it.
-            if (ret != null)
+            if (ret is not null)
             {
                 if (!ReferenceEquals(retType, ret.GetType()))
                 {
@@ -4287,7 +4287,7 @@ namespace System
         internal MdUtf8String(void* pStringHeap)
         {
             byte* pStringBytes = (byte*)pStringHeap;
-            if (pStringHeap != null)
+            if (pStringHeap is not null)
             {
                 m_StringHeapByteLength = string.strlen(pStringBytes);
             }
@@ -4377,7 +4377,7 @@ namespace System.Reflection
                 {
                     K hit = keys[index];
 
-                    if (hit == null)
+                    if (hit is null)
                     {
                         m_count++;
                         m_values[index] = value;
@@ -4424,7 +4424,7 @@ namespace System.Reflection
             Table newTable = new Table(newSize);
 
             Table oldTable = m_Table;
-            if (oldTable != null)
+            if (oldTable is not null)
             {
                 K[] keys = oldTable.m_keys;
                 V[] values = oldTable.m_values;
@@ -4433,7 +4433,7 @@ namespace System.Reflection
                 {
                     K key = keys[i];
 
-                    if (key != null)
+                    if (key is not null)
                     {
                         newTable.Insert(key, values[i]);
                     }
@@ -4449,7 +4449,7 @@ namespace System.Reflection
             get
             {
                 Table table = Volatile.Read(ref m_Table);
-                if (table == null)
+                if (table is null)
                     return default!;
 
                 int hashcode = GetHashCodeHelper(key);
@@ -4464,7 +4464,7 @@ namespace System.Reflection
                     // This volatile read has to be first. It is reading the atomically published result.
                     K hit = Volatile.Read(ref keys[index]);
 
-                    if (hit != null)
+                    if (hit is not null)
                     {
                         if (hit.Equals(key))
                             return table.m_values[index];
@@ -4483,7 +4483,7 @@ namespace System.Reflection
             {
                 Table table = m_Table;
 
-                if (table != null)
+                if (table is not null)
                 {
                     int requiredSize = 2 * (table.m_count + 1);
                     if (requiredSize >= table.m_keys.Length)

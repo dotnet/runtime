@@ -1146,7 +1146,7 @@ namespace System
             {
                 Debug.Assert(offset >= 0, "offset >= 0");
                 Debug.Assert(count >= 0, "count >= 0");
-                Debug.Assert(bytes != null, "bytes != null");
+                Debug.Assert(bytes is not null, "bytes is not null");
                 // Don't corrupt memory when multiple threads are erroneously writing
                 // to this stream simultaneously.
                 if (bytes.Length - offset < count)
@@ -1190,7 +1190,7 @@ namespace System
             {
                 Debug.Assert(offset >= 0, "offset >= 0");
                 Debug.Assert(count >= 0, "count >= 0");
-                Debug.Assert(bytes != null, "bytes != null");
+                Debug.Assert(bytes is not null, "bytes is not null");
                 Debug.Assert(bytes.Length >= offset + count, "bytes.Length >= offset + count");
 
                 // You can't use the fixed statement on an array of length 0.

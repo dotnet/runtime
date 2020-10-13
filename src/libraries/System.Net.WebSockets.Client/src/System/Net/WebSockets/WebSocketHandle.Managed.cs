@@ -66,16 +66,16 @@ namespace System.Net.WebSockets
                 // Create the handler for this request and populate it with all of the options.
                 // Try to use a shared handler rather than creating a new one just for this request, if
                 // the options are compatible.
-                if (options.Credentials == null &&
+                if (options.Credentials is null &&
                     !options.UseDefaultCredentials &&
-                    options.Proxy == null &&
-                    options.Cookies == null &&
-                    options.RemoteCertificateValidationCallback == null &&
+                    options.Proxy is null &&
+                    options.Cookies is null &&
+                    options.RemoteCertificateValidationCallback is null &&
                     options._clientCertificates?.Count == 0)
                 {
                     disposeHandler = false;
                     handler = s_defaultHandler;
-                    if (handler == null)
+                    if (handler is null)
                     {
                         handler = new SocketsHttpHandler()
                         {
@@ -83,7 +83,7 @@ namespace System.Net.WebSockets
                             UseProxy = false,
                             UseCookies = false,
                         };
-                        if (Interlocked.CompareExchange(ref s_defaultHandler, handler, null) != null)
+                        if (Interlocked.CompareExchange(ref s_defaultHandler, handler, null) is not null)
                         {
                             handler.Dispose();
                             handler = s_defaultHandler;
@@ -95,7 +95,7 @@ namespace System.Net.WebSockets
                     handler = new SocketsHttpHandler();
                     handler.PooledConnectionLifetime = TimeSpan.Zero;
                     handler.CookieContainer = options.Cookies;
-                    handler.UseCookies = options.Cookies != null;
+                    handler.UseCookies = options.Cookies is not null;
                     handler.SslOptions.RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback;
 
                     if (options.UseDefaultCredentials)
@@ -107,7 +107,7 @@ namespace System.Net.WebSockets
                         handler.Credentials = options.Credentials;
                     }
 
-                    if (options.Proxy == null)
+                    if (options.Proxy is null)
                     {
                         handler.UseProxy = false;
                     }
@@ -118,7 +118,7 @@ namespace System.Net.WebSockets
 
                     if (options._clientCertificates?.Count > 0) // use field to avoid lazily initializing the collection
                     {
-                        Debug.Assert(handler.SslOptions.ClientCertificates == null);
+                        Debug.Assert(handler.SslOptions.ClientCertificates is null);
                         handler.SslOptions.ClientCertificates = new X509Certificate2Collection();
                         handler.SslOptions.ClientCertificates.AddRange(options.ClientCertificates);
                     }
@@ -166,7 +166,7 @@ namespace System.Net.WebSockets
                     if (subprotocolArray.Length > 0 && !string.IsNullOrEmpty(subprotocolArray[0]))
                     {
                         subprotocol = options.RequestedSubProtocols.Find(requested => string.Equals(requested, subprotocolArray[0], StringComparison.OrdinalIgnoreCase));
-                        if (subprotocol == null)
+                        if (subprotocol is null)
                         {
                             throw new WebSocketException(
                                 WebSocketError.UnsupportedProtocol,

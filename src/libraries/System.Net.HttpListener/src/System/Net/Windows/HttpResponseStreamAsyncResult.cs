@@ -19,7 +19,7 @@ namespace System.Net
         {
             get
             {
-                if (_dataChunks == null)
+                if (_dataChunks is null)
                 {
                     return 0;
                 }
@@ -34,7 +34,7 @@ namespace System.Net
         {
             get
             {
-                if (_dataChunks == null)
+                if (_dataChunks is null)
                 {
                     return null;
                 }
@@ -197,7 +197,7 @@ namespace System.Net
                 else
                 {
                     // if we sent headers and body together, numBytes will be the total, but we need to only account for the data
-                    if (asyncResult._dataChunks == null)
+                    if (asyncResult._dataChunks is null)
                     {
                         result = (uint)0;
                         if (NetEventSource.Log.IsEnabled()) { NetEventSource.DumpBuffer(null, IntPtr.Zero, 0); }
@@ -230,7 +230,7 @@ namespace System.Net
         protected override void Cleanup()
         {
             base.Cleanup();
-            if (_pOverlapped != null)
+            if (_pOverlapped is not null)
             {
                 _boundHandle!.FreeNativeOverlapped(_pOverlapped);
             }

@@ -266,7 +266,7 @@ namespace System.Data.Common
                     throw ADP.InvalidMultipartNameIncorrectUsageOfQuotes(property, name);
             }
 
-            if (parsedNames[0] == null)
+            if (parsedNames[0] is null)
             {
                 if (ThrowOnEmptyMultipartName)
                 {

@@ -218,7 +218,7 @@ namespace System.Data.ProviderBase
 
         internal void DeactivateConnection()
         {
-            Debug.Assert(Pool != null);
+            Debug.Assert(Pool is not null);
 
             // Internal method called from the connection pooler so we don't expose
             // the Deactivate method publicly.
@@ -255,10 +255,10 @@ namespace System.Data.ProviderBase
 
         protected internal virtual DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string?[]? restrictions)
         {
-            Debug.Assert(outerConnection != null, "outerConnection may not be null.");
+            Debug.Assert(outerConnection is not null, "outerConnection may not be null.");
 
             DbMetaDataFactory metaDataFactory = factory.GetMetaDataFactory(poolGroup, this);
-            Debug.Assert(metaDataFactory != null, "metaDataFactory may not be null.");
+            Debug.Assert(metaDataFactory is not null, "metaDataFactory may not be null.");
 
             return metaDataFactory.GetSchema(outerConnection, collectionName, restrictions);
         }

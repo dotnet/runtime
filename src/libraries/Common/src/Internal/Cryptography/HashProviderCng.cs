@@ -21,7 +21,7 @@ namespace Internal.Cryptography
         //
         //   - "key" activates MAC hashing if present. If null, this HashProvider performs a regular old hash.
         //
-        public HashProviderCng(string hashAlgId, byte[]? key) : this(hashAlgId, key, isHmac: key != null)
+        public HashProviderCng(string hashAlgId, byte[]? key) : this(hashAlgId, key, isHmac: key is not null)
         {
         }
 
@@ -40,7 +40,7 @@ namespace Internal.Cryptography
             // So keep hHash trapped in this scope to prevent (mis-)use of it.
             {
                 SafeBCryptHashHandle? hHash = null;
-                NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, key, key == null ? 0 : key.Length, BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG);
+                NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, key, key is null ? 0 : key.Length, BCryptCreateHashFlags.BCRYPT_HASH_REUSABLE_FLAG);
                 if (ntStatus == NTSTATUS.STATUS_INVALID_PARAMETER)
                 {
                     // If we got here, we're running on a downlevel OS (pre-Win8) that doesn't support reusable CNG hash objects. Fall back to creating a
@@ -61,7 +61,7 @@ namespace Internal.Cryptography
 
         public sealed override unsafe void AppendHashData(ReadOnlySpan<byte> source)
         {
-            Debug.Assert(_hHash != null);
+            Debug.Assert(_hHash is not null);
             NTSTATUS ntStatus = Interop.BCrypt.BCryptHashData(_hHash, source, source.Length, 0);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
             {
@@ -73,7 +73,7 @@ namespace Internal.Cryptography
         {
             Debug.Assert(destination.Length >= _hashSize);
 
-            Debug.Assert(_hHash != null);
+            Debug.Assert(_hHash is not null);
             NTSTATUS ntStatus = Interop.BCrypt.BCryptFinishHash(_hHash, destination, _hashSize, 0);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
             {
@@ -88,7 +88,7 @@ namespace Internal.Cryptography
         {
             Debug.Assert(destination.Length >= _hashSize);
 
-            Debug.Assert(_hHash != null);
+            Debug.Assert(_hHash is not null);
 
             using (SafeBCryptHashHandle tmpHash = Interop.BCrypt.BCryptDuplicateHash(_hHash))
             {
@@ -108,7 +108,7 @@ namespace Internal.Cryptography
             if (disposing)
             {
                 DestroyHash();
-                if (_key != null)
+                if (_key is not null)
                 {
                     byte[] key = _key;
                     _key = null;
@@ -126,7 +126,7 @@ namespace Internal.Cryptography
             DestroyHash();
 
             SafeBCryptHashHandle hHash;
-            NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, _key, _key == null ? 0 : _key.Length, BCryptCreateHashFlags.None);
+            NTSTATUS ntStatus = Interop.BCrypt.BCryptCreateHash(_hAlgorithm, out hHash, IntPtr.Zero, 0, _key, _key is null ? 0 : _key.Length, BCryptCreateHashFlags.None);
             if (ntStatus != NTSTATUS.STATUS_SUCCESS)
                 throw Interop.BCrypt.CreateCryptographicException(ntStatus);
 
@@ -137,7 +137,7 @@ namespace Internal.Cryptography
         {
             SafeBCryptHashHandle? hHash = _hHash;
             _hHash = null;
-            if (hHash != null)
+            if (hHash is not null)
             {
                 hHash.Dispose();
             }

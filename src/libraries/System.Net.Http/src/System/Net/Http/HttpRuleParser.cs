@@ -66,7 +66,7 @@ namespace System.Net.Http
 
         internal static int GetTokenLength(string input, int startIndex)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
 
             if (startIndex >= input.Length)
             {
@@ -121,7 +121,7 @@ namespace System.Net.Http
 
         internal static int GetWhitespaceLength(string input, int startIndex)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
 
             if (startIndex >= input.Length)
             {
@@ -202,7 +202,7 @@ namespace System.Net.Http
 
         internal static int GetNumberLength(string input, int startIndex, bool allowDecimal)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
             Debug.Assert((startIndex >= 0) && (startIndex < input.Length));
 
             int current = startIndex;
@@ -246,7 +246,7 @@ namespace System.Net.Http
 
         internal static int GetHostLength(string input, int startIndex, bool allowToken, out string? host)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
             Debug.Assert(startIndex >= 0);
 
             host = null;
@@ -308,7 +308,7 @@ namespace System.Net.Http
         // CHAR = <any US-ASCII character (octets 0 - 127)>
         internal static HttpParseResult GetQuotedPairLength(string input, int startIndex, out int length)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
             Debug.Assert((startIndex >= 0) && (startIndex < input.Length));
 
             length = 0;
@@ -344,7 +344,7 @@ namespace System.Net.Http
         private static HttpParseResult GetExpressionLength(string input, int startIndex, char openChar,
             char closeChar, bool supportsNesting, int nestedCount, out int length)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
             Debug.Assert((startIndex >= 0) && (startIndex < input.Length));
 
             length = 0;

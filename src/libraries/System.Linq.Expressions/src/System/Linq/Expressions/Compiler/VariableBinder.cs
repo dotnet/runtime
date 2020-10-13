@@ -96,7 +96,7 @@ namespace System.Linq.Expressions.Compiler
             LambdaExpression? lambda = node.LambdaOperand;
 
             // optimization: inline code for literal lambda's directly
-            if (lambda != null)
+            if (lambda is not null)
             {
                 // visit the lambda, but treat it like a scope associated with invocation
                 _scopes.Push(_tree.Scopes[node] = new CompilerScope(lambda, false));
@@ -128,7 +128,7 @@ namespace System.Linq.Expressions.Compiler
 
         protected override CatchBlock VisitCatchBlock(CatchBlock node)
         {
-            if (node.Variable == null)
+            if (node.Variable is null)
             {
                 Visit(node.Filter);
                 Visit(node.Body);
@@ -148,7 +148,7 @@ namespace System.Linq.Expressions.Compiler
         {
             ReadOnlyCollection<Expression> body;
             var lambda = node as LambdaExpression;
-            if (lambda != null)
+            if (lambda is not null)
             {
                 body = new ReadOnlyCollection<Expression>(new[] { lambda.Body });
             }
@@ -178,7 +178,7 @@ namespace System.Linq.Expressions.Compiler
                     }
 
                     // Otherwise, merge it
-                    if (currentScope.MergedScopes == null)
+                    if (currentScope.MergedScopes is null)
                     {
                         currentScope.MergedScopes = new HashSet<BlockExpression>(ReferenceEqualityComparer.Instance);
                     }
@@ -220,8 +220,8 @@ namespace System.Linq.Expressions.Compiler
                 }
             }
 
-            Debug.Assert(referenceScope != null);
-            if (referenceScope.ReferenceCount == null)
+            Debug.Assert(referenceScope is not null);
+            if (referenceScope.ReferenceCount is null)
             {
                 referenceScope.ReferenceCount = new Dictionary<ParameterExpression, int>();
             }
@@ -256,7 +256,7 @@ namespace System.Linq.Expressions.Compiler
                     storage = VariableStorageKind.Hoisted;
                 }
             }
-            if (definition == null)
+            if (definition is null)
             {
                 throw Error.UndefinedVariable(node.Name, node.Type, CurrentLambdaName);
             }

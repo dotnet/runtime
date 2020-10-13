@@ -56,27 +56,27 @@ namespace System.Xml
 
         public void SetOutput(Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
-            if (stream == null)
+            if (stream is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(stream));
 
-            if (_writer == null)
+            if (_writer is null)
             {
                 _writer = new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
             }
             _writer.SetOutput(stream, false, null);
 
-            if (_elementStream == null)
+            if (_elementStream is null)
             {
                 _elementStream = new MemoryStream();
             }
 
-            if (_elementWriter == null)
+            if (_elementWriter is null)
             {
                 _elementWriter = new XmlUTF8NodeWriter(s_isEscapedAttributeChar, s_isEscapedElementChar);
             }
             _elementWriter.SetOutput(_elementStream, false, null);
 
-            if (_xmlnsAttributes == null)
+            if (_xmlnsAttributes is null)
             {
                 _xmlnsAttributeCount = 0;
                 _xmlnsOffset = 0;
@@ -99,12 +99,12 @@ namespace System.Xml
             _inStartElement = false;
             _includeComments = includeComments;
             _inclusivePrefixes = null;
-            if (inclusivePrefixes != null)
+            if (inclusivePrefixes is not null)
             {
                 _inclusivePrefixes = new string[inclusivePrefixes.Length];
                 for (int i = 0; i < inclusivePrefixes.Length; ++i)
                 {
-                    if (inclusivePrefixes[i] == null)
+                    if (inclusivePrefixes[i] is null)
                     {
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgument(SR.InvalidInclusivePrefixListCollection);
                     }
@@ -121,18 +121,18 @@ namespace System.Xml
 
         public void Close()
         {
-            if (_writer != null)
+            if (_writer is not null)
                 _writer.Close();
-            if (_elementWriter != null)
+            if (_elementWriter is not null)
                 _elementWriter.Close();
-            if (_elementStream != null && _elementStream.Length > 512)
+            if (_elementStream is not null && _elementStream.Length > 512)
                 _elementStream = null!;
             _elementBuffer = null;
-            if (_scopes != null && _scopes.Length > 16)
+            if (_scopes is not null && _scopes.Length > 16)
                 _scopes = null;
-            if (_attributes != null && _attributes.Length > 16)
+            if (_attributes is not null && _attributes.Length > 16)
                 _attributes = null;
-            if (_xmlnsBuffer != null && _xmlnsBuffer.Length > 1024)
+            if (_xmlnsBuffer is not null && _xmlnsBuffer.Length > 1024)
             {
                 _xmlnsAttributes = null;
                 _xmlnsBuffer = null;
@@ -146,7 +146,7 @@ namespace System.Xml
 
         public void WriteComment(string value)
         {
-            if (value == null)
+            if (value is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
             ThrowIfClosed();
             if (_includeComments)
@@ -158,7 +158,7 @@ namespace System.Xml
         [MemberNotNull(nameof(_scopes))]
         private void StartElement()
         {
-            if (_scopes == null)
+            if (_scopes is null)
             {
                 _scopes = new Scope[4];
             }
@@ -185,9 +185,9 @@ namespace System.Xml
 
         public void WriteStartElement(string prefix, string localName)
         {
-            if (prefix == null)
+            if (prefix is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(prefix));
-            if (localName == null)
+            if (localName is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(localName));
             ThrowIfClosed();
             bool isRootElement = (_depth == 0);
@@ -201,7 +201,7 @@ namespace System.Xml
 
             // If we have a inclusivenamespace prefix list and the namespace declaration is in the
             // outer context, then Add it to the root element.
-            if (isRootElement && (_inclusivePrefixes != null))
+            if (isRootElement && (_inclusivePrefixes is not null))
             {
                 // Scan through all the namespace declarations in the outer scope.
                 for (int i = 0; i < _scopes[0].xmlnsAttributeCount; ++i)
@@ -217,7 +217,7 @@ namespace System.Xml
 
         public void WriteStartElement(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] localNameBuffer, int localNameOffset, int localNameLength)
         {
-            if (prefixBuffer == null)
+            if (prefixBuffer is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(prefixBuffer)));
             if (prefixOffset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(prefixOffset), SR.ValueMustBeNonNegative));
@@ -228,7 +228,7 @@ namespace System.Xml
             if (prefixLength > prefixBuffer.Length - prefixOffset)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(prefixLength), SR.Format(SR.SizeExceedsRemainingBufferSpace, prefixBuffer.Length - prefixOffset)));
 
-            if (localNameBuffer == null)
+            if (localNameBuffer is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(localNameBuffer)));
             if (localNameOffset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(localNameOffset), SR.ValueMustBeNonNegative));
@@ -250,7 +250,7 @@ namespace System.Xml
 
             // If we have a inclusivenamespace prefix list and the namespace declaration is in the
             // outer context, then Add it to the root element.
-            if (isRootElement && (_inclusivePrefixes != null))
+            if (isRootElement && (_inclusivePrefixes is not null))
             {
                 // Scan through all the namespace declarations in the outer scope.
                 for (int i = 0; i < _scopes[0].xmlnsAttributeCount; ++i)
@@ -295,7 +295,7 @@ namespace System.Xml
                 bool alreadyReferred = false;
                 while (j >= 0)
                 {
-                    Debug.Assert(_xmlnsBuffer != null);
+                    Debug.Assert(_xmlnsBuffer is not null);
                     if (Equals(_xmlnsBuffer, _xmlnsAttributes![i].prefixOffset, _xmlnsAttributes[i].prefixLength, _xmlnsBuffer, _xmlnsAttributes[j].prefixOffset, _xmlnsAttributes[j].prefixLength))
                     {
                         // Check if the namespace is also equal.
@@ -349,9 +349,9 @@ namespace System.Xml
 
         public void WriteEndElement(string prefix, string localName)
         {
-            if (prefix == null)
+            if (prefix is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(prefix));
-            if (localName == null)
+            if (localName is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(localName));
             ThrowIfClosed();
             _writer.WriteEndElement(prefix, localName);
@@ -361,7 +361,7 @@ namespace System.Xml
         [MemberNotNull(nameof(_xmlnsBuffer))]
         private void EnsureXmlnsBuffer(int byteCount)
         {
-            if (_xmlnsBuffer == null)
+            if (_xmlnsBuffer is null)
             {
                 _xmlnsBuffer = new byte[Math.Max(byteCount, 128)];
             }
@@ -376,9 +376,9 @@ namespace System.Xml
         [MemberNotNull(nameof(_xmlnsAttributes))]
         public void WriteXmlnsAttribute(string prefix, string ns)
         {
-            if (prefix == null)
+            if (prefix is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(prefix));
-            if (ns == null)
+            if (ns is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(ns));
             ThrowIfClosed();
             if (prefix.Length > int.MaxValue - ns.Length)
@@ -401,7 +401,7 @@ namespace System.Xml
         [MemberNotNull(nameof(_xmlnsAttributes))]
         public void WriteXmlnsAttribute(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] nsBuffer, int nsOffset, int nsLength)
         {
-            if (prefixBuffer == null)
+            if (prefixBuffer is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(prefixBuffer)));
             if (prefixOffset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(prefixOffset), SR.ValueMustBeNonNegative));
@@ -412,7 +412,7 @@ namespace System.Xml
             if (prefixLength > prefixBuffer.Length - prefixOffset)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(prefixLength), SR.Format(SR.SizeExceedsRemainingBufferSpace, prefixBuffer.Length - prefixOffset)));
 
-            if (nsBuffer == null)
+            if (nsBuffer is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(nsBuffer)));
             if (nsOffset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(nsOffset), SR.ValueMustBeNonNegative));
@@ -441,9 +441,9 @@ namespace System.Xml
 
         public void WriteStartAttribute(string prefix, string localName)
         {
-            if (prefix == null)
+            if (prefix is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(prefix));
-            if (localName == null)
+            if (localName is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(localName));
             ThrowIfClosed();
             _attribute.offset = _elementWriter.Position;
@@ -459,7 +459,7 @@ namespace System.Xml
 
         public void WriteStartAttribute(byte[] prefixBuffer, int prefixOffset, int prefixLength, byte[] localNameBuffer, int localNameOffset, int localNameLength)
         {
-            if (prefixBuffer == null)
+            if (prefixBuffer is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(prefixBuffer)));
             if (prefixOffset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(prefixOffset), SR.ValueMustBeNonNegative));
@@ -470,7 +470,7 @@ namespace System.Xml
             if (prefixLength > prefixBuffer.Length - prefixOffset)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(prefixLength), SR.Format(SR.SizeExceedsRemainingBufferSpace, prefixBuffer.Length - prefixOffset)));
 
-            if (localNameBuffer == null)
+            if (localNameBuffer is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(localNameBuffer)));
             if (localNameOffset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(localNameOffset), SR.ValueMustBeNonNegative));
@@ -516,7 +516,7 @@ namespace System.Xml
 
         public void WriteEscapedText(string value)
         {
-            if (value == null)
+            if (value is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
             ThrowIfClosed();
             // Skip all white spaces before the start of root element.
@@ -535,7 +535,7 @@ namespace System.Xml
 
         public void WriteEscapedText(byte[] chars, int offset, int count)
         {
-            if (chars == null)
+            if (chars is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(chars)));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
@@ -593,7 +593,7 @@ namespace System.Xml
         public void WriteText(byte[] chars, int offset, int count)
         {
             ThrowIfClosed();
-            if (chars == null)
+            if (chars is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(chars)));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
@@ -615,7 +615,7 @@ namespace System.Xml
 
         public void WriteText(string value)
         {
-            if (value == null)
+            if (value is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
             if (value.Length > 0)
             {
@@ -633,7 +633,7 @@ namespace System.Xml
         public void WriteText(char[] chars, int offset, int count)
         {
             ThrowIfClosed();
-            if (chars == null)
+            if (chars is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(chars)));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
@@ -655,7 +655,7 @@ namespace System.Xml
 
         private void ThrowIfClosed()
         {
-            if (_writer == null)
+            if (_writer is null)
                 ThrowClosed();
         }
 
@@ -668,7 +668,7 @@ namespace System.Xml
         {
             if (xmlnsAttribute.referred)
             {
-                Debug.Assert(_xmlnsBuffer != null);
+                Debug.Assert(_xmlnsBuffer is not null);
                 _writer.WriteXmlnsAttribute(_xmlnsBuffer, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength, _xmlnsBuffer, xmlnsAttribute.nsOffset, xmlnsAttribute.nsLength);
             }
         }
@@ -704,7 +704,7 @@ namespace System.Xml
 
         private void AddAttribute(ref Attribute attribute)
         {
-            if (_attributes == null)
+            if (_attributes is null)
             {
                 _attributes = new Attribute[4];
             }
@@ -725,7 +725,7 @@ namespace System.Xml
             //            Console.WriteLine("{0}={1}", Encoding.UTF8.GetString(xmlnsBuffer, xmlnsAttribute.prefixOffset, xmlnsAttribute.prefixLength),
             //                                Encoding.UTF8.GetString(xmlnsBuffer, xmlnsAttribute.nsOffset, xmlnsAttribute.nsLength));
 
-            if (_xmlnsAttributes == null)
+            if (_xmlnsAttributes is null)
             {
                 _xmlnsAttributes = new XmlnsAttribute[4];
             }
@@ -739,7 +739,7 @@ namespace System.Xml
             // If the prefix is in the inclusive prefix list, then mark it as
             // to be rendered. Depth 0 is outer context and those can be ignored
             // for now.
-            if ((_depth > 0) && (_inclusivePrefixes != null))
+            if ((_depth > 0) && (_inclusivePrefixes is not null))
             {
                 if (IsInclusivePrefix(ref xmlnsAttribute))
                 {

@@ -32,7 +32,7 @@ namespace System.Xml
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CheckAsync()
         {
-            if (_lastTask != null && !_lastTask.IsCompleted)
+            if (_lastTask is not null && !_lastTask.IsCompleted)
             {
                 throw new InvalidOperationException(SR.XmlAsyncIsRunningException);
             }

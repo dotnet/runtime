@@ -35,7 +35,7 @@ namespace System.Xml.Xsl
 
             try
             {
-                if (args == null)
+                if (args is null)
                 {
                     message = res;
                 }
@@ -48,13 +48,13 @@ namespace System.Xml.Xsl
             {
             }
 
-            if (message != null)
+            if (message is not null)
             {
                 return message;
             }
 
             StringBuilder sb = new StringBuilder(res);
-            if (args != null && args.Length > 0)
+            if (args is not null && args.Length > 0)
             {
                 Debug.Fail("Resource string '" + res + "' was not found");
                 sb.Append('(');
@@ -79,15 +79,15 @@ namespace System.Xml.Xsl
         {
             string result = this.GetType().FullName!;
             string info = FormatDetailedMessage();
-            if (info != null && info.Length > 0)
+            if (info is not null && info.Length > 0)
             {
                 result += ": " + info;
             }
-            if (InnerException != null)
+            if (InnerException is not null)
             {
                 result += " ---> " + InnerException.ToString() + Environment.NewLine + "   " + CreateMessage(SR.Xml_EndOfInnerExceptionStack);
             }
-            if (StackTrace != null)
+            if (StackTrace is not null)
             {
                 result += Environment.NewLine + StackTrace;
             }
@@ -157,16 +157,16 @@ namespace System.Xml.Xsl
 
         internal void SetSourceLineInfo(ISourceLineInfo? lineInfo)
         {
-            Debug.Assert(lineInfo == null || lineInfo.Uri != null);
+            Debug.Assert(lineInfo is null || lineInfo.Uri is not null);
             _lineInfo = lineInfo;
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
-            info.AddValue("hasLineInfo", _lineInfo != null);
+            info.AddValue("hasLineInfo", _lineInfo is not null);
 
-            if (_lineInfo != null)
+            if (_lineInfo is not null)
             {
                 info.AddValue("Uri", _lineInfo.Uri, typeof(string));
                 info.AddValue("StartLine", _lineInfo.Start.Line, typeof(int));
@@ -178,26 +178,26 @@ namespace System.Xml.Xsl
 
         public override string? SourceUri
         {
-            get { return _lineInfo != null ? _lineInfo.Uri : null; }
+            get { return _lineInfo is not null ? _lineInfo.Uri : null; }
         }
 
         public override int LineNumber
         {
-            get { return _lineInfo != null ? _lineInfo.Start.Line : 0; }
+            get { return _lineInfo is not null ? _lineInfo.Start.Line : 0; }
         }
 
         public override int LinePosition
         {
-            get { return _lineInfo != null ? _lineInfo.Start.Pos : 0; }
+            get { return _lineInfo is not null ? _lineInfo.Start.Pos : 0; }
         }
 
         private static string AppendLineInfoMessage(string message, ISourceLineInfo? lineInfo)
         {
-            if (lineInfo != null)
+            if (lineInfo is not null)
             {
                 string fileName = SourceLineInfo.GetFileName(lineInfo.Uri!);
                 string lineInfoMessage = CreateMessage(SR.Xml_ErrorFilePosition, fileName, lineInfo.Start.Line.ToString(CultureInfo.InvariantCulture), lineInfo.Start.Pos.ToString(CultureInfo.InvariantCulture));
-                if (lineInfoMessage != null && lineInfoMessage.Length > 0)
+                if (lineInfoMessage is not null && lineInfoMessage.Length > 0)
                 {
                     if (message.Length > 0 && !XmlCharType.IsWhiteSpace(message[message.Length - 1]))
                     {

@@ -46,7 +46,7 @@ namespace System.Security.Cryptography
             {
                 // If we were passed the friendly name, retrieve the value String.
                 string? oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
-                if (oidValue == null)
+                if (oidValue is null)
                 {
                     oidValue = oid;
                 }
@@ -68,7 +68,7 @@ namespace System.Security.Cryptography
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
@@ -89,7 +89,7 @@ namespace System.Security.Cryptography
             // Need to do part of the argument validation ourselves as OidCollection throws
             // ArgumentOutOfRangeException where List<>.CopyTo() throws ArgumentException.
 
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);

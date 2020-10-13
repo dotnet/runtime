@@ -11,7 +11,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ReadOnlyActiveDirectorySchemaPropertyCollection(ArrayList values)
         {
-            if (values != null)
+            if (values is not null)
             {
                 InnerList.AddRange(values);
             }
@@ -24,7 +24,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ActiveDirectorySchemaProperty schemaProperty)
         {
-            if (schemaProperty == null)
+            if (schemaProperty is null)
                 throw new ArgumentNullException(nameof(schemaProperty));
             for (int i = 0; i < InnerList.Count; i++)
             {
@@ -39,7 +39,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ActiveDirectorySchemaProperty schemaProperty)
         {
-            if (schemaProperty == null)
+            if (schemaProperty is null)
                 throw new ArgumentNullException(nameof(schemaProperty));
 
             for (int i = 0; i < InnerList.Count; i++)

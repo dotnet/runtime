@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
-                if (obj == null)
+                if (obj is null)
                 {
                     frame.Push(null);
                 }
@@ -38,7 +38,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
-                if (obj == null)
+                if (obj is null)
                 {
                     frame.Push(null);
                 }
@@ -55,7 +55,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
-                if (obj == null)
+                if (obj is null)
                 {
                     frame.Push(null);
                 }
@@ -72,7 +72,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
-                if (obj == null)
+                if (obj is null)
                 {
                     frame.Push(null);
                 }
@@ -89,7 +89,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
-                if (obj == null)
+                if (obj is null)
                 {
                     frame.Push(null);
                 }
@@ -106,7 +106,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
-                if (obj == null)
+                if (obj is null)
                 {
                     frame.Push(null);
                 }
@@ -123,7 +123,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
-                if (obj == null)
+                if (obj is null)
                 {
                     frame.Push(null);
                 }
@@ -140,7 +140,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
-                if (obj == null)
+                if (obj is null)
                 {
                     frame.Push(null);
                 }

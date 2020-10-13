@@ -50,7 +50,7 @@ namespace System.Collections.Immutable
             /// </value>
             internal bool IsEmpty
             {
-                get { return _additionalElements == null; }
+                get { return _additionalElements is null; }
             }
 
             /// <summary>
@@ -337,7 +337,7 @@ namespace System.Collections.Immutable
             /// </summary>
             internal void Freeze()
             {
-                if (_additionalElements != null)
+                if (_additionalElements is not null)
                 {
                     _additionalElements.Freeze();
                 }

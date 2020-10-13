@@ -133,7 +133,7 @@ namespace System.Xml.Xsl.Xslt
             NipOffTypeNameCheck();
 
             Debug.Assert(
-                _qname == null ||
+                _qname is null ||
                 _nodeKind == XmlNodeKindFlags.Element || _nodeKind == XmlNodeKindFlags.Attribute || _nodeKind == XmlNodeKindFlags.PI,
                 "qname may be not null only for element, attribute, or PI patterns"
             );
@@ -190,7 +190,7 @@ namespace System.Xml.Xsl.Xslt
             _nodeKind = nodeKinds;
             QilBinary lastAnd = leftPath[idx & 3];
 
-            if (lastAnd != null && lastAnd.Right.NodeType == QilNodeType.Eq)
+            if (lastAnd is not null && lastAnd.Right.NodeType == QilNodeType.Eq)
             {
                 QilBinary eq = (QilBinary)lastAnd.Right;
 
@@ -210,11 +210,11 @@ namespace System.Xml.Xsl.Xslt
             QilBinary and1 = leftPath[idx & 3];
             QilBinary and2 = leftPath[--idx & 3];
 
-            if (and2 != null)
+            if (and2 is not null)
             {
                 and2.Left = and1.Right;
             }
-            else if (and1 != null)
+            else if (and1 is not null)
             {
                 _condition = and1.Right;
             }
@@ -276,7 +276,7 @@ namespace System.Xml.Xsl.Xslt
             QilName? qname = pattern.Match.QName;
             List<Pattern>? list;
 
-            if (qname == null)
+            if (qname is null)
             {
                 list = NonFixedNamePatterns;
             }
@@ -382,7 +382,7 @@ namespace System.Xml.Xsl.Xslt
         private QilNode MatchPattern(QilIterator it, TemplateMatch match)
         {
             QilNode? cond = match.Condition;
-            if (cond == null)
+            if (cond is null)
             {
                 return _f.True();
             }
@@ -550,7 +550,7 @@ namespace System.Xml.Xsl.Xslt
                     QilName qname = match.QName;
                     QilNode cond = match.Condition;
 
-                    if (cond != null) {
+                    if (cond is not null) {
                         // We have to clone, because the same pattern may be used
                         // in many different xsl:apply-templates/imports functions
                         cond = cond.DeepClone(f.BaseFactory);
@@ -569,14 +569,14 @@ namespace System.Xml.Xsl.Xslt
                         default                         : nodeType = null       ;  break;
                         }
 
-                        Debug.Assert(nodeType != null, "Unexpected nodeKind: " + nodeKind);
+                        Debug.Assert(nodeType is not null, "Unexpected nodeKind: " + nodeKind);
                         QilNode typeNameCheck = f.IsType(it, nodeType);
 
-                        if (qname != null) {
+                        if (qname is not null) {
                             typeNameCheck = f.And(typeNameCheck, f.Eq(f.NameOf(it), qname.ShallowClone(f.BaseFactory)));
                         }
 
-                        cond = (cond == null) ? typeNameCheck : f.And(typeNameCheck, cond);
+                        cond = (cond is null) ? typeNameCheck : f.And(typeNameCheck, cond);
                     }
 
                     result = f.Conditional(cond,

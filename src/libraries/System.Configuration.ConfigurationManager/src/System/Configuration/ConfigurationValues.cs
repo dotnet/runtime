@@ -56,7 +56,7 @@ namespace System.Configuration
 
         internal bool Contains(string key)
         {
-            return BaseGet(key) != null;
+            return BaseGet(key) is not null;
         }
 
         internal string GetKey(int index)
@@ -83,13 +83,13 @@ namespace System.Configuration
         internal void ChangeSourceInfo(string key, PropertySourceInfo sourceInfo)
         {
             ConfigurationValue configurationValue = GetConfigValue(key);
-            if (configurationValue != null) configurationValue.SourceInfo = sourceInfo;
+            if (configurationValue is not null) configurationValue.SourceInfo = sourceInfo;
         }
 
         private ConfigurationValue CreateConfigValue(object value, ConfigurationValueFlags valueFlags,
             PropertySourceInfo sourceInfo)
         {
-            if (value != null)
+            if (value is not null)
             {
                 if (value is ConfigurationElement)
                 {
@@ -127,7 +127,7 @@ namespace System.Configuration
         internal bool IsModified(string key)
         {
             ConfigurationValue configurationValue = (ConfigurationValue)BaseGet(key);
-            if (configurationValue != null)
+            if (configurationValue is not null)
                 return (configurationValue.ValueFlags & ConfigurationValueFlags.Modified) != 0;
             return false;
         }
@@ -135,7 +135,7 @@ namespace System.Configuration
         internal bool IsInherited(string key)
         {
             ConfigurationValue configurationValue = (ConfigurationValue)BaseGet(key);
-            if (configurationValue != null)
+            if (configurationValue is not null)
                 return (configurationValue.ValueFlags & ConfigurationValueFlags.Inherited) != 0;
             return false;
         }

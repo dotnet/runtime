@@ -30,10 +30,10 @@ namespace System.Security.Cryptography
 
         public static bool Exists(string keyName, CngProvider provider, CngKeyOpenOptions options)
         {
-            if (keyName == null)
+            if (keyName is null)
                 throw new ArgumentNullException(nameof(keyName));
 
-            if (provider == null)
+            if (provider is null)
                 throw new ArgumentNullException(nameof(provider));
 
             using (SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider())
@@ -50,7 +50,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    if (keyHandle != null)
+                    if (keyHandle is not null)
                         keyHandle.Dispose();
                 }
             }

@@ -41,7 +41,7 @@ namespace System.Data.SqlTypes
         public SqlXml(XmlReader? value)
         {
             // whoever pass in the XmlReader is responsible for closing it
-            if (value == null)
+            if (value is null)
             {
                 SetNull();
             }
@@ -57,7 +57,7 @@ namespace System.Data.SqlTypes
         {
             // whoever pass in the stream is responsible for closing it
             // similar to SqlBytes implementation
-            if (value == null)
+            if (value is null)
             {
                 SetNull();
             }
@@ -85,11 +85,11 @@ namespace System.Data.SqlTypes
             }
 
             // NOTE: Maintaining createSqlReaderMethodInfo private field member to preserve the serialization of the class
-            if (_createSqlReaderMethodInfo == null)
+            if (_createSqlReaderMethodInfo is null)
             {
                 _createSqlReaderMethodInfo = CreateSqlReaderMethodInfo;
             }
-            Debug.Assert(_createSqlReaderMethodInfo != null, "MethodInfo reference for XmlReader.CreateSqlReader should not be null.");
+            Debug.Assert(_createSqlReaderMethodInfo is not null, "MethodInfo reference for XmlReader.CreateSqlReader should not be null.");
 
             XmlReader r = CreateSqlXmlReader(stream);
             _firstCreateReader = false;
@@ -120,7 +120,7 @@ namespace System.Data.SqlTypes
 
         private static Func<Stream, XmlReaderSettings, XmlParserContext?, XmlReader> CreateSqlReaderDelegate()
         {
-            Debug.Assert(CreateSqlReaderMethodInfo != null, "MethodInfo reference for XmlReader.CreateSqlReader should not be null.");
+            Debug.Assert(CreateSqlReaderMethodInfo is not null, "MethodInfo reference for XmlReader.CreateSqlReader should not be null.");
 
             return CreateSqlReaderMethodInfo.CreateDelegate<Func<Stream, XmlReaderSettings, XmlParserContext?, XmlReader>>();
         }
@@ -129,7 +129,7 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                if (s_createSqlReaderMethodInfo == null)
+                if (s_createSqlReaderMethodInfo is null)
                 {
                     s_createSqlReaderMethodInfo = typeof(System.Xml.XmlReader).GetMethod("CreateSqlReader", BindingFlags.Static | BindingFlags.NonPublic)!;
                 }
@@ -222,7 +222,7 @@ namespace System.Data.SqlTypes
         {
             string? isNull = r.GetAttribute("nil", XmlSchema.InstanceNamespace);
 
-            if (isNull != null && XmlConvert.ToBoolean(isNull))
+            if (isNull is not null && XmlConvert.ToBoolean(isNull))
             {
                 // Read the next value.
                 r.ReadInnerXml();
@@ -293,7 +293,7 @@ namespace System.Data.SqlTypes
         internal SqlXmlStreamWrapper(Stream stream)
         {
             _stream = stream;
-            Debug.Assert(_stream != null, "stream can not be null");
+            Debug.Assert(_stream is not null, "stream can not be null");
             _lPosition = 0;
             _isClosed = false;
         }
@@ -408,7 +408,7 @@ namespace System.Data.SqlTypes
             ThrowIfStreamClosed(nameof(Read));
             ThrowIfStreamCannotRead(nameof(Read));
 
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0 || offset > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -429,7 +429,7 @@ namespace System.Data.SqlTypes
             ThrowIfStreamClosed(nameof(Write));
             ThrowIfStreamCannotWrite(nameof(Write));
 
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0 || offset > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -483,7 +483,7 @@ namespace System.Data.SqlTypes
 
         public override void Flush()
         {
-            if (_stream != null)
+            if (_stream is not null)
                 _stream.Flush();
         }
 
@@ -528,7 +528,7 @@ namespace System.Data.SqlTypes
         {
             // Check the .CanRead and .CanWrite and .CanSeek properties to make sure stream is really closed
 
-            if (_isClosed || _stream == null || (!_stream.CanRead && !_stream.CanWrite && !_stream.CanSeek))
+            if (_isClosed || _stream is null || (!_stream.CanRead && !_stream.CanWrite && !_stream.CanSeek))
                 return true;
             else
                 return false;

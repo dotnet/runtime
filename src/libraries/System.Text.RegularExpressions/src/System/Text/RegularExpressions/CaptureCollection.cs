@@ -55,7 +55,7 @@ namespace System.Text.RegularExpressions
             if (_captures is null)
             {
                 ForceInitialized();
-                Debug.Assert(_captures != null);
+                Debug.Assert(_captures is not null);
             }
 
             return _captures[i];
@@ -184,7 +184,7 @@ namespace System.Text.RegularExpressions
 
             internal Enumerator(CaptureCollection collection)
             {
-                Debug.Assert(collection != null, "collection cannot be null.");
+                Debug.Assert(collection is not null, "collection cannot be null.");
 
                 _collection = collection;
                 _index = -1;

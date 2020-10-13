@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding, e);
             }
 
-            if (PolicyQualifiers != null)
+            if (PolicyQualifiers is not null)
             {
 
                 writer.PushSequence();

@@ -28,11 +28,11 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (_helper.JsonFormatReaderDelegate == null)
+                if (_helper.JsonFormatReaderDelegate is null)
                 {
                     lock (this)
                     {
-                        if (_helper.JsonFormatReaderDelegate == null)
+                        if (_helper.JsonFormatReaderDelegate is null)
                         {
                             JsonFormatClassReaderDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
@@ -62,11 +62,11 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (_helper.JsonFormatWriterDelegate == null)
+                if (_helper.JsonFormatWriterDelegate is null)
                 {
                     lock (this)
                     {
-                        if (_helper.JsonFormatWriterDelegate == null)
+                        if (_helper.JsonFormatWriterDelegate is null)
                         {
                             JsonFormatClassWriterDelegate tempDelegate;
                             if (DataContractSerializer.Option == SerializationOption.ReflectionOnly)
@@ -103,7 +103,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
             jsonWriter.WriteAttributeString(null, JsonGlobals.typeString, null, JsonGlobals.objectString);
             JsonFormatWriterDelegate(jsonWriter, obj, context, TraditionalClassDataContract, MemberNames);
         }
@@ -148,7 +148,7 @@ namespace System.Runtime.Serialization.Json
 
             private void CopyMembersAndCheckDuplicateNames()
             {
-                if (_traditionalClassDataContract.MemberNames != null)
+                if (_traditionalClassDataContract.MemberNames is not null)
                 {
                     int memberCount = _traditionalClassDataContract.MemberNames.Length;
                     Dictionary<string, object?> memberTable = new Dictionary<string, object?>(memberCount);

@@ -43,7 +43,7 @@ namespace System.Windows.Markup
         {
             get
             {
-                if (_valueSerializerType == null && _valueSerializerTypeName != null)
+                if (_valueSerializerType is null && _valueSerializerTypeName is not null)
                 {
                     _valueSerializerType = Type.GetType(_valueSerializerTypeName);
                 }
@@ -59,7 +59,7 @@ namespace System.Windows.Markup
         {
             get
             {
-                if (_valueSerializerType != null)
+                if (_valueSerializerType is not null)
                 {
                     return _valueSerializerType.AssemblyQualifiedName!;
                 }

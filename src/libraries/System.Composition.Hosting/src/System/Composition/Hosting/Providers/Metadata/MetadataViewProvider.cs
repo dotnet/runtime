@@ -31,7 +31,7 @@ namespace System.Composition.Hosting.Providers.Metadata
                 return ci.IsPublic && ps.Length == 1 && ps[0].ParameterType == typeof(IDictionary<string, object>);
             });
 
-            if (dictionaryConstructor != null)
+            if (dictionaryConstructor is not null)
             {
                 var providerArg = Expression.Parameter(typeof(IDictionary<string, object>), "metadata");
                 return Expression.Lambda<Func<IDictionary<string, object>, TMetadata>>(
@@ -41,7 +41,7 @@ namespace System.Composition.Hosting.Providers.Metadata
             }
 
             var parameterlessConstructor = ti.DeclaredConstructors.SingleOrDefault(ci => ci.IsPublic && ci.GetParameters().Length == 0);
-            if (parameterlessConstructor != null)
+            if (parameterlessConstructor is not null)
             {
                 var providerArg = Expression.Parameter(typeof(IDictionary<string, object>), "metadata");
                 var resultVar = Expression.Variable(typeof(TMetadata), "result");
@@ -51,8 +51,8 @@ namespace System.Composition.Hosting.Providers.Metadata
 
                 foreach (var prop in typeof(TMetadata).GetTypeInfo().DeclaredProperties
                     .Where(prop =>
-                        prop.GetMethod != null && prop.GetMethod.IsPublic && !prop.GetMethod.IsStatic &&
-                        prop.SetMethod != null && prop.SetMethod.IsPublic && !prop.SetMethod.IsStatic))
+                        prop.GetMethod is not null && prop.GetMethod.IsPublic && !prop.GetMethod.IsStatic &&
+                        prop.SetMethod is not null && prop.SetMethod.IsPublic && !prop.SetMethod.IsStatic))
                 {
                     var dva = Expression.Constant(prop.GetCustomAttribute<DefaultValueAttribute>(false), typeof(DefaultValueAttribute));
                     var name = Expression.Constant(prop.Name, typeof(string));
@@ -79,7 +79,7 @@ namespace System.Composition.Hosting.Providers.Metadata
             if (metadata.TryGetValue(name, out result))
                 return (TValue)result;
 
-            if (defaultValue != null)
+            if (defaultValue is not null)
                 return (TValue)defaultValue.Value;
 
             // This could be significantly improved by describing the target metadata property.

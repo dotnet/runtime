@@ -16,7 +16,7 @@ namespace System.Reflection.Metadata
             Length = length;
         }
 
-        public bool IsDefault => Buffer == null;
+        public bool IsDefault => Buffer is null;
 
         public ArraySegment<byte> GetBytes() => new ArraySegment<byte>(Buffer, Start, Length);
     }

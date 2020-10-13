@@ -23,9 +23,9 @@ namespace System.Xml
 
         public XmlDictionaryString(IXmlDictionary dictionary, string value, int key)
         {
-            if (dictionary == null)
+            if (dictionary is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(dictionary)));
-            if (value == null)
+            if (value is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
             if (key < MinKey || key > MaxKey)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(key), SR.Format(SR.ValueMustBeInRange, MinKey, MaxKey)));
@@ -37,7 +37,7 @@ namespace System.Xml
         [return: NotNullIfNotNull("s")]
         internal static string? GetString(XmlDictionaryString? s)
         {
-            if (s == null)
+            if (s is null)
                 return null;
             return s.Value;
         }
@@ -76,7 +76,7 @@ namespace System.Xml
 
         internal byte[] ToUTF8()
         {
-            if (_buffer == null)
+            if (_buffer is null)
                 _buffer = System.Text.Encoding.UTF8.GetBytes(_value);
             return _buffer;
         }
@@ -105,7 +105,7 @@ namespace System.Xml
 
             public bool TryLookup(string value, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
-                if (value == null)
+                if (value is null)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
                 if (value.Length == 0)
                 {
@@ -129,7 +129,7 @@ namespace System.Xml
 
             public bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
             {
-                if (value == null)
+                if (value is null)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
                 if (value.Dictionary != this)
                 {

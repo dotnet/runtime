@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             writer.PushSequence(tag);
 
 
-            if (CertificateSet != null)
+            if (CertificateSet is not null)
             {
 
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
 
 
-            if (RevocationInfoChoices != null)
+            if (RevocationInfoChoices is not null)
             {
 
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 1));

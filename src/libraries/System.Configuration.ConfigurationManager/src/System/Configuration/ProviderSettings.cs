@@ -62,7 +62,7 @@ namespace System.Configuration
         {
             get
             {
-                if (_propertyNameCollection != null) return _propertyNameCollection;
+                if (_propertyNameCollection is not null) return _propertyNameCollection;
 
                 lock (this)
                 {
@@ -106,14 +106,14 @@ namespace System.Configuration
             bool bIsModified = false;
             ArrayList removeList = null;
 
-            if (_propertyNameCollection != null)
+            if (_propertyNameCollection is not null)
             {
                 // remove any data that has been delete from the collection
                 foreach (ConfigurationProperty prop in _properties)
                     if ((prop.Name != "name") && (prop.Name != "type"))
                     {
-                        if (_propertyNameCollection.Get(prop.Name) != null) continue;
-                        if (removeList == null)
+                        if (_propertyNameCollection.Get(prop.Name) is not null) continue;
+                        if (removeList is null)
                             removeList = new ArrayList();
 
                         if ((Values.GetConfigValue(prop.Name).ValueFlags & ConfigurationValueFlags.Locked) != 0)
@@ -122,7 +122,7 @@ namespace System.Configuration
                         bIsModified = true;
                     }
 
-                if (removeList != null)
+                if (removeList is not null)
                 {
                     foreach (string propName in removeList)
                         _properties.Remove(propName);
@@ -134,7 +134,7 @@ namespace System.Configuration
                     string valueInCollection = _propertyNameCollection[key];
                     string valueInBag = GetProperty(key);
 
-                    if ((valueInBag == null) || (valueInCollection != valueInBag)) // add new property
+                    if ((valueInBag is null) || (valueInCollection != valueInBag)) // add new property
                     {
                         SetProperty(key, valueInCollection);
                         bIsModified = true;
@@ -156,7 +156,7 @@ namespace System.Configuration
             if (_properties.Contains(propName))
             {
                 ConfigurationProperty prop = _properties[propName];
-                if (prop != null)
+                if (prop is not null)
                     return (string)base[prop];
             }
             return null;
@@ -173,7 +173,7 @@ namespace System.Configuration
                 _properties.Add(setPropName);
             }
 
-            if (setPropName == null) return;
+            if (setPropName is null) return;
             base[setPropName] = value;
         }
 

@@ -182,7 +182,7 @@ namespace Microsoft.Extensions.DependencyInjection
             public void WriteProperty(string name, object value)
             {
                 StartProperty(name);
-                if (value != null)
+                if (value is not null)
                 {
                     Builder.AppendFormat(" \"{0}\"", value);
                 }

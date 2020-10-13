@@ -77,7 +77,7 @@ namespace System.Reflection.Metadata
                 get
                 {
                     var current = _chunks.Current;
-                    if (current != null)
+                    if (current is not null)
                     {
                         return new Blob(current._buffer, 0, current.Length);
                     }

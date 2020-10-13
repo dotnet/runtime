@@ -9,7 +9,7 @@ namespace System
     {
         internal static bool EqualsOrdinalAsciiIgnoreCase(string left, char[] right, int rightStartIndex, int rightLength)
         {
-            Debug.Assert(left != null, "Expected non-null string");
+            Debug.Assert(left is not null, "Expected non-null string");
             DebugAssertArrayInputs(right, rightStartIndex, rightLength);
 
             if (left.Length != rightLength)
@@ -61,7 +61,7 @@ namespace System
         [Conditional("DEBUG")]
         internal static void DebugAssertArrayInputs(char[] array, int startIndex, int length)
         {
-            Debug.Assert(array != null, "Null array");
+            Debug.Assert(array is not null, "Null array");
             Debug.Assert(startIndex >= 0, $"Expected {nameof(startIndex)} to be >= 0, got {startIndex}");
             Debug.Assert(length >= 0, $"Expected {nameof(length)} to be >= 0, got {length}");
             Debug.Assert(startIndex <= array.Length - length, $"Expected {startIndex} to be <= {array.Length} - {length}, got {startIndex}");

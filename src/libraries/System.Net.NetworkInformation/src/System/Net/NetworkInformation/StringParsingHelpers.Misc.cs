@@ -75,7 +75,7 @@ namespace System.Net.NetworkInformation
 
         private static int CountOccurrences(string value, string candidate)
         {
-            Debug.Assert(candidate != null, "CountOccurrences: Candidate string was null.");
+            Debug.Assert(candidate is not null, "CountOccurrences: Candidate string was null.");
             int index = 0;
             int occurrences = 0;
             while (index != -1)

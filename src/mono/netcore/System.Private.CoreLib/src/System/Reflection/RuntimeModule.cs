@@ -116,7 +116,7 @@ namespace System.Reflection
         {
             var filtered = new List<Type>();
             foreach (Type t in GetTypes())
-                if (filter != null && filter(t, filterCriteria))
+                if (filter is not null && filter(t, filterCriteria))
                     filtered.Add(t);
             return filtered.ToArray();
         }
@@ -137,7 +137,7 @@ namespace System.Reflection
         public override
         FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             if (IsResource())
@@ -155,7 +155,7 @@ namespace System.Reflection
                 return Array.Empty<FieldInfo>();
 
             Type globalType = GetGlobalType(_impl);
-            return (globalType != null) ? globalType.GetFields(bindingFlags) : Array.Empty<FieldInfo>();
+            return (globalType is not null) ? globalType.GetFields(bindingFlags) : Array.Empty<FieldInfo>();
         }
 
         public override
@@ -176,9 +176,9 @@ namespace System.Reflection
                 return null;
 
             Type globalType = GetGlobalType(_impl);
-            if (globalType == null)
+            if (globalType is null)
                 return null;
-            if (types == null)
+            if (types is null)
                 return globalType.GetMethod(name);
             return globalType.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -192,7 +192,7 @@ namespace System.Reflection
                 return Array.Empty<MethodInfo>();
 
             Type globalType = GetGlobalType(_impl);
-            return (globalType != null) ? globalType.GetMethods(bindingFlags) : Array.Empty<MethodInfo>();
+            return (globalType is not null) ? globalType.GetMethods(bindingFlags) : Array.Empty<MethodInfo>();
         }
 
         public override
@@ -205,7 +205,7 @@ namespace System.Reflection
         public override
         Type GetType(string className, bool throwOnError, bool ignoreCase)
         {
-            if (className == null)
+            if (className is null)
                 throw new ArgumentNullException(nameof(className));
             if (className.Length == 0)
                 throw new ArgumentException("Type name can't be empty");
@@ -250,7 +250,7 @@ namespace System.Reflection
             ResolveTokenError error;
 
             MemberInfo m = ResolveMemberToken(monoModule, metadataToken, ptrs_from_types(genericTypeArguments), ptrs_from_types(genericMethodArguments), out error);
-            if (m == null)
+            if (m is null)
                 throw resolve_token_exception(module.Name, metadataToken, error, "MemberInfo");
             else
                 return m;
@@ -288,7 +288,7 @@ namespace System.Reflection
             ResolveTokenError error;
 
             string s = ResolveStringToken(monoModule, metadataToken, out error);
-            if (s == null)
+            if (s is null)
                 throw resolve_token_exception(module.Name, metadataToken, error, "string");
             else
                 return s;
@@ -326,7 +326,7 @@ namespace System.Reflection
             ResolveTokenError error;
 
             byte[] res = ResolveSignature(monoModule, metadataToken, out error);
-            if (res == null)
+            if (res is null)
                 throw resolve_token_exception(module.Name, metadataToken, error, "signature");
             else
                 return res;
@@ -374,14 +374,14 @@ namespace System.Reflection
 
         internal static IntPtr[]? ptrs_from_types(Type[]? types)
         {
-            if (types == null)
+            if (types is null)
                 return null;
             else
             {
                 IntPtr[] res = new IntPtr[types.Length];
                 for (int i = 0; i < types.Length; ++i)
                 {
-                    if (types[i] == null)
+                    if (types[i] is null)
                         throw new ArgumentException();
                     res[i] = types[i].TypeHandle.Value;
                 }

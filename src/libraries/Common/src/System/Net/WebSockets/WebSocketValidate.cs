@@ -20,7 +20,7 @@ namespace System.Net.WebSockets
         {
             string validStatesText = string.Empty;
 
-            if (validStates != null && validStates.Length > 0)
+            if (validStates is not null && validStates.Length > 0)
             {
                 foreach (WebSocketState validState in validStates)
                 {
@@ -74,7 +74,7 @@ namespace System.Net.WebSockets
                 i++;
             }
 
-            if (invalidChar != null)
+            if (invalidChar is not null)
             {
                 throw new ArgumentException(SR.Format(SR.net_WebSockets_InvalidCharInProtocolString, subProtocol, invalidChar), nameof(subProtocol));
             }
@@ -122,7 +122,7 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(!string.IsNullOrEmpty(parameterName), "'parameterName' MUST NOT be NULL or string.Empty");
 
-            if (arraySegment.Array == null)
+            if (arraySegment.Array is null)
             {
                 throw new ArgumentNullException(parameterName + "." + nameof(arraySegment.Array));
             }
@@ -138,7 +138,7 @@ namespace System.Net.WebSockets
 
         internal static void ValidateBuffer(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }

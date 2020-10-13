@@ -29,18 +29,18 @@ namespace System.ServiceModel.Syndication
         }
 
         public SyndicationItem(string title, string content, Uri itemAlternateLink, string id, DateTimeOffset lastUpdatedTime)
-            : this(title, (content != null) ? new TextSyndicationContent(content) : null, itemAlternateLink, id, lastUpdatedTime)
+            : this(title, (content is not null) ? new TextSyndicationContent(content) : null, itemAlternateLink, id, lastUpdatedTime)
         {
         }
 
         public SyndicationItem(string title, SyndicationContent content, Uri itemAlternateLink, string id, DateTimeOffset lastUpdatedTime)
         {
-            if (title != null)
+            if (title is not null)
             {
                 Title = new TextSyndicationContent(title);
             }
             Content = content;
-            if (itemAlternateLink != null)
+            if (itemAlternateLink is not null)
             {
                 Links.Add(SyndicationLink.CreateAlternateLink(itemAlternateLink));
             }
@@ -50,7 +50,7 @@ namespace System.ServiceModel.Syndication
 
         protected SyndicationItem(SyndicationItem source)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -58,14 +58,14 @@ namespace System.ServiceModel.Syndication
             _extensions = source._extensions.Clone();
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
-            Content = (source.Content != null) ? source.Content.Clone() : null;
+            Content = (source.Content is not null) ? source.Content.Clone() : null;
             _contributors = FeedUtils.ClonePersons(source._contributors);
             Copyright = FeedUtils.CloneTextContent(source.Copyright);
             Id = source.Id;
             _lastUpdatedTime = source._lastUpdatedTime;
             _links = FeedUtils.CloneLinks(source._links);
             _publishDate = source._publishDate;
-            if (source.SourceFeed != null)
+            if (source.SourceFeed is not null)
             {
                 SourceFeed = source.SourceFeed.Clone(false);
                 SourceFeed.Items = new Collection<SyndicationItem>();
@@ -108,7 +108,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                if (LastUpdatedTimeException != null)
+                if (LastUpdatedTimeException is not null)
                 {
                     throw LastUpdatedTimeException;
                 }
@@ -133,7 +133,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                if (PublishDateException != null)
+                if (PublishDateException is not null)
                 {
                     throw PublishDateException;
                 }
@@ -157,7 +157,7 @@ namespace System.ServiceModel.Syndication
 
         public static TSyndicationItem Load<TSyndicationItem>(XmlReader reader) where TSyndicationItem : SyndicationItem, new()
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -181,7 +181,7 @@ namespace System.ServiceModel.Syndication
 
         public void AddPermalink(Uri permalink)
         {
-            if (permalink == null)
+            if (permalink is null)
             {
                 throw new ArgumentNullException(nameof(permalink));
             }

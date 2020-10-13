@@ -60,11 +60,11 @@ namespace System
 
         private MethodBase? GetExceptionMethodFromStackTrace()
         {
-            Debug.Assert(_stackTrace != null, "_stackTrace shouldn't be null when this method is called");
+            Debug.Assert(_stackTrace is not null, "_stackTrace shouldn't be null when this method is called");
             IRuntimeMethodInfo method = GetMethodFromStackTrace(_stackTrace!);
 
             // Under certain race conditions when exceptions are re-used, this can be null
-            if (method == null)
+            if (method is null)
                 return null;
 
             return RuntimeType.GetMethodBase(method);
@@ -74,11 +74,11 @@ namespace System
         {
             get
             {
-                if (_exceptionMethod != null)
+                if (_exceptionMethod is not null)
                 {
                     return _exceptionMethod;
                 }
-                if (_stackTrace == null)
+                if (_stackTrace is null)
                 {
                     return null;
                 }
@@ -98,11 +98,11 @@ namespace System
                 string? remoteStackTraceString = _remoteStackTraceString;
 
                 // if no stack trace, try to get one
-                if (stackTraceString != null)
+                if (stackTraceString is not null)
                 {
                     return remoteStackTraceString + stackTraceString;
                 }
-                if (_stackTrace == null)
+                if (_stackTrace is null)
                 {
                     return remoteStackTraceString;
                 }
@@ -256,7 +256,7 @@ namespace System
             {
                 string? stackTraceString = _stackTraceString;
 
-                if (stackTraceString == null && _stackTrace != null)
+                if (stackTraceString is null && _stackTrace is not null)
                 {
                     stackTraceString = GetStackTrace(this);
                 }
@@ -334,7 +334,7 @@ namespace System
             }
 
             // Check to see if the exception already has a stack set in it.
-            if (_stackTrace != null || _stackTraceString != null || _remoteStackTraceString != null)
+            if (_stackTrace is not null || _stackTraceString is not null || _remoteStackTraceString is not null)
             {
                 ThrowHelper.ThrowInvalidOperationException();
             }

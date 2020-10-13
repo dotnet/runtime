@@ -27,7 +27,7 @@ namespace System
         {
             EnumInfo? entry = enumType.Cache.EnumInfo;
 
-            if (entry == null || (getNames && entry.Names == null))
+            if (entry is null || (getNames && entry.Names is null))
             {
                 if (!GetEnumValuesAndNames(enumType, out ulong[]? values, out string[]? names))
                     Array.Sort(values, names, Collections.Generic.Comparer<ulong>.Default);

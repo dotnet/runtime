@@ -66,9 +66,9 @@ namespace System.Collections
         // Fills a Queue with the elements of an ICollection.  Uses the enumerator
         // to get each of the elements.
         //
-        public Queue(ICollection col) : this((col == null ? 32 : col.Count))
+        public Queue(ICollection col) : this((col is null ? 32 : col.Count))
         {
-            if (col == null)
+            if (col is null)
                 throw new ArgumentNullException(nameof(col));
 
             IEnumerator en = col.GetEnumerator();
@@ -131,7 +131,7 @@ namespace System.Collections
         //
         public virtual void CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -212,7 +212,7 @@ namespace System.Collections
         //
         public static Queue Synchronized(Queue queue)
         {
-            if (queue == null)
+            if (queue is null)
                 throw new ArgumentNullException(nameof(queue));
 
             return new SynchronizedQueue(queue);
@@ -228,12 +228,12 @@ namespace System.Collections
 
             while (count-- > 0)
             {
-                if (obj == null)
+                if (obj is null)
                 {
-                    if (_array[index] == null)
+                    if (_array[index] is null)
                         return true;
                 }
-                else if (_array[index] != null && _array[index]!.Equals(obj))
+                else if (_array[index] is not null && _array[index]!.Equals(obj))
                 {
                     return true;
                 }
@@ -492,7 +492,7 @@ namespace System.Collections
 
             public QueueDebugView(Queue queue)
             {
-                if (queue == null)
+                if (queue is null)
                     throw new ArgumentNullException(nameof(queue));
 
                 _queue = queue;

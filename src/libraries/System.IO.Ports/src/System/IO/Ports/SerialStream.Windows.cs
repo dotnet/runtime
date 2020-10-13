@@ -236,7 +236,7 @@ namespace System.IO.Ports
             }
         }
 
-        internal bool IsOpen => _handle != null && !_eventRunner.ShutdownLoop;
+        internal bool IsOpen => _handle is not null && !_eventRunner.ShutdownLoop;
 
         internal Parity Parity
         {
@@ -345,7 +345,7 @@ namespace System.IO.Ports
             {
                 if (value < 0 && value != SerialPort.InfiniteTimeout)
                     throw new ArgumentOutOfRangeException(nameof(ReadTimeout), SR.ArgumentOutOfRange_Timeout);
-                if (_handle == null) InternalResources.FileNotOpen();
+                if (_handle is null) InternalResources.FileNotOpen();
 
                 int oldReadConstant = _commTimeouts.ReadTotalTimeoutConstant;
                 int oldReadInterval = _commTimeouts.ReadIntervalTimeout;
@@ -470,7 +470,7 @@ namespace System.IO.Ports
             {
                 if (value <= 0 && value != SerialPort.InfiniteTimeout)
                     throw new ArgumentOutOfRangeException(nameof(WriteTimeout), SR.ArgumentOutOfRange_WriteTimeout);
-                if (_handle == null) InternalResources.FileNotOpen();
+                if (_handle is null) InternalResources.FileNotOpen();
 
                 int oldWriteConstant = _commTimeouts.WriteTotalTimeoutConstant;
                 _commTimeouts.WriteTotalTimeoutConstant = ((value == SerialPort.InfiniteTimeout) ? 0 : value);
@@ -558,7 +558,7 @@ namespace System.IO.Ports
         internal SerialStream(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
             bool dtrEnable, bool rtsEnable, bool discardNull, byte parityReplace)
         {
-            if (portName == null)
+            if (portName is null)
             {
                 throw new ArgumentNullException(nameof(portName));
             }
@@ -700,7 +700,7 @@ namespace System.IO.Ports
         {
             // Signal the other side that we're closing.  Should do regardless of whether we've called
             // Close() or not Dispose()
-            if (_handle != null && !_handle.IsInvalid)
+            if (_handle is not null && !_handle.IsInvalid)
             {
                 try
                 {
@@ -751,7 +751,7 @@ namespace System.IO.Ports
                         DiscardOutBuffer();
                     }
 
-                    if (disposing && _eventRunner != null && _waitForComEventTask != null)
+                    if (disposing && _eventRunner is not null && _waitForComEventTask is not null)
                     {
                         _waitForComEventTask.GetAwaiter().GetResult();
                         _eventRunner.waitCommEventWaitHandle.Close();
@@ -855,11 +855,11 @@ namespace System.IO.Ports
             if (!_isAsync)
                 return base.EndRead(asyncResult);
 
-            if (asyncResult == null)
+            if (asyncResult is null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
             SerialStreamAsyncResult afsar = asyncResult as SerialStreamAsyncResult;
-            if (afsar == null || afsar._isWrite)
+            if (afsar is null || afsar._isWrite)
                 InternalResources.WrongAsyncResult();
 
             // This sidesteps race conditions, avoids memory corruption after freeing the
@@ -872,7 +872,7 @@ namespace System.IO.Ports
             // Obtain the WaitHandle, but don't use public property in case we
             // delay initialize the manual reset event in the future.
             WaitHandle wh = afsar._waitHandle;
-            if (wh != null)
+            if (wh is not null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
                 // and we should close the WaitHandle in here.
@@ -903,7 +903,7 @@ namespace System.IO.Ports
 
             // Free memory, GC handles.
             NativeOverlapped* overlappedPtr = afsar._overlapped;
-            if (overlappedPtr != null)
+            if (overlappedPtr is not null)
             {
                 // Legacy behavior as indicated by tests (e.g.: System.IO.Ports.Tests.SerialStream_EndRead.EndReadAfterClose)
                 // expects to be able to call EndRead after Close/Dispose - even if disposed _threadPoolBinding can free the
@@ -935,11 +935,11 @@ namespace System.IO.Ports
 
             if (_inBreak)
                 throw new InvalidOperationException(SR.In_Break_State);
-            if (asyncResult == null)
+            if (asyncResult is null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
             SerialStreamAsyncResult afsar = asyncResult as SerialStreamAsyncResult;
-            if (afsar == null || !afsar._isWrite)
+            if (afsar is null || !afsar._isWrite)
                 InternalResources.WrongAsyncResult();
 
             // This sidesteps race conditions, avoids memory corruption after freeing the
@@ -950,7 +950,7 @@ namespace System.IO.Ports
             // Obtain the WaitHandle, but don't use public property in case we
             // delay initialize the manual reset event in the future.
             WaitHandle wh = afsar._waitHandle;
-            if (wh != null)
+            if (wh is not null)
             {
                 // We must block to ensure that AsyncFSCallback has completed,
                 // and we should close the WaitHandle in here.
@@ -967,7 +967,7 @@ namespace System.IO.Ports
 
             // Free memory, GC handles.
             NativeOverlapped* overlappedPtr = afsar._overlapped;
-            if (overlappedPtr != null)
+            if (overlappedPtr is not null)
             {
                 // Legacy behavior as indicated by tests (e.g.: System.IO.Ports.Tests.SerialStream_EndWrite.EndWriteAfterSerialStreamClose)
                 // expects to be able to call EndWrite after Close/Dispose - even if disposed _threadPoolBinding can free the
@@ -988,7 +988,7 @@ namespace System.IO.Ports
         // Note: Serial driver's write buffer is *already* attempting to write it, so we can only wait until it finishes.
         public override void Flush()
         {
-            if (_handle == null) throw new ObjectDisposedException(SR.Port_not_open);
+            if (_handle is null) throw new ObjectDisposedException(SR.Port_not_open);
             Interop.Kernel32.FlushFileBuffers(_handle);
         }
 
@@ -1031,7 +1031,7 @@ namespace System.IO.Ports
 
         internal unsafe int ReadByte(int timeout)
         {
-            if (_handle == null) InternalResources.FileNotOpen();
+            if (_handle is null) InternalResources.FileNotOpen();
 
             int numBytes = 0;
             if (_isAsync)
@@ -1057,7 +1057,7 @@ namespace System.IO.Ports
 
         internal void SetBufferSizes(int readBufferSize, int writeBufferSize)
         {
-            if (_handle == null) InternalResources.FileNotOpen();
+            if (_handle is null) InternalResources.FileNotOpen();
 
             if (!Interop.Kernel32.SetupComm(_handle, readBufferSize, writeBufferSize))
                 throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -1078,7 +1078,7 @@ namespace System.IO.Ports
                 EndWrite(result);
 
                 SerialStreamAsyncResult afsar = result as SerialStreamAsyncResult;
-                Debug.Assert(afsar != null, "afsar should be a SerialStreamAsyncResult and should not be null");
+                Debug.Assert(afsar is not null, "afsar should be a SerialStreamAsyncResult and should not be null");
                 numBytes = afsar._numBytes;
             }
             else
@@ -1110,7 +1110,7 @@ namespace System.IO.Ports
             if (_inBreak)
                 throw new InvalidOperationException(SR.In_Break_State);
 
-            if (_handle == null) InternalResources.FileNotOpen();
+            if (_handle is null) InternalResources.FileNotOpen();
             _tempBuf[0] = value;
 
 
@@ -1122,7 +1122,7 @@ namespace System.IO.Ports
                 EndWrite(result);
 
                 SerialStreamAsyncResult afsar = result as SerialStreamAsyncResult;
-                Debug.Assert(afsar != null, "afsar should be a SerialStreamAsyncResult and should not be null");
+                Debug.Assert(afsar is not null, "afsar should be a SerialStreamAsyncResult and should not be null");
                 numBytes = afsar._numBytes;
             }
             else
@@ -1524,7 +1524,7 @@ namespace System.IO.Ports
             // But don't close it if the user callback called EndXxx,
             // which then closed the manual reset event already.
             ManualResetEvent wh = asyncResult._waitHandle;
-            if (wh != null)
+            if (wh is not null)
             {
                 bool r = wh.Set();
                 if (!r) throw Win32Marshal.GetExceptionForLastWin32Error();
@@ -1738,10 +1738,10 @@ namespace System.IO.Ports
             {
                 int errors = (int)state;
                 SerialStream stream = (SerialStream)streamWeakReference.Target;
-                if (stream == null)
+                if (stream is null)
                     return;
 
-                if (stream.ErrorReceived != null)
+                if (stream.ErrorReceived is not null)
                 {
                     if ((errors & (int)SerialError.TXFull) != 0)
                         stream.ErrorReceived(stream, new SerialErrorReceivedEventArgs(SerialError.TXFull));
@@ -1766,10 +1766,10 @@ namespace System.IO.Ports
             {
                 int nativeEvents = (int)state;
                 SerialStream stream = (SerialStream)streamWeakReference.Target;
-                if (stream == null)
+                if (stream is null)
                     return;
 
-                if (stream.DataReceived != null)
+                if (stream.DataReceived is not null)
                 {
                     if ((nativeEvents & (int)SerialData.Chars) != 0)
                         stream.DataReceived(stream, new SerialDataReceivedEventArgs(SerialData.Chars));
@@ -1785,10 +1785,10 @@ namespace System.IO.Ports
                 int nativeEvents = (int)state;
 
                 SerialStream stream = (SerialStream)streamWeakReference.Target;
-                if (stream == null)
+                if (stream is null)
                     return;
 
-                if (stream.PinChanged != null)
+                if (stream.PinChanged is not null)
                 {
                     if ((nativeEvents & (int)SerialPinChange.CtsChanged) != 0)
                         stream.PinChanged(stream, new SerialPinChangedEventArgs(SerialPinChange.CtsChanged));
@@ -1854,9 +1854,9 @@ namespace System.IO.Ports
                       // reason to create a synchronization primitive here.  Fixing
                       // this will save us some perf, assuming we can correctly
                       // initialize the ManualResetEvent.
-                    if (_waitHandle == null) {
+                    if (_waitHandle is null) {
                         ManualResetEvent mre = new ManualResetEvent(false);
-                        if (_overlapped != null && _overlapped->EventHandle != IntPtr.Zero)
+                        if (_overlapped is not null && _overlapped->EventHandle != IntPtr.Zero)
                             mre.Handle = _overlapped->EventHandle;
                         if (_isComplete)
                             mre.Set();

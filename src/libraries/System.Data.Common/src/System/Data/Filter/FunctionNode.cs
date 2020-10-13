@@ -68,7 +68,7 @@ namespace System.Data
             if (!s_funcs[_info]._isVariantArgumentList && _argumentCount >= s_funcs[_info]._argumentCount)
                 throw ExprException.FunctionArgumentCount(_name);
 
-            if (_arguments == null)
+            if (_arguments is null)
             {
                 _arguments = new ExpressionNode[initialCapacity];
             }
@@ -284,14 +284,14 @@ namespace System.Data
                 typeName = ((ConstNode)node)._val.ToString();
             }
 
-            if (typeName == null)
+            if (typeName is null)
             {
                 throw ExprException.ArgumentType(s_funcs[_info]._name, 2, typeof(Type));
             }
 
             Type? dataType = Type.GetType(typeName);
 
-            if (dataType == null)
+            if (dataType is null)
             {
                 throw ExprException.InvalidType(typeName);
             }
@@ -512,7 +512,7 @@ namespace System.Data
                         // If there was a type limiter scope on the stack at the time this Convert function was created,
                         // we must manually re-enter the Serialization Guard scope.
 
-                        DeserializationToken deserializationToken = (_capturedLimiter != null) ? SerializationInfo.StartDeserialization() : default;
+                        DeserializationToken deserializationToken = (_capturedLimiter is not null) ? SerializationInfo.StartDeserialization() : default;
                         using (deserializationToken)
                         {
                             return SqlConvert.ChangeType2(argumentValues[0], mytype, type, FormatProvider);
@@ -681,11 +681,11 @@ namespace System.Data
             _isVariantArgumentList = IsVariantArgumentList;
             _argumentCount = argumentCount;
 
-            if (a1 != null)
+            if (a1 is not null)
                 _parameters[0] = a1;
-            if (a2 != null)
+            if (a2 is not null)
                 _parameters[1] = a2;
-            if (a3 != null)
+            if (a3 is not null)
                 _parameters[2] = a3;
         }
 

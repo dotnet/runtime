@@ -28,7 +28,7 @@ namespace System.Collections.ObjectModel
 
         public ReadOnlyDictionary(IDictionary<TKey, TValue> dictionary)
         {
-            if (dictionary == null)
+            if (dictionary is null)
             {
                 throw new ArgumentNullException(nameof(dictionary));
             }
@@ -115,7 +115,7 @@ namespace System.Collections.ObjectModel
 
         private static bool IsCompatibleKey(object key)
         {
-            if (key == null)
+            if (key is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.key);
             }
@@ -165,7 +165,7 @@ namespace System.Collections.ObjectModel
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -206,7 +206,7 @@ namespace System.Collections.ObjectModel
                 else
                 {
                     object[]? objects = array as object[];
-                    if (objects == null)
+                    if (objects is null)
                     {
                         ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                     }
@@ -232,7 +232,7 @@ namespace System.Collections.ObjectModel
         {
             get
             {
-                if (m_syncRoot == null)
+                if (m_syncRoot is null)
                 {
                     if (m_dictionary is ICollection c)
                     {
@@ -290,7 +290,7 @@ namespace System.Collections.ObjectModel
 
             internal KeyCollection(ICollection<TKey> collection)
             {
-                if (collection == null)
+                if (collection is null)
                 {
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
                 }
@@ -341,7 +341,7 @@ namespace System.Collections.ObjectModel
             {
                 get
                 {
-                    if (m_syncRoot == null)
+                    if (m_syncRoot is null)
                     {
                         if (m_collection is ICollection c)
                         {
@@ -368,7 +368,7 @@ namespace System.Collections.ObjectModel
 
             internal ValueCollection(ICollection<TValue> collection)
             {
-                if (collection == null)
+                if (collection is null)
                 {
                     ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
                 }
@@ -419,7 +419,7 @@ namespace System.Collections.ObjectModel
             {
                 get
                 {
-                    if (m_syncRoot == null)
+                    if (m_syncRoot is null)
                     {
                         if (m_collection is ICollection c)
                         {
@@ -446,7 +446,7 @@ namespace System.Collections.ObjectModel
         // Abstracted away to avoid redundant implementations.
         internal static void CopyToNonGenericICollectionHelper<T>(ICollection<T> collection, Array array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -502,7 +502,7 @@ namespace System.Collections.ObjectModel
                 // widening of primitive types here.
                 //
                 object?[]? objects = array as object[];
-                if (objects == null)
+                if (objects is null)
                 {
                     ThrowHelper.ThrowArgumentException_Argument_InvalidArrayType();
                 }

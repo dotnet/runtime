@@ -37,7 +37,7 @@ namespace System.ServiceModel.Syndication
 
         public Atom10FeedFormatter(Type feedTypeToCreate) : base()
         {
-            if (feedTypeToCreate == null)
+            if (feedTypeToCreate is null)
             {
                 throw new ArgumentNullException(nameof(feedTypeToCreate));
             }
@@ -72,7 +72,7 @@ namespace System.ServiceModel.Syndication
 
         public override bool CanRead(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -84,7 +84,7 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -94,7 +94,7 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -114,7 +114,7 @@ namespace System.ServiceModel.Syndication
 
         public override void WriteTo(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -380,7 +380,7 @@ namespace System.ServiceModel.Syndication
 
         internal void WriteContentTo(XmlWriter writer, string elementName, SyndicationContent content)
         {
-            if (content != null)
+            if (content is not null)
             {
                 content.WriteTo(writer, elementName, Atom10Constants.Atom10Namespace);
             }
@@ -388,7 +388,7 @@ namespace System.ServiceModel.Syndication
 
         internal void WriteElement(XmlWriter writer, string elementName, string value)
         {
-            if (value != null)
+            if (value is not null)
             {
                 writer.WriteElementString(elementName, Atom10Constants.Atom10Namespace, value);
             }
@@ -462,7 +462,7 @@ namespace System.ServiceModel.Syndication
         {
             writer.WriteStartElement(Atom10Constants.LinkTag, Atom10Constants.Atom10Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, link.BaseUri);
-            if (baseUriToWrite != null)
+            if (baseUriToWrite is not null)
             {
                 writer.WriteAttributeString("xml", "base", XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
@@ -495,11 +495,11 @@ namespace System.ServiceModel.Syndication
 
         protected virtual SyndicationItem ReadItem(XmlReader reader, SyndicationFeed feed)
         {
-            if (feed == null)
+            if (feed is null)
             {
                 throw new ArgumentNullException(nameof(feed));
             }
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -511,11 +511,11 @@ namespace System.ServiceModel.Syndication
 
         protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
         {
-            if (feed == null)
+            if (feed is null)
             {
                 throw new ArgumentNullException(nameof(feed));
             }
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -538,7 +538,7 @@ namespace System.ServiceModel.Syndication
 
         protected virtual void WriteItems(XmlWriter writer, IEnumerable<SyndicationItem> items, Uri feedBaseUri)
         {
-            if (items == null)
+            if (items is null)
             {
                 return;
             }
@@ -581,7 +581,7 @@ namespace System.ServiceModel.Syndication
                     if (preserveAttributeExtensions)
                     {
                         string value = reader.Value;
-                        if (attrs == null)
+                        if (attrs is null)
                         {
                             attrs = new Dictionary<XmlQualifiedName, string>();
                         }
@@ -592,7 +592,7 @@ namespace System.ServiceModel.Syndication
             reader.MoveToElement();
             string val = (kind == TextSyndicationContentKind.XHtml) ? reader.ReadInnerXml() : reader.ReadElementString();
             TextSyndicationContent result = new TextSyndicationContent(val, kind);
-            if (attrs != null)
+            if (attrs is not null)
             {
                 foreach (XmlQualifiedName attr in attrs.Keys)
                 {
@@ -790,7 +790,7 @@ namespace System.ServiceModel.Syndication
                             }
                         }
 
-                        if (feedItems != null)
+                        if (feedItems is not null)
                         {
                             result.Items = feedItems;
                         }
@@ -799,7 +799,7 @@ namespace System.ServiceModel.Syndication
                     }
                     finally
                     {
-                        if (extWriter != null)
+                        if (extWriter is not null)
                         {
                             ((IDisposable)extWriter).Dispose();
                         }
@@ -987,7 +987,7 @@ namespace System.ServiceModel.Syndication
             link.MediaType = mediaType;
             link.RelationshipType = relationship;
             link.Title = title;
-            link.Uri = (val != null) ? UriFromString(val, UriKind.RelativeOrAbsolute, Atom10Constants.LinkTag, Atom10Constants.Atom10Namespace, reader) : null;
+            link.Uri = (val is not null) ? UriFromString(val, UriKind.RelativeOrAbsolute, Atom10Constants.LinkTag, Atom10Constants.Atom10Namespace, reader) : null;
         }
 
         private SyndicationLink ReadLinkFrom(XmlReader reader, SyndicationFeed feed)
@@ -1102,7 +1102,7 @@ namespace System.ServiceModel.Syndication
 
         private void WriteFeed(XmlWriter writer)
         {
-            if (Feed == null)
+            if (Feed is null)
             {
                 throw new InvalidOperationException(SR.FeedFormatterDoesNotHaveFeed);
             }
@@ -1118,7 +1118,7 @@ namespace System.ServiceModel.Syndication
                 {
                     writer.WriteAttributeString("xml", "lang", XmlNs, feed.Language);
                 }
-                if (feed.BaseUri != null)
+                if (feed.BaseUri is not null)
                 {
                     writer.WriteAttributeString("xml", "base", XmlNs, FeedUtils.GetUriString(feed.BaseUri));
                 }
@@ -1141,7 +1141,7 @@ namespace System.ServiceModel.Syndication
             WriteContentTo(writer, Atom10Constants.RightsTag, feed.Copyright);
             WriteFeedLastUpdatedTimeTo(writer, feed.LastUpdatedTime, isElementRequired);
             WriteCategoriesTo(writer, feed.Categories);
-            if (feed.ImageUrl != null)
+            if (feed.ImageUrl is not null)
             {
                 WriteElement(writer, Atom10Constants.LogoTag, feed.ImageUrl.ToString());
             }
@@ -1165,7 +1165,7 @@ namespace System.ServiceModel.Syndication
         private void WriteItemContents(XmlWriter dictWriter, SyndicationItem item, Uri feedBaseUri)
         {
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(feedBaseUri, item.BaseUri);
-            if (baseUriToWrite != null)
+            if (baseUriToWrite is not null)
             {
                 dictWriter.WriteAttributeString("xml", "base", XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
@@ -1193,7 +1193,7 @@ namespace System.ServiceModel.Syndication
             WriteCategoriesTo(dictWriter, item.Categories);
             WriteContentTo(dictWriter, Atom10Constants.ContentTag, item.Content);
             WriteContentTo(dictWriter, Atom10Constants.RightsTag, item.Copyright);
-            if (item.SourceFeed != null)
+            if (item.SourceFeed is not null)
             {
                 dictWriter.WriteStartElement(Atom10Constants.SourceFeedTag, Atom10Constants.Atom10Namespace);
                 WriteFeedTo(dictWriter, item.SourceFeed, isSourceFeed: true);

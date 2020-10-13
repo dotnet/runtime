@@ -104,7 +104,7 @@ namespace System.Data.SqlTypes
             m_lcid = lcid;
             ValidateSqlCompareOptions(compareOptions);
             m_flag = compareOptions;
-            if (data == null)
+            if (data is null)
             {
                 m_fNotNull = false;
                 m_value = null;
@@ -165,7 +165,7 @@ namespace System.Data.SqlTypes
             ValidateSqlCompareOptions(compareOptions);
             m_flag = compareOptions;
             m_cmpInfo = null;
-            if (data == null)
+            if (data is null)
             {
                 m_fNotNull = false;
                 m_value = null;
@@ -196,7 +196,7 @@ namespace System.Data.SqlTypes
             m_lcid = lcid;
             ValidateSqlCompareOptions(compareOptions);
             m_flag = compareOptions;
-            if (data == null)
+            if (data is null)
             {
                 m_fNotNull = false;
                 m_value = null;
@@ -260,7 +260,7 @@ namespace System.Data.SqlTypes
         private void SetCompareInfo()
         {
             Debug.Assert(!IsNull);
-            if (m_cmpInfo == null)
+            if (m_cmpInfo is null)
                 m_cmpInfo = (CultureInfo.GetCultureInfo(m_lcid)).CompareInfo;
         }
 
@@ -350,7 +350,7 @@ namespace System.Data.SqlTypes
                 throw new SqlTypeException(SQLResource.ConcatDiffCollationMessage);
 
             return new SqlString(x.m_lcid, x.m_flag, x.m_value + y.m_value,
-                    (x.m_cmpInfo == null) ? y.m_cmpInfo : x.m_cmpInfo);
+                    (x.m_cmpInfo is null) ? y.m_cmpInfo : x.m_cmpInfo);
         }
 
         // StringCompare: Common compare function which is used by Compare and CompareTo
@@ -367,8 +367,8 @@ namespace System.Data.SqlTypes
 
             x.SetCompareInfo();
             y.SetCompareInfo();
-            Debug.Assert(x.FBinarySort() || (x.m_cmpInfo != null && y.m_cmpInfo != null),
-                           "x.FBinarySort() || (x.m_cmpInfo != null && y.m_cmpInfo != null)", "");
+            Debug.Assert(x.FBinarySort() || (x.m_cmpInfo is not null && y.m_cmpInfo is not null),
+                           "x.FBinarySort() || (x.m_cmpInfo is not null && y.m_cmpInfo is not null)", "");
 
             int iCmpResult;
 
@@ -923,7 +923,7 @@ namespace System.Data.SqlTypes
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
             string? isNull = reader.GetAttribute("nil", XmlSchema.InstanceNamespace);
-            if (isNull != null && XmlConvert.ToBoolean(isNull))
+            if (isNull is not null && XmlConvert.ToBoolean(isNull))
             {
                 // Read the next value.
                 reader.ReadElementString();

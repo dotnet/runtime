@@ -16,7 +16,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ForestTrustDomainInformation information)
         {
-            if (information == null)
+            if (information is null)
                 throw new ArgumentNullException(nameof(information));
 
             return InnerList.Contains(information);
@@ -24,7 +24,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ForestTrustDomainInformation information)
         {
-            if (information == null)
+            if (information is null)
                 throw new ArgumentNullException(nameof(information));
 
             return InnerList.IndexOf(information);

@@ -47,7 +47,7 @@ namespace System.DirectoryServices
         {
             get
             {
-                if (_innerList == null)
+                if (_innerList is null)
                 {
                     _innerList = new ArrayList();
                     IEnumerator enumerator = new ResultsEnumerator(this,
@@ -66,7 +66,7 @@ namespace System.DirectoryServices
         {
             get
             {
-                if (_searchObject == null)
+                if (_searchObject is null)
                 {
                     _searchObject = (UnsafeNativeMethods.IDirectorySearch)_rootEntry.AdsObject;   // get it only once
                 }
@@ -165,7 +165,7 @@ namespace System.DirectoryServices
         {
             if (!_disposed)
             {
-                if (_handle != (IntPtr)0 && _searchObject != null && disposing)
+                if (_handle != (IntPtr)0 && _searchObject is not null && disposing)
                 {
                     // NOTE: We can't call methods on SearchObject in the finalizer because it
                     // runs on a different thread. The IDirectorySearch object is STA, so COM must create
@@ -237,7 +237,7 @@ namespace System.DirectoryServices
 
             internal ResultsEnumerator(SearchResultCollection results, string parentUserName, string parentPassword, AuthenticationTypes parentAuthenticationType)
             {
-                if (parentUserName != null && parentPassword != null)
+                if (parentUserName is not null && parentPassword is not null)
                     _parentCredentials = new NetworkCredential(parentUserName, parentPassword);
 
                 _parentAuthenticationType = parentAuthenticationType;
@@ -255,7 +255,7 @@ namespace System.DirectoryServices
                     if (!_initialized || _eof)
                         throw new InvalidOperationException(SR.DSNoCurrentEntry);
 
-                    if (_currentResult == null)
+                    if (_currentResult is null)
                         _currentResult = GetCurrentResult();
 
                     return _currentResult;

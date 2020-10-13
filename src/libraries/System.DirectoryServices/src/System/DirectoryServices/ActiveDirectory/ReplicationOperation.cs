@@ -58,14 +58,14 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             get
             {
-                if (_sourceServer == null)
+                if (_sourceServer is null)
                 {
                     // check whether we have got it before
                     if (_nameTable.Contains(SourceServerGuid))
                     {
                         _sourceServer = (string)_nameTable[SourceServerGuid];
                     }
-                    else if (_dsaDN != null)
+                    else if (_dsaDN is not null)
                     {
                         _sourceServer = Utils.GetServerNameFromInvocationID(_dsaDN, SourceServerGuid, _server);
                         // add it to the hashtable

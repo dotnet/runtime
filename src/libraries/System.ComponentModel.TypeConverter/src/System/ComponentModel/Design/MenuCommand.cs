@@ -125,7 +125,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public virtual void Invoke()
         {
-            if (_execHandler != null)
+            if (_execHandler is not null)
             {
                 try
                 {

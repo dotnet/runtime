@@ -13,7 +13,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(unicodeString != null && unicodeString.Length >= count);
+            Debug.Assert(unicodeString is not null && unicodeString.Length >= count);
 
             uint flags = NlsFlags;
 
@@ -45,7 +45,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(unicodeString != null && unicodeString.Length >= count);
+            Debug.Assert(unicodeString is not null && unicodeString.Length >= count);
 
             int length = Interop.Normaliz.IdnToAscii(flags, unicode, count, output, outputLength);
             if (length == 0)
@@ -60,7 +60,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(asciiString != null && asciiString.Length >= count);
+            Debug.Assert(asciiString is not null && asciiString.Length >= count);
 
             uint flags = NlsFlags;
 
@@ -92,7 +92,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(asciiString != null && asciiString.Length >= count);
+            Debug.Assert(asciiString is not null && asciiString.Length >= count);
 
             int length = Interop.Normaliz.IdnToUnicode(flags, ascii, count, output, outputLength);
             if (length == 0)

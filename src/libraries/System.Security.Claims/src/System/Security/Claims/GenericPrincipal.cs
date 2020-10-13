@@ -13,11 +13,11 @@ namespace System.Security.Principal
 
         public GenericPrincipal(IIdentity identity, string[]? roles)
         {
-            if (identity == null)
+            if (identity is null)
                 throw new ArgumentNullException(nameof(identity));
 
             m_identity = identity;
-            if (roles != null)
+            if (roles is not null)
             {
                 m_roles = (string[])roles.Clone();
             }
@@ -44,7 +44,7 @@ namespace System.Security.Principal
             }
 
             // Add 'roles' as external claims so they are not serialized
-            if (roles != null && roles.Length > 0)
+            if (roles is not null && roles.Length > 0)
             {
                 List<Claim> roleClaims = new List<Claim>(roles.Length);
 
@@ -69,7 +69,7 @@ namespace System.Security.Principal
 
         public override bool IsInRole(string? role)
         {
-            if (role == null || m_roles == null)
+            if (role is null || m_roles is null)
                 return false;
 
             for (int i = 0; i < m_roles.Length; ++i)

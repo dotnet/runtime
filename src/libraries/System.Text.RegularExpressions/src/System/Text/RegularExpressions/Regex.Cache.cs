@@ -147,7 +147,7 @@ namespace System.Text.RegularExpressions
             // by having a fast-path that stores the most recently used instance.  Check
             // to see if that instance is the one we want; if it is, we're done.
             Node? lastAccessed = s_lastAccessed;
-            if (lastAccessed != null)
+            if (lastAccessed is not null)
             {
                 if (lastAccessed.Key.Equals(key))
                 {
@@ -269,8 +269,8 @@ namespace System.Text.RegularExpressions
 
             public Key(string pattern, string culture, RegexOptions options, bool hasTimeout)
             {
-                Debug.Assert(pattern != null, "Pattern must be provided");
-                Debug.Assert(culture != null, "Culture must be provided");
+                Debug.Assert(pattern is not null, "Pattern must be provided");
+                Debug.Assert(culture is not null, "Culture must be provided");
 
                 _pattern = pattern;
                 _culture = culture;

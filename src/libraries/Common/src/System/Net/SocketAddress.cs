@@ -188,7 +188,7 @@ namespace System.Net.Internals
         public override bool Equals(object? comparand)
         {
             SocketAddress? castedComparand = comparand as SocketAddress;
-            if (castedComparand == null || this.Size != castedComparand.Size)
+            if (castedComparand is null || this.Size != castedComparand.Size)
             {
                 return false;
             }

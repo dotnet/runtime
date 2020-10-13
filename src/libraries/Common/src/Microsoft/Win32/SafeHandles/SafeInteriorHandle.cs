@@ -21,7 +21,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             SafeHandle? parent = _parent;
 
-            if (parent != null)
+            if (parent is not null)
             {
                 parent.DangerousRelease();
             }
@@ -37,7 +37,7 @@ namespace Microsoft.Win32.SafeHandles
             {
                 // If handle is 0, we're invalid.
                 // If we have a _parent and they're invalid, we're invalid.
-                return handle == IntPtr.Zero || (_parent != null && _parent.IsInvalid);
+                return handle == IntPtr.Zero || (_parent is not null && _parent.IsInvalid);
             }
         }
 

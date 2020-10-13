@@ -32,7 +32,7 @@ namespace System.Text
             _byteStart = inByteStart;
             _byteEnd = inByteStart + inByteCount;
 
-            if (_encoder == null)
+            if (_encoder is null)
                 fallbackBuffer = _enc.EncoderFallback.CreateFallbackBuffer();
             else
             {
@@ -42,13 +42,13 @@ namespace System.Text
                     throw new ArgumentException(SR.Format(SR.Argument_EncoderFallbackNotEmpty, _encoder.Encoding.EncodingName, _encoder.Fallback.GetType()));
             }
             fallbackBufferHelper = new EncoderFallbackBufferHelper(fallbackBuffer);
-            fallbackBufferHelper.InternalInitialize(_chars, _charEnd, _encoder, _bytes != null);
+            fallbackBufferHelper.InternalInitialize(_chars, _charEnd, _encoder, _bytes is not null);
         }
 
         internal unsafe bool AddByte(byte b, int moreBytesExpected)
         {
             Debug.Assert(moreBytesExpected >= 0, "[EncodingByteBuffer.AddByte]expected non-negative moreBytesExpected");
-            if (_bytes != null)
+            if (_bytes is not null)
             {
                 if (_bytes >= _byteEnd - moreBytesExpected)
                 {

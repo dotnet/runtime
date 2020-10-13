@@ -55,7 +55,7 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public InvocationExpression Update(Expression expression, IEnumerable<Expression>? arguments)
         {
-            if (expression == Expression && arguments != null)
+            if (expression == Expression && arguments is not null)
             {
                 if (ExpressionUtils.SameElements(ref arguments, Arguments))
                 {
@@ -143,8 +143,8 @@ namespace System.Linq.Expressions
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
-            Debug.Assert(lambda != null);
-            Debug.Assert(arguments == null || arguments.Length == _arguments.Count);
+            Debug.Assert(lambda is not null);
+            Debug.Assert(arguments is null || arguments.Length == _arguments.Count);
 
             return Expression.Invoke(lambda, arguments ?? _arguments);
         }
@@ -171,8 +171,8 @@ namespace System.Linq.Expressions
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
-            Debug.Assert(lambda != null);
-            Debug.Assert(arguments == null || arguments.Length == 0);
+            Debug.Assert(lambda is not null);
+            Debug.Assert(arguments is null || arguments.Length == 0);
 
             return Expression.Invoke(lambda);
         }
@@ -204,10 +204,10 @@ namespace System.Linq.Expressions
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
-            Debug.Assert(lambda != null);
-            Debug.Assert(arguments == null || arguments.Length == 1);
+            Debug.Assert(lambda is not null);
+            Debug.Assert(arguments is null || arguments.Length == 1);
 
-            if (arguments != null)
+            if (arguments is not null)
             {
                 return Expression.Invoke(lambda, arguments[0]);
             }
@@ -244,10 +244,10 @@ namespace System.Linq.Expressions
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
-            Debug.Assert(lambda != null);
-            Debug.Assert(arguments == null || arguments.Length == 2);
+            Debug.Assert(lambda is not null);
+            Debug.Assert(arguments is null || arguments.Length == 2);
 
-            if (arguments != null)
+            if (arguments is not null)
             {
                 return Expression.Invoke(lambda, arguments[0], arguments[1]);
             }
@@ -287,10 +287,10 @@ namespace System.Linq.Expressions
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
-            Debug.Assert(lambda != null);
-            Debug.Assert(arguments == null || arguments.Length == 3);
+            Debug.Assert(lambda is not null);
+            Debug.Assert(arguments is null || arguments.Length == 3);
 
-            if (arguments != null)
+            if (arguments is not null)
             {
                 return Expression.Invoke(lambda, arguments[0], arguments[1], arguments[2]);
             }
@@ -333,10 +333,10 @@ namespace System.Linq.Expressions
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
-            Debug.Assert(lambda != null);
-            Debug.Assert(arguments == null || arguments.Length == 4);
+            Debug.Assert(lambda is not null);
+            Debug.Assert(arguments is null || arguments.Length == 4);
 
-            if (arguments != null)
+            if (arguments is not null)
             {
                 return Expression.Invoke(lambda, arguments[0], arguments[1], arguments[2], arguments[3]);
             }
@@ -382,10 +382,10 @@ namespace System.Linq.Expressions
 
         internal override InvocationExpression Rewrite(Expression lambda, Expression[]? arguments)
         {
-            Debug.Assert(lambda != null);
-            Debug.Assert(arguments == null || arguments.Length == 5);
+            Debug.Assert(lambda is not null);
+            Debug.Assert(arguments is null || arguments.Length == 5);
 
-            if (arguments != null)
+            if (arguments is not null)
             {
                 return Expression.Invoke(lambda, arguments[0], arguments[1], arguments[2], arguments[3], arguments[4]);
             }
@@ -746,7 +746,7 @@ namespace System.Linq.Expressions
             if (!expression.Type.IsSubclassOf(typeof(MulticastDelegate)))
             {
                 Type? exprType = TypeUtils.FindGenericType(typeof(Expression<>), expression.Type);
-                if (exprType == null)
+                if (exprType is null)
                 {
                     throw Error.ExpressionTypeNotInvocable(expression.Type, nameof(expression));
                 }

@@ -126,7 +126,7 @@ namespace System.Net
                 throw new ProtocolViolationException(SR.net_nouploadonget);
             }
 
-            if (_response != null)
+            if (_response is not null)
             {
                 throw new InvalidOperationException(SR.net_reqsubmitted);
             }
@@ -145,7 +145,7 @@ namespace System.Net
         {
             try
             {
-                if (_stream == null)
+                if (_stream is null)
                 {
                     _stream = new WebFileStream(this, _uri.LocalPath, FileMode.Create, FileAccess.Write, FileShare.Read);
                     _fileAccess = FileAccess.Write;

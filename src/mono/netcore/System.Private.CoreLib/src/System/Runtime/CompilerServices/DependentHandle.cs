@@ -24,7 +24,7 @@ namespace System.Runtime.CompilerServices
             GC.register_ephemeron_array(data);
         }
 
-        public bool IsAllocated => data != null;
+        public bool IsAllocated => data is not null;
 
         // Getting the secondary object is more expensive than getting the first so
         // we provide a separate primary-only accessor for those times we only want the

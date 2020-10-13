@@ -433,17 +433,17 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 ThrowIfDisposed();
 
-                if (_innerCatalog == null)
+                if (_innerCatalog is null)
                 {
                     var catalogReflectionContextAttribute = _assembly.GetFirstAttribute<CatalogReflectionContextAttribute>();
-                    var assembly = (catalogReflectionContextAttribute != null)
+                    var assembly = (catalogReflectionContextAttribute is not null)
                         ? catalogReflectionContextAttribute.CreateReflectionContext().MapAssembly(_assembly)
                         : _assembly;
                     lock (_thisLock)
                     {
-                        if (_innerCatalog == null)
+                        if (_innerCatalog is null)
                         {
-                            var catalog = (_reflectionContext != null)
+                            var catalog = (_reflectionContext is not null)
                                 ? new TypeCatalog(assembly.GetTypes(), _reflectionContext, _definitionOrigin)
                                 : new TypeCatalog(assembly.GetTypes(), _definitionOrigin);
                             Thread.MemoryBarrier();
@@ -467,7 +467,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Debug.Assert(_assembly != null);
+                Debug.Assert(_assembly is not null);
 
                 return _assembly;
             }
@@ -514,7 +514,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (disposing)
                     {
-                        if (_innerCatalog != null)
+                        if (_innerCatalog is not null)
                         {
                             _innerCatalog.Dispose();
                         }

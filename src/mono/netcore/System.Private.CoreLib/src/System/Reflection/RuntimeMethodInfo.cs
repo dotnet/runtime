@@ -193,7 +193,7 @@ namespace System.Reflection
         // copied from CoreCLR's RuntimeMethodInfo
         public override string ToString()
         {
-            if (toString == null)
+            if (toString is null)
             {
                 var sbName = new ValueStringBuilder(MethodNameBufferSize);
 
@@ -350,14 +350,14 @@ namespace System.Reflection
             {
                 if (!DeclaringType.IsInstanceOfType(obj))
                 {
-                    if (obj == null)
+                    if (obj is null)
                         throw new TargetException("Non-static method requires a target.");
                     else
                         throw new TargetException("Object does not match target type.");
                 }
             }
 
-            if (binder == null)
+            if (binder is null)
                 binder = Type.DefaultBinder;
 
             /*Avoid allocating an array every time*/
@@ -401,14 +401,14 @@ namespace System.Reflection
                 }
             }
 
-            if (exc != null)
+            if (exc is not null)
                 throw exc;
             return o;
         }
 
         internal static void ConvertValues(Binder binder, object?[]? args, ParameterInfo[] pinfo, CultureInfo? culture, BindingFlags invokeAttr)
         {
-            if (args == null)
+            if (args is null)
             {
                 if (pinfo.Length == 0)
                     return;
@@ -479,7 +479,7 @@ namespace System.Reflection
         {
             get
             {
-                if (name != null)
+                if (name is not null)
                     return name;
                 return get_name(this);
             }
@@ -672,7 +672,7 @@ namespace System.Reflection
 
         public override MethodInfo MakeGenericMethod(Type[] methodInstantiation)
         {
-            if (methodInstantiation == null)
+            if (methodInstantiation is null)
                 throw new ArgumentNullException(nameof(methodInstantiation));
 
             if (!IsGenericMethodDefinition)
@@ -685,7 +685,7 @@ namespace System.Reflection
             bool hasUserType = false;
             foreach (Type type in methodInstantiation)
             {
-                if (type == null)
+                if (type is null)
                     throw new ArgumentNullException();
                 if (!(type is RuntimeType))
                     hasUserType = true;
@@ -700,7 +700,7 @@ namespace System.Reflection
             }
 
             MethodInfo ret = MakeGenericMethod_impl(methodInstantiation);
-            if (ret == null)
+            if (ret is null)
                 throw new ArgumentException(string.Format("The method has {0} generic parameter(s) but {1} generic argument(s) were provided.", GetGenericArguments().Length, methodInstantiation.Length));
             return ret;
         }
@@ -717,7 +717,7 @@ namespace System.Reflection
         public override MethodInfo GetGenericMethodDefinition()
         {
             MethodInfo res = GetGenericMethodDefinition_impl();
-            if (res == null)
+            if (res is null)
                 throw new InvalidOperationException();
 
             return res;
@@ -812,7 +812,7 @@ namespace System.Reflection
         internal override int GetParametersCount()
         {
             ParameterInfo[] pi = MonoMethodInfo.GetParametersInfo(mhandle, this);
-            return pi == null ? 0 : pi.Length;
+            return pi is null ? 0 : pi.Length;
         }
 
         /*
@@ -826,7 +826,7 @@ namespace System.Reflection
         [DebuggerStepThrough]
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 if (!IsStatic)
                     throw new TargetException("Instance constructor requires a target");
@@ -841,14 +841,14 @@ namespace System.Reflection
 
         private object DoInvoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
-            if (binder == null)
+            if (binder is null)
                 binder = Type.DefaultBinder;
 
             ParameterInfo[] pinfo = MonoMethodInfo.GetParametersInfo(mhandle, this);
 
             RuntimeMethodInfo.ConvertValues(binder, parameters, pinfo, culture, invokeAttr);
 
-            if (obj == null && DeclaringType.ContainsGenericParameters)
+            if (obj is null && DeclaringType.ContainsGenericParameters)
                 throw new MemberAccessException("Cannot create an instance of " + DeclaringType + " because Type.ContainsGenericParameters is true.");
 
             if ((invokeAttr & BindingFlags.CreateInstance) != 0 && DeclaringType.IsAbstract)
@@ -888,10 +888,10 @@ namespace System.Reflection
                 o = InternalInvoke(obj, parameters, out exc);
             }
 
-            if (exc != null)
+            if (exc is not null)
                 throw exc;
 
-            return obj == null ? o : null;
+            return obj is null ? o : null;
         }
 
         [DebuggerHidden]
@@ -951,7 +951,7 @@ namespace System.Reflection
         {
             get
             {
-                if (name != null)
+                if (name is not null)
                     return name;
                 return RuntimeMethodInfo.get_name(this);
             }
@@ -980,7 +980,7 @@ namespace System.Reflection
         // copied from CoreCLR's RuntimeConstructorInfo
         public override string ToString()
         {
-            if (toString == null)
+            if (toString is null)
             {
                 var sbName = new ValueStringBuilder(MethodNameBufferSize);
 

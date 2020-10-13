@@ -23,7 +23,7 @@ namespace System.Collections
 
         public Comparer(CultureInfo culture)
         {
-            if (culture == null)
+            if (culture is null)
                 throw new ArgumentNullException(nameof(culture));
 
             _compareInfo = culture.CompareInfo;
@@ -31,7 +31,7 @@ namespace System.Collections
 
         private Comparer(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
+            if (info is null)
                 throw new ArgumentNullException(nameof(info));
 
             _compareInfo = (CompareInfo)info.GetValue("CompareInfo", typeof(CompareInfo))!;
@@ -39,7 +39,7 @@ namespace System.Collections
 
         public void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
+            if (info is null)
                 throw new ArgumentNullException(nameof(info));
 
             info.AddValue("CompareInfo", _compareInfo);
@@ -54,8 +54,8 @@ namespace System.Collections
         public int Compare(object? a, object? b)
         {
             if (a == b) return 0;
-            if (a == null) return -1;
-            if (b == null) return 1;
+            if (a is null) return -1;
+            if (b is null) return 1;
 
             if (a is string sa && b is string sb)
                 return _compareInfo.Compare(sa, sb);

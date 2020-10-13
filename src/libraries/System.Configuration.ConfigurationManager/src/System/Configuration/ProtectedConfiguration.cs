@@ -13,7 +13,7 @@ namespace System.Configuration
                     PrivilegedConfigurationManager.GetSection(
                             BaseConfigurationRecord.ReservedSectionProtectedConfiguration) as
                         ProtectedConfigurationSection;
-                return config == null ? new ProtectedConfigurationProviderCollection() : config.GetAllProviders();
+                return config is null ? new ProtectedConfigurationProviderCollection() : config.GetAllProviders();
             }
         }
 
@@ -29,7 +29,7 @@ namespace System.Configuration
                     PrivilegedConfigurationManager.GetSection(
                             BaseConfigurationRecord.ReservedSectionProtectedConfiguration) as
                         ProtectedConfigurationSection;
-                return config != null ? config.DefaultProvider : "";
+                return config is not null ? config.DefaultProvider : "";
             }
         }
     }

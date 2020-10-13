@@ -43,7 +43,7 @@ namespace System.Net.Http.Headers
             else
             {
                 _validator.Invoke(item);
-                Debug.Assert(item != null);
+                Debug.Assert(item is not null);
             }
 
             if (_items is null)

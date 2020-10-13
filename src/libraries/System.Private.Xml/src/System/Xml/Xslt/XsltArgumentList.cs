@@ -86,7 +86,7 @@ namespace System.Xml.Xsl
 
         private static void CheckArgumentNull(object param, string paramName)
         {
-            if (param == null)
+            if (param is null)
             {
                 throw new ArgumentNullException(paramName);
             }

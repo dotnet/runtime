@@ -62,7 +62,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             switch (frame.State)
             {
@@ -85,7 +85,7 @@ namespace System.Xml.Xsl.XsltOld
                 case ProcessingChildren:
                     if (_type == ConditionType.ConditionWhen || _type == ConditionType.ConditionOtherwise)
                     {
-                        Debug.Assert(frame.Container != null);
+                        Debug.Assert(frame.Container is not null);
                         frame.Exit();
                     }
 

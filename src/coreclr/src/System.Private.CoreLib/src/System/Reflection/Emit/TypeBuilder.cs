@@ -14,7 +14,7 @@ namespace System.Reflection.Emit
     {
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
-            if (typeInfo == null) return false;
+            if (typeInfo is null) return false;
             return IsAssignableFrom(typeInfo.AsType());
         }
 
@@ -47,9 +47,9 @@ namespace System.Reflection.Emit
 
             public void Bake(ModuleBuilder module, int token)
             {
-                if (m_customBuilder == null)
+                if (m_customBuilder is null)
                 {
-                    Debug.Assert(m_con != null);
+                    Debug.Assert(m_con is not null);
                     DefineCustomAttribute(module, token, module.GetConstructorToken(m_con),
                         m_binaryAttribute, false, false);
                 }
@@ -77,7 +77,7 @@ namespace System.Reflection.Emit
             if (method.IsGenericMethod && !method.IsGenericMethodDefinition)
                 throw new ArgumentException(SR.Argument_NeedGenericMethodDefinition, nameof(method));
 
-            if (method.DeclaringType == null || !method.DeclaringType.IsGenericTypeDefinition)
+            if (method.DeclaringType is null || !method.DeclaringType.IsGenericTypeDefinition)
                 throw new ArgumentException(SR.Argument_MethodNeedGenericDeclaringType, nameof(method));
 
             if (type.GetGenericTypeDefinition() != method.DeclaringType)
@@ -177,14 +177,14 @@ namespace System.Reflection.Emit
         {
             byte[]? localAttr = null;
 
-            if (attr != null)
+            if (attr is not null)
             {
                 localAttr = new byte[attr.Length];
                 Buffer.BlockCopy(attr, 0, localAttr, 0, attr.Length);
             }
 
             DefineCustomAttribute(new QCallModule(ref module), tkAssociate, tkConstructor,
-                localAttr, (localAttr != null) ? localAttr.Length : 0, toDisk, updateCompilerFlags);
+                localAttr, (localAttr is not null) ? localAttr.Length : 0, toDisk, updateCompilerFlags);
         }
 
         [DllImport(RuntimeHelpers.QCall, CharSet = CharSet.Unicode)]
@@ -260,11 +260,11 @@ namespace System.Reflection.Emit
             }
 
             // If the type builder view is equal then it is equal
-            if (tb1 != null && tb2 != null && ReferenceEquals(tb1, tb2))
+            if (tb1 is not null && tb2 is not null && ReferenceEquals(tb1, tb2))
                 return true;
 
             // if the runtimetype view is eqaul than it is equal
-            if (runtimeType1 != null && runtimeType2 != null && runtimeType1 == runtimeType2)
+            if (runtimeType1 is not null && runtimeType2 is not null && runtimeType1 == runtimeType2)
                 return true;
 
             return false;
@@ -275,7 +275,7 @@ namespace System.Reflection.Emit
             // This is a helper function that is used by ParameterBuilder, PropertyBuilder,
             // and FieldBuilder to validate a default value and save it in the meta-data.
 
-            if (value != null)
+            if (value is not null)
             {
                 Type type = value.GetType();
 
@@ -318,7 +318,7 @@ namespace System.Reflection.Emit
 
                         // The constant value supplied should match either the baked enum type or its underlying type
                         // typeBldr.m_enumUnderlyingType is null if the user hasn't created a "value__" field on the enum
-                        if (underlyingType == null || (type != typeBldr.UnderlyingSystemType && type != underlyingType))
+                        if (underlyingType is null || (type != typeBldr.UnderlyingSystemType && type != underlyingType))
                             throw new ArgumentException(SR.Argument_ConstantDoesntMatch);
                     }
                     else // must be a runtime Enum Type
@@ -449,7 +449,7 @@ namespace System.Reflection.Emit
             m_bIsGenParam = true;
             m_typeInterfaces = new List<Type>();
 
-            Debug.Assert(declMeth != null);
+            Debug.Assert(declMeth is not null);
             m_declMeth = declMeth;
             m_DeclaringType = m_declMeth.GetTypeBuilder();
             m_module = declMeth.GetModuleBuilder();
@@ -463,7 +463,7 @@ namespace System.Reflection.Emit
             m_bIsGenParam = true;
             m_typeInterfaces = new List<Type>();
 
-            Debug.Assert(declType != null);
+            Debug.Assert(declType is not null);
             m_DeclaringType = declType;
             m_module = declType.GetModuleBuilder();
         }
@@ -472,7 +472,7 @@ namespace System.Reflection.Emit
             string fullname, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type? parent, Type[]? interfaces, ModuleBuilder module,
             PackingSize iPackingSize, int iTypeSize, TypeBuilder? enclosingType)
         {
-            if (fullname == null)
+            if (fullname is null)
                 throw new ArgumentNullException(nameof(fullname));
 
             if (fullname.Length == 0)
@@ -492,7 +492,7 @@ namespace System.Reflection.Emit
             // cannot have two types within the same assembly of the same name
             containingAssem._assemblyData.CheckTypeNameConflict(fullname, enclosingType);
 
-            if (enclosingType != null)
+            if (enclosingType is not null)
             {
                 // Nested Type should have nested attribute set.
                 // If we are renumbering TypeAttributes' bit, we need to change the logic here.
@@ -501,11 +501,11 @@ namespace System.Reflection.Emit
             }
 
             int[]? interfaceTokens = null;
-            if (interfaces != null)
+            if (interfaces is not null)
             {
                 for (i = 0; i < interfaces.Length; i++)
                 {
-                    if (interfaces[i] == null)
+                    if (interfaces[i] is null)
                     {
                         // cannot contain null in the interface list
                         throw new ArgumentNullException(nameof(interfaces));
@@ -544,11 +544,11 @@ namespace System.Reflection.Emit
             SetInterfaces(interfaces);
 
             int tkParent = 0;
-            if (m_typeParent != null)
+            if (m_typeParent is not null)
                 tkParent = m_module.GetTypeTokenInternal(m_typeParent);
 
             int tkEnclosingType = 0;
-            if (enclosingType != null)
+            if (enclosingType is not null)
             {
                 tkEnclosingType = enclosingType.m_tdType;
             }
@@ -573,7 +573,7 @@ namespace System.Reflection.Emit
             FieldBuilder fdBuilder;
             TypeAttributes typeAttributes;
 
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
@@ -591,7 +591,7 @@ namespace System.Reflection.Emit
             Type? temp = m_module.FindTypeBuilderWithName(strValueClassName, false);
             valueClassType = temp as TypeBuilder;
 
-            if (valueClassType == null)
+            if (valueClassType is null)
             {
                 typeAttributes = TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Class | TypeAttributes.Sealed | TypeAttributes.AnsiClass;
 
@@ -610,7 +610,7 @@ namespace System.Reflection.Emit
         private void VerifyTypeAttributes(TypeAttributes attr)
         {
             // Verify attr consistency for Nesting or otherwise.
-            if (DeclaringType == null)
+            if (DeclaringType is null)
             {
                 // Not a nested class.
                 if (((attr & TypeAttributes.VisibilityMask) != TypeAttributes.NotPublic) && ((attr & TypeAttributes.VisibilityMask) != TypeAttributes.Public))
@@ -792,7 +792,7 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            if (types == null)
+            if (types is null)
             {
                 return m_bakedRuntimeType.GetMethod(name, bindingAttr);
             }
@@ -839,12 +839,12 @@ namespace System.Reflection.Emit
 
         public override Type[] GetInterfaces()
         {
-            if (m_bakedRuntimeType != null)
+            if (m_bakedRuntimeType is not null)
             {
                 return m_bakedRuntimeType.GetInterfaces();
             }
 
-            if (m_typeInterfaces == null)
+            if (m_typeInterfaces is null)
             {
                 return Array.Empty<Type>();
             }
@@ -947,15 +947,15 @@ namespace System.Reflection.Emit
             Type? fromRuntimeType;
             TypeBuilder? fromTypeBuilder = c as TypeBuilder;
 
-            if (fromTypeBuilder != null)
+            if (fromTypeBuilder is not null)
                 fromRuntimeType = fromTypeBuilder.m_bakedRuntimeType;
             else
                 fromRuntimeType = c;
 
-            if (fromRuntimeType != null && fromRuntimeType is RuntimeType)
+            if (fromRuntimeType is not null && fromRuntimeType is RuntimeType)
             {
                 // fromType is baked. So if this type is not baked, it cannot be assignable to!
-                if (m_bakedRuntimeType == null)
+                if (m_bakedRuntimeType is null)
                     return false;
 
                 // since toType is also baked, delegate to the base
@@ -964,7 +964,7 @@ namespace System.Reflection.Emit
 
             // So if c is not a runtimeType nor TypeBuilder. We don't know how to deal with it.
             // return false then.
-            if (fromTypeBuilder == null)
+            if (fromTypeBuilder is null)
                 return false;
 
             // If fromTypeBuilder is a subclass of this class, then c can be cast to this type.
@@ -1045,7 +1045,7 @@ namespace System.Reflection.Emit
 
             p = p.BaseType;
 
-            while (p != null)
+            while (p is not null)
             {
                 if (IsTypeEqual(p, c))
                     return true;
@@ -1060,12 +1060,12 @@ namespace System.Reflection.Emit
         {
             get
             {
-                if (m_bakedRuntimeType != null)
+                if (m_bakedRuntimeType is not null)
                     return m_bakedRuntimeType;
 
                 if (IsEnum)
                 {
-                    if (m_enumUnderlyingType == null)
+                    if (m_enumUnderlyingType is null)
                         throw new InvalidOperationException(SR.InvalidOperation_NoUnderlyingTypeOnEnum);
 
                     return m_enumUnderlyingType;
@@ -1114,12 +1114,12 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null)
+            if (attributeRuntimeType is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(m_bakedRuntimeType, attributeRuntimeType, inherit);
@@ -1130,12 +1130,12 @@ namespace System.Reflection.Emit
             if (!IsCreated())
                 throw new NotSupportedException(SR.NotSupported_TypeNotYetCreated);
 
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null)
+            if (attributeRuntimeType is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(m_bakedRuntimeType, attributeRuntimeType, inherit);
@@ -1153,7 +1153,7 @@ namespace System.Reflection.Emit
             ThrowIfCreated();
 
             m_typeInterfaces = new List<Type>();
-            if (interfaces != null)
+            if (interfaces is not null)
             {
                 m_typeInterfaces.AddRange(interfaces);
             }
@@ -1161,17 +1161,17 @@ namespace System.Reflection.Emit
 
         public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
-            if (names == null)
+            if (names is null)
                 throw new ArgumentNullException(nameof(names));
 
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
             for (int i = 0; i < names.Length; i++)
-                if (names[i] == null)
+                if (names[i] is null)
                     throw new ArgumentNullException(nameof(names));
 
-            if (m_inst != null)
+            if (m_inst is not null)
                 throw new InvalidOperationException();
 
             m_inst = new GenericTypeParameterBuilder[names.Length];
@@ -1193,13 +1193,13 @@ namespace System.Reflection.Emit
         // If a TypeBuilder is generic, it must be a generic type definition
         // All instantiated generic types are TypeBuilderInstantiation.
         public override bool IsGenericTypeDefinition => IsGenericType;
-        public override bool IsGenericType => m_inst != null;
+        public override bool IsGenericType => m_inst is not null;
         public override bool IsGenericParameter => m_bIsGenParam;
         public override bool IsConstructedGenericType => false;
 
         public override int GenericParameterPosition => m_genParamPos;
         public override MethodBase? DeclaringMethod => m_declMeth;
-        public override Type GetGenericTypeDefinition() { if (IsGenericTypeDefinition) return this; if (m_genTypeDef == null) throw new InvalidOperationException(); return m_genTypeDef; }
+        public override Type GetGenericTypeDefinition() { if (IsGenericTypeDefinition) return this; if (m_genTypeDef is null) throw new InvalidOperationException(); return m_genTypeDef; }
         #endregion
 
         #region Define Method
@@ -1213,10 +1213,10 @@ namespace System.Reflection.Emit
 
         private void DefineMethodOverrideNoLock(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
         {
-            if (methodInfoBody == null)
+            if (methodInfoBody is null)
                 throw new ArgumentNullException(nameof(methodInfoBody));
 
-            if (methodInfoDeclaration == null)
+            if (methodInfoDeclaration is null)
                 throw new ArgumentNullException(nameof(methodInfoDeclaration));
 
             ThrowIfCreated();
@@ -1269,7 +1269,7 @@ namespace System.Reflection.Emit
             Type? returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
@@ -1280,12 +1280,12 @@ namespace System.Reflection.Emit
             AssemblyBuilder.CheckContext(parameterTypeRequiredCustomModifiers);
             AssemblyBuilder.CheckContext(parameterTypeOptionalCustomModifiers);
 
-            if (parameterTypes != null)
+            if (parameterTypes is not null)
             {
-                if (parameterTypeOptionalCustomModifiers != null && parameterTypeOptionalCustomModifiers.Length != parameterTypes.Length)
+                if (parameterTypeOptionalCustomModifiers is not null && parameterTypeOptionalCustomModifiers.Length != parameterTypes.Length)
                     throw new ArgumentException(SR.Format(SR.Argument_MismatchedArrays, nameof(parameterTypeOptionalCustomModifiers), nameof(parameterTypes)));
 
-                if (parameterTypeRequiredCustomModifiers != null && parameterTypeRequiredCustomModifiers.Length != parameterTypes.Length)
+                if (parameterTypeRequiredCustomModifiers is not null && parameterTypeRequiredCustomModifiers.Length != parameterTypes.Length)
                     throw new ArgumentException(SR.Format(SR.Argument_MismatchedArrays, nameof(parameterTypeRequiredCustomModifiers), nameof(parameterTypes)));
             }
 
@@ -1357,19 +1357,19 @@ namespace System.Reflection.Emit
 
             lock (SyncRoot)
             {
-                if (name == null)
+                if (name is null)
                     throw new ArgumentNullException(nameof(name));
 
                 if (name.Length == 0)
                     throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
 
-                if (dllName == null)
+                if (dllName is null)
                     throw new ArgumentNullException(nameof(dllName));
 
                 if (dllName.Length == 0)
                     throw new ArgumentException(SR.Argument_EmptyName, nameof(dllName));
 
-                if (importName == null)
+                if (importName is null)
                     throw new ArgumentNullException(nameof(importName));
 
                 if (importName.Length == 0)
@@ -1504,7 +1504,7 @@ namespace System.Reflection.Emit
                 if (genericTypeDefinition is TypeBuilder)
                     genericTypeDefinition = ((TypeBuilder)genericTypeDefinition).m_bakedRuntimeType;
 
-                if (genericTypeDefinition == null)
+                if (genericTypeDefinition is null)
                     throw new NotSupportedException(SR.NotSupported_DynamicModule);
 
                 Type inst = genericTypeDefinition.MakeGenericType(m_typeParent.GetGenericArguments());
@@ -1517,12 +1517,12 @@ namespace System.Reflection.Emit
                         BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
             }
 
-            if (con == null)
+            if (con is null)
             {
                 con = m_typeParent!.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic, null, EmptyTypes, null);
             }
 
-            if (con == null)
+            if (con is null)
                 throw new NotSupportedException(SR.NotSupported_NoParentDefaultConstructor);
 
             // Define the constructor Builder
@@ -1681,7 +1681,7 @@ namespace System.Reflection.Emit
             AssemblyBuilder.CheckContext(type);
             AssemblyBuilder.CheckContext(requiredCustomModifiers);
 
-            if (m_enumUnderlyingType == null && IsEnum)
+            if (m_enumUnderlyingType is null && IsEnum)
             {
                 if ((attributes & FieldAttributes.Static) == 0)
                 {
@@ -1703,7 +1703,7 @@ namespace System.Reflection.Emit
 
         private FieldBuilder DefineInitializedDataNoLock(string name, byte[] data, FieldAttributes attributes)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
 
             // This method will define an initialized Data in .sdata.
@@ -1767,7 +1767,7 @@ namespace System.Reflection.Emit
             Type returnType, Type[]? returnTypeRequiredCustomModifiers, Type[]? returnTypeOptionalCustomModifiers,
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
@@ -1822,7 +1822,7 @@ namespace System.Reflection.Emit
 
         private EventBuilder DefineEventNoLock(string name, EventAttributes attributes, Type eventtype)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
@@ -1891,7 +1891,7 @@ namespace System.Reflection.Emit
             }
 
             int tkParent = 0;
-            if (m_typeParent != null)
+            if (m_typeParent is not null)
                 tkParent = m_module.GetTypeTokenInternal(m_typeParent);
 
             ModuleBuilder module = m_module;
@@ -1900,7 +1900,7 @@ namespace System.Reflection.Emit
             {
                 int[] constraints; // Array of token constrains terminated by null token
 
-                if (m_typeParent != null)
+                if (m_typeParent is not null)
                 {
                     constraints = new int[m_typeInterfaces.Count + 2];
                     constraints[^2] = tkParent;
@@ -1915,11 +1915,11 @@ namespace System.Reflection.Emit
                     constraints[i] = m_module.GetTypeTokenInternal(m_typeInterfaces[i]);
                 }
 
-                int declMember = m_declMeth == null ? m_DeclaringType!.m_tdType : m_declMeth.MetadataToken;
+                int declMember = m_declMeth is null ? m_DeclaringType!.m_tdType : m_declMeth.MetadataToken;
                 m_tdType = DefineGenericParam(new QCallModule(ref module),
                     m_strName!, declMember, m_genParamAttributes, m_genParamPos, constraints);
 
-                if (m_ca != null)
+                if (m_ca is not null)
                 {
                     foreach (CustAttr ca in m_ca)
                         ca.Bake(m_module, MetadataToken);
@@ -1939,7 +1939,7 @@ namespace System.Reflection.Emit
                     SetParentType(new QCallModule(ref module), m_tdType, tkParent);
                 }
 
-                if (m_inst != null)
+                if (m_inst is not null)
                 {
                     foreach (GenericTypeParameterBuilder tb in m_inst)
                     {
@@ -1997,13 +1997,13 @@ namespace System.Reflection.Emit
 
                     // ((m_iAttr & TypeAttributes.ClassSemanticsMask) == TypeAttributes.Interface))
 
-                    if (body != null)
+                    if (body is not null)
                         throw new InvalidOperationException(SR.Format(SR.InvalidOperation_BadMethodBody, meth.Name));
                 }
-                else if (body == null || body.Length == 0)
+                else if (body is null || body.Length == 0)
                 {
                     // If it's not an abstract or an interface, set the IL.
-                    if (meth.m_ilGenerator != null)
+                    if (meth.m_ilGenerator is not null)
                     {
                         // we need to bake the method here.
                         meth.CreateMethodBodyHelper(meth.GetILGenerator());
@@ -2011,7 +2011,7 @@ namespace System.Reflection.Emit
 
                     body = meth.GetBody();
 
-                    if ((body == null || body.Length == 0) && !meth.m_canBeRuntimeImpl)
+                    if ((body is null || body.Length == 0) && !meth.m_canBeRuntimeImpl)
                         throw new InvalidOperationException(
                             SR.Format(SR.InvalidOperation_BadEmptyMethodBody, meth.Name));
                 }
@@ -2022,10 +2022,10 @@ namespace System.Reflection.Emit
                 int[]? tokenFixups = meth.GetTokenFixups();
 
                 SetMethodIL(new QCallModule(ref module), meth.MetadataToken, meth.InitLocals,
-                    body, (body != null) ? body.Length : 0,
+                    body, (body is not null) ? body.Length : 0,
                     localSig, sigLength, maxStack,
-                    exceptions, (exceptions != null) ? exceptions.Length : 0,
-                    tokenFixups, (tokenFixups != null) ? tokenFixups.Length : 0);
+                    exceptions, (exceptions is not null) ? exceptions.Length : 0,
+                    tokenFixups, (tokenFixups is not null) ? tokenFixups.Length : 0);
 
                 if (m_module.ContainingAssemblyBuilder._assemblyData._access == AssemblyBuilderAccess.Run)
                 {
@@ -2046,7 +2046,7 @@ namespace System.Reflection.Emit
                 m_bakedRuntimeType = cls!;
 
                 // if this type is a nested type, we need to invalidate the cached nested runtime type on the nesting type
-                if (m_DeclaringType != null && m_DeclaringType.m_bakedRuntimeType != null)
+                if (m_DeclaringType is not null && m_DeclaringType.m_bakedRuntimeType is not null)
                 {
                     m_DeclaringType.m_bakedRuntimeType.InvalidateCachedNestedType();
                 }
@@ -2070,7 +2070,7 @@ namespace System.Reflection.Emit
         {
             ThrowIfCreated();
 
-            if (parent != null)
+            if (parent is not null)
             {
                 AssemblyBuilder.CheckContext(parent);
 
@@ -2098,7 +2098,7 @@ namespace System.Reflection.Emit
 
         public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
         {
-            if (interfaceType == null)
+            if (interfaceType is null)
             {
                 throw new ArgumentNullException(nameof(interfaceType));
             }
@@ -2127,10 +2127,10 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
+            if (con is null)
                 throw new ArgumentNullException(nameof(con));
 
-            if (binaryAttribute == null)
+            if (binaryAttribute is null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
 
             DefineCustomAttribute(m_module, m_tdType, ((ModuleBuilder)m_module).GetConstructorToken(con),
@@ -2139,7 +2139,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
             customBuilder.CreateCustomAttribute((ModuleBuilder)m_module, m_tdType);

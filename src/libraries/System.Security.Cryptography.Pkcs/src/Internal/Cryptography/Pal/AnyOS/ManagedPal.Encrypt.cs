@@ -76,14 +76,14 @@ namespace Internal.Cryptography.Pal.AnyOS
                 },
             };
 
-            if (unprotectedAttributes != null && unprotectedAttributes.Count > 0)
+            if (unprotectedAttributes is not null && unprotectedAttributes.Count > 0)
             {
                 List<AttributeAsn> attrList = CmsSigner.BuildAttributes(unprotectedAttributes);
 
                 envelopedData.UnprotectedAttributes = PkcsHelpers.NormalizeAttributeSet(attrList.ToArray());
             }
 
-            if (originatorCerts != null && originatorCerts.Count > 0)
+            if (originatorCerts is not null && originatorCerts.Count > 0)
             {
                 CertificateChoiceAsn[] certs = new CertificateChoiceAsn[originatorCerts.Count];
 
@@ -134,9 +134,9 @@ namespace Internal.Cryptography.Pal.AnyOS
             // v0 (RFC 2315):
             //   * Anything not already matched
 
-            if (envelopedData.OriginatorInfo != null ||
+            if (envelopedData.OriginatorInfo is not null ||
                 !allRecipientsVersion0 ||
-                envelopedData.UnprotectedAttributes != null)
+                envelopedData.UnprotectedAttributes is not null)
             {
                 envelopedData.Version = 2;
             }

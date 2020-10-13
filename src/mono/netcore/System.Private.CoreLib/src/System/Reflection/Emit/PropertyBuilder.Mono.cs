@@ -71,7 +71,7 @@ namespace System.Reflection.Emit
             this.returnModOpt = returnModOpt;
             this.paramModReq = paramModReq;
             this.paramModOpt = paramModOpt;
-            if (parameterTypes != null)
+            if (parameterTypes is not null)
             {
                 this.parameters = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, this.parameters, this.parameters.Length);
@@ -86,11 +86,11 @@ namespace System.Reflection.Emit
         }
         public override bool CanRead
         {
-            get { return get_method != null; }
+            get { return get_method is not null; }
         }
         public override bool CanWrite
         {
-            get { return set_method != null; }
+            get { return set_method is not null; }
         }
         public override Type DeclaringType
         {
@@ -111,7 +111,7 @@ namespace System.Reflection.Emit
 
         public void AddOtherMethod(MethodBuilder mdBuilder)
         {
-            if (mdBuilder == null)
+            if (mdBuilder is null)
                 throw new ArgumentNullException(nameof(mdBuilder));
             typeb.check_not_created();
         }
@@ -162,7 +162,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
                 throw new ArgumentNullException(nameof(customBuilder));
             typeb.check_not_created();
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
@@ -172,7 +172,7 @@ namespace System.Reflection.Emit
                 return;
             }
 
-            if (cattrs != null)
+            if (cattrs is not null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
                 cattrs.CopyTo(new_array, 0);
@@ -195,14 +195,14 @@ namespace System.Reflection.Emit
         public void SetGetMethod(MethodBuilder mdBuilder)
         {
             typeb.check_not_created();
-            if (mdBuilder == null)
+            if (mdBuilder is null)
                 throw new ArgumentNullException(nameof(mdBuilder));
             get_method = mdBuilder;
         }
 
         public void SetSetMethod(MethodBuilder mdBuilder)
         {
-            if (mdBuilder == null)
+            if (mdBuilder is null)
                 throw new ArgumentNullException(nameof(mdBuilder));
             set_method = mdBuilder;
         }

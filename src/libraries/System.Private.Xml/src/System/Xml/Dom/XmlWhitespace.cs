@@ -85,7 +85,7 @@ namespace System.Xml
         // Creates a duplicate of this node.
         public override XmlNode CloneNode(bool deep)
         {
-            Debug.Assert(OwnerDocument != null);
+            Debug.Assert(OwnerDocument is not null);
             return OwnerDocument.CreateWhitespace(Data);
         }
 
@@ -123,7 +123,7 @@ namespace System.Xml
         {
             get
             {
-                if (parentNode != null && parentNode.IsText)
+                if (parentNode is not null && parentNode.IsText)
                 {
                     return parentNode;
                 }

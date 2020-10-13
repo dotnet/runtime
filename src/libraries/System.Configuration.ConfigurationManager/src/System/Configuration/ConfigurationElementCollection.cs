@@ -31,7 +31,7 @@ namespace System.Configuration
 
         protected ConfigurationElementCollection(IComparer comparer)
         {
-            if (comparer == null) throw new ArgumentNullException(nameof(comparer));
+            if (comparer is null) throw new ArgumentNullException(nameof(comparer));
 
             _comparer = comparer;
         }
@@ -205,7 +205,7 @@ namespace System.Configuration
 
         public override bool Equals(object compareTo)
         {
-            if (compareTo == null || compareTo.GetType() != GetType())
+            if (compareTo is null || compareTo.GetType() != GetType())
                 return false;
 
             ConfigurationElementCollection compareToElem = (ConfigurationElementCollection)compareTo;
@@ -248,7 +248,7 @@ namespace System.Configuration
             ConfigurationSaveMode saveMode)
         {
             base.Unmerge(sourceElement, parentElement, saveMode);
-            if (sourceElement == null) return;
+            if (sourceElement is null) return;
 
             ConfigurationElementCollection parentCollection = parentElement as ConfigurationElementCollection;
             ConfigurationElementCollection sourceCollection = sourceElement as ConfigurationElementCollection;
@@ -261,24 +261,24 @@ namespace System.Configuration
 
             AssociateContext(sourceElement._configRecord);
 
-            if (parentElement != null)
+            if (parentElement is not null)
             {
-                if (parentElement._lockedAttributesList != null)
+                if (parentElement._lockedAttributesList is not null)
                 {
                     _lockedAttributesList = UnMergeLockList(sourceElement._lockedAttributesList,
                         parentElement._lockedAttributesList, saveMode);
                 }
-                if (parentElement._lockedElementsList != null)
+                if (parentElement._lockedElementsList is not null)
                 {
                     _lockedElementsList = UnMergeLockList(sourceElement._lockedElementsList,
                         parentElement._lockedElementsList, saveMode);
                 }
-                if (parentElement._lockedAllExceptAttributesList != null)
+                if (parentElement._lockedAllExceptAttributesList is not null)
                 {
                     _lockedAllExceptAttributesList = UnMergeLockList(sourceElement._lockedAllExceptAttributesList,
                         parentElement._lockedAllExceptAttributesList, saveMode);
                 }
-                if (parentElement._lockedAllExceptElementsList != null)
+                if (parentElement._lockedAllExceptElementsList is not null)
                 {
                     _lockedAllExceptElementsList = UnMergeLockList(sourceElement._lockedAllExceptElementsList,
                         parentElement._lockedAllExceptElementsList, saveMode);
@@ -293,7 +293,7 @@ namespace System.Configuration
                 EmitClear = ((saveMode == ConfigurationSaveMode.Full) && (_clearElement.Length != 0)) ||
                     ((saveMode == ConfigurationSaveMode.Modified) && _collectionCleared) || sourceCollection.EmitClear;
 
-                if ((parentCollection != null) && (EmitClear != true))
+                if ((parentCollection is not null) && (EmitClear != true))
                 {
                     foreach (Entry entry in parentCollection.Items)
                         if (entry.EntryType != EntryType.Removed)
@@ -349,7 +349,7 @@ namespace System.Configuration
                     }
                 }
 
-                if ((parentCollection != null) && (EmitClear != true))
+                if ((parentCollection is not null) && (EmitClear != true))
                 {
                     foreach (Entry entry in parentCollection.Items)
                     {
@@ -397,7 +397,7 @@ namespace System.Configuration
                     if ((entry.EntryType != EntryType.Added) && (entry.EntryType != EntryType.Replaced)) continue;
                     bool inParent = false;
 
-                    if (parentCollection != null)
+                    if (parentCollection is not null)
                     {
                         foreach (Entry parentEntry in parentCollection.Items)
                         {
@@ -455,7 +455,7 @@ namespace System.Configuration
             ConfigurationElementCollection parentCollection = parentElement as ConfigurationElementCollection;
             ResetLockLists(parentElement);
 
-            if (parentCollection != null)
+            if (parentCollection is not null)
             {
                 foreach (Entry entry in parentCollection.Items)
                 {
@@ -513,7 +513,7 @@ namespace System.Configuration
                 Entry entry = (Entry)Items[index];
                 if (!CompareKeys(key, entry.GetKey(this))) continue;
 
-                if ((entry.Value != null) && entry.Value.LockItem && (ignoreLocks == false))
+                if ((entry.Value is not null) && entry.Value.LockItem && (ignoreLocks == false))
                     throw new ConfigurationErrorsException(SR.Config_base_collection_item_locked);
 
                 if ((entry.EntryType != EntryType.Removed) && throwIfExists)
@@ -734,7 +734,7 @@ namespace System.Configuration
             {
                 if (CompareKeys(key, entry.GetKey(this)))
                 {
-                    if (entry.Value == null) // A phoney delete is already present
+                    if (entry.Value is null) // A phoney delete is already present
                     {
                         if (throwIfMissing)
                         {
@@ -860,7 +860,7 @@ namespace System.Configuration
                 if (entryfound.EntryType != EntryType.Removed) virtualIndex++;
             }
 
-            if (entry != null)
+            if (entry is not null)
                 return entry.Value;
 
             throw new ConfigurationErrorsException(SR.Format(SR.IndexOutOfRange, index));
@@ -897,7 +897,7 @@ namespace System.Configuration
             }
 
             // Entry entry = (Entry)_items[index];
-            if (entry == null) throw new ConfigurationErrorsException(SR.Format(SR.IndexOutOfRange, index));
+            if (entry is null) throw new ConfigurationErrorsException(SR.Format(SR.IndexOutOfRange, index));
 
             return entry.GetKey(this);
         }
@@ -934,7 +934,7 @@ namespace System.Configuration
                 for (int checkIndex = 0; checkIndex < Items.Count; checkIndex++)
                 {
                     Entry entry = (Entry)Items[checkIndex];
-                    if ((entry.Value != null) && entry.Value.LockItem)
+                    if ((entry.Value is not null) && entry.Value.LockItem)
                         throw new ConfigurationErrorsException(SR.Config_base_collection_item_locked_cannot_clear);
                 }
 
@@ -972,7 +972,7 @@ namespace System.Configuration
                 if (entryfound.EntryType != EntryType.Removed) virtualIndex++;
             }
 
-            if (entry == null) throw new ConfigurationErrorsException(SR.Format(SR.IndexOutOfRange, index));
+            if (entry is null) throw new ConfigurationErrorsException(SR.Format(SR.IndexOutOfRange, index));
             if (entry.Value.LockItem)
             {
                 throw new ConfigurationErrorsException(SR.Format(SR.Config_base_attribute_locked,
@@ -1038,7 +1038,7 @@ namespace System.Configuration
                 // no real elements
                 if (_emitClearTag && (_clearElement.Length != 0))
                 {
-                    if (writer != null)
+                    if (writer is not null)
                     {
                         writer.WriteStartElement(_clearElement);
                         writer.WriteEndElement();
@@ -1071,7 +1071,7 @@ namespace System.Configuration
                     case ConfigurationElementCollectionType.AddRemoveClearMapAlternate:
                         if (((entry.EntryType == EntryType.Removed) ||
                             (entry.EntryType == EntryType.Replaced)) &&
-                            (entry.Value != null))
+                            (entry.Value is not null))
                         {
                             writer?.WriteStartElement(_removeElement);
                             entry.Value.SerializeElement(writer, true);
@@ -1186,7 +1186,7 @@ namespace System.Configuration
         internal object GetElementKeyInternal(ConfigurationElement element)
         {
             object key = GetElementKey(element);
-            if (key == null)
+            if (key is null)
                 throw new ConfigurationErrorsException(SR.Config_base_invalid_element_key);
             return key;
         }
@@ -1198,7 +1198,7 @@ namespace System.Configuration
 
         private bool CompareKeys(object key1, object key2)
         {
-            if (_comparer != null) return _comparer.Compare(key1, key2) == 0;
+            if (_comparer is not null) return _comparer.Compare(key1, key2) == 0;
             return key1.Equals(key2);
         }
 
@@ -1253,7 +1253,7 @@ namespace System.Configuration
             internal object GetKey(ConfigurationElementCollection thisCollection)
             {
                 // For items that have been really inserted...
-                return Value != null ? thisCollection.GetElementKeyInternal(Value) : _key;
+                return Value is not null ? thisCollection.GetElementKeyInternal(Value) : _key;
             }
         }
 
@@ -1275,7 +1275,7 @@ namespace System.Configuration
                 {
                     Entry entry = (Entry)_itemsEnumerator.Current;
                     if (entry.EntryType == EntryType.Removed) continue;
-                    _current.Key = entry.GetKey(_thisCollection) != null ? entry.GetKey(_thisCollection) : "key";
+                    _current.Key = entry.GetKey(_thisCollection) is not null ? entry.GetKey(_thisCollection) : "key";
                     _current.Value = entry.Value;
                     return true;
                 }

@@ -38,7 +38,7 @@ internal static partial class Interop
             value = null;
             int ret=-1;
 
-            if (value == null && len == 0)
+            if (value is null && len == 0)
             {
                 // do one try to see how much data we need
                 ret = Sysctl(name,  name_len, pBuffer, &bytesLength);
@@ -51,7 +51,7 @@ internal static partial class Interop
             ret = Sysctl(name,  name_len, pBuffer, &bytesLength);
             if (ret != 0)
             {
-                if (value == null && len == 0)
+                if (value is null && len == 0)
                 {
                     // This is case we allocated memory for caller
                     Marshal.FreeHGlobal((IntPtr)pBuffer);

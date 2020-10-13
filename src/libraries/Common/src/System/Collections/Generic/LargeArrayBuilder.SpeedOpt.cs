@@ -103,7 +103,7 @@ namespace System.Collections.Generic
         /// </remarks>
         public void AddRange(IEnumerable<T> items)
         {
-            Debug.Assert(items != null);
+            Debug.Assert(items is not null);
 
             using (IEnumerator<T> enumerator = items.GetEnumerator())
             {
@@ -184,7 +184,7 @@ namespace System.Collections.Generic
         /// <returns>The position in this builder that was copied up to.</returns>
         public CopyPosition CopyTo(CopyPosition position, T[] array, int arrayIndex, int count)
         {
-            Debug.Assert(array != null);
+            Debug.Assert(array is not null);
             Debug.Assert(arrayIndex >= 0);
             Debug.Assert(count > 0 && count <= Count);
             Debug.Assert(array.Length - arrayIndex >= count);

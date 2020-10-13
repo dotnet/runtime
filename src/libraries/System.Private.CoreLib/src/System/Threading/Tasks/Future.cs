@@ -318,11 +318,11 @@ namespace System.Threading.Tasks
         internal static Task<TResult> StartNew(Task? parent, Func<TResult> function, CancellationToken cancellationToken,
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler)
         {
-            if (function == null)
+            if (function is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
             }
-            if (scheduler == null)
+            if (scheduler is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
@@ -338,11 +338,11 @@ namespace System.Threading.Tasks
         internal static Task<TResult> StartNew(Task? parent, Func<object?, TResult> function, object? state, CancellationToken cancellationToken,
             TaskCreationOptions creationOptions, InternalTaskOptions internalOptions, TaskScheduler scheduler)
         {
-            if (function == null)
+            if (function is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
             }
-            if (scheduler == null)
+            if (scheduler is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
@@ -366,7 +366,7 @@ namespace System.Threading.Tasks
         // internal helper function breaks out logic used by TaskCompletionSource
         internal bool TrySetResult(TResult? result)
         {
-            Debug.Assert(m_action == null, "Task<T>.TrySetResult(): non-null m_action");
+            Debug.Assert(m_action is null, "Task<T>.TrySetResult(): non-null m_action");
 
             bool returnValue = false;
 
@@ -389,7 +389,7 @@ namespace System.Threading.Tasks
                 // FinishStageTwo, omitting everything that doesn't pertain to TrySetResult.
                 Interlocked.Exchange(ref m_stateFlags, m_stateFlags | TASK_STATE_RAN_TO_COMPLETION);
                 ContingentProperties? props = m_contingentProperties;
-                if (props != null)
+                if (props is not null)
                 {
                     NotifyParentIfPotentiallyAttachedTask();
                     props.SetCompleted();
@@ -412,7 +412,7 @@ namespace System.Threading.Tasks
             Debug.Assert(!IsCompleted, "The promise must not yet be completed.");
 
             // If we have a parent, we need to notify it of the completion.  Take the slow path to handle that.
-            if (m_contingentProperties?.m_parent != null)
+            if (m_contingentProperties?.m_parent is not null)
             {
                 bool success = TrySetResult(result);
 
@@ -491,7 +491,7 @@ namespace System.Threading.Tasks
         internal override void InnerInvoke()
         {
             // Invoke the delegate
-            Debug.Assert(m_action != null);
+            Debug.Assert(m_action is not null);
             if (m_action is Func<TResult> func)
             {
                 m_result = func();
@@ -688,12 +688,12 @@ namespace System.Threading.Tasks
         internal Task ContinueWith(Action<Task<TResult>> continuationAction, TaskScheduler scheduler, CancellationToken cancellationToken,
                                    TaskContinuationOptions continuationOptions)
         {
-            if (continuationAction == null)
+            if (continuationAction is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationAction);
             }
 
-            if (scheduler == null)
+            if (scheduler is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
@@ -879,12 +879,12 @@ namespace System.Threading.Tasks
         internal Task ContinueWith(Action<Task<TResult>, object?> continuationAction, object? state, TaskScheduler scheduler, CancellationToken cancellationToken,
                                    TaskContinuationOptions continuationOptions)
         {
-            if (continuationAction == null)
+            if (continuationAction is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationAction);
             }
 
-            if (scheduler == null)
+            if (scheduler is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
@@ -1093,12 +1093,12 @@ namespace System.Threading.Tasks
         internal Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, TNewResult> continuationFunction, TaskScheduler scheduler,
             CancellationToken cancellationToken, TaskContinuationOptions continuationOptions)
         {
-            if (continuationFunction == null)
+            if (continuationFunction is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             }
 
-            if (scheduler == null)
+            if (scheduler is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
@@ -1314,12 +1314,12 @@ namespace System.Threading.Tasks
         internal Task<TNewResult> ContinueWith<TNewResult>(Func<Task<TResult>, object?, TNewResult> continuationFunction, object? state,
             TaskScheduler scheduler, CancellationToken cancellationToken, TaskContinuationOptions continuationOptions)
         {
-            if (continuationFunction == null)
+            if (continuationFunction is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.continuationFunction);
             }
 
-            if (scheduler == null)
+            if (scheduler is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.scheduler);
             }
@@ -1353,7 +1353,7 @@ namespace System.Threading.Tasks
 
         public SystemThreadingTasks_FutureDebugView(Task<TResult> task)
         {
-            Debug.Assert(task != null);
+            Debug.Assert(task is not null);
             m_task = task;
         }
 

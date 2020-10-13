@@ -39,7 +39,7 @@ namespace System.Security.Cryptography.Asn1
 
         internal static bool RepresentsNull(ReadOnlyMemory<byte>? parameters)
         {
-            if (parameters == null)
+            if (parameters is null)
             {
                 return true;
             }

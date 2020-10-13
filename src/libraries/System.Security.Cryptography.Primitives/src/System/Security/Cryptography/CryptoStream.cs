@@ -159,9 +159,9 @@ namespace System.Security.Cryptography
             }
 
             // zeroize plain text material before returning
-            if (_inputBuffer != null)
+            if (_inputBuffer is not null)
                 Array.Clear(_inputBuffer, 0, _inputBuffer.Length);
-            if (_outputBuffer != null)
+            if (_outputBuffer is not null)
                 Array.Clear(_outputBuffer, 0, _outputBuffer.Length);
         }
 
@@ -234,7 +234,7 @@ namespace System.Security.Cryptography
             // does in Read.  If/when that's fixed for Read, it should be fixed here, too.)
             if (_outputBufferIndex > 1)
             {
-                Debug.Assert(_outputBuffer != null);
+                Debug.Assert(_outputBuffer is not null);
                 byte b = _outputBuffer[0];
                 Buffer.BlockCopy(_outputBuffer, 1, _outputBuffer, 0, _outputBufferIndex - 1);
                 _outputBufferIndex -= 1;
@@ -288,7 +288,7 @@ namespace System.Security.Cryptography
             // no bytes ready or we've delivered enough.
             int bytesToDeliver = count;
             int currentOutputIndex = offset;
-            Debug.Assert(_outputBuffer != null);
+            Debug.Assert(_outputBuffer is not null);
             if (_outputBufferIndex != 0)
             {
                 // we have some already-transformed bytes in the output buffer
@@ -329,7 +329,7 @@ namespace System.Security.Cryptography
             // OK, see first if it's a multi-block transform and we can speed up things
             int blocksToProcess = bytesToDeliver / _outputBlockSize;
 
-            Debug.Assert(_inputBuffer != null);
+            Debug.Assert(_inputBuffer is not null);
             if (blocksToProcess > 1 && _transform.CanTransformMultipleBlocks)
             {
                 int numWholeBlocksInBytes = blocksToProcess * _inputBlockSize;
@@ -393,7 +393,7 @@ namespace System.Security.Cryptography
                 {
                     // If we rented and then an exception happened we don't know how much was written to,
                     // clear the whole thing and let it get reclaimed by the GC.
-                    if (tempOutputBuffer != null)
+                    if (tempOutputBuffer is not null)
                     {
                         CryptographicOperations.ZeroMemory(tempOutputBuffer);
                         tempOutputBuffer = null;
@@ -401,7 +401,7 @@ namespace System.Security.Cryptography
 
                     // For the input buffer we know how much was written, so clear that.
                     // But still let it get reclaimed by the GC.
-                    if (tempInputBuffer != null)
+                    if (tempInputBuffer is not null)
                     {
                         CryptographicOperations.ZeroMemory(new Span<byte>(tempInputBuffer, 0, numWholeBlocksInBytes));
                         tempInputBuffer = null;
@@ -537,7 +537,7 @@ namespace System.Security.Cryptography
             // so let's try to make an entire block out of it
             if (_inputBufferIndex > 0)
             {
-                Debug.Assert(_inputBuffer != null);
+                Debug.Assert(_inputBuffer is not null);
                 if (count >= _inputBlockSize - _inputBufferIndex)
                 {
                     // we have enough to transform at least a block, so fill the input block
@@ -563,7 +563,7 @@ namespace System.Security.Cryptography
             int numOutputBytes;
             if (_inputBufferIndex == _inputBlockSize)
             {
-                Debug.Assert(_inputBuffer != null && _outputBuffer != null);
+                Debug.Assert(_inputBuffer is not null && _outputBuffer is not null);
                 numOutputBytes = _transform.TransformBlock(_inputBuffer, 0, _inputBlockSize, _outputBuffer, 0);
                 // write out the bytes we just got
                 if (useAsync)
@@ -619,7 +619,7 @@ namespace System.Security.Cryptography
                     }
                     else
                     {
-                        Debug.Assert(_outputBuffer != null);
+                        Debug.Assert(_outputBuffer is not null);
                         // do it the slow way
                         numOutputBytes = _transform.TransformBlock(buffer, currentInputIndex, _inputBlockSize, _outputBuffer, 0);
 
@@ -634,7 +634,7 @@ namespace System.Security.Cryptography
                 }
                 else
                 {
-                    Debug.Assert(_inputBuffer != null);
+                    Debug.Assert(_inputBuffer is not null);
                     // In this case, we don't have an entire block's worth left, so store it up in the
                     // input buffer, which by now must be empty.
                     Buffer.BlockCopy(buffer, currentInputIndex, _inputBuffer, 0, bytesToWrite);
@@ -674,9 +674,9 @@ namespace System.Security.Cryptography
                     // since it's null after this
                     _finalBlockTransformed = true;
                     // we need to clear all the internal buffers
-                    if (_inputBuffer != null)
+                    if (_inputBuffer is not null)
                         Array.Clear(_inputBuffer, 0, _inputBuffer.Length);
-                    if (_outputBuffer != null)
+                    if (_outputBuffer is not null)
                         Array.Clear(_outputBuffer, 0, _outputBuffer.Length);
 
                     _inputBuffer = null;
@@ -720,12 +720,12 @@ namespace System.Security.Cryptography
                 _finalBlockTransformed = true;
 
                 // we need to clear all the internal buffers
-                if (_inputBuffer != null)
+                if (_inputBuffer is not null)
                 {
                     Array.Clear(_inputBuffer, 0, _inputBuffer.Length);
                 }
 
-                if (_outputBuffer != null)
+                if (_outputBuffer is not null)
                 {
                     Array.Clear(_outputBuffer, 0, _outputBuffer.Length);
                 }
@@ -741,7 +741,7 @@ namespace System.Security.Cryptography
 
         private void InitializeBuffer()
         {
-            if (_transform != null)
+            if (_transform is not null)
             {
                 _inputBlockSize = _transform.InputBlockSize;
                 _inputBuffer = new byte[_inputBlockSize];

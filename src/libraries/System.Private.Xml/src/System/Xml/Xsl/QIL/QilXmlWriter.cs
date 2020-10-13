@@ -94,7 +94,7 @@ namespace System.Xml.Xsl.Qil
         {
             string? s = null, name = null;
 
-            if (ann == null)
+            if (ann is null)
             {
                 return;
             }
@@ -114,8 +114,8 @@ namespace System.Xml.Xsl.Qil
                 return;
             }
 
-            if (s != null && s.Length != 0)
-                this.writer.WriteComment(name != null && name.Length != 0 ? name + ": " + s : s);
+            if (s is not null && s.Length != 0)
+                this.writer.WriteComment(name is not null && name.Length != 0 ? name + ": " + s : s);
         }
 
         /// <summary>
@@ -161,7 +161,7 @@ namespace System.Xml.Xsl.Qil
                 this.writer.WriteAttributeString("id", _ngen.NameOf(node));
 
                 // Write the debug name of this reference (if it's defined) as a "name" attribute
-                if (reference.DebugName != null)
+                if (reference.DebugName is not null)
                     this.writer.WriteAttributeString("name", reference.DebugName.ToString());
 
                 if (node.NodeType == QilNodeType.Parameter)
@@ -169,7 +169,7 @@ namespace System.Xml.Xsl.Qil
                     // Don't visit parameter's name, or its default value if it is null
                     QilParameter param = (QilParameter)node;
 
-                    if (param.DefaultValue != null)
+                    if (param.DefaultValue is not null)
                         VisitAssumeReference(param.DefaultValue);
 
                     return node;
@@ -186,12 +186,12 @@ namespace System.Xml.Xsl.Qil
         {
             QilReference reference = (QilReference)node;
             string name = _ngen.NameOf(node);
-            if (name == null)
+            if (name is null)
                 name = "OUT-OF-SCOPE REFERENCE";
 
             this.writer.WriteStartElement("RefTo");
             this.writer.WriteAttributeString("id", name);
-            if (reference.DebugName != null)
+            if (reference.DebugName is not null)
                 this.writer.WriteAttributeString("name", reference.DebugName.ToString());
             this.writer.WriteEndElement();
 
@@ -204,7 +204,7 @@ namespace System.Xml.Xsl.Qil
         protected override QilNode VisitQilExpression(QilExpression qil)
         {
             IList<QilNode> fdecls = new ForwardRefFinder().Find(qil);
-            if (fdecls != null && fdecls.Count > 0)
+            if (fdecls is not null && fdecls.Count > 0)
             {
                 this.writer.WriteStartElement("ForwardDecls");
                 foreach (QilNode n in fdecls)
@@ -294,7 +294,7 @@ namespace System.Xml.Xsl.Qil
             if ((this.options & (Options.TypeInfo | Options.RoundTripTypeInfo)) != 0)
                 WriteXmlType(node);
 
-            if ((this.options & Options.LineInfo) != 0 && node.SourceLine != null)
+            if ((this.options & Options.LineInfo) != 0 && node.SourceLine is not null)
                 WriteLineInfo(node);
         }
 
@@ -414,7 +414,7 @@ namespace System.Xml.Xsl.Qil
 
                 object? old = n.Annotation;
                 NameAnnotation? a = old as NameAnnotation;
-                if (a == null)
+                if (a is null)
                 {
                     name = NextName();
                     n.Annotation = new NameAnnotation(name, old);

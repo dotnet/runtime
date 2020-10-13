@@ -34,7 +34,7 @@ namespace System.IO.Pipes
         protected PipeCompletionSource(ThreadPoolBoundHandle handle, ReadOnlyMemory<byte> bufferToPin)
             : base(TaskCreationOptions.RunContinuationsAsynchronously)
         {
-            Debug.Assert(handle != null, "handle is null");
+            Debug.Assert(handle is not null, "handle is null");
 
             _threadPoolBinding = handle;
             _state = NoResult;
@@ -62,7 +62,7 @@ namespace System.IO.Pipes
 #endif
 
             // Quick check to make sure that the cancellation token supports cancellation, and that the IO hasn't completed
-            if (cancellationToken.CanBeCanceled && Overlapped != null)
+            if (cancellationToken.CanBeCanceled && Overlapped is not null)
             {
                 // Register the cancellation only if the IO hasn't completed
                 int state = Interlocked.CompareExchange(ref _state, RegisteringCancellation, NoResult);
@@ -96,7 +96,7 @@ namespace System.IO.Pipes
 
             // NOTE: The cancellation must *NOT* be running at this point, or it may observe freed memory
             // (this is why we disposed the registration above)
-            if (_overlapped != null)
+            if (_overlapped is not null)
             {
                 _threadPoolBinding.FreeNativeOverlapped(Overlapped);
                 _overlapped = null;

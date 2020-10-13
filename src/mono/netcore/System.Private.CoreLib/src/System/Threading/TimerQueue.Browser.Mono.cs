@@ -60,7 +60,7 @@ namespace System.Threading
 
         private static int PumpTimerQueue() // NOTE: this method is called via reflection by test code
         {
-            if (s_scheduledTimersToFire == null)
+            if (s_scheduledTimersToFire is null)
             {
                 return int.MaxValue;
             }

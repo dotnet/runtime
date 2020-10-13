@@ -14,8 +14,8 @@ namespace System.Runtime.Serialization
 
         internal static bool NamespacesEqual(string? ns1, string? ns2)
         {
-            if (ns1 == null || ns1.Length == 0)
-                return (ns2 == null || ns2.Length == 0);
+            if (ns1 is null || ns1.Length == 0)
+                return (ns2 is null || ns2.Length == 0);
             else
                 return ns1 == ns2;
         }
@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization
                     foreach (XmlSchemaObject schemaObj in schema.Items)
                     {
                         XmlSchemaType? schemaType = schemaObj as XmlSchemaType;
-                        if (schemaType != null && schemaType.Name == typeQName.Name)
+                        if (schemaType is not null && schemaType.Name == typeQName.Name)
                         {
                             return schemaType;
                         }
@@ -56,7 +56,7 @@ namespace System.Runtime.Serialization
                     foreach (XmlSchemaObject schemaObj in schema.Items)
                     {
                         XmlSchemaElement? schemaElement = schemaObj as XmlSchemaElement;
-                        if (schemaElement != null && schemaElement.Name == elementQName.Name)
+                        if (schemaElement is not null && schemaElement.Name == elementQName.Name)
                         {
                             return schemaElement;
                         }
@@ -68,12 +68,12 @@ namespace System.Runtime.Serialization
 
         internal static XmlSchema GetSchema(string ns, XmlSchemaSet schemas)
         {
-            if (ns == null) { ns = string.Empty; }
+            if (ns is null) { ns = string.Empty; }
 
             ICollection currentSchemas = schemas.Schemas();
             foreach (XmlSchema schema in currentSchemas)
             {
-                if ((schema.TargetNamespace == null && ns.Length == 0) || ns.Equals(schema.TargetNamespace))
+                if ((schema.TargetNamespace is null && ns.Length == 0) || ns.Equals(schema.TargetNamespace))
                 {
                     return schema;
                 }
@@ -120,7 +120,7 @@ namespace System.Runtime.Serialization
             }
 
             XmlSchemaImport import = new XmlSchemaImport();
-            if (ns != null && ns.Length > 0)
+            if (ns is not null && ns.Length > 0)
                 import.Namespace = ns;
             schema.Includes.Add(import);
         }

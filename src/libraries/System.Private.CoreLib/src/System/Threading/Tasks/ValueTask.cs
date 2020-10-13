@@ -74,7 +74,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ValueTask(Task task)
         {
-            if (task == null)
+            if (task is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.task);
             }
@@ -91,7 +91,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ValueTask(IValueTaskSource source, short token)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -173,15 +173,15 @@ namespace System.Threading.Tasks
         public Task AsTask()
         {
             object? obj = _obj;
-            Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
+            Debug.Assert(obj is null || obj is Task || obj is IValueTaskSource);
             return
-                obj == null ? Task.CompletedTask :
+                obj is null ? Task.CompletedTask :
                 obj as Task ??
                 GetTaskForValueTaskSource(Unsafe.As<IValueTaskSource>(obj));
         }
 
         /// <summary>Gets a <see cref="ValueTask"/> that may be used at any point in the future.</summary>
-        public ValueTask Preserve() => _obj == null ? this : new ValueTask(AsTask());
+        public ValueTask Preserve() => _obj is null ? this : new ValueTask(AsTask());
 
         /// <summary>Creates a <see cref="Task"/> to represent the <see cref="IValueTaskSource"/>.</summary>
         /// <remarks>
@@ -290,9 +290,9 @@ namespace System.Threading.Tasks
             get
             {
                 object? obj = _obj;
-                Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
+                Debug.Assert(obj is null || obj is Task || obj is IValueTaskSource);
 
-                if (obj == null)
+                if (obj is null)
                 {
                     return true;
                 }
@@ -313,9 +313,9 @@ namespace System.Threading.Tasks
             get
             {
                 object? obj = _obj;
-                Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
+                Debug.Assert(obj is null || obj is Task || obj is IValueTaskSource);
 
-                if (obj == null)
+                if (obj is null)
                 {
                     return true;
                 }
@@ -335,9 +335,9 @@ namespace System.Threading.Tasks
             get
             {
                 object? obj = _obj;
-                Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
+                Debug.Assert(obj is null || obj is Task || obj is IValueTaskSource);
 
-                if (obj == null)
+                if (obj is null)
                 {
                     return false;
                 }
@@ -362,9 +362,9 @@ namespace System.Threading.Tasks
             get
             {
                 object? obj = _obj;
-                Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
+                Debug.Assert(obj is null || obj is Task || obj is IValueTaskSource);
 
-                if (obj == null)
+                if (obj is null)
                 {
                     return false;
                 }
@@ -383,9 +383,9 @@ namespace System.Threading.Tasks
         internal void ThrowIfCompletedUnsuccessfully()
         {
             object? obj = _obj;
-            Debug.Assert(obj == null || obj is Task || obj is IValueTaskSource);
+            Debug.Assert(obj is null || obj is Task || obj is IValueTaskSource);
 
-            if (obj != null)
+            if (obj is not null)
             {
                 if (obj is Task t)
                 {
@@ -472,7 +472,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ValueTask(Task<TResult> task)
         {
-            if (task == null)
+            if (task is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.task);
             }
@@ -490,7 +490,7 @@ namespace System.Threading.Tasks
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ValueTask(IValueTaskSource<TResult> source, short token)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -519,8 +519,8 @@ namespace System.Threading.Tasks
 
         /// <summary>Returns the hash code for this instance.</summary>
         public override int GetHashCode() =>
-            _obj != null ? _obj.GetHashCode() :
-            _result != null ? _result.GetHashCode() :
+            _obj is not null ? _obj.GetHashCode() :
+            _result is not null ? _result.GetHashCode() :
             0;
 
         /// <summary>Returns a value indicating whether this value is equal to a specified <see cref="object"/>.</summary>
@@ -530,7 +530,7 @@ namespace System.Threading.Tasks
 
         /// <summary>Returns a value indicating whether this value is equal to a specified <see cref="ValueTask{TResult}"/> value.</summary>
         public bool Equals(ValueTask<TResult> other) =>
-            _obj != null || other._obj != null ?
+            _obj is not null || other._obj is not null ?
                 _obj == other._obj && _token == other._token :
                 EqualityComparer<TResult>.Default.Equals(_result, other._result);
 
@@ -552,9 +552,9 @@ namespace System.Threading.Tasks
         public Task<TResult> AsTask()
         {
             object? obj = _obj;
-            Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
+            Debug.Assert(obj is null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
 
-            if (obj == null)
+            if (obj is null)
             {
                 return AsyncTaskMethodBuilder<TResult>.GetTaskForResult(_result!);
             }
@@ -568,7 +568,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>Gets a <see cref="ValueTask{TResult}"/> that may be used at any point in the future.</summary>
-        public ValueTask<TResult> Preserve() => _obj == null ? this : new ValueTask<TResult>(AsTask());
+        public ValueTask<TResult> Preserve() => _obj is null ? this : new ValueTask<TResult>(AsTask());
 
         /// <summary>Creates a <see cref="Task{TResult}"/> to represent the <see cref="IValueTaskSource{TResult}"/>.</summary>
         /// <remarks>
@@ -603,7 +603,7 @@ namespace System.Threading.Tasks
                         }
 
                         Task<TResult>? canceledTask = s_canceledTask;
-                        if (canceledTask == null)
+                        if (canceledTask is null)
                         {
                             // Benign race condition to initialize cached task, as identity doesn't matter.
                             s_canceledTask = canceledTask = Task.FromCanceled<TResult>(new CancellationToken(true));
@@ -681,9 +681,9 @@ namespace System.Threading.Tasks
             get
             {
                 object? obj = _obj;
-                Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
+                Debug.Assert(obj is null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
 
-                if (obj == null)
+                if (obj is null)
                 {
                     return true;
                 }
@@ -704,9 +704,9 @@ namespace System.Threading.Tasks
             get
             {
                 object? obj = _obj;
-                Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
+                Debug.Assert(obj is null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
 
-                if (obj == null)
+                if (obj is null)
                 {
                     return true;
                 }
@@ -726,9 +726,9 @@ namespace System.Threading.Tasks
             get
             {
                 object? obj = _obj;
-                Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
+                Debug.Assert(obj is null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
 
-                if (obj == null)
+                if (obj is null)
                 {
                     return false;
                 }
@@ -753,9 +753,9 @@ namespace System.Threading.Tasks
             get
             {
                 object? obj = _obj;
-                Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
+                Debug.Assert(obj is null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
 
-                if (obj == null)
+                if (obj is null)
                 {
                     return false;
                 }
@@ -777,9 +777,9 @@ namespace System.Threading.Tasks
             get
             {
                 object? obj = _obj;
-                Debug.Assert(obj == null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
+                Debug.Assert(obj is null || obj is Task<TResult> || obj is IValueTaskSource<TResult>);
 
-                if (obj == null)
+                if (obj is null)
                 {
                     return _result!;
                 }
@@ -814,7 +814,7 @@ namespace System.Threading.Tasks
                 Debugger.NotifyOfCrossThreadDependency(); // prevent debugger evaluation from invalidating an underling IValueTaskSource<T> unless forced
 
                 TResult result = Result;
-                if (result != null)
+                if (result is not null)
                 {
                     return result.ToString();
                 }

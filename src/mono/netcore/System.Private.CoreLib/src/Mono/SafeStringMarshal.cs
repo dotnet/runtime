@@ -41,7 +41,7 @@ namespace Mono
         {
             get
             {
-                if (marshaled_string == IntPtr.Zero && str != null)
+                if (marshaled_string == IntPtr.Zero && str is not null)
                     marshaled_string = StringToUtf8(str);
                 return marshaled_string;
             }

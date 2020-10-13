@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition.Primitives
             string contractName = import.ContractName;
             string? genericContractName = import.Metadata.GetValue<string>(CompositionConstants.GenericContractMetadataName);
             int[]? importParametersOrder = import.Metadata.GetValue<int[]>(CompositionConstants.GenericImportParametersOrderMetadataName);
-            if (importParametersOrder != null)
+            if (importParametersOrder is not null)
             {
                 int partArity = part.Metadata.GetValue<int>(CompositionConstants.GenericPartArityMetadataName);
                 if (partArity > 0)
@@ -64,13 +64,13 @@ namespace System.ComponentModel.Composition.Primitives
         private static ImportDefinition TranslateImport(ImportDefinition import, ComposablePartDefinition part)
         {
             ContractBasedImportDefinition? contractBasedImport = import as ContractBasedImportDefinition;
-            if (contractBasedImport == null)
+            if (contractBasedImport is null)
             {
                 return import;
             }
 
             int[]? importParametersOrder = contractBasedImport.Metadata.GetValue<int[]>(CompositionConstants.GenericImportParametersOrderMetadataName);
-            if (importParametersOrder == null)
+            if (importParametersOrder is null)
             {
                 return import;
             }

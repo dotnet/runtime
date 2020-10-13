@@ -62,7 +62,7 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string parentPath)
         {
-            string prefix = parentPath == null ? string.Empty : parentPath + ConfigurationPath.KeyDelimiter;
+            string prefix = parentPath is null ? string.Empty : parentPath + ConfigurationPath.KeyDelimiter;
 
             return Data
                 .Where(kv => kv.Key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))

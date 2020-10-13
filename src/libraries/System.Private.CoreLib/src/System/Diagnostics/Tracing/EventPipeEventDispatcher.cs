@@ -139,7 +139,7 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(Monitor.IsEntered(m_dispatchControlLock));
 
-            if (m_dispatchTask == null)
+            if (m_dispatchTask is null)
             {
                 m_stopDispatchTask = false;
                 // Create a SafeWaitHandle that won't release the handle when done
@@ -153,7 +153,7 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(Monitor.IsEntered(m_dispatchControlLock));
 
-            if (m_dispatchTask != null)
+            if (m_dispatchTask is not null)
             {
                 m_stopDispatchTask = true;
                 Debug.Assert(!m_dispatchTaskWaitHandle.SafeWaitHandle.IsInvalid);

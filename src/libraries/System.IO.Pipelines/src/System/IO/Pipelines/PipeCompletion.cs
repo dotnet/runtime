@@ -24,14 +24,14 @@ namespace System.IO.Pipelines
 
         public bool IsCompleted => _isCompleted;
 
-        public bool IsFaulted => _exceptionInfo != null;
+        public bool IsFaulted => _exceptionInfo is not null;
 
         public PipeCompletionCallbacks? TryComplete(Exception? exception = null)
         {
             if (!_isCompleted)
             {
                 _isCompleted = true;
-                if (exception != null)
+                if (exception is not null)
                 {
                     _exceptionInfo = ExceptionDispatchInfo.Capture(exception);
                 }
@@ -53,7 +53,7 @@ namespace System.IO.Pipelines
                 // -1 to adjust for _firstCallback
                 var callbackIndex = _callbackCount - 1;
                 _callbackCount++;
-                Debug.Assert(_callbacks != null);
+                Debug.Assert(_callbacks is not null);
                 _callbacks[callbackIndex] = new PipeCompletionCallback(callback, state);
             }
 
@@ -67,7 +67,7 @@ namespace System.IO.Pipelines
 
         private void EnsureSpace()
         {
-            if (_callbacks == null)
+            if (_callbacks is null)
             {
                 _callbacks = s_completionCallbackPool.Rent(InitialCallbacksSize);
             }
@@ -91,7 +91,7 @@ namespace System.IO.Pipelines
                 return false;
             }
 
-            if (_exceptionInfo != null)
+            if (_exceptionInfo is not null)
             {
                 ThrowLatchedException();
             }
@@ -122,7 +122,7 @@ namespace System.IO.Pipelines
         public void Reset()
         {
             Debug.Assert(IsCompleted);
-            Debug.Assert(_callbacks == null);
+            Debug.Assert(_callbacks is null);
             _isCompleted = false;
             _exceptionInfo = null;
         }
@@ -130,7 +130,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void ThrowLatchedException()
         {
-            Debug.Assert(_exceptionInfo != null);
+            Debug.Assert(_exceptionInfo is not null);
             _exceptionInfo.Throw();
         }
 

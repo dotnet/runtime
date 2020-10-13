@@ -437,7 +437,7 @@ namespace System.Runtime.Serialization
         {
             GrowElementsIfNeeded();
             _elements[_depth++] = _element;
-            if (_nextElement == null)
+            if (_nextElement is null)
                 _element = GetNextElement();
             else
             {
@@ -457,7 +457,7 @@ namespace System.Runtime.Serialization
 
             _depth--;
 
-            if (_elements != null)
+            if (_elements is not null)
             {
                 _element = _elements[_depth];
             }
@@ -466,7 +466,7 @@ namespace System.Runtime.Serialization
         [MemberNotNull(nameof(_elements))]
         private void GrowElementsIfNeeded()
         {
-            if (_elements == null)
+            if (_elements is null)
                 _elements = new ElementData[8];
             else if (_elements.Length == _depth)
             {
@@ -479,7 +479,7 @@ namespace System.Runtime.Serialization
         private ElementData? GetNextElement()
         {
             int nextDepth = _depth + 1;
-            return (_elements == null || _elements.Length <= nextDepth || _elements[nextDepth] == null)
+            return (_elements is null || _elements.Length <= nextDepth || _elements[nextDepth] is null)
                 ? new ElementData() : _elements[nextDepth];
         }
 
@@ -487,12 +487,12 @@ namespace System.Runtime.Serialization
         {
             ns = ns ?? string.Empty;
             string? prefix = (string?)s_nsToPrefixTable[ns];
-            if (prefix == null)
+            if (prefix is null)
             {
                 lock (s_prefixLock)
                 {
                     prefix = (string?)s_nsToPrefixTable[ns];
-                    if (prefix == null)
+                    if (prefix is null)
                     {
                         prefix = (ns.Length == 0) ? string.Empty : "p" + s_nsToPrefixTable.Count;
                         AddPrefix(prefix, ns);
@@ -531,7 +531,7 @@ namespace System.Runtime.Serialization
         {
             GrowAttributesIfNeeded();
             AttributeData attribute = attributes[attributeCount];
-            if (attribute == null)
+            if (attribute is null)
                 attributes[attributeCount] = attribute = new AttributeData();
             attribute.prefix = prefix;
             attribute.ns = ns;
@@ -543,7 +543,7 @@ namespace System.Runtime.Serialization
         [MemberNotNull(nameof(attributes))]
         private void GrowAttributesIfNeeded()
         {
-            if (attributes == null)
+            if (attributes is null)
                 attributes = new AttributeData[4];
             else if (attributes.Length == attributeCount)
             {

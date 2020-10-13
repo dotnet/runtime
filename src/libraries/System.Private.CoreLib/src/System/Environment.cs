@@ -22,7 +22,7 @@ namespace System
 
         public static string? GetEnvironmentVariable(string variable)
         {
-            if (variable == null)
+            if (variable is null)
                 throw new ArgumentNullException(nameof(variable));
 
             return GetEnvironmentVariableCore(variable);
@@ -33,7 +33,7 @@ namespace System
             if (target == EnvironmentVariableTarget.Process)
                 return GetEnvironmentVariable(variable);
 
-            if (variable == null)
+            if (variable is null)
                 throw new ArgumentNullException(nameof(variable));
 
             bool fromMachine = ValidateAndConvertRegistryTarget(target);
@@ -76,7 +76,7 @@ namespace System
             get => CurrentDirectoryCore;
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 if (value.Length == 0)
@@ -88,7 +88,7 @@ namespace System
 
         public static string ExpandEnvironmentVariables(string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
@@ -150,13 +150,13 @@ namespace System
             get
             {
                 string? processPath = s_processPath;
-                if (processPath == null)
+                if (processPath is null)
                 {
                     // The value is cached both as a performance optimization and to ensure that the API always returns
                     // the same path in a given process.
                     Interlocked.CompareExchange(ref s_processPath, GetProcessPath() ?? "", null);
                     processPath = s_processPath;
-                    Debug.Assert(processPath != null);
+                    Debug.Assert(processPath is not null);
                 }
                 return (processPath.Length != 0) ? processPath : null;
             }
@@ -175,11 +175,11 @@ namespace System
             get
             {
                 OperatingSystem? osVersion = s_osVersion;
-                if (osVersion == null)
+                if (osVersion is null)
                 {
                     Interlocked.CompareExchange(ref s_osVersion, GetOSVersion(), null);
                     osVersion = s_osVersion;
-                    Debug.Assert(osVersion != null);
+                    Debug.Assert(osVersion is not null);
                 }
                 return osVersion;
             }
@@ -218,7 +218,7 @@ namespace System
 
         private static void ValidateVariableAndValue(string variable, ref string? value)
         {
-            if (variable == null)
+            if (variable is null)
                 throw new ArgumentNullException(nameof(variable));
 
             if (variable.Length == 0)

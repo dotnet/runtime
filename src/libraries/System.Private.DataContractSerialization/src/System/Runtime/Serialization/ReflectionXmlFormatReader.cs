@@ -20,7 +20,7 @@ namespace System.Runtime.Serialization
 
         public ReflectionXmlClassReader(ClassDataContract classDataContract)
         {
-            Debug.Assert(classDataContract != null);
+            Debug.Assert(classDataContract is not null);
             _classContract = classDataContract;
             _reflectionReader = new ReflectionXmlReader();
         }
@@ -50,7 +50,7 @@ namespace System.Runtime.Serialization
     {
         protected override void ReflectionReadMembers(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext context, XmlDictionaryString[] memberNames, XmlDictionaryString[]? memberNamespaces, ClassDataContract classContract, ref object obj)
         {
-            Debug.Assert(memberNamespaces != null);
+            Debug.Assert(memberNamespaces is not null);
 
             int memberCount = classContract.MemberNames!.Length;
             context.IncrementItemCount(memberCount);
@@ -129,7 +129,7 @@ namespace System.Runtime.Serialization
 
         private int GetRequiredMembers(ClassDataContract contract, bool[] requiredMembers)
         {
-            int memberCount = (contract.BaseContract == null) ? 0 : GetRequiredMembers(contract.BaseContract, requiredMembers);
+            int memberCount = (contract.BaseContract is null) ? 0 : GetRequiredMembers(contract.BaseContract, requiredMembers);
             List<DataMember> members = contract.Members!;
             for (int i = 0; i < members.Count; i++, memberCount++)
             {

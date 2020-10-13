@@ -27,7 +27,7 @@ namespace System.Net.Http
         {
             // check if there is a parent Activity (and propagation is not suppressed)
             // or if someone listens to HttpHandlerDiagnosticListener
-            return IsGloballyEnabled() && (Activity.Current != null || Settings.s_diagnosticListener.IsEnabled());
+            return IsGloballyEnabled() && (Activity.Current is not null || Settings.s_diagnosticListener.IsEnabled());
         }
 
         internal static bool IsGloballyEnabled()
@@ -57,7 +57,7 @@ namespace System.Net.Http
             // So some requests happening right after subscription starts might not be instrumented. Similarly,
             // when consumer unsubscribes, extra requests might be instrumented
 
-            if (request == null)
+            if (request is null)
             {
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
@@ -113,7 +113,7 @@ namespace System.Net.Http
 
             // If we are on at all, we propagate current activity information
             Activity? currentActivity = Activity.Current;
-            if (currentActivity != null)
+            if (currentActivity is not null)
             {
                 InjectHeaders(currentActivity, request);
             }
@@ -150,7 +150,7 @@ namespace System.Net.Http
             finally
             {
                 // always stop activity if it was started
-                if (activity != null)
+                if (activity is not null)
                 {
                     diagnosticListener.StopActivity(activity, new ActivityStopData(
                         response,
@@ -269,7 +269,7 @@ namespace System.Net.Http
 
                 // AppContext switch wasn't used. Check the environment variable to determine which handler should be used.
                 string? envVar = Environment.GetEnvironmentVariable(EnableActivityPropagationEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
+                if (envVar is not null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
                 {
                     // Suppress Activity propagation.
                     return false;
@@ -290,7 +290,7 @@ namespace System.Net.Http
                 if (!request.Headers.Contains(DiagnosticsHandlerLoggingStrings.TraceParentHeaderName))
                 {
                     request.Headers.TryAddWithoutValidation(DiagnosticsHandlerLoggingStrings.TraceParentHeaderName, currentActivity.Id);
-                    if (currentActivity.TraceStateString != null)
+                    if (currentActivity.TraceStateString is not null)
                     {
                         request.Headers.TryAddWithoutValidation(DiagnosticsHandlerLoggingStrings.TraceStateHeaderName, currentActivity.TraceStateString);
                     }

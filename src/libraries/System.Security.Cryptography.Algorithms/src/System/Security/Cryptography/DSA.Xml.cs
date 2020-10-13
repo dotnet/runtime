@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
         {
             byte[]? ret = XmlKeyHelper.ReadCryptoBinary(ref state, name, sizeHint);
 
-            if (ret == null)
+            if (ret is null)
             {
                 throw new CryptographicException(
                     SR.Format(SR.Cryptography_InvalidFromXmlString, nameof(DSA), name));
@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
             int counter = 0;
             byte[]? x = XmlKeyHelper.ReadCryptoBinary(ref state, nameof(DSAParameters.X), q.Length);
 
-            if (seed != null)
+            if (seed is not null)
             {
                 byte[] counterBytes = ReadRequiredElement(ref state, CounterElementName);
                 counter = XmlKeyHelper.ReadCryptoBinaryInt32(counterBytes);
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
 
             // Check for Counter without Seed after getting X, since that prevents an extra cycle in the
             // canonical element order.
-            if (dsaParameters.Seed == null)
+            if (dsaParameters.Seed is null)
             {
                 if (XmlKeyHelper.HasElement(ref state, CounterElementName))
                 {
@@ -103,7 +103,7 @@ namespace System.Security.Cryptography
             // StringBuilder to need to grow.
 
             DSAParameters keyParameters = ExportParameters(includePrivateParameters);
-            Debug.Assert(keyParameters.P != null);
+            Debug.Assert(keyParameters.P is not null);
             StringBuilder builder = new StringBuilder((keyParameters.P.Length << 1) / 3);
             builder.Append("<DSAKeyValue>");
             XmlKeyHelper.WriteCryptoBinary(nameof(DSAParameters.P), keyParameters.P, builder);
@@ -111,12 +111,12 @@ namespace System.Security.Cryptography
             XmlKeyHelper.WriteCryptoBinary(nameof(DSAParameters.G), keyParameters.G, builder);
             XmlKeyHelper.WriteCryptoBinary(nameof(DSAParameters.Y), keyParameters.Y, builder);
 
-            if (keyParameters.J != null)
+            if (keyParameters.J is not null)
             {
                 XmlKeyHelper.WriteCryptoBinary(nameof(DSAParameters.J), keyParameters.J, builder);
             }
 
-            if (keyParameters.Seed != null)
+            if (keyParameters.Seed is not null)
             {
                 XmlKeyHelper.WriteCryptoBinary(nameof(DSAParameters.Seed), keyParameters.Seed, builder);
                 XmlKeyHelper.WriteCryptoBinary(CounterElementName, keyParameters.Counter, builder);
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography
 
             if (includePrivateParameters)
             {
-                if (keyParameters.X == null)
+                if (keyParameters.X is null)
                 {
 #pragma warning disable CA2208 // Instantiate argument exceptions correctly
                     // .NET Framework compat when a 3rd party type lets X be null when

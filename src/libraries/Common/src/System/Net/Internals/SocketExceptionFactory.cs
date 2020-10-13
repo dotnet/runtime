@@ -25,7 +25,7 @@ namespace System.Net.Internals
             }
 
             public override string Message =>
-                (_endPoint == null) ? base.Message : base.Message + " " + _endPoint.ToString();
+                (_endPoint is null) ? base.Message : base.Message + " " + _endPoint.ToString();
         }
 
         public static SocketException CreateSocketException(int socketError, EndPoint? endPoint)

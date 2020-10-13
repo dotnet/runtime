@@ -1444,7 +1444,7 @@ namespace System.Management
             // release the lock so that worker thread can work on the request
             myReq.evtDone.WaitOne();
 
-            if (myReq.exception != null)
+            if (myReq.exception is not null)
             {
                 throw myReq.exception;
             }
@@ -1761,7 +1761,7 @@ namespace System.Management
         {
             this.exception = null;
             DispatchThread();
-            if (this.Exception != null)
+            if (this.Exception is not null)
             {
                 throw this.Exception;
             }

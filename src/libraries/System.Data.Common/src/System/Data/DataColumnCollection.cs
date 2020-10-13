@@ -85,7 +85,7 @@ namespace System.Data
                 }
 
                 DataColumn? column;
-                if ((!_columnFromName.TryGetValue(name, out column)) || (column == null))
+                if ((!_columnFromName.TryGetValue(name, out column)) || (column is null))
                 {
                     // Case-Insensitive compares
                     int index = IndexOfCaseInsensitive(name);
@@ -108,7 +108,7 @@ namespace System.Data
             get
             {
                 DataColumn? column;
-                if ((_columnFromName.TryGetValue(name, out column)) && (column != null) && (column.Namespace == ns))
+                if ((_columnFromName.TryGetValue(name, out column)) && (column is not null) && (column.Namespace == ns))
                 {
                     return column;
                 }
@@ -136,9 +136,9 @@ namespace System.Data
 
         internal void AddAt(int index, DataColumn column)
         {
-            if (column != null && column.ColumnMapping == MappingType.SimpleContent)
+            if (column is not null && column.ColumnMapping == MappingType.SimpleContent)
             {
-                if (_table.XmlText != null && _table.XmlText != column)
+                if (_table.XmlText is not null && _table.XmlText != column)
                 {
                     throw ExceptionBuilder.CannotAddColumn3();
                 }
@@ -180,7 +180,7 @@ namespace System.Data
                     _table.ElementColumnCount++;
                 }
             }
-            if (!_table.fInitInProgress && column != null && column.Computed)
+            if (!_table.fInitInProgress && column is not null && column.Computed)
             {
                 column.Expression = column.Expression;
             }
@@ -195,11 +195,11 @@ namespace System.Data
                 return;
             }
 
-            if (columns != null)
+            if (columns is not null)
             {
                 foreach (DataColumn column in columns)
                 {
-                    if (column != null)
+                    if (column is not null)
                     {
                         Add(column);
                     }
@@ -317,7 +317,7 @@ namespace System.Data
         /// </summary>
         private void BaseAdd([NotNull] DataColumn? column)
         {
-            if (column == null)
+            if (column is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(column));
             }
@@ -325,7 +325,7 @@ namespace System.Data
             {
                 throw ExceptionBuilder.CannotAddColumn1(column.ColumnName);
             }
-            if (column._table != null)
+            if (column._table is not null)
             {
                 throw ExceptionBuilder.CannotAddColumn2(column.ColumnName);
             }
@@ -359,7 +359,7 @@ namespace System.Data
                     column.InitializeRecord(record);
                 }
 
-                if (_table.DataSet != null)
+                if (_table.DataSet is not null)
                 {
                     column.OnSetDataSet();
                 }
@@ -450,7 +450,7 @@ namespace System.Data
 
         internal bool CanRemove(DataColumn? column, bool fThrowException)
         {
-            if (column == null)
+            if (column is null)
             {
                 if (!fThrowException)
                 {
@@ -478,7 +478,7 @@ namespace System.Data
             _table.OnRemoveColumnInternal(column);
 
             // We need to make sure the column is not involved in any Relations or Constriants
-            if (_table._primaryKey != null && _table._primaryKey.Key.ContainsColumn(column))
+            if (_table._primaryKey is not null && _table._primaryKey.Key.ContainsColumn(column))
             {
                 if (!fThrowException)
                 {
@@ -521,7 +521,7 @@ namespace System.Data
                         throw ExceptionBuilder.CannotRemoveConstraint(_table.Constraints[i].ConstraintName, _table.Constraints[i].Table!.TableName);
             }
 
-            if (_table.DataSet != null)
+            if (_table.DataSet is not null)
             {
                 for (ParentForeignKeyConstraintEnumerator en = new ParentForeignKeyConstraintEnumerator(_table.DataSet, _table); en.GetNext();)
                 {
@@ -534,24 +534,24 @@ namespace System.Data
                 }
             }
 
-            if (column._dependentColumns != null)
+            if (column._dependentColumns is not null)
             {
                 for (int i = 0; i < column._dependentColumns.Count; i++)
                 {
                     DataColumn col = column._dependentColumns[i];
-                    if (_fInClear && (col.Table == _table || col.Table == null))
+                    if (_fInClear && (col.Table == _table || col.Table is null))
                     {
                         continue;
                     }
 
-                    if (col.Table == null)
+                    if (col.Table is null)
                     {
                         continue;
                     }
 
                     Debug.Assert(col.Computed, "invalid (non an expression) column in the expression dependent columns");
                     DataExpression? expr = col.DataExpression;
-                    if ((expr != null) && (expr.DependsOn(column)))
+                    if ((expr is not null) && (expr.DependsOn(column)))
                     {
                         if (!fThrowException)
                             return false;
@@ -597,7 +597,7 @@ namespace System.Data
 
             OnCollectionChanging(s_refreshEventArgs);
 
-            if (_table.fInitInProgress && _delayedAddRangeColumns != null)
+            if (_table.fInitInProgress && _delayedAddRangeColumns is not null)
             {
                 _delayedAddRangeColumns = null;
             }
@@ -633,7 +633,7 @@ namespace System.Data
         public bool Contains(string name)
         {
             DataColumn? column;
-            if ((_columnFromName.TryGetValue(name, out column)) && (column != null))
+            if ((_columnFromName.TryGetValue(name, out column)) && (column is not null))
             {
                 return true;
             }
@@ -644,7 +644,7 @@ namespace System.Data
         internal bool Contains(string name, bool caseSensitive)
         {
             DataColumn? column;
-            if ((_columnFromName.TryGetValue(name, out column)) && (column != null))
+            if ((_columnFromName.TryGetValue(name, out column)) && (column is not null))
             {
                 return true;
             }
@@ -655,7 +655,7 @@ namespace System.Data
 
         public void CopyTo(DataColumn[] array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(array));
             }
@@ -699,7 +699,7 @@ namespace System.Data
             {
                 int count = Count;
                 DataColumn? column;
-                if ((_columnFromName.TryGetValue(columnName, out column)) && (column != null))
+                if ((_columnFromName.TryGetValue(columnName, out column)) && (column is not null))
                 {
                     for (int j = 0; j < count; j++)
                     {
@@ -744,11 +744,11 @@ namespace System.Data
 
         internal void FinishInitCollection()
         {
-            if (_delayedAddRangeColumns != null)
+            if (_delayedAddRangeColumns is not null)
             {
                 foreach (DataColumn? column in _delayedAddRangeColumns)
                 {
-                    if (column != null)
+                    if (column is not null)
                     {
                         Add(column);
                     }
@@ -756,7 +756,7 @@ namespace System.Data
 
                 foreach (DataColumn? column in _delayedAddRangeColumns)
                 {
-                    if (column != null)
+                    if (column is not null)
                     {
                         column.FinishInitInProgress();
                     }
@@ -826,7 +826,7 @@ namespace System.Data
         /// </summary>
         internal void RegisterColumnName(string name, DataColumn? column)
         {
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
 
             try
             {
@@ -840,9 +840,9 @@ namespace System.Data
             catch (ArgumentException)
             {
                 // Argument exception means that there is already an existing key
-                if (_columnFromName[name] != null)
+                if (_columnFromName[name] is not null)
                 {
-                    if (column != null)
+                    if (column is not null)
                     {
                         throw ExceptionBuilder.CannotAddDuplicate(name);
                     }
@@ -855,7 +855,7 @@ namespace System.Data
             }
 
             // If we're adding a child table, then update defaultNameIndex to avoid colisions between the child table and auto-generated column names
-            if ((column == null) && NamesEqual(name, MakeName(_defaultNameIndex), true, _table.Locale) != 0)
+            if ((column is null) && NamesEqual(name, MakeName(_defaultNameIndex), true, _table.Locale) != 0)
             {
                 do
                 {
@@ -866,7 +866,7 @@ namespace System.Data
 
         internal bool CanRegisterName(string name)
         {
-            Debug.Assert(name != null, "Must specify a name");
+            Debug.Assert(name is not null, "Must specify a name");
             return (!_columnFromName.ContainsKey(name));
         }
 
@@ -893,7 +893,7 @@ namespace System.Data
         public void RemoveAt(int index)
         {
             DataColumn dc = this[index];
-            if (dc == null)
+            if (dc is null)
             {
                 throw ExceptionBuilder.ColumnOutOfRange(index);
             }
@@ -906,7 +906,7 @@ namespace System.Data
         public void Remove(string name)
         {
             DataColumn? dc = this[name];
-            if (dc == null)
+            if (dc is null)
             {
                 throw ExceptionBuilder.ColumnNotInTheTable(name, _table.TableName);
             }

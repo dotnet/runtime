@@ -16,7 +16,7 @@ namespace System.ComponentModel
         /// </summary>
         public static bool CheckMachineName(string value)
         {
-            if (value == null)
+            if (value is null)
                 return false;
 
             value = value.Trim();
@@ -32,7 +32,7 @@ namespace System.ComponentModel
         /// </summary>
         public static bool CheckPath(string value)
         {
-            if (value == null)
+            if (value is null)
                 return false;
 
             value = value.TrimStart();
@@ -49,7 +49,7 @@ namespace System.ComponentModel
         /// </summary>
         public static bool CheckRootedPath(string value)
         {
-            if (value == null)
+            if (value is null)
                 return false;
 
             value = value.Trim();

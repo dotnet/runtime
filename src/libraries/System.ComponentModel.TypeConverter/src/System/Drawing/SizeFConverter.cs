@@ -33,7 +33,7 @@ namespace System.Drawing
                 }
 
                 // Parse 2 integer values.
-                if (culture == null)
+                if (culture is null)
                 {
                     culture = CultureInfo.CurrentCulture;
                 }
@@ -60,7 +60,7 @@ namespace System.Drawing
 
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
@@ -69,7 +69,7 @@ namespace System.Drawing
             {
                 if (destinationType == typeof(string))
                 {
-                    if (culture == null)
+                    if (culture is null)
                     {
                         culture = CultureInfo.CurrentCulture;
                     }
@@ -86,7 +86,7 @@ namespace System.Drawing
                 else if (destinationType == typeof(InstanceDescriptor))
                 {
                     ConstructorInfo ctor = typeof(SizeF).GetConstructor(new Type[] { typeof(float), typeof(float) });
-                    if (ctor != null)
+                    if (ctor is not null)
                     {
                         return new InstanceDescriptor(ctor, new object[] { size.Width, size.Height });
                     }
@@ -98,7 +98,7 @@ namespace System.Drawing
 
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
         {
-            if (propertyValues == null)
+            if (propertyValues is null)
             {
                 throw new ArgumentNullException(nameof(propertyValues));
             }
@@ -106,7 +106,7 @@ namespace System.Drawing
             object width = propertyValues["Width"];
             object height = propertyValues["Height"];
 
-            if (width == null || height == null || !(width is float) || !(height is float))
+            if (width is null || height is null || !(width is float) || !(height is float))
             {
                 throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }

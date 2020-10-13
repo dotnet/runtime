@@ -134,8 +134,8 @@ namespace System.Data.Common
         // this allows the caller to determine if it is an error or not for the quotedString to not be quoted
         internal static bool RemoveStringQuotes(string? quotePrefix, string? quoteSuffix, string? quotedString, out string? unquotedString)
         {
-            int prefixLength = quotePrefix != null ? quotePrefix.Length : 0;
-            int suffixLength = quoteSuffix != null ? quoteSuffix.Length : 0;
+            int prefixLength = quotePrefix is not null ? quotePrefix.Length : 0;
+            int suffixLength = quoteSuffix is not null ? quoteSuffix.Length : 0;
 
             if ((suffixLength + prefixLength) == 0)
             {
@@ -143,7 +143,7 @@ namespace System.Data.Common
                 return true;
             }
 
-            if (quotedString == null)
+            if (quotedString is null)
             {
                 unquotedString = quotedString;
                 return false;
@@ -240,7 +240,7 @@ namespace System.Data.Common
         internal static bool IsCatchableExceptionType(Exception e)
         {
             // a 'catchable' exception is defined by what it is not.
-            Debug.Assert(e != null, "Unexpected null exception!");
+            Debug.Assert(e is not null, "Unexpected null exception!");
             Type type = e.GetType();
 
             return ((type != s_stackOverflowType) &&
@@ -260,7 +260,7 @@ namespace System.Data.Common
             // the other way to write this method is, but then SecurityException is checked twice
             // return ((e is SecurityException) || IsCatchableExceptionType(e));
 
-            Debug.Assert(e != null, "Unexpected null exception!");
+            Debug.Assert(e is not null, "Unexpected null exception!");
             Type type = e.GetType();
 
             return ((type != s_stackOverflowType) &&
@@ -486,7 +486,7 @@ namespace System.Data.Common
                 return true;
             }
             INullable? nullable = (value as INullable);
-            return ((null != nullable) && nullable.IsNull);
+            return ((nullable is not null) && nullable.IsNull);
         }
 
         internal static Exception InvalidSeekOrigin(string parameterName)

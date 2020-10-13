@@ -50,12 +50,12 @@ namespace System.ComponentModel
                     // See if we have a culture info to parse with. If so, then use it.
                     DateTimeFormatInfo formatInfo = null;
 
-                    if (culture != null)
+                    if (culture is not null)
                     {
                         formatInfo = (DateTimeFormatInfo)culture.GetFormat(typeof(DateTimeFormatInfo));
                     }
 
-                    if (formatInfo != null)
+                    if (formatInfo is not null)
                     {
                         return DateTime.Parse(text, formatInfo);
                     }
@@ -87,7 +87,7 @@ namespace System.ComponentModel
                     return string.Empty;
                 }
 
-                if (culture == null)
+                if (culture is null)
                 {
                     culture = CultureInfo.CurrentCulture;
                 }

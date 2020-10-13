@@ -25,7 +25,7 @@ namespace System.Runtime.CompilerServices
         [return: NotNullIfNotNull("expression")]
         public static Expression? Quote(Expression? expression, object hoistedLocals, object[] locals)
         {
-            Debug.Assert(hoistedLocals != null && locals != null);
+            Debug.Assert(hoistedLocals is not null && locals is not null);
             var quoter = new ExpressionQuoter((HoistedLocals)hoistedLocals, locals);
             return quoter.Visit(expression);
         }
@@ -101,7 +101,7 @@ namespace System.Runtime.CompilerServices
                 {
                     _shadowedVars.Pop();
                 }
-                if (b == null)
+                if (b is null)
                 {
                     return node;
                 }
@@ -110,13 +110,13 @@ namespace System.Runtime.CompilerServices
 
             protected override CatchBlock VisitCatchBlock(CatchBlock node)
             {
-                if (node.Variable != null)
+                if (node.Variable is not null)
                 {
                     _shadowedVars.Push(new HashSet<ParameterExpression> { node.Variable });
                 }
                 Expression b = Visit(node.Body);
                 Expression? f = Visit(node.Filter);
-                if (node.Variable != null)
+                if (node.Variable is not null)
                 {
                     _shadowedVars.Pop();
                 }
@@ -136,7 +136,7 @@ namespace System.Runtime.CompilerServices
                 for (int i = 0; i < indexes.Length; i++)
                 {
                     IStrongBox? box = GetBox(node.Variables[i]);
-                    if (box == null)
+                    if (box is null)
                     {
                         indexes[i] = vars.Count;
                         vars.Add(node.Variables[i]);
@@ -173,7 +173,7 @@ namespace System.Runtime.CompilerServices
             protected internal override Expression VisitParameter(ParameterExpression node)
             {
                 IStrongBox? box = GetBox(node);
-                if (box == null)
+                if (box is null)
                 {
                     return node;
                 }
@@ -201,7 +201,7 @@ namespace System.Runtime.CompilerServices
                         return (IStrongBox)locals[hoistIndex];
                     }
                     scope = scope.Parent;
-                    if (scope == null)
+                    if (scope is null)
                     {
                         break;
                     }

@@ -63,7 +63,7 @@ namespace System.IO
 
         protected DelegatingStream(Stream innerStream)
         {
-            Debug.Assert(innerStream != null);
+            Debug.Assert(innerStream is not null);
             _innerStream = innerStream;
         }
 

@@ -135,8 +135,8 @@ namespace System.Linq.Expressions
         public static CatchBlock MakeCatchBlock(Type type, ParameterExpression? variable, Expression body, Expression? filter)
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
-            ContractUtils.Requires(variable == null || TypeUtils.AreEquivalent(variable.Type, type), nameof(variable));
-            if (variable == null)
+            ContractUtils.Requires(variable is null || TypeUtils.AreEquivalent(variable.Type, type), nameof(variable));
+            if (variable is null)
             {
                 TypeUtils.ValidateType(type, nameof(type));
             }
@@ -145,7 +145,7 @@ namespace System.Linq.Expressions
                 throw Error.VariableMustNotBeByRef(variable, variable.Type, nameof(variable));
             }
             ExpressionUtils.RequiresCanRead(body, nameof(body));
-            if (filter != null)
+            if (filter is not null)
             {
                 ExpressionUtils.RequiresCanRead(filter, nameof(filter));
                 if (filter.Type != typeof(bool)) throw Error.ArgumentMustBeBoolean(nameof(filter));

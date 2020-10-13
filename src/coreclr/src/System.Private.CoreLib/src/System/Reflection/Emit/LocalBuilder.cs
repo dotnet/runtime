@@ -56,7 +56,7 @@ namespace System.Reflection.Emit
             int index;
 
             MethodBuilder? methodBuilder = m_methodBuilder as MethodBuilder;
-            if (methodBuilder == null)
+            if (methodBuilder is null)
                 // it's a light code gen entity
                 throw new NotSupportedException();
             dynMod = (ModuleBuilder)methodBuilder.Module;
@@ -67,7 +67,7 @@ namespace System.Reflection.Emit
             }
 
             // set the name and range of offset for the local
-            if (dynMod.GetSymWriter() == null)
+            if (dynMod.GetSymWriter() is null)
             {
                 // cannot set local name if not debug module
                 throw new InvalidOperationException(SR.InvalidOperation_NotADebugModule);

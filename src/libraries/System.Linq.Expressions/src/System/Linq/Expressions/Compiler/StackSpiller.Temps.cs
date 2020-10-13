@@ -110,7 +110,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 ParameterExpression temp;
 
-                if (_freeTemps != null)
+                if (_freeTemps is not null)
                 {
                     // Recycle from the free-list if possible.
                     for (int i = _freeTemps.Count - 1; i >= 0; i--)
@@ -140,10 +140,10 @@ namespace System.Linq.Expressions.Compiler
             /// <returns>The original temporary variable.</returns>
             private ParameterExpression UseTemp(ParameterExpression temp)
             {
-                Debug.Assert(_freeTemps == null || !_freeTemps.Contains(temp));
-                Debug.Assert(_usedTemps == null || !_usedTemps.Contains(temp));
+                Debug.Assert(_freeTemps is null || !_freeTemps.Contains(temp));
+                Debug.Assert(_usedTemps is null || !_usedTemps.Contains(temp));
 
-                if (_usedTemps == null)
+                if (_usedTemps is null)
                 {
                     _usedTemps = new Stack<ParameterExpression>();
                 }
@@ -160,9 +160,9 @@ namespace System.Linq.Expressions.Compiler
             /// <param name="temp">The temporary variable to mark as no longer in use.</param>
             private void FreeTemp(ParameterExpression temp)
             {
-                Debug.Assert(_freeTemps == null || !_freeTemps.Contains(temp));
+                Debug.Assert(_freeTemps is null || !_freeTemps.Contains(temp));
 
-                if (_freeTemps == null)
+                if (_freeTemps is null)
                 {
                     _freeTemps = new List<ParameterExpression>();
                 }
@@ -192,12 +192,12 @@ namespace System.Linq.Expressions.Compiler
             /// </remarks>
             internal void Free(int mark)
             {
-                // (_usedTemps != null) ==> (mark <= _usedTemps.Count)
-                Debug.Assert(_usedTemps == null || mark <= _usedTemps.Count);
-                // (_usedTemps == null) ==> (mark == 0)
-                Debug.Assert(mark == 0 || _usedTemps != null);
+                // (_usedTemps is not null) ==> (mark <= _usedTemps.Count)
+                Debug.Assert(_usedTemps is null || mark <= _usedTemps.Count);
+                // (_usedTemps is null) ==> (mark == 0)
+                Debug.Assert(mark == 0 || _usedTemps is not null);
 
-                if (_usedTemps != null)
+                if (_usedTemps is not null)
                 {
                     while (mark < _usedTemps.Count)
                     {
@@ -214,7 +214,7 @@ namespace System.Linq.Expressions.Compiler
             [Conditional("DEBUG")]
             internal void VerifyTemps()
             {
-                Debug.Assert(_usedTemps == null || _usedTemps.Count == 0);
+                Debug.Assert(_usedTemps is null || _usedTemps.Count == 0);
             }
         }
     }

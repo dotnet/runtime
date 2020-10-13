@@ -59,7 +59,7 @@ namespace System.Net
             }
             finally
             {
-                if (e != null)
+                if (e is not null)
                 {
                     InvokeRequestCallback(e);
                 }
@@ -84,7 +84,7 @@ namespace System.Net
         protected void InvokeRequestCallback(object? obj)
         {
             WebRequest? webRequest = _request;
-            if (webRequest != null)
+            if (webRequest is not null)
             {
                 FtpWebRequest ftpWebRequest = (FtpWebRequest)webRequest;
                 ftpWebRequest.RequestCallback(obj);
@@ -305,7 +305,7 @@ namespace System.Net
             // Final QUIT command may get exceptions since the connection
             // may be already closed by the server. So there is no response
             // to process, just advance the pipeline to continue.
-            if (_currentResponseDescription == null && entry!.Command == "QUIT\r\n")
+            if (_currentResponseDescription is null && entry!.Command == "QUIT\r\n")
                 result = PipelineInstruction.Advance;
             else
                 result = PipelineCallback(entry, _currentResponseDescription, false, ref stream);
@@ -663,7 +663,7 @@ namespace System.Net
             if (_isAsync)
             {
                 // Tell who is listening what was received.
-                if (state.Resp != null)
+                if (state.Resp is not null)
                 {
                     _currentResponseDescription = state.Resp;
                 }

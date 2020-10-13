@@ -598,12 +598,12 @@ namespace System.Management
 
             //Try to get extended error info first, and save in errorObject member
             IWbemClassObjectFreeThreaded obj = WbemErrorInfo.GetErrorInfo();
-            if (obj != null)
+            if (obj is not null)
                 errObj = new ManagementBaseObject(obj);
 
             //If the error code is not a WMI one and there's an extended error object available, stick the message
             //from the extended error object in.
-            if (((msg = GetMessage(errorCode)) == null) && (errObj != null))
+            if (((msg = GetMessage(errorCode)) is null) && (errObj is not null))
                 try
                 {
                     msg = (string)errObj["Description"];
@@ -621,12 +621,12 @@ namespace System.Management
 
             //Try to get extended error info first, and save in errorObject member
             IWbemClassObjectFreeThreaded obj = WbemErrorInfo.GetErrorInfo();
-            if (obj != null)
+            if (obj is not null)
                 errObj = new ManagementBaseObject(obj);
 
             //If the error code is not a WMI one and there's an extended error object available, stick the message
             //from the extended error object in.
-            if (((msg = GetMessage(e)) == null) && (errObj != null))
+            if (((msg = GetMessage(e)) is null) && (errObj is not null))
                 try
                 {
                     msg = (string)errObj["Description"];
@@ -653,7 +653,7 @@ namespace System.Management
 
                     // May/may not have extended error info.
                     //
-                    if (errorObject != null)
+                    if (errorObject is not null)
                         errorObject = (ManagementBaseObject)((ManagementException)e).errorObject.Clone();
                     else
                         errorObject = null;
@@ -748,7 +748,7 @@ namespace System.Management
             int hr;
 
             statusCode = (IWbemStatusCodeText) new WbemStatusCodeText();
-            if (statusCode != null)
+            if (statusCode is not null)
             {
                 try {
                     hr = statusCode.GetErrorCodeText_((int)errorCode, 0, 1, out msg);

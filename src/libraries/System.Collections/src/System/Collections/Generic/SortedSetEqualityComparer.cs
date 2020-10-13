@@ -32,11 +32,11 @@ namespace System.Collections.Generic
         public int GetHashCode(SortedSet<T> obj)
         {
             int hashCode = 0;
-            if (obj != null)
+            if (obj is not null)
             {
                 foreach (T t in obj)
                 {
-                    if (t != null)
+                    if (t is not null)
                     {
                         hashCode ^= (_memberEqualityComparer.GetHashCode(t) & 0x7FFFFFFF);
                     }
@@ -50,7 +50,7 @@ namespace System.Collections.Generic
         public override bool Equals(object? obj)
         {
             SortedSetEqualityComparer<T>? comparer = obj as SortedSetEqualityComparer<T>;
-            return comparer != null && _comparer == comparer._comparer;
+            return comparer is not null && _comparer == comparer._comparer;
         }
 
         public override int GetHashCode() => _comparer.GetHashCode() ^ _memberEqualityComparer.GetHashCode();

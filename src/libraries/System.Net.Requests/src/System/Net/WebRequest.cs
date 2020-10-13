@@ -145,7 +145,7 @@ namespace System.Net
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static WebRequest Create(string requestUriString)
         {
-            if (requestUriString == null)
+            if (requestUriString is null)
             {
                 throw new ArgumentNullException(nameof(requestUriString));
             }
@@ -166,7 +166,7 @@ namespace System.Net
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static WebRequest Create(Uri requestUri)
         {
-            if (requestUri == null)
+            if (requestUri is null)
             {
                 throw new ArgumentNullException(nameof(requestUri));
             }
@@ -188,7 +188,7 @@ namespace System.Net
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static WebRequest CreateDefault(Uri requestUri)
         {
-            if (requestUri == null)
+            if (requestUri is null)
             {
                 throw new ArgumentNullException(nameof(requestUri));
             }
@@ -199,7 +199,7 @@ namespace System.Net
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static HttpWebRequest CreateHttp(string requestUriString)
         {
-            if (requestUriString == null)
+            if (requestUriString is null)
             {
                 throw new ArgumentNullException(nameof(requestUriString));
             }
@@ -209,7 +209,7 @@ namespace System.Net
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static HttpWebRequest CreateHttp(Uri requestUri)
         {
-            if (requestUri == null)
+            if (requestUri is null)
             {
                 throw new ArgumentNullException(nameof(requestUri));
             }
@@ -243,11 +243,11 @@ namespace System.Net
             int i;
             WebRequestPrefixElement Current;
 
-            if (prefix == null)
+            if (prefix is null)
             {
                 throw new ArgumentNullException(nameof(prefix));
             }
-            if (creator == null)
+            if (creator is null)
             {
                 throw new ArgumentNullException(nameof(creator));
             }

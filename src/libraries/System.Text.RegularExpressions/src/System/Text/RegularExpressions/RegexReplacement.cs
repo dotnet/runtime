@@ -66,7 +66,7 @@ namespace System.Text.RegularExpressions
                         }
                         int slot = child.M;
 
-                        if (_caps != null && slot >= 0)
+                        if (_caps is not null && slot >= 0)
                         {
                             slot = (int)_caps[slot]!;
                         }

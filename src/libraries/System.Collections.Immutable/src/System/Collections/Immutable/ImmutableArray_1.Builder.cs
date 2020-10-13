@@ -341,7 +341,7 @@ namespace System.Collections.Immutable
             {
                 Requires.Range(length >= 0, nameof(length));
 
-                if (items.array != null)
+                if (items.array is not null)
                 {
                     this.AddRange(items.array, length);
                 }
@@ -353,7 +353,7 @@ namespace System.Collections.Immutable
             /// <param name="items">The items.</param>
             public void AddRange<TDerived>(ImmutableArray<TDerived> items) where TDerived : T
             {
-                if (items.array != null)
+                if (items.array is not null)
                 {
                     this.AddRange(items.array);
                 }

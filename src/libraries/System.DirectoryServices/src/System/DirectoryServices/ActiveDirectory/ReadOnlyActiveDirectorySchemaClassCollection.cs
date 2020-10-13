@@ -11,7 +11,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ReadOnlyActiveDirectorySchemaClassCollection(ICollection values)
         {
-            if (values != null)
+            if (values is not null)
             {
                 InnerList.AddRange(values);
             }
@@ -24,7 +24,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ActiveDirectorySchemaClass schemaClass)
         {
-            if (schemaClass == null)
+            if (schemaClass is null)
                 throw new ArgumentNullException(nameof(schemaClass));
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -40,7 +40,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ActiveDirectorySchemaClass schemaClass)
         {
-            if (schemaClass == null)
+            if (schemaClass is null)
                 throw new ArgumentNullException(nameof(schemaClass));
 
             for (int i = 0; i < InnerList.Count; i++)

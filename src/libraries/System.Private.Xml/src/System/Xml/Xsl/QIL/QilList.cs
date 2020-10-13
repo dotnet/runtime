@@ -44,7 +44,7 @@ namespace System.Xml.Xsl.Qil
         {
             get
             {
-                if (this.xmlType == null)
+                if (this.xmlType is null)
                 {
                     XmlQueryType xt = XmlQueryTypeFactory.Empty;
 

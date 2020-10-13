@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public static CngKey Open(SafeNCryptKeyHandle keyHandle, CngKeyHandleOpenOptions keyHandleOpenOptions)
         {
-            if (keyHandle == null)
+            if (keyHandle is null)
                 throw new ArgumentNullException(nameof(keyHandle));
             if (keyHandle.IsClosed || keyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(keyHandle));
@@ -65,7 +65,7 @@ namespace System.Security.Cryptography
             catch
             {
                 // Make sure that we don't leak the handle the CngKey duplicated
-                if (key != null)
+                if (key is not null)
                     key.Dispose();
 
                 throw;

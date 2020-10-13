@@ -43,7 +43,7 @@ namespace System
 
         internal bool InvocationListLogicallyNull()
         {
-            return (_invocationList == null) || (_invocationList is LoaderAllocator) || (_invocationList is System.Reflection.Emit.DynamicResolver);
+            return (_invocationList is null) || (_invocationList is LoaderAllocator) || (_invocationList is System.Reflection.Emit.DynamicResolver);
         }
 
         public override void GetObjectData(SerializationInfo info, StreamingContext context)
@@ -55,7 +55,7 @@ namespace System
         //    same target, method and invocation list as this object
         public sealed override bool Equals(object? obj)
         {
-            if (obj == null)
+            if (obj is null)
                 return false;
             if (object.ReferenceEquals(this, obj))
                 return true;
@@ -73,8 +73,8 @@ namespace System
                 // there are 4 kind of delegate kinds that fall into this bucket
                 // 1- Multicast (_invocationList is Object[])
                 // 2- Wrapper (_invocationList is Delegate)
-                // 3- Unmanaged FntPtr (_invocationList == null)
-                // 4- Open virtual (_invocationCount == MethodDesc of target, _invocationList == null, LoaderAllocator, or DynamicResolver)
+                // 3- Unmanaged FntPtr (_invocationList is null)
+                // 4- Open virtual (_invocationCount == MethodDesc of target, _invocationList is null, LoaderAllocator, or DynamicResolver)
 
                 if (InvocationListLogicallyNull())
                 {
@@ -133,7 +133,7 @@ namespace System
         // Recursive function which will check for equality of the invocation list.
         private bool InvocationListEquals(MulticastDelegate d)
         {
-            Debug.Assert(d != null);
+            Debug.Assert(d is not null);
             Debug.Assert(_invocationList is object[]);
             object[] invocationList = (object[])_invocationList;
 
@@ -155,12 +155,12 @@ namespace System
 
         private bool TrySetSlot(object?[] a, int index, object o)
         {
-            if (a[index] == null && System.Threading.Interlocked.CompareExchange<object?>(ref a[index], o, null) == null)
+            if (a[index] is null && System.Threading.Interlocked.CompareExchange<object?>(ref a[index], o, null) is null)
                 return true;
 
             // The slot may be already set because we have added and removed the same method before.
             // Optimize this case, because it's cheaper than copying the array.
-            if (a[index] != null)
+            if (a[index] is not null)
             {
                 MulticastDelegate d = (MulticastDelegate)o;
                 MulticastDelegate dd = (MulticastDelegate)a[index]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
@@ -232,7 +232,7 @@ namespace System
             object[]? resultList;
             int followCount = 1;
             object[]? followList = dFollow._invocationList as object[];
-            if (followList != null)
+            if (followList is not null)
                 followCount = (int)dFollow._invocationCount;
 
             int resultCount;
@@ -241,7 +241,7 @@ namespace System
                 resultCount = 1 + followCount;
                 resultList = new object[resultCount];
                 resultList[0] = this;
-                if (followList == null)
+                if (followList is null)
                 {
                     resultList[1] = dFollow;
                 }
@@ -260,7 +260,7 @@ namespace System
                 if (resultCount <= invocationList.Length)
                 {
                     resultList = invocationList;
-                    if (followList == null)
+                    if (followList is null)
                     {
                         if (!TrySetSlot(resultList, invocationCount, dFollow))
                             resultList = null;
@@ -278,7 +278,7 @@ namespace System
                     }
                 }
 
-                if (resultList == null)
+                if (resultList is null)
                 {
                     int allocCount = invocationList.Length;
                     while (allocCount < resultCount)
@@ -289,7 +289,7 @@ namespace System
                     for (int i = 0; i < invocationCount; i++)
                         resultList[i] = invocationList[i];
 
-                    if (followList == null)
+                    if (followList is null)
                     {
                         resultList[invocationCount] = dFollow;
                     }
@@ -344,7 +344,7 @@ namespace System
             //
             MulticastDelegate? v = value as MulticastDelegate;
 
-            if (v == null)
+            if (v is null)
                 return this;
             if (!(v._invocationList is object[]))
             {
@@ -433,7 +433,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(MulticastDelegate? d1, MulticastDelegate? d2)
         {
-            // Test d2 first to allow branch elimination when inlined for null checks (== null)
+            // Test d2 first to allow branch elimination when inlined for null checks (is null)
             // so it can become a simple test
             if (d2 is null)
             {
@@ -450,7 +450,7 @@ namespace System
         {
             // Can't call the == operator as it will call object==
 
-            // Test d2 first to allow branch elimination when inlined for not null checks (!= null)
+            // Test d2 first to allow branch elimination when inlined for not null checks (is not null)
             // so it can become a simple test
             if (d2 is null)
             {
@@ -524,7 +524,7 @@ namespace System
 
         protected override MethodInfo GetMethodImpl()
         {
-            if (_invocationCount != (IntPtr)0 && _invocationList != null)
+            if (_invocationCount != (IntPtr)0 && _invocationList is not null)
             {
                 // multicast case
                 if (_invocationList is object[] invocationList)
@@ -543,7 +543,7 @@ namespace System
             {
                 // we handle unmanaged function pointers here because the generic ones (used for WinRT) would otherwise
                 // be treated as open delegates by the base implementation, resulting in failure to get the MethodInfo
-                if ((_methodBase == null) || !(_methodBase is MethodInfo))
+                if ((_methodBase is null) || !(_methodBase is MethodInfo))
                 {
                     IRuntimeMethodInfo method = FindMethodHandle();
                     RuntimeType declaringType = RuntimeMethodHandle.GetDeclaringType(method);
@@ -573,7 +573,7 @@ namespace System
         [System.Diagnostics.DebuggerNonUserCode]
         private void CtorClosed(object target, IntPtr methodPtr)
         {
-            if (target == null)
+            if (target is null)
                 ThrowNullThisInDelegateToInstance();
             this._target = target;
             this._methodPtr = methodPtr;

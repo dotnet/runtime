@@ -42,7 +42,7 @@ namespace System.Net.Http.Headers
 
         private ProductHeaderValue(ProductHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _name = source._name;
             _version = source._version;
@@ -65,7 +65,7 @@ namespace System.Net.Http.Headers
         {
             ProductHeaderValue? other = obj as ProductHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }

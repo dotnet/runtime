@@ -48,7 +48,7 @@ namespace System.Net.Http
                 throw CreateWrappedException(ex, endPoint.Host, endPoint.Port, cancellationToken);
             }
 
-            if (stream == null)
+            if (stream is null)
             {
                 throw new HttpRequestException(SR.net_http_null_from_connect_callback);
             }
@@ -83,14 +83,14 @@ namespace System.Net.Http
             // If there's a cert validation callback, and if it came from HttpClientHandler,
             // wrap the original delegate in order to change the sender to be the request message (expected by HttpClientHandler's delegate).
             RemoteCertificateValidationCallback? callback = sslOptions.RemoteCertificateValidationCallback;
-            if (callback != null && callback.Target is CertificateCallbackMapper mapper)
+            if (callback is not null && callback.Target is CertificateCallbackMapper mapper)
             {
                 sslOptions = sslOptions.ShallowClone(); // Clone as we're about to mutate it and don't want to affect the cached copy
                 Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool> localFromHttpClientHandler = mapper.FromHttpClientHandler;
                 HttpRequestMessage localRequest = request;
                 sslOptions.RemoteCertificateValidationCallback = (object sender, X509Certificate? certificate, X509Chain? chain, SslPolicyErrors sslPolicyErrors) =>
                 {
-                    Debug.Assert(localRequest != null);
+                    Debug.Assert(localRequest is not null);
                     bool result = localFromHttpClientHandler(localRequest, certificate as X509Certificate2, chain, sslPolicyErrors);
                     localRequest = null!; // ensure the SslOptions and this callback don't keep the first HttpRequestMessage alive indefinitely
                     return result;

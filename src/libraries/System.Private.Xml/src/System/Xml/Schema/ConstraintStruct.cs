@@ -207,7 +207,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                Debug.Assert(_dstruct != null);
+                Debug.Assert(_dstruct is not null);
                 return _dstruct.IsDecimal;
             }
         }
@@ -215,7 +215,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                Debug.Assert(_dstruct != null);
+                Debug.Assert(_dstruct is not null);
                 return _dstruct.Dvalue;
             }
         }
@@ -254,7 +254,7 @@ namespace System.Xml.Schema
 
         public void SetDecimal()
         {
-            if (_dstruct != null)
+            if (_dstruct is not null)
             {
                 return;
             }
@@ -353,13 +353,13 @@ namespace System.Xml.Schema
                 { //this is a list and other is a single value
                     Array? arr1 = this.Value as System.Array;
                     XmlAtomicValue[]? atomicValues1 = arr1 as XmlAtomicValue[];
-                    if (atomicValues1 != null)
+                    if (atomicValues1 is not null)
                     { // this is a list of union
                         return atomicValues1.Length == 1 && atomicValues1.GetValue(0)!.Equals(other.Value);
                     }
                     else
                     {
-                        Debug.Assert(arr1 != null);
+                        Debug.Assert(arr1 is not null);
                         return arr1.Length == 1 && arr1.GetValue(0)!.Equals(other.Value);
                     }
                 }
@@ -368,13 +368,13 @@ namespace System.Xml.Schema
             {
                 Array? arr2 = other.Value as System.Array;
                 XmlAtomicValue[]? atomicValues2 = arr2 as XmlAtomicValue[];
-                if (atomicValues2 != null)
+                if (atomicValues2 is not null)
                 { // other is a list of union
                     return atomicValues2.Length == 1 && atomicValues2.GetValue(0)!.Equals(this.Value);
                 }
                 else
                 {
-                    Debug.Assert(arr2 != null);
+                    Debug.Assert(arr2 is not null);
                     return arr2.Length == 1 && arr2.GetValue(0)!.Equals(this.Value);
                 }
             }
@@ -429,7 +429,7 @@ namespace System.Xml.Schema
         {
             for (int i = 0; i < _ks.Length; ++i)
             {
-                if ((_ks[i] == null) || (_ks[i].Value == null)) return false;
+                if ((_ks[i] is null) || (_ks[i].Value is null)) return false;
             }
             return true;
         }
@@ -460,7 +460,7 @@ namespace System.Xml.Schema
                     if (_ks[i].Value is Array arr)
                     {
                         XmlAtomicValue[]? atomicValues = arr as XmlAtomicValue[];
-                        if (atomicValues != null)
+                        if (atomicValues is not null)
                         {
                             for (int j = 0; j < atomicValues.Length; j++)
                             {

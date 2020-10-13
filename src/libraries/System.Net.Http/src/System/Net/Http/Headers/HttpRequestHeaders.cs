@@ -85,7 +85,7 @@ namespace System.Net.Http.Headers
                 }
                 else
                 {
-                    _expectContinueSet = value != null;
+                    _expectContinueSet = value is not null;
                     ExpectCore.RemoveSpecialValue();
                 }
             }
@@ -102,7 +102,7 @@ namespace System.Net.Http.Headers
                     value = null;
                 }
 
-                if ((value != null) && !HeaderUtilities.IsValidEmailAddress(value))
+                if ((value is not null) && !HeaderUtilities.IsValidEmailAddress(value))
                 {
                     throw new FormatException(SR.net_http_headers_invalid_from_header);
                 }
@@ -121,7 +121,7 @@ namespace System.Net.Http.Headers
                     value = null;
                 }
 
-                if ((value != null) && (HttpRuleParser.GetHostLength(value, 0, false, out string? _) != value.Length))
+                if ((value is not null) && (HttpRuleParser.GetHostLength(value, 0, false, out string? _) != value.Length))
                 {
                     throw new FormatException(SR.net_http_headers_invalid_host_header);
                 }
@@ -158,7 +158,7 @@ namespace System.Net.Http.Headers
             get
             {
                 object? storedValue = GetParsedValues(KnownHeaders.MaxForwards.Descriptor);
-                if (storedValue != null)
+                if (storedValue is not null)
                 {
                     return (int)storedValue;
                 }
@@ -274,10 +274,10 @@ namespace System.Net.Http.Headers
         {
             base.AddHeaders(sourceHeaders);
             HttpRequestHeaders? sourceRequestHeaders = sourceHeaders as HttpRequestHeaders;
-            Debug.Assert(sourceRequestHeaders != null);
+            Debug.Assert(sourceRequestHeaders is not null);
 
             // Copy special values but do not overwrite.
-            if (sourceRequestHeaders._generalHeaders != null)
+            if (sourceRequestHeaders._generalHeaders is not null)
             {
                 GeneralHeaders.AddSpecialsFrom(sourceRequestHeaders._generalHeaders);
             }

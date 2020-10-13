@@ -17,16 +17,16 @@ namespace System.Reflection.Context.Virtual
 
         protected VirtualPropertyBase(Type propertyType, string name, CustomReflectionContext context)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
                 throw new ArgumentException("", nameof(name));
 
-            if (propertyType == null)
+            if (propertyType is null)
                 throw new ArgumentNullException(nameof(propertyType));
 
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
 
             _propertyType = propertyType;
             _name = name;
@@ -57,12 +57,12 @@ namespace System.Reflection.Context.Virtual
 
         public override sealed bool CanRead
         {
-            get { return GetGetMethod(true) != null; }
+            get { return GetGetMethod(true) is not null; }
         }
 
         public override sealed bool CanWrite
         {
-            get { return GetSetMethod(true) != null; }
+            get { return GetSetMethod(true) is not null; }
         }
 
         public override sealed int MetadataToken
@@ -85,9 +85,9 @@ namespace System.Reflection.Context.Virtual
             MethodInfo getMethod = GetGetMethod(nonPublic);
             MethodInfo setMethod = GetSetMethod(nonPublic);
 
-            Debug.Assert(getMethod != null || setMethod != null);
+            Debug.Assert(getMethod is not null || setMethod is not null);
 
-            if (getMethod == null || setMethod == null)
+            if (getMethod is null || setMethod is null)
             {
                 return new MethodInfo[] { getMethod ?? setMethod };
             }
@@ -103,7 +103,7 @@ namespace System.Reflection.Context.Virtual
         public override sealed object GetValue(object obj, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
             MethodInfo getMethod = GetGetMethod(true);
-            if (getMethod == null)
+            if (getMethod is null)
                 throw new ArgumentException(SR.Argument_GetMethNotFnd);
 
             return getMethod.Invoke(obj, invokeAttr, binder, index, culture);
@@ -112,12 +112,12 @@ namespace System.Reflection.Context.Virtual
         public override sealed void SetValue(object obj, object value, BindingFlags invokeAttr, Binder binder, object[] index, CultureInfo culture)
         {
             MethodInfo setMethod = GetSetMethod(true);
-            if (setMethod == null)
+            if (setMethod is null)
                 throw new ArgumentException(SR.Argument_GetMethNotFnd);
 
             object[] args = null;
 
-            if (index != null)
+            if (index is not null)
             {
                 args = new object[index.Length + 1];
 
@@ -205,10 +205,10 @@ namespace System.Reflection.Context.Virtual
 
         private ParameterInfo[] GetIndexParametersNoCopy()
         {
-            if (_indexedParameters == null)
+            if (_indexedParameters is null)
             {
                 MethodInfo method = GetGetMethod(true);
-                if (method != null)
+                if (method is not null)
                 {
                     _indexedParameters = VirtualParameter.CloneParameters(this, method.GetParameters(), skipLastParameter: false);
                 }

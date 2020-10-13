@@ -17,7 +17,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal static Type MakeDelegate(Type[] types)
         {
-            Debug.Assert(types != null && types.Length > 0);
+            Debug.Assert(types is not null && types.Length > 0);
 
             // Can only used predefined delegates if we have no byref types and
             // the arity is small enough to fit in Func<...> or Action<...>
@@ -175,13 +175,13 @@ namespace System.Linq.Expressions.Interpreter
 
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
-            Debug.Assert(key != null);
+            Debug.Assert(key is not null);
 
-            if (_dict != null)
+            if (_dict is not null)
             {
                 return _dict.TryGetValue(key, out value);
             }
-            else if (_keysAndValues != null)
+            else if (_keysAndValues is not null)
             {
                 for (int i = 0; i < _keysAndValues.Length; i++)
                 {
@@ -198,13 +198,13 @@ namespace System.Linq.Expressions.Interpreter
 
         public void Remove(TKey key)
         {
-            Debug.Assert(key != null);
+            Debug.Assert(key is not null);
 
-            if (_dict != null)
+            if (_dict is not null)
             {
                 _dict.Remove(key);
             }
-            else if (_keysAndValues != null)
+            else if (_keysAndValues is not null)
             {
                 for (int i = 0; i < _keysAndValues.Length; i++)
                 {
@@ -219,15 +219,15 @@ namespace System.Linq.Expressions.Interpreter
 
         public bool ContainsKey(TKey key)
         {
-            Debug.Assert(key != null);
+            Debug.Assert(key is not null);
 
-            if (_dict != null)
+            if (_dict is not null)
             {
                 return _dict.ContainsKey(key);
             }
 
             KeyValuePair<TKey, TValue>[]? keysAndValues = _keysAndValues;
-            if (keysAndValues != null)
+            if (keysAndValues is not null)
             {
                 for (int i = 0; i < keysAndValues.Length; i++)
                 {
@@ -243,7 +243,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            if (_dict != null)
+            if (_dict is not null)
             {
                 return _dict.GetEnumerator();
             }
@@ -253,11 +253,11 @@ namespace System.Linq.Expressions.Interpreter
 
         private IEnumerator<KeyValuePair<TKey, TValue>> GetEnumeratorWorker()
         {
-            if (_keysAndValues != null)
+            if (_keysAndValues is not null)
             {
                 for (int i = 0; i < _keysAndValues.Length; i++)
                 {
-                    if (_keysAndValues[i].Key != null)
+                    if (_keysAndValues[i].Key is not null)
                     {
                         yield return _keysAndValues[i];
                     }
@@ -269,7 +269,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             get
             {
-                Debug.Assert(key != null);
+                Debug.Assert(key is not null);
 
                 TValue res;
                 if (TryGetValue(key, out res))
@@ -281,16 +281,16 @@ namespace System.Linq.Expressions.Interpreter
             }
             set
             {
-                Debug.Assert(key != null);
+                Debug.Assert(key is not null);
 
-                if (_dict != null)
+                if (_dict is not null)
                 {
                     _dict[key] = value;
                 }
                 else
                 {
                     int index;
-                    if (_keysAndValues != null)
+                    if (_keysAndValues is not null)
                     {
                         index = -1;
                         for (int i = 0; i < _keysAndValues.Length; i++)
@@ -300,7 +300,7 @@ namespace System.Linq.Expressions.Interpreter
                                 _keysAndValues[i] = new KeyValuePair<TKey, TValue>(key, value);
                                 return;
                             }
-                            else if (_keysAndValues[i].Key == null)
+                            else if (_keysAndValues[i].Key is null)
                             {
                                 index = i;
                             }
@@ -337,7 +337,7 @@ namespace System.Linq.Expressions.Interpreter
         [Conditional("DEBUG")]
         public static void NotNull(object var)
         {
-            Debug.Assert(var != null);
+            Debug.Assert(var is not null);
         }
     }
 }

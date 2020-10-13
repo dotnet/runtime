@@ -48,7 +48,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
 
-            Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo] Expected _sWindowsName to be populated already");
+            Debug.Assert(_sWindowsName is not null, "[CultureData.IcuGetLocaleInfo] Expected _sWindowsName to be populated already");
             return IcuGetLocaleInfo(_sWindowsName, type);
         }
 
@@ -57,7 +57,7 @@ namespace System.Globalization
         private unsafe string IcuGetLocaleInfo(string localeName, LocaleStringData type)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(localeName != null, "[CultureData.IcuGetLocaleInfo] Expected localeName to be not be null");
+            Debug.Assert(localeName is not null, "[CultureData.IcuGetLocaleInfo] Expected localeName to be not be null");
 
             switch (type)
             {
@@ -83,7 +83,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.UseNls);
 
-            Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo(LocaleNumberData)] Expected _sWindowsName to be populated already");
+            Debug.Assert(_sWindowsName is not null, "[CultureData.IcuGetLocaleInfo(LocaleNumberData)] Expected _sWindowsName to be populated already");
 
             switch (type)
             {
@@ -107,7 +107,7 @@ namespace System.Globalization
         private int[] IcuGetLocaleInfo(LocaleGroupingData type)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(_sWindowsName != null, "[CultureData.IcuGetLocaleInfo(LocaleGroupingData)] Expected _sWindowsName to be populated already");
+            Debug.Assert(_sWindowsName is not null, "[CultureData.IcuGetLocaleInfo(LocaleGroupingData)] Expected _sWindowsName to be populated already");
 
             int primaryGroupingSize = 0;
             int secondaryGroupingSize = 0;
@@ -130,7 +130,7 @@ namespace System.Globalization
         private unsafe string IcuGetTimeFormatString(bool shortFormat)
         {
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatString(bool shortFormat)] Expected _sWindowsName to be populated already");
+            Debug.Assert(_sWindowsName is not null, "[CultureData.GetTimeFormatString(bool shortFormat)] Expected _sWindowsName to be populated already");
 
             char* buffer = stackalloc char[ICU_ULOC_KEYWORD_AND_VALUES_CAPACITY];
 

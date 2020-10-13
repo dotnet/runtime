@@ -243,7 +243,7 @@ namespace System.Net.Http.QPack
 
             if (buffer.Length > 0)
             {
-                Debug.Assert(separator != null);
+                Debug.Assert(separator is not null);
                 int valueLength;
                 if (valueEncoding is null || ReferenceEquals(valueEncoding, Encoding.Latin1))
                 {

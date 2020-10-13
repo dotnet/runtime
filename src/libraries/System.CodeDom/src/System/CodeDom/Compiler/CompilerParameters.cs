@@ -25,7 +25,7 @@ namespace System.CodeDom.Compiler
 
         public CompilerParameters(string[] assemblyNames, string outputName, bool includeDebugInformation)
         {
-            if (assemblyNames != null)
+            if (assemblyNames is not null)
             {
                 ReferencedAssemblies.AddRange(assemblyNames);
             }

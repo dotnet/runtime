@@ -10,7 +10,7 @@ namespace System.Diagnostics
         /// <returns>true if the machine is remote; false if it's local.</returns>
         public static bool IsRemoteMachine(string machineName)
         {
-            if (machineName == null)
+            if (machineName is null)
                 throw new ArgumentNullException(nameof(machineName));
 
             if (machineName.Length == 0)

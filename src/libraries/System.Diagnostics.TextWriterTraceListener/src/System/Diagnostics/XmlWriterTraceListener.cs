@@ -67,14 +67,14 @@ namespace System.Diagnostics
         public override void Fail(string? message, string? detailMessage)
         {
             message ??= string.Empty;
-            int length = detailMessage != null ? message.Length + 1 + detailMessage.Length : message.Length;
+            int length = detailMessage is not null ? message.Length + 1 + detailMessage.Length : message.Length;
             TraceEvent(null, SR.TraceAsTraceSource, TraceEventType.Error, 0, string.Create(length, (message, detailMessage),
             (dst, v) =>
             {
                 ReadOnlySpan<char> prefix = v.message;
                 prefix.CopyTo(dst);
 
-                if (v.detailMessage != null)
+                if (v.detailMessage is not null)
                 {
                     dst[prefix.Length] = ' ';
 
@@ -86,17 +86,17 @@ namespace System.Diagnostics
 
         public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object?[]? args)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args, null, null))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args, null, null))
                 return;
 
             WriteHeader(source, eventType, id, eventCache);
-            WriteEscaped(args != null && args.Length != 0 ? string.Format(CultureInfo.InvariantCulture, format, args) : format);
+            WriteEscaped(args is not null && args.Length != 0 ? string.Format(CultureInfo.InvariantCulture, format, args) : format);
             WriteFooter(eventCache);
         }
 
         public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string? message)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, message, null, null, null))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, eventType, id, message, null, null, null))
                 return;
 
             WriteHeader(source, eventType, id, eventCache);
@@ -106,13 +106,13 @@ namespace System.Diagnostics
 
         public override void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, object? data)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, data, null))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, data, null))
                 return;
 
             WriteHeader(source, eventType, id, eventCache);
 
             InternalWrite("<TraceData>");
-            if (data != null)
+            if (data is not null)
             {
                 InternalWrite("<DataItem>");
                 WriteData(data);
@@ -125,17 +125,17 @@ namespace System.Diagnostics
 
         public override void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, params object?[]? data)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
                 return;
 
             WriteHeader(source, eventType, id, eventCache);
             InternalWrite("<TraceData>");
-            if (data != null)
+            if (data is not null)
             {
                 for (int i = 0; i < data.Length; i++)
                 {
                     InternalWrite("<DataItem>");
-                    if (data[i] != null)
+                    if (data[i] is not null)
                         WriteData(data[i]!);
                     InternalWrite("</DataItem>");
                 }
@@ -154,7 +154,7 @@ namespace System.Diagnostics
             }
             else
             {
-                if (_strBldr == null)
+                if (_strBldr is null)
                 {
                     _strBldr = new StringBuilder();
                     _xmlBlobWriter = new XmlTextWriter(new StringWriter(_strBldr, CultureInfo.CurrentCulture));
@@ -188,7 +188,7 @@ namespace System.Diagnostics
 
         public override void TraceTransfer(TraceEventCache? eventCache, string source, int id, string? message, Guid relatedActivityId)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, TraceEventType.Transfer, id, message, null, null, null))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, TraceEventType.Transfer, id, message, null, null, null))
                 return;
 
             WriteHeader(source, TraceEventType.Transfer, id, eventCache, relatedActivityId);
@@ -234,7 +234,7 @@ namespace System.Diagnostics
             InternalWrite("</Level>");
 
             InternalWrite("<TimeCreated SystemTime=\"");
-            if (eventCache != null)
+            if (eventCache is not null)
                 InternalWrite(eventCache.DateTime.ToString("o", CultureInfo.InvariantCulture));
             else
                 InternalWrite(DateTime.Now.ToString("o", CultureInfo.InvariantCulture));
@@ -245,7 +245,7 @@ namespace System.Diagnostics
             InternalWrite("\" />");
 
             InternalWrite("<Correlation ActivityID=\"");
-            if (eventCache != null)
+            if (eventCache is not null)
                 InternalWrite(Trace.CorrelationManager.ActivityId.ToString("B"));
             else
                 InternalWrite(Guid.Empty.ToString("B"));
@@ -295,7 +295,7 @@ namespace System.Diagnostics
             bool writeLogicalOps = IsEnabled(TraceOptions.LogicalOperationStack);
             bool writeCallstack = IsEnabled(TraceOptions.Callstack);
 
-            if (eventCache != null && (writeLogicalOps || writeCallstack))
+            if (eventCache is not null && (writeLogicalOps || writeCallstack))
             {
                 InternalWrite("<System.Diagnostics xmlns=\"http://schemas.microsoft.com/2004/08/System.Diagnostics\">");
 

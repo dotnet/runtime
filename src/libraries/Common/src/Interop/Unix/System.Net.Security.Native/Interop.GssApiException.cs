@@ -51,13 +51,13 @@ internal static partial class Interop
                 if (minorStatus != Status.GSS_S_COMPLETE)
                 {
                     string? minorError = GetGssApiDisplayStatus(minorStatus, isMinor: true);
-                    errorMessage = (majorError != null && minorError != null) ?
+                    errorMessage = (majorError is not null && minorError is not null) ?
                         SR.Format(SR.net_gssapi_operation_failed_detailed, majorError, minorError) :
                         SR.Format(SR.net_gssapi_operation_failed, majorStatus.ToString("x"), minorStatus.ToString("x"));
                 }
                 else
                 {
-                    errorMessage = (majorError != null) ?
+                    errorMessage = (majorError is not null) ?
                         SR.Format(SR.net_gssapi_operation_failed_detailed_majoronly, majorError) :
                         SR.Format(SR.net_gssapi_operation_failed_majoronly, majorStatus.ToString("x"));
                 }

@@ -58,7 +58,7 @@ namespace System.Net.WebSockets
             TimeSpan keepAliveInterval,
             WebSocketBuffer internalBuffer)
         {
-            Debug.Assert(internalBuffer != null, "'internalBuffer' MUST NOT be NULL.");
+            Debug.Assert(internalBuffer is not null, "'internalBuffer' MUST NOT be NULL.");
             HttpWebSocket.ValidateInnerStream(innerStream);
             HttpWebSocket.ValidateOptions(subProtocol, internalBuffer.ReceiveBufferSize,
                 internalBuffer.SendBufferSize, keepAliveInterval);
@@ -97,7 +97,7 @@ namespace System.Net.WebSockets
             _closeStatus = null;
             _closeStatusDescription = null;
             _innerStreamAsWebSocketStream = innerStream as IWebSocketStream;
-            if (_innerStreamAsWebSocketStream != null)
+            if (_innerStreamAsWebSocketStream is not null)
             {
                 _innerStreamAsWebSocketStream.SwitchToOpaqueMode(this);
             }
@@ -141,7 +141,7 @@ namespace System.Net.WebSockets
         {
             get
             {
-                Debug.Assert(_internalBuffer != null, "'_internalBuffer' MUST NOT be NULL.");
+                Debug.Assert(_internalBuffer is not null, "'_internalBuffer' MUST NOT be NULL.");
                 return _internalBuffer;
             }
         }
@@ -249,7 +249,7 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(messageType == WebSocketMessageType.Binary || messageType == WebSocketMessageType.Text,
                 "'messageType' MUST be either 'WebSocketMessageType.Binary' or 'WebSocketMessageType.Text'.");
-            Debug.Assert(buffer.Array != null);
+            Debug.Assert(buffer.Array is not null);
 
             string inputParameter = string.Empty;
             if (NetEventSource.Log.IsEnabled())
@@ -276,7 +276,7 @@ namespace System.Net.WebSockets
                     {
                         keepAliveTask = _keepAliveTask;
 
-                        if (keepAliveTask == null)
+                        if (keepAliveTask is null)
                         {
                             // Check whether there is still another outstanding send operation
                             // Potentially the keepAlive operation has completed before this thread
@@ -331,7 +331,7 @@ namespace System.Net.WebSockets
                 sendFrameLockTaken = true;
 
                 if (sendBuffers.Count > 1 &&
-                    _innerStreamAsWebSocketStream != null &&
+                    _innerStreamAsWebSocketStream is not null &&
                     _innerStreamAsWebSocketStream.SupportsMultipleWrite)
                 {
                     await _innerStreamAsWebSocketStream.MultipleWriteAsync(sendBuffers,
@@ -386,7 +386,7 @@ namespace System.Net.WebSockets
                 _state = WebSocketState.Aborted;
 
                 // Abort any outstanding IO operations.
-                if (SessionHandle != null && !SessionHandle.IsClosed && !SessionHandle.IsInvalid)
+                if (SessionHandle is not null && !SessionHandle.IsClosed && !SessionHandle.IsInvalid)
                 {
                     WebSocketProtocolComponent.WebSocketAbortHandle(SessionHandle);
                 }
@@ -395,7 +395,7 @@ namespace System.Net.WebSockets
                 _sendOutstandingOperationHelper.CancelIO();
                 _closeOutputOutstandingOperationHelper.CancelIO();
                 _closeOutstandingOperationHelper.CancelIO();
-                if (_innerStreamAsWebSocketStream != null)
+                if (_innerStreamAsWebSocketStream is not null)
                 {
                     _innerStreamAsWebSocketStream.Abort();
                 }
@@ -460,7 +460,7 @@ namespace System.Net.WebSockets
                 {
                     Task? closeOutputTask = _closeOutputTask;
 
-                    if (closeOutputTask != null)
+                    if (closeOutputTask is not null)
                     {
                         ReleaseLocks(ref thisLockTaken, ref sessionHandleLockTaken);
                         await closeOutputTask.SuppressContextFlow();
@@ -474,7 +474,7 @@ namespace System.Net.WebSockets
                         _sendOutstandingOperationHelper.TryStartOperation(cancellationToken,
                             out linkedCancellationToken)))
                     {
-                        if (_keepAliveTask != null)
+                        if (_keepAliveTask is not null)
                         {
                             Task keepAliveTask = _keepAliveTask;
 
@@ -589,14 +589,14 @@ namespace System.Net.WebSockets
 
             _state = WebSocketState.Closed;
 
-            if (_innerStreamAsWebSocketStream != null)
+            if (_innerStreamAsWebSocketStream is not null)
             {
                 bool thisLockTaken = thisLockTakenSnapshot;
                 bool sessionHandleLockTaken = sessionHandleLockTakenSnapshot;
 
                 try
                 {
-                    if (_closeNetworkConnectionTask == null)
+                    if (_closeNetworkConnectionTask is null)
                     {
                         _closeNetworkConnectionTask =
                             _innerStreamAsWebSocketStream.CloseNetworkConnectionAsync(cancellationToken);
@@ -684,7 +684,7 @@ namespace System.Net.WebSockets
                 if (ownsCloseCancellationTokenSource)
                 {
                     closeOutputTask = _closeOutputTask;
-                    if (closeOutputTask == null && State != WebSocketState.CloseSent)
+                    if (closeOutputTask is null && State != WebSocketState.CloseSent)
                     {
                         _closeReceivedTaskCompletionSource ??= new TaskCompletionSource();
 
@@ -695,11 +695,11 @@ namespace System.Net.WebSockets
                 }
                 else
                 {
-                    Debug.Assert(_closeReceivedTaskCompletionSource != null, "'_closeReceivedTaskCompletionSource' MUST NOT be NULL.");
+                    Debug.Assert(_closeReceivedTaskCompletionSource is not null, "'_closeReceivedTaskCompletionSource' MUST NOT be NULL.");
                     closeOutputTask = _closeReceivedTaskCompletionSource.Task;
                 }
 
-                if (closeOutputTask != null)
+                if (closeOutputTask is not null)
                 {
                     ReleaseLock(_thisLock, ref lockTaken);
                     try
@@ -720,7 +720,7 @@ namespace System.Net.WebSockets
                         }
                     }
 
-                    // When closeOutputTask != null  and an exception thrown from await closeOutputTask is handled,
+                    // When closeOutputTask is not null  and an exception thrown from await closeOutputTask is handled,
                     // the lock will be taken in the catch-block. So the logic here avoids taking the lock twice.
                     if (!lockTaken)
                     {
@@ -795,7 +795,7 @@ namespace System.Net.WebSockets
                     // - but in the close code path we handle some exception if another thread was able to tranistion
                     // the state into Closed successfully. In this case receiveResult can be NULL and it is safe to
                     // skip the statements in the if-block.
-                    if (receiveResult != null)
+                    if (receiveResult is not null)
                     {
                         if (NetEventSource.Log.IsEnabled() && receiveResult.Count > 0)
                         {
@@ -918,7 +918,7 @@ namespace System.Net.WebSockets
 
         private void ResetFlagAndTakeLock(object lockObject, ref bool thisLockTaken)
         {
-            Debug.Assert(lockObject != null, "'lockObject' MUST NOT be NULL.");
+            Debug.Assert(lockObject is not null, "'lockObject' MUST NOT be NULL.");
             thisLockTaken = false;
             Monitor.Enter(lockObject, ref thisLockTaken);
         }
@@ -932,8 +932,8 @@ namespace System.Net.WebSockets
 
         private void TakeLocks(ref bool thisLockTaken, ref bool sessionHandleLockTaken)
         {
-            Debug.Assert(_thisLock != null, "'_thisLock' MUST NOT be NULL.");
-            Debug.Assert(SessionHandle != null, "'SessionHandle' MUST NOT be NULL.");
+            Debug.Assert(_thisLock is not null, "'_thisLock' MUST NOT be NULL.");
+            Debug.Assert(SessionHandle is not null, "'SessionHandle' MUST NOT be NULL.");
 
             Monitor.Enter(SessionHandle, ref sessionHandleLockTaken);
             Monitor.Enter(_thisLock, ref thisLockTaken);
@@ -941,8 +941,8 @@ namespace System.Net.WebSockets
 
         private void ReleaseLocks(ref bool thisLockTaken, ref bool sessionHandleLockTaken)
         {
-            Debug.Assert(_thisLock != null, "'_thisLock' MUST NOT be NULL.");
-            Debug.Assert(SessionHandle != null, "'SessionHandle' MUST NOT be NULL.");
+            Debug.Assert(_thisLock is not null, "'_thisLock' MUST NOT be NULL.");
+            Debug.Assert(SessionHandle is not null, "'SessionHandle' MUST NOT be NULL.");
 
             if (thisLockTaken)
             {
@@ -959,11 +959,11 @@ namespace System.Net.WebSockets
 
         private void EnsureReceiveOperation()
         {
-            if (_receiveOperation == null)
+            if (_receiveOperation is null)
             {
                 lock (_thisLock)
                 {
-                    if (_receiveOperation == null)
+                    if (_receiveOperation is null)
                     {
                         _receiveOperation = new WebSocketOperation.ReceiveOperation(this);
                     }
@@ -973,11 +973,11 @@ namespace System.Net.WebSockets
 
         private void EnsureSendOperation()
         {
-            if (_sendOperation == null)
+            if (_sendOperation is null)
             {
                 lock (_thisLock)
                 {
-                    if (_sendOperation == null)
+                    if (_sendOperation is null)
                     {
                         _sendOperation = new WebSocketOperation.SendOperation(this);
                     }
@@ -987,11 +987,11 @@ namespace System.Net.WebSockets
 
         private void EnsureKeepAliveOperation()
         {
-            if (_keepAliveOperation == null)
+            if (_keepAliveOperation is null)
             {
                 lock (_thisLock)
                 {
-                    if (_keepAliveOperation == null)
+                    if (_keepAliveOperation is null)
                     {
                         WebSocketOperation.SendOperation keepAliveOperation = new WebSocketOperation.SendOperation(this);
                         keepAliveOperation.BufferType = WebSocketProtocolComponent.BufferType.UnsolicitedPong;
@@ -1003,11 +1003,11 @@ namespace System.Net.WebSockets
 
         private void EnsureCloseOutputOperation()
         {
-            if (_closeOutputOperation == null)
+            if (_closeOutputOperation is null)
             {
                 lock (_thisLock)
                 {
-                    if (_closeOutputOperation == null)
+                    if (_closeOutputOperation is null)
                     {
                         _closeOutputOperation = new WebSocketOperation.CloseOutputOperation(this);
                     }
@@ -1017,7 +1017,7 @@ namespace System.Net.WebSockets
 
         private static void ReleaseLock(object lockObject, ref bool lockTaken)
         {
-            Debug.Assert(lockObject != null, "'lockObject' MUST NOT be NULL.");
+            Debug.Assert(lockObject is not null, "'lockObject' MUST NOT be NULL.");
             if (lockTaken)
             {
                 Monitor.Exit(lockObject);
@@ -1107,7 +1107,7 @@ namespace System.Net.WebSockets
 
         private bool CanHandleExceptionDuringClose(Exception error)
         {
-            Debug.Assert(error != null, "'error' MUST NOT be NULL.");
+            Debug.Assert(error is not null, "'error' MUST NOT be NULL.");
 
             if (State != WebSocketState.Closed)
             {
@@ -1129,7 +1129,7 @@ namespace System.Net.WebSockets
             CancellationToken cancellationToken,
             bool aborted)
         {
-            Debug.Assert(exception != null, "'exception' MUST NOT be NULL.");
+            Debug.Assert(exception is not null, "'exception' MUST NOT be NULL.");
 
             if (NetEventSource.Log.IsEnabled() && !string.IsNullOrEmpty(methodName))
             {
@@ -1137,7 +1137,7 @@ namespace System.Net.WebSockets
             }
 
             OperationCanceledException? operationCanceledException = exception as OperationCanceledException;
-            if (operationCanceledException != null)
+            if (operationCanceledException is not null)
             {
                 if (cancellationToken.IsCancellationRequested ||
                     !aborted)
@@ -1148,7 +1148,7 @@ namespace System.Net.WebSockets
             }
 
             WebSocketException? convertedException = exception as WebSocketException;
-            if (convertedException != null)
+            if (convertedException is not null)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 ThrowIfAborted(aborted, convertedException);
@@ -1156,28 +1156,28 @@ namespace System.Net.WebSockets
             }
 
             SocketException? socketException = exception as SocketException;
-            if (socketException != null)
+            if (socketException is not null)
             {
                 convertedException = new WebSocketException(socketException.NativeErrorCode, socketException);
             }
 
             HttpListenerException? httpListenerException = exception as HttpListenerException;
-            if (httpListenerException != null)
+            if (httpListenerException is not null)
             {
                 convertedException = new WebSocketException(httpListenerException.ErrorCode, httpListenerException);
             }
 
             IOException? ioException = exception as IOException;
-            if (ioException != null)
+            if (ioException is not null)
             {
                 socketException = exception.InnerException as SocketException;
-                if (socketException != null)
+                if (socketException is not null)
                 {
                     convertedException = new WebSocketException(socketException.NativeErrorCode, ioException);
                 }
             }
 
-            if (convertedException != null)
+            if (convertedException is not null)
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 ThrowIfAborted(aborted, convertedException);
@@ -1185,7 +1185,7 @@ namespace System.Net.WebSockets
             }
 
             AggregateException? aggregateException = exception as AggregateException;
-            if (aggregateException != null)
+            if (aggregateException is not null)
             {
                 // Collapse possibly nested graph into a flat list.
                 // Empty inner exception list is unlikely but possible via public api.
@@ -1212,37 +1212,37 @@ namespace System.Net.WebSockets
 
             _cleanedUp = true;
 
-            if (SessionHandle != null)
+            if (SessionHandle is not null)
             {
                 SessionHandle.Dispose();
             }
 
-            if (_internalBuffer != null)
+            if (_internalBuffer is not null)
             {
                 _internalBuffer.Dispose(this.State);
             }
 
-            if (_receiveOutstandingOperationHelper != null)
+            if (_receiveOutstandingOperationHelper is not null)
             {
                 _receiveOutstandingOperationHelper.Dispose();
             }
 
-            if (_sendOutstandingOperationHelper != null)
+            if (_sendOutstandingOperationHelper is not null)
             {
                 _sendOutstandingOperationHelper.Dispose();
             }
 
-            if (_closeOutputOutstandingOperationHelper != null)
+            if (_closeOutputOutstandingOperationHelper is not null)
             {
                 _closeOutputOutstandingOperationHelper.Dispose();
             }
 
-            if (_closeOutstandingOperationHelper != null)
+            if (_closeOutstandingOperationHelper is not null)
             {
                 _closeOutstandingOperationHelper.Dispose();
             }
 
-            if (_innerStream != null)
+            if (_innerStream is not null)
             {
                 try
                 {
@@ -1267,7 +1267,7 @@ namespace System.Net.WebSockets
 
         private void OnBackgroundTaskException(Exception exception)
         {
-            if (Interlocked.CompareExchange<Exception>(ref _pendingException!, exception, null!) == null)
+            if (Interlocked.CompareExchange<Exception>(ref _pendingException!, exception, null!) is null)
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
@@ -1280,7 +1280,7 @@ namespace System.Net.WebSockets
         private void ThrowIfPendingException()
         {
             Exception pendingException = Interlocked.Exchange<Exception>(ref _pendingException!, null!);
-            if (pendingException != null)
+            if (pendingException is not null)
             {
                 throw new WebSocketException(WebSocketError.Faulted, pendingException);
             }
@@ -1349,8 +1349,8 @@ namespace System.Net.WebSockets
 
         private static async void OnKeepAlive(object? sender)
         {
-            Debug.Assert(sender != null, "'sender' MUST NOT be NULL.");
-            Debug.Assert((sender as WebSocketBase) != null, "'sender as WebSocketBase' MUST NOT be NULL.");
+            Debug.Assert(sender is not null, "'sender' MUST NOT be NULL.");
+            Debug.Assert((sender as WebSocketBase) is not null, "'sender as WebSocketBase' MUST NOT be NULL.");
 
             WebSocketBase? thisPtr = (sender as WebSocketBase)!;
             bool lockTaken = false;
@@ -1362,7 +1362,7 @@ namespace System.Net.WebSockets
 
                 if (thisPtr._isDisposed ||
                     thisPtr._state != WebSocketState.Open ||
-                    thisPtr._closeOutputTask != null)
+                    thisPtr._closeOutputTask is not null)
                 {
                     return;
                 }
@@ -1422,7 +1422,7 @@ namespace System.Net.WebSockets
 
             internal WebSocketOperation(WebSocketBase webSocket)
             {
-                Debug.Assert(webSocket != null, "'webSocket' MUST NOT be NULL.");
+                Debug.Assert(webSocket is not null, "'webSocket' MUST NOT be NULL.");
                 _webSocket = webSocket;
                 AsyncOperationCompleted = false;
             }
@@ -1496,7 +1496,7 @@ namespace System.Net.WebSockets
                                         // A close frame was received
 
                                         Debug.Assert(ReceiveResult!.Count == 0, "'receiveResult.Count' MUST be 0.");
-                                        Debug.Assert(ReceiveResult.CloseStatus != null, "'receiveResult.CloseStatus' MUST NOT be NULL for message type 'Close'.");
+                                        Debug.Assert(ReceiveResult.CloseStatus is not null, "'receiveResult.CloseStatus' MUST NOT be NULL for message type 'Close'.");
                                         bool thisLockTaken = false;
                                         try
                                         {
@@ -1711,7 +1711,7 @@ namespace System.Net.WebSockets
 
                 protected override void Initialize(Nullable<ArraySegment<byte>> buffer, CancellationToken cancellationToken)
                 {
-                    Debug.Assert(buffer != null, "'buffer' MUST NOT be NULL.");
+                    Debug.Assert(buffer is not null, "'buffer' MUST NOT be NULL.");
                     _pongReceived = false;
                     _receiveCompleted = false;
                     _webSocket.ThrowIfDisposed();
@@ -1771,7 +1771,7 @@ namespace System.Net.WebSockets
                         return false;
                     }
 
-                    Debug.Assert(ReceiveResult != null,
+                    Debug.Assert(ReceiveResult is not null,
                         "'ReceiveResult' MUST NOT be NULL.");
                     _receiveCompleted = true;
 
@@ -1791,7 +1791,7 @@ namespace System.Net.WebSockets
                     uint dataBufferCount,
                     IntPtr actionContext)
                 {
-                    Debug.Assert(buffer != null, "'buffer MUST NOT be NULL.");
+                    Debug.Assert(buffer is not null, "'buffer MUST NOT be NULL.");
 
                     int bytesTransferred = 0;
                     _pongReceived = false;
@@ -1884,7 +1884,7 @@ namespace System.Net.WebSockets
 
                 protected virtual Nullable<Interop.WebSocket.Buffer> CreateBuffer(Nullable<ArraySegment<byte>> buffer)
                 {
-                    if (buffer == null)
+                    if (buffer is null)
                     {
                         return null;
                     }
@@ -1921,7 +1921,7 @@ namespace System.Net.WebSockets
                     _webSocket.ThrowIfPendingException();
 
                     Nullable<Interop.WebSocket.Buffer> payloadBuffer = CreateBuffer(buffer);
-                    if (payloadBuffer != null)
+                    if (payloadBuffer is not null)
                     {
                         WebSocketProtocolComponent.WebSocketSend(_webSocket, BufferType, payloadBuffer.Value);
                     }
@@ -1933,7 +1933,7 @@ namespace System.Net.WebSockets
 
                 protected override bool ShouldContinue(CancellationToken cancellationToken)
                 {
-                    Debug.Assert(ReceiveResult == null, "'ReceiveResult' MUST be NULL.");
+                    Debug.Assert(ReceiveResult is null, "'ReceiveResult' MUST be NULL.");
                     if (AsyncOperationCompleted)
                     {
                         return false;
@@ -1957,7 +1957,7 @@ namespace System.Net.WebSockets
 
                 protected override Nullable<Interop.WebSocket.Buffer> CreateBuffer(Nullable<ArraySegment<byte>> buffer)
                 {
-                    Debug.Assert(buffer == null, "'buffer' MUST BE NULL.");
+                    Debug.Assert(buffer is null, "'buffer' MUST BE NULL.");
                     _webSocket.ThrowIfDisposed();
                     _webSocket.ThrowIfPendingException();
 
@@ -1967,7 +1967,7 @@ namespace System.Net.WebSockets
                     }
 
                     Interop.WebSocket.Buffer payloadBuffer = default;
-                    if (CloseReason != null)
+                    if (CloseReason is not null)
                     {
                         byte[] blob = Encoding.UTF8.GetBytes(CloseReason);
                         Debug.Assert(blob.Length <= WebSocketValidate.MaxControlFramePayloadLength,
@@ -2065,8 +2065,8 @@ namespace System.Net.WebSockets
 
                 public override void StartTimer(WebSocketBase webSocket)
                 {
-                    Debug.Assert(webSocket != null, "'webSocket' MUST NOT be NULL.");
-                    Debug.Assert(webSocket._keepAliveTracker != null,
+                    Debug.Assert(webSocket is not null, "'webSocket' MUST NOT be NULL.");
+                    Debug.Assert(webSocket._keepAliveTracker is not null,
                         "'webSocket._KeepAliveTracker' MUST NOT be NULL at this point.");
                     int keepAliveIntervalMilliseconds = (int)_keepAliveInterval.TotalMilliseconds;
                     Debug.Assert(keepAliveIntervalMilliseconds > 0, "'keepAliveIntervalMilliseconds' MUST be POSITIVE.");
@@ -2177,7 +2177,7 @@ namespace System.Net.WebSockets
                     }
                 }
 
-                if (snapshot != null)
+                if (snapshot is not null)
                 {
                     snapshot.Dispose();
                 }
@@ -2188,7 +2188,7 @@ namespace System.Net.WebSockets
             {
                 var linkedCancellationTokenSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
-                Debug.Assert(_cancellationTokenSource == null, "'_cancellationTokenSource' MUST be NULL.");
+                Debug.Assert(_cancellationTokenSource is null, "'_cancellationTokenSource' MUST be NULL.");
                 _cancellationTokenSource = linkedCancellationTokenSource;
 
                 return linkedCancellationTokenSource.Token;
@@ -2208,7 +2208,7 @@ namespace System.Net.WebSockets
                     cancellationTokenSourceSnapshot = _cancellationTokenSource;
                 }
 
-                if (cancellationTokenSourceSnapshot != null)
+                if (cancellationTokenSourceSnapshot is not null)
                 {
                     try
                     {
@@ -2242,7 +2242,7 @@ namespace System.Net.WebSockets
                     _cancellationTokenSource = null;
                 }
 
-                if (snapshot != null)
+                if (snapshot is not null)
                 {
                     snapshot.Dispose();
                 }

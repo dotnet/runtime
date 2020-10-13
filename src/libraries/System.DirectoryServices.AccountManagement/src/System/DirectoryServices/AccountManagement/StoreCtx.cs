@@ -34,7 +34,7 @@ namespace System.DirectoryServices.AccountManagement
 
             set
             {
-                Debug.Assert(value != null);
+                Debug.Assert(value is not null);
                 _owningContext = value;
             }
         }
@@ -171,7 +171,7 @@ namespace System.DirectoryServices.AccountManagement
         // Pushes the query represented by the QBE filter into the PrincipalSearcher's underlying native
         // searcher object (creating a fresh native searcher and assigning it to the PrincipalSearcher if one
         // doesn't already exist) and returns the native searcher.
-        // If the PrincipalSearcher does not have a query filter set (PrincipalSearcher.QueryFilter == null),
+        // If the PrincipalSearcher does not have a query filter set (PrincipalSearcher.QueryFilter is null),
         // produces a query that will match all principals in the store.
         //
         // For stores which don't have a native searcher (SAM), the StoreCtx
@@ -185,7 +185,7 @@ namespace System.DirectoryServices.AccountManagement
         // Given a PrincipalSearcher containg a query filter, transforms it into the store schema
         // and performs the query to get a collection of matching native objects (up to a maximum of sizeLimit,
         // or uses the sizelimit already set on the DirectorySearcher if sizeLimit == -1).
-        // If the PrincipalSearcher does not have a query filter (PrincipalSearcher.QueryFilter == null),
+        // If the PrincipalSearcher does not have a query filter (PrincipalSearcher.QueryFilter is null),
         // matches all principals in the store.
         //
         // The collection may not be complete, i.e., paging - the returned ResultSet will automatically
@@ -402,7 +402,7 @@ namespace System.DirectoryServices.AccountManagement
 
                         object filter = FilterFactory.CreateFilter(propertyName);
 
-                        if (value == null)
+                        if (value is null)
                         {
                             ((FilterBase)filter).Value = null;
                         }

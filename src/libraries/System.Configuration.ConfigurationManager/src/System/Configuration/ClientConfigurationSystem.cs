@@ -198,7 +198,7 @@ namespace System.Configuration
             if (!_isUserConfigInited) EnsureInit(sectionName);
 
             // If an error occurred during initialzation, throw it.
-            if (_initError != null) throw _initError;
+            if (_initError is not null) throw _initError;
         }
 
         // If config has been removed because initialization was not complete,

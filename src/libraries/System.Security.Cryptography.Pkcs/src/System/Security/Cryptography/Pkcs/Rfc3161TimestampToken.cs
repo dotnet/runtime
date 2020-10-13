@@ -42,10 +42,10 @@ namespace System.Security.Cryptography.Pkcs
 
         private X509Certificate2? GetSignerCertificate(X509Certificate2Collection? extraCandidates)
         {
-            Debug.Assert(_signerInfo != null, "_signerInfo != null");
+            Debug.Assert(_signerInfo is not null, "_signerInfo is not null");
             X509Certificate2? signerCert = _signerInfo.Certificate;
 
-            if (signerCert != null)
+            if (signerCert is not null)
             {
                 if (CheckCertificate(signerCert, _signerInfo, in _essCertId, in _essCertIdV2, TokenInfo))
                 {
@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Pkcs
                 return null;
             }
 
-            if (extraCandidates == null || extraCandidates.Count == 0)
+            if (extraCandidates is null || extraCandidates.Count == 0)
             {
                 return null;
             }
@@ -81,7 +81,7 @@ namespace System.Security.Cryptography.Pkcs
 
             X509Certificate2? cert = GetSignerCertificate(extraCandidates);
 
-            if (cert == null)
+            if (cert is null)
             {
                 return false;
             }
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography.Pkcs
 
             X509Certificate2? cert = GetSignerCertificate(extraCandidates);
 
-            if (cert == null)
+            if (cert is null)
             {
                 return false;
             }
@@ -125,7 +125,7 @@ namespace System.Security.Cryptography.Pkcs
             [NotNullWhen(true)] out X509Certificate2? signerCertificate,
             X509Certificate2Collection? extraCandidates = null)
         {
-            if (hashAlgorithmId == null)
+            if (hashAlgorithmId is null)
             {
                 throw new ArgumentNullException(nameof(hashAlgorithmId));
             }
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.Pkcs
 
             X509Certificate2? cert = GetSignerCertificate(extraCandidates);
 
-            if (cert == null)
+            if (cert is null)
             {
                 return false;
             }
@@ -157,7 +157,7 @@ namespace System.Security.Cryptography.Pkcs
             [NotNullWhen(true)] out X509Certificate2? signerCertificate,
             X509Certificate2Collection? extraCandidates = null)
         {
-            if (signerInfo == null)
+            if (signerInfo is null)
             {
                 throw new ArgumentNullException(nameof(signerInfo));
             }
@@ -208,9 +208,9 @@ namespace System.Security.Cryptography.Pkcs
             in EssCertIdV2? certId2,
             Rfc3161TimestampTokenInfo tokenInfo)
         {
-            Debug.Assert(tsaCertificate != null);
-            Debug.Assert(signer != null);
-            Debug.Assert(tokenInfo != null);
+            Debug.Assert(tsaCertificate is not null);
+            Debug.Assert(signer is not null);
+            Debug.Assert(tokenInfo is not null);
             // certId and certId2 are allowed to be null, they get checked in CertMatchesIds.
 
             if (!CertMatchesIds(tsaCertificate, certId, certId2))
@@ -361,14 +361,14 @@ namespace System.Security.Cryptography.Pkcs
 
                 X509Certificate2? signerCert = signer.Certificate;
 
-                if (signerCert == null &&
+                if (signerCert is null &&
                     signer.SignerIdentifier.Type == SubjectIdentifierType.IssuerAndSerialNumber)
                 {
                     // If the cert wasn't provided, but the identifier was IssuerAndSerialNumber,
                     // and the ESSCertId(V2) has specified an issuerSerial value, ensure it's a match.
                     X509IssuerSerial issuerSerial = (X509IssuerSerial)signer.SignerIdentifier.Value!;
 
-                    if (certId.HasValue && certId.Value.IssuerSerial != null)
+                    if (certId.HasValue && certId.Value.IssuerSerial is not null)
                     {
                         if (!IssuerAndSerialMatch(
                             certId.Value.IssuerSerial.Value,
@@ -379,7 +379,7 @@ namespace System.Security.Cryptography.Pkcs
                         }
                     }
 
-                    if (certId2.HasValue && certId2.Value.IssuerSerial != null)
+                    if (certId2.HasValue && certId2.Value.IssuerSerial is not null)
                     {
                         if (!IssuerAndSerialMatch(
                             certId2.Value.IssuerSerial.Value,
@@ -393,7 +393,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 if (Rfc3161TimestampTokenInfo.TryDecode(cms.ContentInfo.Content, out Rfc3161TimestampTokenInfo? tokenInfo, out _))
                 {
-                    if (signerCert != null &&
+                    if (signerCert is not null &&
                         !CheckCertificate(signerCert, signer, in certId, in certId2, tokenInfo))
                     {
                         return false;
@@ -429,14 +429,14 @@ namespace System.Security.Cryptography.Pkcs
         {
             GeneralNameAsn[] issuerNames = issuerSerial.Issuer;
 
-            if (issuerNames == null || issuerNames.Length != 1)
+            if (issuerNames is null || issuerNames.Length != 1)
             {
                 return false;
             }
 
             GeneralNameAsn requiredName = issuerNames[0];
 
-            if (requiredName.DirectoryName == null)
+            if (requiredName.DirectoryName is null)
             {
                 return false;
             }
@@ -456,14 +456,14 @@ namespace System.Security.Cryptography.Pkcs
         {
             GeneralNameAsn[] issuerNames = issuerSerial.Issuer;
 
-            if (issuerNames == null || issuerNames.Length != 1)
+            if (issuerNames is null || issuerNames.Length != 1)
             {
                 return false;
             }
 
             GeneralNameAsn requiredName = issuerNames[0];
 
-            if (requiredName.DirectoryName == null)
+            if (requiredName.DirectoryName is null)
             {
                 return false;
             }
@@ -478,7 +478,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static bool CertMatchesIds(X509Certificate2 signerCert, in EssCertId? certId, in EssCertIdV2? certId2)
         {
-            Debug.Assert(signerCert != null);
+            Debug.Assert(signerCert is not null);
             Debug.Assert(certId.HasValue || certId2.HasValue);
             byte[]? serialNumber = null;
 
@@ -542,7 +542,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 if (certId2.Value.IssuerSerial.HasValue)
                 {
-                    if (serialNumber == null)
+                    if (serialNumber is null)
                     {
                         serialNumber = signerCert.GetSerialNumber();
                         Array.Reverse(serialNumber);
@@ -575,7 +575,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 string? setOid = attrSet.Oid?.Value;
 
-                if (setOid != null &&
+                if (setOid is not null &&
                     setOid != Oids.SigningCertificate &&
                     setOid != Oids.SigningCertificateV2)
                 {
@@ -588,7 +588,7 @@ namespace System.Security.Cryptography.Pkcs
 
                     if (attrOid == Oids.SigningCertificate)
                     {
-                        if (certId != null)
+                        if (certId is not null)
                         {
                             return false;
                         }
@@ -615,7 +615,7 @@ namespace System.Security.Cryptography.Pkcs
 
                     if (attrOid == Oids.SigningCertificateV2)
                     {
-                        if (certId2 != null)
+                        if (certId2 is not null)
                         {
                             return false;
                         }
@@ -642,7 +642,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
             }
 
-            return certId2 != null || certId != null;
+            return certId2 is not null || certId is not null;
         }
     }
 }

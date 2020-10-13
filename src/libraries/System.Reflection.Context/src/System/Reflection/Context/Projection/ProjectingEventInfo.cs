@@ -82,7 +82,7 @@ namespace System.Reflection.Context.Projection
         {
             var other = o as ProjectingEventInfo;
 
-            return other != null &&
+            return other is not null &&
                    Projector == other.Projector &&
                    UnderlyingEvent.Equals(other.UnderlyingEvent);
         }

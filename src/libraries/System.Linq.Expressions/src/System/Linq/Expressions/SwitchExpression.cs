@@ -71,7 +71,7 @@ namespace System.Linq.Expressions
             {
                 if (SwitchValue.Type.IsNullableType())
                 {
-                    return (Comparison == null) ||
+                    return (Comparison is null) ||
                         !TypeUtils.AreEquivalent(SwitchValue.Type, Comparison.GetParametersCached()[0].ParameterType.GetNonRefType());
                 }
                 return false;
@@ -89,7 +89,7 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public SwitchExpression Update(Expression switchValue, IEnumerable<SwitchCase>? cases, Expression? defaultBody)
         {
-            if (switchValue == SwitchValue && defaultBody == DefaultBody && cases != null)
+            if (switchValue == SwitchValue && defaultBody == DefaultBody && cases is not null)
             {
                 if (ExpressionUtils.SameElements(ref cases, Cases))
                 {
@@ -184,17 +184,17 @@ namespace System.Linq.Expressions
 
             // Type of the result. Either provided, or it is type of the branches.
             Type resultType;
-            if (type != null)
+            if (type is not null)
                 resultType = type;
             else if (caseList.Count != 0)
                 resultType = caseList[0].Body.Type;
-            else if (defaultBody != null)
+            else if (defaultBody is not null)
                 resultType = defaultBody.Type;
             else
                 resultType = typeof(void);
-            bool customType = type != null;
+            bool customType = type is not null;
 
-            if (comparison != null)
+            if (comparison is not null)
             {
                 ValidateMethodInfo(comparison, nameof(comparison));
                 ParameterInfo[] pms = comparison.GetParametersCached();
@@ -274,7 +274,7 @@ namespace System.Linq.Expressions
                 comparison = equal.Method;
             }
 
-            if (defaultBody == null)
+            if (defaultBody is null)
             {
                 if (resultType != typeof(void)) throw Error.DefaultBodyMustBeSupplied(nameof(defaultBody));
             }

@@ -324,7 +324,7 @@ namespace System.DirectoryServices.AccountManagement
         // Returns null if input string is not a valid hex string.
         internal static string HexStringToLdapHexString(string s)
         {
-            Debug.Assert(s != null);
+            Debug.Assert(s is not null);
 
             if (s.Length % 2 != 0)
             {

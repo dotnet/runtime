@@ -132,7 +132,7 @@ namespace System.Net.Http
                         {
                             idx++;
                         }
-                        if (tmp == null)
+                        if (tmp is null)
                         {
                             continue;
                         }
@@ -167,7 +167,7 @@ namespace System.Net.Http
             {
                 _disposed = true;
 
-                if (_sessionHandle != null && !_sessionHandle.IsInvalid)
+                if (_sessionHandle is not null && !_sessionHandle.IsInvalid)
                 {
                     SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
                 }
@@ -279,7 +279,7 @@ namespace System.Net.Http
                 }
 
                 // Check if we have other rules for bypass.
-                if (_bypass != null)
+                if (_bypass is not null)
                 {
                     foreach (string entry in _bypass)
                     {

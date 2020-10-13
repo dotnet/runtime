@@ -196,7 +196,7 @@ namespace System.Formats.Asn1
                     SR.Format(SR.ContentException_PrimitiveEncodingRequired, tagNumber));
             }
 
-            if (encodedLength == null)
+            if (encodedLength is null)
             {
                 throw new AsnContentException();
             }
@@ -376,12 +376,12 @@ namespace System.Formats.Asn1
             if (tag.IsConstructed)
             {
                 // T-REC-X.690-201508 sec 9.1 (CER: Length forms) says constructed is always indefinite.
-                if (ruleSet == AsnEncodingRules.CER && length != null)
+                if (ruleSet == AsnEncodingRules.CER && length is not null)
                 {
                     throw GetValidityException(LengthValidity.CerRequiresIndefinite);
                 }
             }
-            else if (length == null)
+            else if (length is null)
             {
                 // T-REC-X.690-201508 sec 8.1.3.2 says primitive encodings must use a definite form.
                 throw GetValidityException(LengthValidity.PrimitiveEncodingRequiresDefinite);
@@ -412,20 +412,20 @@ namespace System.Formats.Asn1
             if (localTag.IsConstructed)
             {
                 // T-REC-X.690-201508 sec 9.1 (CER: Length forms) says constructed is always indefinite.
-                if (ruleSet == AsnEncodingRules.CER && encodedLength != null)
+                if (ruleSet == AsnEncodingRules.CER && encodedLength is not null)
                 {
                     actualLength = bytesConsumed = 0;
                     return LengthValidity.CerRequiresIndefinite;
                 }
             }
-            else if (encodedLength == null)
+            else if (encodedLength is null)
             {
                 // T-REC-X.690-201508 sec 8.1.3.2 says primitive encodings must use a definite form.
                 actualLength = bytesConsumed = 0;
                 return LengthValidity.PrimitiveEncodingRequiresDefinite;
             }
 
-            if (encodedLength != null)
+            if (encodedLength is not null)
             {
                 int len = encodedLength.Value;
                 int totalLength = len;
@@ -503,7 +503,7 @@ namespace System.Formats.Asn1
 
                 // We found another indefinite length, that means we need to find another
                 // EndOfContents marker to balance it out.
-                if (length == null)
+                if (length is null)
                 {
                     depth++;
                     cur = cur.Slice(bytesRead);
@@ -565,7 +565,7 @@ namespace System.Formats.Asn1
         {
             Debug.Assert(offset >= 0);
 
-            if (length == null)
+            if (length is null)
             {
                 return source.Slice(offset);
             }

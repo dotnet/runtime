@@ -99,7 +99,7 @@ namespace System.Threading.Tasks
         public ConcurrentExclusiveSchedulerPair(TaskScheduler taskScheduler, int maxConcurrencyLevel, int maxItemsPerTask)
         {
             // Validate arguments
-            if (taskScheduler == null) throw new ArgumentNullException(nameof(taskScheduler));
+            if (taskScheduler is null) throw new ArgumentNullException(nameof(taskScheduler));
             if (maxConcurrencyLevel == 0 || maxConcurrencyLevel < -1) throw new ArgumentOutOfRangeException(nameof(maxConcurrencyLevel));
             if (maxItemsPerTask == 0 || maxItemsPerTask < -1) throw new ArgumentOutOfRangeException(nameof(maxItemsPerTask));
 
@@ -148,7 +148,7 @@ namespace System.Threading.Tasks
             LazyInitializer.EnsureInitialized(ref m_completionState, () => new CompletionState());
 
         /// <summary>Gets whether completion has been requested.</summary>
-        private bool CompletionRequested => m_completionState != null && Volatile.Read(ref m_completionState.m_completionRequested);
+        private bool CompletionRequested => m_completionState is not null && Volatile.Read(ref m_completionState.m_completionRequested);
 
         /// <summary>Sets that completion has been requested.</summary>
         private void RequestCompletion()
@@ -180,7 +180,7 @@ namespace System.Threading.Tasks
                 // Now, only allow shutdown if an exception occurred or if there are no more tasks to process.
                 CompletionState cs = EnsureCompletionStateInitialized();
                 return
-                    (cs.m_exceptions != null && cs.m_exceptions.Count > 0) ||
+                    (cs.m_exceptions is not null && cs.m_exceptions.Count > 0) ||
                     (m_concurrentTaskScheduler.m_tasks.IsEmpty && m_exclusiveTaskScheduler.m_tasks.IsEmpty);
             }
         }
@@ -204,7 +204,7 @@ namespace System.Threading.Tasks
                     Debug.Assert(!localThis.m_completionState!.IsCompleted, "Completion should only happen once.");
 
                     List<Exception>? exceptions = localThis.m_completionState.m_exceptions;
-                    bool success = (exceptions != null && exceptions.Count > 0) ?
+                    bool success = (exceptions is not null && exceptions.Count > 0) ?
                         localThis.m_completionState.TrySetException(exceptions) :
                         localThis.m_completionState.TrySetResult();
                     Debug.Assert(success, "Expected to complete completion task.");
@@ -218,7 +218,7 @@ namespace System.Threading.Tasks
         /// <param name="faultedTask">The faulted worker task that's initiating the shutdown.</param>
         private void FaultWithTask(Task faultedTask)
         {
-            Debug.Assert(faultedTask != null && faultedTask.IsFaulted && faultedTask.Exception!.InnerExceptions.Count > 0,
+            Debug.Assert(faultedTask is not null && faultedTask.IsFaulted && faultedTask.Exception!.InnerExceptions.Count > 0,
                 "Needs a task in the faulted state and thus with exceptions.");
             ContractAssertMonitorStatus(ValueLock, held: true);
 
@@ -513,7 +513,7 @@ namespace System.Threading.Tasks
             /// <param name="processingMode">The processing mode of this scheduler.</param>
             internal ConcurrentExclusiveTaskScheduler(ConcurrentExclusiveSchedulerPair pair, int maxConcurrencyLevel, ProcessingMode processingMode)
             {
-                Debug.Assert(pair != null, "Scheduler must be associated with a valid pair.");
+                Debug.Assert(pair is not null, "Scheduler must be associated with a valid pair.");
                 Debug.Assert(processingMode == ProcessingMode.ProcessingConcurrentTasks || processingMode == ProcessingMode.ProcessingExclusiveTask,
                     "Scheduler must be for concurrent or exclusive processing.");
                 Debug.Assert(
@@ -536,7 +536,7 @@ namespace System.Threading.Tasks
             /// <param name="task">The task to be queued.</param>
             protected internal override void QueueTask(Task task)
             {
-                Debug.Assert(task != null, "Infrastructure should have provided a non-null task.");
+                Debug.Assert(task is not null, "Infrastructure should have provided a non-null task.");
                 lock (m_pair.ValueLock)
                 {
                     // If the scheduler has already had completion requested, no new work is allowed to be scheduled
@@ -552,7 +552,7 @@ namespace System.Threading.Tasks
             /// <param name="task">The task to be executed.</param>
             internal void ExecuteTask(Task task)
             {
-                Debug.Assert(task != null, "Infrastructure should have provided a non-null task.");
+                Debug.Assert(task is not null, "Infrastructure should have provided a non-null task.");
                 base.TryExecuteTask(task);
             }
 
@@ -562,7 +562,7 @@ namespace System.Threading.Tasks
             /// <returns>true if the task could be executed; otherwise, false.</returns>
             protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued)
             {
-                Debug.Assert(task != null, "Infrastructure should have provided a non-null task.");
+                Debug.Assert(task is not null, "Infrastructure should have provided a non-null task.");
 
                 // If the scheduler has had completion requested, no new work is allowed to be scheduled.
                 // A non-locked read on m_completionRequested (in CompletionRequested) is acceptable here because:
@@ -670,7 +670,7 @@ namespace System.Threading.Tasks
                 /// <param name="scheduler">The scheduler being debugged.</param>
                 public DebugView(ConcurrentExclusiveTaskScheduler scheduler)
                 {
-                    Debug.Assert(scheduler != null, "Need a scheduler with which to construct the debug view.");
+                    Debug.Assert(scheduler is not null, "Need a scheduler with which to construct the debug view.");
                     m_taskScheduler = scheduler;
                 }
 
@@ -693,7 +693,7 @@ namespace System.Threading.Tasks
             /// <param name="pair">The pair being debugged.</param>
             public DebugView(ConcurrentExclusiveSchedulerPair pair)
             {
-                Debug.Assert(pair != null, "Need a pair with which to construct the debug view.");
+                Debug.Assert(pair is not null, "Need a pair with which to construct the debug view.");
                 m_pair = pair;
             }
 
@@ -716,7 +716,7 @@ namespace System.Threading.Tasks
             get
             {
                 // If our completion task is done, so are we.
-                if (m_completionState != null && m_completionState.IsCompleted) return ProcessingMode.Completed;
+                if (m_completionState is not null && m_completionState.IsCompleted) return ProcessingMode.Completed;
 
                 // Otherwise, summarize our current state.
                 ProcessingMode mode = ProcessingMode.NotCurrentlyProcessing;
@@ -733,7 +733,7 @@ namespace System.Threading.Tasks
         [Conditional("DEBUG")]
         private static void ContractAssertMonitorStatus(object syncObj, bool held)
         {
-            Debug.Assert(syncObj != null, "The monitor object to check must be provided.");
+            Debug.Assert(syncObj is not null, "The monitor object to check must be provided.");
             Debug.Assert(Monitor.IsEntered(syncObj) == held, "The locking scheme was not correctly followed.");
         }
 

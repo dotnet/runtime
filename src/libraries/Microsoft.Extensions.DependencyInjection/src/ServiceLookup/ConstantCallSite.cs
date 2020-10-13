@@ -11,7 +11,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public ConstantCallSite(Type serviceType, object defaultValue): base(ResultCache.None)
         {
-            if (defaultValue != null && !serviceType.IsInstanceOfType(defaultValue))
+            if (defaultValue is not null && !serviceType.IsInstanceOfType(defaultValue))
             {
                 throw new ArgumentException(SR.Format(SR.ConstantCantBeConvertedToServiceType, defaultValue.GetType(), serviceType));
             }

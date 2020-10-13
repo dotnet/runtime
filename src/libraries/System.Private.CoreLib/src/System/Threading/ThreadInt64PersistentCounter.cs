@@ -21,7 +21,7 @@ namespace System.Threading
         public void Increment()
         {
             ThreadLocalNode? node = _threadLocalNode.Value;
-            if (node != null)
+            if (node is not null)
             {
                 node.Increment();
                 return;
@@ -33,7 +33,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.NoInlining)]
         private void TryCreateNode()
         {
-            Debug.Assert(_threadLocalNode.Value == null);
+            Debug.Assert(_threadLocalNode.Value is null);
 
             try
             {
@@ -57,7 +57,7 @@ namespace System.Threading
                         count = _overflowCount;
                         foreach (ThreadLocalNode node in _threadLocalNode.ValuesAsEnumerable)
                         {
-                            if (node != null)
+                            if (node is not null)
                             {
                                 count += node.Count;
                             }
@@ -84,7 +84,7 @@ namespace System.Threading
 
             public ThreadLocalNode(ThreadInt64PersistentCounter counter)
             {
-                Debug.Assert(counter != null);
+                Debug.Assert(counter is not null);
 
                 _count = 1;
                 _counter = counter;

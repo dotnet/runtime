@@ -61,7 +61,7 @@ namespace System.Configuration
             {
                 Assembly configurationAssembly = typeof(ConfigurationException).Assembly;
                 Type type = configurationAssembly.GetType(typeString, false);
-                if (type != null)
+                if (type is not null)
                     return type;
             }
             catch { }
@@ -71,7 +71,7 @@ namespace System.Configuration
                 try
                 {
                     Type type = Type.GetType($"{typeString}, {assembly}");
-                    if (type != null)
+                    if (type is not null)
                         return type;
                 }
                 catch { }
@@ -94,13 +94,13 @@ namespace System.Configuration
             catch
             {
                 type = GetImplicitType(typeString);
-                if (type == null)
+                if (type is null)
                 {
                     throw;
                 }
             }
 
-            if (type == null)
+            if (type is null)
             {
                 type = GetImplicitType(typeString);
             }
@@ -121,13 +121,13 @@ namespace System.Configuration
             catch
             {
                 type = GetImplicitType(typeString);
-                if (type == null)
+                if (type is null)
                 {
                     throw;
                 }
             }
 
-            if (type == null)
+            if (type is null)
             {
                 type = GetImplicitType(typeString);
             }
@@ -150,14 +150,14 @@ namespace System.Configuration
         internal static ConstructorInfo GetConstructor(Type type, Type baseType, bool throwOnError)
         {
             type = VerifyAssignableType(baseType, type, throwOnError);
-            if (type == null)
+            if (type is null)
                 return null;
 
             const BindingFlags BindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
 
             ConstructorInfo ctor = type.GetConstructor(BindingFlags, null, CallingConventions.HasThis, Type.EmptyTypes,
                 null);
-            if ((ctor == null) && throwOnError)
+            if ((ctor is null) && throwOnError)
                 throw new TypeLoadException(SR.Format(SR.TypeNotPublic, type.AssemblyQualifiedName));
 
             return ctor;

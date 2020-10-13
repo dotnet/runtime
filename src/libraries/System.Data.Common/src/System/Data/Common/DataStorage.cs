@@ -499,7 +499,7 @@ namespace System.Data.Common
 
         private static Tuple<bool, bool, bool, bool> InspectTypeForInterfaces(Type dataType)
         {
-            Debug.Assert(dataType != null, "Type should not be null");
+            Debug.Assert(dataType is not null, "Type should not be null");
 
             return new Tuple<bool, bool, bool, bool>(
                 typeof(INullable).IsAssignableFrom(dataType),

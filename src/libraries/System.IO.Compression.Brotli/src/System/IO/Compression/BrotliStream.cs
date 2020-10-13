@@ -19,7 +19,7 @@ namespace System.IO.Compression
         public BrotliStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false) { }
         public BrotliStream(Stream stream, CompressionMode mode, bool leaveOpen)
         {
-            if (stream == null)
+            if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
 
             switch (mode)
@@ -44,7 +44,7 @@ namespace System.IO.Compression
 
         private void EnsureNotDisposed()
         {
-            if (_stream == null)
+            if (_stream is null)
                 throw new ObjectDisposedException(GetType().Name, SR.ObjectDisposed_StreamClosed);
         }
 
@@ -52,7 +52,7 @@ namespace System.IO.Compression
         {
             try
             {
-                if (disposing && _stream != null)
+                if (disposing && _stream is not null)
                 {
                     if (_mode == CompressionMode.Compress)
                     {
@@ -76,7 +76,7 @@ namespace System.IO.Compression
         {
             try
             {
-                if (_stream != null)
+                if (_stream is not null)
                 {
                     if (_mode == CompressionMode.Compress)
                     {
@@ -102,7 +102,7 @@ namespace System.IO.Compression
             _decoder.Dispose();
 
             byte[] buffer = _buffer;
-            if (buffer != null)
+            if (buffer is not null)
             {
                 _buffer = null!;
                 if (!AsyncOperationIsActive)
@@ -114,7 +114,7 @@ namespace System.IO.Compression
 
         private static void ValidateParameters(byte[] array, int offset, int count)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
 
             if (offset < 0)
@@ -128,8 +128,8 @@ namespace System.IO.Compression
         }
 
         public Stream BaseStream => _stream;
-        public override bool CanRead => _mode == CompressionMode.Decompress && _stream != null && _stream.CanRead;
-        public override bool CanWrite => _mode == CompressionMode.Compress && _stream != null && _stream.CanWrite;
+        public override bool CanRead => _mode == CompressionMode.Decompress && _stream is not null && _stream.CanRead;
+        public override bool CanWrite => _mode == CompressionMode.Compress && _stream is not null && _stream.CanWrite;
         public override bool CanSeek => false;
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
         public override long Length => throw new NotSupportedException();

@@ -36,7 +36,7 @@ namespace System.Configuration
 
             if (!alwaysIntercept && StringUtil.EqualsIgnoreCase(oldStreamname, newStreamname)) return;
 
-            if (_streams == null) _streams = new HybridDictionary(true);
+            if (_streams is null) _streams = new HybridDictionary(true);
 
             _streams[oldStreamname] = new StreamUpdate(newStreamname);
         }
@@ -46,7 +46,7 @@ namespace System.Configuration
         internal string GetNewStreamname(string oldStreamname)
         {
             StreamUpdate streamUpdate = GetStreamUpdate(oldStreamname, false);
-            return streamUpdate != null ? streamUpdate.NewStreamname : oldStreamname;
+            return streamUpdate is not null ? streamUpdate.NewStreamname : oldStreamname;
         }
 
         // Get the StreamUpdate for a stream.
@@ -56,11 +56,11 @@ namespace System.Configuration
         // if the new stream has been successfully written to.
         private StreamUpdate GetStreamUpdate(string oldStreamname, bool alwaysIntercept)
         {
-            if (_streams == null)
+            if (_streams is null)
                 return null;
 
             StreamUpdate streamUpdate = (StreamUpdate)_streams[oldStreamname];
-            if ((streamUpdate != null) && !alwaysIntercept && !streamUpdate.WriteCompleted) streamUpdate = null;
+            if ((streamUpdate is not null) && !alwaysIntercept && !streamUpdate.WriteCompleted) streamUpdate = null;
 
             return streamUpdate;
         }
@@ -68,7 +68,7 @@ namespace System.Configuration
         public override object GetStreamVersion(string streamName)
         {
             StreamUpdate streamUpdate = GetStreamUpdate(streamName, false);
-            return streamUpdate != null
+            return streamUpdate is not null
                 ? InternalConfigHost.StaticGetStreamVersion(streamUpdate.NewStreamname)
                 : Host.GetStreamVersion(streamName);
         }
@@ -76,7 +76,7 @@ namespace System.Configuration
         public override Stream OpenStreamForRead(string streamName)
         {
             StreamUpdate streamUpdate = GetStreamUpdate(streamName, false);
-            return streamUpdate != null
+            return streamUpdate is not null
                 ? InternalConfigHost.StaticOpenStreamForRead(streamUpdate.NewStreamname)
                 : Host.OpenStreamForRead(streamName);
         }
@@ -85,7 +85,7 @@ namespace System.Configuration
         {
             // Always attempt to write to the new stream name if it exists.
             StreamUpdate streamUpdate = GetStreamUpdate(streamName, true);
-            if (streamUpdate != null)
+            if (streamUpdate is not null)
             {
                 return InternalConfigHost.StaticOpenStreamForWrite(
                     streamUpdate.NewStreamname, templateStreamName, ref writeContext);
@@ -96,7 +96,7 @@ namespace System.Configuration
         public override void WriteCompleted(string streamName, bool success, object writeContext)
         {
             StreamUpdate streamUpdate = GetStreamUpdate(streamName, true);
-            if (streamUpdate != null)
+            if (streamUpdate is not null)
             {
                 InternalConfigHost.StaticWriteCompleted(streamUpdate.NewStreamname, success, writeContext);
 
@@ -118,14 +118,14 @@ namespace System.Configuration
         public override void DeleteStream(string streamName)
         {
             StreamUpdate streamUpdate = GetStreamUpdate(streamName, false);
-            if (streamUpdate != null) InternalConfigHost.StaticDeleteStream(streamUpdate.NewStreamname);
+            if (streamUpdate is not null) InternalConfigHost.StaticDeleteStream(streamUpdate.NewStreamname);
             else Host.DeleteStream(streamName);
         }
 
         public override bool IsFile(string streamName)
         {
             StreamUpdate streamUpdate = GetStreamUpdate(streamName, false);
-            return streamUpdate != null
+            return streamUpdate is not null
                 ? InternalConfigHost.StaticIsFile(streamUpdate.NewStreamname)
                 : Host.IsFile(streamName);
         }

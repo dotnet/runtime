@@ -165,7 +165,7 @@ namespace System.Xml
         public override void WriteEndElement()
         {
             VerifyState(Method.WriteEndElement);
-            if (_write == null)
+            if (_write is null)
             {
                 throw new InvalidOperationException();
             }
@@ -182,7 +182,7 @@ namespace System.Xml
         {
             VerifyState(Method.WriteFullEndElement);
             XmlElement? elem = _write as XmlElement;
-            if (elem == null)
+            if (elem is null)
             {
                 throw new InvalidOperationException();
             }
@@ -213,7 +213,7 @@ namespace System.Xml
         {
             VerifyState(Method.WriteEndAttribute);
             XmlAttribute? attr = _write as XmlAttribute;
-            if (attr == null)
+            if (attr is null)
             {
                 throw new InvalidOperationException();
             }
@@ -263,7 +263,7 @@ namespace System.Xml
         {
             VerifyState(Method.WriteEndNamespaceDeclaration);
             XmlAttribute? attr = _write as XmlAttribute;
-            if (attr == null)
+            if (attr is null)
             {
                 throw new InvalidOperationException();
             }
@@ -306,7 +306,7 @@ namespace System.Xml
             VerifyState(Method.WriteEntityRef);
             XmlNode node = _document.CreateEntityReference(name);
             AddChild(node, _write);
-            // REVIEW: the namespace scope is incorrect(?) unless write == null
+            // REVIEW: the namespace scope is incorrect(?) unless write is null
         }
 
         public override void WriteCharEntity(char ch)
@@ -371,7 +371,7 @@ namespace System.Xml
                 {
                     case DocumentXmlWriterType.InsertSiblingAfter:
                         XmlNode? parent = _start.ParentNode;
-                        if (parent == null)
+                        if (parent is null)
                         {
                             throw new InvalidOperationException(SR.Xpn_MissingParent);
                         }
@@ -384,7 +384,7 @@ namespace System.Xml
                         break;
                     case DocumentXmlWriterType.InsertSiblingBefore:
                         parent = _start.ParentNode;
-                        if (parent == null)
+                        if (parent is null)
                         {
                             throw new InvalidOperationException(SR.Xpn_MissingParent);
                         }
@@ -431,12 +431,12 @@ namespace System.Xml
         private void CloseWithAppendAttribute()
         {
             XmlElement? elem = _start as XmlElement;
-            Debug.Assert(elem != null);
+            Debug.Assert(elem is not null);
             XmlAttributeCollection attrs = elem.Attributes;
             for (int i = 0; i < _fragment.Count; i++)
             {
                 XmlAttribute? attr = _fragment[i] as XmlAttribute;
-                Debug.Assert(attr != null);
+                Debug.Assert(attr is not null);
                 int offset = attrs.FindNodeOffsetNS(attr);
                 if (offset != -1
                     && ((XmlAttribute)attrs.nodes[offset]).Specified)
@@ -447,7 +447,7 @@ namespace System.Xml
             for (int i = 0; i < _fragment.Count; i++)
             {
                 XmlAttribute? attr = _fragment[i] as XmlAttribute;
-                Debug.Assert(attr != null);
+                Debug.Assert(attr is not null);
                 attrs.Append(attr);
             }
         }
@@ -455,7 +455,7 @@ namespace System.Xml
         private void CloseWithReplaceToFollowingSibling()
         {
             XmlNode? parent = _start.ParentNode;
-            if (parent == null)
+            if (parent is null)
             {
                 throw new InvalidOperationException(SR.Xpn_MissingParent);
             }
@@ -506,14 +506,14 @@ namespace System.Xml
 
         private void AddAttribute(XmlAttribute attr, XmlNode? parent)
         {
-            if (parent == null)
+            if (parent is null)
             {
                 _fragment.Add(attr);
             }
             else
             {
                 XmlElement? elem = parent as XmlElement;
-                if (elem == null)
+                if (elem is null)
                 {
                     throw new InvalidOperationException();
                 }
@@ -524,7 +524,7 @@ namespace System.Xml
 
         private void AddChild(XmlNode node, XmlNode? parent)
         {
-            if (parent == null)
+            if (parent is null)
             {
                 _fragment.Add(node);
             }
@@ -543,7 +543,7 @@ namespace System.Xml
                 case DocumentXmlWriterType.InsertSiblingAfter:
                 case DocumentXmlWriterType.InsertSiblingBefore:
                     XmlNode? parent = _start.ParentNode;
-                    if (parent != null)
+                    if (parent is not null)
                     {
                         nodeType = parent.NodeType;
                     }

@@ -22,7 +22,7 @@ namespace System.IO.Compression
         // A specific constructor to allow decompression of Deflate64
         internal DeflateManagedStream(Stream stream, ZipArchiveEntry.CompressionMethodValues method, long uncompressedSize = -1)
         {
-            if (stream == null)
+            if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
             if (!stream.CanRead)
                 throw new ArgumentException(SR.NotSupported_UnreadableStream, nameof(stream));
@@ -41,7 +41,7 @@ namespace System.IO.Compression
         {
             get
             {
-                if (_stream == null)
+                if (_stream is null)
                 {
                     return false;
                 }
@@ -141,7 +141,7 @@ namespace System.IO.Compression
 
         private void ValidateParameters(byte[] array, int offset, int count)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
 
             if (offset < 0)
@@ -156,7 +156,7 @@ namespace System.IO.Compression
 
         private void EnsureNotDisposed()
         {
-            if (_stream == null)
+            if (_stream is null)
                 ThrowStreamClosedException();
         }
 
@@ -207,7 +207,7 @@ namespace System.IO.Compression
                 // If there is no data on the output buffer and we are not at
                 // the end of the stream, we need to get more data from the base stream
                 readTask = _stream!.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
-                if (readTask == null)
+                if (readTask is null)
                 {
                     throw new InvalidOperationException(SR.NotSupported_UnreadableStream);
                 }
@@ -217,7 +217,7 @@ namespace System.IO.Compression
             finally
             {
                 // if we haven't started any async work, decrement the counter to end the transaction
-                if (readTask == null)
+                if (readTask is null)
                 {
                     Interlocked.Decrement(ref _asyncOperations);
                 }
@@ -256,7 +256,7 @@ namespace System.IO.Compression
                         // We could have read in head information and didn't get any data.
                         // Read from the base stream again.
                         readTask = _stream!.ReadAsync(_buffer, 0, _buffer.Length, cancellationToken);
-                        if (readTask == null)
+                        if (readTask is null)
                         {
                             throw new InvalidOperationException(SR.NotSupported_UnreadableStream);
                         }
@@ -284,7 +284,7 @@ namespace System.IO.Compression
             if (!disposing)
                 return;
 
-            if (_stream == null)
+            if (_stream is null)
                 return;
 
             Flush();
@@ -303,7 +303,7 @@ namespace System.IO.Compression
                 // In this case, we still need to clean up internal resources, hence the inner finally blocks.
                 try
                 {
-                    if (disposing && _stream != null)
+                    if (disposing && _stream is not null)
                         _stream.Dispose();
                 }
                 finally

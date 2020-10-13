@@ -47,8 +47,8 @@ namespace System.Collections.Immutable
         /// <param name="backwards">The backwards stack.</param>
         internal ImmutableQueue(ImmutableStack<T> forwards, ImmutableStack<T> backwards)
         {
-            Debug.Assert(forwards != null);
-            Debug.Assert(backwards != null);
+            Debug.Assert(forwards is not null);
+            Debug.Assert(backwards is not null);
 
             _forwards = forwards;
             _backwards = backwards;
@@ -109,12 +109,12 @@ namespace System.Collections.Immutable
                 // Although this is a lazy-init pattern, no lock is required because
                 // this instance is immutable otherwise, and a double-assignment from multiple
                 // threads is harmless.
-                if (_backwardsReversed == null)
+                if (_backwardsReversed is null)
                 {
                     _backwardsReversed = _backwards.Reverse();
                 }
 
-                Debug.Assert(_backwardsReversed != null);
+                Debug.Assert(_backwardsReversed is not null);
                 return _backwardsReversed;
             }
         }

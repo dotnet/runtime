@@ -11,7 +11,7 @@ namespace System.Collections.Generic
 
         public QueueDebugView(Queue<T> queue)
         {
-            if (queue == null)
+            if (queue is null)
             {
                 throw new ArgumentNullException(nameof(queue));
             }

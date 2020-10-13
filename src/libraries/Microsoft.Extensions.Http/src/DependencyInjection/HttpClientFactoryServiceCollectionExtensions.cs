@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="IServiceCollection"/>.</returns>
         public static IServiceCollection AddHttpClient(this IServiceCollection services)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -80,12 +80,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient(this IServiceCollection services, string name)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -114,17 +114,17 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient(this IServiceCollection services, string name, Action<HttpClient> configureClient)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (configureClient == null)
+            if (configureClient is null)
             {
                 throw new ArgumentNullException(nameof(configureClient));
             }
@@ -155,17 +155,17 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder AddHttpClient(this IServiceCollection services, string name, Action<IServiceProvider, HttpClient> configureClient)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (configureClient == null)
+            if (configureClient is null)
             {
                 throw new ArgumentNullException(nameof(configureClient));
             }
@@ -203,7 +203,7 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services)
             where TClient : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -247,7 +247,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -289,12 +289,12 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services, string name)
             where TClient : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -341,12 +341,12 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -385,12 +385,12 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services, Action<HttpClient> configureClient)
             where TClient : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (configureClient == null)
+            if (configureClient is null)
             {
                 throw new ArgumentNullException(nameof(configureClient));
             }
@@ -431,12 +431,12 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services, Action<IServiceProvider, HttpClient> configureClient)
             where TClient : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (configureClient == null)
+            if (configureClient is null)
             {
                 throw new ArgumentNullException(nameof(configureClient));
             }
@@ -482,12 +482,12 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (configureClient == null)
+            if (configureClient is null)
             {
                 throw new ArgumentNullException(nameof(configureClient));
             }
@@ -533,12 +533,12 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (configureClient == null)
+            if (configureClient is null)
             {
                 throw new ArgumentNullException(nameof(configureClient));
             }
@@ -582,17 +582,17 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services, string name, Action<HttpClient> configureClient)
             where TClient : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (configureClient == null)
+            if (configureClient is null)
             {
                 throw new ArgumentNullException(nameof(configureClient));
             }
@@ -635,17 +635,17 @@ namespace Microsoft.Extensions.DependencyInjection
             this IServiceCollection services, string name, Action<IServiceProvider, HttpClient> configureClient)
             where TClient : class
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (configureClient == null)
+            if (configureClient is null)
             {
                 throw new ArgumentNullException(nameof(configureClient));
             }
@@ -693,17 +693,17 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (configureClient == null)
+            if (configureClient is null)
             {
                 throw new ArgumentNullException(nameof(configureClient));
             }
@@ -751,17 +751,17 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (configureClient == null)
+            if (configureClient is null)
             {
                 throw new ArgumentNullException(nameof(configureClient));
             }
@@ -803,12 +803,12 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (factory == null)
+            if (factory is null)
             {
                 throw new ArgumentNullException(nameof(factory));
             }
@@ -849,17 +849,17 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (factory == null)
+            if (factory is null)
             {
                 throw new ArgumentNullException(nameof(factory));
             }
@@ -900,12 +900,12 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (factory == null)
+            if (factory is null)
             {
                 throw new ArgumentNullException(nameof(factory));
             }
@@ -944,17 +944,17 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
 
-            if (factory == null)
+            if (factory is null)
             {
                 throw new ArgumentNullException(nameof(factory));
             }

@@ -22,7 +22,7 @@ namespace System.Configuration.Internal
         {
             FileVersion other = obj as FileVersion;
             return
-                (other != null)
+                (other is not null)
                 && (_exists == other._exists)
                 && (_fileSize == other._fileSize)
                 && (_utcCreationTime == other._utcCreationTime)

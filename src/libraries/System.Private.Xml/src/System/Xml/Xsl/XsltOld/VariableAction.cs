@@ -71,12 +71,12 @@ namespace System.Xml.Xsl.XsltOld
                 CompileTemplate(compiler);
                 compiler.ToParent();
 
-                if (this.selectKey != Compiler.InvalidQueryKey && this.containedActions != null)
+                if (this.selectKey != Compiler.InvalidQueryKey && this.containedActions is not null)
                 {
                     throw XsltException.Create(SR.Xslt_VariableCntSel2, this.nameStr);
                 }
             }
-            if (this.containedActions != null)
+            if (this.containedActions is not null)
             {
                 baseUri = baseUri + '#' + compiler.GetUnicRtfId();
             }
@@ -95,7 +95,7 @@ namespace System.Xml.Xsl.XsltOld
 
             if (Ref.Equal(name, compiler.Atoms.Name))
             {
-                Debug.Assert(this.name == null && this.nameStr == null);
+                Debug.Assert(this.name is null && this.nameStr is null);
                 this.nameStr = value;
                 this.name = compiler.CreateXPathQName(this.nameStr);
             }
@@ -113,7 +113,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null && frame.State != ValueCalculated);
+            Debug.Assert(processor is not null && frame is not null && frame.State != ValueCalculated);
             object? value = null;
 
             switch (frame.State)
@@ -121,7 +121,7 @@ namespace System.Xml.Xsl.XsltOld
                 case Initialized:
                     if (IsGlobal)
                     {
-                        if (frame.GetVariable(_varKey) != null)
+                        if (frame.GetVariable(_varKey) is not null)
                         { // This var was calculated already
                             frame.Finished();
                             break;
@@ -138,7 +138,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         value = processor.GetParameter(this.name!);
                     }
-                    if (value != null)
+                    if (value is not null)
                     {
                         goto case ValueCalculated;
                     }
@@ -151,7 +151,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
 
                     // If there is no 'select' attribute and the content is empty, use the empty string
-                    if (this.containedActions == null)
+                    if (this.containedActions is null)
                     {
                         value = string.Empty;
                         goto case ValueCalculated;
@@ -171,7 +171,7 @@ namespace System.Xml.Xsl.XsltOld
                     goto case ValueCalculated;
 
                 case ValueCalculated:
-                    Debug.Assert(value != null);
+                    Debug.Assert(value is not null);
                     frame.SetVariable(_varKey, value);
                     frame.Finished();
                     break;

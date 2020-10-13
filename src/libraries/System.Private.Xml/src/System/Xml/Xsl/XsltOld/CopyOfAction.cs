@@ -41,12 +41,12 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             switch (frame.State)
             {
                 case Initialized:
-                    Debug.Assert(frame.NodeSet != null);
+                    Debug.Assert(frame.NodeSet is not null);
                     Query query = processor.GetValueQuery(_selectKey);
                     object result = query.Evaluate(frame.NodeSet);
 
@@ -60,7 +60,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
 
                     XPathNavigator? nav = result as XPathNavigator;
-                    if (nav != null)
+                    if (nav is not null)
                     {
                         processor.PushActionFrame(CopyNodeSetAction.GetAction(), new XPathSingletonIterator(nav));
                         frame.State = NodeSetCopied;
@@ -80,7 +80,7 @@ namespace System.Xml.Xsl.XsltOld
                     break;
 
                 case ResultStored:
-                    Debug.Assert(frame.StoredOutput != null);
+                    Debug.Assert(frame.StoredOutput is not null);
                     processor.TextEvent(frame.StoredOutput);
                     frame.Finished();
                     break;

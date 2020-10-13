@@ -37,19 +37,19 @@ namespace System.Security.Cryptography
         {
             unsafe
             {
-                if (parameters.Exponent == null || parameters.Modulus == null)
+                if (parameters.Exponent is null || parameters.Modulus is null)
                     throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
 
                 bool includePrivate;
-                if (parameters.D == null)
+                if (parameters.D is null)
                 {
                     includePrivate = false;
 
-                    if (parameters.P != null ||
-                        parameters.DP != null ||
-                        parameters.Q != null ||
-                        parameters.DQ != null ||
-                        parameters.InverseQ != null)
+                    if (parameters.P is not null ||
+                        parameters.DP is not null ||
+                        parameters.Q is not null ||
+                        parameters.DQ is not null ||
+                        parameters.InverseQ is not null)
                     {
                         throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
                     }
@@ -58,11 +58,11 @@ namespace System.Security.Cryptography
                 {
                     includePrivate = true;
 
-                    if (parameters.P == null ||
-                        parameters.DP == null ||
-                        parameters.Q == null ||
-                        parameters.DQ == null ||
-                        parameters.InverseQ == null)
+                    if (parameters.P is null ||
+                        parameters.DP is null ||
+                        parameters.Q is null ||
+                        parameters.DQ is null ||
+                        parameters.InverseQ is null)
                     {
                         throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
                     }
@@ -201,7 +201,7 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> passwordBytes,
                 PbeParameters pbeParameters)
             {
-                if (pbeParameters == null)
+                if (pbeParameters is null)
                     throw new ArgumentNullException(nameof(pbeParameters));
 
                 return CngPkcs8.ExportEncryptedPkcs8PrivateKey(
@@ -214,7 +214,7 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<char> password,
                 PbeParameters pbeParameters)
             {
-                if (pbeParameters == null)
+                if (pbeParameters is null)
                 {
                     throw new ArgumentNullException(nameof(pbeParameters));
                 }
@@ -241,7 +241,7 @@ namespace System.Security.Cryptography
                 Span<byte> destination,
                 out int bytesWritten)
             {
-                if (pbeParameters == null)
+                if (pbeParameters is null)
                     throw new ArgumentNullException(nameof(pbeParameters));
 
                 PasswordBasedEncryption.ValidatePbeParameters(
@@ -263,7 +263,7 @@ namespace System.Security.Cryptography
                 Span<byte> destination,
                 out int bytesWritten)
             {
-                if (pbeParameters == null)
+                if (pbeParameters is null)
                     throw new ArgumentNullException(nameof(pbeParameters));
 
                 PasswordBasedEncryption.ValidatePbeParameters(

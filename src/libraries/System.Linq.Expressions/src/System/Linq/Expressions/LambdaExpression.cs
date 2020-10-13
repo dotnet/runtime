@@ -141,7 +141,7 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(method, nameof(method));
             ContractUtils.Requires(method.IsStatic, nameof(method));
             var type = method.DeclaringType as System.Reflection.Emit.TypeBuilder;
-            if (type == null) throw Error.MethodBuilderDoesNotHaveTypeBuilder();
+            if (type is null) throw Error.MethodBuilderDoesNotHaveTypeBuilder();
 
             Compiler.LambdaCompiler.Compile(this, method);
         }
@@ -226,14 +226,14 @@ namespace System.Linq.Expressions
                 // Ensure parameters is safe to enumerate twice.
                 // (If this means a second call to ToReadOnly it will return quickly).
                 ICollection<ParameterExpression>? pars;
-                if (parameters == null)
+                if (parameters is null)
                 {
                     pars = null;
                 }
                 else
                 {
                     pars = parameters as ICollection<ParameterExpression>;
-                    if (pars == null)
+                    if (pars is null)
                     {
                         parameters = pars = parameters.ToReadOnly();
                     }
@@ -276,7 +276,7 @@ namespace System.Linq.Expressions
 
         internal static Expression<TDelegate> Create(Expression body, string? name, bool tailCall, IReadOnlyList<ParameterExpression> parameters)
         {
-            if (name == null && !tailCall)
+            if (name is null && !tailCall)
             {
                 return parameters.Count switch
                 {
@@ -309,7 +309,7 @@ namespace System.Linq.Expressions
     {
         public static Expression<TDelegate> CreateExpressionFunc(Expression body, string? name, bool tailCall, ReadOnlyCollection<ParameterExpression> parameters)
         {
-            if (name == null && !tailCall)
+            if (name is null && !tailCall)
             {
                 switch (parameters.Count)
                 {
@@ -336,7 +336,7 @@ namespace System.Linq.Expressions
         internal override int ParameterCount => 0;
 
         internal override bool SameParameters(ICollection<ParameterExpression>? parameters) =>
-            parameters == null || parameters.Count == 0;
+            parameters is null || parameters.Count == 0;
 
         internal override ParameterExpression GetParameter(int index)
         {
@@ -347,8 +347,8 @@ namespace System.Linq.Expressions
 
         internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
-            Debug.Assert(body != null);
-            Debug.Assert(parameters == null || parameters.Length == 0);
+            Debug.Assert(body is not null);
+            Debug.Assert(parameters is null || parameters.Length == 0);
 
             return Expression.Lambda<TDelegate>(body, parameters);
         }
@@ -375,7 +375,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameParameters(ICollection<ParameterExpression>? parameters)
         {
-            if (parameters != null && parameters.Count == 1)
+            if (parameters is not null && parameters.Count == 1)
             {
                 using (IEnumerator<ParameterExpression> en = parameters.GetEnumerator())
                 {
@@ -391,10 +391,10 @@ namespace System.Linq.Expressions
 
         internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
-            Debug.Assert(body != null);
-            Debug.Assert(parameters == null || parameters.Length == 1);
+            Debug.Assert(body is not null);
+            Debug.Assert(parameters is null || parameters.Length == 1);
 
-            if (parameters != null)
+            if (parameters is not null)
             {
                 return Expression.Lambda<TDelegate>(body, parameters);
             }
@@ -427,7 +427,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameParameters(ICollection<ParameterExpression>? parameters)
         {
-            if (parameters != null && parameters.Count == 2)
+            if (parameters is not null && parameters.Count == 2)
             {
                 if (_par0 is ReadOnlyCollection<ParameterExpression> alreadyCollection)
                 {
@@ -453,10 +453,10 @@ namespace System.Linq.Expressions
 
         internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
-            Debug.Assert(body != null);
-            Debug.Assert(parameters == null || parameters.Length == 2);
+            Debug.Assert(body is not null);
+            Debug.Assert(parameters is null || parameters.Length == 2);
 
-            if (parameters != null)
+            if (parameters is not null)
             {
                 return Expression.Lambda<TDelegate>(body, parameters);
             }
@@ -492,7 +492,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameParameters(ICollection<ParameterExpression>? parameters)
         {
-            if (parameters != null && parameters.Count == 3)
+            if (parameters is not null && parameters.Count == 3)
             {
                 if (_par0 is ReadOnlyCollection<ParameterExpression> alreadyCollection)
                 {
@@ -521,10 +521,10 @@ namespace System.Linq.Expressions
 
         internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
-            Debug.Assert(body != null);
-            Debug.Assert(parameters == null || parameters.Length == 3);
+            Debug.Assert(body is not null);
+            Debug.Assert(parameters is null || parameters.Length == 3);
 
-            if (parameters != null)
+            if (parameters is not null)
             {
                 return Expression.Lambda<TDelegate>(body, parameters);
             }
@@ -554,8 +554,8 @@ namespace System.Linq.Expressions
 
         internal override Expression<TDelegate> Rewrite(Expression body, ParameterExpression[]? parameters)
         {
-            Debug.Assert(body != null);
-            Debug.Assert(parameters == null || parameters.Length == _parameters.Count);
+            Debug.Assert(body is not null);
+            Debug.Assert(parameters is null || parameters.Length == _parameters.Count);
 
             return Expression.Lambda<TDelegate>(body, Name, TailCall, parameters ?? _parameters);
         }
@@ -587,7 +587,7 @@ namespace System.Linq.Expressions
             // delegate type
             Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>? fastPath;
             CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>? factories = s_lambdaFactories;
-            if (factories == null)
+            if (factories is null)
             {
                 s_lambdaFactories = factories = new CacheDict<Type, Func<Expression, string?, bool, ReadOnlyCollection<ParameterExpression>, LambdaExpression>>(50);
             }
@@ -950,7 +950,7 @@ namespace System.Linq.Expressions
 
         private static TryGetFuncActionArgsResult ValidateTryGetFuncActionArgs(Type[]? typeArgs)
         {
-            if (typeArgs == null)
+            if (typeArgs is null)
             {
                 return TryGetFuncActionArgsResult.ArgumentNull;
             }
@@ -958,7 +958,7 @@ namespace System.Linq.Expressions
             for (int i = 0; i < typeArgs.Length; i++)
             {
                 Type a = typeArgs[i];
-                if (a == null)
+                if (a is null)
                 {
                     return TryGetFuncActionArgsResult.ArgumentNull;
                 }
@@ -996,7 +996,7 @@ namespace System.Linq.Expressions
                     // This includes pointers or void. We allow the exception that comes
                     // from trying to use them as generic arguments to pass through.
                     Type result = Compiler.DelegateHelpers.GetFuncType(typeArgs);
-                    if (result == null)
+                    if (result is null)
                     {
                         throw Error.IncorrectNumberOfTypeArgsForFunc(nameof(typeArgs));
                     }
@@ -1016,7 +1016,7 @@ namespace System.Linq.Expressions
         {
             if (ValidateTryGetFuncActionArgs(typeArgs) == TryGetFuncActionArgsResult.Valid)
             {
-                return (funcType = Compiler.DelegateHelpers.GetFuncType(typeArgs)) != null;
+                return (funcType = Compiler.DelegateHelpers.GetFuncType(typeArgs)) is not null;
             }
 
             funcType = null;
@@ -1041,7 +1041,7 @@ namespace System.Linq.Expressions
                     // This includes pointers or void. We allow the exception that comes
                     // from trying to use them as generic arguments to pass through.
                     Type result = Compiler.DelegateHelpers.GetActionType(typeArgs);
-                    if (result == null)
+                    if (result is null)
                     {
                         throw Error.IncorrectNumberOfTypeArgsForAction(nameof(typeArgs));
                     }
@@ -1060,7 +1060,7 @@ namespace System.Linq.Expressions
         {
             if (ValidateTryGetFuncActionArgs(typeArgs) == TryGetFuncActionArgsResult.Valid)
             {
-                return (actionType = Compiler.DelegateHelpers.GetActionType(typeArgs)) != null;
+                return (actionType = Compiler.DelegateHelpers.GetActionType(typeArgs)) is not null;
             }
 
             actionType = null;

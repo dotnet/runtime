@@ -163,7 +163,7 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                if (dbMask != null)
+                if (dbMask is not null)
                 {
                     CryptographicOperations.ZeroMemory(dbMaskSpan);
                     CryptoPool.Return(dbMask, clearSize: 0);

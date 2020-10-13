@@ -48,7 +48,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="collection">The collection whose elements to copy to the builder.</param>
         public ReadOnlyCollectionBuilder(IEnumerable<T> collection)
         {
-            if (collection == null)
+            if (collection is null)
                 throw new ArgumentNullException(nameof(collection));
 
             if (collection is ICollection<T> c)
@@ -223,11 +223,11 @@ namespace System.Runtime.CompilerServices
         /// <returns>true if item is found in the <see cref="ReadOnlyCollectionBuilder{T}"/>; otherwise, false.</returns>
         public bool Contains(T item)
         {
-            if ((object?)item == null)
+            if ((object?)item is null)
             {
                 for (int i = 0; i < _size; i++)
                 {
-                    if ((object?)_items[i] == null)
+                    if ((object?)_items[i] is null)
                     {
                         return true;
                     }
@@ -384,7 +384,7 @@ namespace System.Runtime.CompilerServices
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(nameof(array));
@@ -477,12 +477,12 @@ namespace System.Runtime.CompilerServices
 
         private static bool IsCompatibleObject(object? value)
         {
-            return ((value is T) || (value == null && default(T) == null));
+            return ((value is T) || (value is null && default(T) is null));
         }
 
         private static void ValidateNullValue(object? value, string argument)
         {
-            if (value == null && default(T) != null)
+            if (value is null && default(T) is not null)
             {
                 throw Error.InvalidNullValue(typeof(T), argument);
             }

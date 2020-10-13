@@ -63,7 +63,7 @@ namespace System.Diagnostics
             {
                 // Don't try to Dispose resources (like ManualResetEvents) if
                 // the process is shutting down.
-                if (_state != null && !Environment.HasShutdownStarted)
+                if (_state is not null && !Environment.HasShutdownStarted)
                 {
                     _state.ReleaseRef();
                 }
@@ -71,7 +71,7 @@ namespace System.Diagnostics
 
             public void Dispose()
             {
-                if (_state != null)
+                if (_state is not null)
                 {
                     GC.SuppressFinalize(this);
                     _state.ReleaseRef();
@@ -142,7 +142,7 @@ namespace System.Diagnostics
                                 pws = null;
                             }
                         }
-                        if (pws == null)
+                        if (pws is null)
                         {
                             pws = new ProcessWaitState(processId, isChild: false, usesTerminal: false, exitTime);
                             s_processWaitStates.Add(processId, pws);
@@ -238,7 +238,7 @@ namespace System.Diagnostics
 
             lock (_gate)
             {
-                if (_exitedEvent != null)
+                if (_exitedEvent is not null)
                 {
                     _exitedEvent.Dispose();
                     _exitedEvent = null;
@@ -268,7 +268,7 @@ namespace System.Diagnostics
             lock (_gate)
             {
                 // If we already have an initialized event, just return it.
-                if (_exitedEvent == null)
+                if (_exitedEvent is null)
                 {
                     // If we don't, create one, and if the process hasn't yet exited,
                     // make sure we have a task that's actively monitoring the completion state.
@@ -280,7 +280,7 @@ namespace System.Diagnostics
                             // If we haven't exited, we need to spin up an asynchronous operation that
                             // will completed the exitedEvent when the other process exits. If there's already
                             // another operation underway, then we'll just tack ours onto the end of it.
-                            _waitInProgress = _waitInProgress == null ?
+                            _waitInProgress = _waitInProgress is null ?
                                 WaitForExitAsync() :
                                 _waitInProgress.ContinueWith((_, state) => ((ProcessWaitState)state!).WaitForExitAsync(),
                                     this, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default).Unwrap();
@@ -325,7 +325,7 @@ namespace System.Diagnostics
 
                 // Is another wait operation in progress?  If so, then we haven't exited,
                 // and that task owns the right to call CheckForNonChildExit.
-                if (_waitInProgress != null)
+                if (_waitInProgress is not null)
                 {
                     exitCode = null;
                     return false;
@@ -442,7 +442,7 @@ namespace System.Diagnostics
                         {
                             // If there's currently a wait-in-progress, then we know the other process
                             // hasn't exited (barring races and the polling interval).
-                            if (_waitInProgress != null)
+                            if (_waitInProgress is not null)
                             {
                                 return false;
                             }
@@ -459,7 +459,7 @@ namespace System.Diagnostics
                         // If there's already a wait in progress, we'll do so later
                         // by waiting on that existing task.  Otherwise, we'll spin up
                         // such a task.
-                        if (_waitInProgress != null)
+                        if (_waitInProgress is not null)
                         {
                             waitTask = _waitInProgress;
                         }
@@ -503,7 +503,7 @@ namespace System.Diagnostics
         private Task WaitForExitAsync(CancellationToken cancellationToken = default)
         {
             Debug.Assert(Monitor.IsEntered(_gate));
-            Debug.Assert(_waitInProgress == null);
+            Debug.Assert(_waitInProgress is null);
             Debug.Assert(!_isChild);
 
             return _waitInProgress = Task.Run(async delegate // Task.Run used because of potential blocking in CheckForNonChildExit
@@ -647,13 +647,13 @@ namespace System.Diagnostics
                         ProcessWaitState pws = kv.Value;
                         if (pws.TryReapChild())
                         {
-                            if (firstToRemove == null)
+                            if (firstToRemove is null)
                             {
                                 firstToRemove = pws;
                             }
                             else
                             {
-                                if (additionalToRemove == null)
+                                if (additionalToRemove is null)
                                 {
                                     additionalToRemove = new List<ProcessWaitState>();
                                 }
@@ -662,10 +662,10 @@ namespace System.Diagnostics
                         }
                     }
 
-                    if (firstToRemove != null)
+                    if (firstToRemove is not null)
                     {
                         firstToRemove.ReleaseRef();
-                        if (additionalToRemove != null)
+                        if (additionalToRemove is not null)
                         {
                             foreach (ProcessWaitState pws in additionalToRemove)
                             {

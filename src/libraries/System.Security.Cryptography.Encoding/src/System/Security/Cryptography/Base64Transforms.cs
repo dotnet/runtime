@@ -31,7 +31,7 @@ namespace System.Security.Cryptography
             // inputCount < InputBlockSize is not allowed
             ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount, InputBlockSize);
 
-            if (outputBuffer == null)
+            if (outputBuffer is null)
                 ThrowHelper.ThrowArgumentNull(ThrowHelper.ExceptionArgument.outputBuffer);
 
             // For now, only convert 3 bytes to 4
@@ -134,10 +134,10 @@ namespace System.Security.Cryptography
             // inputCount != InputBlockSize is allowed
             ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
 
-            if (_inputBuffer == null)
+            if (_inputBuffer is null)
                 ThrowHelper.ThrowObjectDisposed();
 
-            if (outputBuffer == null)
+            if (outputBuffer is null)
                 ThrowHelper.ThrowArgumentNull(ThrowHelper.ExceptionArgument.outputBuffer);
 
             // The common case is inputCount = InputBlockSize
@@ -175,7 +175,7 @@ namespace System.Security.Cryptography
             // inputCount != InputBlockSize is allowed
             ThrowHelper.ValidateTransformBlock(inputBuffer, inputOffset, inputCount);
 
-            if (_inputBuffer == null)
+            if (_inputBuffer is null)
             {
                 ThrowHelper.ThrowObjectDisposed();
             }
@@ -326,7 +326,7 @@ namespace System.Security.Cryptography
 
         private void ReturnToCryptoPool(byte[]? array, int clearSize)
         {
-            if (array != null)
+            if (array is not null)
             {
                 CryptoPool.Return(array, clearSize);
             }
@@ -356,7 +356,7 @@ namespace System.Security.Cryptography
             // we always want to clear the input buffer
             if (disposing)
             {
-                if (_inputBuffer != null)
+                if (_inputBuffer is not null)
                 {
                     CryptographicOperations.ZeroMemory(_inputBuffer);
                     _inputBuffer = null!;
@@ -377,7 +377,7 @@ namespace System.Security.Cryptography
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void ValidateTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            if (inputBuffer == null)
+            if (inputBuffer is null)
                 ThrowArgumentNull(ExceptionArgument.inputBuffer);
 
             if ((uint)inputCount > inputBuffer.Length)

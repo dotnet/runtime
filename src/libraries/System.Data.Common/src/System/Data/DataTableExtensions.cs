@@ -106,10 +106,10 @@ namespace System.Data
                 }
 
                 DataRow current;
-                if (table == null)
+                if (table is null)
                 {
                     current = rows.Current;
-                    if (current == null)
+                    if (current is null)
                     {
                         throw DataSetUtil.InvalidOperation(SR.DataSetLinq_NullDataRow);
                     }
@@ -136,7 +136,7 @@ namespace System.Data
                     do
                     {
                         current = rows.Current;
-                        if (current == null)
+                        if (current is null)
                         {
                             continue;
                         }

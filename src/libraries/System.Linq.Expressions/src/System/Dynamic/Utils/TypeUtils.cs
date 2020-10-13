@@ -19,7 +19,7 @@ namespace System.Dynamic.Utils
 
         public static Type GetNullableType(this Type type)
         {
-            Debug.Assert(type != null, "type cannot be null");
+            Debug.Assert(type is not null, "type cannot be null");
             if (type.IsValueType && !IsNullableType(type))
             {
                 return typeof(Nullable<>).MakeGenericType(type);
@@ -165,7 +165,7 @@ namespace System.Dynamic.Utils
         public static bool IsValidInstanceType(MemberInfo member, Type instanceType)
         {
             Type? targetType = member.DeclaringType;
-            if (targetType == null)
+            if (targetType is null)
             {
                 return false;
             }
@@ -211,7 +211,7 @@ namespace System.Dynamic.Utils
 
         public static bool HasIdentityPrimitiveOrNullableConversionTo(this Type source, Type dest)
         {
-            Debug.Assert(source != null && dest != null);
+            Debug.Assert(source is not null && dest is not null);
 
             // Identity conversion
             if (AreEquivalent(source, dest))
@@ -242,7 +242,7 @@ namespace System.Dynamic.Utils
 
         public static bool HasReferenceConversionTo(this Type source, Type dest)
         {
-            Debug.Assert(source != null && dest != null);
+            Debug.Assert(source is not null && dest is not null);
 
             // void -> void conversion is handled elsewhere
             // (it's an identity conversion)
@@ -416,31 +416,31 @@ namespace System.Dynamic.Utils
 
         private static bool IsCovariant(Type t)
         {
-            Debug.Assert(t != null);
+            Debug.Assert(t is not null);
             return 0 != (t.GenericParameterAttributes & GenericParameterAttributes.Covariant);
         }
 
         private static bool IsContravariant(Type t)
         {
-            Debug.Assert(t != null);
+            Debug.Assert(t is not null);
             return 0 != (t.GenericParameterAttributes & GenericParameterAttributes.Contravariant);
         }
 
         private static bool IsInvariant(Type t)
         {
-            Debug.Assert(t != null);
+            Debug.Assert(t is not null);
             return 0 == (t.GenericParameterAttributes & GenericParameterAttributes.VarianceMask);
         }
 
         private static bool IsDelegate(Type t)
         {
-            Debug.Assert(t != null);
+            Debug.Assert(t is not null);
             return t.IsSubclassOf(typeof(MulticastDelegate));
         }
 
         public static bool IsLegalExplicitVariantDelegateConversion(Type source, Type dest)
         {
-            Debug.Assert(source != null && dest != null);
+            Debug.Assert(source is not null && dest is not null);
 
             // There *might* be a legal conversion from a generic delegate type S to generic delegate type  T,
             // provided all of the follow are true:
@@ -468,9 +468,9 @@ namespace System.Dynamic.Utils
             Type[] sourceArguments = source.GetGenericArguments();
             Type[] destArguments = dest.GetGenericArguments();
 
-            Debug.Assert(genericParameters != null);
-            Debug.Assert(sourceArguments != null);
-            Debug.Assert(destArguments != null);
+            Debug.Assert(genericParameters is not null);
+            Debug.Assert(sourceArguments is not null);
+            Debug.Assert(destArguments is not null);
             Debug.Assert(genericParameters.Length == sourceArguments.Length);
             Debug.Assert(genericParameters.Length == destArguments.Length);
 
@@ -479,7 +479,7 @@ namespace System.Dynamic.Utils
                 Type sourceArgument = sourceArguments[iParam];
                 Type destArgument = destArguments[iParam];
 
-                Debug.Assert(sourceArgument != null && destArgument != null);
+                Debug.Assert(sourceArgument is not null && destArgument is not null);
 
                 // If the arguments are identical then this one is automatically good, so skip it.
                 if (AreEquivalent(sourceArgument, destArgument))
@@ -489,7 +489,7 @@ namespace System.Dynamic.Utils
 
                 Type genericParameter = genericParameters[iParam];
 
-                Debug.Assert(genericParameter != null);
+                Debug.Assert(genericParameter is not null);
 
                 if (IsInvariant(genericParameter))
                 {
@@ -615,7 +615,7 @@ namespace System.Dynamic.Utils
             MethodInfo[] eMethods = nnExprType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
             MethodInfo? method = FindConversionOperator(eMethods, convertFrom, convertToType);
-            if (method != null)
+            if (method is not null)
             {
                 return method;
             }
@@ -623,7 +623,7 @@ namespace System.Dynamic.Utils
             MethodInfo[] cMethods = nnConvType.GetMethods(BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
 
             method = FindConversionOperator(cMethods, convertFrom, convertToType);
-            if (method != null)
+            if (method is not null)
             {
                 return method;
             }
@@ -798,7 +798,7 @@ namespace System.Dynamic.Utils
                     foreach (Type itype in type.GetTypeInfo().ImplementedInterfaces)
                     {
                         Type? found = FindGenericType(definition, itype);
-                        if (found != null)
+                        if (found is not null)
                         {
                             return found;
                         }
@@ -825,20 +825,20 @@ namespace System.Dynamic.Utils
             do
             {
                 MethodInfo? result = type.GetAnyStaticMethodValidated(name, new[] { type });
-                if (result != null && result.IsSpecialName && !result.ContainsGenericParameters)
+                if (result is not null && result.IsSpecialName && !result.ContainsGenericParameters)
                 {
                     return result;
                 }
 
                 type = type.BaseType!;
-            } while (type != null);
+            } while (type is not null);
 
             return null;
         }
 
         public static Type GetNonRefType(this Type type) => type.IsByRef ? type.GetElementType()! : type;
 
-        public static bool AreEquivalent(Type? t1, Type? t2) => t1 != null && t1.IsEquivalentTo(t2);
+        public static bool AreEquivalent(Type? t1, Type? t2) => t1 is not null && t1.IsEquivalentTo(t2);
 
         public static bool AreReferenceAssignable(Type dest, Type src)
         {

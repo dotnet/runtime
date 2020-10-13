@@ -111,7 +111,7 @@ namespace System.Net.Http
 
         public virtual void Add(HttpContent content)
         {
-            if (content == null)
+            if (content is null)
             {
                 throw new ArgumentNullException(nameof(content));
             }
@@ -174,7 +174,7 @@ namespace System.Net.Http
         // then the stream will be closed an exception thrown.
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            Debug.Assert(stream != null);
+            Debug.Assert(stream is not null);
             try
             {
                 // Write start boundary.
@@ -218,7 +218,7 @@ namespace System.Net.Http
 
         private protected async Task SerializeToStreamAsyncCore(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            Debug.Assert(stream != null);
+            Debug.Assert(stream is not null);
             try
             {
                 // Write start boundary.
@@ -438,7 +438,7 @@ namespace System.Net.Http
 
             internal ContentReadStream(Stream[] streams)
             {
-                Debug.Assert(streams != null);
+                Debug.Assert(streams is not null);
                 _streams = streams;
                 foreach (Stream stream in streams)
                 {
@@ -479,7 +479,7 @@ namespace System.Net.Http
 
                 while (true)
                 {
-                    if (_current != null)
+                    if (_current is not null)
                     {
                         int bytesRead = _current.Read(buffer, offset, count);
                         if (bytesRead != 0)
@@ -509,7 +509,7 @@ namespace System.Net.Http
 
                 while (true)
                 {
-                    if (_current != null)
+                    if (_current is not null)
                     {
                         int bytesRead = _current.Read(buffer);
                         if (bytesRead != 0)
@@ -554,7 +554,7 @@ namespace System.Net.Http
 
                 while (true)
                 {
-                    if (_current != null)
+                    if (_current is not null)
                     {
                         int bytesRead = await _current.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
                         if (bytesRead != 0)
@@ -643,7 +643,7 @@ namespace System.Net.Http
 
             private static void ValidateReadArgs(byte[] buffer, int offset, int count)
             {
-                if (buffer == null)
+                if (buffer is null)
                 {
                     throw new ArgumentNullException(nameof(buffer));
                 }
@@ -691,7 +691,7 @@ namespace System.Net.Http
             }
             finally
             {
-                if (rentedBuffer != null)
+                if (rentedBuffer is not null)
                 {
                     ArrayPool<byte>.Shared.Return(rentedBuffer);
                 }

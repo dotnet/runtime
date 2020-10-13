@@ -56,7 +56,7 @@ namespace System.Net.NetworkInformation
             IpHeader iph = default;
 
             bool ipv4 = address.AddressFamily == AddressFamily.InterNetwork;
-            bool sendIpHeader = ipv4 && options != null && SendIpHeader;
+            bool sendIpHeader = ipv4 && options is not null && SendIpHeader;
 
              if (sendIpHeader)
              {
@@ -96,12 +96,12 @@ namespace System.Net.NetworkInformation
                 socket.DualMode = false;
             }
 
-            if (socketConfig.Options != null && socketConfig.Options.Ttl > 0)
+            if (socketConfig.Options is not null && socketConfig.Options.Ttl > 0)
             {
                 socket.Ttl = (short)socketConfig.Options.Ttl;
             }
 
-            if (socketConfig.Options != null && addrFamily == AddressFamily.InterNetwork)
+            if (socketConfig.Options is not null && addrFamily == AddressFamily.InterNetwork)
             {
                 if (SendIpHeader)
                 {
@@ -281,13 +281,13 @@ namespace System.Net.NetworkInformation
         {
             bool isIpv4 = address.AddressFamily == AddressFamily.InterNetwork;
             string? pingExecutable = isIpv4 ? UnixCommandLinePing.Ping4UtilityPath : UnixCommandLinePing.Ping6UtilityPath;
-            if (pingExecutable == null)
+            if (pingExecutable is null)
             {
                 throw new PlatformNotSupportedException(SR.net_ping_utility_not_found);
             }
 
             UnixCommandLinePing.PingFragmentOptions fragmentOption = UnixCommandLinePing.PingFragmentOptions.Default;
-            if (options != null && address.AddressFamily == AddressFamily.InterNetwork)
+            if (options is not null && address.AddressFamily == AddressFamily.InterNetwork)
             {
                 fragmentOption = options.DontFragment ? UnixCommandLinePing.PingFragmentOptions.Do : UnixCommandLinePing.PingFragmentOptions.Dont;
             }

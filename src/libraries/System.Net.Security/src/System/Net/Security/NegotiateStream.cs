@@ -215,7 +215,7 @@ namespace System.Net.Security
         public override bool IsAuthenticated => IsAuthenticatedCore;
 
         [MemberNotNullWhen(true, nameof(_context))]
-        private bool IsAuthenticatedCore => _context != null && HandshakeComplete && _exception == null && _remoteOk;
+        private bool IsAuthenticatedCore => _context is not null && HandshakeComplete && _exception is null && _remoteOk;
 
         public override bool IsMutuallyAuthenticated =>
             IsAuthenticatedCore &&
@@ -226,7 +226,7 @@ namespace System.Net.Security
 
         public override bool IsSigned => IsAuthenticatedCore && (_context.IsIntegrityFlag || _context.IsConfidentialityFlag);
 
-        public override bool IsServer => _context != null && _context.IsServer;
+        public override bool IsServer => _context is not null && _context.IsServer;
 
         public virtual TokenImpersonationLevel ImpersonationLevel
         {
@@ -536,7 +536,7 @@ namespace System.Net.Security
         private void ThrowIfExceptional()
         {
             ExceptionDispatchInfo? e = _exception;
-            if (e != null)
+            if (e is not null)
             {
                 ThrowExceptional(e);
             }
@@ -559,7 +559,7 @@ namespace System.Net.Security
         /// <summary>Validates user parameters for all Read/Write methods.</summary>
         private static void ValidateParameters(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -588,10 +588,10 @@ namespace System.Net.Security
             ProtectionLevel protectionLevel,
             TokenImpersonationLevel impersonationLevel)
         {
-            if (policy != null)
+            if (policy is not null)
             {
                 // One of these must be set if EP is turned on
-                if (policy.CustomChannelBinding == null && policy.CustomServiceNames == null)
+                if (policy.CustomChannelBinding is null && policy.CustomServiceNames is null)
                 {
                     throw new ArgumentException(SR.net_auth_must_specify_extended_protection_scheme, nameof(policy));
                 }
@@ -620,23 +620,23 @@ namespace System.Net.Security
                 ThrowIfExceptional();
             }
 
-            if (_context != null && _context.IsValidContext)
+            if (_context is not null && _context.IsValidContext)
             {
                 throw new InvalidOperationException(SR.net_auth_reauth);
             }
 
-            if (credential == null)
+            if (credential is null)
             {
                 throw new ArgumentNullException(nameof(credential));
             }
 
-            if (servicePrincipalName == null)
+            if (servicePrincipalName is null)
             {
                 throw new ArgumentNullException(nameof(servicePrincipalName));
             }
 
             NegotiateStreamPal.ValidateImpersonationLevel(impersonationLevel);
-            if (_context != null && IsServer != isServer)
+            if (_context is not null && IsServer != isServer)
             {
                 throw new InvalidOperationException(SR.net_auth_client_server);
             }
@@ -714,7 +714,7 @@ namespace System.Net.Security
 
         private void SetFailed(Exception e)
         {
-            if (_exception == null || !(_exception.SourceException is ObjectDisposedException))
+            if (_exception is null || !(_exception.SourceException is ObjectDisposedException))
             {
                 _exception = ExceptionDispatchInfo.Capture(e);
             }
@@ -734,7 +734,7 @@ namespace System.Net.Security
 
         private async Task AuthenticateAsync<TAdapter>(TAdapter adapter, [CallerMemberName] string? callerName = null) where TAdapter : IReadWriteAdapter
         {
-            Debug.Assert(_context != null);
+            Debug.Assert(_context is not null);
 
             ThrowIfFailed(authSuccessCheck: false);
             if (Interlocked.Exchange(ref _authInProgress, 1) == 1)
@@ -761,11 +761,11 @@ namespace System.Net.Security
 
         private bool CheckSpn()
         {
-            Debug.Assert(_context != null);
+            Debug.Assert(_context is not null);
 
             if (_context.IsKerberos ||
                 _extendedProtectionPolicy!.PolicyEnforcement == PolicyEnforcement.Never ||
-                _extendedProtectionPolicy.CustomServiceNames == null)
+                _extendedProtectionPolicy.CustomServiceNames is null)
             {
                 return true;
             }
@@ -783,7 +783,7 @@ namespace System.Net.Security
         // Client authentication starts here, but server also loops through this method.
         private async Task SendBlobAsync<TAdapter>(TAdapter adapter, byte[]? message) where TAdapter : IReadWriteAdapter
         {
-            Debug.Assert(_context != null);
+            Debug.Assert(_context is not null);
 
             Exception? exception = null;
             if (message != s_emptyMessage)
@@ -791,7 +791,7 @@ namespace System.Net.Security
                 message = GetOutgoingBlob(message, ref exception);
             }
 
-            if (exception != null)
+            if (exception is not null)
             {
                 // Signal remote side on a failed attempt.
                 await SendAuthResetSignalAndThrowAsync(adapter, message!, exception).ConfigureAwait(false);
@@ -862,12 +862,12 @@ namespace System.Net.Security
                     message ??= s_emptyMessage;
                 }
             }
-            else if (message == null || message == s_emptyMessage)
+            else if (message is null || message == s_emptyMessage)
             {
                 throw new InternalException();
             }
 
-            if (message != null)
+            if (message is not null)
             {
                 //even if we are completed, there could be a blob for sending.
                 await _framer!.WriteMessageAsync(adapter, message).ConfigureAwait(false);
@@ -885,10 +885,10 @@ namespace System.Net.Security
         // Server authentication starts here, but client also loops through this method.
         private async Task ReceiveBlobAsync<TAdapter>(TAdapter adapter) where TAdapter : IReadWriteAdapter
         {
-            Debug.Assert(_framer != null);
+            Debug.Assert(_framer is not null);
 
             byte[]? message = await _framer.ReadMessageAsync(adapter).ConfigureAwait(false);
-            if (message == null)
+            if (message is null)
             {
                 // This is an EOF otherwise we would get at least *empty* message but not a null one.
                 throw new AuthenticationException(SR.net_auth_eof);
@@ -963,7 +963,7 @@ namespace System.Net.Security
 
         private unsafe byte[]? GetOutgoingBlob(byte[]? incomingBlob, ref Exception? e)
         {
-            Debug.Assert(_context != null);
+            Debug.Assert(_context is not null);
 
             byte[]? message = _context.GetOutgoingBlob(incomingBlob, false, out SecurityStatusPal statusCode);
 
@@ -980,7 +980,7 @@ namespace System.Net.Security
                 }
             }
 
-            if (message != null && message.Length == 0)
+            if (message is not null && message.Length == 0)
             {
                 message = s_emptyMessage;
             }
@@ -990,7 +990,7 @@ namespace System.Net.Security
 
         private int EncryptData(ReadOnlySpan<byte> buffer, [NotNull] ref byte[]? outBuffer)
         {
-            Debug.Assert(_context != null);
+            Debug.Assert(_context is not null);
             ThrowIfFailed(authSuccessCheck: true);
 
             // SSPI seems to ignore this sequence number.
@@ -1000,7 +1000,7 @@ namespace System.Net.Security
 
         private int DecryptData(byte[] buffer, int offset, int count, out int newOffset)
         {
-            Debug.Assert(_context != null);
+            Debug.Assert(_context is not null);
             ThrowIfFailed(authSuccessCheck: true);
 
             // SSPI seems to ignore this sequence number.

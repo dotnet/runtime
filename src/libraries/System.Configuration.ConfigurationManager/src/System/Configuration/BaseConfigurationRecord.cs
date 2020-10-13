@@ -169,19 +169,19 @@ namespace System.Configuration
 
         internal bool HasStream => ConfigStreamInfo.HasStream;
 
-        private bool IsInitDelayed => _initDelayedRoot != null;
+        private bool IsInitDelayed => _initDelayedRoot is not null;
 
         internal IInternalConfigHost Host => _configRoot.Host;
 
         internal BaseConfigurationRecord Parent => _parent;
 
-        internal bool IsRootConfig => _parent == null;
+        internal bool IsRootConfig => _parent is null;
 
         internal bool IsMachineConfig => _parent == _configRoot.RootConfigRecord;
 
         internal string LocationSubPath => _locationSubPath;
 
-        internal bool IsLocationConfig => _locationSubPath != null;
+        internal bool IsLocationConfig => _locationSubPath is not null;
 
         protected ConfigRecordStreamInfo ConfigStreamInfo
             => IsLocationConfig ? _parent._configStreamInfo : _configStreamInfo;
@@ -197,14 +197,14 @@ namespace System.Configuration
             }
         }
 
-        private bool HasFactoryRecords => _factoryRecords != null;
+        private bool HasFactoryRecords => _factoryRecords is not null;
 
         // Return true if there is no unique configuration information in this record.
-        internal bool IsEmpty => (_parent != null)
+        internal bool IsEmpty => (_parent is not null)
             && !_initErrors.HasErrors(false)
-            && ((_sectionRecords == null) || (_sectionRecords.Count == 0))
-            && ((_factoryRecords == null) || (_factoryRecords.Count == 0))
-            && ((_locationSections == null) || (_locationSections.Count == 0));
+            && ((_sectionRecords is null) || (_sectionRecords.Count == 0))
+            && ((_factoryRecords is null) || (_factoryRecords.Count == 0))
+            && ((_locationSections is null) || (_locationSections.Count == 0));
 
         internal object ConfigContext
         {
@@ -239,7 +239,7 @@ namespace System.Configuration
 
         internal FrameworkName TargetFramework => CurrentConfiguration?.TargetFramework;
 
-        internal Stack SectionsStack => CurrentConfiguration == null ? new Stack() : CurrentConfiguration.SectionsStack;
+        internal Stack SectionsStack => CurrentConfiguration is null ? new Stack() : CurrentConfiguration.SectionsStack;
 
         public string ConfigPath => _configPath;
 
@@ -347,7 +347,7 @@ namespace System.Configuration
                 {
                     // Treat location inputs from parent record
                     // as though they were bonafide sections in this record.
-                    if (IsLocationConfig && (_parent._locationSections != null))
+                    if (IsLocationConfig && (_parent._locationSections is not null))
                     {
                         // Resolve paths and check for errors in location sections.
                         _parent.ResolveLocationSections();
@@ -367,7 +367,7 @@ namespace System.Configuration
                                 // remove the LocationSectionRecord from the list
                                 _parent._locationSections.RemoveAt(i);
 
-                                if (locationSubPathInputs == null) locationSubPathInputs = new ArrayList();
+                                if (locationSubPathInputs is null) locationSubPathInputs = new ArrayList();
 
                                 locationSubPathInputs.Add(locationSectionRecord);
                             }
@@ -385,7 +385,7 @@ namespace System.Configuration
                         // because a Configuration object will contain at most one location config record.
                         while (!current.IsRootConfig)
                         {
-                            if (current._locationSections != null)
+                            if (current._locationSections is not null)
                             {
                                 current.ResolveLocationSections();
 
@@ -408,7 +408,7 @@ namespace System.Configuration
 
                                         // First add all indirect inputs per configKey to a local list.
                                         // We will sort all lists after the while loop.
-                                        if (indirectLocationInputs == null)
+                                        if (indirectLocationInputs is null)
                                             indirectLocationInputs = new Dictionary<string, List<SectionInput>>(1);
 
                                         string configKey = locationSectionRecord.SectionXmlInfo.ConfigKey;
@@ -429,7 +429,7 @@ namespace System.Configuration
                             current = current._parent;
                         }
 
-                        if (indirectLocationInputs != null)
+                        if (indirectLocationInputs is not null)
                         {
                             // Add indirect inputs per configKey
                             foreach (KeyValuePair<string, List<SectionInput>> keyValuePair in indirectLocationInputs)
@@ -461,7 +461,7 @@ namespace System.Configuration
                         BaseConfigurationRecord current = _parent;
                         while (!current.IsRootConfig)
                         {
-                            if (current._locationSections != null)
+                            if (current._locationSections is not null)
                             {
                                 current.ResolveLocationSections();
                                 foreach (LocationSectionRecord locationSectionRecord in current._locationSections)
@@ -496,7 +496,7 @@ namespace System.Configuration
                 else
                 {
                     // Add location sections for this record as bonafide sections.
-                    if (locationSubPathInputs == null) return;
+                    if (locationSubPathInputs is null) return;
                     foreach (LocationSectionRecord locationSectionRecord in locationSubPathInputs)
                     {
                         // add the file input
@@ -550,7 +550,7 @@ namespace System.Configuration
                         ConfigStreamInfo.StreamVersion = MonitorStream(null, null, ConfigStreamInfo.StreamName);
                         using (Stream stream = Host.OpenStreamForRead(ConfigStreamInfo.StreamName))
                         {
-                            if (stream == null)
+                            if (stream is null)
                             {
                                 // There is no stream to load from
                                 return;
@@ -621,7 +621,7 @@ namespace System.Configuration
                             StreamInfo fileStreamInfo = (StreamInfo)streamInfos[ConfigStreamInfo.StreamName];
 
                             // add this file's streaminfo to the now empty list
-                            if (fileStreamInfo != null)
+                            if (fileStreamInfo is not null)
                             {
                                 streamInfos.Remove(ConfigStreamInfo.StreamName);
                                 ConfigStreamInfo.StreamInfos.Add(ConfigStreamInfo.StreamName, fileStreamInfo);
@@ -631,7 +631,7 @@ namespace System.Configuration
                 }
 
                 // Stop monitoring streams outside the lock, to prevent deadlock.
-                if (streamInfos != null)
+                if (streamInfos is not null)
                 {
                     foreach (StreamInfo streamInfo in streamInfos.Values)
                         if (streamInfo.IsMonitored)
@@ -639,7 +639,7 @@ namespace System.Configuration
                 }
 
                 // Remove file input
-                if (_sectionRecords != null)
+                if (_sectionRecords is not null)
                 {
                     List<SectionRecord> removes = null;
                     foreach (SectionRecord sectionRecord in _sectionRecords.Values)
@@ -655,13 +655,13 @@ namespace System.Configuration
                         else
                         {
                             // Remove the entire section record
-                            if (removes == null) removes = new List<SectionRecord>();
+                            if (removes is null) removes = new List<SectionRecord>();
 
                             removes.Add(sectionRecord);
                         }
                     }
 
-                    if (removes != null)
+                    if (removes is not null)
                     {
                         foreach (SectionRecord sectionRecord in removes)
                             _sectionRecords.Remove(sectionRecord.ConfigKey);
@@ -696,7 +696,7 @@ namespace System.Configuration
             {
                 using (Stream stream = Host.OpenStreamForRead(ConfigStreamInfo.StreamName))
                 {
-                    if (stream != null)
+                    if (stream is not null)
                     {
                         ConfigStreamInfo.HasStream = true;
 
@@ -717,7 +717,7 @@ namespace System.Configuration
                 }
 
                 // Add implicit sections to the factory list
-                if (factoryList == null)
+                if (factoryList is null)
                 {
                     // But if factoryList isn't found in this config, we still try to
                     // add implicit sections to an empty factoryList.
@@ -740,7 +740,7 @@ namespace System.Configuration
 
             // Set/Add/Remove Record
             // Note that the _factoryRecords hashtable is protected by the hierarchy lock.
-            if ((factoryRecord != null) || HasFactoryRecords) EnsureFactories()[configKey] = factoryRecord;
+            if ((factoryRecord is not null) || HasFactoryRecords) EnsureFactories()[configKey] = factoryRecord;
 
             // Throw accumulated errors
             ThrowIfParseErrors(errors);
@@ -790,7 +790,7 @@ namespace System.Configuration
             // check for a cached result
             bool hasResult = false;
             SectionRecord sectionRecord = GetSectionRecord(configKey, getLkg);
-            if ((sectionRecord != null) && sectionRecord.HasResult)
+            if ((sectionRecord is not null) && sectionRecord.HasResult)
             {
                 // Results should never be stored if the section has errors.
                 Debug.Assert(!sectionRecord.HasErrors, "!sectionRecord.HasErrors");
@@ -824,7 +824,7 @@ namespace System.Configuration
             // then merge it with our own input if we have any.
             if (!hasResult)
             {
-                bool hasInput = (sectionRecord != null) && sectionRecord.HasInput;
+                bool hasInput = (sectionRecord is not null) && sectionRecord.HasInput;
 
                 // We want to cache results in a section record if:
                 // - The request is made at this level, and so is likely to be
@@ -894,7 +894,7 @@ namespace System.Configuration
                         // client user configuration files, which aren't needed by
                         // most applications.
                         if (IsInitDelayed
-                            && ((factoryRecord == null)
+                            && ((factoryRecord is null)
                             ||
                             _initDelayedRoot.IsDefinitionAllowed(factoryRecord.AllowDefinition,
                                 factoryRecord.AllowExeDefinition)))
@@ -927,7 +927,7 @@ namespace System.Configuration
                         // For compatibility with previous versions,
                         // return null if the section is not found
                         // or is a group.
-                        if ((factoryRecord == null) || factoryRecord.IsGroup) return;
+                        if ((factoryRecord is null) || factoryRecord.IsGroup) return;
 
                         // Use the factory record's copy of the configKey,
                         // so that we don't store more than one instance
@@ -940,7 +940,7 @@ namespace System.Configuration
                         {
                             // We'll need a factory to evaluate the input.
                             factoryRecord = FindAndEnsureFactoryRecord(configKey, out isRootDeclaration);
-                            Debug.Assert(factoryRecord != null, "factoryRecord != null");
+                            Debug.Assert(factoryRecord is not null, "factoryRecord is not null");
                         }
                         else
                         {
@@ -949,18 +949,18 @@ namespace System.Configuration
                             // declared here. This is important to avoid a walk up the config
                             // hierachy when there is no input in this record.
                             factoryRecord = GetFactoryRecord(configKey, false);
-                            if (factoryRecord == null) isRootDeclaration = false;
+                            if (factoryRecord is null) isRootDeclaration = false;
                             else
                             {
                                 factoryRecord = FindAndEnsureFactoryRecord(configKey, out isRootDeclaration);
-                                Debug.Assert(factoryRecord != null, "factoryRecord != null");
+                                Debug.Assert(factoryRecord is not null, "factoryRecord is not null");
                             }
                         }
                     }
 
                     // We need a factory record to check permission.
-                    Debug.Assert(!checkPermission || (factoryRecord != null),
-                        "!checkPermission || factoryRecord != null");
+                    Debug.Assert(!checkPermission || (factoryRecord is not null),
+                        "!checkPermission || factoryRecord is not null");
 
                     // If this is the root declaration, then we always want to cache
                     // the result, in order to prevent the section default from being
@@ -969,7 +969,7 @@ namespace System.Configuration
 
                     // We'll need a section record to cache results,
                     // and maybe to use in creating the section default.
-                    if ((sectionRecord == null) && cacheResults) sectionRecord = EnsureSectionRecord(configKey, true);
+                    if ((sectionRecord is null) && cacheResults) sectionRecord = EnsureSectionRecord(configKey, true);
 
                     // Retrieve the parent's runtime object if the runtimeObject
                     // is requested, and we are not going to merge that input
@@ -1027,7 +1027,7 @@ namespace System.Configuration
                         // to create a copy in the case of MgmtConfigurationRecord -
                         // otherwise we could inadvertently return the parent to the user,
                         // which could then be modified.
-                        if (sectionRecord != null)
+                        if (sectionRecord is not null)
                         {
                             tmpResult = UseParentResult(configKey, parentResult, sectionRecord);
                             if (getRuntimeObject)
@@ -1063,7 +1063,7 @@ namespace System.Configuration
                         // Cache the results.
                         if (cacheResults)
                         {
-                            if (sectionRecord == null) sectionRecord = EnsureSectionRecord(configKey, true);
+                            if (sectionRecord is null) sectionRecord = EnsureSectionRecord(configKey, true);
 
                             sectionRecord.Result = tmpResult;
                             if (getRuntimeObject) sectionRecord.ResultRuntimeObject = tmpResultRuntimeObject;
@@ -1217,7 +1217,7 @@ namespace System.Configuration
 
                     // Evaluate indirectLocationInputs.  Used only in location config record.
                     // See the comment for VSWhidbey 540184 in Init() for more details.
-                    if (indirectLocationInputs != null)
+                    if (indirectLocationInputs is not null)
                     {
                         Debug.Assert(IsLocationConfig,
                             "indirectLocationInputs is non-null only in location config record");
@@ -1235,7 +1235,7 @@ namespace System.Configuration
                     }
 
                     // Evaluate location inputs
-                    if (locationInputs != null)
+                    if (locationInputs is not null)
                     {
                         foreach (SectionInput locationInput in locationInputs)
                         {
@@ -1251,7 +1251,7 @@ namespace System.Configuration
                     }
 
                     // Evaluate file input
-                    if (fileInput != null)
+                    if (fileInput is not null)
                     {
                         if (!fileInput.HasResult)
                         {
@@ -1272,8 +1272,8 @@ namespace System.Configuration
                         // change to the section shouldn't go to the locationInput.Result.
                         //
                         // In runtime, UseParentResult does nothing.
-                        Debug.Assert((locationInputs != null) || (indirectLocationInputs != null),
-                            "locationInputs != null || indirectLocationInputs != null");
+                        Debug.Assert((locationInputs is not null) || (indirectLocationInputs is not null),
+                            "locationInputs is not null || indirectLocationInputs is not null");
                         currentResult = UseParentResult(configKey, currentResult, sectionRecord);
                     }
 
@@ -1286,7 +1286,7 @@ namespace System.Configuration
                 {
                     // Catch the exception if LKG is requested and we have
                     // location input to fall back on.
-                    if (getLkg && (locationInputs != null)) savedException = e;
+                    if (getLkg && (locationInputs is not null)) savedException = e;
                     else throw;
                 }
 
@@ -1337,7 +1337,7 @@ namespace System.Configuration
             try
             {
                 ConfigXmlReader reader = GetSectionXmlReader(keys, input);
-                if (reader == null)
+                if (reader is null)
                 {
                     // If section is not found in a file, use the parent result
                     result = UseParentResult(factoryRecord.ConfigKey, parentResult, sectionRecord);
@@ -1368,18 +1368,18 @@ namespace System.Configuration
             {
                 if (!_flags[SupportsRefresh]
                     &&
-                    ((stream == null) || HasStreamChanged(sectionXmlInfo.Filename, sectionXmlInfo.StreamVersion)))
+                    ((stream is null) || HasStreamChanged(sectionXmlInfo.Filename, sectionXmlInfo.StreamVersion)))
                 {
                     throw new ConfigurationErrorsException(SR.Config_file_has_changed,
                         sectionXmlInfo.Filename, 0);
                 }
 
-                if (stream == null) return null;
+                if (stream is null) return null;
 
                 // CONSIDER: In refresh case, need to recheck validity of file - can't make assumptions
                 using (XmlUtil xmlUtil = new XmlUtil(stream, sectionXmlInfo.Filename, true))
                 {
-                    if (sectionXmlInfo.SubPath == null)
+                    if (sectionXmlInfo.SubPath is null)
                         section = FindSectionRecursive(keys, 0, xmlUtil, ref lineNumber);
                     else
                     {
@@ -1409,7 +1409,7 @@ namespace System.Configuration
                                         locationSubPathAttribute))
                                 {
                                     section = FindSectionRecursive(keys, 0, xmlUtil, ref lineNumber);
-                                    if (section != null)
+                                    if (section is not null)
                                         break;
                                 }
                             }
@@ -1442,7 +1442,7 @@ namespace System.Configuration
                     {
                         // We haven't reached the section yet, so keep evaluating
                         section = FindSectionRecursive(keys, iKey + 1, xmlUtil, ref lineNumber);
-                        if (section != null) break;
+                        if (section is not null) break;
 
                         continue; // don't call "Skip" -- FindSectionRecursive forwards the reader
                     }
@@ -1469,12 +1469,12 @@ namespace System.Configuration
                         xmlUtil.SchemaErrors.AddError(ce, ExceptionAction.NonSpecific);
                     }
 
-                    if (isValid && (locationSubPath == null))
+                    if (isValid && (locationSubPath is null))
                     {
                         // Location sections that don't have a subpath are treated
                         // as ordinary sections.
                         section = FindSectionRecursive(keys, iKey, xmlUtil, ref lineNumber);
-                        if (section != null) break;
+                        if (section is not null) break;
 
                         continue; // don't call "Skip" -- FindSectionRecursive forwards the reader
                     }
@@ -1492,7 +1492,7 @@ namespace System.Configuration
 
             using (Stream stream = Host.OpenStreamForRead(configSourceStreamName))
             {
-                if (stream == null)
+                if (stream is null)
                 {
                     throw new ConfigurationErrorsException(
                         SR.Format(SR.Config_cannot_open_config_source, sectionXmlInfo.ConfigSource),
@@ -1506,7 +1506,7 @@ namespace System.Configuration
 
                     // Check for protectionProvider
                     string protectionProviderAttribute = xmlUtil.Reader.GetAttribute(ProtectionProviderAttibute);
-                    if (protectionProviderAttribute != null)
+                    if (protectionProviderAttribute is not null)
                     {
                         if (xmlUtil.Reader.AttributeCount != 1)
                         {
@@ -1547,7 +1547,7 @@ namespace System.Configuration
             {
                 string name = keys[keys.Length - 1];
                 string rawXml = input.SectionXmlInfo.RawXml;
-                if (rawXml != null)
+                if (rawXml is not null)
                 {
                     // Use the stored raw xml to provide the content of the section.
                     reader = new ConfigXmlReader(rawXml, input.SectionXmlInfo.Filename, input.SectionXmlInfo.LineNumber);
@@ -1569,7 +1569,7 @@ namespace System.Configuration
                     }
                 }
 
-                if (reader != null)
+                if (reader is not null)
                 {
                     if (!input.IsProtectionProviderDetermined)
                     {
@@ -1577,7 +1577,7 @@ namespace System.Configuration
                             GetProtectionProviderFromName(input.SectionXmlInfo.ProtectionProviderName, false);
                     }
 
-                    if (input.ProtectionProvider != null)
+                    if (input.ProtectionProvider is not null)
                         reader = DecryptConfigSection(reader, input.ProtectionProvider);
                 }
             }
@@ -1608,7 +1608,7 @@ namespace System.Configuration
             _protectedConfig =
                 GetSection(ReservedSectionProtectedConfiguration, false, false) as ProtectedConfigurationSection;
 
-            Debug.Assert(_protectedConfig != null,
+            Debug.Assert(_protectedConfig is not null,
                 "<configProtectedData> section should always be available because it's a built-in section");
 
             _flags[ProtectedDataInitialized] = true;
@@ -1624,7 +1624,7 @@ namespace System.Configuration
             try
             {
                 config = CreateSection(inputIsTrusted, factoryRecord, sectionRecord, parentConfig, reader);
-                if ((config == null) && (parentConfig != null))
+                if ((config is null) && (parentConfig is not null))
                     throw new ConfigurationErrorsException(SR.Config_object_is_null, filename, line);
             }
             catch (ThreadAbortException)
@@ -1651,7 +1651,7 @@ namespace System.Configuration
         {
             if (!implicitIsRooted && IsImplicitSection(configKey)) return false;
 
-            return _parent.IsRootConfig || (_parent.FindFactoryRecord(configKey, true) == null);
+            return _parent.IsRootConfig || (_parent.FindFactoryRecord(configKey, true) is null);
         }
 
         // Search the config hierarchy for a FactoryRecord.
@@ -1665,7 +1665,7 @@ namespace System.Configuration
             while (!tConfigRecord.IsRootConfig)
             {
                 FactoryRecord factoryRecord = tConfigRecord.GetFactoryRecord(configKey, permitErrors);
-                if (factoryRecord != null)
+                if (factoryRecord is not null)
                 {
 #if DEBUG
                     if (IsImplicitSection(configKey) && !factoryRecord.HasErrors)
@@ -1701,7 +1701,7 @@ namespace System.Configuration
 
             BaseConfigurationRecord configRecord;
             FactoryRecord factoryRecord = FindFactoryRecord(configKey, false, out configRecord);
-            if ((factoryRecord == null) || factoryRecord.IsGroup) return factoryRecord;
+            if ((factoryRecord is null) || factoryRecord.IsGroup) return factoryRecord;
 
             // Find the root declaration
             FactoryRecord rootFactoryRecord = factoryRecord;
@@ -1713,7 +1713,7 @@ namespace System.Configuration
                 BaseConfigurationRecord tempConfigRecord;
                 FactoryRecord tempFactoryRecord = currentConfigRecord.FindFactoryRecord(configKey, false,
                     out tempConfigRecord);
-                if (tempFactoryRecord == null)
+                if (tempFactoryRecord is null)
                     break;
 
                 rootFactoryRecord = tempFactoryRecord;
@@ -1726,7 +1726,7 @@ namespace System.Configuration
             // A child factory record must be equivalent to its parent,
             // so if the child has no errors, the parent must also have no errors.
             Debug.Assert(!rootFactoryRecord.HasErrors, "!rootFactoryRecord.HasErrors");
-            if (rootFactoryRecord.Factory == null)
+            if (rootFactoryRecord.Factory is null)
             {
                 try
                 {
@@ -1742,7 +1742,7 @@ namespace System.Configuration
                 }
             }
 
-            if (factoryRecord.Factory == null)
+            if (factoryRecord.Factory is null)
             {
                 factoryRecord.Factory = rootFactoryRecord.Factory;
             }
@@ -1862,7 +1862,7 @@ namespace System.Configuration
                                 string configKey = CombineConfigKey(parentConfigKey, tagName);
 
                                 FactoryRecord factoryRecord = (FactoryRecord)factoryList[configKey];
-                                if (factoryRecord != null)
+                                if (factoryRecord is not null)
                                 {
                                     // Error: duplicate <sectionGroup> declaration
                                     xmlUtil.SchemaErrors.AddError(
@@ -1873,12 +1873,12 @@ namespace System.Configuration
                                 {
                                     // Look for a factory of the same name in the parent
                                     FactoryRecord parentFactoryRecord = _parent.FindFactoryRecord(configKey, true);
-                                    if (parentFactoryRecord != null)
+                                    if (parentFactoryRecord is not null)
                                     {
                                         configKey = parentFactoryRecord.ConfigKey;
 
                                         // make sure that an ancestor has not defined a <section> with the same name as the <sectionGroup>
-                                        if ((parentFactoryRecord != null) &&
+                                        if ((parentFactoryRecord is not null) &&
                                             (!parentFactoryRecord.IsGroup || !parentFactoryRecord.IsEquivalentSectionGroupFactory(Host, typeName)))
                                         {
                                             xmlUtil.SchemaErrors.AddError(
@@ -1998,7 +1998,7 @@ namespace System.Configuration
                                 string configKey = CombineConfigKey(parentConfigKey, tagName);
 
                                 FactoryRecord factoryRecord = (FactoryRecord)factoryList[configKey];
-                                if (factoryRecord != null)
+                                if (factoryRecord is not null)
                                 {
                                     // Error: duplicate section declaration
                                     xmlUtil.SchemaErrors.AddError(
@@ -2010,7 +2010,7 @@ namespace System.Configuration
                                 else
                                 {
                                     FactoryRecord parentFactoryRecord = _parent.FindFactoryRecord(configKey, true);
-                                    if (parentFactoryRecord != null)
+                                    if (parentFactoryRecord is not null)
                                     {
                                         // We have a parent factory record with the same name
                                         configKey = parentFactoryRecord.ConfigKey;
@@ -2219,7 +2219,7 @@ namespace System.Configuration
             {
                 SectionRecord sectionRecord = parent.GetSectionRecord(configKey, true);
 
-                if (sectionRecord != null)
+                if (sectionRecord is not null)
                 {
                     // Check for 1a
                     if (IsLocationConfig && ReferenceEquals(immediateParent, parent))
@@ -2249,13 +2249,13 @@ namespace System.Configuration
             // Case 2
             if (mode == OverrideMode.Inherit)
             {
-                Debug.Assert(FindFactoryRecord(configKey, true) != null);
+                Debug.Assert(FindFactoryRecord(configKey, true) is not null);
 
                 bool atDeclarationLevel;
                 OverrideMode defaultMode = FindFactoryRecord(configKey, true).OverrideModeDefault.OverrideMode;
 
-                if (IsLocationConfig) atDeclarationLevel = Parent.GetFactoryRecord(configKey, true) != null;
-                else atDeclarationLevel = GetFactoryRecord(configKey, true) != null;
+                if (IsLocationConfig) atDeclarationLevel = Parent.GetFactoryRecord(configKey, true) is not null;
+                else atDeclarationLevel = GetFactoryRecord(configKey, true) is not null;
 
                 if (!atDeclarationLevel)
                 {
@@ -2306,7 +2306,7 @@ namespace System.Configuration
             // As long as nobody uses EnsureSectionRecordUnsafe this method will be returning the correct
             // lock value only by looking at the section record
 
-            if (sectionRecord != null)
+            if (sectionRecord is not null)
             {
                 result = sectionRecord.Locked ? OverrideMode.Deny : OverrideMode.Allow;
                 childLockMode = sectionRecord.LockChildren ? OverrideMode.Deny : OverrideMode.Allow;
@@ -2382,7 +2382,7 @@ namespace System.Configuration
                 // Find the relevant factory record
                 FactoryRecord factoryRecord = FindFactoryRecord(configKey, true);
 
-                if (factoryRecord == null)
+                if (factoryRecord is null)
                 {
                     // Unregistered configuration section, add DefaultSection factory for it.
                     //
@@ -2465,7 +2465,7 @@ namespace System.Configuration
                     OverrideMode sectionLockMode = OverrideMode.Inherit;
                     OverrideMode sectionChildLockMode = OverrideMode.Inherit;
                     bool positionedAtNextElement = false;
-                    bool isFileInput = locationSubPath == null;
+                    bool isFileInput = locationSubPath is null;
 
                     if (!factoryRecord.HasErrors)
                     {
@@ -2483,7 +2483,7 @@ namespace System.Configuration
                         {
                             // Verify that the section is unique
                             SectionRecord sectionRecord = GetSectionRecord(configKey, true);
-                            if ((sectionRecord != null) && sectionRecord.HasFileInput)
+                            if ((sectionRecord is not null) && sectionRecord.HasFileInput)
                             {
                                 if (!factoryRecord.IsIgnorable())
                                 {
@@ -2521,7 +2521,7 @@ namespace System.Configuration
                             // First do all the attributes reading without advancing the reader.
 
                             string configSourceAttribute = xmlUtil.Reader.GetAttribute(ConfigSourceAttribute);
-                            if (configSourceAttribute != null)
+                            if (configSourceAttribute is not null)
                             {
                                 try
                                 {
@@ -2542,7 +2542,7 @@ namespace System.Configuration
                             }
 
                             string protectionProviderAttribute = xmlUtil.Reader.GetAttribute(ProtectionProviderAttibute);
-                            if (protectionProviderAttribute != null)
+                            if (protectionProviderAttribute is not null)
                             {
                                 try
                                 {
@@ -2567,7 +2567,7 @@ namespace System.Configuration
                             // The 2nd part of the configSource check requires advancing the reader.
                             // Please note that this part should be done only AFTER all other attributes
                             // checking are done.
-                            if (configSourceAttribute != null)
+                            if (configSourceAttribute is not null)
                             {
                                 if (!xmlUtil.Reader.IsEmptyElement)
                                 {
@@ -2595,7 +2595,7 @@ namespace System.Configuration
                             }
                         }
 
-                        if (configSource != null)
+                        if (configSource is not null)
                         {
                             try
                             {
@@ -2621,7 +2621,7 @@ namespace System.Configuration
                         // prefetch the raw xml
                         if (!xmlUtil.SchemaErrors.HasLocalErrors)
                         {
-                            if ((configSource == null) && ShouldPrefetchRawXml(factoryRecord))
+                            if ((configSource is null) && ShouldPrefetchRawXml(factoryRecord))
                             {
                                 Debug.Assert(!positionedAtNextElement, "!positionedAtNextElement");
 
@@ -2667,7 +2667,7 @@ namespace System.Configuration
 
                     if (addInput)
                     {
-                        string targetConfigPath = locationSubPath == null ? _configPath : null;
+                        string targetConfigPath = locationSubPath is null ? _configPath : null;
 
                         SectionXmlInfo sectionXmlInfo = new SectionXmlInfo(
                             configKey, _configPath, targetConfigPath, locationSubPath,
@@ -2675,7 +2675,7 @@ namespace System.Configuration
                             configSource, configSourceStreamName, configSourceStreamVersion,
                             protectionProviderName, overrideMode, skipInChildApps);
 
-                        if (locationSubPath == null)
+                        if (locationSubPath is null)
                         {
                             // Add this file input to the section record
 
@@ -2777,7 +2777,7 @@ namespace System.Configuration
                 // Host.IsDefinitionAllowed.  Instead of this we should invent a new method in
                 // IInternalConfigHost to return whether a configPath can be part of an app or not.
                 // But since it's Whidbey RC "Ask Mode" I chose not to do it due to bigger code churn.
-                if ((locationSubPath == null) &&
+                if ((locationSubPath is null) &&
                     !inheritInChildApp &&
                     Host.IsDefinitionAllowed(_configPath, ConfigurationAllowDefinition.MachineToWebRoot,
                         ConfigurationAllowExeDefinition.MachineOnly))
@@ -2801,7 +2801,7 @@ namespace System.Configuration
 
             // Scan elements of the location section if the path is the current path.
             // We do not add <location path="." /> to the _locationSections list.
-            if (locationSubPath == null)
+            if (locationSubPath is null)
             {
                 ScanSectionsRecursive(xmlUtil, string.Empty, true, null, overrideMode, !inheritInChildApp);
                 return;
@@ -2816,14 +2816,14 @@ namespace System.Configuration
 
             // Skip over location sections that don't apply to this (application) host for runtime records
             IInternalConfigHost host = Host;
-            if (this is RuntimeConfigurationRecord && (host != null) && (locationSubPath.Length != 0) &&
+            if (this is RuntimeConfigurationRecord && (host is not null) && (locationSubPath.Length != 0) &&
                 (locationSubPath[0] != '.'))
             {
                 // The application's config path is global to the AppDomain
-                if (s_appConfigPath == null)
+                if (s_appConfigPath is null)
                 {
                     object ctx = ConfigContext;
-                    if (ctx != null)
+                    if (ctx is not null)
                     {
                         string appConfigPath = ctx.ToString();
                         Interlocked.CompareExchange(ref s_appConfigPath, appConfigPath, null);
@@ -2870,7 +2870,7 @@ namespace System.Configuration
             {
                 if (!_flags[IsLocationListResolved])
                 {
-                    if (_locationSections != null)
+                    if (_locationSections is not null)
                     {
                         // Create dictionary that maps configPaths to (dictionary that maps sectionNames to locationSectionRecords)
                         HybridDictionary locationConfigPaths = new HybridDictionary(true);
@@ -2884,7 +2884,7 @@ namespace System.Configuration
                             // Check uniqueness
                             HybridDictionary locationSectionRecordDictionary =
                                 (HybridDictionary)locationConfigPaths[targetConfigPath];
-                            if (locationSectionRecordDictionary == null)
+                            if (locationSectionRecordDictionary is null)
                             {
                                 locationSectionRecordDictionary = new HybridDictionary(false);
                                 locationConfigPaths.Add(targetConfigPath, locationSectionRecordDictionary);
@@ -2894,7 +2894,7 @@ namespace System.Configuration
                                 (LocationSectionRecord)
                                 locationSectionRecordDictionary[locationSectionRecord.ConfigKey];
                             FactoryRecord factoryRecord = null;
-                            if (duplicateRecord == null)
+                            if (duplicateRecord is null)
                             {
                                 locationSectionRecordDictionary.Add(locationSectionRecord.ConfigKey,
                                     locationSectionRecord);
@@ -2902,7 +2902,7 @@ namespace System.Configuration
                             else
                             {
                                 factoryRecord = FindFactoryRecord(locationSectionRecord.ConfigKey, true);
-                                if ((factoryRecord == null) || !factoryRecord.IsIgnorable())
+                                if ((factoryRecord is null) || !factoryRecord.IsIgnorable())
                                 {
                                     if (!duplicateRecord.HasErrors)
                                     {
@@ -2920,7 +2920,7 @@ namespace System.Configuration
                             }
 
                             // Check if the definition is allowed
-                            if (factoryRecord == null)
+                            if (factoryRecord is null)
                                 factoryRecord = FindFactoryRecord(locationSectionRecord.ConfigKey, true);
 
                             if (factoryRecord.HasErrors) continue;
@@ -2947,14 +2947,14 @@ namespace System.Configuration
                                 // It is an error if a parent section with the same configKey is locked.
                                 SectionRecord sectionRecord =
                                     parent.GetSectionRecord(locationSectionRecord.ConfigKey, true);
-                                if ((sectionRecord != null) &&
+                                if ((sectionRecord is not null) &&
                                     (sectionRecord.LockChildren || sectionRecord.Locked))
                                     locked = true;
                                 else
                                 {
                                     // It is an error if a parent configuration file locks a section for the
                                     // locationConfigPath or any sub-path of the locationConfigPath.
-                                    if (parent._locationSections != null)
+                                    if (parent._locationSections is not null)
                                     {
                                         string targetConfigPath =
                                             locationSectionRecord.SectionXmlInfo.TargetConfigPath;
@@ -3114,10 +3114,10 @@ namespace System.Configuration
         {
             SectionRecord sectionRecord;
 
-            if (_sectionRecords != null) sectionRecord = (SectionRecord)_sectionRecords[configKey];
+            if (_sectionRecords is not null) sectionRecord = (SectionRecord)_sectionRecords[configKey];
             else sectionRecord = null;
 
-            if ((sectionRecord != null) && !permitErrors) sectionRecord.ThrowOnErrors();
+            if ((sectionRecord is not null) && !permitErrors) sectionRecord.ThrowOnErrors();
 
             return sectionRecord;
         }
@@ -3142,14 +3142,14 @@ namespace System.Configuration
         private SectionRecord EnsureSectionRecordImpl(string configKey, bool permitErrors, bool setLockSettings)
         {
             SectionRecord sectionRecord = GetSectionRecord(configKey, permitErrors);
-            if (sectionRecord != null) return sectionRecord;
+            if (sectionRecord is not null) return sectionRecord;
 
             lock (this)
             {
-                if (_sectionRecords == null) _sectionRecords = new Hashtable();
+                if (_sectionRecords is null) _sectionRecords = new Hashtable();
                 else sectionRecord = GetSectionRecord(configKey, permitErrors);
 
-                if (sectionRecord == null)
+                if (sectionRecord is null)
                 {
                     sectionRecord = new SectionRecord(configKey);
 
@@ -3171,10 +3171,10 @@ namespace System.Configuration
 
         internal FactoryRecord GetFactoryRecord(string configKey, bool permitErrors)
         {
-            if (_factoryRecords == null) return null;
+            if (_factoryRecords is null) return null;
 
             FactoryRecord factoryRecord = (FactoryRecord)_factoryRecords[configKey];
-            if ((factoryRecord != null) && !permitErrors) factoryRecord.ThrowOnErrors();
+            if ((factoryRecord is not null) && !permitErrors) factoryRecord.ThrowOnErrors();
 
             return factoryRecord;
         }
@@ -3221,7 +3221,7 @@ namespace System.Configuration
                 if (_flags[Closed]) return null;
 
                 StreamInfo streamInfo = (StreamInfo)ConfigStreamInfo.StreamInfos[streamname];
-                if (streamInfo != null)
+                if (streamInfo is not null)
                 {
                     if (streamInfo.SectionName != configKey)
                     {
@@ -3255,7 +3255,7 @@ namespace System.Configuration
 
                 if (_flags[SupportsChangeNotifications])
                 {
-                    if (ConfigStreamInfo.CallbackDelegate == null)
+                    if (ConfigStreamInfo.CallbackDelegate is null)
                         ConfigStreamInfo.CallbackDelegate = OnStreamChanged;
 
                     callbackDelegate = ConfigStreamInfo.CallbackDelegate;
@@ -3278,13 +3278,13 @@ namespace System.Configuration
                     return;
 
                 StreamInfo streamInfo = (StreamInfo)ConfigStreamInfo.StreamInfos[streamname];
-                if ((streamInfo == null) || !streamInfo.IsMonitored)
+                if ((streamInfo is null) || !streamInfo.IsMonitored)
                     return;
 
                 sectionName = streamInfo.SectionName;
             }
 
-            if (sectionName == null) notifyChanged = true;
+            if (sectionName is null) notifyChanged = true;
             else
             {
                 FactoryRecord factoryRecord = FindFactoryRecord(sectionName, false);
@@ -3312,7 +3312,7 @@ namespace System.Configuration
                 if (ConfigStreamInfo.HasStreamInfos)
                 {
                     StreamInfo streamInfo = (StreamInfo)ConfigStreamInfo.StreamInfos[configSourceStreamName];
-                    if ((streamInfo != null) && (streamInfo.SectionName != configKey))
+                    if ((streamInfo is not null) && (streamInfo.SectionName != configKey))
                     {
                         throw new ConfigurationErrorsException(
                             SR.Format(SR.Config_source_cannot_be_shared, configSourceArg),
@@ -3338,7 +3338,7 @@ namespace System.Configuration
                     {
                         StreamInfo streamInfo =
                             (StreamInfo)current.ConfigStreamInfo.StreamInfos[configSourceStreamName];
-                        if (streamInfo != null)
+                        if (streamInfo is not null)
                         {
                             throw new ConfigurationErrorsException(
                                 SR.Format(SR.Config_source_parent_conflict, configSourceArg),
@@ -3362,7 +3362,7 @@ namespace System.Configuration
 
             // Clear any stored result in the section
             SectionRecord sectionRecord = GetSectionRecord(configKey, false);
-            if (sectionRecord != null)
+            if (sectionRecord is not null)
             {
                 sectionRecord.ClearResult();
 
@@ -3378,7 +3378,7 @@ namespace System.Configuration
                     throw ExceptionUtil.UnexpectedError("BaseConfigurationRecord::hlClearResultRecursive");
 
                 FactoryRecord factoryRecord = FindFactoryRecord(configKey, false);
-                if ((factoryRecord != null) && !factoryRecord.IsGroup)
+                if ((factoryRecord is not null) && !factoryRecord.IsGroup)
                 {
                     configKey = factoryRecord.ConfigKey;
                     sectionRecord = EnsureSectionRecord(configKey, false);
@@ -3397,7 +3397,7 @@ namespace System.Configuration
             }
 
             // Recurse
-            if (_children != null)
+            if (_children is not null)
             {
                 IEnumerable children = _children.Values;
                 foreach (BaseConfigurationRecord child in children)
@@ -3416,7 +3416,7 @@ namespace System.Configuration
         // Requires the hierarchy lock to be acquired (hl)
         internal void HlAddChild(string configName, BaseConfigurationRecord child)
         {
-            if (_children == null) _children = new Hashtable(StringComparer.OrdinalIgnoreCase);
+            if (_children is null) _children = new Hashtable(StringComparer.OrdinalIgnoreCase);
 
             _children.Add(configName, child);
         }
@@ -3451,7 +3451,7 @@ namespace System.Configuration
 
             while (!configRecord.IsRootConfig)
             {
-                if (configRecord._locationSections != null)
+                if (configRecord._locationSections is not null)
                 {
                     configRecord.ResolveLocationSections();
                     foreach (LocationSectionRecord locationSectionRecord in configRecord._locationSections)
@@ -3504,10 +3504,10 @@ namespace System.Configuration
 
             // no hierarchy lock is needed to access _children here,
             // as it has already been detached from the hierarchy tree
-            if (_children != null)
+            if (_children is not null)
                 foreach (BaseConfigurationRecord child in _children.Values) child.CloseRecursive();
 
-            if (streamInfos != null)
+            if (streamInfos is not null)
             {
                 foreach (StreamInfo streamInfo in streamInfos.Values)
                     if (streamInfo.IsMonitored)
@@ -3543,9 +3543,9 @@ namespace System.Configuration
         {
             object currentVersion = Host.GetStreamVersion(streamname);
 
-            if (lastVersion != null) return (currentVersion == null) || !lastVersion.Equals(currentVersion);
+            if (lastVersion is not null) return (currentVersion is null) || !lastVersion.Equals(currentVersion);
 
-            return currentVersion != null;
+            return currentVersion is not null;
         }
 
         protected virtual string CallHostDecryptSection(string encryptedXml,
@@ -3657,12 +3657,12 @@ namespace System.Configuration
             // (e.g. if we're in machine.config)
             if (!_parent.IsRootConfig) return;
 
-            if (factoryList == null) factoryList = EnsureFactories();
+            if (factoryList is null) factoryList = EnsureFactories();
 
             // Look to see if we already have a factory for "configProtectedData"
             FactoryRecord factoryRecord = (FactoryRecord)factoryList[ReservedSectionProtectedConfiguration];
 
-            if (factoryRecord != null)
+            if (factoryRecord is not null)
             {
                 // If the user has mistakenly declared an implicit section, we should leave the factoryRecord
                 // alone because it contains the error and the error will be thrown later.
@@ -3719,7 +3719,7 @@ namespace System.Configuration
 
             internal HybridDictionary StreamInfos => _streamInfos ?? (_streamInfos = new HybridDictionary(true));
 
-            internal bool HasStreamInfos => _streamInfos != null;
+            internal bool HasStreamInfos => _streamInfos is not null;
 
 #if DEBUG
             internal string[] Keys

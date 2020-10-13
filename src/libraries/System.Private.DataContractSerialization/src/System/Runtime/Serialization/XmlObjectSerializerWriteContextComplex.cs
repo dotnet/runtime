@@ -62,7 +62,7 @@ namespace System.Runtime.Serialization
 
         internal override void WriteString(XmlWriterDelegator xmlWriter, string? value, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            if (value == null)
+            if (value is null)
                 WriteNull(xmlWriter, typeof(string), true/*isMemberTypeSerializable*/, name, ns);
             else
             {
@@ -81,7 +81,7 @@ namespace System.Runtime.Serialization
 
         internal override void WriteBase64(XmlWriterDelegator xmlWriter, byte[] value, XmlDictionaryString name, XmlDictionaryString ns)
         {
-            if (value == null)
+            if (value is null)
                 WriteNull(xmlWriter, typeof(byte[]), true/*isMemberTypeSerializable*/, name, ns);
             else
             {
@@ -100,7 +100,7 @@ namespace System.Runtime.Serialization
 
         internal override void WriteUri(XmlWriterDelegator xmlWriter, Uri value, XmlDictionaryString name, XmlDictionaryString ns)
         {
-            if (value == null)
+            if (value is null)
                 WriteNull(xmlWriter, typeof(Uri), true/*isMemberTypeSerializable*/, name, ns);
             else
             {
@@ -119,11 +119,11 @@ namespace System.Runtime.Serialization
 
         internal override void WriteQName(XmlWriterDelegator xmlWriter, XmlQualifiedName? value, XmlDictionaryString name, XmlDictionaryString? ns)
         {
-            if (value == null)
+            if (value is null)
                 WriteNull(xmlWriter, typeof(XmlQualifiedName), true/*isMemberTypeSerializable*/, name, ns);
             else
             {
-                if (ns != null && ns.Value != null && ns.Value.Length > 0)
+                if (ns is not null && ns.Value is not null && ns.Value.Length > 0)
                     xmlWriter.WriteStartElement(Globals.ElementPrefix, name, ns);
                 else
                     xmlWriter.WriteStartElement(name, ns);
@@ -135,7 +135,7 @@ namespace System.Runtime.Serialization
 
         internal override void InternalSerialize(XmlWriterDelegator xmlWriter, object obj, bool isDeclaredType, bool writeXsiType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle)
         {
-            if (_serializationSurrogateProvider == null)
+            if (_serializationSurrogateProvider is null)
             {
                 base.InternalSerialize(xmlWriter, obj, isDeclaredType, writeXsiType, declaredTypeID, declaredTypeHandle);
             }
@@ -172,7 +172,7 @@ namespace System.Runtime.Serialization
 
         internal override void CheckIfTypeSerializable(Type memberType, bool isMemberTypeSerializable)
         {
-            if (_serializationSurrogateProvider != null)
+            if (_serializationSurrogateProvider is not null)
             {
                 while (memberType.IsArray)
                     memberType = memberType.GetElementType()!;
@@ -187,7 +187,7 @@ namespace System.Runtime.Serialization
 
         internal override Type GetSurrogatedType(Type type)
         {
-            if (_serializationSurrogateProvider == null)
+            if (_serializationSurrogateProvider is null)
             {
                 return base.GetSurrogatedType(type);
             }

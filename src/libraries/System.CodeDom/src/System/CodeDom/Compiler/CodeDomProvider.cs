@@ -65,21 +65,21 @@ namespace System.CodeDom.Compiler
         public static string GetLanguageFromExtension(string extension)
         {
             CompilerInfo compilerInfo = GetCompilerInfoForExtensionNoThrow(extension);
-            if (compilerInfo == null)
+            if (compilerInfo is null)
             {
                 throw new ConfigurationErrorsException(SR.CodeDomProvider_NotDefined);
             }
             return compilerInfo._compilerLanguages[0];
         }
 
-        public static bool IsDefinedLanguage(string language) => GetCompilerInfoForLanguageNoThrow(language) != null;
+        public static bool IsDefinedLanguage(string language) => GetCompilerInfoForLanguageNoThrow(language) is not null;
 
-        public static bool IsDefinedExtension(string extension) => GetCompilerInfoForExtensionNoThrow(extension) != null;
+        public static bool IsDefinedExtension(string extension) => GetCompilerInfoForExtensionNoThrow(extension) is not null;
 
         public static CompilerInfo GetCompilerInfo(string language)
         {
             CompilerInfo compilerInfo = GetCompilerInfoForLanguageNoThrow(language);
-            if (compilerInfo == null)
+            if (compilerInfo is null)
             {
                 throw new ConfigurationErrorsException(SR.CodeDomProvider_NotDefined);
             }
@@ -88,7 +88,7 @@ namespace System.CodeDom.Compiler
 
         private static CompilerInfo GetCompilerInfoForLanguageNoThrow(string language)
         {
-            if (language == null)
+            if (language is null)
             {
                 throw new ArgumentNullException(nameof(language));
             }
@@ -100,7 +100,7 @@ namespace System.CodeDom.Compiler
 
         private static CompilerInfo GetCompilerInfoForExtensionNoThrow(string extension)
         {
-            if (extension == null)
+            if (extension is null)
             {
                 throw new ArgumentNullException(nameof(extension));
             }
@@ -184,7 +184,7 @@ namespace System.CodeDom.Compiler
         private ICodeCompiler CreateCompilerHelper()
         {
             ICodeCompiler compiler = CreateCompiler();
-            if (compiler == null)
+            if (compiler is null)
             {
                 throw new NotImplementedException(SR.NotSupported_CodeDomAPI);
             }
@@ -194,7 +194,7 @@ namespace System.CodeDom.Compiler
         private ICodeGenerator CreateGeneratorHelper()
         {
             ICodeGenerator generator = CreateGenerator();
-            if (generator == null)
+            if (generator is null)
             {
                 throw new NotImplementedException(SR.NotSupported_CodeDomAPI);
             }
@@ -204,7 +204,7 @@ namespace System.CodeDom.Compiler
         private ICodeParser CreateParserHelper()
         {
             ICodeParser parser = CreateParser();
-            if (parser == null)
+            if (parser is null)
             {
                 throw new NotImplementedException(SR.NotSupported_CodeDomAPI);
             }

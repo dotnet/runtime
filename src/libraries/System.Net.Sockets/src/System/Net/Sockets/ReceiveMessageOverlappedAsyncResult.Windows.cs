@@ -49,7 +49,7 @@ namespace System.Net.Sockets
             }
 
             // Pin buffers.
-            object[] objectsToPin = new object[(_controlBuffer != null) ? 5 : 4];
+            object[] objectsToPin = new object[(_controlBuffer is not null) ? 5 : 4];
             objectsToPin[0] = buffer;
             objectsToPin[1] = _messageBuffer;
             objectsToPin[2] = _wsaBufferArray;
@@ -59,7 +59,7 @@ namespace System.Net.Sockets
             _socketAddress.CopyAddressSizeIntoBuffer();
             objectsToPin[3] = _socketAddress.Buffer;
 
-            if (_controlBuffer != null)
+            if (_controlBuffer is not null)
             {
                 objectsToPin[4] = _controlBuffer;
             }
@@ -79,7 +79,7 @@ namespace System.Net.Sockets
             _message->buffers = Marshal.UnsafeAddrOfPinnedArrayElement(_wsaBufferArray, 0);
             _message->count = 1;
 
-            if (_controlBuffer != null)
+            if (_controlBuffer is not null)
             {
                 _message->controlBuffer.Pointer = Marshal.UnsafeAddrOfPinnedArrayElement(_controlBuffer, 0);
                 _message->controlBuffer.Length = _controlBuffer.Length;

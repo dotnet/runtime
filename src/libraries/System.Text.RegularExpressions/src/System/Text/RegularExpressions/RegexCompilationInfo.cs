@@ -46,7 +46,7 @@ namespace System.Text.RegularExpressions
             [MemberNotNull(nameof(_name))]
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(Name));
                 }

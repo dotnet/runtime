@@ -206,15 +206,15 @@ namespace System.Xml.Xsl.XsltOld
         //
         internal NavigatorInput(XPathNavigator navigator, string baseUri, InputScope? rootScope)
         {
-            if (navigator == null)
+            if (navigator is null)
             {
                 throw new ArgumentNullException(nameof(navigator));
             }
-            if (baseUri == null)
+            if (baseUri is null)
             {
                 throw new ArgumentNullException(nameof(baseUri));
             }
-            Debug.Assert(navigator.NameTable != null);
+            Debug.Assert(navigator.NameTable is not null);
             _Next = null;
             _Href = baseUri;
             _Atoms = new KeywordsTable(navigator.NameTable);
@@ -239,7 +239,7 @@ namespace System.Xml.Xsl.XsltOld
         [MemberNotNull(nameof(_Navigator))]
         internal void AssertInput()
         {
-            Debug.Assert(_Navigator != null);
+            Debug.Assert(_Navigator is not null);
         }
     }
 }

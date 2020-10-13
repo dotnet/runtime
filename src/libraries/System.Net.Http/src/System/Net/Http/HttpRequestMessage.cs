@@ -33,7 +33,7 @@ namespace System.Net.Http
             get { return _version; }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -66,7 +66,7 @@ namespace System.Net.Http
 
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    if (value == null)
+                    if (value is null)
                     {
                         NetEventSource.ContentNull(this);
                     }
@@ -86,7 +86,7 @@ namespace System.Net.Http
             get { return _method; }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -101,7 +101,7 @@ namespace System.Net.Http
             get { return _requestUri; }
             set
             {
-                if ((value != null) && (value.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(value)))
+                if ((value is not null) && (value.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(value)))
                 {
                     throw new ArgumentException(HttpUtilities.InvalidUriMessage, nameof(value));
                 }
@@ -117,7 +117,7 @@ namespace System.Net.Http
         {
             get
             {
-                if (_headers == null)
+                if (_headers is null)
                 {
                     _headers = new HttpRequestHeaders();
                 }
@@ -125,7 +125,7 @@ namespace System.Net.Http
             }
         }
 
-        internal bool HasHeaders => _headers != null;
+        internal bool HasHeaders => _headers is not null;
 
         [Obsolete("Use Options instead.")]
         public IDictionary<string, object?> Properties => Options;
@@ -165,13 +165,13 @@ namespace System.Net.Http
             sb.Append(_method);
 
             sb.Append(", RequestUri: '");
-            sb.Append(_requestUri == null ? "<null>" : _requestUri.ToString());
+            sb.Append(_requestUri is null ? "<null>" : _requestUri.ToString());
 
             sb.Append("', Version: ");
             sb.Append(_version);
 
             sb.Append(", Content: ");
-            sb.Append(_content == null ? "<null>" : _content.GetType().ToString());
+            sb.Append(_content is null ? "<null>" : _content.GetType().ToString());
 
             sb.AppendLine(", Headers:");
             HeaderUtilities.DumpHeaders(sb, _headers, _content?.Headers);
@@ -187,7 +187,7 @@ namespace System.Net.Http
             {
                 throw new ArgumentNullException(nameof(method));
             }
-            if ((requestUri != null) && (requestUri.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(requestUri)))
+            if ((requestUri is not null) && (requestUri.IsAbsoluteUri) && (!HttpUtilities.IsHttpUri(requestUri)))
             {
                 throw new ArgumentException(HttpUtilities.InvalidUriMessage, nameof(requestUri));
             }
@@ -214,7 +214,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_content != null)
+                if (_content is not null)
                 {
                     _content.Dispose();
                 }

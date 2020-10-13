@@ -31,7 +31,7 @@ namespace System.Linq.Expressions.Compiler
                 EmitConstant(array, typeof(T[]));
             }
 #if FEATURE_COMPILE_TO_METHODBUILDER
-            else if (_typeBuilder != null)
+            else if (_typeBuilder is not null)
             {
                 // store into field in our type builder, we will initialize
                 // the value only once.
@@ -94,9 +94,9 @@ namespace System.Linq.Expressions.Compiler
             Type delegateType = inner._lambda.Type;
             DynamicMethod? dynamicMethod = inner._method as DynamicMethod;
 #if FEATURE_COMPILE_TO_METHODBUILDER
-            if (dynamicMethod != null)
+            if (dynamicMethod is not null)
 #else
-            Debug.Assert(dynamicMethod != null);
+            Debug.Assert(dynamicMethod is not null);
 #endif
             {
                 // Emit MethodInfo.CreateDelegate instead because DynamicMethod is not in Windows 8 Profile
@@ -160,7 +160,7 @@ namespace System.Linq.Expressions.Compiler
             Type[] result;
             int i;
 
-            if (firstType != null)
+            if (firstType is not null)
             {
                 result = new Type[count + 1];
                 result[0] = firstType;
@@ -243,7 +243,7 @@ namespace System.Linq.Expressions.Compiler
             _scope.Exit();
 
             // Validate labels
-            Debug.Assert(_labelBlock.Parent == null && _labelBlock.Kind == LabelScopeKind.Lambda);
+            Debug.Assert(_labelBlock.Parent is null && _labelBlock.Kind == LabelScopeKind.Lambda);
             foreach (LabelInfo label in _labelInfo.Values)
             {
                 label.ValidateFinish();

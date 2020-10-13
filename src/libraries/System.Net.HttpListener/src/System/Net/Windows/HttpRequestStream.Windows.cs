@@ -219,12 +219,12 @@ namespace System.Net
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"asyncResult: {asyncResult}");
 
-            if (asyncResult == null)
+            if (asyncResult is null)
             {
                 throw new ArgumentNullException(nameof(asyncResult));
             }
             HttpRequestStreamAsyncResult? castedAsyncResult = asyncResult as HttpRequestStreamAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
+            if (castedAsyncResult is null || castedAsyncResult.AsyncObject != this)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
@@ -236,7 +236,7 @@ namespace System.Net
             // wait & then check for errors
             object? returnValue = castedAsyncResult.InternalWaitForCompletion();
             Exception? exception = returnValue as Exception;
-            if (exception != null)
+            if (exception is not null)
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
@@ -342,7 +342,7 @@ namespace System.Net
             protected override void Cleanup()
             {
                 base.Cleanup();
-                if (_pOverlapped != null)
+                if (_pOverlapped is not null)
                 {
                     _boundHandle!.FreeNativeOverlapped(_pOverlapped);
                 }

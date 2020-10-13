@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.Logging.Console
         private void SetFormatters(IEnumerable<ConsoleFormatter> formatters = null)
         {
             _formatters = new ConcurrentDictionary<string, ConsoleFormatter>(StringComparer.OrdinalIgnoreCase);
-            if (formatters == null || !formatters.Any())
+            if (formatters is null || !formatters.Any())
             {
                 var defaultMonitor = new FormatterOptionsMonitor<SimpleConsoleFormatterOptions>(new SimpleConsoleFormatterOptions());
                 var systemdMonitor = new FormatterOptionsMonitor<ConsoleFormatterOptions>(new ConsoleFormatterOptions());
@@ -98,7 +98,7 @@ namespace Microsoft.Extensions.Logging.Console
         // warning:  ReloadLoggerOptions can be called before the ctor completed,... before registering all of the state used in this method need to be initialized
         private void ReloadLoggerOptions(ConsoleLoggerOptions options)
         {
-            if (options.FormatterName == null || !_formatters.TryGetValue(options.FormatterName, out ConsoleFormatter logFormatter))
+            if (options.FormatterName is null || !_formatters.TryGetValue(options.FormatterName, out ConsoleFormatter logFormatter))
             {
 #pragma warning disable CS0618
                 logFormatter = options.Format switch
@@ -106,7 +106,7 @@ namespace Microsoft.Extensions.Logging.Console
                     ConsoleLoggerFormat.Systemd => _formatters[ConsoleFormatterNames.Systemd],
                     _ => _formatters[ConsoleFormatterNames.Simple],
                 };
-                if (options.FormatterName == null)
+                if (options.FormatterName is null)
                 {
                     UpdateFormatterOptions(logFormatter, options);
                 }
@@ -123,7 +123,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <inheritdoc />
         public ILogger CreateLogger(string name)
         {
-            if (_options.CurrentValue.FormatterName == null || !_formatters.TryGetValue(_options.CurrentValue.FormatterName, out ConsoleFormatter logFormatter))
+            if (_options.CurrentValue.FormatterName is null || !_formatters.TryGetValue(_options.CurrentValue.FormatterName, out ConsoleFormatter logFormatter))
             {
 #pragma warning disable CS0618
                 logFormatter = _options.CurrentValue.Format switch
@@ -131,7 +131,7 @@ namespace Microsoft.Extensions.Logging.Console
                     ConsoleLoggerFormat.Systemd => _formatters[ConsoleFormatterNames.Systemd],
                     _ => _formatters[ConsoleFormatterNames.Simple],
                 };
-                if (_options.CurrentValue.FormatterName == null)
+                if (_options.CurrentValue.FormatterName is null)
                 {
                     UpdateFormatterOptions(logFormatter, _options.CurrentValue);
                 }

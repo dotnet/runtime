@@ -342,7 +342,7 @@ namespace System.Runtime.Serialization.Json
             OnXmlDictionaryReaderClose? onClose = _onReaderClose;
             _onReaderClose = null;
             ResetState();
-            if (onClose != null)
+            if (onClose is not null)
             {
                 try
                 {
@@ -414,7 +414,7 @@ namespace System.Runtime.Serialization.Json
                 BufferReader.SetWindow(ElementNode.BufferOffset, _maxBytesPerRead);
             }
 
-            Debug.Assert(_charactersToSkipOnNextRead != null);
+            Debug.Assert(_charactersToSkipOnNextRead is not null);
             byte ch;
 
             // Skip whitespace before checking EOF
@@ -731,7 +731,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (IsAttributeValue)
             {
-                if (buffer == null)
+                if (buffer is null)
                 {
                     throw new ArgumentNullException(nameof(buffer));
                 }
@@ -762,7 +762,7 @@ namespace System.Runtime.Serialization.Json
         {
             if (IsAttributeValue)
             {
-                if (chars == null)
+                if (chars is null)
                 {
                     throw new ArgumentNullException(nameof(chars));
                 }
@@ -807,7 +807,7 @@ namespace System.Runtime.Serialization.Json
         public void SetInput(byte[] buffer, int offset, int count, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
             OnXmlDictionaryReaderClose? onClose)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -838,7 +838,7 @@ namespace System.Runtime.Serialization.Json
         public void SetInput(Stream stream, Encoding? encoding, XmlDictionaryReaderQuotas quotas,
             OnXmlDictionaryReaderClose? onClose)
         {
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
@@ -858,7 +858,7 @@ namespace System.Runtime.Serialization.Json
 
         internal static void CheckArray(Array array, int offset, int count)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -1063,7 +1063,7 @@ namespace System.Runtime.Serialization.Json
         private void EnterJsonScope(JsonNodeType currentNodeType)
         {
             _scopeDepth++;
-            if (_scopes == null)
+            if (_scopes is null)
             {
                 _scopes = new JsonNodeType[4];
             }
@@ -1549,7 +1549,7 @@ namespace System.Runtime.Serialization.Json
             _expectingFirstElementInNonPrimitiveChild = false;
             _charactersToSkipOnNextRead = new byte[2];
             _scopeDepth = 0;
-            if ((_scopes != null) && (_scopes.Length > JsonGlobals.maxScopeSize))
+            if ((_scopes is not null) && (_scopes.Length > JsonGlobals.maxScopeSize))
             {
                 _scopes = null;
             }
@@ -1612,7 +1612,7 @@ namespace System.Runtime.Serialization.Json
         [return: NotNullIfNotNull("val")]
         private string? UnescapeJsonString(string? val)
         {
-            if (val == null)
+            if (val is null)
             {
                 return null;
             }
@@ -1624,7 +1624,7 @@ namespace System.Runtime.Serialization.Json
                 if (val[i] == '\\')
                 {
                     i++;
-                    if (sb == null)
+                    if (sb is null)
                     {
                         sb = new StringBuilder();
                     }
@@ -1675,7 +1675,7 @@ namespace System.Runtime.Serialization.Json
                     count++;
                 }
             }
-            if (sb == null)
+            if (sb is null)
             {
                 return val;
             }

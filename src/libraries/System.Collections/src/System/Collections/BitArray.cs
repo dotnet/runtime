@@ -63,11 +63,11 @@ namespace System.Collections
         ** represents the lowest index value; bytes[0] & 1 represents bit 0,
         ** bytes[0] & 2 represents bit 1, bytes[0] & 4 represents bit 2, etc.
         **
-        ** Exceptions: ArgumentException if bytes == null.
+        ** Exceptions: ArgumentException if bytes is null.
         =========================================================================*/
         public BitArray(byte[] bytes)
         {
-            if (bytes == null)
+            if (bytes is null)
             {
                 throw new ArgumentNullException(nameof(bytes));
             }
@@ -123,7 +123,7 @@ namespace System.Collections
         private const uint Vector256IntCount = 8;
         public unsafe BitArray(bool[] values)
         {
-            if (values == null)
+            if (values is null)
             {
                 throw new ArgumentNullException(nameof(values));
             }
@@ -235,11 +235,11 @@ namespace System.Collections
         ** integer represents the lowest index value; values[0] & 1 represents bit
         ** 0, values[0] & 2 represents bit 1, values[0] & 4 represents bit 2, etc.
         **
-        ** Exceptions: ArgumentException if values == null.
+        ** Exceptions: ArgumentException if values is null.
         =========================================================================*/
         public BitArray(int[] values)
         {
-            if (values == null)
+            if (values is null)
             {
                 throw new ArgumentNullException(nameof(values));
             }
@@ -260,11 +260,11 @@ namespace System.Collections
         /*=========================================================================
         ** Allocates a new BitArray with the same length and bit values as bits.
         **
-        ** Exceptions: ArgumentException if bits == null.
+        ** Exceptions: ArgumentException if bits is null.
         =========================================================================*/
         public BitArray(BitArray bits)
         {
-            if (bits == null)
+            if (bits is null)
             {
                 throw new ArgumentNullException(nameof(bits));
             }
@@ -347,12 +347,12 @@ namespace System.Collections
         /*=========================================================================
         ** Returns a reference to the current instance ANDed with value.
         **
-        ** Exceptions: ArgumentException if value == null or
+        ** Exceptions: ArgumentException if value is null or
         **             value.Length != this.Length.
         =========================================================================*/
         public unsafe BitArray And(BitArray value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
@@ -433,12 +433,12 @@ namespace System.Collections
         /*=========================================================================
         ** Returns a reference to the current instance ORed with value.
         **
-        ** Exceptions: ArgumentException if value == null or
+        ** Exceptions: ArgumentException if value is null or
         **             value.Length != this.Length.
         =========================================================================*/
         public unsafe BitArray Or(BitArray value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
@@ -519,12 +519,12 @@ namespace System.Collections
         /*=========================================================================
         ** Returns a reference to the current instance XORed with value.
         **
-        ** Exceptions: ArgumentException if value == null or
+        ** Exceptions: ArgumentException if value is null or
         **             value.Length != this.Length.
         =========================================================================*/
         public unsafe BitArray Xor(BitArray value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
@@ -847,7 +847,7 @@ namespace System.Collections
 
         public unsafe void CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
 
             if (index < 0)

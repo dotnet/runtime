@@ -194,7 +194,7 @@ namespace System.Collections.Immutable
                 // Creating an instance of ImmutableSortedMap<T> with our root node automatically freezes our tree,
                 // ensuring that the returned instance is immutable.  Any further mutations made to this builder
                 // will clone (and unfreeze) the spine of modified nodes until the next time this method is invoked.
-                if (_immutable == null)
+                if (_immutable is null)
                 {
                     _immutable = ImmutableHashSet<T>.Wrap(_root, _equalityComparer, _count);
                 }
@@ -210,7 +210,7 @@ namespace System.Collections.Immutable
             /// <returns>A value indicating whether the search was successful.</returns>
             public bool TryGetValue(T equalValue, out T actualValue)
             {
-                int hashCode = equalValue != null ? _equalityComparer.GetHashCode(equalValue) : 0;
+                int hashCode = equalValue is not null ? _equalityComparer.GetHashCode(equalValue) : 0;
                 if (_root.TryGetValue(hashCode, out HashBucket bucket))
                 {
                     return bucket.TryExchange(equalValue, _equalityComparer, out actualValue);

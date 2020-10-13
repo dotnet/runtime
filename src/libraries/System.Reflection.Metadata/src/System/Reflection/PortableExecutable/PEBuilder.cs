@@ -25,7 +25,7 @@ namespace System.Reflection.PortableExecutable
 
             public Section(string name, SectionCharacteristics characteristics)
             {
-                if (name == null)
+                if (name is null)
                 {
                     Throw.ArgumentNull(nameof(name));
                 }
@@ -60,13 +60,13 @@ namespace System.Reflection.PortableExecutable
 
         protected PEBuilder(PEHeaderBuilder header, Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider)
         {
-            if (header == null)
+            if (header is null)
             {
                 Throw.ArgumentNull(nameof(header));
             }
 
             IdProvider = deterministicIdProvider ?? BlobContentId.GetTimeBasedProvider();
-            IsDeterministic = deterministicIdProvider != null;
+            IsDeterministic = deterministicIdProvider is not null;
             Header = header;
             _lazySections = new Lazy<ImmutableArray<Section>>(CreateSections);
         }
@@ -489,14 +489,14 @@ namespace System.Reflection.PortableExecutable
 
         internal void Sign(BlobBuilder peImage, Blob strongNameSignatureFixup, Func<IEnumerable<Blob>, byte[]> signatureProvider)
         {
-            Debug.Assert(peImage != null);
-            Debug.Assert(signatureProvider != null);
+            Debug.Assert(peImage is not null);
+            Debug.Assert(signatureProvider is not null);
 
             int peHeadersSize = Header.ComputeSizeOfPEHeaders(GetSections().Length);
             byte[] signature = signatureProvider(GetContentToSign(peImage, peHeadersSize, Header.FileAlignment, strongNameSignatureFixup));
 
             // signature may be shorter (the rest of the reserved space is padding):
-            if (signature == null || signature.Length > strongNameSignatureFixup.Length)
+            if (signature is null || signature.Length > strongNameSignatureFixup.Length)
             {
                 throw new InvalidOperationException(SR.SignatureProviderReturnedInvalidSignature);
             }

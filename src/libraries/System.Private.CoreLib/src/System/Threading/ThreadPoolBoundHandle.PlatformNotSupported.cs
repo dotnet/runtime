@@ -15,7 +15,7 @@ namespace System.Threading
 
         public static ThreadPoolBoundHandle BindHandle(SafeHandle handle)
         {
-            if (handle == null)
+            if (handle is null)
                 throw new ArgumentNullException(nameof(handle));
 
             if (handle.IsClosed || handle.IsInvalid)
@@ -27,7 +27,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(IOCompletionCallback callback, object? state, object? pinData)
         {
-            if (callback == null)
+            if (callback is null)
                 throw new ArgumentNullException(nameof(callback));
 
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
@@ -36,7 +36,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public unsafe NativeOverlapped* AllocateNativeOverlapped(PreAllocatedOverlapped preAllocated)
         {
-            if (preAllocated == null)
+            if (preAllocated is null)
                 throw new ArgumentNullException(nameof(preAllocated));
 
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
@@ -45,7 +45,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public unsafe void FreeNativeOverlapped(NativeOverlapped* overlapped)
         {
-            if (overlapped == null)
+            if (overlapped is null)
                 throw new ArgumentNullException(nameof(overlapped));
 
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);
@@ -54,7 +54,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe object? GetNativeOverlappedState(NativeOverlapped* overlapped)
         {
-            if (overlapped == null)
+            if (overlapped is null)
                 throw new ArgumentNullException(nameof(overlapped));
 
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_OverlappedIO);

@@ -94,7 +94,7 @@ namespace System.Reflection.Emit
 
         private void AddName(string name)
         {
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
 
             if (_nestedName)
                 Append('+');
@@ -128,7 +128,7 @@ namespace System.Reflection.Emit
 
         private void AddAssemblySpec(string assemblySpec)
         {
-            if (assemblySpec != null && !assemblySpec.Equals(""))
+            if (assemblySpec is not null && !assemblySpec.Equals(""))
             {
                 Append(", ");
 
@@ -305,7 +305,7 @@ namespace System.Reflection.Emit
 
             // Append namespace + nesting + name
             var nestings = new List<Type>();
-            for (Type? t = rootType; t != null; t = t.IsGenericParameter ? null : t.DeclaringType)
+            for (Type? t = rootType; t is not null; t = t.IsGenericParameter ? null : t.DeclaringType)
                 nestings.Add(t);
 
             for (int i = nestings.Count - 1; i >= 0; i--)
@@ -313,7 +313,7 @@ namespace System.Reflection.Emit
                 Type enclosingType = nestings[i];
                 string name = enclosingType.Name;
 
-                if (i == nestings.Count - 1 && enclosingType.Namespace != null && enclosingType.Namespace.Length != 0)
+                if (i == nestings.Count - 1 && enclosingType.Namespace is not null && enclosingType.Namespace.Length != 0)
                     name = enclosingType.Namespace + "." + name;
 
                 AddName(name);

@@ -392,7 +392,7 @@ namespace System.Reflection.Metadata.Ecma335
             AssemblyFlags flags,
             AssemblyHashAlgorithm hashAlgorithm)
         {
-            if (version == null)
+            if (version is null)
             {
                 Throw.ArgumentNull(nameof(version));
             }
@@ -423,7 +423,7 @@ namespace System.Reflection.Metadata.Ecma335
             AssemblyFlags flags,
             BlobHandle hashValue)
         {
-            if (version == null)
+            if (version is null)
             {
                 Throw.ArgumentNull(nameof(version));
             }

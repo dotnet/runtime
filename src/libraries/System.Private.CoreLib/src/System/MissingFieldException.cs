@@ -42,14 +42,14 @@ namespace System
         {
             get
             {
-                if (ClassName == null)
+                if (ClassName is null)
                 {
                     return base.Message;
                 }
                 else
                 {
                     // do any desired fixups to classname here.
-                    return SR.Format(SR.MissingField_Name, (Signature != null ? FormatSignature(Signature) + " " : "") + ClassName + "." + MemberName);
+                    return SR.Format(SR.MissingField_Name, (Signature is not null ? FormatSignature(Signature) + " " : "") + ClassName + "." + MemberName);
                 }
             }
         }

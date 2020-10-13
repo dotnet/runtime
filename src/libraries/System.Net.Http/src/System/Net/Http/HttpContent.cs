@@ -76,8 +76,8 @@ namespace System.Net.Http
 
         private static void AssertEncodingConstants(Encoding encoding, int codePage, int preambleLength, int first2Bytes, params byte[] preamble)
         {
-            Debug.Assert(encoding != null);
-            Debug.Assert(preamble != null);
+            Debug.Assert(encoding is not null);
+            Debug.Assert(preamble is not null);
 
             Debug.Assert(codePage == encoding.CodePage,
                 "Encoding code page mismatch for encoding: " + encoding.EncodingName,
@@ -117,7 +117,7 @@ namespace System.Net.Http
         {
             get
             {
-                if (_headers == null)
+                if (_headers is null)
                 {
                     _headers = new HttpContentHeaders(this);
                 }
@@ -127,12 +127,12 @@ namespace System.Net.Http
 
         private bool IsBuffered
         {
-            get { return _bufferedContent != null; }
+            get { return _bufferedContent is not null; }
         }
 
         internal bool TryGetBuffer(out ArraySegment<byte> buffer)
         {
-            if (_bufferedContent != null)
+            if (_bufferedContent is not null)
             {
                 return _bufferedContent.TryGetBuffer(out buffer);
             }
@@ -190,7 +190,7 @@ namespace System.Net.Http
 
             // If we do have encoding information in the 'Content-Type' header, use that information to convert
             // the content to a string.
-            if (charset != null)
+            if (charset is not null)
             {
                 try
                 {
@@ -217,7 +217,7 @@ namespace System.Net.Http
 
             // If no content encoding is listed in the ContentType HTTP header, or no Content-Type header present,
             // then check for a BOM in the data to figure out the encoding.
-            if (encoding == null)
+            if (encoding is null)
             {
                 if (!TryDetectEncoding(buffer, out encoding, out bomLength))
                 {
@@ -245,7 +245,7 @@ namespace System.Net.Http
 
         internal byte[] ReadBufferedContentAsByteArray()
         {
-            Debug.Assert(_bufferedContent != null);
+            Debug.Assert(_bufferedContent is not null);
             // The returned array is exposed out of the library, so use ToArray rather
             // than TryGetBuffer in order to make a copy.
             return _bufferedContent.ToArray();
@@ -262,7 +262,7 @@ namespace System.Net.Http
             // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized
             // in ReadAsStreamAsync).
 
-            if (_contentReadStream == null) // don't yet have a Stream
+            if (_contentReadStream is null) // don't yet have a Stream
             {
                 Stream s = TryGetBuffer(out ArraySegment<byte> buffer) ?
                     new MemoryStream(buffer.Array!, buffer.Offset, buffer.Count, writable: false) :
@@ -292,7 +292,7 @@ namespace System.Net.Http
             // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized here
             // in ReadAsStreamAsync).
 
-            if (_contentReadStream == null) // don't yet have a Stream
+            if (_contentReadStream is null) // don't yet have a Stream
             {
                 Task<Stream> t = TryGetBuffer(out ArraySegment<byte> buffer) ?
                     Task.FromResult<Stream>(new MemoryStream(buffer.Array!, buffer.Offset, buffer.Count, writable: false)) :
@@ -321,7 +321,7 @@ namespace System.Net.Http
             // initialized in TryReadAsStream/ReadAsStream), or a Task<Stream> (it was previously initialized here
             // in ReadAsStreamAsync).
 
-            if (_contentReadStream == null) // don't yet have a Stream
+            if (_contentReadStream is null) // don't yet have a Stream
             {
                 Stream? s = TryGetBuffer(out ArraySegment<byte> buffer) ?
                     new MemoryStream(buffer.Array!, buffer.Offset, buffer.Count, writable: false) :
@@ -365,7 +365,7 @@ namespace System.Net.Http
         public void CopyTo(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             CheckDisposed();
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
@@ -399,7 +399,7 @@ namespace System.Net.Http
         public Task CopyToAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             CheckDisposed();
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
@@ -448,7 +448,7 @@ namespace System.Net.Http
                 return;
             }
 
-            if (tempBuffer == null)
+            if (tempBuffer is null)
             {
                 throw error!;
             }
@@ -510,7 +510,7 @@ namespace System.Net.Http
                 return Task.CompletedTask;
             }
 
-            if (tempBuffer == null)
+            if (tempBuffer is null)
             {
                 // We don't throw in LoadIntoBufferAsync(): return a faulted task.
                 return Task.FromException(error!);
@@ -643,7 +643,7 @@ namespace System.Net.Http
             // content length exceeds the max. buffer size.
             long? contentLength = Headers.ContentLength;
 
-            if (contentLength != null)
+            if (contentLength is not null)
             {
                 Debug.Assert(contentLength >= 0);
 
@@ -669,7 +669,7 @@ namespace System.Net.Http
             {
                 _disposed = true;
 
-                if (_contentReadStream != null)
+                if (_contentReadStream is not null)
                 {
                     Stream? s = _contentReadStream as Stream ??
                         (_contentReadStream is Task<Stream> t && t.Status == TaskStatus.RanToCompletion ? t.Result : null);
@@ -704,7 +704,7 @@ namespace System.Net.Http
 
         private void CheckTaskNotNull(Task task)
         {
-            if (task == null)
+            if (task is null)
             {
                 var e = new InvalidOperationException(SR.net_http_content_no_task_returned);
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
@@ -742,8 +742,8 @@ namespace System.Net.Http
             int offset = buffer.Offset;
             int dataLength = buffer.Count;
 
-            Debug.Assert(data != null);
-            Debug.Assert(encoding != null);
+            Debug.Assert(data is not null);
+            Debug.Assert(encoding is not null);
 
             switch (encoding.CodePage)
             {
@@ -780,7 +780,7 @@ namespace System.Net.Http
             int offset = buffer.Offset;
             int dataLength = buffer.Count;
 
-            Debug.Assert(data != null);
+            Debug.Assert(data is not null);
 
             if (dataLength >= 2)
             {
@@ -826,7 +826,7 @@ namespace System.Net.Http
         private static bool BufferHasPrefix(ArraySegment<byte> buffer, byte[] prefix)
         {
             byte[]? byteArray = buffer.Array;
-            if (prefix == null || byteArray == null || prefix.Length > buffer.Count || prefix.Length == 0)
+            if (prefix is null || byteArray is null || prefix.Length > buffer.Count || prefix.Length == 0)
                 return false;
 
             for (int i = 0, j = buffer.Offset; i < prefix.Length; i++, j++)
@@ -960,7 +960,7 @@ namespace System.Net.Http
 
             protected override void Dispose(bool disposing)
             {
-                Debug.Assert(_buffer != null);
+                Debug.Assert(_buffer is not null);
 
                 ArrayPool<byte>.Shared.Return(_buffer);
                 _buffer = null!;
@@ -1017,7 +1017,7 @@ namespace System.Net.Http
 
             public override void Write(byte[] buffer, int offset, int count)
             {
-                Debug.Assert(buffer != null);
+                Debug.Assert(buffer is not null);
                 Debug.Assert(offset >= 0);
                 Debug.Assert(count >= 0);
 

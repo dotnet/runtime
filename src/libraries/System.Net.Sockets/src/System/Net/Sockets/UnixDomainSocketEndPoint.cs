@@ -16,7 +16,7 @@ namespace System.Net.Sockets
 
         public UnixDomainSocketEndPoint(string path)
         {
-            if (path == null)
+            if (path is null)
             {
                 throw new ArgumentNullException(nameof(path));
             }
@@ -53,7 +53,7 @@ namespace System.Net.Sockets
 
         internal UnixDomainSocketEndPoint(SocketAddress socketAddress)
         {
-            if (socketAddress == null)
+            if (socketAddress is null)
             {
                 throw new ArgumentNullException(nameof(socketAddress));
             }

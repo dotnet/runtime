@@ -85,7 +85,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     this.ThrowIfDisposed();
-                    if (_current != null)
+                    if (_current is not null)
                     {
                         return _current.Value;
                     }
@@ -115,7 +115,7 @@ namespace System.Collections.Immutable
             {
                 _root = null!;
                 _current = null;
-                if (_stack != null && _stack.TryUse(ref this, out Stack<RefAsValueType<SortedInt32KeyNode<TValue>>>? stack))
+                if (_stack is not null && _stack.TryUse(ref this, out Stack<RefAsValueType<SortedInt32KeyNode<TValue>>>? stack))
                 {
                     stack.ClearFastWhenEmpty();
                     s_enumeratingStacks.TryAdd(this, _stack!);
@@ -132,7 +132,7 @@ namespace System.Collections.Immutable
             {
                 this.ThrowIfDisposed();
 
-                if (_stack != null)
+                if (_stack is not null)
                 {
                     var stack = _stack.Use(ref this);
                     if (stack.Count > 0)
@@ -156,7 +156,7 @@ namespace System.Collections.Immutable
                 this.ThrowIfDisposed();
 
                 _current = null;
-                if (_stack != null)
+                if (_stack is not null)
                 {
                     var stack = _stack.Use(ref this);
                     stack.ClearFastWhenEmpty();
@@ -175,7 +175,7 @@ namespace System.Collections.Immutable
                 // For enumerators of empty collections, there isn't any natural
                 // way to know when a copy of the struct has been disposed of.
 
-                if (_root == null || (_stack != null && !_stack.IsOwned(ref this)))
+                if (_root is null || (_stack is not null && !_stack.IsOwned(ref this)))
                 {
                     Requires.FailObjectDisposed(this);
                 }

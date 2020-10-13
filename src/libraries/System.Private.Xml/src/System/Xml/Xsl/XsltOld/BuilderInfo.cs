@@ -90,12 +90,12 @@ namespace System.Xml.Xsl.XsltOld
         {
             get
             {
-                if (_name == null)
+                if (_name is null)
                 {
                     string prefix = Prefix;
                     string localName = LocalName;
 
-                    if (prefix != null && 0 < prefix.Length)
+                    if (prefix is not null && 0 < prefix.Length)
                     {
                         if (localName.Length > 0)
                         {
@@ -147,14 +147,14 @@ namespace System.Xml.Xsl.XsltOld
                         for (int i = 0; i < this.TextInfoCount; i++)
                         {
                             string? ti = this.TextInfo[i];
-                            if (ti == null) continue; // ignore disableEscaping
+                            if (ti is null) continue; // ignore disableEscaping
                             size += ti.Length;
                         }
                         StringBuilder sb = new StringBuilder(size);
                         for (int i = 0; i < this.TextInfoCount; i++)
                         {
                             string? ti = this.TextInfo[i];
-                            if (ti == null) continue; // ignore disableEscaping
+                            if (ti is null) continue; // ignore disableEscaping
                             sb.Append(ti);
                         }
                         return sb.ToString();
@@ -169,7 +169,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void ValueAppend(string? s, bool disableEscaping)
         {
-            if (s == null || s.Length == 0)
+            if (s is null || s.Length == 0)
             {
                 return;
             }

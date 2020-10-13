@@ -64,10 +64,10 @@ namespace System.Xml.Xsl.Runtime
                 // Load the default document from a Uri
                 _defaultDataSource = GetDataSource(defaultDataSource as string, null);
 
-                if (_defaultDataSource == null)
+                if (_defaultDataSource is null)
                     throw new XslTransformException(SR.XmlIl_UnknownDocument, defaultDataSource as string);
             }
-            else if (defaultDataSource != null)
+            else if (defaultDataSource is not null)
             {
                 _defaultDataSource = ConstructDocument(defaultDataSource, null, null);
             }
@@ -92,7 +92,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XmlNameTable DefaultNameTable
         {
-            get { return _defaultDataSource != null ? _defaultDataSource.NameTable : null; }
+            get { return _defaultDataSource is not null ? _defaultDataSource.NameTable : null; }
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace System.Xml.Xsl.Runtime
             get
             {
                 // Throw exception if there is no default data source to return
-                if (_defaultDataSource == null)
+                if (_defaultDataSource is null)
                     throw new XslTransformException(SR.XmlIl_NoDefaultDocument, string.Empty);
 
                 return _defaultDataSource;
@@ -124,17 +124,17 @@ namespace System.Xml.Xsl.Runtime
             try
             {
                 // If the data source has already been retrieved, then return the data source from the cache.
-                uriResolvedBase = (uriBase != null) ? _dataSources.ResolveUri(null, uriBase) : null;
+                uriResolvedBase = (uriBase is not null) ? _dataSources.ResolveUri(null, uriBase) : null;
                 uriResolved = _dataSources.ResolveUri(uriResolvedBase, uriRelative);
-                if (uriResolved != null)
+                if (uriResolved is not null)
                     nav = _dataSourceCache[uriResolved] as XPathNavigator;
 
-                if (nav == null)
+                if (nav is null)
                 {
                     // Get the entity from the resolver and ensure it is cached as a document
                     input = _dataSources.GetEntity(uriResolved, null, null);
 
-                    if (input != null)
+                    if (input is not null)
                     {
                         // Construct a document from the entity and add the document to the cache
                         nav = ConstructDocument(input, uriRelative, uriResolved);
@@ -164,12 +164,12 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         private XPathNavigator ConstructDocument(object dataSource, string uriRelative, Uri uriResolved)
         {
-            Debug.Assert(dataSource != null, "GetType() below assumes dataSource is not null");
+            Debug.Assert(dataSource is not null, "GetType() below assumes dataSource is not null");
             Stream stream = dataSource as Stream;
-            if (stream != null)
+            if (stream is not null)
             {
                 // Create document from stream
-                XmlReader reader = _readerSettings.CreateReader(stream, uriResolved != null ? uriResolved.ToString() : null);
+                XmlReader reader = _readerSettings.CreateReader(stream, uriResolved is not null ? uriResolved.ToString() : null);
 
                 try
                 {
@@ -190,13 +190,13 @@ namespace System.Xml.Xsl.Runtime
             }
             else if (dataSource is IXPathNavigable)
             {
-                if (_wsRules != null)
+                if (_wsRules is not null)
                     throw new XslTransformException(SR.XmlIl_CantStripNav, string.Empty);
 
                 return (dataSource as IXPathNavigable).CreateNavigator();
             }
 
-            Debug.Assert(uriRelative != null, "Relative URI should not be null");
+            Debug.Assert(uriRelative is not null, "Relative URI should not be null");
             throw new XslTransformException(SR.XmlIl_CantResolveEntity, uriRelative, dataSource.GetType().ToString());
         }
 
@@ -211,7 +211,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public object GetParameter(string localName, string namespaceUri)
         {
-            return (_argList != null) ? _argList.GetParam(localName, namespaceUri) : null;
+            return (_argList is not null) ? _argList.GetParam(localName, namespaceUri) : null;
         }
 
 
@@ -224,7 +224,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public object GetLateBoundObject(string namespaceUri)
         {
-            return (_argList != null) ? _argList.GetExtensionObject(namespaceUri) : null;
+            return (_argList is not null) ? _argList.GetExtensionObject(namespaceUri) : null;
         }
 
         /// <summary>
@@ -234,11 +234,11 @@ namespace System.Xml.Xsl.Runtime
         {
             object instance;
 
-            if (_argList == null)
+            if (_argList is null)
                 return false;
 
             instance = _argList.GetExtensionObject(namespaceUri);
-            if (instance == null)
+            if (instance is null)
                 return false;
 
             return new XmlExtensionFunction(name, namespaceUri, -1, instance.GetType(), XmlQueryRuntime.LateBoundFlags).CanBind();
@@ -257,12 +257,12 @@ namespace System.Xml.Xsl.Runtime
             object objRet;
 
             // Get external object instance from argument list (throw if either the list or the instance doesn't exist)
-            instance = (_argList != null) ? _argList.GetExtensionObject(namespaceUri) : null;
-            if (instance == null)
+            instance = (_argList is not null) ? _argList.GetExtensionObject(namespaceUri) : null;
+            if (instance is null)
                 throw new XslTransformException(SR.XmlIl_UnknownExtObj, namespaceUri);
 
             // Bind to a method on the instance object
-            if (_extFuncsLate == null)
+            if (_extFuncsLate is null)
                 _extFuncsLate = new XmlExtensionFunctionTable();
 
             // Bind to the instance, looking for a matching method (throws if no matching method)
@@ -309,7 +309,7 @@ namespace System.Xml.Xsl.Runtime
             objRet = extFunc.Invoke(instance, objActualArgs);
 
             // 2. Convert to IList<XPathItem>
-            if (objRet == null && extFunc.ClrReturnType == XsltConvert.VoidType)
+            if (objRet is null && extFunc.ClrReturnType == XsltConvert.VoidType)
                 return XmlQueryNodeSequence.Empty;
 
             return (IList<XPathItem>)_runtime.ChangeTypeXsltResult(XmlQueryTypeFactory.ItemS, objRet);
@@ -325,9 +325,9 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void OnXsltMessageEncountered(string message)
         {
-            XsltMessageEncounteredEventHandler onMessage = (_argList != null) ? _argList.xsltMessageEncountered : null;
+            XsltMessageEncounteredEventHandler onMessage = (_argList is not null) ? _argList.xsltMessageEncountered : null;
 
-            if (onMessage != null)
+            if (onMessage is not null)
                 onMessage(this, new XmlILQueryEventArgs(message));
         }
     }

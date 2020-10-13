@@ -60,37 +60,37 @@ namespace System.Reflection.Emit
 
         public override EventAttributes Attributes
         {
-            get { return event_builder != null ? event_builder.attrs : event_info!.Attributes; }
+            get { return event_builder is not null ? event_builder.attrs : event_info!.Attributes; }
         }
 
         public override MethodInfo? GetAddMethod(bool nonPublic)
         {
-            MethodInfo? add = event_builder != null ? event_builder.add_method : event_info!.GetAddMethod(nonPublic);
-            if (add == null || (!nonPublic && !add.IsPublic))
+            MethodInfo? add = event_builder is not null ? event_builder.add_method : event_info!.GetAddMethod(nonPublic);
+            if (add is null || (!nonPublic && !add.IsPublic))
                 return null;
             return TypeBuilder.GetMethod(instantiation, add);
         }
 
         public override MethodInfo? GetRaiseMethod(bool nonPublic)
         {
-            MethodInfo? raise = event_builder != null ? event_builder.raise_method : event_info!.GetRaiseMethod(nonPublic);
-            if (raise == null || (!nonPublic && !raise.IsPublic))
+            MethodInfo? raise = event_builder is not null ? event_builder.raise_method : event_info!.GetRaiseMethod(nonPublic);
+            if (raise is null || (!nonPublic && !raise.IsPublic))
                 return null;
             return TypeBuilder.GetMethod(instantiation, raise);
         }
 
         public override MethodInfo? GetRemoveMethod(bool nonPublic)
         {
-            MethodInfo? remove = event_builder != null ? event_builder.remove_method : event_info!.GetRemoveMethod(nonPublic);
-            if (remove == null || (!nonPublic && !remove.IsPublic))
+            MethodInfo? remove = event_builder is not null ? event_builder.remove_method : event_info!.GetRemoveMethod(nonPublic);
+            if (remove is null || (!nonPublic && !remove.IsPublic))
                 return null;
             return TypeBuilder.GetMethod(instantiation, remove);
         }
 
         public override MethodInfo[] GetOtherMethods(bool nonPublic)
         {
-            MethodInfo[]? other = event_builder != null ? event_builder.other_methods : event_info!.GetOtherMethods(nonPublic);
-            if (other == null)
+            MethodInfo[]? other = event_builder is not null ? event_builder.other_methods : event_info!.GetOtherMethods(nonPublic);
+            if (other is null)
                 return Array.Empty<MethodInfo>();
 
             List<MethodInfo> res = new List<MethodInfo>();
@@ -109,7 +109,7 @@ namespace System.Reflection.Emit
 
         public override string Name
         {
-            get { return event_builder != null ? event_builder.name : event_info!.Name; }
+            get { return event_builder is not null ? event_builder.name : event_info!.Name; }
         }
 
         public override Type ReflectedType

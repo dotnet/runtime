@@ -52,7 +52,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             try
             {
                 ServiceCallSite callSite = CallSiteFactory.GetCallSite(descriptor, new CallSiteChain());
-                if (callSite != null)
+                if (callSite is not null)
                 {
                     _callback?.OnCreate(callSite);
                 }
@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         private Func<ServiceProviderEngineScope, object> CreateServiceAccessor(Type serviceType)
         {
             ServiceCallSite callSite = CallSiteFactory.GetCallSite(serviceType, new CallSiteChain());
-            if (callSite != null)
+            if (callSite is not null)
             {
                 DependencyInjectionEventSource.Log.CallSiteBuilt(serviceType, callSite);
                 _callback?.OnCreate(callSite);

@@ -92,17 +92,17 @@ namespace System.Reflection.Emit
             MethodInfo? setter = GetSetMethod(nonPublic);
 
             int methods = 0;
-            if (getter != null)
+            if (getter is not null)
                 ++methods;
-            if (setter != null)
+            if (setter is not null)
                 ++methods;
 
             MethodInfo[] res = new MethodInfo[methods];
 
             methods = 0;
-            if (getter != null)
+            if (getter is not null)
                 res[methods++] = getter;
-            if (setter != null)
+            if (setter is not null)
                 res[methods] = setter;
 
             return res;
@@ -112,7 +112,7 @@ namespace System.Reflection.Emit
         public override MethodInfo? GetGetMethod(bool nonPublic)
         {
             MethodInfo? mi = prop.GetGetMethod(nonPublic);
-            if (mi != null && prop.DeclaringType == instantiation.generic_type)
+            if (mi is not null && prop.DeclaringType == instantiation.generic_type)
             {
                 mi = TypeBuilder.GetMethod(instantiation, mi);
             }
@@ -122,7 +122,7 @@ namespace System.Reflection.Emit
         public override ParameterInfo[] GetIndexParameters()
         {
             MethodInfo? method = GetGetMethod(true);
-            if (method != null)
+            if (method is not null)
                 return method.GetParameters();
 
             return Array.Empty<ParameterInfo>();
@@ -131,7 +131,7 @@ namespace System.Reflection.Emit
         public override MethodInfo? GetSetMethod(bool nonPublic)
         {
             MethodInfo? mi = prop.GetSetMethod(nonPublic);
-            if (mi != null && prop.DeclaringType == instantiation.generic_type)
+            if (mi is not null && prop.DeclaringType == instantiation.generic_type)
             {
                 mi = TypeBuilder.GetMethod(instantiation, mi);
             }

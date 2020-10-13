@@ -32,7 +32,7 @@ namespace System.Reflection
                 for (int i = 0; i < types.Length; i++)
                 {
                     TypeInfo typeinfo = types[i].GetTypeInfo();
-                    if (typeinfo == null)
+                    if (typeinfo is null)
                         throw new NotSupportedException(SR.Format(SR.NotSupported_NoTypeInfo, types[i].FullName));
 
                     typeinfos[i] = typeinfo;
@@ -127,7 +127,7 @@ namespace System.Reflection
         public virtual object? CreateInstance(string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object[]? args, CultureInfo? culture, object[]? activationAttributes)
         {
             Type? t = GetType(typeName, throwOnError: false, ignoreCase: ignoreCase);
-            if (t == null)
+            if (t is null)
                 return null;
 
             return Activator.CreateInstance(t, bindingAttr, binder, args, culture, activationAttributes);
@@ -175,7 +175,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Assembly? left, Assembly? right)
         {
-            // Test "right" first to allow branch elimination when inlined for null checks (== null)
+            // Test "right" first to allow branch elimination when inlined for null checks (is null)
             // so it can become a simple test
             if (right is null)
             {
@@ -198,11 +198,11 @@ namespace System.Reflection
 
         public static Assembly? GetAssembly(Type type)
         {
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
             Module m = type.Module;
-            if (m == null)
+            if (m is null)
                 return null;
             else
                 return m.Assembly;
@@ -228,7 +228,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly Load(byte[] rawAssembly, byte[]? rawSymbolStore)
         {
-            if (rawAssembly == null)
+            if (rawAssembly is null)
                 throw new ArgumentNullException(nameof(rawAssembly));
 
             if (rawAssembly.Length == 0)
@@ -244,7 +244,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly LoadFile(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             if (PathInternal.IsPartiallyQualified(path))
@@ -271,7 +271,7 @@ namespace System.Reflection
         private static Assembly? LoadFromResolveHandler(object? sender, ResolveEventArgs args)
         {
             Assembly? requestingAssembly = args.RequestingAssembly;
-            if (requestingAssembly == null)
+            if (requestingAssembly is null)
             {
                 return null;
             }
@@ -328,7 +328,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public static Assembly LoadFrom(string assemblyFile)
         {
-            if (assemblyFile == null)
+            if (assemblyFile is null)
                 throw new ArgumentNullException(nameof(assemblyFile));
 
             string fullPath = Path.GetFullPath(assemblyFile);

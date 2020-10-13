@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization.Json
             }
             else
             {
-                if (encoding == null)
+                if (encoding is null)
                 {
                     throw new ArgumentNullException(nameof(encoding));
                 }
@@ -188,8 +188,8 @@ namespace System.Runtime.Serialization.Json
                         return _stream.Read(buffer, offset, count);
                     }
 
-                    Debug.Assert(_bytes != null);
-                    Debug.Assert(_chars != null);
+                    Debug.Assert(_bytes is not null);
+                    Debug.Assert(_chars is not null);
                     // No more bytes than can be turned into characters
                     _byteOffset = 0;
                     _byteCount = _stream.Read(_bytes, _byteCount, (_chars.Length - 1) * 2);
@@ -257,8 +257,8 @@ namespace System.Runtime.Serialization.Json
                 return;
             }
 
-            Debug.Assert(_bytes != null);
-            Debug.Assert(_chars != null);
+            Debug.Assert(_bytes is not null);
+            Debug.Assert(_chars is not null);
             while (count > 0)
             {
                 int size = _chars.Length < count ? _chars.Length : count;
@@ -301,7 +301,7 @@ namespace System.Runtime.Serialization.Json
 
         private static SupportedEncoding GetSupportedEncoding(Encoding? encoding)
         {
-            if (encoding == null)
+            if (encoding is null)
             {
                 return SupportedEncoding.None;
             }
@@ -352,7 +352,7 @@ namespace System.Runtime.Serialization.Json
 
         private void CleanupCharBreak()
         {
-            Debug.Assert(_bytes != null);
+            Debug.Assert(_bytes is not null);
 
             int max = _byteOffset + _byteCount;
 
@@ -398,7 +398,7 @@ namespace System.Runtime.Serialization.Json
         private void EnsureBuffers()
         {
             EnsureByteBuffer();
-            if (_chars == null)
+            if (_chars is null)
             {
                 _chars = new char[BufferLength];
             }
@@ -407,7 +407,7 @@ namespace System.Runtime.Serialization.Json
         [MemberNotNull(nameof(_bytes))]
         private void EnsureByteBuffer()
         {
-            if (_bytes != null)
+            if (_bytes is not null)
             {
                 return;
             }
@@ -419,7 +419,7 @@ namespace System.Runtime.Serialization.Json
 
         private void FillBuffer(int count)
         {
-            Debug.Assert(_bytes != null);
+            Debug.Assert(_bytes is not null);
 
             count -= _byteCount;
             while (count > 0)

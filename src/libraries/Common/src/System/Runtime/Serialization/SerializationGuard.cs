@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization
             MethodInfo? throwMethod = typeof(SerializationInfo).GetMethod("ThrowIfDeserializationInProgress",
                 BindingFlags.Static | BindingFlags.NonPublic | BindingFlags.Public, null, new Type[] { typeof(string), typeof(int).MakeByRefType() }, Array.Empty<ParameterModifier>());
 
-            if (throwMethod != null)
+            if (throwMethod is not null)
             {
                 throwIfDeserializationInProgressDelegate = throwMethod.CreateDelegate<ThrowIfDeserializationInProgressWithSwitchDel>();
             }

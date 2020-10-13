@@ -22,11 +22,11 @@ namespace System.Net
 
         public void Add(Uri uriPrefix, string authType, NetworkCredential cred)
         {
-            if (uriPrefix == null)
+            if (uriPrefix is null)
             {
                 throw new ArgumentNullException(nameof(uriPrefix));
             }
-            if (authType == null)
+            if (authType is null)
             {
                 throw new ArgumentNullException(nameof(authType));
             }
@@ -46,7 +46,7 @@ namespace System.Net
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{cred.Domain}],[{cred.UserName}]");
 
-            if (_cache == null)
+            if (_cache is null)
             {
                 _cache = new Dictionary<CredentialKey, NetworkCredential>();
             }
@@ -56,12 +56,12 @@ namespace System.Net
 
         public void Add(string host, int port, string authenticationType, NetworkCredential credential)
         {
-            if (host == null)
+            if (host is null)
             {
                 throw new ArgumentNullException(nameof(host));
             }
 
-            if (authenticationType == null)
+            if (authenticationType is null)
             {
                 throw new ArgumentNullException(nameof(authenticationType));
             }
@@ -91,7 +91,7 @@ namespace System.Net
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Adding key:[{key}], cred:[{credential.Domain}],[{credential.UserName}]");
 
-            if (_cacheForHosts == null)
+            if (_cacheForHosts is null)
             {
                 _cacheForHosts = new Dictionary<CredentialHostKey, NetworkCredential>();
             }
@@ -101,14 +101,14 @@ namespace System.Net
 
         public void Remove(Uri? uriPrefix, string? authType)
         {
-            if (uriPrefix == null || authType == null)
+            if (uriPrefix is null || authType is null)
             {
                 // These couldn't possibly have been inserted into
                 // the cache because of the test in Add().
                 return;
             }
 
-            if (_cache == null)
+            if (_cache is null)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
                 return;
@@ -125,7 +125,7 @@ namespace System.Net
 
         public void Remove(string? host, int port, string? authenticationType)
         {
-            if (host == null || authenticationType == null)
+            if (host is null || authenticationType is null)
             {
                 // These couldn't possibly have been inserted into
                 // the cache because of the test in Add().
@@ -137,7 +137,7 @@ namespace System.Net
                 return;
             }
 
-            if (_cacheForHosts == null)
+            if (_cacheForHosts is null)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Short-circuiting because the dictionary is null.");
                 return;
@@ -154,16 +154,16 @@ namespace System.Net
 
         public NetworkCredential? GetCredential(Uri uriPrefix, string authType)
         {
-            if (uriPrefix == null)
+            if (uriPrefix is null)
             {
                 throw new ArgumentNullException(nameof(uriPrefix));
             }
-            if (authType == null)
+            if (authType is null)
             {
                 throw new ArgumentNullException(nameof(authType));
             }
 
-            if (_cache == null)
+            if (_cache is null)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
                 return null;
@@ -192,18 +192,18 @@ namespace System.Net
                 }
             }
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Returning {(mostSpecificMatch == null ? "null" : "(" + mostSpecificMatch.UserName + ":" + mostSpecificMatch.Domain + ")")}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Returning {(mostSpecificMatch is null ? "null" : "(" + mostSpecificMatch.UserName + ":" + mostSpecificMatch.Domain + ")")}");
 
             return mostSpecificMatch;
         }
 
         public NetworkCredential? GetCredential(string host, int port, string authenticationType)
         {
-            if (host == null)
+            if (host is null)
             {
                 throw new ArgumentNullException(nameof(host));
             }
-            if (authenticationType == null)
+            if (authenticationType is null)
             {
                 throw new ArgumentNullException(nameof(authenticationType));
             }
@@ -216,7 +216,7 @@ namespace System.Net
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
-            if (_cacheForHosts == null)
+            if (_cacheForHosts is null)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "CredentialCache::GetCredential short-circuiting because the dictionary is null.");
                 return null;
@@ -227,7 +227,7 @@ namespace System.Net
             NetworkCredential? match = null;
             _cacheForHosts.TryGetValue(key, out match);
 
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Returning {((match == null) ? "null" : "(" + match.UserName + ":" + match.Domain + ")")}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Returning {((match is null) ? "null" : "(" + match.UserName + ":" + match.Domain + ")")}");
 
             return match;
         }
@@ -242,17 +242,17 @@ namespace System.Net
         {
             internal static CredentialEnumerator Create(CredentialCache cache)
             {
-                Debug.Assert(cache != null);
+                Debug.Assert(cache is not null);
 
-                if (cache._cache != null)
+                if (cache._cache is not null)
                 {
-                    return cache._cacheForHosts != null ?
+                    return cache._cacheForHosts is not null ?
                         new DoubleTableCredentialEnumerator(cache) :
                         new SingleTableCredentialEnumerator<CredentialKey>(cache, cache._cache);
                 }
                 else
                 {
-                    return cache._cacheForHosts != null ?
+                    return cache._cacheForHosts is not null ?
                         new SingleTableCredentialEnumerator<CredentialHostKey>(cache, cache._cacheForHosts) :
                         new CredentialEnumerator(cache);
                 }
@@ -265,7 +265,7 @@ namespace System.Net
 
             private CredentialEnumerator(CredentialCache cache)
             {
-                Debug.Assert(cache != null);
+                Debug.Assert(cache is not null);
 
                 _cache = cache;
                 _version = cache._version;
@@ -315,7 +315,7 @@ namespace System.Net
 
                 public SingleTableCredentialEnumerator(CredentialCache cache, Dictionary<TKey, NetworkCredential> table) : base(cache)
                 {
-                    Debug.Assert(table != null);
+                    Debug.Assert(table is not null);
 
                     // Despite the ValueCollection allocation, ValueCollection's enumerator is faster
                     // than Dictionary's enumerator for enumerating the values because it avoids
@@ -340,7 +340,7 @@ namespace System.Net
 
                 public DoubleTableCredentialEnumerator(CredentialCache cache) : base(cache, cache._cache!)
                 {
-                    Debug.Assert(cache._cacheForHosts != null);
+                    Debug.Assert(cache._cacheForHosts is not null);
 
                     // Despite the ValueCollection allocation, ValueCollection's enumerator is faster
                     // than Dictionary's enumerator for enumerating the values because it avoids
@@ -423,7 +423,7 @@ namespace System.Net
         {
             Debug.Assert(!string.IsNullOrEmpty(host));
             Debug.Assert(port >= 0);
-            Debug.Assert(authenticationType != null);
+            Debug.Assert(authenticationType is not null);
 
             Host = host;
             Port = port;
@@ -462,8 +462,8 @@ namespace System.Net
 
         internal CredentialKey(Uri uriPrefix, string authenticationType)
         {
-            Debug.Assert(uriPrefix != null);
-            Debug.Assert(authenticationType != null);
+            Debug.Assert(uriPrefix is not null);
+            Debug.Assert(authenticationType is not null);
 
             UriPrefix = uriPrefix;
             UriPrefixLength = UriPrefix.ToString().Length;
@@ -472,7 +472,7 @@ namespace System.Net
 
         internal bool Match(Uri uri, string authenticationType)
         {
-            if (uri == null || authenticationType == null)
+            if (uri is null || authenticationType is null)
             {
                 return false;
             }
@@ -502,8 +502,8 @@ namespace System.Net
         // True if <prefixUri> is a prefix of this URI
         private static bool IsPrefix(Uri uri, Uri prefixUri)
         {
-            Debug.Assert(uri != null);
-            Debug.Assert(prefixUri != null);
+            Debug.Assert(uri is not null);
+            Debug.Assert(prefixUri is not null);
 
             if (prefixUri.Scheme != uri.Scheme || prefixUri.Host != uri.Host || prefixUri.Port != uri.Port)
             {
@@ -525,7 +525,7 @@ namespace System.Net
 
         public bool Equals(CredentialKey? other)
         {
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }

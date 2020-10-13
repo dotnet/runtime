@@ -101,31 +101,31 @@ namespace System.Reflection.Metadata
 
         internal static AssemblyReferenceHandle GetProjectedAssemblyRef(int projectionIndex)
         {
-            Debug.Assert(s_projectionInfos != null && projectionIndex >= 0 && projectionIndex < s_projectionInfos.Length);
+            Debug.Assert(s_projectionInfos is not null && projectionIndex >= 0 && projectionIndex < s_projectionInfos.Length);
             return AssemblyReferenceHandle.FromVirtualIndex(s_projectionInfos[projectionIndex].AssemblyRef);
         }
 
         internal static StringHandle GetProjectedName(int projectionIndex)
         {
-            Debug.Assert(s_projectionInfos != null && projectionIndex >= 0 && projectionIndex < s_projectionInfos.Length);
+            Debug.Assert(s_projectionInfos is not null && projectionIndex >= 0 && projectionIndex < s_projectionInfos.Length);
             return StringHandle.FromVirtualIndex(s_projectionInfos[projectionIndex].ClrName);
         }
 
         internal static StringHandle GetProjectedNamespace(int projectionIndex)
         {
-            Debug.Assert(s_projectionInfos != null && projectionIndex >= 0 && projectionIndex < s_projectionInfos.Length);
+            Debug.Assert(s_projectionInfos is not null && projectionIndex >= 0 && projectionIndex < s_projectionInfos.Length);
             return StringHandle.FromVirtualIndex(s_projectionInfos[projectionIndex].ClrNamespace);
         }
 
         internal static TypeRefSignatureTreatment GetProjectedSignatureTreatment(int projectionIndex)
         {
-            Debug.Assert(s_projectionInfos != null && projectionIndex >= 0 && projectionIndex < s_projectionInfos.Length);
+            Debug.Assert(s_projectionInfos is not null && projectionIndex >= 0 && projectionIndex < s_projectionInfos.Length);
             return s_projectionInfos[projectionIndex].SignatureTreatment;
         }
 
         private static void InitializeProjectedTypes()
         {
-            if (s_projectedTypeNames == null || s_projectionInfos == null)
+            if (s_projectedTypeNames is null || s_projectionInfos is null)
             {
                 var systemRuntimeWindowsRuntime = AssemblyReferenceHandle.VirtualIndex.System_Runtime_WindowsRuntime;
                 var systemRuntime = AssemblyReferenceHandle.VirtualIndex.System_Runtime;

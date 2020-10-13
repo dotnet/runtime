@@ -31,7 +31,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="totalValueProvider">The delegate to invoke to get the total value for this counter.</param>
         public IncrementingPollingCounter(string name, EventSource eventSource, Func<double> totalValueProvider) : base(name, eventSource)
         {
-            if (totalValueProvider == null)
+            if (totalValueProvider is null)
                 throw new ArgumentNullException(nameof(totalValueProvider));
 
             _totalValueProvider = totalValueProvider;

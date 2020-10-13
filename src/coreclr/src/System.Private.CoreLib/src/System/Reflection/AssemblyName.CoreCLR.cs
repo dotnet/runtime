@@ -13,7 +13,7 @@ namespace System.Reflection
     {
         public AssemblyName(string assemblyName)
         {
-            if (assemblyName == null)
+            if (assemblyName is null)
                 throw new ArgumentNullException(nameof(assemblyName));
             if ((assemblyName.Length == 0) ||
                 (assemblyName[0] == '\0'))

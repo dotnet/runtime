@@ -77,7 +77,7 @@ namespace System.IO.Internal
                 throw new ArgumentException(SR.Format(SR.InvalidNullEmptyArgument, nameof(fileName)), nameof(fileName));
             }
 
-            if (_files[fileName] != null)
+            if (_files[fileName] is not null)
             {
                 throw new ArgumentException(SR.Format(SR.DuplicateFileName, fileName), nameof(fileName));
             }
@@ -114,7 +114,7 @@ namespace System.IO.Internal
 
         private void EnsureTempNameCreated()
         {
-            if (_basePath == null)
+            if (_basePath is null)
             {
                 string tempFileName = null;
                 bool uniqueFile = false;
@@ -150,7 +150,7 @@ namespace System.IO.Internal
         private bool KeepFile(string fileName)
         {
             object keep = _files[fileName];
-            return keep != null ? (bool)keep : false;
+            return keep is not null ? (bool)keep : false;
         }
 
         public void Delete()
@@ -172,7 +172,7 @@ namespace System.IO.Internal
 
         internal void SafeDelete()
         {
-            if (_files != null && _files.Count > 0)
+            if (_files is not null && _files.Count > 0)
             {
                 string[] fileNames = new string[_files.Count];
                 _files.Keys.CopyTo(fileNames, 0);

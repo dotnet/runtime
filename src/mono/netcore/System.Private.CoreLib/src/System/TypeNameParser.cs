@@ -23,11 +23,11 @@ namespace System
             bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
+            if (typeName is null)
                 throw new ArgumentNullException(nameof(typeName));
 
             ParsedName? pname = ParseName(typeName, false, 0, out int end_pos);
-            if (pname == null)
+            if (pname is null)
             {
                 if (throwOnError)
                     throw new ArgumentException();
@@ -48,34 +48,34 @@ namespace System
         {
             // Resolve assembly
             Assembly? assembly = null;
-            if (pname.AssemblyName != null)
+            if (pname.AssemblyName is not null)
             {
                 assembly = ResolveAssembly(pname.AssemblyName, assemblyResolver, throwOnError, ref stackMark);
-                if (assembly == null)
+                if (assembly is null)
                     // If throwOnError is true, an exception was already thrown
                     return null;
             }
 
             // Resolve base type
             Type? type = ResolveType(assembly!, pname.Names!, typeResolver, throwOnError, ignoreCase, ref stackMark);
-            if (type == null)
+            if (type is null)
                 return null;
 
             // Resolve type arguments
-            if (pname.TypeArguments != null)
+            if (pname.TypeArguments is not null)
             {
                 var args = new Type?[pname.TypeArguments.Count];
                 for (int i = 0; i < pname.TypeArguments.Count; ++i)
                 {
                     args[i] = ConstructType(pname.TypeArguments[i], assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
-                    if (args[i] == null)
+                    if (args[i] is null)
                         return null;
                 }
                 type = type.MakeGenericType(args!);
             }
 
             // Resolve modifiers
-            if (pname.Modifiers != null)
+            if (pname.Modifiers is not null)
             {
                 bool bounded = false;
                 foreach (int mod in pname.Modifiers)
@@ -112,7 +112,7 @@ namespace System
         {
             var aname = new AssemblyName(name);
 
-            if (assemblyResolver == null)
+            if (assemblyResolver is null)
             {
                 if (throwOnError)
                 {
@@ -133,7 +133,7 @@ namespace System
             else
             {
                 Assembly? assembly = assemblyResolver(aname);
-                if (assembly == null && throwOnError)
+                if (assembly is null && throwOnError)
                     throw new FileNotFoundException(SR.FileNotFound_ResolveAssembly, name);
                 return assembly;
             }
@@ -146,12 +146,12 @@ namespace System
 
             string name = EscapeTypeName(names[0]);
             // Resolve the top level type.
-            if (typeResolver != null)
+            if (typeResolver is not null)
             {
                 type = typeResolver(assembly, name, ignoreCase);
-                if (type == null && throwOnError)
+                if (type is null && throwOnError)
                 {
-                    if (assembly == null)
+                    if (assembly is null)
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveType, name));
                     else
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, name, assembly.FullName));
@@ -159,13 +159,13 @@ namespace System
             }
             else
             {
-                if (assembly == null)
+                if (assembly is null)
                     type = RuntimeType.GetType(name, throwOnError, ignoreCase, false, ref stackMark);
                 else
                     type = assembly.GetType(name, throwOnError, ignoreCase);
             }
 
-            if (type == null)
+            if (type is null)
                 return null;
 
             // Resolve nested types.
@@ -176,7 +176,7 @@ namespace System
             for (int i = 1; i < names.Count; ++i)
             {
                 type = type.GetNestedType(names[i], bindingFlags);
-                if (type == null)
+                if (type is null)
                 {
                     if (throwOnError)
                         throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType, names[i], names[i - 1]));
@@ -230,20 +230,20 @@ namespace System
             public override string ToString () {
                 var sb = new StringBuilder ();
                 sb.Append (Names [0]);
-                if (TypeArguments != null) {
+                if (TypeArguments is not null) {
                     sb.Append ("[");
                     for (int i = 0; i < TypeArguments.Count; ++i) {
-                        if (TypeArguments [i].AssemblyName != null)
+                        if (TypeArguments [i].AssemblyName is not null)
                             sb.Append ('[');
                         sb.Append (TypeArguments [i].ToString ());
-                        if (TypeArguments [i].AssemblyName != null)
+                        if (TypeArguments [i].AssemblyName is not null)
                             sb.Append (']');
                         if (i < TypeArguments.Count - 1)
                             sb.Append (", ");
                     }
                     sb.Append ("]");
                 }
-                if (AssemblyName != null)
+                if (AssemblyName is not null)
                     sb.Append ($", {AssemblyName}");
                 return sb.ToString ();
             }
@@ -309,7 +309,7 @@ namespace System
                         pos++;
                         isbyref = true;
                         isptr = false;
-                        if (res.Modifiers == null)
+                        if (res.Modifiers is null)
                             res.Modifiers = new List<int>();
                         res.Modifiers.Add(0);
                         break;
@@ -317,7 +317,7 @@ namespace System
                         if (isbyref)
                             return null;
                         pos++;
-                        if (res.Modifiers == null)
+                        if (res.Modifiers is null)
                             res.Modifiers = new List<int>();
                         res.Modifiers.Add(-1);
                         isptr = true;
@@ -357,7 +357,7 @@ namespace System
                             if (bounded && rank > 1)
                                 return null;
                             /* n.b. bounded needs both modifiers: -2 == bounded, 1 == rank 1 array */
-                            if (res.Modifiers == null)
+                            if (res.Modifiers is null)
                                 res.Modifiers = new List<int>();
                             if (bounded)
                                 res.Modifiers.Add(-2);
@@ -382,7 +382,7 @@ namespace System
                                 }
 
                                 ParsedName? arg = ParseName(name, true, pos, out pos);
-                                if (arg == null)
+                                if (arg is null)
                                     return null;
                                 res.TypeArguments.Add(arg);
 

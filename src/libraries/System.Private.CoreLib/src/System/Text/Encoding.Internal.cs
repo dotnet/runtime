@@ -121,9 +121,9 @@ namespace System.Text
         /// </summary>
         internal virtual unsafe int GetByteCount(char* pChars, int charCount, EncoderNLS? encoder)
         {
-            Debug.Assert(encoder != null, "This code path should only be called from EncoderNLS.");
+            Debug.Assert(encoder is not null, "This code path should only be called from EncoderNLS.");
             Debug.Assert(charCount >= 0, "Caller should've checked this condition.");
-            Debug.Assert(pChars != null || charCount == 0, "Cannot provide a null pointer and a non-zero count.");
+            Debug.Assert(pChars is not null || charCount == 0, "Cannot provide a null pointer and a non-zero count.");
 
             // We're going to try to stay on the fast-path as much as we can. That means that we have
             // no leftover data to drain and the entire source buffer can be consumed in a single
@@ -255,7 +255,7 @@ namespace System.Text
         /// </exception>
         private unsafe int GetByteCountWithFallback(char* pOriginalChars, int originalCharCount, int charsConsumedSoFar, EncoderNLS encoder)
         {
-            Debug.Assert(encoder != null, "This code path should only be called from EncoderNLS.");
+            Debug.Assert(encoder is not null, "This code path should only be called from EncoderNLS.");
             Debug.Assert(0 <= charsConsumedSoFar && charsConsumedSoFar <= originalCharCount, "Caller should've checked this condition.");
 
             // First, try draining any data that already exists on the encoder instance. If we can't complete
@@ -327,7 +327,7 @@ namespace System.Text
                     // or (b) the encoding can't translate this scalar value.
 
                     if (Rune.DecodeFromUtf16(chars, out Rune firstScalarValue, out int charsConsumedThisIteration) == OperationStatus.NeedMoreData
-                           && encoder != null
+                           && encoder is not null
                            && !encoder.MustFlush)
                     {
                         // We saw a standalone high surrogate at the end of the buffer, and the
@@ -398,11 +398,11 @@ namespace System.Text
         /// </summary>
         internal virtual unsafe int GetBytes(char* pChars, int charCount, byte* pBytes, int byteCount, EncoderNLS? encoder)
         {
-            Debug.Assert(encoder != null, "This code path should only be called from EncoderNLS.");
+            Debug.Assert(encoder is not null, "This code path should only be called from EncoderNLS.");
             Debug.Assert(charCount >= 0, "Caller should've checked this condition.");
-            Debug.Assert(pChars != null || charCount == 0, "Cannot provide a null pointer and a non-zero count.");
+            Debug.Assert(pChars is not null || charCount == 0, "Cannot provide a null pointer and a non-zero count.");
             Debug.Assert(byteCount >= 0, "Caller should've checked this condition.");
-            Debug.Assert(pBytes != null || byteCount == 0, "Cannot provide a null pointer and a non-zero count.");
+            Debug.Assert(pBytes is not null || byteCount == 0, "Cannot provide a null pointer and a non-zero count.");
 
             // We're going to try to stay on the fast-path as much as we can. That means that we have
             // no leftover data to drain and the entire source buffer can be transcoded in a single
@@ -521,7 +521,7 @@ namespace System.Text
         /// </exception>
         private unsafe int GetBytesWithFallback(char* pOriginalChars, int originalCharCount, byte* pOriginalBytes, int originalByteCount, int charsConsumedSoFar, int bytesWrittenSoFar, EncoderNLS encoder)
         {
-            Debug.Assert(encoder != null, "This code path should only be called from EncoderNLS.");
+            Debug.Assert(encoder is not null, "This code path should only be called from EncoderNLS.");
             Debug.Assert(0 <= charsConsumedSoFar && charsConsumedSoFar <= originalCharCount, "Caller should've checked this condition.");
             Debug.Assert(0 <= bytesWrittenSoFar && bytesWrittenSoFar <= originalByteCount, "Caller should've checked this condition.");
 
@@ -685,13 +685,13 @@ namespace System.Text
 
                 // If an EncoderNLS instance is active, update its "total consumed character count" value.
 
-                if (encoder != null)
+                if (encoder is not null)
                 {
                     Debug.Assert(originalCharsLength >= chars.Length, "About to report a negative number of chars used?");
                     encoder._charsUsed = originalCharsLength - chars.Length; // number of chars consumed
                 }
 
-                Debug.Assert(fallbackBuffer.Remaining == 0 || encoder != null, "Shouldn't have any leftover data in fallback buffer unless an EncoderNLS is in use.");
+                Debug.Assert(fallbackBuffer.Remaining == 0 || encoder is not null, "Shouldn't have any leftover data in fallback buffer unless an EncoderNLS is in use.");
 
                 return originalBytesLength - bytes.Length;
             }
@@ -706,9 +706,9 @@ namespace System.Text
         /// </summary>
         internal virtual unsafe int GetCharCount(byte* pBytes, int byteCount, DecoderNLS? decoder)
         {
-            Debug.Assert(decoder != null, "This code path should only be called from DecoderNLS.");
+            Debug.Assert(decoder is not null, "This code path should only be called from DecoderNLS.");
             Debug.Assert(byteCount >= 0, "Caller should've checked this condition.");
-            Debug.Assert(pBytes != null || byteCount == 0, "Cannot provide a null pointer and a non-zero count.");
+            Debug.Assert(pBytes is not null || byteCount == 0, "Cannot provide a null pointer and a non-zero count.");
 
             // We're going to try to stay on the fast-path as much as we can. That means that we have
             // no leftover data to drain and the entire source buffer can be consumed in a single
@@ -841,7 +841,7 @@ namespace System.Text
         /// </exception>
         private unsafe int GetCharCountWithFallback(byte* pOriginalBytes, int originalByteCount, int bytesConsumedSoFar, DecoderNLS decoder)
         {
-            Debug.Assert(decoder != null, "This code path should only be called from DecoderNLS.");
+            Debug.Assert(decoder is not null, "This code path should only be called from DecoderNLS.");
             Debug.Assert(0 <= bytesConsumedSoFar && bytesConsumedSoFar <= originalByteCount, "Caller should've checked this condition.");
 
             // First, try draining any data that already exists on the decoder instance. If we can't complete
@@ -918,7 +918,7 @@ namespace System.Text
                     // There are two scenarios: (a) the source buffer contained invalid data, or it contained incomplete data.
 
                     if (DecodeFirstRune(bytes, out Rune firstScalarValue, out int bytesConsumedThisIteration) == OperationStatus.NeedMoreData
-                          && decoder != null
+                          && decoder is not null
                           && !decoder.MustFlush)
                     {
                         // We saw incomplete data at the end of the buffer, and the active DecoderNLS isntance
@@ -986,11 +986,11 @@ namespace System.Text
         /// </summary>
         internal virtual unsafe int GetChars(byte* pBytes, int byteCount, char* pChars, int charCount, DecoderNLS? decoder)
         {
-            Debug.Assert(decoder != null, "This code path should only be called from DecoderNLS.");
+            Debug.Assert(decoder is not null, "This code path should only be called from DecoderNLS.");
             Debug.Assert(byteCount >= 0, "Caller should've checked this condition.");
-            Debug.Assert(pBytes != null || byteCount == 0, "Cannot provide a null pointer and a non-zero count.");
+            Debug.Assert(pBytes is not null || byteCount == 0, "Cannot provide a null pointer and a non-zero count.");
             Debug.Assert(charCount >= 0, "Caller should've checked this condition.");
-            Debug.Assert(pChars != null || charCount == 0, "Cannot provide a null pointer and a non-zero count.");
+            Debug.Assert(pChars is not null || charCount == 0, "Cannot provide a null pointer and a non-zero count.");
 
             // We're going to try to stay on the fast-path as much as we can. That means that we have
             // no leftover data to drain and the entire source buffer can be transcoded in a single
@@ -1109,7 +1109,7 @@ namespace System.Text
         /// </exception>
         private protected unsafe int GetCharsWithFallback(byte* pOriginalBytes, int originalByteCount, char* pOriginalChars, int originalCharCount, int bytesConsumedSoFar, int charsWrittenSoFar, DecoderNLS decoder)
         {
-            Debug.Assert(decoder != null, "This code path should only be called from DecoderNLS.");
+            Debug.Assert(decoder is not null, "This code path should only be called from DecoderNLS.");
             Debug.Assert(0 <= bytesConsumedSoFar && bytesConsumedSoFar <= originalByteCount, "Caller should've checked this condition.");
             Debug.Assert(0 <= charsWrittenSoFar && charsWrittenSoFar <= originalCharCount, "Caller should've checked this condition.");
 
@@ -1274,7 +1274,7 @@ namespace System.Text
 
                 // If a DecoderNLS instance is active, update its "total consumed byte count" value.
 
-                if (decoder != null)
+                if (decoder is not null)
                 {
                     Debug.Assert(originalBytesLength >= bytes.Length, "About to report a negative number of bytes used?");
                     decoder._bytesUsed = originalBytesLength - bytes.Length; // number of bytes consumed

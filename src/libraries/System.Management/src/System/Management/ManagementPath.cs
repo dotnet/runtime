@@ -83,7 +83,7 @@ namespace System.Management
         //Fires IdentifierChanged event
         private void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
+            if (IdentifierChanged is not null)
                 IdentifierChanged(this, null);
         }
 
@@ -159,14 +159,14 @@ namespace System.Management
 
             // Wire up change handler chain. Use supplied handler, if specified;
             // otherwise, default to that of the path argument.
-            if (handler != null)
+            if (handler is not null)
                 pathTmp.IdentifierChanged = handler;
 
             // Assign ManagementPath IWbemPath to this.wmiPath.
             // Optimization for performance : As long as the path is only read, we share this interface.
             // On the first write, a private copy will be needed;
             // isWbemPathShared signals ManagementPath to create such a copy at write-time.
-            if (path != null && path.wmiPath != null)
+            if (path is not null && path.wmiPath is not null)
             {
                 pathTmp.wmiPath = path.wmiPath;
                 pathTmp.isWbemPathShared = path.isWbemPathShared = true;
@@ -256,7 +256,7 @@ namespace System.Management
         private void SetWbemPath(string path)
         {
             // Test/utilize isWbemPathShared *only* on public + internal members!
-            if (wmiPath == null)
+            if (wmiPath is null)
                 wmiPath = CreateWbemPath(path);
             else
                 SetWbemPath(wmiPath, path);
@@ -562,7 +562,7 @@ namespace System.Management
         //Used to update the relative path when the user changes any key properties
         internal void UpdateRelativePath(string relPath)
         {
-            if (relPath == null)
+            if (relPath is null)
                 return;
 
             //Get the server & namespace part from the existing path, and concatenate the given relPath.
@@ -669,14 +669,14 @@ namespace System.Management
             IWbemPath wmiPathTmp = null;
             bChange = false;
 
-            Debug.Assert(nsPath != null);
+            Debug.Assert(nsPath is not null);
 
             //Do some validation on the path to make sure it is a valid namespace path (at least syntactically)
             if (!IsValidNamespaceSyntax(nsPath))
                 ManagementException.ThrowWithExtendedInfo((ManagementStatus)tag_WBEMSTATUS.WBEM_E_INVALID_NAMESPACE);
 
             wmiPathTmp = CreateWbemPath(nsPath);
-            if (wmiPath == null)
+            if (wmiPath is null)
                 wmiPath = this.CreateWbemPath("");
             else if (isWbemPathShared)
             {
@@ -926,7 +926,7 @@ namespace System.Management
             {
                 int status = (int)ManagementStatus.NoError;
 
-                if (wmiPath == null)
+                if (wmiPath is null)
                     wmiPath = (IWbemPath)MTAHelper.CreateInMTA(typeof(WbemDefPath)); //new WbemDefPath();
                 else if (isWbemPathShared)
                 {
@@ -1098,7 +1098,7 @@ namespace System.Management
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
 
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
@@ -1107,7 +1107,7 @@ namespace System.Management
             {
                 ManagementPath obj = ((ManagementPath)(value));
                 ConstructorInfo ctor = typeof(ManagementPath).GetConstructor(new Type[] { typeof(string) });
-                if (ctor != null)
+                if (ctor is not null)
                 {
                     return new InstanceDescriptor(ctor, new object[] { obj.Path });
                 }

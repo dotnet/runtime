@@ -35,7 +35,7 @@ namespace System.Security.Cryptography.Xml
         // A helper function that determines if a namespace node is a committed attribute
         internal static bool IsCommittedNamespace(XmlElement element, string prefix, string value)
         {
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
             string name = ((prefix.Length > 0) ? "xmlns:" + prefix : "xmlns");
@@ -45,14 +45,14 @@ namespace System.Security.Cryptography.Xml
 
         internal static bool IsRedundantNamespace(XmlElement element, string prefix, string value)
         {
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
             XmlNode ancestorNode = ((XmlNode)element).ParentNode;
-            while (ancestorNode != null)
+            while (ancestorNode is not null)
             {
                 XmlElement ancestorElement = ancestorNode as XmlElement;
-                if (ancestorElement != null)
+                if (ancestorElement is not null)
                     if (HasNamespace(ancestorElement, prefix, value)) return true;
                 ancestorNode = ancestorNode.ParentNode;
             }
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Xml
         internal static string GetAttribute(XmlElement element, string localName, string namespaceURI)
         {
             string s = (element.HasAttribute(localName) ? element.GetAttribute(localName) : null);
-            if (s == null && element.HasAttribute(localName, namespaceURI))
+            if (s is null && element.HasAttribute(localName, namespaceURI))
                 s = element.GetAttribute(localName, namespaceURI);
             return s;
         }
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static bool VerifyAttributes(XmlElement element, string expectedAttrName)
         {
-            return VerifyAttributes(element, expectedAttrName == null ? null : new string[] { expectedAttrName });
+            return VerifyAttributes(element, expectedAttrName is null ? null : new string[] { expectedAttrName });
         }
 
         internal static bool VerifyAttributes(XmlElement element, string[] expectedAttrNames)
@@ -85,7 +85,7 @@ namespace System.Security.Cryptography.Xml
                 // There are a few Xml Special Attributes that are always allowed on any node. Make sure we allow those here.
                 bool attrIsAllowed = attr.Name == "xmlns" || attr.Name.StartsWith("xmlns:") || attr.Name == "xml:space" || attr.Name == "xml:lang" || attr.Name == "xml:base";
                 int expectedInd = 0;
-                while (!attrIsAllowed && expectedAttrNames != null && expectedInd < expectedAttrNames.Length)
+                while (!attrIsAllowed && expectedAttrNames is not null && expectedInd < expectedAttrNames.Length)
                 {
                     attrIsAllowed = attr.Name == expectedAttrNames[expectedInd];
                     expectedInd++;
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static bool IsNonRedundantNamespaceDecl(XmlAttribute a, XmlAttribute nearestAncestorWithSamePrefix)
         {
-            if (nearestAncestorWithSamePrefix == null)
+            if (nearestAncestorWithSamePrefix is null)
                 return !IsEmptyDefaultNamespaceNode(a);
             else
                 return !nearestAncestorWithSamePrefix.Value.Equals(a.Value);
@@ -200,7 +200,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static XmlDocument PreProcessDocumentInput(XmlDocument document, XmlResolver xmlResolver, string baseUri)
         {
-            if (document == null)
+            if (document is null)
                 throw new ArgumentNullException(nameof(document));
 
             MyXmlDocument doc = new MyXmlDocument();
@@ -222,7 +222,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static XmlDocument PreProcessElementInput(XmlElement elem, XmlResolver xmlResolver, string baseUri)
         {
-            if (elem == null)
+            if (elem is null)
                 throw new ArgumentNullException(nameof(elem));
 
             MyXmlDocument doc = new MyXmlDocument();
@@ -244,7 +244,7 @@ namespace System.Security.Cryptography.Xml
         internal static XmlDocument DiscardComments(XmlDocument document)
         {
             XmlNodeList nodeList = document.SelectNodes("//comment()");
-            if (nodeList != null)
+            if (nodeList is not null)
             {
                 foreach (XmlNode node1 in nodeList)
                 {
@@ -269,7 +269,7 @@ namespace System.Security.Cryptography.Xml
                 XmlNode rootNode = (XmlNode)elementList[index];
                 // Add the children nodes
                 XmlNodeList childNodes = rootNode.ChildNodes;
-                if (childNodes != null)
+                if (childNodes is not null)
                 {
                     foreach (XmlNode node1 in childNodes)
                     {
@@ -281,7 +281,7 @@ namespace System.Security.Cryptography.Xml
                 }
                 // Add the attribute nodes
                 XmlAttributeCollection attribNodes = rootNode.Attributes;
-                if (attribNodes != null)
+                if (attribNodes is not null)
                 {
                     foreach (XmlNode attribNode in rootNode.Attributes)
                     {
@@ -363,7 +363,7 @@ namespace System.Security.Cryptography.Xml
             XmlNode child = inputElement.FirstChild;
             XmlNode sibling = null;
 
-            while (child != null)
+            while (child is not null)
             {
                 sibling = child.NextSibling;
                 inputElement.RemoveChild(child);
@@ -379,7 +379,7 @@ namespace System.Security.Cryptography.Xml
         {
             // Use MemoryStream's WriteTo(Stream) method if possible
             MemoryStream inputMS = input as MemoryStream;
-            if (inputMS != null && inputMS.Position == 0)
+            if (inputMS is not null && inputMS.Position == 0)
             {
                 inputMS.WriteTo(output);
                 return inputMS.Length;
@@ -402,7 +402,7 @@ namespace System.Security.Cryptography.Xml
         internal static Hashtable TokenizePrefixListString(string s)
         {
             Hashtable set = new Hashtable();
-            if (s != null)
+            if (s is not null)
             {
                 string[] prefixes = s.Split(null);
                 foreach (string prefix in prefixes)
@@ -461,7 +461,7 @@ namespace System.Security.Cryptography.Xml
         {
             foreach (XmlNode node in nodeList)
             {
-                if (node.OwnerDocument != null)
+                if (node.OwnerDocument is not null)
                     return node.OwnerDocument;
             }
             return null;
@@ -469,7 +469,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static void AddNamespaces(XmlElement elem, CanonicalXmlNodeList namespaces)
         {
-            if (namespaces != null)
+            if (namespaces is not null)
             {
                 foreach (XmlNode attrib in namespaces)
                 {
@@ -485,7 +485,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static void AddNamespaces(XmlElement elem, Hashtable namespaces)
         {
-            if (namespaces != null)
+            if (namespaces is not null)
             {
                 foreach (string key in namespaces.Keys)
                 {
@@ -500,17 +500,17 @@ namespace System.Security.Cryptography.Xml
         // This method gets the attributes that should be propagated
         internal static CanonicalXmlNodeList GetPropagatedAttributes(XmlElement elem)
         {
-            if (elem == null)
+            if (elem is null)
                 return null;
 
             CanonicalXmlNodeList namespaces = new CanonicalXmlNodeList();
             XmlNode ancestorNode = elem;
             bool bDefNamespaceToAdd = true;
 
-            while (ancestorNode != null)
+            while (ancestorNode is not null)
             {
                 XmlElement ancestorElement = ancestorNode as XmlElement;
-                if (ancestorElement == null)
+                if (ancestorElement is null)
                 {
                     ancestorNode = ancestorNode.ParentNode;
                     continue;
@@ -621,9 +621,9 @@ namespace System.Security.Cryptography.Xml
         // Mimic the behavior of the X509IssuerSerial constructor with null and empty checks
         internal static X509IssuerSerial CreateX509IssuerSerial(string issuerName, string serialNumber)
         {
-            if (issuerName == null || issuerName.Length == 0)
+            if (issuerName is null || issuerName.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(issuerName));
-            if (serialNumber == null || serialNumber.Length == 0)
+            if (serialNumber is null || serialNumber.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyOrNullString, nameof(serialNumber));
 
             return new X509IssuerSerial()
@@ -637,7 +637,7 @@ namespace System.Security.Cryptography.Xml
         {
             X509Certificate2Collection collection = new X509Certificate2Collection();
             ArrayList decryptionIssuerSerials = (certUsageType == CertUsageType.Decryption ? new ArrayList() : null);
-            if (keyInfoX509Data.Certificates != null)
+            if (keyInfoX509Data.Certificates is not null)
             {
                 foreach (X509Certificate2 certificate in keyInfoX509Data.Certificates)
                 {
@@ -653,8 +653,8 @@ namespace System.Security.Cryptography.Xml
                 }
             }
 
-            if (keyInfoX509Data.SubjectNames == null && keyInfoX509Data.IssuerSerials == null &&
-                keyInfoX509Data.SubjectKeyIds == null && decryptionIssuerSerials == null)
+            if (keyInfoX509Data.SubjectNames is null && keyInfoX509Data.IssuerSerials is null &&
+                keyInfoX509Data.SubjectKeyIds is null && decryptionIssuerSerials is null)
                 return collection;
 
             // Open LocalMachine and CurrentUser "Other People"/"My" stores.
@@ -666,7 +666,7 @@ namespace System.Security.Cryptography.Xml
 
             for (int index = 0; index < stores.Length; index++)
             {
-                if (stores[index] != null)
+                if (stores[index] is not null)
                 {
                     X509Certificate2Collection filters = null;
                     // We don't care if we can't open the store.
@@ -675,14 +675,14 @@ namespace System.Security.Cryptography.Xml
                         stores[index].Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
                         filters = stores[index].Certificates;
                         stores[index].Close();
-                        if (keyInfoX509Data.SubjectNames != null)
+                        if (keyInfoX509Data.SubjectNames is not null)
                         {
                             foreach (string subjectName in keyInfoX509Data.SubjectNames)
                             {
                                 filters = filters.Find(X509FindType.FindBySubjectDistinguishedName, subjectName, false);
                             }
                         }
-                        if (keyInfoX509Data.IssuerSerials != null)
+                        if (keyInfoX509Data.IssuerSerials is not null)
                         {
                             foreach (X509IssuerSerial issuerSerial in keyInfoX509Data.IssuerSerials)
                             {
@@ -690,7 +690,7 @@ namespace System.Security.Cryptography.Xml
                                 filters = filters.Find(X509FindType.FindBySerialNumber, issuerSerial.SerialNumber, false);
                             }
                         }
-                        if (keyInfoX509Data.SubjectKeyIds != null)
+                        if (keyInfoX509Data.SubjectKeyIds is not null)
                         {
                             foreach (byte[] ski in keyInfoX509Data.SubjectKeyIds)
                             {
@@ -698,7 +698,7 @@ namespace System.Security.Cryptography.Xml
                                 filters = filters.Find(X509FindType.FindBySubjectKeyIdentifier, hex, false);
                             }
                         }
-                        if (decryptionIssuerSerials != null)
+                        if (decryptionIssuerSerials is not null)
                         {
                             foreach (X509IssuerSerial issuerSerial in decryptionIssuerSerials)
                             {
@@ -712,7 +712,7 @@ namespace System.Security.Cryptography.Xml
                     // Opening LocalMachine stores (other than Root or CertificateAuthority) on Linux
                     catch (PlatformNotSupportedException) { }
 
-                    if (filters != null)
+                    if (filters is not null)
                         collection.AddRange(filters);
                 }
             }

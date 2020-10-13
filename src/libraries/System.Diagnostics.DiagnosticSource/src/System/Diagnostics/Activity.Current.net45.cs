@@ -23,7 +23,7 @@ namespace System.Diagnostics
                 ObjectHandle activityHandle = (ObjectHandle)CallContext.LogicalGetData(FieldKey);
 
                 // Unwrap the Activity if it was set in the same AppDomain (as FieldKey is AppDomain-specific).
-                if (activityHandle != null)
+                if (activityHandle is not null)
                 {
                     return (Activity)activityHandle.Unwrap();
                 }

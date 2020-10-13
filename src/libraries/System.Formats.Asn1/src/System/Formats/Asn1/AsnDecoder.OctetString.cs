@@ -100,7 +100,7 @@ namespace System.Formats.Asn1
                 Slice(source, headerLength, contentLength),
                 ruleSet,
                 destination,
-                contentLength == null,
+                contentLength is null,
                 out int bytesRead,
                 out bytesWritten);
 
@@ -172,7 +172,7 @@ namespace System.Formats.Asn1
 
             byte[] ret = contents.ToArray();
 
-            if (rented != null)
+            if (rented is not null)
             {
                 CryptoPool.Return(rented, contents.Length);
             }
@@ -352,7 +352,7 @@ namespace System.Formats.Asn1
                             throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                         }
 
-                        Debug.Assert(length != null);
+                        Debug.Assert(length is not null);
 
                         // The call to Slice here sanity checks the data bounds, length.Value is not
                         // reliable unless this call has succeeded.
@@ -406,7 +406,7 @@ namespace System.Formats.Asn1
                             throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                         }
 
-                        if (readerStack == null)
+                        if (readerStack is null)
                         {
                             readerStack = new Stack<(int, int, bool, int)>();
                         }
@@ -421,7 +421,7 @@ namespace System.Formats.Asn1
 
                         cur = Slice(cur, headerLength, length);
                         bytesRead = headerLength;
-                        isIndefinite = (length == null);
+                        isIndefinite = (length is null);
                     }
                     else
                     {
@@ -485,7 +485,7 @@ namespace System.Formats.Asn1
             ref byte[]? rented,
             Span<byte> tmpSpace = default)
         {
-            Debug.Assert(rented == null);
+            Debug.Assert(rented is null);
 
             if (TryReadPrimitiveOctetStringCore(
                 source,
@@ -508,7 +508,7 @@ namespace System.Formats.Asn1
 
             if (tmpSpace.Length > 0 && tooBig > tmpSpace.Length)
             {
-                bool isIndefinite = contentLength == null;
+                bool isIndefinite = contentLength is null;
                 tooBig = CountConstructedOctetString(contents, ruleSet, isIndefinite);
             }
 
@@ -522,7 +522,7 @@ namespace System.Formats.Asn1
                 Slice(source, headerLength, contentLength),
                 ruleSet,
                 tmpSpace,
-                contentLength == null,
+                contentLength is null,
                 out int bytesRead,
                 out int bytesWritten))
             {

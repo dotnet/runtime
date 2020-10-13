@@ -25,7 +25,7 @@ namespace System.Security.Cryptography.Xml
 
         public DataObject(string id, string mimeType, string encoding, XmlElement data)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
 
             _id = id;
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Xml
             get { return _elData; }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 // Reset the node list
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                return (_cachedXml != null);
+                return (_cachedXml is not null);
             }
         }
 
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography.Xml
             if (!string.IsNullOrEmpty(_encoding))
                 objectElement.SetAttribute("Encoding", _encoding);
 
-            if (_elData != null)
+            if (_elData is not null)
             {
                 foreach (XmlNode node in _elData)
                 {
@@ -133,7 +133,7 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);

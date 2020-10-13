@@ -25,11 +25,11 @@ namespace System.ComponentModel.Composition.Hosting
 
             public DependentsTraversal(FilteredCatalog catalog, Func<ImportDefinition, bool> importFilter)
             {
-                if (catalog == null)
+                if (catalog is null)
                 {
                     throw new ArgumentNullException(nameof(catalog));
                 }
-                if (importFilter == null)
+                if (importFilter is null)
                 {
                     throw new ArgumentNullException(nameof(importFilter));
                 }
@@ -73,7 +73,7 @@ namespace System.ComponentModel.Composition.Hosting
                 reachableParts = null;
                 List<ComposablePartDefinition>? reachablePartList = null;
 
-                Debug.Assert(_importersIndex != null);
+                Debug.Assert(_importersIndex is not null);
                 // Go through all part exports
                 foreach (ExportDefinition export in part.ExportDefinitions)
                 {
@@ -88,7 +88,7 @@ namespace System.ComponentModel.Composition.Hosting
                             {
                                 if (import.IsImportDependentOnPart(part, export, part.IsGeneric() != candidateReachablePart.IsGeneric()))
                                 {
-                                    if (reachablePartList == null)
+                                    if (reachablePartList is null)
                                     {
                                         reachablePartList = new List<ComposablePartDefinition>();
                                     }
@@ -100,7 +100,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
 
                 reachableParts = reachablePartList;
-                return (reachableParts != null);
+                return (reachableParts is not null);
             }
         }
     }

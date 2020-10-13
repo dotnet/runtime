@@ -32,7 +32,7 @@ namespace System.IO.Ports
         // are not usefully queried by applications which know they have a SerialStream, etc...
         public override bool CanRead
         {
-            get { return (_handle != null); }
+            get { return (_handle is not null); }
         }
 
         public override bool CanSeek
@@ -42,12 +42,12 @@ namespace System.IO.Ports
 
         public override bool CanTimeout
         {
-            get { return (_handle != null); }
+            get { return (_handle is not null); }
         }
 
         public override bool CanWrite
         {
-            get { return (_handle != null); }
+            get { return (_handle is not null); }
         }
 
         public override long Length
@@ -88,7 +88,7 @@ namespace System.IO.Ports
 
         private void CheckReadWriteArguments(byte[] array, int offset, int count)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
@@ -96,7 +96,7 @@ namespace System.IO.Ports
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNumRequired);
             if (array.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            if (_handle == null)
+            if (_handle is null)
                 InternalResources.FileNotOpen();
         }
 

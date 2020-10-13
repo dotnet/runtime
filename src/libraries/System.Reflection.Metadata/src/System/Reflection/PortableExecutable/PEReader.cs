@@ -32,7 +32,7 @@ namespace System.Reflection.PortableExecutable
         // _lazyPEHeaders are not null in that case.
         private MemoryBlockProvider? _peImage;
 
-        // If we read the data from the image lazily (peImage != null) we defer reading the PE headers.
+        // If we read the data from the image lazily (peImage is not null) we defer reading the PE headers.
         private PEHeaders? _lazyPEHeaders;
 
         private AbstractMemoryBlock? _lazyMetadataBlock;
@@ -71,7 +71,7 @@ namespace System.Reflection.PortableExecutable
         /// </remarks>
         public unsafe PEReader(byte* peImage, int size, bool isLoadedImage)
         {
-            if (peImage == null)
+            if (peImage is null)
             {
                 throw new ArgumentNullException(nameof(peImage));
             }
@@ -152,7 +152,7 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="BadImageFormatException"><see cref="PEStreamOptions.PrefetchMetadata"/> is specified and the PE headers of the image are invalid.</exception>
         public unsafe PEReader(Stream peStream, PEStreamOptions options, int size)
         {
-            if (peStream == null)
+            if (peStream is null)
             {
                 throw new ArgumentNullException(nameof(peStream));
             }
@@ -255,7 +255,7 @@ namespace System.Reflection.PortableExecutable
             _lazyMetadataBlock = null;
 
             var peSectionBlocks = _lazyPESectionBlocks;
-            if (peSectionBlocks != null)
+            if (peSectionBlocks is not null)
             {
                 foreach (var block in peSectionBlocks)
                 {
@@ -269,9 +269,9 @@ namespace System.Reflection.PortableExecutable
         private MemoryBlockProvider GetPEImage()
         {
             var peImage = _peImage;
-            if (peImage == null)
+            if (peImage is null)
             {
-                if (_lazyPEHeaders == null)
+                if (_lazyPEHeaders is null)
                 {
                     Throw.PEReaderDisposed();
                 }
@@ -291,10 +291,10 @@ namespace System.Reflection.PortableExecutable
         {
             get
             {
-                if (_lazyPEHeaders == null)
+                if (_lazyPEHeaders is null)
                 {
                     InitializePEHeaders();
-                    Debug.Assert(_lazyPEHeaders != null);
+                    Debug.Assert(_lazyPEHeaders is not null);
                 }
 
                 return _lazyPEHeaders;
@@ -308,7 +308,7 @@ namespace System.Reflection.PortableExecutable
             Stream stream = GetPEImage().GetStream(out constraints);
 
             PEHeaders headers;
-            if (constraints.GuardOpt != null)
+            if (constraints.GuardOpt is not null)
             {
                 lock (constraints.GuardOpt)
                 {
@@ -337,10 +337,10 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="InvalidOperationException">PE image not available.</exception>
         private AbstractMemoryBlock GetEntireImageBlock()
         {
-            if (_lazyImageBlock == null)
+            if (_lazyImageBlock is null)
             {
                 var newBlock = GetPEImage().GetMemoryBlock();
-                if (Interlocked.CompareExchange(ref _lazyImageBlock, newBlock, null) != null)
+                if (Interlocked.CompareExchange(ref _lazyImageBlock, newBlock, null) is not null)
                 {
                     // another thread created the block already, we need to dispose ours:
                     newBlock.Dispose();
@@ -359,10 +359,10 @@ namespace System.Reflection.PortableExecutable
                 throw new InvalidOperationException(SR.PEImageDoesNotHaveMetadata);
             }
 
-            if (_lazyMetadataBlock == null)
+            if (_lazyMetadataBlock is null)
             {
                 var newBlock = GetPEImage().GetMemoryBlock(PEHeaders.MetadataStartOffset, PEHeaders.MetadataSize);
-                if (Interlocked.CompareExchange(ref _lazyMetadataBlock, newBlock, null) != null)
+                if (Interlocked.CompareExchange(ref _lazyMetadataBlock, newBlock, null) is not null)
                 {
                     // another thread created the block already, we need to dispose ours:
                     newBlock.Dispose();
@@ -380,7 +380,7 @@ namespace System.Reflection.PortableExecutable
 
             var peImage = GetPEImage();
 
-            if (_lazyPESectionBlocks == null)
+            if (_lazyPESectionBlocks is null)
             {
                 Interlocked.CompareExchange(ref _lazyPESectionBlocks, new AbstractMemoryBlock[PEHeaders.SectionHeaders.Length], null);
             }
@@ -410,7 +410,7 @@ namespace System.Reflection.PortableExecutable
                 newBlock = peImage.GetMemoryBlock(PEHeaders.SectionHeaders[index].PointerToRawData, size);
             }
 
-            if (Interlocked.CompareExchange(ref _lazyPESectionBlocks[index], newBlock, null) != null)
+            if (Interlocked.CompareExchange(ref _lazyPESectionBlocks[index], newBlock, null) is not null)
             {
                 // another thread created the block already, we need to dispose ours:
                 newBlock.Dispose();
@@ -425,7 +425,7 @@ namespace System.Reflection.PortableExecutable
         /// <remarks>
         /// Returns false if the <see cref="PEReader"/> is constructed from a stream and only part of it is prefetched into memory.
         /// </remarks>
-        public bool IsEntireImageAvailable => _lazyImageBlock != null || _peImage != null;
+        public bool IsEntireImageAvailable => _lazyImageBlock is not null || _peImage is not null;
 
         /// <summary>
         /// Gets a pointer to and size of the PE image if available (<see cref="IsEntireImageAvailable"/>).
@@ -504,7 +504,7 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="InvalidOperationException">PE image not available.</exception>
         public PEMemoryBlock GetSectionData(string sectionName)
         {
-            if (sectionName == null)
+            if (sectionName is null)
             {
                 Throw.ArgumentNull(nameof(sectionName));
             }
@@ -526,7 +526,7 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="InvalidOperationException">PE image not available.</exception>
         public ImmutableArray<DebugDirectoryEntry> ReadDebugDirectory()
         {
-            Debug.Assert(PEHeaders.PEHeader != null);
+            Debug.Assert(PEHeaders.PEHeader is not null);
 
             var debugDirectory = PEHeaders.PEHeader.DebugTableDirectory;
             if (debugDirectory.Size == 0)
@@ -701,12 +701,12 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="IOException">No matching PDB file is found due to an error: An IO error occurred while reading the PE image or the PDB.</exception>
         public bool TryOpenAssociatedPortablePdb(string peImagePath, Func<string, Stream?> pdbFileStreamProvider, out MetadataReaderProvider? pdbReaderProvider, out string? pdbPath)
         {
-            if (peImagePath == null)
+            if (peImagePath is null)
             {
                 Throw.ArgumentNull(nameof(peImagePath));
             }
 
-            if (pdbFileStreamProvider == null)
+            if (pdbFileStreamProvider is null)
             {
                 Throw.ArgumentNull(nameof(pdbFileStreamProvider));
             }
@@ -749,7 +749,7 @@ namespace System.Reflection.PortableExecutable
 
             // Report any metadata and IO errors. PDB might exist but we couldn't read some metadata.
             // The caller might chose to ignore the failure or report it to the user.
-            if (errorToReport != null)
+            if (errorToReport is not null)
             {
                 Debug.Assert(errorToReport is BadImageFormatException || errorToReport is IOException);
                 ExceptionDispatchInfo.Capture(errorToReport).Throw();
@@ -812,7 +812,7 @@ namespace System.Reflection.PortableExecutable
                     pdbStream = null;
                 }
 
-                if (pdbStream == null)
+                if (pdbStream is null)
                 {
                     return false;
                 }
@@ -840,7 +840,7 @@ namespace System.Reflection.PortableExecutable
             }
             finally
             {
-                if (provider == null)
+                if (provider is null)
                 {
                     candidate?.Dispose();
                 }

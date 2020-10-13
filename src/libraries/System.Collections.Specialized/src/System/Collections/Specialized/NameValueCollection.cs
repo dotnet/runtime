@@ -41,7 +41,7 @@ namespace System.Collections.Specialized
         ///    provider and the default case-insensitive comparer.</para>
         /// </devdoc>
         public NameValueCollection(NameValueCollection col)
-            : base(col != null ? col.Comparer : null)
+            : base(col is not null ? col.Comparer : null)
         {
             Add(col!);
         }
@@ -77,9 +77,9 @@ namespace System.Collections.Specialized
         ///    case-insensitive comparer.</para>
         /// </devdoc>
         public NameValueCollection(int capacity, NameValueCollection col)
-            : base(capacity, (col != null ? col.Comparer : null))
+            : base(capacity, (col is not null ? col.Comparer : null))
         {
-            if (col == null)
+            if (col is null)
             {
                 throw new ArgumentNullException(nameof(col));
             }
@@ -113,16 +113,16 @@ namespace System.Collections.Specialized
 
         private static string? GetAsOneString(ArrayList? list)
         {
-            int n = (list != null) ? list.Count : 0;
+            int n = (list is not null) ? list.Count : 0;
 
             if (n == 1)
             {
-                Debug.Assert(list != null);
+                Debug.Assert(list is not null);
                 return (string?)list[0];
             }
             else if (n > 1)
             {
-                Debug.Assert(list != null);
+                Debug.Assert(list is not null);
                 StringBuilder s = new StringBuilder((string?)list[0]);
 
                 for (int i = 1; i < n; i++)
@@ -141,7 +141,7 @@ namespace System.Collections.Specialized
 
         private static string[]? GetAsStringArray(ArrayList? list)
         {
-            int n = (list != null) ? list.Count : 0;
+            int n = (list is not null) ? list.Count : 0;
             if (n == 0)
                 return null;
 
@@ -159,7 +159,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public void Add(NameValueCollection c)
         {
-            if (c == null)
+            if (c is null)
             {
                 throw new ArgumentNullException(nameof(c));
             }
@@ -173,7 +173,7 @@ namespace System.Collections.Specialized
                 string? key = c.GetKey(i);
                 string[]? values = c.GetValues(i);
 
-                if (values != null)
+                if (values is not null)
                 {
                     for (int j = 0; j < values.Length; j++)
                         Add(key, values[j]);
@@ -200,7 +200,7 @@ namespace System.Collections.Specialized
 
         public void CopyTo(Array dest, int index)
         {
-            if (dest == null)
+            if (dest is null)
             {
                 throw new ArgumentNullException(nameof(dest));
             }
@@ -221,7 +221,7 @@ namespace System.Collections.Specialized
             }
 
             int n = Count;
-            if (_all == null)
+            if (_all is null)
             {
                 string?[] all = new string[n];
                 for (int i = 0; i < n; i++)
@@ -273,18 +273,18 @@ namespace System.Collections.Specialized
 
             ArrayList? values = (ArrayList?)BaseGet(name);
 
-            if (values == null)
+            if (values is null)
             {
                 // new key - add new key with single value
                 values = new ArrayList(1);
-                if (value != null)
+                if (value is not null)
                     values.Add(value);
                 BaseAdd(name, values);
             }
             else
             {
                 // old key -- append value to the list of values
-                if (value != null)
+                if (value is not null)
                     values.Add(value);
             }
         }
@@ -402,7 +402,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (_allKeys == null)
+                if (_allKeys is null)
                     _allKeys = BaseGetAllKeys();
                 return _allKeys;
             }

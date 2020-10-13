@@ -34,7 +34,7 @@ namespace System.DirectoryServices
             _changeList = ArrayList.Synchronized(tempList);
             _allowMultipleChange = entry.allowMultipleChange;
             string tempPath = entry.Path;
-            if (tempPath == null || tempPath.Length == 0)
+            if (tempPath is null || tempPath.Length == 0)
             {
                 // user does not specify path, so we bind to default naming context using LDAP provider.
                 _needNewBehavior = true;
@@ -86,13 +86,13 @@ namespace System.DirectoryServices
                 }
                 catch (System.Runtime.InteropServices.COMException e)
                 {
-                    if (e.ErrorCode != unchecked((int)0x80004005) || (value == null))
+                    if (e.ErrorCode != unchecked((int)0x80004005) || (value is null))
                         // WinNT provider throws E_FAIL when null value is specified though actually ADS_PROPERTY_CLEAR option is used, need to catch exception
                         // here. But at the same time we don't want to catch the exception if user explicitly sets the value to null.
                         throw;
                 }
 
-                if (value == null)
+                if (value is null)
                     return;
 
                 // we could not do Clear and Add, we have to bypass the existing collection cache
@@ -137,7 +137,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         public void AddRange(object[] value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -152,7 +152,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         public void AddRange(PropertyValueCollection value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }

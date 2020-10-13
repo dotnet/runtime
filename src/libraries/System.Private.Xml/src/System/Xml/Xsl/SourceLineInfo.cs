@@ -81,7 +81,7 @@ namespace System.Xml.Xsl
         // Returns file path for local and network URIs. Used for PDB generating and error reporting.
         public static string GetFileName(string uriString)
         {
-            Debug.Assert(uriString != null);
+            Debug.Assert(uriString is not null);
             Uri? uri;
 
             if (uriString.Length != 0 &&

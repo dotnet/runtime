@@ -42,7 +42,7 @@ namespace System.Security.Cryptography.Pkcs
         [return: NotNullIfNotNull("rawData")]
         private static byte[]? Decode(byte[]? rawData)
         {
-            if (rawData == null)
+            if (rawData is null)
             {
                 return null;
             }

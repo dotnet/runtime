@@ -2019,7 +2019,7 @@ namespace System.Xml.Xsl
 
             public int CompareTo(object? obj)
             {
-                Debug.Assert(obj != null);
+                Debug.Assert(obj is not null);
                 BigInteger bi = (BigInteger)obj;
                 AssertValid();
                 bi.AssertValid();
@@ -3109,7 +3109,7 @@ namespace System.Xml.Xsl
             LGetRight:
                 Debug.Assert(ch == '.');
                 ch = *pch++;
-                if (pchFirstDig == null)
+                if (pchFirstDig is null)
                 {
                     // Count fractional leading zeros (e.g. six zeros in '0.0000005')
                     while (ch == '0')
@@ -3143,11 +3143,11 @@ namespace System.Xml.Xsl
                     return 0.0;
                 }
 
-                Debug.Assert(pchFirstDig != null);
+                Debug.Assert(pchFirstDig is not null);
 
                 if (expAdj == 0)
                 {
-                    // Assert(StrRChrW(pchFirstDig, &pchFirstDig[numDig], '.') == null);
+                    // Assert(StrRChrW(pchFirstDig, &pchFirstDig[numDig], '.') is null);
 
                     // Detect special case where number is an integer
                     if (numDig <= 9)
@@ -3167,7 +3167,7 @@ namespace System.Xml.Xsl
                 {
                     // The number has a fractional part
                     Debug.Assert(expAdj < 0);
-                    // Assert(StrRChrW(pchStart, pch, '.') != null);
+                    // Assert(StrRChrW(pchStart, pch, '.') is not null);
                 }
 
                 // Limit to 50 digits (double is only precise up to 17 or so digits)

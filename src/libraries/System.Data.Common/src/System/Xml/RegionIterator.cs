@@ -22,7 +22,7 @@ namespace System.Xml
 
         internal RegionIterator(XmlBoundElement rowElement) : base(((XmlDataDocument)(rowElement.OwnerDocument)).Mapper)
         {
-            Debug.Assert(rowElement != null && rowElement.Row != null);
+            Debug.Assert(rowElement is not null && rowElement.Row is not null);
             _rowElement = rowElement;
             _currentNode = rowElement;
         }
@@ -42,10 +42,10 @@ namespace System.Xml
             nextNode = _currentNode.FirstChild;
 
             // No children, try next sibling
-            if (nextNode != null)
+            if (nextNode is not null)
             {
                 _currentNode = nextNode;
-                Debug.Assert(CurrentNode != null);
+                Debug.Assert(CurrentNode is not null);
                 // If we have been defoliated, we should have stayed that way
                 Debug.Assert((oldState == ElementState.Defoliated) ? (_rowElement.ElementState == ElementState.Defoliated) : true);
                 // Rollback foliation
@@ -73,20 +73,20 @@ namespace System.Xml
 
             XmlNode? nextNode = _currentNode.NextSibling;
 
-            if (nextNode != null)
+            if (nextNode is not null)
             {
                 _currentNode = nextNode;
                 // If we have been defoliated, we should have stayed that way
                 Debug.Assert((oldState == ElementState.Defoliated) ? (_rowElement.ElementState == ElementState.Defoliated) : true);
                 // Rollback foliation
                 _rowElement.ElementState = oldState;
-                Debug.Assert(CurrentNode != null);
+                Debug.Assert(CurrentNode is not null);
                 return true;
             }
 
             // No next sibling, try the first sibling of from the parent chain
             nextNode = _currentNode;
-            while (nextNode != _rowElement && nextNode!.NextSibling == null)
+            while (nextNode != _rowElement && nextNode!.NextSibling is null)
             {
                 nextNode = nextNode.ParentNode;
             }
@@ -102,7 +102,7 @@ namespace System.Xml
                 return false;
             }
 
-            Debug.Assert(nextNode.NextSibling != null);
+            Debug.Assert(nextNode.NextSibling is not null);
             _currentNode = nextNode.NextSibling;
 
             // If we have been defoliated, we should have stayed that way
@@ -110,7 +110,7 @@ namespace System.Xml
 
             // Rollback foliation
             _rowElement.ElementState = oldState;
-            Debug.Assert(CurrentNode != null);
+            Debug.Assert(CurrentNode is not null);
             return true;
         }
 
@@ -119,11 +119,11 @@ namespace System.Xml
         [MemberNotNullWhen(true, nameof(CurrentNode))]
         internal bool NextInitialTextLikeNodes(out string value)
         {
-            Debug.Assert(CurrentNode != null);
+            Debug.Assert(CurrentNode is not null);
             Debug.Assert(CurrentNode.NodeType == XmlNodeType.Element);
 #if DEBUG
             // It's not OK to try to read the initial text value for sub-regions, because we do not know how to revert their initial state
-            if (CurrentNode.NodeType == XmlNodeType.Element && mapper.GetTableSchemaForElement((XmlElement)(CurrentNode)) != null)
+            if (CurrentNode.NodeType == XmlNodeType.Element && mapper.GetTableSchemaForElement((XmlElement)(CurrentNode)) is not null)
             {
                 if (CurrentNode != _rowElement)
                 {
@@ -139,7 +139,7 @@ namespace System.Xml
 
             XmlNode? n = CurrentNode.FirstChild;
             value = GetInitialTextFromNodes(ref n);
-            if (n == null)
+            if (n is null)
             {
                 // If we have been defoliated, we should have stayed that way
                 Debug.Assert((oldState == ElementState.Defoliated) ? (_rowElement.ElementState == ElementState.Defoliated) : true);
@@ -163,19 +163,19 @@ namespace System.Xml
         {
             string? value = null;
 
-            if (n != null)
+            if (n is not null)
             {
                 // don't consider whitespace
                 while (n.NodeType == XmlNodeType.Whitespace)
                 {
                     n = n.NextSibling;
-                    if (n == null)
+                    if (n is null)
                     {
                         return string.Empty;
                     }
                 }
 
-                if (XmlDataDocument.IsTextLikeNode(n) && (n.NextSibling == null || !XmlDataDocument.IsTextLikeNode(n.NextSibling)))
+                if (XmlDataDocument.IsTextLikeNode(n) && (n.NextSibling is null || !XmlDataDocument.IsTextLikeNode(n.NextSibling)))
                 {
                     // don't use string builder if only one text node exists
                     value = n.Value;
@@ -184,7 +184,7 @@ namespace System.Xml
                 else
                 {
                     StringBuilder sb = new StringBuilder();
-                    while (n != null && XmlDataDocument.IsTextLikeNode(n))
+                    while (n is not null && XmlDataDocument.IsTextLikeNode(n))
                     {
                         // Ignore non-significant whitespace nodes
                         if (n.NodeType != XmlNodeType.Whitespace)

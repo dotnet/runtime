@@ -15,7 +15,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ExportFactoryCreator(Type exportFactoryType)
         {
-            if (exportFactoryType == null)
+            if (exportFactoryType is null)
             {
                 throw new ArgumentNullException(nameof(exportFactoryType));
             }
@@ -26,7 +26,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         public Func<Export, object> CreateStronglyTypedExportFactoryFactory(Type exportType, Type? metadataViewType)
         {
             MethodInfo genericMethod;
-            if (metadataViewType == null)
+            if (metadataViewType is null)
             {
                 genericMethod = _createStronglyTypedExportFactoryOfT.MakeGenericMethod(exportType);
             }
@@ -35,7 +35,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 genericMethod = _createStronglyTypedExportFactoryOfTM.MakeGenericMethod(exportType, metadataViewType);
             }
 
-            if (genericMethod == null)
+            if (genericMethod is null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }

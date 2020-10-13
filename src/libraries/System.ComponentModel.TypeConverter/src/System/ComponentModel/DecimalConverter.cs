@@ -45,7 +45,7 @@ namespace System.ComponentModel
             if (destinationType == typeof(InstanceDescriptor) && value is decimal decimalValue)
             {
                 ConstructorInfo ctor = typeof(decimal).GetConstructor(new Type[] { typeof(int[]) });
-                Debug.Assert(ctor != null, "Expected constructor to exist.");
+                Debug.Assert(ctor is not null, "Expected constructor to exist.");
                 return new InstanceDescriptor(ctor, new object[] { decimal.GetBits(decimalValue) });
             }
 

@@ -87,7 +87,7 @@ namespace System.Net.Quic.Implementations.Mock
             {
                 CheckDisposed();
 
-                return _state != null;
+                return _state is not null;
             }
         }
 

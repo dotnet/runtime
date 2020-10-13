@@ -94,7 +94,7 @@ namespace System.ComponentModel.Composition.Registration
                 };
             }
 
-            if (attributes == null)
+            if (attributes is null)
             {
                 attributes = new List<Attribute>();
             }

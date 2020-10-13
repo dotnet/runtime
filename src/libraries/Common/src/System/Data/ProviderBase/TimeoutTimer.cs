@@ -44,7 +44,7 @@ namespace System.Data.ProviderBase
 
             //---------------------
             // Postconditions
-            Debug.Assert(timeout != null); // Need a valid timeouttimer if no error
+            Debug.Assert(timeout is not null); // Need a valid timeouttimer if no error
 
             return timeout;
         }
@@ -65,7 +65,7 @@ namespace System.Data.ProviderBase
 
             //---------------------
             // Postconditions
-            Debug.Assert(timeout != null); // Need a valid timeouttimer if no error
+            Debug.Assert(timeout is not null); // Need a valid timeouttimer if no error
 
             return timeout;
         }

@@ -29,7 +29,7 @@ namespace System.ComponentModel.Composition
                 // In here return a collection of all of the exceptions in the Errors collection
                 foreach (var error in _exception.Errors)
                 {
-                    if (error.Exception != null)
+                    if (error.Exception is not null)
                     {
                         errors.Add(error.Exception);
                     }

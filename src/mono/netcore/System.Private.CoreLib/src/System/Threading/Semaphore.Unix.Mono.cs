@@ -23,7 +23,7 @@ namespace System.Threading
 
         private static OpenExistingResult OpenExistingWorker(string name, out Semaphore? result)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)

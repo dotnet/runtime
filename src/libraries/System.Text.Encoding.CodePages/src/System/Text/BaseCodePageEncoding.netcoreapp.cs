@@ -44,7 +44,7 @@ namespace System.Text
                     string? resourceName = EncodingNLS.GetLocalizedEncodingNameResource(codePageIndex.CodePage);
                     string? displayName = null;
 
-                    if (resourceName != null && resourceName.StartsWith("Globalization_cp_", StringComparison.OrdinalIgnoreCase))
+                    if (resourceName is not null && resourceName.StartsWith("Globalization_cp_", StringComparison.OrdinalIgnoreCase))
                     {
                         displayName = SR.GetResourceString(resourceName);
                     }

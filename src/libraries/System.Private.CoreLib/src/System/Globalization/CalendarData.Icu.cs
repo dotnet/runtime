@@ -41,7 +41,7 @@ namespace System.Globalization
             result &= GetCalendarInfo(localeName, calendarId, CalendarDataType.NativeName, out this.sNativeName!);
             result &= GetCalendarInfo(localeName, calendarId, CalendarDataType.MonthDay, out this.sMonthDay!);
 
-            if (this.sMonthDay != null)
+            if (this.sMonthDay is not null)
             {
                 this.sMonthDay = NormalizeDatePattern(this.sMonthDay);
             }
@@ -55,9 +55,9 @@ namespace System.Globalization
 
             string? leapHebrewMonthName = null;
             result &= EnumMonthNames(localeName, calendarId, CalendarDataType.MonthNames, out this.saMonthNames!, ref leapHebrewMonthName);
-            if (leapHebrewMonthName != null)
+            if (leapHebrewMonthName is not null)
             {
-                Debug.Assert(this.saMonthNames != null);
+                Debug.Assert(this.saMonthNames is not null);
 
                 // In Hebrew calendar, get the leap month name Adar II and override the non-leap month 7
                 Debug.Assert(calendarId == CalendarId.HEBREW && saMonthNames.Length == 13);

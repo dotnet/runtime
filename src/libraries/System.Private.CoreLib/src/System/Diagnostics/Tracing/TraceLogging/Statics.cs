@@ -119,7 +119,7 @@ namespace System.Diagnostics.Tracing
                 current |= (byte)(more ? 0x80 : 0x00);
                 tagsLeft <<= 7;
 
-                if (metadata != null)
+                if (metadata is not null)
                 {
                     metadata[pos] = current;
                 }
@@ -169,7 +169,7 @@ namespace System.Diagnostics.Tracing
 
         public static void CheckName(string? name)
         {
-            if (name != null && 0 <= name.IndexOf('\0'))
+            if (name is not null && 0 <= name.IndexOf('\0'))
             {
                 throw new ArgumentOutOfRangeException(nameof(name));
             }
@@ -362,7 +362,7 @@ namespace System.Diagnostics.Tracing
 
                 foreach (Type ifaceType in ifaceTypes)
                 {
-                    if (elementType != null)
+                    if (elementType is not null)
                     {
                         // ambiguous match. report no match at all.
                         elementType = null;
@@ -395,8 +395,8 @@ namespace System.Diagnostics.Tracing
             recursionCheck.Add(dataType);
 
             EventDataAttribute? eventAttrib = Statics.GetCustomAttribute<EventDataAttribute>(dataType);
-            if (eventAttrib != null ||
-                Statics.GetCustomAttribute<CompilerGeneratedAttribute>(dataType) != null ||
+            if (eventAttrib is not null ||
+                Statics.GetCustomAttribute<CompilerGeneratedAttribute>(dataType) is not null ||
                 IsGenericMatch(dataType, typeof(KeyValuePair<,>)))
             {
                 var analysis = new TypeAnalysis(dataType, eventAttrib, recursionCheck);
@@ -566,7 +566,7 @@ namespace System.Diagnostics.Tracing
                 else
                 {
                     Type? elementType = FindEnumerableElementType(dataType);
-                    if (elementType != null)
+                    if (elementType is not null)
                     {
                         result = new EnumerableTypeInfo(dataType, TraceLoggingTypeInfo.GetInstance(elementType, recursionCheck));
                     }

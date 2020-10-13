@@ -97,7 +97,7 @@ namespace System.IO
 
         public static void ReplaceFile(string sourceFullPath, string destFullPath, string? destBackupFullPath, bool ignoreMetadataErrors)
         {
-            if (destBackupFullPath != null)
+            if (destBackupFullPath is not null)
             {
                 // We're backing up the destination file to the backup file, so we need to first delete the backup
                 // file, if it exists.  If deletion fails for a reason other than the file not existing, fail.
@@ -204,7 +204,7 @@ namespace System.IO
                     case Interop.Error.ENOENT:
                         // In order to match Windows behavior
                         string? directoryName = Path.GetDirectoryName(fullPath);
-                        Debug.Assert(directoryName != null);
+                        Debug.Assert(directoryName is not null);
                         if (directoryName.Length > 0 && !Directory.Exists(directoryName))
                         {
                             throw Interop.GetExceptionForIoErrno(errorInfo, fullPath, true);
@@ -429,7 +429,7 @@ namespace System.IO
                             }
                             catch (Exception exc)
                             {
-                                if (firstException != null)
+                                if (firstException is not null)
                                 {
                                     firstException = exc;
                                 }
@@ -439,13 +439,13 @@ namespace System.IO
                 }
                 catch (Exception exc)
                 {
-                    if (firstException != null)
+                    if (firstException is not null)
                     {
                         firstException = exc;
                     }
                 }
 
-                if (firstException != null)
+                if (firstException is not null)
                 {
                     throw firstException;
                 }

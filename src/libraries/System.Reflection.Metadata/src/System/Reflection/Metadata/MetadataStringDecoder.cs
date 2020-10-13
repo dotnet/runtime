@@ -43,7 +43,7 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public MetadataStringDecoder(Encoding encoding)
         {
-            if (encoding == null)
+            if (encoding is null)
             {
                 throw new ArgumentNullException(nameof(encoding));
             }
@@ -72,7 +72,7 @@ namespace System.Reflection.Metadata
         /// <returns>The decoded string.</returns>
         public unsafe virtual string GetString(byte* bytes, int byteCount)
         {
-            Debug.Assert(Encoding != null);
+            Debug.Assert(Encoding is not null);
 
             // Note that this call is currently wired to the light-up extension in EncodingHelper
             // for portability.

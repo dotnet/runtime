@@ -77,7 +77,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 UIHint = uiHint;
                 PresentationLayer = presentationLayer;
-                if (controlParameters != null)
+                if (controlParameters is not null)
                 {
                     _inputControlParameters = new object[controlParameters.Length];
                     Array.Copy(controlParameters, _inputControlParameters, controlParameters.Length);
@@ -142,8 +142,8 @@ namespace System.ComponentModel.DataAnnotations
                     return false;
                 }
 
-                Debug.Assert(leftParams != null, "leftParams shouldn't be null");
-                Debug.Assert(rightParams != null, "rightParams shouldn't be null");
+                Debug.Assert(leftParams is not null, "leftParams shouldn't be null");
+                Debug.Assert(rightParams is not null, "rightParams shouldn't be null");
                 if (leftParams.Count != rightParams.Count)
                 {
                     return false;
@@ -164,7 +164,7 @@ namespace System.ComponentModel.DataAnnotations
 
                 object?[]? inputControlParameters = _inputControlParameters;
 
-                if (inputControlParameters == null || inputControlParameters.Length == 0)
+                if (inputControlParameters is null || inputControlParameters.Length == 0)
                 {
                     return controlParameters;
                 }
@@ -177,7 +177,7 @@ namespace System.ComponentModel.DataAnnotations
                 {
                     object? key = inputControlParameters[i];
                     object? value = inputControlParameters[i + 1];
-                    if (key == null)
+                    if (key is null)
                     {
                         throw new InvalidOperationException(SR.Format(SR.UIHintImplementation_ControlParameterKeyIsNull, i));
                     }

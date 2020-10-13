@@ -10,7 +10,7 @@ namespace System.Reflection.Context.Projection
     {
         public IList<T> Project<T>(IList<T> values, Func<T, T> project)
         {
-            if (values == null || values.Count == 0)
+            if (values is null || values.Count == 0)
                 return values;
 
             T[] projected = ProjectAll(values, project);
@@ -20,7 +20,7 @@ namespace System.Reflection.Context.Projection
 
         public T[] Project<T>(T[] values, Func<T, T> project)
         {
-            if (values == null || values.Length == 0)
+            if (values is null || values.Length == 0)
                 return values;
 
             return ProjectAll(values, project);
@@ -61,7 +61,7 @@ namespace System.Reflection.Context.Projection
 
         public Type[] Unproject(Type[] values)
         {
-            if (values == null)
+            if (values is null)
                 return null;
 
             Type[] newTypes = new Type[values.Length];
@@ -83,9 +83,9 @@ namespace System.Reflection.Context.Projection
 
         public bool NeedsProjection(object value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
-            if (value == null)
+            if (value is null)
                 return false;
 
             if (value is IProjectable projector && projector == this)
@@ -102,7 +102,7 @@ namespace System.Reflection.Context.Projection
         private T[] ProjectAll<T>(IList<T> values, Func<T, T> project)
         {
             Debug.Assert(null != project);
-            Debug.Assert(values != null && values.Count > 0);
+            Debug.Assert(values is not null && values.Count > 0);
 
             var projected = new T[values.Count];
 

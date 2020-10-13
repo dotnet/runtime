@@ -30,7 +30,7 @@ namespace System
                     end = i;
             }
 
-            if (res == null)
+            if (res is null)
             {
                 res = str.Substring(start, end - start);
             }

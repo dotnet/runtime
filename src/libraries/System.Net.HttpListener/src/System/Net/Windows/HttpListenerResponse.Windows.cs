@@ -83,7 +83,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -125,7 +125,7 @@ namespace System.Net
         public void Close(byte[] responseEntity, bool willBlock)
         {
             CheckDisposed();
-            if (responseEntity == null)
+            if (responseEntity is null)
             {
                 throw new ArgumentNullException(nameof(responseEntity));
             }
@@ -135,7 +135,7 @@ namespace System.Net
                 ContentLength64 = responseEntity.Length;
             }
             EnsureResponseStream();
-            Debug.Assert(_responseStream != null);
+            Debug.Assert(_responseStream is not null);
             if (willBlock)
             {
                 try
@@ -175,7 +175,7 @@ namespace System.Net
 
         private void EnsureResponseStream()
         {
-            if (_responseStream == null)
+            if (_responseStream is null)
             {
                 _responseStream = new HttpResponseStream(HttpListenerContext!);
             }
@@ -259,12 +259,12 @@ namespace System.Net
             List<GCHandle>? pinnedHeaders = SerializeHeaders(ref _nativeResponse.Headers, isWebSocketHandshake);
             try
             {
-                if (pDataChunk != null)
+                if (pDataChunk is not null)
                 {
                     _nativeResponse.EntityChunkCount = 1;
                     _nativeResponse.pEntityChunks = pDataChunk;
                 }
-                else if (asyncResult != null && asyncResult.pDataChunks != null)
+                else if (asyncResult is not null && asyncResult.pDataChunks is not null)
                 {
                     _nativeResponse.EntityChunkCount = asyncResult.dataChunkCount;
                     _nativeResponse.pEntityChunks = asyncResult.pDataChunks;
@@ -295,10 +295,10 @@ namespace System.Net
                                     &bytesSent,
                                     SafeLocalAllocHandle.Zero,
                                     0,
-                                    asyncResult == null ? null : asyncResult._pOverlapped,
+                                    asyncResult is null ? null : asyncResult._pOverlapped,
                                     null);
 
-                            if (asyncResult != null &&
+                            if (asyncResult is not null &&
                                 statusCode == Interop.HttpApi.ERROR_SUCCESS &&
                                 HttpListener.SkipIOCPCallbackOnSuccess)
                             {
@@ -322,10 +322,10 @@ namespace System.Net
                                 &bytesSent,
                                 SafeLocalAllocHandle.Zero,
                                 0,
-                                asyncResult == null ? null : asyncResult._pOverlapped,
+                                asyncResult is null ? null : asyncResult._pOverlapped,
                                 null);
 
-                        if (asyncResult != null &&
+                        if (asyncResult is not null &&
                             statusCode == Interop.HttpApi.ERROR_SUCCESS &&
                             HttpListener.SkipIOCPCallbackOnSuccess)
                         {
@@ -418,7 +418,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
         // This method handles the shared response header processing between normal HTTP responses and WebSocket responses.
         internal void ComputeCoreHeaders()
         {
-            if (HttpListenerContext.MutualAuthentication != null && HttpListenerContext.MutualAuthentication.Length > 0)
+            if (HttpListenerContext.MutualAuthentication is not null && HttpListenerContext.MutualAuthentication.Length > 0)
             {
                 Headers[HttpResponseHeader.WwwAuthenticate] = HttpListenerContext.MutualAuthentication;
             }
@@ -519,7 +519,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
   $"index={index},headers.count={Headers.Count},headerName:{headerName},lookup:{lookup} headerValue:{headerValue}");
                         if (lookup == -1)
                         {
-                            if (unknownHeaders == null)
+                            if (unknownHeaders is null)
                             {
                                 unknownHeaders = new Interop.HttpApi.HTTP_UNKNOWN_HEADER[numUnknownHeaders];
                                 gcHandle = GCHandle.Alloc(unknownHeaders, GCHandleType.Pinned);
@@ -557,7 +557,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
                         else
                         {
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"HttpResponseHeader[{lookup}]:{((HttpResponseHeader)lookup)} headerValue:{headerValue}");
-                            if (headerValue != null)
+                            if (headerValue is not null)
                             {
                                 bytes = new byte[WebHeaderEncoding.GetByteCount(headerValue)];
                                 pKnownHeaders[lookup].RawValueLength = (ushort)bytes.Length;
@@ -584,7 +584,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
 
         private void FreePinnedHeaders(List<GCHandle>? pinnedHeaders)
         {
-            if (pinnedHeaders != null)
+            if (pinnedHeaders is not null)
             {
                 foreach (GCHandle gcHandle in pinnedHeaders)
                 {

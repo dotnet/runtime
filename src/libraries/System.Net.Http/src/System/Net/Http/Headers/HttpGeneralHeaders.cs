@@ -50,7 +50,7 @@ namespace System.Net.Http.Headers
                 }
                 else
                 {
-                    _connectionCloseSet = value != null;
+                    _connectionCloseSet = value is not null;
                     ConnectionCore.RemoveSpecialValue();
                 }
             }
@@ -62,7 +62,7 @@ namespace System.Net.Http.Headers
             // and it contains the special value, or if we haven't and the headers contain
             // the parsed special value, return true.  We don't just access ConnectionCore,
             // as doing so will unnecessarily initialize the collection even if it's not needed.
-            if (headers?._connection != null)
+            if (headers?._connection is not null)
             {
                 if (headers._connection.IsSpecialValueSet)
                 {
@@ -73,7 +73,7 @@ namespace System.Net.Http.Headers
             {
                 return true;
             }
-            if (headers != null && headers._connectionCloseSet)
+            if (headers is not null && headers._connectionCloseSet)
             {
                 return false;
             }
@@ -90,7 +90,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (_pragma == null)
+                if (_pragma is null)
                 {
                     _pragma = new HttpHeaderValueCollection<NameValueHeaderValue>(KnownHeaders.Pragma.Descriptor, _parent);
                 }
@@ -102,7 +102,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (_trailer == null)
+                if (_trailer is null)
                 {
                     _trailer = new HttpHeaderValueCollection<string>(KnownHeaders.Trailer.Descriptor,
                         _parent, HeaderUtilities.TokenValidator);
@@ -122,7 +122,7 @@ namespace System.Net.Http.Headers
             // and it contains the special value, or if we haven't and the headers contain
             // the parsed special value, return true.  We don't just access TransferEncodingCore,
             // as doing so will unnecessarily initialize the collection even if it's not needed.
-            if (headers?._transferEncoding != null)
+            if (headers?._transferEncoding is not null)
             {
                 if (headers._transferEncoding.IsSpecialValueSet)
                 {
@@ -133,7 +133,7 @@ namespace System.Net.Http.Headers
             {
                 return true;
             }
-            if (headers != null && headers._transferEncodingChunkedSet)
+            if (headers is not null && headers._transferEncodingChunkedSet)
             {
                 return false;
             }
@@ -158,7 +158,7 @@ namespace System.Net.Http.Headers
                 }
                 else
                 {
-                    _transferEncodingChunkedSet = value != null;
+                    _transferEncodingChunkedSet = value is not null;
                     TransferEncodingCore.RemoveSpecialValue();
                 }
             }
@@ -168,7 +168,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (_upgrade == null)
+                if (_upgrade is null)
                 {
                     _upgrade = new HttpHeaderValueCollection<ProductHeaderValue>(KnownHeaders.Upgrade.Descriptor, _parent);
                 }
@@ -180,7 +180,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (_via == null)
+                if (_via is null)
                 {
                     _via = new HttpHeaderValueCollection<ViaHeaderValue>(KnownHeaders.Via.Descriptor, _parent);
                 }
@@ -192,7 +192,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (_warning == null)
+                if (_warning is null)
                 {
                     _warning = new HttpHeaderValueCollection<WarningHeaderValue>(KnownHeaders.Warning.Descriptor, _parent);
                 }
@@ -204,7 +204,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (_connection == null)
+                if (_connection is null)
                 {
                     _connection = new HttpHeaderValueCollection<string>(KnownHeaders.Connection.Descriptor,
                         _parent, HeaderUtilities.ConnectionClose, HeaderUtilities.TokenValidator);
@@ -217,7 +217,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (_transferEncoding == null)
+                if (_transferEncoding is null)
                 {
                     _transferEncoding = new HttpHeaderValueCollection<TransferCodingHeaderValue>(
                         KnownHeaders.TransferEncoding.Descriptor, _parent, HeaderUtilities.TransferEncodingChunked);
@@ -228,7 +228,7 @@ namespace System.Net.Http.Headers
 
         internal HttpGeneralHeaders(HttpHeaders parent)
         {
-            Debug.Assert(parent != null);
+            Debug.Assert(parent is not null);
 
             _parent = parent;
         }

@@ -19,11 +19,11 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public RootDesignerSerializerAttribute(Type serializerType, Type baseSerializerType, bool reloadable)
         {
-            if (serializerType == null)
+            if (serializerType is null)
             {
                 throw new ArgumentNullException(nameof(serializerType));
             }
-            if (baseSerializerType == null)
+            if (baseSerializerType is null)
             {
                 throw new ArgumentNullException(nameof(baseSerializerType));
             }
@@ -38,7 +38,7 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public RootDesignerSerializerAttribute(string serializerTypeName, Type baseSerializerType, bool reloadable)
         {
-            if (baseSerializerType == null)
+            if (baseSerializerType is null)
             {
                 throw new ArgumentNullException(nameof(baseSerializerType));
             }
@@ -86,7 +86,7 @@ namespace System.ComponentModel.Design.Serialization
         {
             get
             {
-                if (_typeId == null)
+                if (_typeId is null)
                 {
                     string baseType = SerializerBaseTypeName ?? string.Empty;
                     int comma = baseType.IndexOf(',');

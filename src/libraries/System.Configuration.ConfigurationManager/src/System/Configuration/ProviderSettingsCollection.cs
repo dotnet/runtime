@@ -21,7 +21,7 @@ namespace System.Configuration
             get { return (ProviderSettings)BaseGet(index); }
             set
             {
-                if (BaseGet(index) != null)
+                if (BaseGet(index) is not null)
                     BaseRemoveAt(index);
 
                 BaseAdd(index, value);
@@ -30,7 +30,7 @@ namespace System.Configuration
 
         public void Add(ProviderSettings provider)
         {
-            if (provider != null)
+            if (provider is not null)
             {
                 provider.UpdatePropertyCollection();
                 BaseAdd(provider);

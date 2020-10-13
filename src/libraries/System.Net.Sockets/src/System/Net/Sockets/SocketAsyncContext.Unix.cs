@@ -237,7 +237,7 @@ namespace System.Net.Sockets
                 DoAbort();
 
                 ManualResetEventSlim? e = Event;
-                if (e != null)
+                if (e is not null)
                 {
                     e.Set();
                 }
@@ -263,7 +263,7 @@ namespace System.Net.Sockets
             public void Dispatch()
             {
                 ManualResetEventSlim? e = Event;
-                if (e != null)
+                if (e is not null)
                 {
                     // Sync operation.  Signal waiting thread to continue processing.
                     e.Set();
@@ -277,7 +277,7 @@ namespace System.Net.Sockets
 
             public void Schedule()
             {
-                Debug.Assert(Event == null);
+                Debug.Assert(Event is null);
 
                 // Async operation.  Process the IO on the threadpool.
                 ThreadPool.UnsafeQueueUserWorkItem(this, preferLocal: false);
@@ -461,7 +461,7 @@ namespace System.Net.Sockets
             {
                 // Zero byte read is performed to know when data is available.
                 // We don't have to call receive, our caller is interested in the event.
-                if (Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress == null)
+                if (Buffer.Length == 0 && Flags == SocketFlags.None && SocketAddress is null)
                 {
                     BytesTransferred = 0;
                     ReceivedFlags = SocketFlags.None;
@@ -472,7 +472,7 @@ namespace System.Net.Sockets
                 {
                     if (!SetReceivedFlags)
                     {
-                        Debug.Assert(SocketAddress == null);
+                        Debug.Assert(SocketAddress is null);
 
                         ReceivedFlags = SocketFlags.None;
                         return SocketPal.TryCompleteReceive(context._socket, Buffer.Span, Flags, out BytesTransferred, out ErrorCode);
@@ -648,7 +648,7 @@ namespace System.Net.Sockets
 
             public LockToken(object lockObject)
             {
-                Debug.Assert(lockObject != null);
+                Debug.Assert(lockObject is not null);
 
                 _lockObject = lockObject;
 
@@ -723,7 +723,7 @@ namespace System.Net.Sockets
 
             public void Init()
             {
-                Debug.Assert(_queueLock == null);
+                Debug.Assert(_queueLock is null);
                 _queueLock = new object();
 
                 _state = QueueState.Ready;
@@ -793,10 +793,10 @@ namespace System.Net.Sockets
                                 // Enqueue the operation.
                                 Debug.Assert(operation.Next == operation, "Expected operation.Next == operation");
 
-                                if (_tail == null)
+                                if (_tail is null)
                                 {
                                     Debug.Assert(!_isNextOperationSynchronous);
-                                    _isNextOperationSynchronous = operation.Event != null;
+                                    _isNextOperationSynchronous = operation.Event is not null;
                                 }
                                 else
                                 {
@@ -818,7 +818,7 @@ namespace System.Net.Sockets
                                 return true;
 
                             case QueueState.Stopped:
-                                Debug.Assert(_tail == null);
+                                Debug.Assert(_tail is null);
                                 doAbort = true;
                                 break;
 
@@ -854,15 +854,15 @@ namespace System.Net.Sockets
                     switch (_state)
                     {
                         case QueueState.Ready:
-                            Debug.Assert(_tail == null, "State == Ready but queue is not empty!");
+                            Debug.Assert(_tail is null, "State == Ready but queue is not empty!");
                             _sequenceNumber++;
                             Trace(context, $"Exit (previously ready)");
                             return null;
 
                         case QueueState.Waiting:
-                            Debug.Assert(_tail != null, "State == Waiting but queue is empty!");
+                            Debug.Assert(_tail is not null, "State == Waiting but queue is empty!");
                             op = _tail.Next;
-                            Debug.Assert(_isNextOperationSynchronous == (op.Event != null));
+                            Debug.Assert(_isNextOperationSynchronous == (op.Event is not null));
                             if (skipAsyncEvents && !_isNextOperationSynchronous)
                             {
                                 Debug.Assert(!processAsyncEvents);
@@ -876,13 +876,13 @@ namespace System.Net.Sockets
                             break;
 
                         case QueueState.Processing:
-                            Debug.Assert(_tail != null, "State == Processing but queue is empty!");
+                            Debug.Assert(_tail is not null, "State == Processing but queue is empty!");
                             _sequenceNumber++;
                             Trace(context, $"Exit (currently processing)");
                             return null;
 
                         case QueueState.Stopped:
-                            Debug.Assert(_tail == null);
+                            Debug.Assert(_tail is null);
                             Trace(context, $"Exit (stopped)");
                             return null;
 
@@ -893,7 +893,7 @@ namespace System.Net.Sockets
                 }
 
                 ManualResetEventSlim? e = op.Event;
-                if (e != null)
+                if (e is not null)
                 {
                     // Sync operation.  Signal waiting thread to continue processing.
                     e.Set();
@@ -916,7 +916,7 @@ namespace System.Net.Sockets
             {
                 OperationResult result = ProcessQueuedOperation(op);
 
-                Debug.Assert(op.Event == null, "Sync operation encountered in ProcessAsyncOperation");
+                Debug.Assert(op.Event is null, "Sync operation encountered in ProcessAsyncOperation");
 
                 if (result == OperationResult.Completed)
                 {
@@ -950,14 +950,14 @@ namespace System.Net.Sockets
 
                     if (_state == QueueState.Stopped)
                     {
-                        Debug.Assert(_tail == null);
+                        Debug.Assert(_tail is null);
                         Trace(context, $"Exit (stopped)");
                         return OperationResult.Cancelled;
                     }
                     else
                     {
                         Debug.Assert(_state == QueueState.Processing, $"_state={_state} while processing queue!");
-                        Debug.Assert(_tail != null, "Unexpected empty queue while processing I/O");
+                        Debug.Assert(_tail is not null, "Unexpected empty queue while processing I/O");
                         Debug.Assert(op == _tail.Next, "Operation is not at head of queue???");
                         observedSequenceNumber = _sequenceNumber;
                     }
@@ -990,7 +990,7 @@ namespace System.Net.Sockets
                     {
                         if (_state == QueueState.Stopped)
                         {
-                            Debug.Assert(_tail == null);
+                            Debug.Assert(_tail is null);
                             Trace(context, $"Exit (stopped)");
                             return OperationResult.Cancelled;
                         }
@@ -1022,7 +1022,7 @@ namespace System.Net.Sockets
                 {
                     if (_state == QueueState.Stopped)
                     {
-                        Debug.Assert(_tail == null);
+                        Debug.Assert(_tail is null);
                         Trace(context, $"Exit (stopped)");
                     }
                     else
@@ -1043,7 +1043,7 @@ namespace System.Net.Sockets
                         {
                             // Pop current operation and advance to next
                             nextOp = _tail.Next = op.Next;
-                            _isNextOperationSynchronous = nextOp.Event != null;
+                            _isNextOperationSynchronous = nextOp.Event is not null;
                         }
                     }
                 }
@@ -1056,7 +1056,7 @@ namespace System.Net.Sockets
             public void CancelAndContinueProcessing(TOperation op)
             {
                 // Note, only sync operations use this method.
-                Debug.Assert(op.Event != null);
+                Debug.Assert(op.Event is not null);
 
                 // Remove operation from queue.
                 // Note it must be there since it can only be processed and removed by the caller.
@@ -1065,11 +1065,11 @@ namespace System.Net.Sockets
                 {
                     if (_state == QueueState.Stopped)
                     {
-                        Debug.Assert(_tail == null);
+                        Debug.Assert(_tail is null);
                     }
                     else
                     {
-                        Debug.Assert(_tail != null, "Unexpected empty queue in CancelAndContinueProcessing");
+                        Debug.Assert(_tail is not null, "Unexpected empty queue in CancelAndContinueProcessing");
 
                         if (_tail.Next == op)
                         {
@@ -1084,7 +1084,7 @@ namespace System.Net.Sockets
                             {
                                 // Pop current operation and advance to next
                                 _tail.Next = op.Next;
-                                _isNextOperationSynchronous = op.Next.Event != null;
+                                _isNextOperationSynchronous = op.Next.Event is not null;
                             }
 
                             // We're the first op in the queue.
@@ -1092,7 +1092,7 @@ namespace System.Net.Sockets
                             {
                                 // The queue has already handed off execution responsibility to us.
                                 // We need to dispatch to the next op.
-                                if (_tail == null)
+                                if (_tail is null)
                                 {
                                     _state = QueueState.Ready;
                                     _sequenceNumber++;
@@ -1104,7 +1104,7 @@ namespace System.Net.Sockets
                             }
                             else if (_state == QueueState.Waiting)
                             {
-                                if (_tail == null)
+                                if (_tail is null)
                                 {
                                     _state = QueueState.Ready;
                                     _sequenceNumber++;
@@ -1149,7 +1149,7 @@ namespace System.Net.Sockets
 
                     _state = QueueState.Stopped;
 
-                    if (_tail != null)
+                    if (_tail is not null)
                     {
                         AsyncOperation op = _tail;
                         do
@@ -1176,7 +1176,7 @@ namespace System.Net.Sockets
                     typeof(TOperation) == typeof(WriteOperation) ? "send" :
                     "???";
 
-                OutputTrace($"{IdOf(context)}-{queueType}.{memberName}: {message}, {_state}-{_sequenceNumber}, {((_tail == null) ? "empty" : "not empty")}");
+                OutputTrace($"{IdOf(context)}-{queueType}.{memberName}: {message}, {_state}-{_sequenceNumber}, {((_tail is null) ? "empty" : "not empty")}");
             }
         }
 
@@ -1184,7 +1184,7 @@ namespace System.Net.Sockets
         private OperationQueue<ReadOperation> _receiveQueue;
         private OperationQueue<WriteOperation> _sendQueue;
         private SocketAsyncEngine? _asyncEngine;
-        private bool IsRegistered => _asyncEngine != null;
+        private bool IsRegistered => _asyncEngine is not null;
         private bool _nonBlockingSet;
 
         private readonly object _registerLock = new object();
@@ -1210,7 +1210,7 @@ namespace System.Net.Sockets
             Debug.Assert(_nonBlockingSet);
             lock (_registerLock)
             {
-                if (_asyncEngine == null)
+                if (_asyncEngine is null)
                 {
                     bool addedRef = false;
                     try
@@ -1348,7 +1348,7 @@ namespace System.Net.Sockets
 
         public SocketError Accept(byte[] socketAddress, ref int socketAddressLen, out IntPtr acceptedFd)
         {
-            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
+            Debug.Assert(socketAddress is not null, "Expected non-null socketAddress");
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
 
             SocketError errorCode;
@@ -1375,9 +1375,9 @@ namespace System.Net.Sockets
 
         public SocketError AcceptAsync(byte[] socketAddress, ref int socketAddressLen, out IntPtr acceptedFd, Action<IntPtr, byte[], int, SocketError> callback)
         {
-            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
+            Debug.Assert(socketAddress is not null, "Expected non-null socketAddress");
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
-            Debug.Assert(callback != null, "Expected non-null callback");
+            Debug.Assert(callback is not null, "Expected non-null callback");
 
             SetNonBlocking();
 
@@ -1412,7 +1412,7 @@ namespace System.Net.Sockets
 
         public SocketError Connect(byte[] socketAddress, int socketAddressLen)
         {
-            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
+            Debug.Assert(socketAddress is not null, "Expected non-null socketAddress");
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
 
             // Connect is different than the usual "readiness" pattern of other operations.
@@ -1441,9 +1441,9 @@ namespace System.Net.Sockets
 
         public SocketError ConnectAsync(byte[] socketAddress, int socketAddressLen, Action<SocketError> callback)
         {
-            Debug.Assert(socketAddress != null, "Expected non-null socketAddress");
+            Debug.Assert(socketAddress is not null, "Expected non-null socketAddress");
             Debug.Assert(socketAddressLen > 0, $"Unexpected socketAddressLen: {socketAddressLen}");
-            Debug.Assert(callback != null, "Expected non-null callback");
+            Debug.Assert(callback is not null, "Expected non-null callback");
 
             SetNonBlocking();
 
@@ -2051,14 +2051,14 @@ namespace System.Net.Sockets
 
             if ((events & Interop.Sys.SocketEvents.Read) != 0 &&
                 _receiveQueue.IsNextOperationSynchronous_Speculative &&
-                _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this, skipAsyncEvents: true) == null)
+                _receiveQueue.ProcessSyncEventOrGetAsyncEvent(this, skipAsyncEvents: true) is null)
             {
                 events ^= Interop.Sys.SocketEvents.Read;
             }
 
             if ((events & Interop.Sys.SocketEvents.Write) != 0 &&
                 _sendQueue.IsNextOperationSynchronous_Speculative &&
-                _sendQueue.ProcessSyncEventOrGetAsyncEvent(this, skipAsyncEvents: true) == null)
+                _sendQueue.ProcessSyncEventOrGetAsyncEvent(this, skipAsyncEvents: true) is null)
             {
                 events ^= Interop.Sys.SocketEvents.Write;
             }
@@ -2102,7 +2102,7 @@ namespace System.Net.Sockets
             // synchronously to avoid an extra thread pool work item. When we have two operations to process, processing both
             // synchronously may delay the second operation, so schedule one onto the thread pool and process the other
             // synchronously. There might be better ways of doing this.
-            if (sendOperation == null)
+            if (sendOperation is null)
             {
                 receiveOperation?.Process();
             }
@@ -2136,6 +2136,6 @@ namespace System.Net.Sockets
 #endif
         }
 
-        public static string IdOf(object o) => o == null ? "(null)" : $"{o.GetType().Name}#{o.GetHashCode():X2}";
+        public static string IdOf(object o) => o is null ? "(null)" : $"{o.GetType().Name}#{o.GetHashCode():X2}";
     }
 }

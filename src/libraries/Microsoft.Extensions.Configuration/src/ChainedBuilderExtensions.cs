@@ -29,11 +29,11 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddConfiguration(this IConfigurationBuilder configurationBuilder, IConfiguration config, bool shouldDisposeConfiguration)
         {
-            if (configurationBuilder == null)
+            if (configurationBuilder is null)
             {
                 throw new ArgumentNullException(nameof(configurationBuilder));
             }
-            if (config == null)
+            if (config is null)
             {
                 throw new ArgumentNullException(nameof(config));
             }

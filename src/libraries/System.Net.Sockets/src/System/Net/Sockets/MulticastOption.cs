@@ -14,12 +14,12 @@ namespace System.Net.Sockets
         // group and local address.
         public MulticastOption(IPAddress group, IPAddress mcint)
         {
-            if (group == null)
+            if (group is null)
             {
                 throw new ArgumentNullException(nameof(group));
             }
 
-            if (mcint == null)
+            if (mcint is null)
             {
                 throw new ArgumentNullException(nameof(mcint));
             }
@@ -30,7 +30,7 @@ namespace System.Net.Sockets
 
         public MulticastOption(IPAddress group, int interfaceIndex)
         {
-            if (group == null)
+            if (group is null)
             {
                 throw new ArgumentNullException(nameof(group));
             }
@@ -47,7 +47,7 @@ namespace System.Net.Sockets
         // Creates a new version of the MulticastOption class for the specified group.
         public MulticastOption(IPAddress group)
         {
-            if (group == null)
+            if (group is null)
             {
                 throw new ArgumentNullException(nameof(group));
             }
@@ -113,7 +113,7 @@ namespace System.Net.Sockets
         // address group and local address.
         public IPv6MulticastOption(IPAddress group, long ifindex)
         {
-            if (group == null)
+            if (group is null)
             {
                 throw new ArgumentNullException(nameof(group));
             }
@@ -131,7 +131,7 @@ namespace System.Net.Sockets
         // group.
         public IPv6MulticastOption(IPAddress group)
         {
-            if (group == null)
+            if (group is null)
             {
                 throw new ArgumentNullException(nameof(group));
             }

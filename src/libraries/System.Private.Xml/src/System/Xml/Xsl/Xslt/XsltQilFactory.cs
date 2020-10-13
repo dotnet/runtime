@@ -43,7 +43,7 @@ namespace System.Xml.Xsl.Xslt
         [Conditional("DEBUG")]
         public void CheckQName(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.QNameX), "Must be a singleton QName");
+            Debug.Assert(n is not null && n.XmlType!.IsSubtypeOf(T.QNameX), "Must be a singleton QName");
         }
 
         // We use a value of XmlQualifiedName type to denote a missing parameter
@@ -119,7 +119,7 @@ namespace System.Xml.Xsl.Xslt
         public QilNode InvokeNumberFormat(QilNode value, QilNode format,
             QilNode lang, QilNode letterValue, QilNode groupingSeparator, QilNode groupingSize)
         {
-            Debug.Assert(value != null && (
+            Debug.Assert(value is not null && (
                 value.XmlType!.IsSubtypeOf(T.IntXS) ||
                 value.XmlType.IsSubtypeOf(T.DoubleX)),
                 "Value must be either a sequence of ints, or a double singleton"
@@ -138,7 +138,7 @@ namespace System.Xml.Xsl.Xslt
 
         public QilNode InvokeRegisterDecimalFormat(DecimalFormatDecl format)
         {
-            Debug.Assert(format != null);
+            Debug.Assert(format is not null);
             return XsltInvokeEarlyBound(QName("register-decimal-format"),
                 XsltMethods.RegisterDecimalFormat, T.IntX,
                 new QilNode[] {
@@ -151,7 +151,7 @@ namespace System.Xml.Xsl.Xslt
         public QilNode InvokeRegisterDecimalFormatter(QilNode formatPicture, DecimalFormatDecl format)
         {
             CheckString(formatPicture);
-            Debug.Assert(format != null);
+            Debug.Assert(format is not null);
             return XsltInvokeEarlyBound(QName("register-decimal-formatter"),
                 XsltMethods.RegisterDecimalFormatter, T.DoubleX,
                 new QilNode[] {

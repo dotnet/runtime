@@ -29,12 +29,12 @@ namespace System.Diagnostics.Tracing
         /// <param name="eventSource">The event source.</param>
         internal DiagnosticCounter(string name, EventSource eventSource)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(Name));
             }
 
-            if (eventSource == null)
+            if (eventSource is null)
             {
                 throw new ArgumentNullException(nameof(EventSource));
             }
@@ -51,8 +51,8 @@ namespace System.Diagnostics.Tracing
         private protected void Publish()
         {
             Debug.Assert(_group is null);
-            Debug.Assert(Name != null);
-            Debug.Assert(EventSource != null);
+            Debug.Assert(Name is not null);
+            Debug.Assert(EventSource is not null);
 
             _group = CounterGroup.GetCounterGroup(EventSource);
             _group.Add(this);
@@ -66,7 +66,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void Dispose()
         {
-            if (_group != null)
+            if (_group is not null)
             {
                 _group.Remove(this);
                 _group = null;
@@ -91,7 +91,7 @@ namespace System.Diagnostics.Tracing
             get => _displayName;
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(DisplayName));
                 _displayName = value;
             }
@@ -103,7 +103,7 @@ namespace System.Diagnostics.Tracing
             get => _displayUnits;
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(DisplayUnits));
                 _displayUnits = value;
             }
@@ -129,7 +129,7 @@ namespace System.Diagnostics.Tracing
         {
             Debug.Assert(Monitor.IsEntered(this));
 
-            if (_metadata == null)
+            if (_metadata is null)
             {
                 return "";
             }

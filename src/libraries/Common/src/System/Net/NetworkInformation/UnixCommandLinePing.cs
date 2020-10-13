@@ -39,12 +39,12 @@ namespace System.Net.NetworkInformation
         // Check if found ping is symlink to busybox like alpine /bin/ping -> /bin/busybox
         private static unsafe bool IsBusyboxPing(string? pingBinary)
         {
-            if (pingBinary != null)
+            if (pingBinary is not null)
             {
                 string? linkedName = Interop.Sys.ReadLink(pingBinary);
 
                 // If pingBinary is not link linkedName will be null
-                if (linkedName != null && linkedName.EndsWith("busybox", StringComparison.Ordinal))
+                if (linkedName is not null && linkedName.EndsWith("busybox", StringComparison.Ordinal))
                 {
                     return true;
                 }

@@ -144,7 +144,7 @@ namespace System.Xml.Xsl.XsltOld
                     }
                     catch (System.NotSupportedException) { }
                     catch (System.ArgumentException) { }
-                    Debug.Assert(_encoding != null);
+                    Debug.Assert(_encoding is not null);
                 }
             }
             else if (Ref.Equal(name, compiler.Atoms.OmitXmlDeclaration))
@@ -199,7 +199,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 string[] qnames = XmlConvert.SplitString(value);
 
-                if (_cdataElements == null)
+                if (_cdataElements is null)
                 {
                     _cdataElements = new Hashtable(qnames.Length);
                 }

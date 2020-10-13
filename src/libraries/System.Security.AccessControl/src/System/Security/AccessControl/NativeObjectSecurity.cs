@@ -99,11 +99,11 @@ namespace System.Security.AccessControl
             int error;
             RawSecurityDescriptor? rawSD;
 
-            if (createByName && name == null)
+            if (createByName && name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            else if (!createByName && handle == null)
+            else if (!createByName && handle is null)
             {
                 throw new ArgumentNullException(nameof(handle));
             }
@@ -114,12 +114,12 @@ namespace System.Security.AccessControl
             {
                 System.Exception? exception = null;
 
-                if (exceptionFromErrorCode != null)
+                if (exceptionFromErrorCode is not null)
                 {
                     exception = exceptionFromErrorCode(error, name, handle, exceptionContext);
                 }
 
-                if (exception == null)
+                if (exception is null)
                 {
                     if (error == Interop.Errors.ERROR_ACCESS_DENIED)
                     {
@@ -191,13 +191,13 @@ namespace System.Security.AccessControl
                 SystemAcl? sacl = null;
                 DiscretionaryAcl? dacl = null;
 
-                if ((includeSections & AccessControlSections.Owner) != 0 && _securityDescriptor.Owner != null)
+                if ((includeSections & AccessControlSections.Owner) != 0 && _securityDescriptor.Owner is not null)
                 {
                     securityInfo |= SecurityInfos.Owner;
                     owner = _securityDescriptor.Owner;
                 }
 
-                if ((includeSections & AccessControlSections.Group) != 0 && _securityDescriptor.Group != null)
+                if ((includeSections & AccessControlSections.Group) != 0 && _securityDescriptor.Group is not null)
                 {
                     securityInfo |= SecurityInfos.Group;
                     group = _securityDescriptor.Group;
@@ -207,7 +207,7 @@ namespace System.Security.AccessControl
                 {
                     securityInfo |= SecurityInfos.SystemAcl;
                     if (_securityDescriptor.IsSystemAclPresent &&
-                         _securityDescriptor.SystemAcl != null &&
+                         _securityDescriptor.SystemAcl is not null &&
                          _securityDescriptor.SystemAcl.Count > 0)
                     {
                         sacl = _securityDescriptor.SystemAcl;
@@ -266,12 +266,12 @@ namespace System.Security.AccessControl
                 {
                     System.Exception? exception = null;
 
-                    if (_exceptionFromErrorCode != null)
+                    if (_exceptionFromErrorCode is not null)
                     {
                         exception = _exceptionFromErrorCode(error, name, handle, exceptionContext);
                     }
 
-                    if (exception == null)
+                    if (exception is null)
                     {
                         if (error == Interop.Errors.ERROR_ACCESS_DENIED)
                         {
@@ -345,7 +345,7 @@ namespace System.Security.AccessControl
 
         protected void Persist(string name, AccessControlSections includeSections, object? exceptionContext)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -366,7 +366,7 @@ namespace System.Security.AccessControl
 
         protected void Persist(SafeHandle handle, AccessControlSections includeSections, object? exceptionContext)
         {
-            if (handle == null)
+            if (handle is null)
             {
                 throw new ArgumentNullException(nameof(handle));
             }

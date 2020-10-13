@@ -65,10 +65,10 @@ namespace System.Xml
             get
             {
                 XmlNode? prev = base.PreviousSibling;
-                if (prev == null)
+                if (prev is null)
                 {
                     XmlBoundElement? parent = ParentNode as XmlBoundElement;
-                    if (parent != null)
+                    if (parent is not null)
                     {
                         parent.AutoFoliate();
                         return base.PreviousSibling;
@@ -85,10 +85,10 @@ namespace System.Xml
             get
             {
                 XmlNode? next = base.NextSibling;
-                if (next == null)
+                if (next is null)
                 {
                     XmlBoundElement? parent = ParentNode as XmlBoundElement;
-                    if (parent != null)
+                    if (parent is not null)
                     {
                         parent.AutoFoliate();
                         return base.NextSibling;
@@ -138,7 +138,7 @@ namespace System.Xml
             XmlNode? child = FirstChild;
             XmlNode? sibling = null;
 
-            while (child != null)
+            while (child is not null)
             {
                 sibling = child.NextSibling;
                 RemoveChild(child);
@@ -199,7 +199,7 @@ namespace System.Xml
         internal void Foliate(ElementState newState)
         {
             XmlDataDocument doc = (XmlDataDocument)OwnerDocument;
-            if (doc != null)
+            if (doc is not null)
             {
                 doc.Foliate(this, newState);
             }
@@ -209,7 +209,7 @@ namespace System.Xml
         private void AutoFoliate()
         {
             XmlDataDocument doc = (XmlDataDocument)OwnerDocument;
-            if (doc != null)
+            if (doc is not null)
             {
                 doc.Foliate(this, doc.AutoFoliationState);
             }
@@ -381,7 +381,7 @@ namespace System.Xml
 
                 default:
                     Debug.Assert(((IXmlDataVirtualNode)dp).IsOnColumn(null));
-                    if (dp.GetNode() != null)
+                    if (dp.GetNode() is not null)
                     {
                         dp.GetNode().WriteTo(w);
                     }

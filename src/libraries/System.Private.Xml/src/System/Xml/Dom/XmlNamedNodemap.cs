@@ -29,7 +29,7 @@ namespace System.Xml
         // Adds a XmlNode using its Name property
         public virtual XmlNode? SetNamedItem(XmlNode? node)
         {
-            if (node == null)
+            if (node is null)
                 return null;
 
             int offset = FindNodeOffset(node.LocalName, node.NamespaceURI);
@@ -150,13 +150,13 @@ namespace System.Xml
             string? nodeValue = node.Value;
             XmlNodeChangedEventArgs? args = parent.GetEventArgs(node, oldParent, parent, nodeValue, nodeValue, XmlNodeChangedAction.Insert);
 
-            if (args != null)
+            if (args is not null)
                 parent.BeforeEvent(args);
 
             nodes.Add(node);
             node.SetParent(parent);
 
-            if (args != null)
+            if (args is not null)
                 parent.AfterEvent(args);
 
             return node;
@@ -165,14 +165,14 @@ namespace System.Xml
         internal virtual XmlNode AddNodeForLoad(XmlNode node, XmlDocument doc)
         {
             XmlNodeChangedEventArgs? args = doc.GetInsertEventArgsForLoad(node, parent);
-            if (args != null)
+            if (args is not null)
             {
                 doc.BeforeEvent(args);
             }
 
             nodes.Add(node);
             node.SetParent(parent);
-            if (args != null)
+            if (args is not null)
             {
                 doc.AfterEvent(args);
             }
@@ -187,13 +187,13 @@ namespace System.Xml
             string? oldNodeValue = oldNode.Value;
             XmlNodeChangedEventArgs? args = parent.GetEventArgs(oldNode, parent, null, oldNodeValue, oldNodeValue, XmlNodeChangedAction.Remove);
 
-            if (args != null)
+            if (args is not null)
                 parent.BeforeEvent(args);
 
             nodes.RemoveAt(i);
             oldNode.SetParent(null);
 
-            if (args != null)
+            if (args is not null)
                 parent.AfterEvent(args);
 
             return oldNode;
@@ -217,13 +217,13 @@ namespace System.Xml
             string? nodeValue = node.Value;
             XmlNodeChangedEventArgs? args = parent.GetEventArgs(node, oldParent, parent, nodeValue, nodeValue, XmlNodeChangedAction.Insert);
 
-            if (args != null)
+            if (args is not null)
                 parent.BeforeEvent(args);
 
             nodes.Insert(i, node);
             node.SetParent(parent);
 
-            if (args != null)
+            if (args is not null)
                 parent.AfterEvent(args);
 
             return node;

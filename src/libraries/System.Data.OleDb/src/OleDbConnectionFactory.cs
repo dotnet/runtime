@@ -47,18 +47,18 @@ namespace System.Data.OleDb
 
         protected override DbMetaDataFactory CreateMetaDataFactory(DbConnectionInternal internalConnection, out bool cacheMetaDataFactory)
         {
-            Debug.Assert(internalConnection != null, "internalConnection may not be null.");
+            Debug.Assert(internalConnection is not null, "internalConnection may not be null.");
             cacheMetaDataFactory = false;
 
             OleDbConnectionInternal oleDbInternalConnection = (OleDbConnectionInternal)internalConnection;
             OleDbConnection? oleDbOuterConnection = oleDbInternalConnection.Connection;
-            Debug.Assert(oleDbOuterConnection != null, "outer connection may not be null.");
+            Debug.Assert(oleDbOuterConnection is not null, "outer connection may not be null.");
 
             NameValueCollection settings = (NameValueCollection)ConfigurationManager.GetSection("system.data.oledb");
             Stream? XMLStream = null;
             string? providerFileName = oleDbOuterConnection.GetDataSourcePropertyValue(OleDbPropertySetGuid.DataSourceInfo, ODB.DBPROP_PROVIDERFILENAME) as string;
 
-            if (settings != null)
+            if (settings is not null)
             {
                 string[]? values = null;
                 string? metaDataXML = null;
@@ -66,34 +66,34 @@ namespace System.Data.OleDb
 
                 // if providerfilename is not supported we can't build the settings key needed to
                 // get the provider specific XML path
-                if (providerFileName != null)
+                if (providerFileName is not null)
                 {
                     metaDataXML = providerFileName + _metaDataXml;
                     values = settings.GetValues(metaDataXML);
                 }
 
                 // if we did not find provider specific xml see if there is new default xml
-                if (values == null)
+                if (values is null)
                 {
                     metaDataXML = _defaultMetaDataXml;
                     values = settings.GetValues(metaDataXML);
                 }
 
                 // If there is new XML get it
-                if (values != null)
+                if (values is not null)
                 {
                     XMLStream = ADP.GetXmlStreamFromValues(values, metaDataXML!);
                 }
             }
 
             // if the xml was not obtained from machine.config use the embedded XML resource
-            if (XMLStream == null)
+            if (XMLStream is null)
             {
                 XMLStream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("System.Data.OleDb.OleDbMetaData.xml");
                 cacheMetaDataFactory = true;
             }
 
-            Debug.Assert(XMLStream != null, "XMLstream may not be null.");
+            Debug.Assert(XMLStream is not null, "XMLstream may not be null.");
 
             // using the ServerVersion as the NormalizedServerVersion. Doing this for two reasons
             //  1) The Spec for DBPROP_DBMSVER normalizes the ServerVersion

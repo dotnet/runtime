@@ -49,7 +49,7 @@ namespace System.Linq.Expressions.Compiler
         private static bool NotEmpty(Expression node)
         {
             var empty = node as DefaultExpression;
-            if (empty == null || empty.Type != typeof(void))
+            if (empty is null || empty.Type != typeof(void))
             {
                 return true;
             }
@@ -64,7 +64,7 @@ namespace System.Linq.Expressions.Compiler
         private static bool Significant(Expression node)
         {
             var block = node as BlockExpression;
-            if (block != null)
+            if (block is not null)
             {
                 for (int i = 0; i < block.ExpressionCount; i++)
                 {
@@ -86,7 +86,7 @@ namespace System.Linq.Expressions.Compiler
         private void EmitCoalesceBinaryExpression(Expression expr)
         {
             BinaryExpression b = (BinaryExpression)expr;
-            Debug.Assert(b.Method == null);
+            Debug.Assert(b.Method is null);
 
             if (b.Left.Type.IsNullableType())
             {
@@ -95,7 +95,7 @@ namespace System.Linq.Expressions.Compiler
             else
             {
                 Debug.Assert(!b.Left.Type.IsValueType);
-                if (b.Conversion != null)
+                if (b.Conversion is not null)
                 {
                     EmitLambdaReferenceCoalesce(b);
                 }
@@ -109,7 +109,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitNullableCoalesce(BinaryExpression b)
         {
-            Debug.Assert(b.Method == null);
+            Debug.Assert(b.Method is null);
 
             LocalBuilder loc = GetLocal(b.Left.Type);
             Label labIfNull = _ilg.DefineLabel();
@@ -121,7 +121,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Brfalse, labIfNull);
 
             Type nnLeftType = b.Left.Type.GetNonNullableType();
-            if (b.Conversion != null)
+            if (b.Conversion is not null)
             {
                 Debug.Assert(b.Conversion.ParameterCount == 1);
                 ParameterExpression p = b.Conversion.GetParameter(0);
@@ -281,7 +281,7 @@ namespace System.Linq.Expressions.Compiler
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Dup);
             MethodInfo? opFalse = TypeUtils.GetBooleanOperator(b.Method.DeclaringType!, "op_False");
-            Debug.Assert(opFalse != null, "factory should check that the method exists");
+            Debug.Assert(opFalse is not null, "factory should check that the method exists");
             _ilg.Emit(OpCodes.Call, opFalse);
             _ilg.Emit(OpCodes.Brtrue, labEnd);
 
@@ -311,7 +311,7 @@ namespace System.Linq.Expressions.Compiler
         {
             BinaryExpression b = (BinaryExpression)expr;
 
-            if (b.Method != null)
+            if (b.Method is not null)
             {
                 if (b.IsLiftedLogical)
                 {
@@ -356,7 +356,7 @@ namespace System.Linq.Expressions.Compiler
             _ilg.Emit(OpCodes.Ldloca, locLeft);
             _ilg.EmitHasValue(type);
             _ilg.Emit(OpCodes.Or);
-            // if !(right == true | left != null)
+            // if !(right == true | left is not null)
             _ilg.Emit(OpCodes.Brfalse_S, returnLeft);
             _ilg.Emit(OpCodes.Ldloc, locRight);
             FreeLocal(locRight);
@@ -387,7 +387,7 @@ namespace System.Linq.Expressions.Compiler
             EmitExpression(b.Left);
             _ilg.Emit(OpCodes.Dup);
             MethodInfo? opTrue = TypeUtils.GetBooleanOperator(b.Method.DeclaringType!, "op_True");
-            Debug.Assert(opTrue != null, "factory should check that the method exists");
+            Debug.Assert(opTrue is not null, "factory should check that the method exists");
 
             _ilg.Emit(OpCodes.Call, opTrue);
             _ilg.Emit(OpCodes.Brtrue, labEnd);
@@ -405,7 +405,7 @@ namespace System.Linq.Expressions.Compiler
         {
             BinaryExpression b = (BinaryExpression)expr;
 
-            if (b.Method != null)
+            if (b.Method is not null)
             {
                 if (b.IsLiftedLogical)
                 {
@@ -441,7 +441,7 @@ namespace System.Linq.Expressions.Compiler
         /// operators to avoid double-branching, minimize instruction count,
         /// and generate similar IL to the C# compiler. This is important for
         /// the JIT to optimize patterns like:
-        ///     x != null AndAlso x.GetType() == typeof(SomeType)
+        ///     x is not null AndAlso x.GetType() == typeof(SomeType)
         ///
         /// One optimization we don't do: we always emits at least one
         /// conditional branch to the label, and always possibly falls through,
@@ -493,7 +493,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitBranchNot(bool branch, UnaryExpression node, Label label)
         {
-            if (node.Method != null)
+            if (node.Method is not null)
             {
                 EmitExpression(node, CompilationFlags.EmitAsNoTail | CompilationFlags.EmitNoExpressionStart);
                 EmitBranchOp(branch, label);
@@ -511,7 +511,7 @@ namespace System.Linq.Expressions.Compiler
             // To share code paths, we want to treat NotEqual as an inverted Equal
             bool branchWhenEqual = branch == (node.NodeType == ExpressionType.Equal);
 
-            if (node.Method != null)
+            if (node.Method is not null)
             {
                 EmitBinaryMethod(node, CompilationFlags.EmitAsNoTail);
                 // EmitBinaryMethod takes into account the Equal/NotEqual
@@ -583,7 +583,7 @@ namespace System.Linq.Expressions.Compiler
             Debug.Assert(node.NodeType == ExpressionType.AndAlso || node.NodeType == ExpressionType.OrElse);
             Debug.Assert(!node.IsLiftedToNull);
 
-            if (node.Method != null || node.IsLifted)
+            if (node.Method is not null || node.IsLifted)
             {
                 EmitExpression(node);
                 EmitBranchOp(branch, label);

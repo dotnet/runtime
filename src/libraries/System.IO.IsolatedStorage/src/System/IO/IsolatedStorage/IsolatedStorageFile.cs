@@ -118,7 +118,7 @@ namespace System.IO.IsolatedStorage
 
         public void DeleteFile(string file)
         {
-            if (file == null)
+            if (file is null)
                 throw new ArgumentNullException(nameof(file));
 
             EnsureStoreIsValid();
@@ -136,7 +136,7 @@ namespace System.IO.IsolatedStorage
 
         public bool FileExists(string path)
         {
-            if (path == null)
+            if (path is null)
             {
                 throw new ArgumentNullException(nameof(path));
             }
@@ -148,7 +148,7 @@ namespace System.IO.IsolatedStorage
 
         public bool DirectoryExists(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             EnsureStoreIsValid();
@@ -158,7 +158,7 @@ namespace System.IO.IsolatedStorage
 
         public void CreateDirectory(string dir)
         {
-            if (dir == null)
+            if (dir is null)
                 throw new ArgumentNullException(nameof(dir));
 
             EnsureStoreIsValid();
@@ -194,7 +194,7 @@ namespace System.IO.IsolatedStorage
 
         public void DeleteDirectory(string dir)
         {
-            if (dir == null)
+            if (dir is null)
                 throw new ArgumentNullException(nameof(dir));
 
             EnsureStoreIsValid();
@@ -218,7 +218,7 @@ namespace System.IO.IsolatedStorage
         // foo\abc*.txt will give all abc*.txt files in foo directory
         public string[] GetFileNames(string searchPattern)
         {
-            if (searchPattern == null)
+            if (searchPattern is null)
                 throw new ArgumentNullException(nameof(searchPattern));
 
             EnsureStoreIsValid();
@@ -243,7 +243,7 @@ namespace System.IO.IsolatedStorage
         // foo\data* will give all directory names in foo directory that starts with data
         public string[] GetDirectoryNames(string searchPattern)
         {
-            if (searchPattern == null)
+            if (searchPattern is null)
                 throw new ArgumentNullException(nameof(searchPattern));
 
             EnsureStoreIsValid();
@@ -288,7 +288,7 @@ namespace System.IO.IsolatedStorage
 
         public DateTimeOffset GetCreationTime(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             if (path.Length == 0)
@@ -310,7 +310,7 @@ namespace System.IO.IsolatedStorage
 
         public DateTimeOffset GetLastAccessTime(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             if (path.Length == 0)
@@ -332,7 +332,7 @@ namespace System.IO.IsolatedStorage
 
         public DateTimeOffset GetLastWriteTime(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             if (path.Length == 0)
@@ -354,10 +354,10 @@ namespace System.IO.IsolatedStorage
 
         public void CopyFile(string sourceFileName, string destinationFileName)
         {
-            if (sourceFileName == null)
+            if (sourceFileName is null)
                 throw new ArgumentNullException(nameof(sourceFileName));
 
-            if (destinationFileName == null)
+            if (destinationFileName is null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
             if (sourceFileName.Length == 0)
@@ -375,10 +375,10 @@ namespace System.IO.IsolatedStorage
 
         public void CopyFile(string sourceFileName, string destinationFileName, bool overwrite)
         {
-            if (sourceFileName == null)
+            if (sourceFileName is null)
                 throw new ArgumentNullException(nameof(sourceFileName));
 
-            if (destinationFileName == null)
+            if (destinationFileName is null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
             if (sourceFileName.Length == 0)
@@ -416,10 +416,10 @@ namespace System.IO.IsolatedStorage
 
         public void MoveFile(string sourceFileName, string destinationFileName)
         {
-            if (sourceFileName == null)
+            if (sourceFileName is null)
                 throw new ArgumentNullException(nameof(sourceFileName));
 
-            if (destinationFileName == null)
+            if (destinationFileName is null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
             if (sourceFileName.Length == 0)
@@ -457,10 +457,10 @@ namespace System.IO.IsolatedStorage
 
         public void MoveDirectory(string sourceDirectoryName, string destinationDirectoryName)
         {
-            if (sourceDirectoryName == null)
+            if (sourceDirectoryName is null)
                 throw new ArgumentNullException(nameof(sourceDirectoryName));
 
-            if (destinationDirectoryName == null)
+            if (destinationDirectoryName is null)
                 throw new ArgumentNullException(nameof(destinationDirectoryName));
 
             if (sourceDirectoryName.Length == 0)
@@ -639,30 +639,30 @@ namespace System.IO.IsolatedStorage
         public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type? applicationEvidenceType)
         {
             // Scope MUST be Application
-            return (applicationEvidenceType == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
+            return (applicationEvidenceType is null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
         }
 
         public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object? applicationIdentity)
         {
             // Scope MUST be Application
-            return (applicationIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
+            return (applicationIdentity is null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
         }
 
         public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, Type? domainEvidenceType, Type? assemblyEvidenceType)
         {
             // Scope MUST NOT be Application (assembly is assumed otherwise)
-            return (domainEvidenceType == null && assemblyEvidenceType == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
+            return (domainEvidenceType is null && assemblyEvidenceType is null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
         }
 
         public static IsolatedStorageFile GetStore(IsolatedStorageScope scope, object? domainIdentity, object? assemblyIdentity)
         {
             // Scope MUST NOT be Application (assembly is assumed otherwise)
-            return (domainIdentity == null && assemblyIdentity == null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
+            return (domainIdentity is null && assemblyIdentity is null) ? GetStore(scope) : throw new PlatformNotSupportedException(SR.PlatformNotSupported_CAS); // https://github.com/dotnet/runtime/issues/18208
         }
 
         internal string GetFullPath(string partialPath)
         {
-            Debug.Assert(partialPath != null, "partialPath should be non null");
+            Debug.Assert(partialPath is not null, "partialPath should be non null");
 
             int i;
 
@@ -730,7 +730,7 @@ namespace System.IO.IsolatedStorage
             Close();
 
             string? parentDirectory = Path.GetDirectoryName(RootDirectory.TrimEnd(Path.DirectorySeparatorChar));
-            Debug.Assert(parentDirectory != null);
+            Debug.Assert(parentDirectory is not null);
 
             if (ContainsUnknownFiles(parentDirectory))
                 return;
@@ -749,7 +749,7 @@ namespace System.IO.IsolatedStorage
             if (Helper.IsDomain(Scope))
             {
                 parentDirectory = Path.GetDirectoryName(parentDirectory);
-                Debug.Assert(parentDirectory != null);
+                Debug.Assert(parentDirectory is not null);
 
                 if (ContainsUnknownFiles(parentDirectory))
                     return;

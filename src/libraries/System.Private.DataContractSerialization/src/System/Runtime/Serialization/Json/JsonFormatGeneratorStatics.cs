@@ -84,10 +84,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_collectionItemNameProperty == null)
+                if (s_collectionItemNameProperty is null)
                 {
                     s_collectionItemNameProperty = typeof(XmlObjectSerializerWriteContextComplexJson).GetProperty("CollectionItemName", Globals.ScanAllMembers);
-                    Debug.Assert(s_collectionItemNameProperty != null);
+                    Debug.Assert(s_collectionItemNameProperty is not null);
                 }
 
                 return s_collectionItemNameProperty;
@@ -105,10 +105,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_ienumeratorGetCurrentMethod == null)
+                if (s_ienumeratorGetCurrentMethod is null)
                 {
                     s_ienumeratorGetCurrentMethod = typeof(IEnumerator).GetProperty("Current")!.GetGetMethod();
-                    Debug.Assert(s_ienumeratorGetCurrentMethod != null);
+                    Debug.Assert(s_ienumeratorGetCurrentMethod is not null);
                 }
                 return s_ienumeratorGetCurrentMethod;
             }
@@ -117,10 +117,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_getItemContractMethod == null)
+                if (s_getItemContractMethod is null)
                 {
                     s_getItemContractMethod = typeof(CollectionDataContract).GetProperty("ItemContract", Globals.ScanAllMembers)!.GetGetMethod(nonPublic: true);
-                    Debug.Assert(s_getItemContractMethod != null);
+                    Debug.Assert(s_getItemContractMethod is not null);
                 }
                 return s_getItemContractMethod;
             }
@@ -129,10 +129,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_getJsonDataContractMethod == null)
+                if (s_getJsonDataContractMethod is null)
                 {
                     s_getJsonDataContractMethod = typeof(JsonDataContract).GetMethod("GetJsonDataContract", Globals.ScanAllMembers);
-                    Debug.Assert(s_getJsonDataContractMethod != null);
+                    Debug.Assert(s_getJsonDataContractMethod is not null);
                 }
                 return s_getJsonDataContractMethod;
             }
@@ -141,10 +141,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_getJsonMemberIndexMethod == null)
+                if (s_getJsonMemberIndexMethod is null)
                 {
                     s_getJsonMemberIndexMethod = typeof(XmlObjectSerializerReadContextComplexJson).GetMethod("GetJsonMemberIndex", Globals.ScanAllMembers);
-                    Debug.Assert(s_getJsonMemberIndexMethod != null);
+                    Debug.Assert(s_getJsonMemberIndexMethod is not null);
                 }
                 return s_getJsonMemberIndexMethod;
             }
@@ -153,10 +153,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_getRevisedItemContractMethod == null)
+                if (s_getRevisedItemContractMethod is null)
                 {
                     s_getRevisedItemContractMethod = typeof(XmlObjectSerializerWriteContextComplexJson).GetMethod("GetRevisedItemContract", Globals.ScanAllMembers);
-                    Debug.Assert(s_getRevisedItemContractMethod != null);
+                    Debug.Assert(s_getRevisedItemContractMethod is not null);
                 }
                 return s_getRevisedItemContractMethod;
             }
@@ -165,10 +165,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_getUninitializedObjectMethod == null)
+                if (s_getUninitializedObjectMethod is null)
                 {
                     s_getUninitializedObjectMethod = typeof(XmlFormatReaderGenerator).GetMethod("UnsafeGetUninitializedObject", Globals.ScanAllMembers, null, new Type[] { typeof(Type) }, null);
-                    Debug.Assert(s_getUninitializedObjectMethod != null);
+                    Debug.Assert(s_getUninitializedObjectMethod is not null);
                 }
                 return s_getUninitializedObjectMethod;
             }
@@ -178,10 +178,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_isStartElementMethod0 == null)
+                if (s_isStartElementMethod0 is null)
                 {
                     s_isStartElementMethod0 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, null, Array.Empty<Type>(), null);
-                    Debug.Assert(s_isStartElementMethod0 != null);
+                    Debug.Assert(s_isStartElementMethod0 is not null);
                 }
                 return s_isStartElementMethod0;
             }
@@ -190,10 +190,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_isStartElementMethod2 == null)
+                if (s_isStartElementMethod2 is null)
                 {
                     s_isStartElementMethod2 = typeof(XmlReaderDelegator).GetMethod("IsStartElement", Globals.ScanAllMembers, null, new Type[] { typeof(XmlDictionaryString), typeof(XmlDictionaryString) }, null);
-                    Debug.Assert(s_isStartElementMethod2 != null);
+                    Debug.Assert(s_isStartElementMethod2 is not null);
                 }
                 return s_isStartElementMethod2;
             }
@@ -202,10 +202,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_localNameProperty == null)
+                if (s_localNameProperty is null)
                 {
                     s_localNameProperty = typeof(XmlReaderDelegator).GetProperty("LocalName", Globals.ScanAllMembers);
-                    Debug.Assert(s_localNameProperty != null);
+                    Debug.Assert(s_localNameProperty is not null);
                 }
                 return s_localNameProperty;
             }
@@ -214,10 +214,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_namespaceProperty == null)
+                if (s_namespaceProperty is null)
                 {
                     s_namespaceProperty = typeof(XmlReaderDelegator).GetProperty("NamespaceProperty", Globals.ScanAllMembers);
-                    Debug.Assert(s_namespaceProperty != null);
+                    Debug.Assert(s_namespaceProperty is not null);
                 }
                 return s_namespaceProperty;
             }
@@ -226,10 +226,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_ienumeratorMoveNextMethod == null)
+                if (s_ienumeratorMoveNextMethod is null)
                 {
                     s_ienumeratorMoveNextMethod = typeof(IEnumerator).GetMethod("MoveNext");
-                    Debug.Assert(s_ienumeratorMoveNextMethod != null);
+                    Debug.Assert(s_ienumeratorMoveNextMethod is not null);
                 }
                 return s_ienumeratorMoveNextMethod;
             }
@@ -238,10 +238,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_moveToContentMethod == null)
+                if (s_moveToContentMethod is null)
                 {
                     s_moveToContentMethod = typeof(XmlReaderDelegator).GetMethod("MoveToContent", Globals.ScanAllMembers);
-                    Debug.Assert(s_moveToContentMethod != null);
+                    Debug.Assert(s_moveToContentMethod is not null);
                 }
                 return s_moveToContentMethod;
             }
@@ -250,10 +250,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_nodeTypeProperty == null)
+                if (s_nodeTypeProperty is null)
                 {
                     s_nodeTypeProperty = typeof(XmlReaderDelegator).GetProperty("NodeType", Globals.ScanAllMembers);
-                    Debug.Assert(s_nodeTypeProperty != null);
+                    Debug.Assert(s_nodeTypeProperty is not null);
                 }
                 return s_nodeTypeProperty;
             }
@@ -262,10 +262,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_onDeserializationMethod == null)
+                if (s_onDeserializationMethod is null)
                 {
                     s_onDeserializationMethod = typeof(IDeserializationCallback).GetMethod("OnDeserialization");
-                    Debug.Assert(s_onDeserializationMethod != null);
+                    Debug.Assert(s_onDeserializationMethod is not null);
                 }
                 return s_onDeserializationMethod;
             }
@@ -274,10 +274,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_readJsonValueMethod == null)
+                if (s_readJsonValueMethod is null)
                 {
                     s_readJsonValueMethod = typeof(DataContractJsonSerializer).GetMethod("ReadJsonValue", Globals.ScanAllMembers);
-                    Debug.Assert(s_readJsonValueMethod != null);
+                    Debug.Assert(s_readJsonValueMethod is not null);
                 }
                 return s_readJsonValueMethod;
             }
@@ -286,10 +286,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_serializationExceptionCtor == null)
+                if (s_serializationExceptionCtor is null)
                 {
                     s_serializationExceptionCtor = typeof(SerializationException).GetConstructor(new Type[] { typeof(string) });
-                    Debug.Assert(s_serializationExceptionCtor != null);
+                    Debug.Assert(s_serializationExceptionCtor is not null);
                 }
                 return s_serializationExceptionCtor;
             }
@@ -298,7 +298,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_serInfoCtorArgs == null)
+                if (s_serInfoCtorArgs is null)
                 {
                     s_serInfoCtorArgs = new Type[] { typeof(SerializationInfo), typeof(StreamingContext) };
                 }
@@ -309,10 +309,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_throwDuplicateMemberExceptionMethod == null)
+                if (s_throwDuplicateMemberExceptionMethod is null)
                 {
                     s_throwDuplicateMemberExceptionMethod = typeof(XmlObjectSerializerReadContextComplexJson).GetMethod("ThrowDuplicateMemberException", Globals.ScanAllMembers);
-                    Debug.Assert(s_throwDuplicateMemberExceptionMethod != null);
+                    Debug.Assert(s_throwDuplicateMemberExceptionMethod is not null);
                 }
                 return s_throwDuplicateMemberExceptionMethod;
             }
@@ -321,10 +321,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_throwMissingRequiredMembersMethod == null)
+                if (s_throwMissingRequiredMembersMethod is null)
                 {
                     s_throwMissingRequiredMembersMethod = typeof(XmlObjectSerializerReadContextComplexJson).GetMethod("ThrowMissingRequiredMembers", Globals.ScanAllMembers);
-                    Debug.Assert(s_throwMissingRequiredMembersMethod != null);
+                    Debug.Assert(s_throwMissingRequiredMembersMethod is not null);
                 }
                 return s_throwMissingRequiredMembersMethod;
             }
@@ -333,10 +333,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeHandleProperty == null)
+                if (s_typeHandleProperty is null)
                 {
                     s_typeHandleProperty = typeof(Type).GetProperty("TypeHandle");
-                    Debug.Assert(s_typeHandleProperty != null);
+                    Debug.Assert(s_typeHandleProperty is not null);
                 }
                 return s_typeHandleProperty;
             }
@@ -345,10 +345,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_useSimpleDictionaryFormatReadProperty == null)
+                if (s_useSimpleDictionaryFormatReadProperty is null)
                 {
                     s_useSimpleDictionaryFormatReadProperty = typeof(XmlObjectSerializerReadContextComplexJson).GetProperty("UseSimpleDictionaryFormat", Globals.ScanAllMembers);
-                    Debug.Assert(s_useSimpleDictionaryFormatReadProperty != null);
+                    Debug.Assert(s_useSimpleDictionaryFormatReadProperty is not null);
                 }
                 return s_useSimpleDictionaryFormatReadProperty;
             }
@@ -357,10 +357,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_useSimpleDictionaryFormatWriteProperty == null)
+                if (s_useSimpleDictionaryFormatWriteProperty is null)
                 {
                     s_useSimpleDictionaryFormatWriteProperty = typeof(XmlObjectSerializerWriteContextComplexJson).GetProperty("UseSimpleDictionaryFormat", Globals.ScanAllMembers);
-                    Debug.Assert(s_useSimpleDictionaryFormatWriteProperty != null);
+                    Debug.Assert(s_useSimpleDictionaryFormatWriteProperty is not null);
                 }
                 return s_useSimpleDictionaryFormatWriteProperty;
             }
@@ -369,10 +369,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_writeAttributeStringMethod == null)
+                if (s_writeAttributeStringMethod is null)
                 {
                     s_writeAttributeStringMethod = typeof(XmlWriterDelegator).GetMethod("WriteAttributeString", Globals.ScanAllMembers, null, new Type[] { typeof(string), typeof(string), typeof(string), typeof(string) }, null);
-                    Debug.Assert(s_writeAttributeStringMethod != null);
+                    Debug.Assert(s_writeAttributeStringMethod is not null);
                 }
                 return s_writeAttributeStringMethod;
             }
@@ -381,10 +381,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_writeEndElementMethod == null)
+                if (s_writeEndElementMethod is null)
                 {
                     s_writeEndElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteEndElement", Globals.ScanAllMembers, null, Array.Empty<Type>(), null);
-                    Debug.Assert(s_writeEndElementMethod != null);
+                    Debug.Assert(s_writeEndElementMethod is not null);
                 }
                 return s_writeEndElementMethod;
             }
@@ -393,10 +393,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_writeJsonISerializableMethod == null)
+                if (s_writeJsonISerializableMethod is null)
                 {
                     s_writeJsonISerializableMethod = typeof(XmlObjectSerializerWriteContextComplexJson).GetMethod("WriteJsonISerializable", Globals.ScanAllMembers);
-                    Debug.Assert(s_writeJsonISerializableMethod != null);
+                    Debug.Assert(s_writeJsonISerializableMethod is not null);
                 }
                 return s_writeJsonISerializableMethod;
             }
@@ -405,10 +405,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_writeJsonNameWithMappingMethod == null)
+                if (s_writeJsonNameWithMappingMethod is null)
                 {
                     s_writeJsonNameWithMappingMethod = typeof(XmlObjectSerializerWriteContextComplexJson).GetMethod("WriteJsonNameWithMapping", Globals.ScanAllMembers);
-                    Debug.Assert(s_writeJsonNameWithMappingMethod != null);
+                    Debug.Assert(s_writeJsonNameWithMappingMethod is not null);
                 }
                 return s_writeJsonNameWithMappingMethod;
             }
@@ -417,10 +417,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_writeJsonValueMethod == null)
+                if (s_writeJsonValueMethod is null)
                 {
                     s_writeJsonValueMethod = typeof(DataContractJsonSerializer).GetMethod("WriteJsonValue", Globals.ScanAllMembers);
-                    Debug.Assert(s_writeJsonValueMethod != null);
+                    Debug.Assert(s_writeJsonValueMethod is not null);
                 }
                 return s_writeJsonValueMethod;
             }
@@ -429,10 +429,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_writeStartElementMethod == null)
+                if (s_writeStartElementMethod is null)
                 {
                     s_writeStartElementMethod = typeof(XmlWriterDelegator).GetMethod("WriteStartElement", Globals.ScanAllMembers, null, new Type[] { typeof(XmlDictionaryString), typeof(XmlDictionaryString) }, null);
-                    Debug.Assert(s_writeStartElementMethod != null);
+                    Debug.Assert(s_writeStartElementMethod is not null);
                 }
                 return s_writeStartElementMethod;
             }
@@ -442,10 +442,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_writeStartElementStringMethod == null)
+                if (s_writeStartElementStringMethod is null)
                 {
                     s_writeStartElementStringMethod = typeof(XmlWriterDelegator).GetMethod("WriteStartElement", Globals.ScanAllMembers, null, new Type[] { typeof(string), typeof(string) }, null);
-                    Debug.Assert(s_writeStartElementStringMethod != null);
+                    Debug.Assert(s_writeStartElementStringMethod is not null);
                 }
                 return s_writeStartElementStringMethod;
             }
@@ -455,10 +455,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_parseEnumMethod == null)
+                if (s_parseEnumMethod is null)
                 {
                     s_parseEnumMethod = typeof(Enum).GetMethod("Parse", BindingFlags.Static | BindingFlags.Public, null, new Type[] { typeof(Type), typeof(string) }, null);
-                    Debug.Assert(s_parseEnumMethod != null);
+                    Debug.Assert(s_parseEnumMethod is not null);
                 }
                 return s_parseEnumMethod;
             }
@@ -468,10 +468,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_getJsonMemberNameMethod == null)
+                if (s_getJsonMemberNameMethod is null)
                 {
                     s_getJsonMemberNameMethod = typeof(XmlObjectSerializerReadContextComplexJson).GetMethod("GetJsonMemberName", Globals.ScanAllMembers, null, new Type[] { typeof(XmlReaderDelegator) }, null);
-                    Debug.Assert(s_getJsonMemberNameMethod != null);
+                    Debug.Assert(s_getJsonMemberNameMethod is not null);
                 }
                 return s_getJsonMemberNameMethod;
             }

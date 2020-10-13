@@ -614,7 +614,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // hUser could be null if no credentials were specified
                 Debug.Assert(hUser != IntPtr.Zero ||
-                                (credentials == null || (credentials.UserName == null && credentials.Password == null)));
+                                (credentials is null || (credentials.UserName is null && credentials.Password is null)));
 
                 int f = Interop.Advapi32.LookupAccountSid(serverName, sid, null, ref nameLength, null, ref domainNameLength, out accountUsage);
 
@@ -670,8 +670,8 @@ namespace System.DirectoryServices.AccountManagement
                         "Utils",
                         "ConstructFakePrincipalFromSID: Build principal for SID={0}, server={1}, authority={2}",
                         Utils.ByteArrayToString(sid),
-                        (serverName != null ? serverName : "NULL"),
-                        (authorityName != null ? authorityName : "NULL"));
+                        (serverName is not null ? serverName : "NULL"),
+                        (authorityName is not null ? authorityName : "NULL"));
 
             Debug.Assert(ClassifySID(sid) == SidType.FakeObject);
 
@@ -736,7 +736,7 @@ namespace System.DirectoryServices.AccountManagement
             IntPtr hToken = IntPtr.Zero;
 
             // default credential is specified, no need to do impersonation
-            if (credential == null)
+            if (credential is null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "Utils", "BeginImpersonation: nothing to impersonate");
                 return false;
@@ -749,7 +749,7 @@ namespace System.DirectoryServices.AccountManagement
             string domainName = credential.Domain;
 
             // no need to do impersonation as username and password are both null
-            if (userName == null && password == null)
+            if (userName is null && password is null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "Utils", "BeginImpersonation: nothing to impersonate (2)");
                 return false;

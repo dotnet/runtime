@@ -25,7 +25,7 @@ namespace System.Xml
         {
             get
             {
-                if (_target != null)
+                if (_target is not null)
                     return _target;
                 return string.Empty;
             }
@@ -60,10 +60,10 @@ namespace System.Xml
             {
                 XmlNode? parent = ParentNode;
                 XmlNodeChangedEventArgs? args = GetEventArgs(this, parent, parent, _data, value, XmlNodeChangedAction.Change);
-                if (args != null)
+                if (args is not null)
                     BeforeEvent(args);
                 _data = value;
-                if (args != null)
+                if (args is not null)
                     AfterEvent(args);
             }
         }
@@ -85,7 +85,7 @@ namespace System.Xml
         // Creates a duplicate of this node.
         public override XmlNode CloneNode(bool deep)
         {
-            Debug.Assert(OwnerDocument != null);
+            Debug.Assert(OwnerDocument is not null);
             return OwnerDocument.CreateProcessingInstruction(_target, _data);
         }
 

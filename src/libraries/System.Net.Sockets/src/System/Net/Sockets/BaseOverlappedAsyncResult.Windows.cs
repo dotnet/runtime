@@ -38,8 +38,8 @@ namespace System.Net.Sockets
             Socket s = (Socket)AsyncObject!;
 
             // Bind the Win32 Socket Handle to the ThreadPool
-            Debug.Assert(s != null, "m_CurrentSocket is null");
-            Debug.Assert(s.SafeHandle != null, "m_CurrentSocket.SafeHandle is null");
+            Debug.Assert(s is not null, "m_CurrentSocket is null");
+            Debug.Assert(s.SafeHandle is not null, "m_CurrentSocket.SafeHandle is null");
 
             if (s.SafeHandle.IsInvalid)
             {
@@ -81,7 +81,7 @@ namespace System.Net.Sockets
                 // be other differences as well."
 
                 Socket? socket = asyncResult.AsyncObject as Socket;
-                if (socket == null)
+                if (socket is null)
                 {
                     socketError = SocketError.NotSocket;
                 }

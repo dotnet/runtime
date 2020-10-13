@@ -99,7 +99,7 @@ namespace System.Diagnostics.Tracing
                 int oldPos = this.bufferPos;
                 this.bufferPos = checked(this.bufferPos + size);
                 this.EnsureBuffer();
-                Debug.Assert(buffer != null);
+                Debug.Assert(buffer is not null);
 
                 for (int i = 0; i != size; i++, oldPos++)
                 {
@@ -134,7 +134,7 @@ namespace System.Diagnostics.Tracing
                     int oldPos = this.bufferPos;
                     this.bufferPos = checked(this.bufferPos + size);
                     this.EnsureBuffer();
-                    Debug.Assert(buffer != null);
+                    Debug.Assert(buffer is not null);
 
                     fixed (void* p = value)
                     {
@@ -147,7 +147,7 @@ namespace System.Diagnostics.Tracing
         internal void AddNullTerminatedString(string? value)
         {
             // Treat null strings as empty strings.
-            if (value == null)
+            if (value is null)
             {
                 value = string.Empty;
             }
@@ -176,7 +176,7 @@ namespace System.Diagnostics.Tracing
                 int oldPos = this.bufferPos;
                 this.bufferPos = checked(this.bufferPos + size);
                 this.EnsureBuffer();
-                Debug.Assert(buffer != null);
+                Debug.Assert(buffer is not null);
 
                 fixed (void* p = value)
                 {
@@ -217,7 +217,7 @@ namespace System.Diagnostics.Tracing
                     int oldPos = this.bufferPos;
                     this.bufferPos = checked(this.bufferPos + size);
                     this.EnsureBuffer();
-                    Debug.Assert(value != null && buffer != null);
+                    Debug.Assert(value is not null && buffer is not null);
                     Buffer.BlockCopy(value, 0, this.buffer, oldPos, size);
                 }
             }
@@ -242,7 +242,7 @@ namespace System.Diagnostics.Tracing
         internal void EndBufferedArray(int bookmark, int count)
         {
             this.EnsureBuffer();
-            Debug.Assert(buffer != null);
+            Debug.Assert(buffer is not null);
             this.buffer[bookmark - 2] = unchecked((byte)count);
             this.buffer[bookmark - 1] = unchecked((byte)(count >> 8));
             this.EndBuffered();
@@ -275,7 +275,7 @@ namespace System.Diagnostics.Tracing
                 */
 
                 this.EnsureBuffer();
-                Debug.Assert(buffer != null);
+                Debug.Assert(buffer is not null);
                 this.PinArray(this.buffer, this.bufferPos);
                 this.buffer = null;
                 this.bufferPos = 0;
@@ -285,7 +285,7 @@ namespace System.Diagnostics.Tracing
         private void EnsureBuffer()
         {
             int required = this.bufferPos;
-            if (this.buffer == null || this.buffer.Length < required)
+            if (this.buffer is null || this.buffer.Length < required)
             {
                 this.GrowBuffer(required);
             }
@@ -294,7 +294,7 @@ namespace System.Diagnostics.Tracing
         private void EnsureBuffer(int additionalSize)
         {
             int required = this.bufferPos + additionalSize;
-            if (this.buffer == null || this.buffer.Length < required)
+            if (this.buffer is null || this.buffer.Length < required)
             {
                 this.GrowBuffer(required);
             }
@@ -302,7 +302,7 @@ namespace System.Diagnostics.Tracing
 
         private void GrowBuffer(int required)
         {
-            int newSize = this.buffer == null ? 64 : this.buffer.Length;
+            int newSize = this.buffer is null ? 64 : this.buffer.Length;
 
             do
             {

@@ -25,7 +25,7 @@ namespace System.Data
         private void ChildRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
-            if (dv != null)
+            if (dv is not null)
             {
                 dv.ChildRelationCollectionChanged(sender, e);
             }
@@ -38,7 +38,7 @@ namespace System.Data
         private void ParentRelationCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
-            if (dv != null)
+            if (dv is not null)
             {
                 dv.ParentRelationCollectionChanged(sender, e);
             }
@@ -51,7 +51,7 @@ namespace System.Data
         private void ColumnCollectionChanged(object sender, CollectionChangeEventArgs e)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
-            if (dv != null)
+            if (dv is not null)
             {
                 dv.ColumnCollectionChangedInternal(sender, e);
             }
@@ -67,7 +67,7 @@ namespace System.Data
         internal void MaintainDataView(ListChangedType changedType, DataRow? row, bool trackAddRemove)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
-            if (dv != null)
+            if (dv is not null)
             {
                 dv.MaintainDataView(changedType, row, trackAddRemove);
             }
@@ -80,7 +80,7 @@ namespace System.Data
         internal void IndexListChanged(ListChangedEventArgs e)
         {
             DataView? dv = (DataView?)_dvWeak.Target;
-            if (dv != null)
+            if (dv is not null)
             {
                 dv.IndexListChangedInternal(e);
             }
@@ -94,7 +94,7 @@ namespace System.Data
         {
             Debug.Assert(null == _table, "DataViewListener already registered table");
             _table = table;
-            if (table != null)
+            if (table is not null)
             {
                 // actively remove listeners without a target
                 RegisterListener(table);
@@ -121,7 +121,7 @@ namespace System.Data
             DataTable? table = _table;
             _table = null;
 
-            if (table != null)
+            if (table is not null)
             {
                 CollectionChangeEventHandler handlerCollection = new CollectionChangeEventHandler(ColumnCollectionChanged);
                 table.Columns.ColumnPropertyChanged -= handlerCollection;
@@ -165,7 +165,7 @@ namespace System.Data
             Index? index = _index;
             _index = null;
 
-            if (index != null)
+            if (index is not null)
             {
                 lock (index)
                 {

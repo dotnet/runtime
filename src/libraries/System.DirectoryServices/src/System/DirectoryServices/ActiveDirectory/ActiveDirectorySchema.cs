@@ -61,13 +61,13 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (disposing)
                     {
                         // dispose schema entry
-                        if (_schemaEntry != null)
+                        if (_schemaEntry is not null)
                         {
                             _schemaEntry.Dispose();
                             _schemaEntry = null;
                         }
                         // dispose the abstract schema entry
-                        if (_abstractSchemaEntry != null)
+                        if (_abstractSchemaEntry is not null)
                         {
                             _abstractSchemaEntry.Dispose();
                             _abstractSchemaEntry = null;
@@ -86,7 +86,7 @@ namespace System.DirectoryServices.ActiveDirectory
         #region public methods
         public static ActiveDirectorySchema GetSchema(DirectoryContext context)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -99,12 +99,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.NotADOrADAM, nameof(context));
             }
 
-            if ((context.Name == null) && (!context.isRootDomain()))
+            if ((context.Name is null) && (!context.isRootDomain()))
             {
                 throw new ActiveDirectoryObjectNotFoundException(SR.ContextNotAssociatedWithDomain, typeof(ActiveDirectorySchema), null);
             }
 
-            if (context.Name != null)
+            if (context.Name is not null)
             {
                 // the target should be a valid forest name or a server
                 if (!((context.isRootDomain()) || (context.isADAMConfigSet()) || (context.isServer())))
@@ -192,7 +192,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 // refresh the schema on the client
                 // bind to the abstract schema
-                if (_abstractSchemaEntry == null)
+                if (_abstractSchemaEntry is null)
                 {
                     _abstractSchemaEntry = directoryEntryMgr.GetCachedDirectoryEntry("Schema");
                 }
@@ -204,7 +204,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (rootDSE != null)
+                if (rootDSE is not null)
                 {
                     rootDSE.Dispose();
                 }
@@ -227,7 +227,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (commonName == null)
+            if (commonName is null)
             {
                 throw new ArgumentNullException(nameof(commonName));
             }
@@ -303,7 +303,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (commonName == null)
+            if (commonName is null)
             {
                 throw new ArgumentNullException(nameof(commonName));
             }
@@ -407,7 +407,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedSchemaRoleOwner == null)
+                if (_cachedSchemaRoleOwner is null)
                 {
                     _cachedSchemaRoleOwner = GetSchemaRoleOwner();
                 }
@@ -443,7 +443,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     bool isDefunct = false;
 
-                    if ((res.Properties[PropertyManager.IsDefunct] != null) && (res.Properties[PropertyManager.IsDefunct].Count > 0))
+                    if ((res.Properties[PropertyManager.IsDefunct] is not null) && (res.Properties[PropertyManager.IsDefunct].Count > 0))
                     {
                         isDefunct = (bool)res.Properties[PropertyManager.IsDefunct][0];
                     }
@@ -466,7 +466,7 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 // dispose off the result collection
-                if (resCol != null)
+                if (resCol is not null)
                 {
                     resCol.Dispose();
                 }
@@ -500,7 +500,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                     bool isDefunct = false;
 
-                    if ((res.Properties[PropertyManager.IsDefunct] != null) && (res.Properties[PropertyManager.IsDefunct].Count > 0))
+                    if ((res.Properties[PropertyManager.IsDefunct] is not null) && (res.Properties[PropertyManager.IsDefunct].Count > 0))
                     {
                         isDefunct = (bool)res.Properties[PropertyManager.IsDefunct][0];
                     }
@@ -523,7 +523,7 @@ namespace System.DirectoryServices.ActiveDirectory
             finally
             {
                 // dispose off the result collection
-                if (resCol != null)
+                if (resCol is not null)
                 {
                     resCol.Dispose();
                 }

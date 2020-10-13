@@ -22,7 +22,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Since MoveNext() saved off the current value for us, this is largely trivial.
 
-                if (_endReached == true || _enumerator == null)
+                if (_endReached == true || _enumerator is null)
                 {
                     // Either we're at the end or before the beginning
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "TrackedCollectionEnumerator", "Current: bad position, endReached={0}", _endReached);
@@ -58,13 +58,13 @@ namespace System.DirectoryServices.AccountManagement
                 return false;
             }
 
-            if (_enumerator == null)
+            if (_enumerator is null)
             {
                 // Must be at the very beginning
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "TrackedCollectionEnumerator", "MoveNext: at beginning");
 
                 _enumerator = ((IEnumerable)_combinedValues).GetEnumerator();
-                Debug.Assert(_enumerator != null);
+                Debug.Assert(_enumerator is not null);
             }
 
             bool gotNextValue = _enumerator.MoveNext();

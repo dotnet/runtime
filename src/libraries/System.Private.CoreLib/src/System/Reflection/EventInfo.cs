@@ -63,7 +63,7 @@ namespace System.Reflection
         {
             MethodInfo? addMethod = GetAddMethod(nonPublic: false);
 
-            if (addMethod == null)
+            if (addMethod is null)
                 throw new InvalidOperationException(SR.InvalidOperation_NoPublicAddMethod);
 
             addMethod.Invoke(target, new object?[] { handler });
@@ -75,7 +75,7 @@ namespace System.Reflection
         {
             MethodInfo? removeMethod = GetRemoveMethod(nonPublic: false);
 
-            if (removeMethod == null)
+            if (removeMethod is null)
                 throw new InvalidOperationException(SR.InvalidOperation_NoPublicRemoveMethod);
 
             removeMethod.Invoke(target, new object?[] { handler });
@@ -87,7 +87,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(EventInfo? left, EventInfo? right)
         {
-            // Test "right" first to allow branch elimination when inlined for null checks (== null)
+            // Test "right" first to allow branch elimination when inlined for null checks (is null)
             // so it can become a simple test
             if (right is null)
             {

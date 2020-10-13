@@ -100,12 +100,12 @@ namespace System.Reflection
             MonoEventInfo info = GetEventInfo(this);
 
             MethodInfo method = info.add_method;
-            if (method == null)
+            if (method is null)
                 method = info.remove_method;
-            if (method == null)
+            if (method is null)
                 method = info.raise_method;
 
-            return RuntimeType.FilterPreCalculate(method != null && method.IsPublic, GetDeclaringTypeInternal() != ReflectedType, method != null && method.IsStatic);
+            return RuntimeType.FilterPreCalculate(method is not null && method.IsPublic, GetDeclaringTypeInternal() != ReflectedType, method is not null && method.IsStatic);
         }
 
         public override EventAttributes Attributes
@@ -119,7 +119,7 @@ namespace System.Reflection
         public override MethodInfo? GetAddMethod(bool nonPublic)
         {
             MonoEventInfo info = GetEventInfo(this);
-            if (nonPublic || (info.add_method != null && info.add_method.IsPublic))
+            if (nonPublic || (info.add_method is not null && info.add_method.IsPublic))
                 return info.add_method;
             return null;
         }
@@ -127,7 +127,7 @@ namespace System.Reflection
         public override MethodInfo? GetRaiseMethod(bool nonPublic)
         {
             MonoEventInfo info = GetEventInfo(this);
-            if (nonPublic || (info.raise_method != null && info.raise_method.IsPublic))
+            if (nonPublic || (info.raise_method is not null && info.raise_method.IsPublic))
                 return info.raise_method;
             return null;
         }
@@ -135,7 +135,7 @@ namespace System.Reflection
         public override MethodInfo? GetRemoveMethod(bool nonPublic)
         {
             MonoEventInfo info = GetEventInfo(this);
-            if (nonPublic || (info.remove_method != null && info.remove_method.IsPublic))
+            if (nonPublic || (info.remove_method is not null && info.remove_method.IsPublic))
                 return info.remove_method;
             return null;
         }
@@ -233,7 +233,7 @@ namespace System.Reflection
             if (handle.Value == IntPtr.Zero)
                 throw new ArgumentException("The handle is invalid.");
             EventInfo ei = internal_from_handle_type(handle.Value, reflectedType.Value);
-            if (ei == null)
+            if (ei is null)
                 throw new ArgumentException("The event handle and the type handle are incompatible.");
             return ei;
         }

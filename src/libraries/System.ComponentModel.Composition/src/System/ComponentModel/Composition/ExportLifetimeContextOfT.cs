@@ -24,7 +24,7 @@ namespace System.ComponentModel.Composition
 
         public void Dispose()
         {
-            if (_disposeAction != null)
+            if (_disposeAction is not null)
             {
                 _disposeAction.Invoke();
             }

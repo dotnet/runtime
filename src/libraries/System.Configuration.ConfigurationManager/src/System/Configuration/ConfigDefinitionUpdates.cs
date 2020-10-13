@@ -33,7 +33,7 @@ namespace System.Configuration
             string updatedXml, SectionRecord sectionRecord)
         {
             LocationUpdates locationUpdates = FindLocationUpdates(overrideMode, inheritInChildApps);
-            if (locationUpdates == null)
+            if (locationUpdates is null)
             {
                 locationUpdates = new LocationUpdates(overrideMode, inheritInChildApps);
                 LocationUpdatesList.Add(locationUpdates);

@@ -18,7 +18,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         internal NamespaceCache(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _metadataReader = reader;
         }
 
@@ -28,7 +28,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         internal bool CacheIsRealized
         {
-            get { return _namespaceTable != null; }
+            get { return _namespaceTable is not null; }
         }
 
         internal string GetFullName(NamespaceDefinitionHandle handle)
@@ -41,7 +41,7 @@ namespace System.Reflection.Metadata.Ecma335
         internal NamespaceData GetRootNamespace()
         {
             EnsureNamespaceTableIsPopulated();
-            Debug.Assert(_rootNamespace != null);
+            Debug.Assert(_rootNamespace is not null);
             return _rootNamespace;
         }
 
@@ -106,7 +106,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             lock (_namespaceTableAndListLock)
             {
-                if (_namespaceTable != null)
+                if (_namespaceTable is not null)
                 {
                     return;
                 }
@@ -146,7 +146,7 @@ namespace System.Reflection.Metadata.Ecma335
                     namespaceTable.Add(group.Key, group.Value.Freeze());
                 }
 
-                if (virtualNamespaces != null)
+                if (virtualNamespaces is not null)
                 {
                     foreach (var virtualNamespace in virtualNamespaces)
                     {
@@ -178,7 +178,7 @@ namespace System.Reflection.Metadata.Ecma335
                     Debug.Assert(data.Namespaces!.Count == 0);
                     data.MergeInto(existingRecord);
 
-                    if (remaps == null)
+                    if (remaps is null)
                     {
                         remaps = new List<KeyValuePair<NamespaceDefinitionHandle, NamespaceDataBuilder>>();
                     }
@@ -191,7 +191,7 @@ namespace System.Reflection.Metadata.Ecma335
             }
 
             // Needs to be done outside of foreach (var group in table) to avoid modifying the dictionary while foreach'ing over it.
-            if (remaps != null)
+            if (remaps is not null)
             {
                 foreach (var tuple in remaps)
                 {
@@ -229,7 +229,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         private void LinkChildDataToParentData(NamespaceDataBuilder child, NamespaceDataBuilder parent)
         {
-            Debug.Assert(child != null && parent != null);
+            Debug.Assert(child is not null && parent is not null);
             Debug.Assert(!child.Handle.IsNil);
             child.Parent = parent.Handle;
             parent.Namespaces!.Add(child.Handle);
@@ -278,7 +278,7 @@ namespace System.Reflection.Metadata.Ecma335
                     return;
                 }
 
-                if (virtualNamespaces != null)
+                if (virtualNamespaces is not null)
                 {
                     foreach (var data in virtualNamespaces)
                     {
@@ -323,7 +323,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         private void PopulateTableWithTypeDefinitions(Dictionary<NamespaceDefinitionHandle, NamespaceDataBuilder> table)
         {
-            Debug.Assert(table != null);
+            Debug.Assert(table is not null);
 
             foreach (var typeHandle in _metadataReader.TypeDefinitions)
             {
@@ -355,7 +355,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         private void PopulateTableWithExportedTypes(Dictionary<NamespaceDefinitionHandle, NamespaceDataBuilder> table)
         {
-            Debug.Assert(table != null);
+            Debug.Assert(table is not null);
 
             foreach (var exportedTypeHandle in _metadataReader.ExportedTypes)
             {
@@ -389,11 +389,11 @@ namespace System.Reflection.Metadata.Ecma335
         private void EnsureNamespaceTableIsPopulated()
         {
             // PERF: Branch will rarely be taken; do work in PopulateNamespaceList() so this can be inlined easily.
-            if (_namespaceTable == null)
+            if (_namespaceTable is null)
             {
                 PopulateNamespaceTable();
             }
-            Debug.Assert(_namespaceTable != null);
+            Debug.Assert(_namespaceTable is not null);
         }
 
         /// <summary>
@@ -437,7 +437,7 @@ namespace System.Reflection.Metadata.Ecma335
             {
                 // It is not an error to call this function multiple times. We cache the result
                 // because it's immutable.
-                if (_frozen == null)
+                if (_frozen is null)
                 {
                     var namespaces = Namespaces!.ToImmutable();
                     Namespaces = null;

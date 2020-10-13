@@ -60,7 +60,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Debug.Assert(_addedDefinitions != null);
+                Debug.Assert(_addedDefinitions is not null);
 
                 return _addedDefinitions;
             }
@@ -77,7 +77,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Debug.Assert(_removedDefinitions != null);
+                Debug.Assert(_removedDefinitions is not null);
 
                 return _removedDefinitions;
             }

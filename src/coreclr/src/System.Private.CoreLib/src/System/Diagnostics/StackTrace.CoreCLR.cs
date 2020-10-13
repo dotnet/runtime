@@ -22,13 +22,13 @@ namespace System.Diagnostics
             for (int i = 0; i < iNumFrames; i++)
             {
                 MethodBase? mb = StackF.GetMethodBase(i);
-                if (mb != null)
+                if (mb is not null)
                 {
                     Type? t = mb.DeclaringType;
-                    if (t == null)
+                    if (t is null)
                         break;
                     string? ns = t.Namespace;
-                    if (ns == null)
+                    if (ns is null)
                         break;
                     if (!string.Equals(ns, PackageName, StringComparison.Ordinal))
                         break;
@@ -77,7 +77,7 @@ namespace System.Diagnostics
 
                 // CalculateFramesToSkip skips all frames in the System.Diagnostics namespace,
                 // but this is not desired if building a stack trace from an exception.
-                if (e == null)
+                if (e is null)
                     _methodsToSkip += CalculateFramesToSkip(StackF, _numOfFrames);
 
                 _numOfFrames -= _methodsToSkip;

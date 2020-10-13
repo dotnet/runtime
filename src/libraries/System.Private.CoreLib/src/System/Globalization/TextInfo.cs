@@ -91,7 +91,7 @@ namespace System.Globalization
         /// </summary>
         public static TextInfo ReadOnly(TextInfo textInfo)
         {
-            if (textInfo == null)
+            if (textInfo is null)
             {
                 throw new ArgumentNullException(nameof(textInfo));
             }
@@ -127,7 +127,7 @@ namespace System.Globalization
             get => _listSeparator ??= _cultureData.ListSeparator;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -163,7 +163,7 @@ namespace System.Globalization
 
         public string ToLower(string str)
         {
-            if (str == null)
+            if (str is null)
             {
                 throw new ArgumentNullException(nameof(str));
             }
@@ -319,7 +319,7 @@ namespace System.Globalization
             bool toUpper = typeof(TConversion) == typeof(ToUpperConversion); // JIT will treat this as a constant in release builds
 
             Debug.Assert(!GlobalizationMode.Invariant);
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             // If the string is empty, we're done.
             if (source.Length == 0)
@@ -567,7 +567,7 @@ namespace System.Globalization
 
         public string ToUpper(string str)
         {
-            if (str == null)
+            if (str is null)
             {
                 throw new ArgumentNullException(nameof(str));
             }
@@ -645,7 +645,7 @@ namespace System.Globalization
         /// </summary>
         public unsafe string ToTitleCase(string str)
         {
-            if (str == null)
+            if (str is null)
             {
                 throw new ArgumentNullException(nameof(str));
             }
@@ -703,7 +703,7 @@ namespace System.Globalization
                             i++;
                             if (hasLowerCase)
                             {
-                                if (lowercaseData == null)
+                                if (lowercaseData is null)
                                 {
                                     lowercaseData = ToLower(str);
                                 }
@@ -735,7 +735,7 @@ namespace System.Globalization
                     {
                         if (hasLowerCase)
                         {
-                            if (lowercaseData == null)
+                            if (lowercaseData is null)
                             {
                                 lowercaseData = ToLower(str);
                             }

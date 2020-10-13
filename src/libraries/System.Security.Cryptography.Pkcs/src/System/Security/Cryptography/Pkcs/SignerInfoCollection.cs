@@ -19,14 +19,14 @@ namespace System.Security.Cryptography.Pkcs
 
         internal SignerInfoCollection(SignerInfo[] signerInfos)
         {
-            Debug.Assert(signerInfos != null);
+            Debug.Assert(signerInfos is not null);
 
             _signerInfos = signerInfos;
         }
 
         internal SignerInfoCollection(SignerInfoAsn[] signedDataSignerInfos, SignedCms ownerDocument)
         {
-            Debug.Assert(signedDataSignerInfos != null);
+            Debug.Assert(signedDataSignerInfos is not null);
 
             _signerInfos = new SignerInfo[signedDataSignerInfos.Length];
 
@@ -53,7 +53,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static int FindIndexForSigner(SignerInfo[] signerInfos, SignerInfo signer)
         {
-            Debug.Assert(signer != null);
+            Debug.Assert(signer is not null);
             SubjectIdentifier id = signer.SignerIdentifier;
 
             for (int i = 0; i < signerInfos.Length; i++)

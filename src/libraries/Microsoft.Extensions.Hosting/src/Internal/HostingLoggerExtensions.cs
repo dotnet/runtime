@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         public static void ApplicationError(this ILogger logger, EventId eventId, string message, Exception exception)
         {
             var reflectionTypeLoadException = exception as ReflectionTypeLoadException;
-            if (reflectionTypeLoadException != null)
+            if (reflectionTypeLoadException is not null)
             {
                 foreach (Exception ex in reflectionTypeLoadException.LoaderExceptions)
                 {

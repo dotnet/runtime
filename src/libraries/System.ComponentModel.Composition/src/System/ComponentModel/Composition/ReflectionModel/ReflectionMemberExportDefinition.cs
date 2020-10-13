@@ -16,7 +16,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionMemberExportDefinition(LazyMemberInfo member, ExportDefinition exportDefinition, ICompositionElement? origin)
         {
-            if (exportDefinition == null)
+            if (exportDefinition is null)
             {
                 throw new ArgumentNullException(nameof(exportDefinition));
             }
@@ -40,7 +40,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             get
             {
-                if (_metadata == null)
+                if (_metadata is null)
                 {
                     _metadata = _exportDefinition.Metadata.AsReadOnly();
                 }

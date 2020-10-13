@@ -181,7 +181,7 @@ namespace System.Formats.Asn1
             out int bytesConsumed,
             Asn1Tag? expectedTag = null)
         {
-            if (flagsEnumType == null)
+            if (flagsEnumType is null)
                 throw new ArgumentNullException(nameof(flagsEnumType));
 
             // This will throw an ArgumentException if TEnum isn't an enum type,
@@ -327,7 +327,7 @@ namespace System.Formats.Asn1
             Asn1Tag actualTag = ReadEncodedValue(source, ruleSet, out _, out int contentLength, out _);
 
             // Get the last ArgumentException out of the way before we rent arrays
-            if (expectedTag != null)
+            if (expectedTag is not null)
             {
                 CheckExpectedTag(actualTag, expectedTag.Value, UniversalTagNumber.BitString);
             }

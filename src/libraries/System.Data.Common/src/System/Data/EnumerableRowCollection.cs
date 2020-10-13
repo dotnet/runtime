@@ -72,7 +72,7 @@ namespace System.Data
         /// </summary>
         internal EnumerableRowCollection(IEnumerable<TRow> enumerableRows, bool isDataViewable, DataTable? table)
         {
-            Debug.Assert(!isDataViewable || table != null, "isDataViewable bug table is null");
+            Debug.Assert(!isDataViewable || table is not null, "isDataViewable bug table is null");
 
             _enumerableRows = enumerableRows;
             if (isDataViewable)
@@ -276,7 +276,7 @@ namespace System.Data
         /// </summary>
         internal void AddPredicate(Func<TRow, bool> pred)
         {
-            Debug.Assert(pred != null);
+            Debug.Assert(pred is not null);
             _listOfPredicates.Add(pred);
         }
 

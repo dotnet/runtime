@@ -52,7 +52,7 @@ namespace Internal.Cryptography
         {
             // note: rgbIV is guaranteed to be cloned before this method, so no need to clone it again
 
-            if (rgbKey == null)
+            if (rgbKey is null)
                 throw new ArgumentNullException(nameof(rgbKey));
 
             long keySize = rgbKey.Length * (long)BitsPerByte;
@@ -64,7 +64,7 @@ namespace Internal.Cryptography
             if (IsSemiWeakKey(rgbKey))
                 throw new CryptographicException(SR.Cryptography_InvalidKey_SemiWeak, "DES");
 
-            if (rgbIV != null)
+            if (rgbIV is not null)
             {
                 long ivSize = rgbIV.Length * (long)BitsPerByte;
                 if (ivSize != BlockSize)

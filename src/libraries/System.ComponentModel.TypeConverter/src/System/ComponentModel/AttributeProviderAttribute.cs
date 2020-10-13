@@ -30,7 +30,7 @@ namespace System.ComponentModel
         /// </summary>
         public AttributeProviderAttribute(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }

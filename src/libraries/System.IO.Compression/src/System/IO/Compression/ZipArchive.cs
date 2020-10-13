@@ -82,14 +82,14 @@ namespace System.IO.Compression
         ///         UTF-8 encoding for entry names.<br />
         ///         This value is used as follows:</para>
         ///     <para><strong>Reading (opening) ZIP archive files:</strong></para>
-        ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
+        ///     <para>If <c>entryNameEncoding</c> is not specified (<c>is null</c>):</para>
         ///     <list>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
         ///         use the current system default code page (<c>Encoding.Default</c>) in order to decode the entry name.</item>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header <em>is</em> set,
         ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
         ///     </list>
-        ///     <para>If <c>entryNameEncoding</c> is specified (<c>!= null</c>):</para>
+        ///     <para>If <c>entryNameEncoding</c> is specified (<c>is not null</c>):</para>
         ///     <list>
         ///         <item>For entries where the language encoding flag (EFS) in the general purpose bit flag of the local file header is <em>not</em> set,
         ///         use the specified <c>entryNameEncoding</c> in order to decode the entry name.</item>
@@ -97,7 +97,7 @@ namespace System.IO.Compression
         ///         use UTF-8 (<c>Encoding.UTF8</c>) in order to decode the entry name.</item>
         ///     </list>
         ///     <para><strong>Writing (saving) ZIP archive files:</strong></para>
-        ///     <para>If <c>entryNameEncoding</c> is not specified (<c>== null</c>):</para>
+        ///     <para>If <c>entryNameEncoding</c> is not specified (<c>is null</c>):</para>
         ///     <list>
         ///         <item>For entry names that contain characters outside the ASCII range,
         ///         the language encoding flag (EFS) will be set in the general purpose bit flag of the local file header,
@@ -106,7 +106,7 @@ namespace System.IO.Compression
         ///         the language encoding flag (EFS) will not be set in the general purpose bit flag of the local file header,
         ///         and the current system default code page (<c>Encoding.Default</c>) will be used to encode the entry names into bytes.</item>
         ///     </list>
-        ///     <para>If <c>entryNameEncoding</c> is specified (<c>!= null</c>):</para>
+        ///     <para>If <c>entryNameEncoding</c> is specified (<c>is not null</c>):</para>
         ///     <list>
         ///         <item>The specified <c>entryNameEncoding</c> will always be used to encode the entry names into bytes.
         ///         The language encoding flag (EFS) in the general purpose bit flag of the local file header will be set if and only
@@ -118,7 +118,7 @@ namespace System.IO.Compression
         /// <exception cref="ArgumentException">If a Unicode encoding other than UTF-8 is specified for the <code>entryNameEncoding</code>.</exception>
         public ZipArchive(Stream stream, ZipArchiveMode mode, bool leaveOpen, Encoding? entryNameEncoding)
         {
-            if (stream == null)
+            if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
 
             EntryNameEncoding = entryNameEncoding;
@@ -204,7 +204,7 @@ namespace System.IO.Compression
             }
             catch
             {
-                if (extraTempStream != null)
+                if (extraTempStream is not null)
                     extraTempStream.Dispose();
 
                 throw;
@@ -328,7 +328,7 @@ namespace System.IO.Compression
         /// <returns>A wrapper for the file entry in the archive. If no entry in the archive exists with the specified name, null will be returned.</returns>
         public ZipArchiveEntry? GetEntry(string entryName)
         {
-            if (entryName == null)
+            if (entryName is null)
                 throw new ArgumentNullException(nameof(entryName));
 
             if (_mode == ZipArchiveMode.Create)
@@ -351,7 +351,7 @@ namespace System.IO.Compression
 
             private set
             {
-                // value == null is fine. This means the user does not want to overwrite default encoding picking logic.
+                // value is null is fine. This means the user does not want to overwrite default encoding picking logic.
 
                 // The Zip file spec [http://www.pkware.com/documents/casestudies/APPNOTE.TXT] specifies a bit in the entry header
                 // (specifically: the language encoding flag (EFS) in the general purpose bit flag of the local file header) that
@@ -366,7 +366,7 @@ namespace System.IO.Compression
                 // for something other tools do not support. If we realise in future that "something else" should include non-UTF8
                 // Unicode encodings, we can remove this restriction.
 
-                if (value != null &&
+                if (value is not null &&
                         (value.Equals(Encoding.BigEndianUnicode)
                         || value.Equals(Encoding.Unicode)))
                 {
@@ -379,7 +379,7 @@ namespace System.IO.Compression
 
         private ZipArchiveEntry DoCreateEntry(string entryName, CompressionLevel? compressionLevel)
         {
-            if (entryName == null)
+            if (entryName is null)
                 throw new ArgumentNullException(nameof(entryName));
 
             if (string.IsNullOrEmpty(entryName))
@@ -403,7 +403,7 @@ namespace System.IO.Compression
         internal void AcquireArchiveStream(ZipArchiveEntry entry)
         {
             // if a previous entry had held the stream but never wrote anything, we write their local header for them
-            if (_archiveStreamOwner != null)
+            if (_archiveStreamOwner is not null)
             {
                 if (!_archiveStreamOwner.EverOpenedForWrite)
                 {
@@ -465,7 +465,7 @@ namespace System.IO.Compression
                 // if _backingStream isn't null, that means we assigned the original stream they passed
                 // us to _backingStream (which they requested we leave open), and _archiveStream was
                 // the temporary copy that we needed
-                if (_backingStream != null)
+                if (_backingStream is not null)
                     _archiveStream.Dispose();
             }
         }
@@ -489,7 +489,7 @@ namespace System.IO.Compression
 
                 long numberOfEntries = 0;
 
-                Debug.Assert(_archiveReader != null);
+                Debug.Assert(_archiveReader is not null);
                 //read the central directory
                 ZipCentralDirectoryFileHeader currentHeader;
                 bool saveExtraFieldsAndComments = Mode == ZipArchiveMode.Update;
@@ -530,7 +530,7 @@ namespace System.IO.Compression
 
                 long eocdStart = _archiveStream.Position;
 
-                Debug.Assert(_archiveReader != null);
+                Debug.Assert(_archiveReader is not null);
                 // read the EOCD
                 ZipEndOfCentralDirectoryBlock eocd;
                 bool eocdProper = ZipEndOfCentralDirectoryBlock.TryReadBlock(_archiveReader, out eocd);
@@ -590,7 +590,7 @@ namespace System.IO.Compression
                         Zip64EndOfCentralDirectoryLocator.SignatureConstant,
                         Zip64EndOfCentralDirectoryLocator.SignatureSize))
                 {
-                    Debug.Assert(_archiveReader != null);
+                    Debug.Assert(_archiveReader is not null);
 
                     // use locator to get to Zip64-EOCD
                     Zip64EndOfCentralDirectoryLocator locator;

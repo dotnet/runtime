@@ -90,7 +90,7 @@ namespace System
         [DoesNotReturn]
         internal void ThrowException()
         {
-            Debug.Assert(_exceptionDispatch != null, "execution path is invalid");
+            Debug.Assert(_exceptionDispatch is not null, "execution path is invalid");
 
             _exceptionDispatch.Throw();
         }
@@ -123,12 +123,12 @@ namespace System
 
         internal static LazyThreadSafetyMode? GetMode(LazyHelper? state)
         {
-            if (state == null)
+            if (state is null)
                 return null; // we don't know the mode anymore
             return state.GetMode();
         }
 
-        internal static bool GetIsValueFaulted(LazyHelper? state) => state?._exceptionDispatch != null;
+        internal static bool GetIsValueFaulted(LazyHelper? state) => state?._exceptionDispatch is not null;
 
         internal static LazyHelper Create(LazyThreadSafetyMode mode, bool useDefaultConstructor)
         {
@@ -296,7 +296,7 @@ namespace System
 
         private Lazy(Func<T>? valueFactory, LazyThreadSafetyMode mode, bool useDefaultConstructor)
         {
-            if (valueFactory == null && !useDefaultConstructor)
+            if (valueFactory is null && !useDefaultConstructor)
                 throw new ArgumentNullException(nameof(valueFactory));
 
             _factory = valueFactory;
@@ -314,7 +314,7 @@ namespace System
             try
             {
                 Func<T>? factory = _factory;
-                if (factory == null)
+                if (factory is null)
                     throw new InvalidOperationException(SR.Lazy_Value_RecursiveCallsToValue);
                 _factory = null;
 
@@ -367,7 +367,7 @@ namespace System
         private void PublicationOnlyViaFactory(LazyHelper initializer)
         {
             Func<T>? factory = _factory;
-            if (factory == null)
+            if (factory is null)
             {
                 PublicationOnlyWaitForOtherThreadToPublish();
             }
@@ -393,7 +393,7 @@ namespace System
             // we have to create a copy of state here, and use the copy exclusively from here on in
             // so as to ensure thread safety.
             LazyHelper? state = _state;
-            if (state != null)
+            if (state is not null)
             {
                 switch (state.State)
                 {
@@ -478,7 +478,7 @@ namespace System
         /// a value being produced or an exception being thrown.  If an exception goes unhandled during initialization,
         /// <see cref="IsValueCreated"/> will return false.
         /// </remarks>
-        public bool IsValueCreated => _state == null;
+        public bool IsValueCreated => _state is null;
 
         /// <summary>Gets the lazily initialized value of the current <see
         /// cref="System.Lazy{T}"/>.</summary>
@@ -502,7 +502,7 @@ namespace System
         /// from initialization delegate.
         /// </remarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        public T Value => _state == null ? _value! : CreateValue();
+        public T Value => _state is null ? _value! : CreateValue();
     }
 
     /// <summary>A debugger view of the Lazy&lt;T&gt; to surface additional debugging properties and

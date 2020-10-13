@@ -20,7 +20,7 @@ namespace System.Runtime.Serialization
 
         internal void Push(object obj)
         {
-            if (_objectArray == null)
+            if (_objectArray is null)
             {
                 _objectArray = new object[InitialArraySize];
                 _objectArray[_count++] = obj;
@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                if (_objectDictionary == null)
+                if (_objectDictionary is null)
                     _objectDictionary = new Dictionary<object, object?>();
 
                 _objectDictionary.Add(obj, null);
@@ -47,7 +47,7 @@ namespace System.Runtime.Serialization
                 return;
             if (_count > MaximumArraySize)
             {
-                if (_objectDictionary == null)
+                if (_objectDictionary is null)
                 {
                     DiagnosticUtility.DebugAssert("Object reference stack in invalid state");
                 }
@@ -55,9 +55,9 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                if ((_objectArray != null) && _objectArray[_count - 1] == obj)
+                if ((_objectArray is not null) && _objectArray[_count - 1] == obj)
                 {
-                    if (_isReferenceArray == null)
+                    if (_isReferenceArray is null)
                     {
                         _isReferenceArray = new bool[_objectArray.Length];
                     }
@@ -74,7 +74,7 @@ namespace System.Runtime.Serialization
         {
             if (_count > MaximumArraySize)
             {
-                if (_objectDictionary == null)
+                if (_objectDictionary is null)
                 {
                     DiagnosticUtility.DebugAssert("Object reference stack in invalid state");
                 }
@@ -89,13 +89,13 @@ namespace System.Runtime.Serialization
             int currentCount = _count;
             if (currentCount > MaximumArraySize)
             {
-                if (_objectDictionary != null && _objectDictionary.ContainsKey(obj))
+                if (_objectDictionary is not null && _objectDictionary.ContainsKey(obj))
                     return true;
                 currentCount = MaximumArraySize;
             }
             for (int i = (currentCount - 1); i >= 0; i--)
             {
-                if (object.ReferenceEquals(obj, _objectArray![i]) && _isReferenceArray != null && !_isReferenceArray[i])
+                if (object.ReferenceEquals(obj, _objectArray![i]) && _isReferenceArray is not null && !_isReferenceArray[i])
                     return true;
             }
             return false;

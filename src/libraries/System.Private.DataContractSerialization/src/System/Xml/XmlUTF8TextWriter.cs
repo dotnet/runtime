@@ -18,16 +18,16 @@ namespace System.Xml
 
         public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
         {
-            if (stream == null)
+            if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (encoding.WebName != Encoding.UTF8.WebName)
             {
                 stream = new EncodingStreamWrapper(stream, encoding, true);
             }
 
-            if (_writer == null)
+            if (_writer is null)
             {
                 _writer = new XmlUTF8NodeWriter();
             }
@@ -104,7 +104,7 @@ namespace System.Xml
         public new void SetOutput(Stream stream, bool ownsStream, Encoding? encoding)
         {
             Encoding? utf8Encoding = null;
-            if (encoding != null && encoding.CodePage == Encoding.UTF8.CodePage)
+            if (encoding is not null && encoding.CodePage == Encoding.UTF8.CodePage)
             {
                 utf8Encoding = encoding;
                 encoding = null;
@@ -116,7 +116,7 @@ namespace System.Xml
 
         private byte[] GetCharEntityBuffer()
         {
-            if (_entityChars == null)
+            if (_entityChars is null)
             {
                 _entityChars = new byte[maxEntityLength];
             }
@@ -127,14 +127,14 @@ namespace System.Xml
         {
             if (charCount >= 256)
                 return new char[charCount];
-            if (_chars == null || _chars.Length < charCount)
+            if (_chars is null || _chars.Length < charCount)
                 _chars = new char[charCount];
             return _chars;
         }
 
         public override void WriteDeclaration()
         {
-            if (_encoding == null)
+            if (_encoding is null)
             {
                 WriteUTF8Chars(s_utf8Decl, 0, s_utf8Decl.Length);
             }

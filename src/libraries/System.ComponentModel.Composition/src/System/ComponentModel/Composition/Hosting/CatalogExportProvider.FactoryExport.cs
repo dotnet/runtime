@@ -31,7 +31,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             protected override object GetExportedValueCore()
             {
-                if (_factoryExportPartDefinition == null)
+                if (_factoryExportPartDefinition is null)
                 {
                     _factoryExportPartDefinition = new FactoryExportPartDefinition(this);
                 }

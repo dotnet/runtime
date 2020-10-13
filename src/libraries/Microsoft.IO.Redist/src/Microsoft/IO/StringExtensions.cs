@@ -27,7 +27,7 @@ namespace Microsoft.IO
 
         public static unsafe string Create<TState>(int length, TState state, SpanAction<char, TState> action)
         {
-            if (action == null)
+            if (action is null)
                 throw new ArgumentNullException(nameof(action));
 
             if (length <= 0)

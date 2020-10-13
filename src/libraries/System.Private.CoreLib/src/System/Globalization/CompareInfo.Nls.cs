@@ -54,8 +54,8 @@ namespace System.Globalization
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (char* pValue = &MemoryMarshal.GetReference(value))
             {
-                Debug.Assert(pSource != null);
-                Debug.Assert(pValue != null);
+                Debug.Assert(pSource is not null);
+                Debug.Assert(pValue is not null);
 
                 int ret = Interop.Kernel32.FindStringOrdinal(
                             dwFindStringOrdinalFlags,
@@ -91,8 +91,8 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
 
-            Debug.Assert(source != null);
-            Debug.Assert(value != null);
+            Debug.Assert(source is not null);
+            Debug.Assert(value is not null);
 
             int offset = startIndex - count + 1;
             int result = FindStringOrdinal(FIND_FROMEND, source.AsSpan(offset, count), value, ignoreCase);
@@ -172,7 +172,7 @@ namespace System.Globalization
                 int hash = Marvin.ComputeHash32(span.Slice(0, sortKeyLength), Marvin.DefaultSeed);
 
                 // Return the borrowed array if necessary.
-                if (borrowedArr != null)
+                if (borrowedArr is not null)
                 {
                     ArrayPool<byte>.Shared.Return(borrowedArr);
                 }
@@ -192,8 +192,8 @@ namespace System.Globalization
             fixed (char* char1 = &string1)
             fixed (char* char2 = &string2)
             {
-                Debug.Assert(char1 != null);
-                Debug.Assert(char2 != null);
+                Debug.Assert(char1 is not null);
+                Debug.Assert(char2 is not null);
 
                 // Use the OS to compare and then convert the result to expected value by subtracting 2
                 int result = Interop.Kernel32.CompareStringOrdinal(char1, count1, char2, count2, bIgnoreCase: true);
@@ -283,7 +283,7 @@ namespace System.Globalization
             fixed (char* pSource = &MemoryMarshal.GetReference(lpStringSource))
             fixed (char* pValue = &MemoryMarshal.GetReference(lpStringValue))
             {
-                Debug.Assert(pSource != null && pValue != null);
+                Debug.Assert(pSource is not null && pValue is not null);
 
                 int result = Interop.Kernel32.FindNLSStringEx(
                                     pLocaleName,
@@ -328,7 +328,7 @@ namespace System.Globalization
             int idx = FindString(FIND_STARTSWITH | (uint)GetNativeCompareFlags(options), source, prefix, matchLengthPtr);
             if (idx >= 0)
             {
-                if (matchLengthPtr != null)
+                if (matchLengthPtr is not null)
                 {
                     *matchLengthPtr += idx; // account for chars we skipped at the front of the string
                 }
@@ -349,7 +349,7 @@ namespace System.Globalization
             int idx = FindString(FIND_ENDSWITH | (uint)GetNativeCompareFlags(options), source, suffix, pcchFound: null);
             if (idx >= 0)
             {
-                if (matchLengthPtr != null)
+                if (matchLengthPtr is not null)
                 {
                     *matchLengthPtr = source.Length - idx; // all chars from idx to the end of the string are consumed
                 }
@@ -371,7 +371,7 @@ namespace System.Globalization
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
 
-            if (source == null) { throw new ArgumentNullException(nameof(source)); }
+            if (source is null) { throw new ArgumentNullException(nameof(source)); }
 
             if ((options & ValidCompareMaskOffFlags) != 0)
             {
@@ -464,8 +464,8 @@ namespace System.Globalization
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             fixed (byte* pSortKey = &MemoryMarshal.GetReference(destination))
             {
-                Debug.Assert(pSource != null);
-                Debug.Assert(pSortKey != null);
+                Debug.Assert(pSource is not null);
+                Debug.Assert(pSortKey is not null);
 
 #if TARGET_WINDOWS
                 if (!Environment.IsWindows8OrAbove)
@@ -542,7 +542,7 @@ namespace System.Globalization
 
             fixed (char* pSource = &MemoryMarshal.GetReference(source))
             {
-                Debug.Assert(pSource != null);
+                Debug.Assert(pSource is not null);
                 sortKeyLength = Interop.Kernel32.LCMapStringEx(_sortHandle != IntPtr.Zero ? null : _sortName,
                                                                flags,
                                                                pSource, sourceLength,

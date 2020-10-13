@@ -40,8 +40,8 @@ namespace System.Xml.Xsl.XsltOld
 
         internal ReaderOutput(Processor processor)
         {
-            Debug.Assert(processor != null);
-            Debug.Assert(processor.NameTable != null);
+            Debug.Assert(processor is not null);
+            Debug.Assert(processor.NameTable is not null);
 
             _processor = processor;
             _nameTable = processor.NameTable;
@@ -67,7 +67,7 @@ namespace System.Xml.Xsl.XsltOld
                 string prefix = Prefix;
                 string localName = LocalName;
 
-                if (prefix != null && prefix.Length > 0)
+                if (prefix is not null && prefix.Length > 0)
                 {
                     if (localName.Length > 0)
                     {
@@ -167,12 +167,12 @@ namespace System.Xml.Xsl.XsltOld
 
         public override XmlSpace XmlSpace
         {
-            get { return _manager != null ? _manager.XmlSpace : XmlSpace.None; }
+            get { return _manager is not null ? _manager.XmlSpace : XmlSpace.None; }
         }
 
         public override string XmlLang
         {
-            get { return _manager != null ? _manager.XmlLang : string.Empty; }
+            get { return _manager is not null ? _manager.XmlLang : string.Empty; }
         }
 
         // Attribute Accessors
@@ -307,7 +307,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public override bool Read()
         {
-            Debug.Assert(_processor != null || _state == ReadState.Closed);
+            Debug.Assert(_processor is not null || _state == ReadState.Closed);
 
             if (_state != ReadState.Interactive)
             {
@@ -420,7 +420,7 @@ namespace System.Xml.Xsl.XsltOld
                         }
                         else
                         {
-                            if (sb == null)
+                            if (sb is null)
                             {
                                 sb = new StringBuilder(result);
                             }
@@ -430,7 +430,7 @@ namespace System.Xml.Xsl.XsltOld
                             throw new InvalidOperationException(SR.Xml_InvalidOperation);
                         break;
                     default:
-                        return (sb == null) ? result : sb.ToString();
+                        return (sb is null) ? result : sb.ToString();
                 }
             }
         }
@@ -448,7 +448,7 @@ namespace System.Xml.Xsl.XsltOld
                     Read();                 // skeep  begin Element
                     while (depth < Depth)
                     { // process content
-                        Debug.Assert(_builder != null);
+                        Debug.Assert(_builder is not null);
                         output.RecordDone(_builder);
                         Read();
                     }
@@ -486,7 +486,7 @@ namespace System.Xml.Xsl.XsltOld
                     // process internal elements & text nodes
                     while (depth < Depth)
                     {
-                        Debug.Assert(_builder != null);
+                        Debug.Assert(_builder is not null);
                         output.RecordDone(_builder);
                         Read();
                     }
@@ -520,7 +520,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             get
             {
-                Debug.Assert(_nameTable != null);
+                Debug.Assert(_nameTable is not null);
                 return _nameTable;
             }
         }
@@ -529,7 +529,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             string? atomizedPrefix = _nameTable.Get(prefix);
 
-            if (_manager != null && atomizedPrefix != null)
+            if (_manager is not null && atomizedPrefix is not null)
             {
                 return _manager.ResolveNamespace(atomizedPrefix);
             }
@@ -553,7 +553,7 @@ namespace System.Xml.Xsl.XsltOld
                 return false;
             }
 
-            if (_attributeValue == null)
+            if (_attributeValue is null)
             {
                 _attributeValue = new BuilderInfo();
                 _attributeValue.NodeType = XmlNodeType.Text;
@@ -628,11 +628,11 @@ namespace System.Xml.Xsl.XsltOld
 
         private bool FindAttribute(string? localName, string? namespaceURI, out int attrIndex)
         {
-            if (namespaceURI == null)
+            if (namespaceURI is null)
             {
                 namespaceURI = string.Empty;
             }
-            if (localName == null)
+            if (localName is null)
             {
                 localName = string.Empty;
             }
@@ -655,7 +655,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private bool FindAttribute(string? name, out int attrIndex)
         {
-            if (name == null)
+            if (name is null)
             {
                 name = string.Empty;
             }
@@ -689,8 +689,8 @@ namespace System.Xml.Xsl.XsltOld
         [System.Diagnostics.Conditional("DEBUG")]
         private void CheckCurrentInfo()
         {
-            Debug.Assert(_currentInfo != null);
-            Debug.Assert(_attributeCount == 0 || _attributeList != null);
+            Debug.Assert(_currentInfo is not null);
+            Debug.Assert(_attributeCount == 0 || _attributeList is not null);
             Debug.Assert((_currentIndex == -1) == (_currentInfo == _mainNode));
             Debug.Assert((_currentIndex == -1) || (_currentInfo == _attributeValue || _attributeList![_currentIndex] is BuilderInfo && _attributeList[_currentIndex] == _currentInfo));
         }
@@ -710,7 +710,7 @@ namespace System.Xml.Xsl.XsltOld
 
             public string AttributeInnerXml(string value)
             {
-                if (_encoder == null) Init();
+                if (_encoder is null) Init();
                 _buffer!.Length = 0;       // clean buffer
                 _encoder.StartAttribute(/*save:*/false);
                 _encoder.Write(value);
@@ -720,7 +720,7 @@ namespace System.Xml.Xsl.XsltOld
 
             public string AttributeOuterXml(string name, string value)
             {
-                if (_encoder == null) Init();
+                if (_encoder is null) Init();
                 _buffer!.Length = 0;       // clean buffer
                 _buffer.Append(name);
                 _buffer.Append('=');

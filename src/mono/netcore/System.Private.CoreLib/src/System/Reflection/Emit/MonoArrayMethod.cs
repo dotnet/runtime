@@ -170,7 +170,7 @@ namespace System.Reflection
                     parms = parms + ", ";
                 parms = parms + p[i].ParameterType.Name;
             }
-            if (ReturnType != null)
+            if (ReturnType is not null)
                 return ReturnType.Name + " " + Name + "(" + parms + ")";
             else
                 return "void " + Name + "(" + parms + ")";

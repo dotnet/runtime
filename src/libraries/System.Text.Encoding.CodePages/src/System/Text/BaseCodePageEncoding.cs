@@ -152,14 +152,14 @@ namespace System.Text
 
         internal static Stream GetEncodingDataStream(string tableName)
         {
-            Debug.Assert(tableName != null, "table name can not be null");
+            Debug.Assert(tableName is not null, "table name can not be null");
 
             // NOTE: We must reflect on a public type that is exposed in the contract here
             // (i.e. CodePagesEncodingProvider), otherwise we will not get a reference to
             // the right assembly.
             Stream? stream = typeof(CodePagesEncodingProvider).GetTypeInfo().Assembly.GetManifestResourceStream(tableName);
 
-            if (stream == null)
+            if (stream is null)
             {
                 // We can not continue if we can't get the resource.
                 throw new InvalidOperationException();
@@ -188,7 +188,7 @@ namespace System.Text
         // Look up the code page pointer
         private unsafe bool FindCodePage(int codePage)
         {
-            Debug.Assert(m_codePageHeader != null && m_codePageHeader.Length == CODEPAGE_HEADER_SIZE, "m_codePageHeader expected to match in size the struct CodePageHeader");
+            Debug.Assert(m_codePageHeader is not null && m_codePageHeader.Length == CODEPAGE_HEADER_SIZE, "m_codePageHeader expected to match in size the struct CodePageHeader");
 
             // Loop through all of the m_pCodePageIndex[] items to find our code page
             byte[] codePageIndex = new byte[sizeof(CodePageIndex)];
@@ -289,10 +289,10 @@ namespace System.Text
         // Allocate memory to load our code page
         protected unsafe byte* GetNativeMemory(int iSize)
         {
-            if (safeNativeMemoryHandle == null)
+            if (safeNativeMemoryHandle is null)
             {
                 byte* pNativeMemory = (byte*)Marshal.AllocHGlobal(iSize);
-                Debug.Assert(pNativeMemory != null);
+                Debug.Assert(pNativeMemory is not null);
 
                 safeNativeMemoryHandle = new SafeAllocHHandle((IntPtr)pNativeMemory);
             }
@@ -305,9 +305,9 @@ namespace System.Text
         internal char[] GetBestFitUnicodeToBytesData()
         {
             // Read in our best fit table if necessary
-            if (arrayUnicodeBestFit == null) ReadBestFitTable();
+            if (arrayUnicodeBestFit is null) ReadBestFitTable();
 
-            Debug.Assert(arrayUnicodeBestFit != null, "[BaseCodePageEncoding.GetBestFitUnicodeToBytesData]Expected non-null arrayUnicodeBestFit");
+            Debug.Assert(arrayUnicodeBestFit is not null, "[BaseCodePageEncoding.GetBestFitUnicodeToBytesData]Expected non-null arrayUnicodeBestFit");
 
             // Normally we don't have any best fit data.
             return arrayUnicodeBestFit!;
@@ -316,9 +316,9 @@ namespace System.Text
         internal char[] GetBestFitBytesToUnicodeData()
         {
             // Read in our best fit table if necessary
-            if (arrayBytesBestFit == null) ReadBestFitTable();
+            if (arrayBytesBestFit is null) ReadBestFitTable();
 
-            Debug.Assert(arrayBytesBestFit != null, "[BaseCodePageEncoding.GetBestFitBytesToUnicodeData]Expected non-null arrayBytesBestFit");
+            Debug.Assert(arrayBytesBestFit is not null, "[BaseCodePageEncoding.GetBestFitBytesToUnicodeData]Expected non-null arrayBytesBestFit");
 
             // Normally we don't have any best fit data.
             return arrayBytesBestFit!;
@@ -330,7 +330,7 @@ namespace System.Text
         // the memory section pointer will get finalized one more time.
         internal unsafe void CheckMemorySection()
         {
-            if (safeNativeMemoryHandle != null && safeNativeMemoryHandle.DangerousGetHandle() == IntPtr.Zero)
+            if (safeNativeMemoryHandle is not null && safeNativeMemoryHandle.DangerousGetHandle() == IntPtr.Zero)
             {
                 LoadManagedCodePage();
             }

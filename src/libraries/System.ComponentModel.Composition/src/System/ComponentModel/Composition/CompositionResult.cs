@@ -25,7 +25,7 @@ namespace System.ComponentModel.Composition
 
         public bool Succeeded
         {
-            get { return _errors == null || !_errors.Any(); }
+            get { return _errors is null || !_errors.Any(); }
         }
 
         public IEnumerable<CompositionError> Errors
@@ -70,7 +70,7 @@ namespace System.ComponentModel.Composition
         {
             if (!Succeeded)
             {
-                if (atomicComposition == null)
+                if (atomicComposition is null)
                 {
                     throw new CompositionException(_errors);
                 }

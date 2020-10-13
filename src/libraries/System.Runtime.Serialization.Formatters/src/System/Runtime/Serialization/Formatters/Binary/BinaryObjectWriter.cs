@@ -49,11 +49,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal void Serialize(object graph, BinaryFormatterWriter serWriter)
         {
-            if (graph == null)
+            if (graph is null)
             {
                 throw new ArgumentNullException(nameof(graph));
             }
-            if (serWriter == null)
+            if (serWriter is null)
             {
                 throw new ArgumentNullException(nameof(serWriter));
             }
@@ -76,7 +76,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             WriteSerializedStreamHeader(_topId, headerId);
 
             _objectQueue.Enqueue(graph);
-            while ((obj = GetNext(out long objectId)) != null)
+            while ((obj = GetNext(out long objectId)) is not null)
             {
                 WriteObjectInfo? objectInfo = null;
 
@@ -112,7 +112,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private void Write(WriteObjectInfo objectInfo, NameInfo memberNameInfo, NameInfo typeNameInfo)
         {
             object? obj = objectInfo._obj;
-            if (obj == null)
+            if (obj is null)
             {
                 throw new ArgumentNullException(nameof(objectInfo) + "." + nameof(objectInfo._obj));
             }
@@ -121,7 +121,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (ReferenceEquals(objType, Converter.s_typeofString))
             {
-                Debug.Assert(_serWriter != null);
+                Debug.Assert(_serWriter is not null);
                 // Top level String
                 memberNameInfo._objectId = objectId;
                 _serWriter.WriteObjectString((int)objectId, obj.ToString());
@@ -146,7 +146,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         typeNameInfo._isParentTypeOnObject = true;
                     }
 
-                    Debug.Assert(memberNames != null && memberTypes != null && memberData != null);
+                    Debug.Assert(memberNames is not null && memberTypes is not null && memberData is not null);
                     var memberObjectInfos = new WriteObjectInfo[memberNames.Length];
 
                     // Get assembly information
@@ -158,16 +158,16 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     for (int i = 0; i < memberTypes.Length; i++)
                     {
                         Type type =
-                            memberTypes[i] != null ? memberTypes[i] :
-                            memberData[i] != null ? GetType(memberData[i]!) : // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                            memberTypes[i] is not null ? memberTypes[i] :
+                            memberData[i] is not null ? GetType(memberData[i]!) : // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                             Converter.s_typeofObject;
 
                         InternalPrimitiveTypeE code = ToCode(type);
                         if ((code == InternalPrimitiveTypeE.Invalid) &&
                             (!ReferenceEquals(type, Converter.s_typeofString)))
                         {
-                            Debug.Assert(_serObjectInfoInit != null && _formatterConverter != null);
-                            if (memberData[i] != null)
+                            Debug.Assert(_serObjectInfoInit is not null && _formatterConverter is not null);
+                            if (memberData[i] is not null)
                             {
                                 memberObjectInfos[i] = WriteObjectInfo.Serialize(
                                     memberData[i]!, // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
@@ -208,8 +208,8 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             int numItems = memberNames.Length;
 
-            Debug.Assert(_serWriter != null);
-            if (memberNameInfo != null)
+            Debug.Assert(_serWriter is not null);
+            if (memberNameInfo is not null)
             {
                 memberNameInfo._objectId = objectInfo._objectId;
                 _serWriter.WriteObject(memberNameInfo, typeNameInfo, numItems, memberNames, memberTypes, memberObjectInfos);
@@ -220,7 +220,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 _serWriter.WriteObject(typeNameInfo, null, numItems, memberNames, memberTypes, memberObjectInfos);
             }
 
-            Debug.Assert(memberNameInfo != null);
+            Debug.Assert(memberNameInfo is not null);
             if (memberNameInfo._isParentTypeOnObject)
             {
                 memberNameInfo._transmitTypeOnObject = true;
@@ -237,7 +237,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 WriteMemberSetup(objectInfo, memberNameInfo, typeNameInfo, memberNames[i], memberTypes[i], memberData[i], memberObjectInfos[i]);
             }
 
-            if (memberNameInfo != null)
+            if (memberNameInfo is not null)
             {
                 memberNameInfo._objectId = objectInfo._objectId;
                 _serWriter.WriteObjectEnd(memberNameInfo, typeNameInfo);
@@ -258,7 +258,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             NameInfo newMemberNameInfo = MemberToNameInfo(memberName); // newMemberNameInfo contains the member type
 
-            if (memberObjectInfo != null)
+            if (memberObjectInfo is not null)
             {
                 newMemberNameInfo._assemId = memberObjectInfo._assemId;
             }
@@ -266,7 +266,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             // newTypeNameInfo contains the data type
             NameInfo newTypeNameInfo;
-            if (memberObjectInfo == null)
+            if (memberObjectInfo is null)
             {
                 newTypeNameInfo = TypeToNameInfo(memberType);
             }
@@ -298,7 +298,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             // The member object of type is ISerializable and
             //  Binary - Types always transmitted.
 
-            if (ReferenceEquals(memberType, Converter.s_typeofObject) || Nullable.GetUnderlyingType(memberType!) != null)
+            if (ReferenceEquals(memberType, Converter.s_typeofObject) || Nullable.GetUnderlyingType(memberType!) is not null)
             {
                 memberTypeNameInfo._transmitTypeOnMember = true;
                 memberNameInfo._transmitTypeOnMember = true;
@@ -334,7 +334,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 assignUniqueIdToValueType = true;
                 memberType = GetType(memberData!);
-                if (memberObjectInfo == null)
+                if (memberObjectInfo is null)
                 {
                     TypeToNameInfo(memberType, memberTypeNameInfo);
                 }
@@ -344,7 +344,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
             }
 
-            if (memberObjectInfo != null && memberObjectInfo._isArray)
+            if (memberObjectInfo is not null && memberObjectInfo._isArray)
             {
                 // outObj is an array. It can never be a value type.
                 long arrayId = Schedule(outObj, false, null, memberObjectInfo);
@@ -356,7 +356,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
                 else
                 {
-                    Debug.Assert(_serWriter != null);
+                    Debug.Assert(_serWriter is not null);
                     // Nested Array
                     _serWriter.WriteMemberNested(memberNameInfo);
 
@@ -370,7 +370,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (!WriteKnownValueClass(memberNameInfo, memberTypeNameInfo, memberData!))
             {
-                if (outType == null)
+                if (outType is null)
                 {
                     outType = GetType(outObj);
                 }
@@ -378,7 +378,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 long memberObjectId = Schedule(outObj, assignUniqueIdToValueType, outType, memberObjectInfo);
                 if (memberObjectId < 0)
                 {
-                    Debug.Assert(memberObjectInfo != null);
+                    Debug.Assert(memberObjectInfo is not null);
                     // Nested object
                     memberObjectInfo._objectId = memberObjectId;
                     NameInfo newTypeNameInfo = TypeToNameInfo(memberObjectInfo);
@@ -400,7 +400,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private void WriteArray(WriteObjectInfo objectInfo, NameInfo? memberNameInfo, WriteObjectInfo? memberObjectInfo)
         {
             bool isAllocatedMemberNameInfo = false;
-            if (memberNameInfo == null)
+            if (memberNameInfo is null)
             {
                 memberNameInfo = TypeToNameInfo(objectInfo);
                 isAllocatedMemberNameInfo = true;
@@ -421,12 +421,12 @@ namespace System.Runtime.Serialization.Formatters.Binary
             WriteObjectInfo? arrayElemObjectInfo = null;
             if (!arrayElemType.IsPrimitive)
             {
-                Debug.Assert(_serObjectInfoInit != null && _formatterConverter != null);
+                Debug.Assert(_serObjectInfoInit is not null && _formatterConverter is not null);
                 arrayElemObjectInfo = WriteObjectInfo.Serialize(arrayElemType, _surrogates, _context, _serObjectInfoInit, _formatterConverter, _binder);
                 arrayElemObjectInfo._assemId = GetAssemblyId(arrayElemObjectInfo);
             }
 
-            NameInfo arrayElemTypeNameInfo = arrayElemObjectInfo == null ?
+            NameInfo arrayElemTypeNameInfo = arrayElemObjectInfo is null ?
                 TypeToNameInfo(arrayElemType) :
                 TypeToNameInfo(arrayElemObjectInfo);
             arrayElemTypeNameInfo._isArray = arrayElemTypeNameInfo._type!.IsArray;
@@ -466,7 +466,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
             arrayElemTypeNameInfo._arrayEnum = arrayEnum;
 
-            Debug.Assert(_serWriter != null);
+            Debug.Assert(_serWriter is not null);
             // Byte array
             if ((ReferenceEquals(arrayElemType, Converter.s_typeofByte)) && (rank == 1) && (lowerBoundA[0] == 0))
             {
@@ -474,7 +474,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 return;
             }
 
-            if (ReferenceEquals(arrayElemType, Converter.s_typeofObject) || Nullable.GetUnderlyingType(arrayElemType) != null)
+            if (ReferenceEquals(arrayElemType, Converter.s_typeofObject) || Nullable.GetUnderlyingType(arrayElemType) is not null)
             {
                 memberNameInfo._transmitTypeOnMember = true;
                 arrayElemTypeNameInfo._transmitTypeOnMember = true;
@@ -506,7 +506,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     int upperBound = upperBoundA[0] + 1;
                     for (int i = lowerBoundA[0]; i < upperBound; i++)
                     {
-                        if (objectA == null)
+                        if (objectA is null)
                         {
                             WriteArrayMember(objectInfo, arrayElemTypeNameInfo, array.GetValue(i));
                         }
@@ -599,7 +599,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             if (isObjectOnMember)
             {
                 // Object array, need type of member
-                if (dataType == null)
+                if (dataType is null)
                 {
                     dataType = GetType(data!);
                 }
@@ -629,10 +629,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 actualTypeInfo._objectId = arrayId;
                 if (arrayId < 1)
                 {
-                    Debug.Assert(_serObjectInfoInit != null && _formatterConverter != null);
+                    Debug.Assert(_serObjectInfoInit is not null && _formatterConverter is not null);
                     WriteObjectInfo newObjectInfo = WriteObjectInfo.Serialize(obj, _surrogates, _context, _serObjectInfoInit, _formatterConverter, this, _binder);
                     newObjectInfo._objectId = arrayId;
-                    newObjectInfo._assemId = !ReferenceEquals(arrayElemTypeNameInfo._type, Converter.s_typeofObject) && Nullable.GetUnderlyingType(arrayElemTypeNameInfo._type!) == null ?
+                    newObjectInfo._assemId = !ReferenceEquals(arrayElemTypeNameInfo._type, Converter.s_typeofObject) && Nullable.GetUnderlyingType(arrayElemTypeNameInfo._type!) is null ?
                         actualTypeInfo._assemId :
                         GetAssemblyId(newObjectInfo);
                     NameInfo typeNameInfo = TypeToNameInfo(newObjectInfo);
@@ -643,7 +643,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
                 else
                 {
-                    Debug.Assert(_serWriter != null);
+                    Debug.Assert(_serWriter is not null);
                     _serWriter.WriteItemObjectRef(arrayElemTypeNameInfo, (int)arrayId);
                 }
             }
@@ -659,7 +659,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             int[] currentA = new int[rank];
             int[]? indexMap = null;
             bool isLowerBound = false;
-            if (lowerBoundA != null)
+            if (lowerBoundA is not null)
             {
                 for (int i = 0; i < rank; i++)
                 {
@@ -733,7 +733,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             // A WriteObjectInfo is queued if this object was a member of another object
             object? realObj = obj is WriteObjectInfo ? ((WriteObjectInfo)obj)._obj : obj;
-            Debug.Assert(realObj != null);
+            Debug.Assert(realObj is not null);
             objID = _idGenerator!.HasId(realObj, out isNew);
             if (isNew)
             {
@@ -754,9 +754,9 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 isNew = false;
                 return _previousId;
             }
-            Debug.Assert(_idGenerator != null);
+            Debug.Assert(_idGenerator is not null);
             _idGenerator._currentCount = _currentId;
-            if (type != null && type.IsValueType)
+            if (type is not null && type.IsValueType)
             {
                 if (!assignUniqueIdToValueType)
                 {
@@ -783,13 +783,13 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private long Schedule(object obj, bool assignUniqueIdToValueType, Type? type, WriteObjectInfo? objectInfo)
         {
             long id = 0;
-            if (obj != null)
+            if (obj is not null)
             {
                 bool isNew;
                 id = InternalGetId(obj, assignUniqueIdToValueType, type, out isNew);
                 if (isNew && id > 0)
                 {
-                    Debug.Assert(_objectQueue != null);
+                    Debug.Assert(_objectQueue is not null);
                     _objectQueue.Enqueue(objectInfo ?? obj);
                 }
             }
@@ -811,7 +811,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 }
                 else
                 {
-                    Debug.Assert(_serWriter != null);
+                    Debug.Assert(_serWriter is not null);
                     if (typeNameInfo._isArray) // null if an array
                     {
                         _serWriter.WriteItem(memberNameInfo, typeNameInfo, data);
@@ -846,7 +846,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if ((isFirstTime) || (stringId < 0))
             {
-                Debug.Assert(_serWriter != null);
+                Debug.Assert(_serWriter is not null);
                 _serWriter.WriteMemberString(memberNameInfo, typeNameInfo, (string)stringObject);
             }
             else
@@ -858,7 +858,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Writes a null member into the stream
         private bool CheckForNull(WriteObjectInfo objectInfo, NameInfo memberNameInfo, NameInfo typeNameInfo, object? data)
         {
-            bool isNull = data == null;
+            bool isNull = data is null;
 
             // Optimization, Null members are only written for Binary
             if ((isNull) && (((_formatterEnums._serializerTypeEnum == InternalSerializerTypeE.Binary)) ||
@@ -868,7 +868,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                              objectInfo._isSi ||
                              (CheckTypeFormat(_formatterEnums._typeFormat, FormatterTypeStyle.TypesAlways))))
             {
-                Debug.Assert(_serWriter != null);
+                Debug.Assert(_serWriter is not null);
                 if (typeNameInfo._isArrayItem)
                 {
                     if (typeNameInfo._arrayEnum == InternalArrayTypeE.Single)
@@ -897,7 +897,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Transforms a type to the serialized string form. URT Primitive types are converted to XMLData Types
         private NameInfo TypeToNameInfo(Type? type, WriteObjectInfo? objectInfo, InternalPrimitiveTypeE code, NameInfo? nameInfo)
         {
-            if (nameInfo == null)
+            if (nameInfo is null)
             {
                 nameInfo = GetNameInfo();
             }
@@ -908,7 +908,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
             if (code == InternalPrimitiveTypeE.Invalid)
             {
-                if (objectInfo != null)
+                if (objectInfo is not null)
                 {
                     nameInfo.NIname = objectInfo.GetTypeFullName();
                     nameInfo._assemId = objectInfo._assemId;
@@ -961,7 +961,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private long GetAssemblyId(WriteObjectInfo objectInfo)
         {
             //use objectInfo to get assembly string with new criteria
-            if (_assemblyToIdTable == null)
+            if (_assemblyToIdTable is null)
             {
                 _assemblyToIdTable = new Dictionary<string, long>();
             }
@@ -997,7 +997,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     _assemblyToIdTable[assemblyString] = assemId;
                 }
 
-                Debug.Assert(_serWriter != null);
+                Debug.Assert(_serWriter is not null);
                 _serWriter.WriteAssembly(objectInfo._objectType, serializedAssemblyString, (int)assemId, isNew);
             }
             return assemId;

@@ -34,7 +34,7 @@ namespace Microsoft.Extensions.Http.Logging
         {
             get
             {
-                if (_values == null)
+                if (_values is null)
                 {
                     var values = new List<KeyValuePair<string, object>>();
 
@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Http.Logging
                         values.Add(new KeyValuePair<string, object>(kvp.Key, kvp.Value));
                     }
 
-                    if (ContentHeaders != null)
+                    if (ContentHeaders is not null)
                     {
                         foreach (KeyValuePair<string, IEnumerable<string>> kvp in ContentHeaders)
                         {
@@ -85,7 +85,7 @@ namespace Microsoft.Extensions.Http.Logging
 
         public override string ToString()
         {
-            if (_formatted == null)
+            if (_formatted is null)
             {
                 var builder = new StringBuilder();
                 builder.AppendLine(_kind == Kind.Request ? "Request Headers:" : "Response Headers:");

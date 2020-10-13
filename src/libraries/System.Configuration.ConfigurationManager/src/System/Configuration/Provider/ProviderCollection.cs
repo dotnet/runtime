@@ -38,10 +38,10 @@ namespace System.Configuration.Provider
             if (_readOnly)
                 throw new NotSupportedException(SR.CollectionReadOnly);
 
-            if (provider == null)
+            if (provider is null)
                 throw new ArgumentNullException(nameof(provider));
 
-            if ((provider.Name == null) || (provider.Name.Length < 1))
+            if ((provider.Name is null) || (provider.Name.Length < 1))
                 throw new ArgumentException(SR.Config_provider_name_null_or_empty);
 
             _hashtable.Add(provider.Name, provider);

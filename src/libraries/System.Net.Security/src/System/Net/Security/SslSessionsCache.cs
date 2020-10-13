@@ -142,9 +142,9 @@ namespace System.Net.Security
         //
         internal static void CacheCredential(SafeFreeCredentials creds, byte[]? thumbPrint, SslProtocols sslProtocols, bool isServer, EncryptionPolicy encryptionPolicy)
         {
-            if (creds == null)
+            if (creds is null)
             {
-                NetEventSource.Fail(null, "creds == null");
+                NetEventSource.Fail(null, "creds is null");
             }
 
             if (creds!.IsInvalid)
@@ -165,7 +165,7 @@ namespace System.Net.Security
                     {
                         cached = SafeCredentialReference.CreateReference(creds);
 
-                        if (cached == null)
+                        if (cached is null)
                         {
                             // Means the handle got closed in between, return it back and let caller deal with the issue.
                             return;
@@ -192,12 +192,12 @@ namespace System.Net.Security
                             {
                                 cached = toRemoveAttempt[i].Value;
 
-                                if (cached != null)
+                                if (cached is not null)
                                 {
                                     creds = cached.Target;
                                     cached.Dispose();
 
-                                    if (!creds.IsClosed && !creds.IsInvalid && (cached = SafeCredentialReference.CreateReference(creds)) != null)
+                                    if (!creds.IsClosed && !creds.IsInvalid && (cached = SafeCredentialReference.CreateReference(creds)) is not null)
                                     {
                                         s_cachedCreds[toRemoveAttempt[i].Key] = cached;
                                     }

@@ -51,9 +51,9 @@ namespace System.Security.Cryptography.Xml
                 encryptionMethod = encryptedGrantList[i].SelectSingleNode("//r:encryptedGrant/enc:EncryptionMethod", _namespaceManager) as XmlElement;
                 keyInfo = encryptedGrantList[i].SelectSingleNode("//r:encryptedGrant/dsig:KeyInfo", _namespaceManager) as XmlElement;
                 cipherData = encryptedGrantList[i].SelectSingleNode("//r:encryptedGrant/enc:CipherData", _namespaceManager) as XmlElement;
-                if ((encryptionMethod != null) &&
-                    (keyInfo != null) &&
-                    (cipherData != null))
+                if ((encryptionMethod is not null) &&
+                    (keyInfo is not null) &&
+                    (cipherData is not null))
                 {
                     encryptionMethodObj = new EncryptionMethod();
                     keyInfoObj = new KeyInfo();
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Xml
                         decryptedContent = _relDecryptor.Decrypt(encryptionMethodObj,
                                                                 keyInfoObj, toDecrypt);
 
-                        if ((decryptedContent == null) || (decryptedContent.Length == 0))
+                        if ((decryptedContent is null) || (decryptedContent.Length == 0))
                             throw new CryptographicException(SR.Cryptography_Xml_XrmlUnableToDecryptGrant);
 
                         streamReader = new StreamReader(decryptedContent);
@@ -83,13 +83,13 @@ namespace System.Security.Cryptography.Xml
                     }
                     finally
                     {
-                        if (toDecrypt != null)
+                        if (toDecrypt is not null)
                             toDecrypt.Close();
 
-                        if (decryptedContent != null)
+                        if (decryptedContent is not null)
                             decryptedContent.Close();
 
-                        if (streamReader != null)
+                        if (streamReader is not null)
                             streamReader.Close();
                     }
 
@@ -126,14 +126,14 @@ namespace System.Security.Cryptography.Xml
         // License transform has no inner XML elements
         public override void LoadInnerXml(XmlNodeList nodeList)
         {
-            if (nodeList != null && nodeList.Count > 0)
+            if (nodeList is not null && nodeList.Count > 0)
                 throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
         }
 
         public override void LoadInput(object obj)
         {
             // Check if the Context property is set before this transform is invoked.
-            if (Context == null)
+            if (Context is null)
                 throw new CryptographicException(SR.Cryptography_Xml_XrmlMissingContext);
 
             _license = new XmlDocument();
@@ -149,16 +149,16 @@ namespace System.Security.Cryptography.Xml
 
             // Get the nearest issuer node
             currentIssuerContext = Context.SelectSingleNode("ancestor-or-self::r:issuer[1]", _namespaceManager) as XmlElement;
-            if (currentIssuerContext == null)
+            if (currentIssuerContext is null)
                 throw new CryptographicException(SR.Cryptography_Xml_XrmlMissingIssuer);
 
             signatureNode = currentIssuerContext.SelectSingleNode("descendant-or-self::dsig:Signature[1]", _namespaceManager) as XmlElement;
-            if (signatureNode != null)
+            if (signatureNode is not null)
                 signatureNode.ParentNode.RemoveChild(signatureNode);
 
             // Get the nearest license node
             currentLicenseContext = currentIssuerContext.SelectSingleNode("ancestor-or-self::r:license[1]", _namespaceManager) as XmlElement;
-            if (currentLicenseContext == null)
+            if (currentLicenseContext is null)
                 throw new CryptographicException(SR.Cryptography_Xml_XrmlMissingLicence);
 
             XmlNodeList issuerList = currentLicenseContext.SelectNodes("descendant-or-self::r:license[1]/r:issuer", _namespaceManager);
@@ -178,7 +178,7 @@ namespace System.Security.Cryptography.Xml
 
             if (encryptedGrantList.Count > 0)
             {
-                if (_relDecryptor == null)
+                if (_relDecryptor is null)
                     throw new CryptographicException(SR.Cryptography_Xml_XrmlMissingIRelDecryptor);
 
                 DecryptEncryptedGrants(encryptedGrantList, _relDecryptor);

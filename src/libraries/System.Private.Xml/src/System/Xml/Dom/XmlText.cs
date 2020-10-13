@@ -73,7 +73,7 @@ namespace System.Xml
         // Creates a duplicate of this node.
         public override XmlNode CloneNode(bool deep)
         {
-            Debug.Assert(OwnerDocument != null);
+            Debug.Assert(OwnerDocument is not null);
             return OwnerDocument.CreateTextNode(Data);
         }
 
@@ -88,10 +88,10 @@ namespace System.Xml
             {
                 Data = value;
                 XmlNode? parent = parentNode;
-                if (parent != null && parent.NodeType == XmlNodeType.Attribute)
+                if (parent is not null && parent.NodeType == XmlNodeType.Attribute)
                 {
                     XmlUnspecifiedAttribute? attr = parent as XmlUnspecifiedAttribute;
-                    if (attr != null && !attr.Specified)
+                    if (attr is not null && !attr.Specified)
                     {
                         attr.SetSpecified(true);
                     }
@@ -108,7 +108,7 @@ namespace System.Xml
             if (offset > length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             //if the text node is out of the living tree, throw exception.
-            if (parentNode == null)
+            if (parentNode is null)
                 throw new InvalidOperationException(SR.Xdom_TextNode_SplitText);
 
             int count = length - offset;
@@ -151,7 +151,7 @@ namespace System.Xml
         {
             get
             {
-                if (parentNode != null && parentNode.IsText)
+                if (parentNode is not null && parentNode.IsText)
                 {
                     return parentNode;
                 }

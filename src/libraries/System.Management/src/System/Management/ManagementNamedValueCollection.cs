@@ -21,7 +21,7 @@ namespace System.Management
         //Fires IdentifierChanged event
         private void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
+            if (IdentifierChanged is not null)
                 IdentifierChanged(this, null);
         }
 

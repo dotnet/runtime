@@ -49,7 +49,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_attributeUses == null)
+                if (_attributeUses is null)
                 {
                     _attributeUses = new XmlSchemaObjectTable();
                 }

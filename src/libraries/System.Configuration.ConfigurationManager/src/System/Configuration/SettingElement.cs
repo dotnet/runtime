@@ -45,7 +45,7 @@ namespace System.Configuration
         public override bool Equals(object settings)
         {
             SettingElement element = settings as SettingElement;
-            return (element != null && base.Equals(settings) && Equals(element.Value, Value));
+            return (element is not null && base.Equals(settings) && Equals(element.Value, Value));
         }
 
         public override int GetHashCode()

@@ -128,7 +128,7 @@ namespace System
         {
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     value = string.Empty;
                 }
@@ -173,7 +173,7 @@ namespace System
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     value = string.Empty;
                 }
@@ -195,7 +195,7 @@ namespace System
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     value = string.Empty;
                 }
@@ -220,7 +220,7 @@ namespace System
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     value = string.Empty;
                 }
@@ -271,7 +271,7 @@ namespace System
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     value = string.Empty;
                 }
@@ -293,7 +293,7 @@ namespace System
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     value = string.Empty;
                 }
@@ -340,7 +340,7 @@ namespace System
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     value = string.Empty;
                 }
@@ -353,7 +353,7 @@ namespace System
 
         public override bool Equals(object? rparam)
         {
-            if (rparam == null)
+            if (rparam is null)
             {
                 return false;
             }
@@ -403,7 +403,7 @@ namespace System
             if (_scheme.Length != 0)
             {
                 UriParser? syntax = UriParser.GetSyntax(_scheme);
-                if (syntax != null)
+                if (syntax is not null)
                     _schemeDelimiter = syntax.InFact(UriSyntaxFlags.MustHaveAuthority) ||
                                         (_host.Length != 0 && syntax.NotAny(UriSyntaxFlags.MailToLikeUri) && syntax.InFact(UriSyntaxFlags.OptionalAuthority))
                             ? Uri.SchemeDelimiter

@@ -21,7 +21,7 @@ namespace Internal.Runtime.InteropServices
         {
 #if TARGET_WINDOWS
             string? assemblyPathString = Marshal.PtrToStringUni(assemblyPath);
-            if (assemblyPathString == null)
+            if (assemblyPathString is null)
             {
                 throw new ArgumentOutOfRangeException(nameof(assemblyPath));
             }

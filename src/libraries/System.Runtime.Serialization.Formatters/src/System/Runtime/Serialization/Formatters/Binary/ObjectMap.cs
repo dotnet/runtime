@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             _objectId = objectId;
             _assemblyInfo = assemblyInfo;
 
-            if (assemblyInfo == null)
+            if (assemblyInfo is null)
             {
                 throw new SerializationException(SR.Format(SR.Serialization_Assembly, objectName));
             }

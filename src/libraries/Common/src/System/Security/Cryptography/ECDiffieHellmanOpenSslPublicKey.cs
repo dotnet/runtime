@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
 
             internal ECDiffieHellmanOpenSslPublicKey(SafeEvpPKeyHandle pkeyHandle)
             {
-                if (pkeyHandle == null)
+                if (pkeyHandle is null)
                     throw new ArgumentNullException(nameof(pkeyHandle));
                 if (pkeyHandle.IsInvalid)
                     throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
@@ -101,7 +101,7 @@ namespace System.Security.Cryptography
 
             private void ThrowIfDisposed()
             {
-                if (_key == null)
+                if (_key is null)
                 {
                     throw new ObjectDisposedException(
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS

@@ -79,7 +79,7 @@ namespace System.Data
                 {
                     return Row[column, RowVersionDefault];
                 }
-                else if (_dataView.Table.DataSet != null && _dataView.Table.DataSet.Relations.Contains(property))
+                else if (_dataView.Table.DataSet is not null && _dataView.Table.DataSet.Relations.Contains(property))
                 {
                     return CreateChildView(property);
                 }
@@ -148,7 +148,7 @@ namespace System.Data
         /// <exception cref="ArgumentException">null or mismatch between <paramref name="relation"/> and <see cref="System.Data.DataView.get_Table"/>.</exception>
         public DataView CreateChildView(DataRelation relation, bool followParent)
         {
-            if (relation == null || relation.ParentKey.Table != DataView.Table)
+            if (relation is null || relation.ParentKey.Table != DataView.Table)
             {
                 throw ExceptionBuilder.CreateChildView();
             }
@@ -244,7 +244,7 @@ namespace System.Data
         EventDescriptorCollection ICustomTypeDescriptor.GetEvents(Attribute[] attributes) => new EventDescriptorCollection(null);
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties() => ((ICustomTypeDescriptor)this).GetProperties(null);
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes) =>
-            (_dataView.Table != null ? _dataView.Table.GetPropertyDescriptorCollection(attributes) : s_zeroPropertyDescriptorCollection);
+            (_dataView.Table is not null ? _dataView.Table.GetPropertyDescriptorCollection(attributes) : s_zeroPropertyDescriptorCollection);
         object ICustomTypeDescriptor.GetPropertyOwner(PropertyDescriptor pd) => this;
 #nullable enable
         #endregion

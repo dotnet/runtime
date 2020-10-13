@@ -42,7 +42,7 @@ namespace System.Composition.Hosting.Core
 
         public ExportDescriptorPromise[] GetResults()
         {
-            if (_results == null)
+            if (_results is null)
             {
                 if (_remainingProviders.Count != 0)
                 {

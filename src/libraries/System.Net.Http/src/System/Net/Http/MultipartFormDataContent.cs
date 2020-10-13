@@ -25,12 +25,12 @@ namespace System.Net.Http
 
         public override void Add(HttpContent content)
         {
-            if (content == null)
+            if (content is null)
             {
                 throw new ArgumentNullException(nameof(content));
             }
 
-            if (content.Headers.ContentDisposition == null)
+            if (content.Headers.ContentDisposition is null)
             {
                 content.Headers.ContentDisposition = new ContentDispositionHeaderValue(formData);
             }
@@ -40,7 +40,7 @@ namespace System.Net.Http
 
         public void Add(HttpContent content, string name)
         {
-            if (content == null)
+            if (content is null)
             {
                 throw new ArgumentNullException(nameof(content));
             }
@@ -54,7 +54,7 @@ namespace System.Net.Http
 
         public void Add(HttpContent content, string name, string fileName)
         {
-            if (content == null)
+            if (content is null)
             {
                 throw new ArgumentNullException(nameof(content));
             }
@@ -72,7 +72,7 @@ namespace System.Net.Http
 
         private void AddInternal(HttpContent content, string name, string? fileName)
         {
-            if (content.Headers.ContentDisposition == null)
+            if (content.Headers.ContentDisposition is null)
             {
                 ContentDispositionHeaderValue header = new ContentDispositionHeaderValue(formData);
                 header.Name = name;

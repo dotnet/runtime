@@ -10,21 +10,21 @@ namespace System.Configuration
 
         public CallbackValidator(Type type, ValidatorCallback callback) : this(callback)
         {
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (type is null) throw new ArgumentNullException(nameof(type));
             _type = type;
         }
 
         // Do not check for null type here to handle the callback attribute case
         internal CallbackValidator(ValidatorCallback callback)
         {
-            if (callback == null) throw new ArgumentNullException(nameof(callback));
+            if (callback is null) throw new ArgumentNullException(nameof(callback));
             _type = null;
             _callback = callback;
         }
 
         public override bool CanValidate(Type type)
         {
-            return (type == _type) || (_type == null);
+            return (type == _type) || (_type is null);
         }
 
         public override void Validate(object value)

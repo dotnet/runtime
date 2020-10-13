@@ -27,7 +27,7 @@ namespace System.Runtime.Serialization.Json
                 enumValue = Enum.ToObject(TraditionalDataContract.UnderlyingType, jsonReader.ReadElementContentAsLong());
             }
 
-            if (context != null)
+            if (context is not null)
             {
                 context.AddNewObject(enumValue);
             }

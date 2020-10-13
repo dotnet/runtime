@@ -12,7 +12,7 @@ namespace System.Configuration
         private ConfigurationSectionCollection _configSections;
         private string _typeName;
 
-        internal bool Attached => _configRecord != null;
+        internal bool Attached => _configRecord is not null;
 
         public bool IsDeclared { get; private set; }
 
@@ -37,7 +37,7 @@ namespace System.Configuration
                 string typeName = value;
                 if (string.IsNullOrEmpty(typeName)) typeName = null;
 
-                if (_configRecord != null)
+                if (_configRecord is not null)
                 {
                     if (_configRecord.IsLocationConfig)
                     {
@@ -47,10 +47,10 @@ namespace System.Configuration
 
                     // allow type to be different from current type,
                     // so long as it doesn't conflict with a type already defined
-                    if (typeName != null)
+                    if (typeName is not null)
                     {
                         FactoryRecord factoryRecord = FindParentFactoryRecord(false);
-                        if ((factoryRecord != null) && !factoryRecord.IsEquivalentType(_configRecord.Host, typeName))
+                        if ((factoryRecord is not null) && !factoryRecord.IsEquivalentType(_configRecord.Host, typeName))
                         {
                             throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined,
                                 SectionGroupName));
@@ -66,7 +66,7 @@ namespace System.Configuration
         {
             get
             {
-                if (_configSections == null)
+                if (_configSections is null)
                 {
                     VerifyIsAttachedToConfigRecord();
                     _configSections = new ConfigurationSectionCollection(_configRecord, this);
@@ -80,7 +80,7 @@ namespace System.Configuration
         {
             get
             {
-                if (_configSectionGroups == null)
+                if (_configSectionGroups is null)
                 {
                     VerifyIsAttachedToConfigRecord();
                     _configSectionGroups = new ConfigurationSectionGroupCollection(_configRecord, this);
@@ -99,14 +99,14 @@ namespace System.Configuration
             Name = factoryRecord.Name;
             _typeName = factoryRecord.FactoryTypeName;
 
-            if (_typeName != null)
+            if (_typeName is not null)
             {
                 FactoryRecord parentFactoryRecord = null;
                 if (!configRecord.Parent.IsRootConfig)
                     parentFactoryRecord = configRecord.Parent.FindFactoryRecord(factoryRecord.ConfigKey, true);
 
-                IsDeclarationRequired = parentFactoryRecord?.FactoryTypeName == null;
-                IsDeclared = configRecord.GetFactoryRecord(factoryRecord.ConfigKey, true) != null;
+                IsDeclarationRequired = parentFactoryRecord?.FactoryTypeName is null;
+                IsDeclared = configRecord.GetFactoryRecord(factoryRecord.ConfigKey, true) is not null;
             }
         }
 
@@ -128,7 +128,7 @@ namespace System.Configuration
         {
             FactoryRecord factoryRecord = null;
 
-            if ((_configRecord != null) && !_configRecord.Parent.IsRootConfig)
+            if ((_configRecord is not null) && !_configRecord.Parent.IsRootConfig)
                 factoryRecord = _configRecord.Parent.FindFactoryRecord(SectionGroupName, permitErrors);
 
             return factoryRecord;
@@ -136,7 +136,7 @@ namespace System.Configuration
 
         private void VerifyIsAttachedToConfigRecord()
         {
-            if (_configRecord == null)
+            if (_configRecord is null)
                 throw new InvalidOperationException(SR.Config_cannot_edit_configurationsectiongroup_when_not_attached);
         }
 
@@ -152,7 +152,7 @@ namespace System.Configuration
             if (IsRoot)
                 throw new InvalidOperationException(SR.Config_root_section_group_cannot_be_edited);
 
-            if ((_configRecord != null) && _configRecord.IsLocationConfig)
+            if ((_configRecord is not null) && _configRecord.IsLocationConfig)
                 throw new InvalidOperationException(SR.Config_cannot_edit_configurationsectiongroup_in_location_config);
 
             if (!force && IsDeclarationRequired)

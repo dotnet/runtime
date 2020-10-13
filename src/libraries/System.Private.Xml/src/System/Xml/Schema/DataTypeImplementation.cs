@@ -168,7 +168,7 @@ namespace System.Xml.Schema
         internal static XmlSchemaSimpleType StartBuiltinType(XmlQualifiedName qname, XmlSchemaDatatype dataType)
         {
             XmlSchemaSimpleType simpleType;
-            Debug.Assert(qname != null && dataType != null);
+            Debug.Assert(qname is not null && dataType is not null);
 
             simpleType = new XmlSchemaSimpleType();
             simpleType.SetQualifiedName(qname);
@@ -184,7 +184,7 @@ namespace System.Xml.Schema
         /// </summary>
         internal static void FinishBuiltinType(XmlSchemaSimpleType derivedType, XmlSchemaSimpleType baseType)
         {
-            Debug.Assert(derivedType != null && baseType != null);
+            Debug.Assert(derivedType is not null && baseType is not null);
 
             // Create link from the derived type to the base type
             derivedType.SetBaseSchemaType(baseType);
@@ -321,7 +321,7 @@ namespace System.Xml.Schema
 
         internal static XmlSchemaSimpleType GetNormalizedStringTypeV1Compat()
         {
-            if (s_normalizedStringTypeV1Compat == null)
+            if (s_normalizedStringTypeV1Compat is null)
             {
                 XmlSchemaSimpleType correctType = GetSimpleTypeFromTypeCode(XmlTypeCode.NormalizedString);
                 XmlSchemaSimpleType tempNormalizedStringTypeV1Compat = (correctType.Clone() as XmlSchemaSimpleType)!;
@@ -336,7 +336,7 @@ namespace System.Xml.Schema
 
         internal static XmlSchemaSimpleType GetTokenTypeV1Compat()
         {
-            if (s_tokenTypeV1Compat == null)
+            if (s_tokenTypeV1Compat is null)
             {
                 XmlSchemaSimpleType correctType = GetSimpleTypeFromTypeCode(XmlTypeCode.Token);
                 XmlSchemaSimpleType tempTokenTypeV1Compat = (correctType.Clone() as XmlSchemaSimpleType)!;
@@ -359,7 +359,7 @@ namespace System.Xml.Schema
             while (currentType.BaseXmlSchemaType != DatatypeImplementation.AnySimpleType)
             {
                 currentType = (currentType.BaseXmlSchemaType as XmlSchemaSimpleType)!;
-                Debug.Assert(currentType != null);
+                Debug.Assert(currentType is not null);
             }
             return currentType.TypeCode;
         }
@@ -411,13 +411,13 @@ namespace System.Xml.Schema
 
         public override bool IsDerivedFrom(XmlSchemaDatatype datatype)
         {
-            if (datatype == null)
+            if (datatype is null)
             {
                 return false;
             }
 
             //Common case - Derived by restriction
-            for (DatatypeImplementation? dt = this; dt != null; dt = dt._baseType)
+            for (DatatypeImplementation? dt = this; dt is not null; dt = dt._baseType)
             {
                 if (dt == datatype)
                 {
@@ -425,7 +425,7 @@ namespace System.Xml.Schema
                 }
             }
 
-            if (((DatatypeImplementation)datatype)._baseType == null)
+            if (((DatatypeImplementation)datatype)._baseType is null)
             { //Both are built-in types
                 Type derivedType = this.GetType();
                 Type baseType = datatype.GetType();
@@ -435,7 +435,7 @@ namespace System.Xml.Schema
             { //base type is union (not a restriction of union) and derived type is not union
                 return ((Datatype_union)datatype).IsUnionBaseOf(this);
             }
-            else if ((_variety == XmlSchemaDatatypeVariety.Union || _variety == XmlSchemaDatatypeVariety.List) && _restriction == null)
+            else if ((_variety == XmlSchemaDatatypeVariety.Union || _variety == XmlSchemaDatatypeVariety.List) && _restriction is null)
             { //derived type is union (not a restriction)
                 return (datatype == s__anySimpleType.Datatype);
             }
@@ -475,7 +475,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_valueConverter == null)
+                if (_valueConverter is null)
                 {
                     _valueConverter = CreateValueConverter(_parentSchemaType!);
                 }
@@ -507,7 +507,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                RestrictionFlags flags = _restriction != null ? _restriction.Flags : 0;
+                RestrictionFlags flags = _restriction is not null ? _restriction.Flags : 0;
                 if (flags != 0 && (flags & (RestrictionFlags.Pattern | RestrictionFlags.WhiteSpace | RestrictionFlags.TotalDigits | RestrictionFlags.FractionDigits)) != 0)
                 {
                     return true;
@@ -519,7 +519,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                RestrictionFlags flags = _restriction != null ? _restriction.Flags : 0;
+                RestrictionFlags flags = _restriction is not null ? _restriction.Flags : 0;
                 if (flags != 0 && (flags & (RestrictionFlags.Length | RestrictionFlags.MinLength | RestrictionFlags.MaxLength | RestrictionFlags.MaxExclusive | RestrictionFlags.MaxInclusive | RestrictionFlags.MinExclusive | RestrictionFlags.MinInclusive | RestrictionFlags.TotalDigits | RestrictionFlags.FractionDigits | RestrictionFlags.Enumeration)) != 0)
                 {
                     return true;
@@ -540,12 +540,12 @@ namespace System.Xml.Schema
         {
             object? typedValue;
             Exception? exception = TryParseValue(s, nameTable, nsmgr, out typedValue);
-            if (exception != null)
+            if (exception is not null)
             {
                 throw new XmlSchemaException(SR.Sch_InvalidValueDetailed, new string[] { s, GetTypeName(), exception.Message }, exception, null, 0, 0, null);
             }
 
-            Debug.Assert(typedValue != null);
+            Debug.Assert(typedValue is not null);
 
             if (this.Variety == XmlSchemaDatatypeVariety.Union)
             {
@@ -561,12 +561,12 @@ namespace System.Xml.Schema
             {
                 object? typedValue;
                 Exception? exception = TryParseValue(s, nameTable, nsmgr, out typedValue);
-                if (exception != null)
+                if (exception is not null)
                 {
                     throw new XmlSchemaException(SR.Sch_InvalidValueDetailed, new string[] { s, GetTypeName(), exception.Message }, exception, null, 0, 0, null);
                 }
 
-                Debug.Assert(typedValue != null);
+                Debug.Assert(typedValue is not null);
                 return typedValue;
             }
             else
@@ -580,13 +580,13 @@ namespace System.Xml.Schema
             Exception? exception = null;
             typedValue = null;
 
-            if (value == null)
+            if (value is null)
             {
                 return new ArgumentNullException(nameof(value));
             }
 
             string? s = value as string;
-            if (s != null)
+            if (s is not null)
             {
                 return TryParseValue(s, nameTable, namespaceResolver, out typedValue);
             }
@@ -601,12 +601,12 @@ namespace System.Xml.Schema
                 {
                     string s1 = (string)this.ValueConverter.ChangeType(value, typeof(string), namespaceResolver); //Using value here to avoid info loss
                     exception = this.FacetsChecker.CheckLexicalFacets(ref s1, this);
-                    if (exception != null) goto Error;
+                    if (exception is not null) goto Error;
                 }
                 if (this.HasValueFacets)
                 {
                     exception = this.FacetsChecker.CheckValueFacets(valueToCheck, this);
-                    if (exception != null) goto Error;
+                    if (exception is not null) goto Error;
                 }
                 typedValue = valueToCheck;
                 return null;
@@ -636,7 +636,7 @@ namespace System.Xml.Schema
         {
             XmlSchemaType? simpleType = _parentSchemaType;
             string typeName;
-            if (simpleType == null || simpleType.QualifiedName.IsEmpty)
+            if (simpleType is null || simpleType.QualifiedName.IsEmpty)
             { //If no QName, get typecode, no line info since it is not pertinent without file name
                 typeName = TypeCodeString;
             }
@@ -931,37 +931,37 @@ namespace System.Xml.Schema
             XmlSchemaComplexType? complexType;
             complexType = schemaType as XmlSchemaComplexType;
 
-            if (complexType != null)
+            if (complexType is not null)
             {
                 do
                 {
                     simpleType = complexType.BaseXmlSchemaType as XmlSchemaSimpleType;
-                    if (simpleType != null)
+                    if (simpleType is not null)
                     {
                         break;
                     }
                     complexType = complexType.BaseXmlSchemaType as XmlSchemaComplexType;
-                } while (complexType != null && complexType != XmlSchemaComplexType.AnyType);
+                } while (complexType is not null && complexType != XmlSchemaComplexType.AnyType);
             }
             else
             {
                 simpleType = schemaType as XmlSchemaSimpleType;
             }
-            if (simpleType != null)
+            if (simpleType is not null)
             {
                 do
                 {
                     XmlSchemaSimpleTypeList? listType = simpleType.Content as XmlSchemaSimpleTypeList;
-                    if (listType != null)
+                    if (listType is not null)
                     {
                         listItemType = listType.BaseItemType;
                         break;
                     }
                     simpleType = simpleType.BaseXmlSchemaType as XmlSchemaSimpleType;
-                } while (simpleType != null && simpleType != DatatypeImplementation.AnySimpleType);
+                } while (simpleType is not null && simpleType != DatatypeImplementation.AnySimpleType);
             }
 
-            if (listItemType == null)
+            if (listItemType is null)
             { //Get built-in simple type for the typecode
                 listItemType = DatatypeImplementation.GetSimpleTypeFromTypeCode(schemaType!.Datatype!.TypeCode);
             }
@@ -979,7 +979,7 @@ namespace System.Xml.Schema
             System.Array arr1 = (System.Array)value1;
             System.Array arr2 = (System.Array)value2;
 
-            Debug.Assert(arr1 != null && arr2 != null);
+            Debug.Assert(arr1 is not null && arr2 is not null);
             int length = arr1.Length;
             if (length != arr2.Length)
             {
@@ -987,10 +987,10 @@ namespace System.Xml.Schema
             }
 
             XmlAtomicValue[]? atomicValues1 = arr1 as XmlAtomicValue[];
-            if (atomicValues1 != null)
+            if (atomicValues1 is not null)
             {
                 XmlAtomicValue[]? atomicValues2 = arr2 as XmlAtomicValue[];
-                Debug.Assert(atomicValues2 != null);
+                Debug.Assert(atomicValues2 is not null);
                 XmlSchemaType xmlType1;
                 for (int i = 0; i < atomicValues1.Length; i++)
                 {
@@ -1043,14 +1043,14 @@ namespace System.Xml.Schema
         internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
         {
             Exception? exception;
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
 
             string? s = value as string;
             typedValue = null;
-            if (s != null)
+            if (s is not null)
             {
                 return TryParseValue(s, nameTable, namespaceResolver, out typedValue);
             }
@@ -1059,7 +1059,7 @@ namespace System.Xml.Schema
             {
                 object valueToCheck = this.ValueConverter.ChangeType(value, this.ValueType, namespaceResolver);
                 Array valuesToCheck = (valueToCheck as Array)!;
-                Debug.Assert(valuesToCheck != null);
+                Debug.Assert(valuesToCheck is not null);
 
                 bool checkItemLexical = _itemType.HasLexicalFacets;
                 bool checkItemValue = _itemType.HasValueFacets;
@@ -1074,12 +1074,12 @@ namespace System.Xml.Schema
                     {
                         string s1 = (string)itemValueConverter.ChangeType(item, typeof(string), namespaceResolver);
                         exception = itemFacetsChecker.CheckLexicalFacets(ref s1, _itemType);
-                        if (exception != null) goto Error;
+                        if (exception is not null) goto Error;
                     }
                     if (checkItemValue)
                     {
                         exception = itemFacetsChecker.CheckValueFacets(item, _itemType);
-                        if (exception != null) goto Error;
+                        if (exception is not null) goto Error;
                     }
                 }
 
@@ -1088,12 +1088,12 @@ namespace System.Xml.Schema
                 {
                     string s1 = (string)this.ValueConverter.ChangeType(valueToCheck, typeof(string), namespaceResolver);
                     exception = listFacetsChecker.CheckLexicalFacets(ref s1, this);
-                    if (exception != null) goto Error;
+                    if (exception is not null) goto Error;
                 }
                 if (this.HasValueFacets)
                 {
                     exception = listFacetsChecker.CheckValueFacets(valueToCheck, this);
-                    if (exception != null) goto Error;
+                    if (exception is not null) goto Error;
                 }
                 typedValue = valueToCheck;
                 return null;
@@ -1126,7 +1126,7 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = listFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             ArrayList values = new ArrayList();
             object array;
@@ -1138,9 +1138,9 @@ namespace System.Xml.Schema
                 {
                     //Parse items in list according to the itemType
                     exception = _itemType.TryParseValue(splitString[i], nameTable, nsmgr, out unionTypedValue);
-                    if (exception != null) goto Error;
+                    if (exception is not null) goto Error;
 
-                    Debug.Assert(unionTypedValue != null);
+                    Debug.Assert(unionTypedValue is not null);
 
                     XsdSimpleValue simpleValue = (XsdSimpleValue)unionTypedValue;
                     values.Add(new XmlAtomicValue(simpleValue.XmlType, simpleValue.TypedValue, nsmgr));
@@ -1153,7 +1153,7 @@ namespace System.Xml.Schema
                 for (int i = 0; i < splitString.Length; ++i)
                 {
                     exception = _itemType.TryParseValue(splitString[i], nameTable, nsmgr, out typedValue);
-                    if (exception != null) goto Error;
+                    if (exception is not null) goto Error;
 
                     values.Add(typedValue);
                 }
@@ -1166,7 +1166,7 @@ namespace System.Xml.Schema
             }
 
             exception = listFacetsChecker.CheckValueFacets(array, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = array;
 
@@ -1199,7 +1199,7 @@ namespace System.Xml.Schema
             XsdSimpleValue? simpleValue1 = value1 as XsdSimpleValue;
             XsdSimpleValue? simpleValue2 = value2 as XsdSimpleValue;
 
-            if (simpleValue1 == null || simpleValue2 == null)
+            if (simpleValue1 is null || simpleValue2 is null)
             {
                 return -1;
             }
@@ -1273,22 +1273,22 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = unionFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             //Parse string to CLR value
             for (int i = 0; i < _types.Length; ++i)
             {
                 exception = _types[i].Datatype!.TryParseValue(s, nameTable, nsmgr, out typedValue);
-                if (exception == null)
+                if (exception is null)
                 {
                     memberType = _types[i];
                     break;
                 }
             }
 
-            Debug.Assert(typedValue != null);
+            Debug.Assert(typedValue is not null);
 
-            if (memberType == null)
+            if (memberType is null)
             {
                 exception = new XmlSchemaException(SR.Sch_UnionFailedEx, s);
                 goto Error;
@@ -1296,7 +1296,7 @@ namespace System.Xml.Schema
 
             typedValue = new XsdSimpleValue(memberType, typedValue);
             exception = unionFacetsChecker.CheckValueFacets(typedValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             return null;
 
@@ -1307,13 +1307,13 @@ namespace System.Xml.Schema
         internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
             Exception? exception;
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
             typedValue = null;
             string? s = value as string;
-            if (s != null)
+            if (s is not null)
             {
                 return TryParseValue(s, nameTable, nsmgr, out typedValue);
             }
@@ -1322,14 +1322,14 @@ namespace System.Xml.Schema
             XmlSchemaSimpleType? memberType = null;
             for (int i = 0; i < _types.Length; ++i)
             {
-                if (_types[i].Datatype!.TryParseValue(value, nameTable, nsmgr, out valueToCheck) == null)
+                if (_types[i].Datatype!.TryParseValue(value, nameTable, nsmgr, out valueToCheck) is null)
                 { //no error
                     memberType = _types[i];
                     break;
                 }
             }
 
-            if (valueToCheck == null)
+            if (valueToCheck is null)
             {
                 exception = new XmlSchemaException(SR.Sch_UnionFailedEx, value.ToString());
                 goto Error;
@@ -1341,15 +1341,15 @@ namespace System.Xml.Schema
                 {
                     string s1 = (string)this.ValueConverter.ChangeType(valueToCheck, typeof(string), nsmgr); //Using value here to avoid info loss
                     exception = unionFacetsChecker.CheckLexicalFacets(ref s1, this);
-                    if (exception != null) goto Error;
+                    if (exception is not null) goto Error;
                 }
 
-                Debug.Assert(memberType != null);
+                Debug.Assert(memberType is not null);
                 typedValue = new XsdSimpleValue(memberType, valueToCheck);
                 if (this.HasValueFacets)
                 {
                     exception = unionFacetsChecker.CheckValueFacets(typedValue, this);
-                    if (exception != null) goto Error;
+                    if (exception is not null) goto Error;
                 }
                 return null;
             }
@@ -1495,10 +1495,10 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = stringFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = stringFacetsChecker.CheckValueFacets(s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = s;
             return null;
@@ -1568,11 +1568,11 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = miscFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             bool boolValue;
             exception = XmlConvert.TryToBoolean(s, out boolValue);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = boolValue;
 
@@ -1654,14 +1654,14 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = numeric2FacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             float singleValue;
             exception = XmlConvert.TryToSingle(s, out singleValue);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = numeric2FacetsChecker.CheckValueFacets(singleValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = singleValue;
 
@@ -1742,14 +1742,14 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = numeric2FacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             double doubleValue;
             exception = XmlConvert.TryToDouble(s, out doubleValue);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = numeric2FacetsChecker.CheckValueFacets(doubleValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = doubleValue;
 
@@ -1837,14 +1837,14 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = s_numeric10FacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             decimal decimalValue;
             exception = XmlConvert.TryToDecimal(s, out decimalValue);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = s_numeric10FacetsChecker.CheckValueFacets(decimalValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = decimalValue;
 
@@ -1926,20 +1926,20 @@ namespace System.Xml.Schema
             Exception? exception;
             typedValue = null;
 
-            if (s == null || s.Length == 0)
+            if (s is null || s.Length == 0)
             {
                 return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
 
             exception = durationFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             TimeSpan timeSpanValue;
             exception = XmlConvert.TryToTimeSpan(s, out timeSpanValue);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = durationFacetsChecker.CheckValueFacets(timeSpanValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = timeSpanValue;
 
@@ -1957,25 +1957,25 @@ namespace System.Xml.Schema
             Exception? exception;
             typedValue = null;
 
-            if (s == null || s.Length == 0)
+            if (s is null || s.Length == 0)
             {
                 return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
 
             exception = durationFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             XsdDuration duration;
             exception = XsdDuration.TryParse(s, XsdDuration.DurationType.YearMonthDuration, out duration);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             TimeSpan timeSpanValue;
 
             exception = duration.TryToTimeSpan(XsdDuration.DurationType.YearMonthDuration, out timeSpanValue);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = durationFacetsChecker.CheckValueFacets(timeSpanValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = timeSpanValue;
 
@@ -1996,24 +1996,24 @@ namespace System.Xml.Schema
 
             typedValue = null;
 
-            if (s == null || s.Length == 0)
+            if (s is null || s.Length == 0)
             {
                 return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
 
             exception = durationFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             XsdDuration duration;
             exception = XsdDuration.TryParse(s, XsdDuration.DurationType.DayTimeDuration, out duration);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             TimeSpan timeSpanValue;
             exception = duration.TryToTimeSpan(XsdDuration.DurationType.DayTimeDuration, out timeSpanValue);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = durationFacetsChecker.CheckValueFacets(timeSpanValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = timeSpanValue;
 
@@ -2084,7 +2084,7 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = dateTimeFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             XsdDateTime dateTime;
             if (!XsdDateTime.TryParse(s, _dateTimeFlags, out dateTime))
@@ -2105,7 +2105,7 @@ namespace System.Xml.Schema
             }
 
             exception = dateTimeFacetsChecker.CheckValueFacets(dateTimeValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = dateTimeValue;
 
@@ -2470,7 +2470,7 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = binaryFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             byte[]? byteArrayValue = null;
             try
@@ -2489,7 +2489,7 @@ namespace System.Xml.Schema
             }
 
             exception = binaryFacetsChecker.CheckValueFacets(byteArrayValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = byteArrayValue;
 
@@ -2571,7 +2571,7 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = binaryFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             byte[]? byteArrayValue = null;
             try
@@ -2590,7 +2590,7 @@ namespace System.Xml.Schema
             }
 
             exception = binaryFacetsChecker.CheckValueFacets(byteArrayValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = byteArrayValue;
 
@@ -2678,17 +2678,17 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = stringFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             Uri? uri;
             exception = XmlConvert.TryToUri(s, out uri);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
-            Debug.Assert(uri != null);
+            Debug.Assert(uri is not null);
 
             string stringValue = uri.OriginalString;
             exception = ((StringFacetsChecker)stringFacetsChecker).CheckValueFacets(stringValue, this, false);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = uri;
 
@@ -2765,13 +2765,13 @@ namespace System.Xml.Schema
 
             typedValue = null;
 
-            if (s == null || s.Length == 0)
+            if (s is null || s.Length == 0)
             {
                 return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
 
             exception = qnameFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             XmlQualifiedName? qname = null;
             try
@@ -2791,7 +2791,7 @@ namespace System.Xml.Schema
             }
 
             exception = qnameFacetsChecker.CheckValueFacets(qname, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = qname;
 
@@ -2966,10 +2966,10 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = stringFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = stringFacetsChecker.CheckValueFacets(s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             nameTable!.Add(s);
 
@@ -3101,13 +3101,13 @@ namespace System.Xml.Schema
 
             typedValue = null;
 
-            if (s == null || s.Length == 0)
+            if (s is null || s.Length == 0)
             {
                 return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
 
             exception = qnameFacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             XmlQualifiedName? qname = null;
             try
@@ -3127,7 +3127,7 @@ namespace System.Xml.Schema
             }
 
             exception = qnameFacetsChecker.CheckValueFacets(qname, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = qname;
 
@@ -3141,9 +3141,9 @@ namespace System.Xml.Schema
         {
             // Only datatypes that are derived from NOTATION by specifying a value for enumeration can be used in a schema.
             // Furthermore, the value of all enumeration facets must match the name of a notation declared in the current schema.                    //
-            for (Datatype_NOTATION? dt = this; dt != null; dt = (Datatype_NOTATION?)dt.Base)
+            for (Datatype_NOTATION? dt = this; dt is not null; dt = (Datatype_NOTATION?)dt.Base)
             {
-                if (dt.Restriction != null && (dt.Restriction.Flags & RestrictionFlags.Enumeration) != 0)
+                if (dt.Restriction is not null && (dt.Restriction.Flags & RestrictionFlags.Enumeration) != 0)
                 {
                     for (int i = 0; i < dt.Restriction.Enumeration!.Count; ++i)
                     {
@@ -3182,14 +3182,14 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = FacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             decimal decimalValue;
             exception = XmlConvert.TryToInteger(s, out decimalValue);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = FacetsChecker.CheckValueFacets(decimalValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = decimalValue;
 
@@ -3300,14 +3300,14 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = s_numeric10FacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             long int64Value;
             exception = XmlConvert.TryToInt64(s, out int64Value);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = s_numeric10FacetsChecker.CheckValueFacets(int64Value, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = int64Value;
 
@@ -3356,14 +3356,14 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = s_numeric10FacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             int int32Value;
             exception = XmlConvert.TryToInt32(s, out int32Value);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = s_numeric10FacetsChecker.CheckValueFacets(int32Value, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = int32Value;
 
@@ -3413,14 +3413,14 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = s_numeric10FacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             short int16Value;
             exception = XmlConvert.TryToInt16(s, out int16Value);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = s_numeric10FacetsChecker.CheckValueFacets(int16Value, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = int16Value;
 
@@ -3469,14 +3469,14 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = s_numeric10FacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             sbyte sbyteValue;
             exception = XmlConvert.TryToSByte(s, out sbyteValue);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = s_numeric10FacetsChecker.CheckValueFacets((short)sbyteValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = sbyteValue;
 
@@ -3557,14 +3557,14 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = s_numeric10FacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             ulong uint64Value;
             exception = XmlConvert.TryToUInt64(s, out uint64Value);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = s_numeric10FacetsChecker.CheckValueFacets((decimal)uint64Value, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = uint64Value;
 
@@ -3613,14 +3613,14 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = s_numeric10FacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             uint uint32Value;
             exception = XmlConvert.TryToUInt32(s, out uint32Value);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = s_numeric10FacetsChecker.CheckValueFacets((long)uint32Value, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = uint32Value;
 
@@ -3669,14 +3669,14 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = s_numeric10FacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             ushort uint16Value;
             exception = XmlConvert.TryToUInt16(s, out uint16Value);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = s_numeric10FacetsChecker.CheckValueFacets((int)uint16Value, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = uint16Value;
 
@@ -3724,14 +3724,14 @@ namespace System.Xml.Schema
             typedValue = null;
 
             exception = s_numeric10FacetsChecker.CheckLexicalFacets(ref s, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             byte byteValue;
             exception = XmlConvert.TryToByte(s, out byteValue);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             exception = s_numeric10FacetsChecker.CheckValueFacets((short)byteValue, this);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = byteValue;
 
@@ -3818,11 +3818,11 @@ namespace System.Xml.Schema
 
         public override object ParseValue(string s, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr)
         {
-            if (s == null || s.Length == 0)
+            if (s is null || s.Length == 0)
             {
                 throw new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
             }
-            if (nsmgr == null)
+            if (nsmgr is null)
             {
                 throw new ArgumentNullException(nameof(nsmgr));
             }
@@ -3892,7 +3892,7 @@ namespace System.Xml.Schema
 
             char charValue;
             exception = XmlConvert.TryToChar(s, out charValue);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = charValue;
 
@@ -3914,7 +3914,7 @@ namespace System.Xml.Schema
                 Numeric10FacetsChecker facetsChecker = (this.FacetsChecker as Numeric10FacetsChecker)!;
                 decimal value = XmlConvert.ToDecimal(s);
                 exception = facetsChecker.CheckTotalAndFractionDigits(value, 14 + 4, 4, true, true);
-                if (exception != null) goto Error;
+                if (exception is not null) goto Error;
 
                 return value;
             }
@@ -3938,11 +3938,11 @@ namespace System.Xml.Schema
 
             decimal decimalValue;
             exception = XmlConvert.TryToDecimal(s, out decimalValue);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             Numeric10FacetsChecker facetsChecker = (this.FacetsChecker as Numeric10FacetsChecker)!;
             exception = facetsChecker.CheckTotalAndFractionDigits(decimalValue, 14 + 4, 4, true, true);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = decimalValue;
 
@@ -3993,7 +3993,7 @@ namespace System.Xml.Schema
 
             Guid guid;
             exception = XmlConvert.TryToGuid(s, out guid);
-            if (exception != null) goto Error;
+            if (exception is not null) goto Error;
 
             typedValue = guid;
 

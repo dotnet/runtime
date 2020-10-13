@@ -14,7 +14,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(strInput != null);
+            Debug.Assert(strInput is not null);
 
             // The only way to know if IsNormalizedString failed is through checking the Win32 last error
             // IsNormalizedString pinvoke has SetLastError attribute property which will set the last error
@@ -57,7 +57,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(strInput != null);
+            Debug.Assert(strInput is not null);
 
             if (strInput.Length == 0)
             {
@@ -98,7 +98,7 @@ namespace System.Globalization
                         case Interop.Errors.ERROR_INSUFFICIENT_BUFFER:
                             realLength = Math.Abs(realLength);
                             Debug.Assert(realLength > buffer.Length, "Buffer overflow should have iLength > cBuffer.Length");
-                            if (toReturn != null)
+                            if (toReturn is not null)
                             {
                                 // Clear toReturn first to ensure we don't return the same buffer twice
                                 char[] temp = toReturn;
@@ -133,7 +133,7 @@ namespace System.Globalization
             }
             finally
             {
-                if (toReturn != null)
+                if (toReturn is not null)
                 {
                     ArrayPool<char>.Shared.Return(toReturn);
                 }

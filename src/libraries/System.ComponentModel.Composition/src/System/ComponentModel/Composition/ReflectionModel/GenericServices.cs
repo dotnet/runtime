@@ -13,7 +13,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         internal static IList<Type> GetPureGenericParameters(this Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -38,7 +38,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         internal static int GetPureGenericArity(this Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -97,7 +97,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         [return: NotNullIfNotNull("types")]
         public static IEnumerable<Type>? CreateTypeSpecializations(this Type[]? types, Type[] specializationTypes)
         {
-            if (types == null)
+            if (types is null)
             {
                 return null;
             }
@@ -146,7 +146,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static bool CanSpecialize(Type? type, IEnumerable<Type>? constraintTypes)
         {
-            if (constraintTypes == null)
+            if (constraintTypes is null)
             {
                 return true;
             }
@@ -155,7 +155,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             // a part of where T : struct is also handled here as T : ValueType
             foreach (Type constraintType in constraintTypes)
             {
-                if ((constraintType != null) && !constraintType.IsAssignableFrom(type))
+                if ((constraintType is not null) && !constraintType.IsAssignableFrom(type))
                 {
                     return false;
                 }
@@ -184,7 +184,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             if ((attributes & GenericParameterAttributes.DefaultConstructorConstraint) != 0)
             {
                 // value types always have default constructors
-                if (!type.IsValueType && (type.GetConstructor(Type.EmptyTypes) == null))
+                if (!type.IsValueType && (type.GetConstructor(Type.EmptyTypes) is null))
                 {
                     return false;
                 }
@@ -201,7 +201,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
                 // Make sure that the type is not nullable
                 // this is salways guaranteed in C#, but other languages may be different
-                if (Nullable.GetUnderlyingType(type) != null)
+                if (Nullable.GetUnderlyingType(type) is not null)
                 {
                     return false;
                 }

@@ -41,12 +41,12 @@ namespace System.ComponentModel.Design.Serialization
                 // The Owner and Member properties can be null if the MemberRelationship is constructed
                 // using the default constructor. However there is no situation in which one is null
                 // and not the other as the main constructor performs argument validation.
-                if (source.Owner == null)
+                if (source.Owner is null)
                 {
                     throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Owner"), nameof(source));
                 }
 
-                Debug.Assert(source.Member != null);
+                Debug.Assert(source.Member is not null);
                 return GetRelationship(source);
             }
             set
@@ -54,12 +54,12 @@ namespace System.ComponentModel.Design.Serialization
                 // The Owner and Member properties can be null if the MemberRelationship is constructed
                 // using the default constructor. However there is no situation in which one is null
                 // and not the other as the main constructor performs argument validation.
-                if (source.Owner == null)
+                if (source.Owner is null)
                 {
                     throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Owner"), nameof(source));
                 }
 
-                Debug.Assert(source.Member != null);
+                Debug.Assert(source.Member is not null);
                 SetRelationship(source, value);
             }
         }
@@ -73,11 +73,11 @@ namespace System.ComponentModel.Design.Serialization
         {
             get
             {
-                if (sourceOwner == null)
+                if (sourceOwner is null)
                 {
                     throw new ArgumentNullException(nameof(sourceOwner));
                 }
-                if (sourceMember == null)
+                if (sourceMember is null)
                 {
                     throw new ArgumentNullException(nameof(sourceMember));
                 }
@@ -86,11 +86,11 @@ namespace System.ComponentModel.Design.Serialization
             }
             set
             {
-                if (sourceOwner == null)
+                if (sourceOwner is null)
                 {
                     throw new ArgumentNullException(nameof(sourceOwner));
                 }
-                if (sourceMember == null)
+                if (sourceMember is null)
                 {
                     throw new ArgumentNullException(nameof(sourceMember));
                 }
@@ -124,11 +124,11 @@ namespace System.ComponentModel.Design.Serialization
             {
                 string sourceName = TypeDescriptor.GetComponentName(source.Owner);
                 string relName = TypeDescriptor.GetComponentName(relationship.Owner);
-                if (sourceName == null)
+                if (sourceName is null)
                 {
                     sourceName = source.Owner.ToString();
                 }
-                if (relName == null)
+                if (relName is null)
                 {
                     relName = relationship.Owner.ToString();
                 }
@@ -156,7 +156,7 @@ namespace System.ComponentModel.Design.Serialization
             {
                 _owner = new WeakReference(rel.Owner);
                 _member = rel.Member;
-                _hashCode = rel.Owner == null ? 0 : rel.Owner.GetHashCode();
+                _hashCode = rel.Owner is null ? 0 : rel.Owner.GetHashCode();
             }
 
             public override bool Equals(object o)
@@ -200,7 +200,7 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Returns true if this relationship is empty.
         /// </summary>
-        public bool IsEmpty => Owner == null;
+        public bool IsEmpty => Owner is null;
 
         /// <summary>
         /// The member in this relationship.
@@ -225,7 +225,7 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public override int GetHashCode()
         {
-            if (Owner == null)
+            if (Owner is null)
             {
                 return base.GetHashCode();
             }

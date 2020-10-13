@@ -18,7 +18,7 @@ namespace System.Reflection.Internal
 
         internal MemoryBlock(byte* buffer, int length)
         {
-            Debug.Assert(length >= 0 && (buffer != null || length == 0));
+            Debug.Assert(length >= 0 && (buffer is not null || length == 0));
             this.Pointer = buffer;
             this.Length = length;
         }
@@ -30,7 +30,7 @@ namespace System.Reflection.Internal
                 throw new ArgumentOutOfRangeException(nameof(length));
             }
 
-            if (buffer == null && length != 0)
+            if (buffer is null && length != 0)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -49,12 +49,12 @@ namespace System.Reflection.Internal
 
         internal byte[]? ToArray()
         {
-            return Pointer == null ? null : PeekBytes(0, Length);
+            return Pointer is null ? null : PeekBytes(0, Length);
         }
 
         private string GetDebuggerDisplay()
         {
-            if (Pointer == null)
+            if (Pointer is null)
             {
                 return "<null>";
             }
@@ -77,7 +77,7 @@ namespace System.Reflection.Internal
 
         internal string GetDebuggerDisplay(int offset)
         {
-            if (Pointer == null)
+            if (Pointer is null)
             {
                 return "<null>";
             }

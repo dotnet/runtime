@@ -101,7 +101,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    return _left == null;
+                    return _left is null;
                 }
             }
 
@@ -730,7 +730,7 @@ namespace System.Collections.Immutable
                 }
                 else
                 {
-                    Debug.Assert(_right != null && _left != null);
+                    Debug.Assert(_right is not null && _left is not null);
                     Node result = this;
                     int compare = keyComparer.Compare(key, _key);
                     if (compare == 0)
@@ -798,19 +798,19 @@ namespace System.Collections.Immutable
             /// <returns>The mutated (or created) node.</returns>
             private Node Mutate(Node? left = null, Node? right = null)
             {
-                Debug.Assert(_left != null && _right != null);
+                Debug.Assert(_left is not null && _right is not null);
                 if (_frozen)
                 {
                     return new Node(_key, _value, left ?? _left, right ?? _right);
                 }
                 else
                 {
-                    if (left != null)
+                    if (left is not null)
                     {
                         _left = left;
                     }
 
-                    if (right != null)
+                    if (right is not null)
                     {
                         _right = right;
                     }

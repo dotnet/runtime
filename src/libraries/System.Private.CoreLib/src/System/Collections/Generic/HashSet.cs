@@ -55,7 +55,7 @@ namespace System.Collections.Generic
 
         public HashSet(IEqualityComparer<T>? comparer)
         {
-            if (comparer != null && comparer != EqualityComparer<T>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
+            if (comparer is not null && comparer != EqualityComparer<T>.Default) // first check for null to avoid forcing default comparer instantiation unnecessarily
             {
                 _comparer = comparer;
             }
@@ -87,7 +87,7 @@ namespace System.Collections.Generic
 
         public HashSet(IEnumerable<T> collection, IEqualityComparer<T>? comparer) : this(comparer)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
@@ -195,8 +195,8 @@ namespace System.Collections.Generic
             int count = _count;
             if (count > 0)
             {
-                Debug.Assert(_buckets != null, "_buckets should be non-null");
-                Debug.Assert(_entries != null, "_entries should be non-null");
+                Debug.Assert(_buckets is not null, "_buckets should be non-null");
+                Debug.Assert(_entries is not null, "_entries should be non-null");
 
                 Array.Clear(_buckets, 0, _buckets.Length);
                 _count = 0;
@@ -215,17 +215,17 @@ namespace System.Collections.Generic
         private int FindItemIndex(T item)
         {
             int[]? buckets = _buckets;
-            if (buckets != null)
+            if (buckets is not null)
             {
                 Entry[]? entries = _entries;
-                Debug.Assert(entries != null, "Expected _entries to be initialized");
+                Debug.Assert(entries is not null, "Expected _entries to be initialized");
 
                 uint collisionCount = 0;
                 IEqualityComparer<T>? comparer = _comparer;
 
-                if (comparer == null)
+                if (comparer is null)
                 {
-                    int hashCode = item != null ? item.GetHashCode() : 0;
+                    int hashCode = item is not null ? item.GetHashCode() : 0;
                     if (typeof(T).IsValueType)
                     {
                         // ValueType: Devirtualize with EqualityComparer<TValue>.Default intrinsic
@@ -273,7 +273,7 @@ namespace System.Collections.Generic
                 }
                 else
                 {
-                    int hashCode = item != null ? comparer.GetHashCode(item) : 0;
+                    int hashCode = item is not null ? comparer.GetHashCode(item) : 0;
                     int i = GetBucketRef(hashCode) - 1; // Value in _buckets is 1-based
                     while (i >= 0)
                     {
@@ -311,14 +311,14 @@ namespace System.Collections.Generic
 
         public bool Remove(T item)
         {
-            if (_buckets != null)
+            if (_buckets is not null)
             {
                 Entry[]? entries = _entries;
-                Debug.Assert(entries != null, "entries should be non-null");
+                Debug.Assert(entries is not null, "entries should be non-null");
 
                 uint collisionCount = 0;
                 int last = -1;
-                int hashCode = item != null ? (_comparer?.GetHashCode(item) ?? item.GetHashCode()) : 0;
+                int hashCode = item is not null ? (_comparer?.GetHashCode(item) ?? item.GetHashCode()) : 0;
 
                 ref int bucket = ref GetBucketRef(hashCode);
                 int i = bucket - 1; // Value in buckets is 1-based
@@ -388,16 +388,16 @@ namespace System.Collections.Generic
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
+            if (info is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.info);
             }
 
             info.AddValue(VersionName, _version); // need to serialize version to avoid problems with serializing while enumerating
             info.AddValue(ComparerName, Comparer, typeof(IEqualityComparer<T>));
-            info.AddValue(CapacityName, _buckets == null ? 0 : _buckets.Length);
+            info.AddValue(CapacityName, _buckets is null ? 0 : _buckets.Length);
 
-            if (_buckets != null)
+            if (_buckets is not null)
             {
                 var array = new T[Count];
                 CopyTo(array);
@@ -411,7 +411,7 @@ namespace System.Collections.Generic
 
         public virtual void OnDeserialization(object? sender)
         {
-            if (_siInfo == null)
+            if (_siInfo is null)
             {
                 // It might be necessary to call OnDeserialization from a container if the
                 // container object also implements OnDeserialization. We can return immediately
@@ -433,7 +433,7 @@ namespace System.Collections.Generic
 #endif
 
                 T[]? array = (T[]?)_siInfo.GetValue(ElementsName, typeof(T[]));
-                if (array == null)
+                if (array is null)
                 {
                     ThrowHelper.ThrowSerializationException(ExceptionResource.Serialization_MissingKeys);
                 }
@@ -474,7 +474,7 @@ namespace System.Collections.Generic
         /// </remarks>
         public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
         {
-            if (_buckets != null)
+            if (_buckets is not null)
             {
                 int index = FindItemIndex(equalValue);
                 if (index >= 0)
@@ -492,7 +492,7 @@ namespace System.Collections.Generic
         /// <param name="other">The collection to compare to the current <see cref="HashSet{T}"/> object.</param>
         public void UnionWith(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
@@ -507,7 +507,7 @@ namespace System.Collections.Generic
         /// <param name="other">The collection to compare to the current <see cref="HashSet{T}"/> object.</param>
         public void IntersectWith(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
@@ -544,7 +544,7 @@ namespace System.Collections.Generic
         /// <param name="other">The collection to compare to the current <see cref="HashSet{T}"/> object.</param>
         public void ExceptWith(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
@@ -573,7 +573,7 @@ namespace System.Collections.Generic
         /// <param name="other">The collection to compare to the current <see cref="HashSet{T}"/> object.</param>
         public void SymmetricExceptWith(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
@@ -612,7 +612,7 @@ namespace System.Collections.Generic
         /// <returns>true if the <see cref="HashSet{T}"/> object is a subset of <paramref name="other"/>; otherwise, false.</returns>
         public bool IsSubsetOf(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
@@ -648,7 +648,7 @@ namespace System.Collections.Generic
         /// <returns>true if the <see cref="HashSet{T}"/> object is a proper subset of <paramref name="other"/>; otherwise, false.</returns>
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
@@ -696,7 +696,7 @@ namespace System.Collections.Generic
         /// <returns>true if the <see cref="HashSet{T}"/> object is a superset of <paramref name="other"/>; otherwise, false.</returns>
         public bool IsSupersetOf(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
@@ -733,7 +733,7 @@ namespace System.Collections.Generic
         /// <returns>true if the <see cref="HashSet{T}"/> object is a proper superset of <paramref name="other"/>; otherwise, false.</returns>
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
@@ -776,7 +776,7 @@ namespace System.Collections.Generic
         /// <returns>true if the <see cref="HashSet{T}"/> object and <paramref name="other"/> share at least one common element; otherwise, false.</returns>
         public bool Overlaps(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
@@ -808,7 +808,7 @@ namespace System.Collections.Generic
         /// <returns>true if the <see cref="HashSet{T}"/> object is equal to <paramref name="other"/>; otherwise, false.</returns>
         public bool SetEquals(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.other);
             }
@@ -857,7 +857,7 @@ namespace System.Collections.Generic
 
         public void CopyTo(T[] array, int arrayIndex, int count)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -897,7 +897,7 @@ namespace System.Collections.Generic
         /// <summary>Removes all elements that match the conditions defined by the specified predicate from a <see cref="HashSet{T}"/> collection.</summary>
         public int RemoveWhere(Predicate<T> match)
         {
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -949,13 +949,13 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.capacity);
             }
 
-            int currentCapacity = _entries == null ? 0 : _entries.Length;
+            int currentCapacity = _entries is null ? 0 : _entries.Length;
             if (currentCapacity >= capacity)
             {
                 return currentCapacity;
             }
 
-            if (_buckets == null)
+            if (_buckets is null)
             {
                 return Initialize(capacity);
             }
@@ -971,7 +971,7 @@ namespace System.Collections.Generic
         {
             // Value types never rehash
             Debug.Assert(!forceNewHashCodes || !typeof(T).IsValueType);
-            Debug.Assert(_entries != null, "_entries should be non-null");
+            Debug.Assert(_entries is not null, "_entries should be non-null");
             Debug.Assert(newSize >= _entries.Length);
 
             var entries = new Entry[newSize];
@@ -989,7 +989,7 @@ namespace System.Collections.Generic
                     ref Entry entry = ref entries[i];
                     if (entry.Next >= -1)
                     {
-                        entry.HashCode = entry.Value != null ? _comparer!.GetHashCode(entry.Value) : 0;
+                        entry.HashCode = entry.Value is not null ? _comparer!.GetHashCode(entry.Value) : 0;
                     }
                 }
 
@@ -1028,7 +1028,7 @@ namespace System.Collections.Generic
 
             int newSize = HashHelpers.GetPrime(capacity);
             Entry[]? oldEntries = _entries;
-            int currentCapacity = oldEntries == null ? 0 : oldEntries.Length;
+            int currentCapacity = oldEntries is null ? 0 : oldEntries.Length;
             if (newSize >= currentCapacity)
             {
                 return;
@@ -1091,14 +1091,14 @@ namespace System.Collections.Generic
         /// <returns>true if the element is added to the <see cref="HashSet{T}"/> object; false if the element is already present.</returns>
         private bool AddIfNotPresent(T value, out int location)
         {
-            if (_buckets == null)
+            if (_buckets is null)
             {
                 Initialize(0);
             }
-            Debug.Assert(_buckets != null);
+            Debug.Assert(_buckets is not null);
 
             Entry[]? entries = _entries;
-            Debug.Assert(entries != null, "expected entries to be non-null");
+            Debug.Assert(entries is not null, "expected entries to be non-null");
 
             IEqualityComparer<T>? comparer = _comparer;
             int hashCode;
@@ -1106,9 +1106,9 @@ namespace System.Collections.Generic
             uint collisionCount = 0;
             ref int bucket = ref Unsafe.NullRef<int>();
 
-            if (comparer == null)
+            if (comparer is null)
             {
-                hashCode = value != null ? value.GetHashCode() : 0;
+                hashCode = value is not null ? value.GetHashCode() : 0;
                 bucket = ref GetBucketRef(hashCode);
                 int i = bucket - 1; // Value in _buckets is 1-based
                 if (typeof(T).IsValueType)
@@ -1158,7 +1158,7 @@ namespace System.Collections.Generic
             }
             else
             {
-                hashCode = value != null ? comparer.GetHashCode(value) : 0;
+                hashCode = value is not null ? comparer.GetHashCode(value) : 0;
                 bucket = ref GetBucketRef(hashCode);
                 int i = bucket - 1; // Value in _buckets is 1-based
                 while (i >= 0)
@@ -1294,7 +1294,7 @@ namespace System.Collections.Generic
         /// </summary>
         private unsafe void IntersectWithEnumerable(IEnumerable<T> other)
         {
-            Debug.Assert(_buckets != null, "_buckets shouldn't be null; callers should check first");
+            Debug.Assert(_buckets is not null, "_buckets shouldn't be null; callers should check first");
 
             // Keep track of current last index; don't want to move past the end of our bit array
             // (could happen if another thread is modifying the collection).
@@ -1452,7 +1452,7 @@ namespace System.Collections.Generic
                 return (UniqueCount: 0, UnfoundCount: numElementsInOther);
             }
 
-            Debug.Assert((_buckets != null) && (_count > 0), "_buckets was null but count greater than 0");
+            Debug.Assert((_buckets is not null) && (_count > 0), "_buckets was null but count greater than 0");
 
             int originalCount = _count;
             int intArrayLength = BitHelper.ToIntArrayLength(originalCount);

@@ -42,8 +42,8 @@ namespace System.Xml.Schema
                 _pattern_facet = null;
                 _datatype = baseDatatype;
                 _derivedRestriction = restriction;
-                _baseFlags = _datatype.Restriction != null ? _datatype.Restriction.Flags : 0;
-                _baseFixedFlags = _datatype.Restriction != null ? _datatype.Restriction.FixedFlags : 0;
+                _baseFlags = _datatype.Restriction is not null ? _datatype.Restriction.Flags : 0;
+                _baseFixedFlags = _datatype.Restriction is not null ? _datatype.Restriction.FixedFlags : 0;
                 _validRestrictionFlags = _datatype.ValidRestrictionFlags;
                 _nonNegativeInt = DatatypeImplementation.GetSimpleTypeFromTypeCode(XmlTypeCode.NonNegativeInteger).Datatype!;
                 _builtInEnum = !(_datatype is Datatype_union || _datatype is Datatype_List) ? _datatype.TypeCode : 0;
@@ -171,7 +171,7 @@ namespace System.Xml.Schema
             internal void CompileEnumerationFacet(XmlSchemaFacet facet, IXmlNamespaceResolver nsmgr, XmlNameTable nameTable)
             {
                 CheckProhibitedFlag(facet, RestrictionFlags.Enumeration, SR.Sch_EnumerationFacetProhibited);
-                if (_derivedRestriction.Enumeration == null)
+                if (_derivedRestriction.Enumeration is null)
                 {
                     _derivedRestriction.Enumeration = new ArrayList();
                 }
@@ -357,7 +357,7 @@ namespace System.Xml.Schema
                 //needs to be converted to a RegEx
                 if (_firstPattern == false)
                 {
-                    if (_derivedRestriction.Patterns == null)
+                    if (_derivedRestriction.Patterns is null)
                     {
                         _derivedRestriction.Patterns = new ArrayList();
                     }
@@ -590,7 +590,7 @@ namespace System.Xml.Schema
                 }
                 if ((_baseFlags & RestrictionFlags.Pattern) != 0)
                 {
-                    if (_derivedRestriction.Patterns == null)
+                    if (_derivedRestriction.Patterns is null)
                     {
                         _derivedRestriction.Patterns = baseRestriction.Patterns;
                     }
@@ -604,7 +604,7 @@ namespace System.Xml.Schema
 
                 if ((_baseFlags & RestrictionFlags.Enumeration) != 0)
                 {
-                    if (_derivedRestriction.Enumeration == null)
+                    if (_derivedRestriction.Enumeration is null)
                     {
                         _derivedRestriction.Enumeration = baseRestriction.Enumeration;
                     }
@@ -673,7 +673,7 @@ namespace System.Xml.Schema
             {
                 object? typedValue;
                 Exception? ex = datatype.TryParseValue(facet.Value!, nameTable, nsmgr, out typedValue);
-                if (ex == null)
+                if (ex is null)
                 {
                     return typedValue!;
                 }
@@ -858,7 +858,7 @@ namespace System.Xml.Schema
                     {
                         s = XmlComplianceUtil.CDataNormalize(s);
                     }
-                    else if (restriction != null && (restriction.Flags & RestrictionFlags.WhiteSpace) != 0)
+                    else if (restriction is not null && (restriction.Flags & RestrictionFlags.WhiteSpace) != 0)
                     { //Restriction has whitespace facet specified
                         if (restriction.WhiteSpace == XmlSchemaWhiteSpace.Replace)
                         {
@@ -877,7 +877,7 @@ namespace System.Xml.Schema
         }
         internal Exception? CheckPatternFacets(RestrictionFacets? restriction, string value)
         {
-            if (restriction != null && (restriction.Flags & RestrictionFlags.Pattern) != 0)
+            if (restriction is not null && (restriction.Flags & RestrictionFlags.Pattern) != 0)
             {
                 for (int i = 0; i < restriction.Patterns!.Count; ++i)
                 {
@@ -907,7 +907,7 @@ namespace System.Xml.Schema
             for (int i = 0; i < facets.Count; ++i)
             {
                 XmlSchemaFacet facet = (XmlSchemaFacet)facets[i];
-                if (facet.Value == null)
+                if (facet.Value is null)
                 {
                     throw new XmlSchemaException(SR.Sch_InvalidFacet, facet);
                 }
@@ -1013,7 +1013,7 @@ namespace System.Xml.Schema
         internal override Exception? CheckValueFacets(decimal value, XmlSchemaDatatype datatype)
         {
             RestrictionFacets? restriction = datatype.Restriction;
-            RestrictionFlags flags = restriction != null ? restriction.Flags : 0;
+            RestrictionFlags flags = restriction is not null ? restriction.Flags : 0;
             XmlValueConverter valueConverter = datatype.ValueConverter;
 
             //Check built-in facets
@@ -1024,7 +1024,7 @@ namespace System.Xml.Schema
             //Check user-defined facets
             if (flags != 0)
             {
-                Debug.Assert(restriction != null);
+                Debug.Assert(restriction is not null);
                 if ((flags & RestrictionFlags.MaxInclusive) != 0)
                 {
                     if (value > valueConverter.ToDecimal(restriction.MaxInclusive!))
@@ -1138,7 +1138,7 @@ namespace System.Xml.Schema
         internal override Exception? CheckValueFacets(double value, XmlSchemaDatatype datatype)
         {
             RestrictionFacets? restriction = datatype.Restriction;
-            RestrictionFlags flags = restriction != null ? restriction.Flags : 0;
+            RestrictionFlags flags = restriction is not null ? restriction.Flags : 0;
             XmlValueConverter valueConverter = datatype.ValueConverter;
 
             if ((flags & RestrictionFlags.MaxInclusive) != 0)
@@ -1214,7 +1214,7 @@ namespace System.Xml.Schema
         internal override Exception? CheckValueFacets(TimeSpan value, XmlSchemaDatatype datatype)
         {
             RestrictionFacets? restriction = datatype.Restriction;
-            RestrictionFlags flags = restriction != null ? restriction.Flags : 0;
+            RestrictionFlags flags = restriction is not null ? restriction.Flags : 0;
 
             if ((flags & RestrictionFlags.MaxInclusive) != 0)
             {
@@ -1285,7 +1285,7 @@ namespace System.Xml.Schema
         internal override Exception? CheckValueFacets(DateTime value, XmlSchemaDatatype datatype)
         {
             RestrictionFacets? restriction = datatype.Restriction;
-            RestrictionFlags flags = restriction != null ? restriction.Flags : 0;
+            RestrictionFlags flags = restriction is not null ? restriction.Flags : 0;
 
             if ((flags & RestrictionFlags.MaxInclusive) != 0)
             {
@@ -1356,7 +1356,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (s_languagePattern == null)
+                if (s_languagePattern is null)
                 {
                     Regex langRegex = new Regex("^([a-zA-Z]{1,8})(-[a-zA-Z0-9]{1,8})*$");
                     Interlocked.CompareExchange(ref s_languagePattern, langRegex, null);
@@ -1381,11 +1381,11 @@ namespace System.Xml.Schema
             //Length, MinLength, MaxLength
             int length = value.Length;
             RestrictionFacets? restriction = datatype.Restriction;
-            RestrictionFlags flags = restriction != null ? restriction.Flags : 0;
+            RestrictionFlags flags = restriction is not null ? restriction.Flags : 0;
             Exception? exception;
 
             exception = CheckBuiltInFacets(value, datatype.TypeCode, verifyUri);
-            if (exception != null) return exception;
+            if (exception is not null) return exception;
 
             if (flags != 0)
             {
@@ -1474,7 +1474,7 @@ namespace System.Xml.Schema
                     break;
 
                 case XmlTypeCode.Language:
-                    if (s == null || s.Length == 0)
+                    if (s is null || s.Length == 0)
                     {
                         return new XmlSchemaException(SR.Sch_EmptyAttributeValue, string.Empty);
                     }
@@ -1516,10 +1516,10 @@ namespace System.Xml.Schema
         internal override Exception? CheckValueFacets(XmlQualifiedName value, XmlSchemaDatatype datatype)
         {
             RestrictionFacets? restriction = datatype.Restriction;
-            RestrictionFlags flags = restriction != null ? restriction.Flags : 0;
+            RestrictionFlags flags = restriction is not null ? restriction.Flags : 0;
             if (flags != 0)
             {
-                Debug.Assert(restriction != null);
+                Debug.Assert(restriction is not null);
 
                 // If there are facets defined
                 string strValue = value.ToString();
@@ -1590,7 +1590,7 @@ namespace System.Xml.Schema
             //Length, MinLength, MaxLength
             RestrictionFacets? restriction = datatype.Restriction;
             int length = value.Length;
-            RestrictionFlags flags = restriction != null ? restriction.Flags : 0;
+            RestrictionFlags flags = restriction is not null ? restriction.Flags : 0;
             if (flags != 0)
             { //if it has facets defined
                 if ((flags & RestrictionFlags.Length) != 0)
@@ -1648,10 +1648,10 @@ namespace System.Xml.Schema
         {
             // Check for facets allowed on lists - Length, MinLength, MaxLength
             Array values = (value as Array)!;
-            Debug.Assert(values != null);
+            Debug.Assert(values is not null);
 
             RestrictionFacets? restriction = datatype.Restriction;
-            RestrictionFlags flags = restriction != null ? restriction.Flags : 0;
+            RestrictionFlags flags = restriction is not null ? restriction.Flags : 0;
 
             if ((flags & (RestrictionFlags.Length | RestrictionFlags.MinLength | RestrictionFlags.MaxLength)) != 0)
             {
@@ -1708,7 +1708,7 @@ namespace System.Xml.Schema
         internal override Exception? CheckValueFacets(object value, XmlSchemaDatatype datatype)
         {
             RestrictionFacets? restriction = datatype.Restriction;
-            RestrictionFlags flags = restriction != null ? restriction.Flags : 0;
+            RestrictionFlags flags = restriction is not null ? restriction.Flags : 0;
 
             if ((flags & RestrictionFlags.Enumeration) != 0)
             {

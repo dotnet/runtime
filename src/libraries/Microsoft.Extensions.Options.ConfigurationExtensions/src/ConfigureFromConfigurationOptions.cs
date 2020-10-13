@@ -22,7 +22,7 @@ namespace Microsoft.Extensions.Options
         public ConfigureFromConfigurationOptions(IConfiguration config)
             : base(options => ConfigurationBinder.Bind(config, options))
         {
-            if (config == null)
+            if (config is null)
             {
                 throw new ArgumentNullException(nameof(config));
             }

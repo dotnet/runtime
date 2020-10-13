@@ -29,7 +29,7 @@ namespace System.Xml.Xsl.Runtime
                 // All linked keys have same priority
                 XmlSortKey key = this;
 
-                while (key != null)
+                while (key is not null)
                 {
                     key._priority = value;
                     key = key._nextKey;
@@ -44,7 +44,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XmlSortKey AddSortKey(XmlSortKey sortKey)
         {
-            if (_nextKey != null)
+            if (_nextKey is not null)
             {
                 // Add to end of list--this is not it
                 _nextKey.AddSortKey(sortKey);
@@ -65,10 +65,10 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         protected int BreakSortingTie(XmlSortKey that)
         {
-            if (_nextKey != null)
+            if (_nextKey is not null)
             {
                 // There are multiple keys, so break tie using next key
-                Debug.Assert(_nextKey != null && that._nextKey != null);
+                Debug.Assert(_nextKey is not null && that._nextKey is not null);
                 return _nextKey.CompareTo(that._nextKey);
             }
 
@@ -83,7 +83,7 @@ namespace System.Xml.Xsl.Runtime
         protected int CompareToEmpty(object obj)
         {
             XmlEmptySortKey that = obj as XmlEmptySortKey;
-            Debug.Assert(that != null && !(this is XmlEmptySortKey));
+            Debug.Assert(that is not null && !(this is XmlEmptySortKey));
             return that.IsEmptyGreatest ? -1 : 1;
         }
 
@@ -120,7 +120,7 @@ namespace System.Xml.Xsl.Runtime
         {
             XmlEmptySortKey that = obj as XmlEmptySortKey;
 
-            if (that == null)
+            if (that is null)
             {
                 // Empty compared to non-empty
                 Debug.Assert(obj is XmlSortKey);
@@ -151,7 +151,7 @@ namespace System.Xml.Xsl.Runtime
             XmlDecimalSortKey that = obj as XmlDecimalSortKey;
             int cmp;
 
-            if (that == null)
+            if (that is null)
                 return CompareToEmpty(obj);
 
             cmp = decimal.Compare(_decVal, that._decVal);
@@ -180,7 +180,7 @@ namespace System.Xml.Xsl.Runtime
         {
             XmlIntegerSortKey that = obj as XmlIntegerSortKey;
 
-            if (that == null)
+            if (that is null)
                 return CompareToEmpty(obj);
 
             if (_longVal == that._longVal)
@@ -208,7 +208,7 @@ namespace System.Xml.Xsl.Runtime
         {
             XmlIntSortKey that = obj as XmlIntSortKey;
 
-            if (that == null)
+            if (that is null)
                 return CompareToEmpty(obj);
 
             if (_intVal == that._intVal)
@@ -244,18 +244,18 @@ namespace System.Xml.Xsl.Runtime
             XmlStringSortKey that = obj as XmlStringSortKey;
             int idx, cntCmp, result;
 
-            if (that == null)
+            if (that is null)
                 return CompareToEmpty(obj);
 
             // Compare either using SortKey.Compare or byte arrays
-            if (_sortKey != null)
+            if (_sortKey is not null)
             {
-                Debug.Assert(that._sortKey != null, "Both keys must have non-null sortKey field");
+                Debug.Assert(that._sortKey is not null, "Both keys must have non-null sortKey field");
                 result = SortKey.Compare(_sortKey, that._sortKey);
             }
             else
             {
-                Debug.Assert(_sortKeyBytes != null && that._sortKeyBytes != null, "Both keys must have non-null sortKeyBytes field");
+                Debug.Assert(_sortKeyBytes is not null && that._sortKeyBytes is not null, "Both keys must have non-null sortKeyBytes field");
 
                 cntCmp = (_sortKeyBytes.Length < that._sortKeyBytes.Length) ? _sortKeyBytes.Length : that._sortKeyBytes.Length;
                 for (idx = 0; idx < cntCmp; idx++)
@@ -322,7 +322,7 @@ namespace System.Xml.Xsl.Runtime
         {
             XmlDoubleSortKey that = obj as XmlDoubleSortKey;
 
-            if (that == null)
+            if (that is null)
             {
                 // Compare to empty sequence
                 if (_isNaN)

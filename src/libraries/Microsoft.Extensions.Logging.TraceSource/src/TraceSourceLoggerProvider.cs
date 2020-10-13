@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
         /// <param name="rootTraceListener">The <see cref="TraceListener"/> to use.</param>
         public TraceSourceLoggerProvider(SourceSwitch rootSourceSwitch, TraceListener rootTraceListener)
         {
-            if (rootSourceSwitch == null)
+            if (rootSourceSwitch is null)
             {
                 throw new ArgumentNullException(nameof(rootSourceSwitch));
             }
@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
                     traceSource.Switch = _rootSourceSwitch;
                 }
 
-                if (_rootTraceListener != null)
+                if (_rootTraceListener is not null)
                 {
                     traceSource.Listeners.Add(_rootTraceListener);
                 }
@@ -120,7 +120,7 @@ namespace Microsoft.Extensions.Logging.TraceSource
             if (!_disposed)
             {
                 _disposed = true;
-                if (_rootTraceListener != null)
+                if (_rootTraceListener is not null)
                 {
                     _rootTraceListener.Flush();
                     _rootTraceListener.Dispose();

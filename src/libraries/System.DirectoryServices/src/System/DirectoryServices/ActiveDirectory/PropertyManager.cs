@@ -131,9 +131,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static object GetPropertyValue(DirectoryContext context, DirectoryEntry directoryEntry, string propertyName)
         {
-            Debug.Assert(directoryEntry != null, "PropertyManager::GetPropertyValue - directoryEntry is null");
+            Debug.Assert(directoryEntry is not null, "PropertyManager::GetPropertyValue - directoryEntry is null");
 
-            Debug.Assert(propertyName != null, "PropertyManager::GetPropertyValue - propertyName is null");
+            Debug.Assert(propertyName is not null, "PropertyManager::GetPropertyValue - propertyName is null");
 
             try
             {
@@ -159,15 +159,15 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static object GetSearchResultPropertyValue(SearchResult res, string propertyName)
         {
-            Debug.Assert(res != null, "PropertyManager::GetSearchResultPropertyValue - res is null");
+            Debug.Assert(res is not null, "PropertyManager::GetSearchResultPropertyValue - res is null");
 
-            Debug.Assert(propertyName != null, "PropertyManager::GetSearchResultPropertyValue - propertyName is null");
+            Debug.Assert(propertyName is not null, "PropertyManager::GetSearchResultPropertyValue - propertyName is null");
 
             ResultPropertyValueCollection propertyValues = null;
             try
             {
                 propertyValues = res.Properties[propertyName];
-                if ((propertyValues == null) || (propertyValues.Count < 1))
+                if ((propertyValues is null) || (propertyValues.Count < 1))
                 {
                     throw new ActiveDirectoryOperationException(SR.Format(SR.PropertyNotFound, propertyName));
                 }

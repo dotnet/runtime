@@ -136,7 +136,7 @@ namespace System.Data
 
         private static object Eval(ExpressionNode expr, DataRow? row, DataRowVersion version, int[]? recordNos)
         {
-            if (recordNos == null)
+            if (recordNos is null)
             {
                 return expr.Eval(row, version);
             }
@@ -1522,7 +1522,7 @@ namespace System.Data
             if ((vLeft == DBNull.Value) || (_left.IsSqlColumn && DataStorage.IsObjectSqlNull(vLeft)))
                 return DBNull.Value;
 
-            if (_pattern == null)
+            if (_pattern is null)
             {
                 object vRight = _right.Eval(row, version);
 

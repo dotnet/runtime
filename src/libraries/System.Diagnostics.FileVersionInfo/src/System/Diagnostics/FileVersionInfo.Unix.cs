@@ -195,7 +195,7 @@ namespace System.Diagnostics
 
             major = minor = build = priv = 0;
 
-            if (versionString != null)
+            if (versionString is not null)
             {
                 string[] parts = versionString.Split('.');
                 if (parts.Length <= 4 && parts.Length > 0)

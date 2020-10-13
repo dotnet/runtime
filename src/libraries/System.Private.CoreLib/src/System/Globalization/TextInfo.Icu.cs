@@ -11,7 +11,7 @@ namespace System.Globalization
 
         private static bool NeedsTurkishCasing(string localeName)
         {
-            Debug.Assert(localeName != null);
+            Debug.Assert(localeName is not null);
 
             return CultureInfo.GetCultureInfo(localeName).CompareInfo.Compare("\u0131", "I", CompareOptions.IgnoreCase) == 0;
         }

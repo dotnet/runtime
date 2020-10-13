@@ -36,7 +36,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Entering PushChangesToNative, type={0}", p.GetType());
 
-                if (de == null)
+                if (de is null)
                 {
                     // Must be a newly-inserted Principal for which PushChangesToNative has not yet
                     // been called.
@@ -57,7 +57,7 @@ namespace System.DirectoryServices.AccountManagement
                     // Determine the SAM account name for the entry we'll be creating.  Use the name from the NT4 IdentityClaim.
                     string samAccountName = GetSamAccountName(p);
 
-                    if (samAccountName == null)
+                    if (samAccountName is null)
                     {
                         // They didn't set a NT4 IdentityClaim.
                         throw new InvalidOperationException(SR.NameMustBeSetToPersistPrincipal);
@@ -141,7 +141,7 @@ namespace System.DirectoryServices.AccountManagement
                     Debug.Assert(p is AuthenticablePrincipal);
 
                     string password = (string)p.GetValueForProperty(PropertyNames.PwdInfoPassword);
-                    Debug.Assert(password != null); // if null, PasswordInfo should not have indicated it was changed
+                    Debug.Assert(password is not null); // if null, PasswordInfo should not have indicated it was changed
 
                     SDSUtils.SetPassword(de, password);
                 }
@@ -162,7 +162,7 @@ namespace System.DirectoryServices.AccountManagement
 
             string Name = p.SamAccountName;
 
-            if (Name == null)
+            if (Name is null)
                 return null;
 
             // Split the SAM account name out of the UrnValue
@@ -197,9 +197,9 @@ namespace System.DirectoryServices.AccountManagement
         internal override Principal GetAsPrincipal(object storeObject, object discriminant)
         {
             // SAM doesn't use discriminant, should always be null.
-            Debug.Assert(discriminant == null);
+            Debug.Assert(discriminant is null);
 
-            Debug.Assert(storeObject != null);
+            Debug.Assert(storeObject is not null);
             Debug.Assert(storeObject is DirectoryEntry);
 
             DirectoryEntry de = (DirectoryEntry)storeObject;
@@ -208,12 +208,12 @@ namespace System.DirectoryServices.AccountManagement
 
             // Construct an appropriate Principal object.
             Principal p = SDSUtils.DirectoryEntryToPrincipal(de, this.OwningContext, null);
-            Debug.Assert(p != null);
+            Debug.Assert(p is not null);
 
             // Assign a SAMStoreKey to the newly-constructed Principal.
 
             // If it doesn't have an objectSid, it's not a principal and we shouldn't be here.
-            Debug.Assert((de.Properties["objectSid"] != null) && (de.Properties["objectSid"].Count == 1));
+            Debug.Assert((de.Properties["objectSid"] is not null) && (de.Properties["objectSid"].Count == 1));
 
             SAMStoreKey key = new SAMStoreKey(this.MachineFlatName, (byte[])de.Properties["objectSid"].Value);
             p.Key = key;
@@ -223,8 +223,8 @@ namespace System.DirectoryServices.AccountManagement
 
         internal override void Load(Principal p, string principalPropertyName)
         {
-            Debug.Assert(p != null);
-            Debug.Assert(p.UnderlyingObject != null);
+            Debug.Assert(p is not null);
+            Debug.Assert(p.UnderlyingObject is not null);
             Debug.Assert(p.UnderlyingObject is DirectoryEntry);
 
             DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
@@ -249,7 +249,7 @@ namespace System.DirectoryServices.AccountManagement
             ArrayList entries = (ArrayList)propertyMappingTableByProperty[principalPropertyName];
 
             // We don't support this property and cannot load it.  To maintain backward compatibility with the old code just return.
-            if (entries == null)
+            if (entries is null)
                 return;
 
             try
@@ -274,12 +274,12 @@ namespace System.DirectoryServices.AccountManagement
         {
             try
             {
-                Debug.Assert(p != null);
-                Debug.Assert(p.UnderlyingObject != null);
+                Debug.Assert(p is not null);
+                Debug.Assert(p.UnderlyingObject is not null);
                 Debug.Assert(p.UnderlyingObject is DirectoryEntry);
 
                 DirectoryEntry de = (DirectoryEntry)p.UnderlyingObject;
-                Debug.Assert(de != null);
+                Debug.Assert(de is not null);
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "Entering Load, type={0}, path={1}", p.GetType(), de.Path);
 
@@ -310,7 +310,7 @@ namespace System.DirectoryServices.AccountManagement
                     ArrayList entries = (ArrayList)propertyMappingTableByWinNT[samAttribute.ToLowerInvariant()];
 
                     // If it's not in the table, it's not an SAM attribute we care about
-                    if (entries == null)
+                    if (entries is null)
                         continue;
 
                     // Load it into the Principal.  Some LDAP attributes (such as userAccountControl)
@@ -343,7 +343,7 @@ namespace System.DirectoryServices.AccountManagement
                 byte[] sid = new byte[sidObj.BinaryLength];
                 sidObj.GetBinaryForm(sid, 0);
 
-                if (sid == null)
+                if (sid is null)
                     throw new ArgumentException(SR.StoreCtxSecurityIdentityClaimBadFormat);
 
                 // If they're searching by SID for a SID corresponding to a fake group, construct
@@ -372,14 +372,14 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Not a fake group.  Search for the real group.
                 object o = FindNativeBySIDIdentRef(principalType, sid);
-                return (o != null) ? GetAsPrincipal(o, null) : null;
+                return (o is not null) ? GetAsPrincipal(o, null) : null;
             }
             else if (urnScheme == UrnScheme.SamAccountScheme || urnScheme == UrnScheme.NameScheme)
             {
                 object o = FindNativeByNT4IdentRef(principalType, urnValue);
-                return (o != null) ? GetAsPrincipal(o, null) : null;
+                return (o is not null) ? GetAsPrincipal(o, null) : null;
             }
-            else if (urnScheme == null)
+            else if (urnScheme is null)
             {
                 object sidPrincipal = null;
                 object nt4Principal = null;
@@ -404,7 +404,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // If null, must have been a non-SID UrnValue.  Ignore it, and
                 // continue on to try NT4 Account IdentityClaim.
-                if (sid != null)
+                if (sid is not null)
                 {
                     // Are they perhaps searching for a fake group?
                     // If they passed in a valid SID for a fake group, construct and return the fake
@@ -455,17 +455,17 @@ namespace System.DirectoryServices.AccountManagement
                 GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                         "SAMStoreCtx",
                                         "FindPrincipalByIdentRef: scheme==null, found nt4={0}, found sid={1}",
-                                        (nt4Principal != null),
-                                        (sidPrincipal != null));
+                                        (nt4Principal is not null),
+                                        (sidPrincipal is not null));
 
                 // If they both succeeded in finding a match, we have too many matches.
                 // Throw an exception.
-                if ((sidPrincipal != null) && (nt4Principal != null))
+                if ((sidPrincipal is not null) && (nt4Principal is not null))
                     throw new MultipleMatchesException(SR.MultipleMatchingPrincipals);
 
                 // Return whichever one matched.  If neither matched, this will return null.
-                return (sidPrincipal != null) ? GetAsPrincipal(sidPrincipal, null) :
-                            ((nt4Principal != null) ? GetAsPrincipal(nt4Principal, null) :
+                return (sidPrincipal is not null) ? GetAsPrincipal(sidPrincipal, null) :
+                            ((nt4Principal is not null) ? GetAsPrincipal(nt4Principal, null) :
                                 null);
             }
             else
@@ -572,7 +572,7 @@ namespace System.DirectoryServices.AccountManagement
                 // If it has no SID, it's not a security principal, and we're not interested in it.
                 // This also has the side effect of forcing the object to load, thereby testing
                 // whether or not it exists.
-                if (de.Properties["objectSid"] == null || de.Properties["objectSid"].Count == 0)
+                if (de.Properties["objectSid"] is null || de.Properties["objectSid"].Count == 0)
                     return false;
             }
             catch (System.Runtime.InteropServices.COMException e)
@@ -627,7 +627,7 @@ namespace System.DirectoryServices.AccountManagement
         // for ADStoreCtx).  For others, it may vary depending on the Principal passed in.
         internal override Type NativeType(Principal p)
         {
-            Debug.Assert(p != null);
+            Debug.Assert(p is not null);
 
             return typeof(DirectoryEntry);
         }
@@ -910,10 +910,10 @@ namespace System.DirectoryServices.AccountManagement
         {
             string value = (string)p.GetValueForProperty(propertyName);
 
-            if (p.unpersisted && value == null)
+            if (p.unpersisted && value is null)
                 return;
 
-            if (value != null && value.Length > 0)
+            if (value is not null && value.Length > 0)
                 de.Properties[suggestedWinNTProperty].Value = value;
             else
                 de.Properties[suggestedWinNTProperty].Value = "";
@@ -930,10 +930,10 @@ namespace System.DirectoryServices.AccountManagement
 
             byte[] value = (byte[])p.GetValueForProperty(propertyName);
 
-            if (p.unpersisted && value == null)
+            if (p.unpersisted && value is null)
                 return;
 
-            if (value != null && value.Length != 0)
+            if (value is not null && value.Length != 0)
             {
                 de.Properties[suggestedWinNTProperty].Value = value;
             }
@@ -987,7 +987,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             Nullable<DateTime> value = (Nullable<DateTime>)p.GetValueForProperty(propertyName);
 
-            if (p.unpersisted && value == null)
+            if (p.unpersisted && value is null)
                 return;
 
             // ADSI's WinNT provider uses 1/1/1970 to represent "never expires" when setting the property
@@ -1081,7 +1081,7 @@ namespace System.DirectoryServices.AccountManagement
                     if (member.unpersisted)
                         throw new InvalidOperationException(SR.StoreCtxGroupHasUnpersistedInsertedPrincipal);
 
-                    Debug.Assert(member.Context != null);
+                    Debug.Assert(member.Context is not null);
 
                     // There's no restriction on the type of principal to be inserted (AD/reg-SAM/MSAM), but it needs
                     // to have a SID IdentityClaim.  We'll check that as we go.
@@ -1095,7 +1095,7 @@ namespace System.DirectoryServices.AccountManagement
                     // Build a SID ADsPath
                     string memberSidPath = GetSidADsPathFromPrincipal(member);
 
-                    if (memberSidPath == null)
+                    if (memberSidPath is null)
                         throw new InvalidOperationException(SR.SAMStoreCtxCouldntGetSIDForGroupMember);
 
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "UpdateGroupMembership: inserting {0}", memberSidPath);
@@ -1123,7 +1123,7 @@ namespace System.DirectoryServices.AccountManagement
                     // Build a SID ADsPath
                     string memberSidPath = GetSidADsPathFromPrincipal(member);
 
-                    if (memberSidPath == null)
+                    if (memberSidPath is null)
                         throw new InvalidOperationException(SR.SAMStoreCtxCouldntGetSIDForGroupMember);
 
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMStoreCtx", "UpdateGroupMembership: removing {0}", memberSidPath);
@@ -1153,7 +1153,7 @@ namespace System.DirectoryServices.AccountManagement
 
             SecurityIdentifier Sid = p.Sid;
 
-            if (Sid == null)
+            if (Sid is null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "SAMStoreCtx", "GetSidADsPathFromPrincipal: no SID");
                 return null;
@@ -1161,7 +1161,7 @@ namespace System.DirectoryServices.AccountManagement
 
             string sddlSid = Sid.ToString();
 
-            if (sddlSid == null)
+            if (sddlSid is null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn,
                                         "SAMStoreCtx",

@@ -24,14 +24,14 @@ namespace System.Security.Cryptography.Xml
 
         public override XmlElement GetXml()
         {
-            if (_encryptedKey == null)
+            if (_encryptedKey is null)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "KeyInfoEncryptedKey");
             return _encryptedKey.GetXml();
         }
 
         internal override XmlElement GetXml(XmlDocument xmlDocument)
         {
-            if (_encryptedKey == null)
+            if (_encryptedKey is null)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "KeyInfoEncryptedKey");
             return _encryptedKey.GetXml(xmlDocument);
         }

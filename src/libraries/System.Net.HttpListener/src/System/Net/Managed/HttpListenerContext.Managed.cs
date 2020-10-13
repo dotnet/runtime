@@ -26,7 +26,7 @@ namespace System.Net
 
         internal string? ErrorMessage { get; set; }
 
-        internal bool HaveError => ErrorMessage != null;
+        internal bool HaveError => ErrorMessage is not null;
 
         internal HttpConnection Connection => _connection;
 

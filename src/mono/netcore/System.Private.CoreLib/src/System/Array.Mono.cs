@@ -48,7 +48,7 @@ namespace System
 
         public static unsafe void Clear(Array array, int index, int length)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
             int lowerBound = array.GetLowerBound(0);
@@ -76,10 +76,10 @@ namespace System
 
         public static void Copy(Array sourceArray, Array destinationArray, int length)
         {
-            if (sourceArray == null)
+            if (sourceArray is null)
                 throw new ArgumentNullException(nameof(sourceArray));
 
-            if (destinationArray == null)
+            if (destinationArray is null)
                 throw new ArgumentNullException(nameof(destinationArray));
 
             Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray,
@@ -93,10 +93,10 @@ namespace System
 
         private static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            if (sourceArray == null)
+            if (sourceArray is null)
                 throw new ArgumentNullException(nameof(sourceArray));
 
-            if (destinationArray == null)
+            if (destinationArray is null)
                 throw new ArgumentNullException(nameof(destinationArray));
 
             if (length < 0)
@@ -134,7 +134,7 @@ namespace System
 
             Type src_type = sourceArray.GetType().GetElementType()!;
             Type dst_type = destinationArray.GetType().GetElementType()!;
-            bool dst_type_vt = dst_type.IsValueType && Nullable.GetUnderlyingType(dst_type) == null;
+            bool dst_type_vt = dst_type.IsValueType && Nullable.GetUnderlyingType(dst_type) is null;
 
             bool src_is_enum = src_type.IsEnum;
             bool dst_is_enum = dst_type.IsEnum;
@@ -169,7 +169,7 @@ namespace System
                     if (!src_type.IsValueType && dst_is_enum)
                         throw new InvalidCastException(SR.InvalidCast_DownCastArrayElement);
 
-                    if (dst_type_vt && (srcval == null || (src_type == typeof(object) && srcval.GetType() != dst_type)))
+                    if (dst_type_vt && (srcval is null || (src_type == typeof(object) && srcval.GetType() != dst_type)))
                         throw new InvalidCastException();
 
                     try
@@ -260,7 +260,7 @@ namespace System
                 ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
 
             RuntimeType? runtimeType = elementType.UnderlyingSystemType as RuntimeType;
-            if (runtimeType == null)
+            if (runtimeType is null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             Array? array = null;
@@ -279,7 +279,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length2, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             RuntimeType? runtimeType = elementType.UnderlyingSystemType as RuntimeType;
-            if (runtimeType == null)
+            if (runtimeType is null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             int* lengths = stackalloc int[] { length1, length2 };
@@ -301,7 +301,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length3, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             RuntimeType? runtimeType = elementType.UnderlyingSystemType as RuntimeType;
-            if (runtimeType == null)
+            if (runtimeType is null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             int* lengths = stackalloc int[] { length1, length2, length3 };
@@ -315,13 +315,13 @@ namespace System
         {
             if (elementType is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (lengths == null)
+            if (lengths is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
             if (lengths.Length == 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
 
             RuntimeType? runtimeType = elementType.UnderlyingSystemType as RuntimeType;
-            if (runtimeType == null)
+            if (runtimeType is null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             for (int i = 0; i < lengths.Length; i++)
@@ -337,11 +337,11 @@ namespace System
 
         public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
         {
-            if (elementType == null)
+            if (elementType is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (lengths == null)
+            if (lengths is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
-            if (lowerBounds == null)
+            if (lowerBounds is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lowerBounds);
             if (lengths.Length != lowerBounds!.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RanksAndBounds);
@@ -353,7 +353,7 @@ namespace System
                     ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.lengths, i, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             RuntimeType? runtimeType = elementType.UnderlyingSystemType as RuntimeType;
-            if (runtimeType == null)
+            if (runtimeType is null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             Array? array = null;

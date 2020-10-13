@@ -48,9 +48,9 @@ namespace System
         }
 
         public override string Message =>
-            ClassName == null ?
+            ClassName is null ?
                 base.Message :
                 SR.Format(SR.MissingMethod_Name, ClassName + "." + MemberName +
-                    (Signature != null ? " " + FormatSignature(Signature) : string.Empty));
+                    (Signature is not null ? " " + FormatSignature(Signature) : string.Empty));
     }
 }

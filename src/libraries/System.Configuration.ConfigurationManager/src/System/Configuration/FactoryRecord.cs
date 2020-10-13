@@ -183,7 +183,7 @@ namespace System.Configuration
         // by cloning we contain a single copy of the strings referred to in the factory and section records
         internal FactoryRecord CloneSectionGroup(string factoryTypeName, string filename, int lineNumber)
         {
-            if (FactoryTypeName != null) factoryTypeName = FactoryTypeName;
+            if (FactoryTypeName is not null) factoryTypeName = FactoryTypeName;
 
             return new FactoryRecord(ConfigKey,
                 Group,
@@ -208,7 +208,7 @@ namespace System.Configuration
 
                 Type t1, t2;
 
-                if (host != null)
+                if (host is not null)
                 {
                     t1 = TypeUtil.GetType(host, typeName, false);
                     t2 = TypeUtil.GetType(host, FactoryTypeName, false);
@@ -219,7 +219,7 @@ namespace System.Configuration
                     t2 = TypeUtil.GetType(FactoryTypeName, false);
                 }
 
-                return (t1 != null) && (t1 == t2);
+                return (t1 is not null) && (t1 == t2);
             }
             catch { }
 
@@ -228,7 +228,7 @@ namespace System.Configuration
 
         internal bool IsEquivalentSectionGroupFactory(IInternalConfigHost host, string typeName)
         {
-            if ((typeName == null) || (FactoryTypeName == null))
+            if ((typeName is null) || (FactoryTypeName is null))
                 return true;
 
             return IsEquivalentType(host, typeName);
@@ -265,10 +265,10 @@ namespace System.Configuration
 
         internal bool IsIgnorable()
         {
-            if (Factory != null)
+            if (Factory is not null)
                 return Factory is IgnoreSectionHandler;
 
-            return (FactoryTypeName != null) && FactoryTypeName.Contains("System.Configuration.IgnoreSection");
+            return (FactoryTypeName is not null) && FactoryTypeName.Contains("System.Configuration.IgnoreSection");
         }
     }
 }

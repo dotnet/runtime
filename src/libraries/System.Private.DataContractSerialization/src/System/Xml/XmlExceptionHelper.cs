@@ -32,7 +32,7 @@ namespace System.Xml
         {
             string s = SR.Format(res, arg1, arg2, arg3);
             IXmlLineInfo? lineInfo = reader as IXmlLineInfo;
-            if (lineInfo != null && lineInfo.HasLineInfo())
+            if (lineInfo is not null && lineInfo.HasLineInfo())
             {
                 s += " " + SR.Format(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
             }
@@ -45,7 +45,7 @@ namespace System.Xml
         {
             string s = exception.Message;
             IXmlLineInfo? lineInfo = reader as IXmlLineInfo;
-            if (lineInfo != null && lineInfo.HasLineInfo())
+            if (lineInfo is not null && lineInfo.HasLineInfo())
             {
                 s += " " + SR.Format(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
             }

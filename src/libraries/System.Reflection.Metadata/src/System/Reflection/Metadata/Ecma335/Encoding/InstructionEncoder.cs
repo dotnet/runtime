@@ -34,7 +34,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </param>
         public InstructionEncoder(BlobBuilder codeBuilder, ControlFlowBuilder? controlFlowBuilder = null)
         {
-            if (codeBuilder == null)
+            if (codeBuilder is null)
             {
                 Throw.BuilderArgumentNull();
             }
@@ -437,7 +437,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         private ControlFlowBuilder GetBranchBuilder()
         {
-            if (ControlFlowBuilder == null)
+            if (ControlFlowBuilder is null)
             {
                 Throw.ControlFlowBuilderNotAvailable();
             }

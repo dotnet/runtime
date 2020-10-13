@@ -27,7 +27,7 @@ namespace System.Net.Http.Headers
             // allocated.  Then we only pay for the 45 bytes for those fields when any is actually accessed.
             object[] collections = _specialCollectionsSlots ?? (_specialCollectionsSlots = new object[NumCollectionsSlots]);
             object result = collections[slot];
-            if (result == null)
+            if (result is null)
             {
                 collections[slot] = result = creationFunc(this)!;
             }
@@ -151,10 +151,10 @@ namespace System.Net.Http.Headers
         {
             base.AddHeaders(sourceHeaders);
             HttpResponseHeaders? sourceResponseHeaders = sourceHeaders as HttpResponseHeaders;
-            Debug.Assert(sourceResponseHeaders != null);
+            Debug.Assert(sourceResponseHeaders is not null);
 
             // Copy special values, but do not overwrite
-            if (sourceResponseHeaders._generalHeaders != null)
+            if (sourceResponseHeaders._generalHeaders is not null)
             {
                 GeneralHeaders.AddSpecialsFrom(sourceResponseHeaders._generalHeaders);
             }
@@ -166,7 +166,7 @@ namespace System.Net.Http.Headers
                 return true;
 
             KnownHeader? knownHeader = KnownHeaders.TryGetKnownHeader(descriptor.Name);
-            if (knownHeader == null)
+            if (knownHeader is null)
                 return true;
 
             return (knownHeader.HeaderType & HttpHeaderType.NonTrailing) == 0;

@@ -290,7 +290,7 @@ namespace System.Diagnostics.Tracing
                         {
                             args = new Dictionary<string, string?>(4);
                             // data can be null if the filterArgs had a very large size which failed our sanity check
-                            if (data != null)
+                            if (data is not null)
                             {
                                 while (keyIndex < data.Length)
                                 {
@@ -387,7 +387,7 @@ namespace System.Diagnostics.Tracing
 
             // first look for sessions that have gone away (or have changed)
             // (present in the m_liveSessions but not in the new liveSessionList)
-            if (m_liveSessions != null)
+            if (m_liveSessions is not null)
             {
                 foreach (SessionInfo s in m_liveSessions)
                 {
@@ -399,7 +399,7 @@ namespace System.Diagnostics.Tracing
             }
             // next look for sessions that were created since the last callback  (or have changed)
             // (present in the new liveSessionList but not in m_liveSessions)
-            if (liveSessionList != null)
+            if (liveSessionList is not null)
             {
                 foreach (SessionInfo s in liveSessionList)
                 {
@@ -513,7 +513,7 @@ namespace System.Diagnostics.Tracing
             }
             finally
             {
-                if (buffer != null && buffer != stackSpace)
+                if (buffer is not null && buffer != stackSpace)
                 {
                     Marshal.FreeHGlobal((IntPtr)buffer);
                 }
@@ -537,7 +537,7 @@ namespace System.Diagnostics.Tracing
 
             using (var key = Registry.LocalMachine.OpenSubKey(regKey))
             {
-                if (key != null)
+                if (key is not null)
                 {
                     foreach (string valueName in key.GetValueNames())
                     {
@@ -552,7 +552,7 @@ namespace System.Diagnostics.Tracing
                                 (new RegistryPermission(RegistryPermissionAccess.Read, regKey)).Assert();
 #endif
                                 var data = key.GetValue(valueName) as byte[];
-                                if (data != null)
+                                if (data is not null)
                                 {
                                     var dataAsString = System.Text.Encoding.UTF8.GetString(data);
                                     int keywordIdx = dataAsString.IndexOf("EtwSessionKeyword", StringComparison.Ordinal);
@@ -581,7 +581,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         private static int IndexOfSessionInList(List<SessionInfo>? sessions, int etwSessionId)
         {
-            if (sessions == null)
+            if (sessions is null)
                 return -1;
             // for non-coreclr code we could use List<T>.FindIndex(Predicate<T>), but we need this to compile
             // on coreclr as well
@@ -605,7 +605,7 @@ namespace System.Diagnostics.Tracing
         {
             data = null;
             dataStart = 0;
-            if (filterData == null)
+            if (filterData is null)
             {
 #if TARGET_WINDOWS
                 string regKey = @"\Microsoft\Windows\CurrentVersion\Winevt\Publishers\{" + m_providerId + "}";
@@ -623,7 +623,7 @@ namespace System.Diagnostics.Tracing
                 using (RegistryKey? key = Registry.LocalMachine.OpenSubKey(regKey))
                 {
                     data = key?.GetValue(valueName, null) as byte[];
-                    if (data != null)
+                    if (data is not null)
                     {
                         // We only used the persisted data from the registry for updates.
                         command = ControllerCommand.Update;
@@ -758,11 +758,11 @@ namespace System.Diagnostics.Tracing
             string? sRet = data as string;
             byte[]? blobRet = null;
 
-            if (sRet != null)
+            if (sRet is not null)
             {
                 dataDescriptor->Size = ((uint)sRet.Length + 1) * 2;
             }
-            else if ((blobRet = data as byte[]) != null)
+            else if ((blobRet = data as byte[]) is not null)
             {
                 // first store array length
                 *(int*)dataBuffer = blobRet.Length;
@@ -920,7 +920,7 @@ namespace System.Diagnostics.Tracing
                 }
 
                 // To our eyes, everything else is a just a string
-                if (data == null)
+                if (data is null)
                     sRet = "";
                 else
                     sRet = data.ToString()!;
@@ -1006,11 +1006,11 @@ namespace System.Diagnostics.Tracing
                 bool hasNonStringRefArgs = false;
                 for (index = 0; index < eventPayload.Length; index++)
                 {
-                    if (eventPayload[index] != null)
+                    if (eventPayload[index] is not null)
                     {
                         object? supportedRefObj = EncodeObject(ref eventPayload[index], ref userDataPtr, ref currentBuffer, ref totalEventSize);
 
-                        if (supportedRefObj != null)
+                        if (supportedRefObj is not null)
                         {
                             // EncodeObject advanced userDataPtr to the next empty slot
                             int idx = (int)(userDataPtr - userData - 1);
@@ -1064,35 +1064,35 @@ namespace System.Diagnostics.Tracing
                             v4 = (string?)dataRefObj[4], v5 = (string?)dataRefObj[5], v6 = (string?)dataRefObj[6], v7 = (string?)dataRefObj[7])
                     {
                         userDataPtr = (EventData*)userData;
-                        if (dataRefObj[0] != null)
+                        if (dataRefObj[0] is not null)
                         {
                             userDataPtr[refObjPosition[0]].Ptr = (ulong)v0;
                         }
-                        if (dataRefObj[1] != null)
+                        if (dataRefObj[1] is not null)
                         {
                             userDataPtr[refObjPosition[1]].Ptr = (ulong)v1;
                         }
-                        if (dataRefObj[2] != null)
+                        if (dataRefObj[2] is not null)
                         {
                             userDataPtr[refObjPosition[2]].Ptr = (ulong)v2;
                         }
-                        if (dataRefObj[3] != null)
+                        if (dataRefObj[3] is not null)
                         {
                             userDataPtr[refObjPosition[3]].Ptr = (ulong)v3;
                         }
-                        if (dataRefObj[4] != null)
+                        if (dataRefObj[4] is not null)
                         {
                             userDataPtr[refObjPosition[4]].Ptr = (ulong)v4;
                         }
-                        if (dataRefObj[5] != null)
+                        if (dataRefObj[5] is not null)
                         {
                             userDataPtr[refObjPosition[5]].Ptr = (ulong)v5;
                         }
-                        if (dataRefObj[6] != null)
+                        if (dataRefObj[6] is not null)
                         {
                             userDataPtr[refObjPosition[6]].Ptr = (ulong)v6;
                         }
-                        if (dataRefObj[7] != null)
+                        if (dataRefObj[7] is not null)
                         {
                             userDataPtr[refObjPosition[7]].Ptr = (ulong)v7;
                         }
@@ -1168,7 +1168,7 @@ namespace System.Diagnostics.Tracing
         // </SecurityKernel>
         protected internal unsafe bool WriteEvent(ref EventDescriptor eventDescriptor, IntPtr eventHandle, Guid* activityID, Guid* childActivityID, int dataCount, IntPtr data)
         {
-            if (childActivityID != null)
+            if (childActivityID is not null)
             {
                 // activity transfers are supported only for events that specify the Send or Receive opcode
                 Debug.Assert((EventOpcode)eventDescriptor.Opcode == EventOpcode.Send ||

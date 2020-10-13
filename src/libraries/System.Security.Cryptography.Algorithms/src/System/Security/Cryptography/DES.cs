@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
             }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 if (!(value.Length * 8).IsLegalSize(s_legalKeySizes))
@@ -107,7 +107,7 @@ namespace System.Security.Cryptography
 
         private static bool IsLegalKeySize(byte[]? rgbKey)
         {
-            if (rgbKey != null && rgbKey.Length == 8)
+            if (rgbKey is not null && rgbKey.Length == 8)
                 return true;
 
             return false;

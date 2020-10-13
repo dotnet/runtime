@@ -20,7 +20,7 @@ namespace System.Net.Security
             X509Certificate2[] intermediates = Array.Empty<X509Certificate2>();
             using (X509Chain chain = new X509Chain())
             {
-                if (additionalCertificates != null)
+                if (additionalCertificates is not null)
                 {
                     foreach (X509Certificate cert in additionalCertificates)
                     {

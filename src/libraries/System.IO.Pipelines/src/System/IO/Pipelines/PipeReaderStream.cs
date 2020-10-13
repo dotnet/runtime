@@ -15,7 +15,7 @@ namespace System.IO.Pipelines
 
         public PipeReaderStream(PipeReader pipeReader, bool leaveOpen)
         {
-            Debug.Assert(pipeReader != null);
+            Debug.Assert(pipeReader is not null);
             _pipeReader = pipeReader;
             LeaveOpen = leaveOpen;
         }

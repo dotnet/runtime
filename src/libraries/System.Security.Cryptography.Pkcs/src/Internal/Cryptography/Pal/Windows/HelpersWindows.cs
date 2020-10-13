@@ -407,7 +407,7 @@ namespace Internal.Cryptography.Pal.Windows
             string keyName = GetStringProvParam(handle, CryptProvParam.PP_CONTAINER, ref asciiStringBuf, ref rented, maxClear);
             maxClear = Math.Max(maxClear, keyName.Length);
 
-            if (rented != null)
+            if (rented is not null)
             {
                 CryptoPool.Return(rented, maxClear);
             }
@@ -434,7 +434,7 @@ namespace Internal.Cryptography.Pal.Windows
             {
                 if (len > buf.Length)
                 {
-                    if (rented != null)
+                    if (rented is not null)
                     {
                         CryptoPool.Return(rented, clearLen);
                     }

@@ -51,7 +51,7 @@ namespace Microsoft.Extensions.Caching.Memory
             this MemoryCacheEntryOptions options,
             IChangeToken expirationToken)
         {
-            if (expirationToken == null)
+            if (expirationToken is null)
             {
                 throw new ArgumentNullException(nameof(expirationToken));
             }
@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.Caching.Memory
             this MemoryCacheEntryOptions options,
             PostEvictionDelegate callback)
         {
-            if (callback == null)
+            if (callback is null)
             {
                 throw new ArgumentNullException(nameof(callback));
             }
@@ -133,7 +133,7 @@ namespace Microsoft.Extensions.Caching.Memory
             PostEvictionDelegate callback,
             object state)
         {
-            if (callback == null)
+            if (callback is null)
             {
                 throw new ArgumentNullException(nameof(callback));
             }

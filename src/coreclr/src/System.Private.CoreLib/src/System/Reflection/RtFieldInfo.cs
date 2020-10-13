@@ -34,7 +34,7 @@ namespace System.Reflection
             INVOCATION_FLAGS invocationFlags = 0;
 
             // first take care of all the NO_INVOKE cases
-            if (declaringType != null && declaringType.ContainsGenericParameters)
+            if (declaringType is not null && declaringType.ContainsGenericParameters)
             {
                 invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE;
             }
@@ -84,7 +84,7 @@ namespace System.Reflection
             {
                 if (!m_declaringType.IsInstanceOfType(target))
                 {
-                    if (target == null)
+                    if (target is null)
                     {
                         throw new TargetException(SR.RFLCT_Targ_StatFldReqTarg);
                     }
@@ -129,7 +129,7 @@ namespace System.Reflection
 
             if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
             {
-                if (declaringType != null && DeclaringType!.ContainsGenericParameters)
+                if (declaringType is not null && DeclaringType!.ContainsGenericParameters)
                     throw new InvalidOperationException(SR.Arg_UnboundGenField);
 
                 throw new FieldAccessException();
@@ -140,7 +140,7 @@ namespace System.Reflection
             RuntimeType fieldType = (RuntimeType)FieldType;
 
             bool domainInitialized = false;
-            if (declaringType == null)
+            if (declaringType is null)
             {
                 return RuntimeFieldHandle.GetValue(this, obj, fieldType, null, ref domainInitialized);
             }
@@ -175,7 +175,7 @@ namespace System.Reflection
 
             if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NO_INVOKE) != 0)
             {
-                if (declaringType != null && declaringType.ContainsGenericParameters)
+                if (declaringType is not null && declaringType.ContainsGenericParameters)
                     throw new InvalidOperationException(SR.Arg_UnboundGenField);
 
                 throw new FieldAccessException();
@@ -187,7 +187,7 @@ namespace System.Reflection
             value = fieldType.CheckValue(value, binder, culture, invokeAttr);
 
             bool domainInitialized = false;
-            if (declaringType == null)
+            if (declaringType is null)
             {
                 RuntimeFieldHandle.SetValue(this, obj, value, fieldType, m_fieldAttributes, null, ref domainInitialized);
             }

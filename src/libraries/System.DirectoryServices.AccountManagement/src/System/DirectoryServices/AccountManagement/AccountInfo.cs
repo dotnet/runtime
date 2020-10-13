@@ -244,7 +244,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "AccountInfo", "IsAccountLockedOut: sending lockout query");
 
-                Debug.Assert(_owningPrincipal.Context != null);
+                Debug.Assert(_owningPrincipal.Context is not null);
 
                 return _owningPrincipal.GetStoreCtxToUse().IsLockedOut(_owningPrincipal);
             }
@@ -261,7 +261,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "AccountInfo", "UnlockAccount: sending unlock request");
 
-                Debug.Assert(_owningPrincipal.Context != null);
+                Debug.Assert(_owningPrincipal.Context is not null);
 
                 _owningPrincipal.GetStoreCtxToUse().UnlockAccount(_owningPrincipal);
             }
@@ -375,10 +375,10 @@ namespace System.DirectoryServices.AccountManagement
 
                 case (PropertyNames.AcctInfoPermittedLogonTimes):
                     // If they're equal, they have _not_ changed
-                    if ((_permittedLogonTimes == null) && (_permittedLogonTimesOriginal == null))
+                    if ((_permittedLogonTimes is null) && (_permittedLogonTimesOriginal is null))
                         return false;
 
-                    if ((_permittedLogonTimes == null) || (_permittedLogonTimesOriginal == null))
+                    if ((_permittedLogonTimes is null) || (_permittedLogonTimesOriginal is null))
                         return true;
 
                     return !Utils.AreBytesEqual(_permittedLogonTimes, _permittedLogonTimesOriginal);
@@ -451,7 +451,7 @@ namespace System.DirectoryServices.AccountManagement
 
             _permittedWorkstations.ResetTracking();
 
-            _permittedLogonTimesOriginal = (_permittedLogonTimes != null) ?
+            _permittedLogonTimesOriginal = (_permittedLogonTimes is not null) ?
                                                             (byte[])_permittedLogonTimes.Clone() :
                                                             null;
             _expirationDateChanged = (_expirationDateChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;

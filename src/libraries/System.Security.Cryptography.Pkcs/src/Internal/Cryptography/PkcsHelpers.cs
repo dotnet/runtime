@@ -46,7 +46,7 @@ namespace Internal.Cryptography
 
         internal static HashAlgorithmName GetDigestAlgorithm(Oid oid)
         {
-            Debug.Assert(oid != null);
+            Debug.Assert(oid is not null);
             return GetDigestAlgorithm(oid.Value);
         }
 
@@ -107,7 +107,7 @@ namespace Internal.Cryptography
 
         public static void RemoveAt<T>(ref T[] arr, int idx)
         {
-            Debug.Assert(arr != null);
+            Debug.Assert(arr is not null);
             Debug.Assert(idx >= 0);
             Debug.Assert(idx < arr.Length);
 
@@ -149,7 +149,7 @@ namespace Internal.Cryptography
             writer.PopSetOf();
             normalizedValue = writer.Encode();
 
-            if (encodedValueProcessor != null)
+            if (encodedValueProcessor is not null)
             {
                 encodedValueProcessor(normalizedValue);
             }
@@ -643,7 +643,7 @@ namespace Internal.Cryptography
             exception = null;
             rsaEncryptionPadding = null;
 
-            if (parameters == null || parameters.Value.IsEmpty)
+            if (parameters is null || parameters.Value.IsEmpty)
             {
                 exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 return false;
@@ -654,7 +654,7 @@ namespace Internal.Cryptography
                 OaepParamsAsn oaepParameters = OaepParamsAsn.Decode(parameters.Value, AsnEncodingRules.DER);
 
                 if (oaepParameters.MaskGenFunc.Algorithm != Oids.Mgf1 ||
-                    oaepParameters.MaskGenFunc.Parameters == null ||
+                    oaepParameters.MaskGenFunc.Parameters is null ||
                     oaepParameters.PSourceFunc.Algorithm != Oids.PSpecified
                     )
                 {
@@ -672,7 +672,7 @@ namespace Internal.Cryptography
 
                 ReadOnlySpan<byte> pSpecifiedDefaultParameters = new byte[] { 0x04, 0x00 };
 
-                if (oaepParameters.PSourceFunc.Parameters != null &&
+                if (oaepParameters.PSourceFunc.Parameters is not null &&
                     !oaepParameters.PSourceFunc.Parameters.Value.Span.SequenceEqual(pSpecifiedDefaultParameters))
                 {
                     exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);

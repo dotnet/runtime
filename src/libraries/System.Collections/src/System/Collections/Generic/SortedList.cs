@@ -107,7 +107,7 @@ namespace System.Collections.Generic
         public SortedList(IComparer<TKey>? comparer)
             : this()
         {
-            if (comparer != null)
+            if (comparer is not null)
             {
                 this.comparer = comparer;
             }
@@ -148,9 +148,9 @@ namespace System.Collections.Generic
         // subsequently added to the sorted list.
         //
         public SortedList(IDictionary<TKey, TValue> dictionary, IComparer<TKey>? comparer)
-            : this((dictionary != null ? dictionary.Count : 0), comparer)
+            : this(dictionary is not null ? dictionary.Count : 0, comparer)
         {
-            if (dictionary == null)
+            if (dictionary is null)
                 throw new ArgumentNullException(nameof(dictionary));
 
             int count = dictionary.Count;
@@ -182,7 +182,7 @@ namespace System.Collections.Generic
         //
         public void Add(TKey key, TValue value)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (key is null) throw new ArgumentNullException(nameof(key));
             int i = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
             if (i >= 0)
                 throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key), nameof(key));
@@ -267,16 +267,16 @@ namespace System.Collections.Generic
 
         void IDictionary.Add(object key, object? value)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
-            if (value == null && !(default(TValue) == null))    // null is an invalid value for Value types
+            if (value is null && !(default(TValue) is null))    // null is an invalid value for Value types
                 throw new ArgumentNullException(nameof(value));
 
             if (!(key is TKey))
                 throw new ArgumentException(SR.Format(SR.Arg_WrongType, key, typeof(TKey)), nameof(key));
 
-            if (!(value is TValue) && value != null)            // null is a valid value for Reference Types
+            if (!(value is TValue) && value is not null)            // null is a valid value for Reference Types
                 throw new ArgumentException(SR.Format(SR.Arg_WrongType, value, typeof(TValue)), nameof(value));
 
             Add((TKey)key, (TValue)value!);
@@ -364,14 +364,14 @@ namespace System.Collections.Generic
 
         private KeyList GetKeyListHelper()
         {
-            if (keyList == null)
+            if (keyList is null)
                 keyList = new KeyList(this);
             return keyList;
         }
 
         private ValueList GetValueListHelper()
         {
-            if (valueList == null)
+            if (valueList is null)
                 valueList = new ValueList(this);
             return valueList;
         }
@@ -444,7 +444,7 @@ namespace System.Collections.Generic
         // Copies the values in this SortedList to an array.
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -468,7 +468,7 @@ namespace System.Collections.Generic
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -494,7 +494,7 @@ namespace System.Collections.Generic
             }
 
             KeyValuePair<TKey, TValue>[]? keyValuePairArray = array as KeyValuePair<TKey, TValue>[];
-            if (keyValuePairArray != null)
+            if (keyValuePairArray is not null)
             {
                 for (int i = 0; i < Count; i++)
                 {
@@ -504,7 +504,7 @@ namespace System.Collections.Generic
             else
             {
                 object[]? objects = array as object[];
-                if (objects == null)
+                if (objects is null)
                 {
                     throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }
@@ -588,7 +588,7 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (((object)key) == null) throw new ArgumentNullException(nameof(key));
+                if (key is null) throw new ArgumentNullException(nameof(key));
                 int i = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
                 if (i >= 0)
                 {
@@ -622,7 +622,7 @@ namespace System.Collections.Generic
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                if (value == null && !(default(TValue) == null))
+                if (value is null && !(default(TValue) is null))
                     throw new ArgumentNullException(nameof(value));
 
                 TKey tempKey = (TKey)key;
@@ -645,7 +645,7 @@ namespace System.Collections.Generic
         // key value.
         public int IndexOfKey(TKey key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
             int ret = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
             return ret >= 0 ? ret : -1;
@@ -750,7 +750,7 @@ namespace System.Collections.Generic
 
         private static bool IsCompatibleKey(object key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -1062,7 +1062,7 @@ namespace System.Collections.Generic
 
             void ICollection.CopyTo(Array array, int arrayIndex)
             {
-                if (array != null && array.Rank != 1)
+                if (array is not null && array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
 
                 try
@@ -1105,7 +1105,7 @@ namespace System.Collections.Generic
 
             public int IndexOf(TKey key)
             {
-                if (((object)key) == null)
+                if (key is null)
                     throw new ArgumentNullException(nameof(key));
 
                 int i = Array.BinarySearch<TKey>(_dict.keys, 0,
@@ -1181,7 +1181,7 @@ namespace System.Collections.Generic
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array != null && array.Rank != 1)
+                if (array is not null && array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
 
                 try

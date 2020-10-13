@@ -13,7 +13,7 @@ namespace System.Security.Cryptography.Pkcs
 
         internal SignerInfoEnumerator(SignerInfoCollection signerInfos)
         {
-            Debug.Assert(signerInfos != null);
+            Debug.Assert(signerInfos is not null);
 
             _signerInfos = signerInfos;
             _position = -1;

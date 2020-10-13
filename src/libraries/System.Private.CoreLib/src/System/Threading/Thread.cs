@@ -21,7 +21,7 @@ namespace System.Threading
         public Thread(ThreadStart start)
             : this()
         {
-            if (start == null)
+            if (start is null)
             {
                 throw new ArgumentNullException(nameof(start));
             }
@@ -32,7 +32,7 @@ namespace System.Threading
         public Thread(ThreadStart start, int maxStackSize)
             : this()
         {
-            if (start == null)
+            if (start is null)
             {
                 throw new ArgumentNullException(nameof(start));
             }
@@ -47,7 +47,7 @@ namespace System.Threading
         public Thread(ParameterizedThreadStart start)
             : this()
         {
-            if (start == null)
+            if (start is null)
             {
                 throw new ArgumentNullException(nameof(start));
             }
@@ -58,7 +58,7 @@ namespace System.Threading
         public Thread(ParameterizedThreadStart start, int maxStackSize)
             : this()
         {
-            if (start == null)
+            if (start is null)
             {
                 throw new ArgumentNullException(nameof(start));
             }
@@ -80,7 +80,7 @@ namespace System.Threading
 
         private void SetCultureOnUnstartedThread(CultureInfo value, bool uiCulture)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -165,7 +165,7 @@ namespace System.Threading
             {
                 lock (this)
                 {
-                    if (_name != null)
+                    if (_name is not null)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_WriteOnce);
                     }
@@ -326,7 +326,7 @@ namespace System.Threading
             private static Dictionary<string, LocalDataStoreSlot> EnsureNameToSlotMap()
             {
                 Dictionary<string, LocalDataStoreSlot>? nameToSlotMap = s_nameToSlotMap;
-                if (nameToSlotMap != null)
+                if (nameToSlotMap is not null)
                 {
                     return nameToSlotMap;
                 }
@@ -371,12 +371,12 @@ namespace System.Threading
 
             private static ThreadLocal<object?> GetThreadLocal(LocalDataStoreSlot slot)
             {
-                if (slot == null)
+                if (slot is null)
                 {
                     throw new ArgumentNullException(nameof(slot));
                 }
 
-                Debug.Assert(slot.Data != null);
+                Debug.Assert(slot.Data is not null);
                 return slot.Data;
             }
 

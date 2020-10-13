@@ -56,7 +56,7 @@ namespace System.ComponentModel.DataAnnotations
             EnsureValidPropertyType(propertyName, propertyType, value);
 
             var result = true;
-            var breakOnFirstError = (validationResults == null);
+            var breakOnFirstError = (validationResults is null);
 
             var attributes = _store.GetPropertyValidationAttributes(validationContext);
 
@@ -132,19 +132,19 @@ namespace System.ComponentModel.DataAnnotations
         public static bool TryValidateObject(object instance, ValidationContext validationContext,
             ICollection<ValidationResult>? validationResults, bool validateAllProperties)
         {
-            if (instance == null)
+            if (instance is null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
 
             // TODO-NULLABLE: null validationContext isn't supported (GetObjectValidationErrors will throw), remove that check
-            if (validationContext != null && instance != validationContext.ObjectInstance)
+            if (validationContext is not null && instance != validationContext.ObjectInstance)
             {
                 throw new ArgumentException(SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));
             }
 
             var result = true;
-            var breakOnFirstError = (validationResults == null);
+            var breakOnFirstError = (validationResults is null);
 
             foreach (ValidationError err in GetObjectValidationErrors(instance, validationContext!, validateAllProperties, breakOnFirstError))
             {
@@ -189,7 +189,7 @@ namespace System.ComponentModel.DataAnnotations
             ICollection<ValidationResult>? validationResults, IEnumerable<ValidationAttribute> validationAttributes)
         {
             var result = true;
-            var breakOnFirstError = validationResults == null;
+            var breakOnFirstError = validationResults is null;
 
             foreach (
                 var err in
@@ -271,11 +271,11 @@ namespace System.ComponentModel.DataAnnotations
         public static void ValidateObject(object instance, ValidationContext validationContext,
             bool validateAllProperties)
         {
-            if (instance == null)
+            if (instance is null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
-            if (validationContext == null)
+            if (validationContext is null)
             {
                 throw new ArgumentNullException(nameof(validationContext));
             }
@@ -307,7 +307,7 @@ namespace System.ComponentModel.DataAnnotations
         public static void ValidateValue(object value, ValidationContext validationContext,
             IEnumerable<ValidationAttribute> validationAttributes)
         {
-            if (validationContext == null)
+            if (validationContext is null)
             {
                 throw new ArgumentNullException(nameof(validationContext));
             }
@@ -328,7 +328,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="ArgumentNullException">When <paramref name="validationContext" /> is null.</exception>
         private static ValidationContext CreateValidationContext(object instance, ValidationContext validationContext)
         {
-            Debug.Assert(validationContext != null);
+            Debug.Assert(validationContext is not null);
 
             // Create a new context using the existing ValidationContext that acts as an IServiceProvider and contains our existing items.
             var context = new ValidationContext(instance, validationContext, validationContext.Items);
@@ -347,7 +347,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="ArgumentNullException">When <paramref name="destinationType" /> is null.</exception>
         private static bool CanBeAssigned(Type destinationType, object? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 // Null can be assigned only to reference types or Nullable or Nullable<>
                 return !destinationType.IsValueType ||
@@ -395,9 +395,9 @@ namespace System.ComponentModel.DataAnnotations
         private static IEnumerable<ValidationError> GetObjectValidationErrors(object instance,
             ValidationContext validationContext, bool validateAllProperties, bool breakOnFirstError)
         {
-            Debug.Assert(instance != null);
+            Debug.Assert(instance is not null);
 
-            if (validationContext == null)
+            if (validationContext is null)
             {
                 throw new ArgumentNullException(nameof(validationContext));
             }
@@ -428,7 +428,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 var results = validatable.Validate(validationContext);
 
-                if (results != null)
+                if (results is not null)
                 {
                     foreach (var result in results.Where(r => r != ValidationResult.Success))
                     {
@@ -471,7 +471,7 @@ namespace System.ComponentModel.DataAnnotations
                 {
                     // only validate the Required attributes
                     var reqAttr = attributes.OfType<RequiredAttribute>().FirstOrDefault();
-                    if (reqAttr != null)
+                    if (reqAttr is not null)
                     {
                         // Note: we let the [Required] attribute do its own null testing,
                         // since the user may have subclassed it and have a deeper meaning to what 'required' means
@@ -542,7 +542,7 @@ namespace System.ComponentModel.DataAnnotations
         private static IEnumerable<ValidationError> GetValidationErrors(object? value,
             ValidationContext validationContext, IEnumerable<ValidationAttribute> attributes, bool breakOnFirstError)
         {
-            if (validationContext == null)
+            if (validationContext is null)
             {
                 throw new ArgumentNullException(nameof(validationContext));
             }
@@ -552,7 +552,7 @@ namespace System.ComponentModel.DataAnnotations
 
             // Get the required validator if there is one and test it first, aborting on failure
             var required = attributes.OfType<RequiredAttribute>().FirstOrDefault();
-            if (required != null)
+            if (required is not null)
             {
                 if (!TryValidate(value, validationContext, required, out validationError))
                 {
@@ -597,7 +597,7 @@ namespace System.ComponentModel.DataAnnotations
         private static bool TryValidate(object? value, ValidationContext validationContext, ValidationAttribute attribute,
             [NotNullWhen(false)] out ValidationError? validationError)
         {
-            Debug.Assert(validationContext != null);
+            Debug.Assert(validationContext is not null);
 
             var validationResult = attribute.GetValidationResult(value, validationContext);
             if (validationResult != ValidationResult.Success)

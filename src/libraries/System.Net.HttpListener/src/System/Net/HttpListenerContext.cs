@@ -24,7 +24,7 @@ namespace System.Net
         {
             get
             {
-                if (_response == null)
+                if (_response is null)
                 {
                     _response = new HttpListenerResponse(this);
                 }

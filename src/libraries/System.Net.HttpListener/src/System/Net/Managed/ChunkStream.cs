@@ -197,7 +197,7 @@ namespace System.Net
                 for (int i = 0; i < count; i++)
                 {
                     Chunk ch = _chunks[i];
-                    if (ch == null || ch.Bytes == null)
+                    if (ch is null || ch.Bytes is null)
                         continue;
                     if (ch.Bytes.Length > 0 && ch.Offset < ch.Bytes.Length)
                         return (_state != State.Body);
@@ -383,7 +383,7 @@ namespace System.Net
 
             StringReader reader = new StringReader(_saved.ToString());
             string? line;
-            while ((line = reader.ReadLine()) != null && line != "")
+            while ((line = reader.ReadLine()) is not null && line != "")
                 _headers.Add(line);
 
             return State.None;

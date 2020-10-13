@@ -16,7 +16,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerVerb(string text, EventHandler handler) : base(handler, StandardCommands.VerbFirst)
         {
-            Properties["Text"] = text == null ? null : Regex.Replace(text, @"\(\&.\)", "");
+            Properties["Text"] = text is null ? null : Regex.Replace(text, @"\(\&.\)", "");
         }
 
         /// <summary>
@@ -25,7 +25,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public DesignerVerb(string text, EventHandler handler, CommandID startCommandID) : base(handler, startCommandID)
         {
-            Properties["Text"] = text == null ? null : Regex.Replace(text, @"\(\&.\)", "");
+            Properties["Text"] = text is null ? null : Regex.Replace(text, @"\(\&.\)", "");
         }
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace System.ComponentModel.Design
             get
             {
                 object result = Properties["Description"];
-                if (result == null)
+                if (result is null)
                 {
                     return string.Empty;
                 }
@@ -54,7 +54,7 @@ namespace System.ComponentModel.Design
             get
             {
                 object result = Properties["Text"];
-                if (result == null)
+                if (result is null)
                 {
                     return string.Empty;
                 }

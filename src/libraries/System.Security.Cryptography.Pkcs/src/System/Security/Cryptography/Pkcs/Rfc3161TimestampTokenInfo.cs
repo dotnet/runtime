@@ -70,11 +70,11 @@ namespace System.Security.Cryptography.Pkcs
 
         public ReadOnlyMemory<byte>? GetTimestampAuthorityName()
         {
-            if (_tsaNameBytes == null)
+            if (_tsaNameBytes is null)
             {
                 GeneralNameAsn? tsaName = _parsedData.Tsa;
 
-                if (tsaName == null)
+                if (tsaName is null)
                 {
                     return null;
                 }
@@ -226,9 +226,9 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlyMemory<byte>? tsaName,
             X509ExtensionCollection? extensions)
         {
-            if (policyId == null)
+            if (policyId is null)
                 throw new ArgumentNullException(nameof(policyId));
-            if (hashAlgorithmId == null)
+            if (hashAlgorithmId is null)
                 throw new ArgumentNullException(nameof(hashAlgorithmId));
 
             var tstInfo = new Rfc3161TstInfo
@@ -252,17 +252,17 @@ namespace System.Security.Cryptography.Pkcs
                 Nonce = nonce,
             };
 
-            if (accuracyInMicroseconds != null)
+            if (accuracyInMicroseconds is not null)
             {
                 tstInfo.Accuracy = new Rfc3161Accuracy(accuracyInMicroseconds.Value);
             }
 
-            if (tsaName != null)
+            if (tsaName is not null)
             {
                 tstInfo.Tsa = GeneralNameAsn.Decode(tsaName.Value, AsnEncodingRules.DER);
             }
 
-            if (extensions != null)
+            if (extensions is not null)
             {
                 tstInfo.Extensions = extensions.OfType<X509Extension>().
                     Select(ex => new X509ExtensionAsn(ex)).ToArray();

@@ -28,7 +28,7 @@ namespace System.Configuration
 
             // start res off as a shallow clone of the parent
 
-            if (parent == null)
+            if (parent is null)
                 res = new Hashtable(StringComparer.OrdinalIgnoreCase);
             else
                 res = (Hashtable)((Hashtable)parent).Clone();
@@ -56,7 +56,7 @@ namespace System.Configuration
                         value = HandlerBase.RemoveAttribute(child, ValueAttributeName);
                     HandlerBase.CheckForUnrecognizedAttributes(child);
 
-                    if (value == null)
+                    if (value is null)
                         value = "";
 
                     res[key] = value;

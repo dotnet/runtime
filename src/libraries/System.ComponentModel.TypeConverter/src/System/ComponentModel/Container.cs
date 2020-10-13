@@ -33,18 +33,18 @@ namespace System.ComponentModel
         {
             lock (_syncObj)
             {
-                if (component == null)
+                if (component is null)
                 {
                     return;
                 }
 
                 ISite site = component.Site;
-                if (site != null && site.Container == this)
+                if (site is not null && site.Container == this)
                 {
                     return;
                 }
 
-                if (_sites == null)
+                if (_sites is null)
                 {
                     _sites = new ISite[4];
                 }
@@ -134,7 +134,7 @@ namespace System.ComponentModel
             {
                 lock (_syncObj)
                 {
-                    if (_components == null)
+                    if (_components is null)
                     {
                         IComponent[] result = new IComponent[_siteCount];
                         for (int i = 0; i < _siteCount; i++)
@@ -145,7 +145,7 @@ namespace System.ComponentModel
 
                         // At each component add, if we don't yet have a filter, look for one.
                         // Components may add filters.
-                        if (_filter == null && _checkedFilter)
+                        if (_filter is null && _checkedFilter)
                         {
                             _checkedFilter = false;
                         }
@@ -157,10 +157,10 @@ namespace System.ComponentModel
                         _checkedFilter = true;
                     }
 
-                    if (_filter != null)
+                    if (_filter is not null)
                     {
                         ComponentCollection filteredComponents = _filter.FilterComponents(_components);
-                        if (filteredComponents != null)
+                        if (filteredComponents is not null)
                         {
                             _components = filteredComponents;
                         }
@@ -181,7 +181,7 @@ namespace System.ComponentModel
             lock (_syncObj)
             {
                 ISite site = component?.Site;
-                if (site == null || site.Container != this)
+                if (site is null || site.Container != this)
                 {
                     return;
                 }
@@ -214,18 +214,18 @@ namespace System.ComponentModel
         /// </summary>
         protected virtual void ValidateName(IComponent component, string name)
         {
-            if (component == null)
+            if (component is null)
             {
                 throw new ArgumentNullException(nameof(component));
             }
 
-            if (name != null)
+            if (name is not null)
             {
                 for (int i = 0; i < Math.Min(_siteCount, _sites.Length); i++)
                 {
                     ISite s = _sites[i];
 
-                    if (s?.Name != null && string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase) && s.Component != component)
+                    if (s?.Name is not null && string.Equals(s.Name, name, StringComparison.OrdinalIgnoreCase) && s.Component != component)
                     {
                         InheritanceAttribute inheritanceAttribute = (InheritanceAttribute)TypeDescriptor.GetAttributes(s.Component)[typeof(InheritanceAttribute)];
                         if (inheritanceAttribute.InheritanceLevel != InheritanceLevel.InheritedReadOnly)
@@ -276,7 +276,7 @@ namespace System.ComponentModel
                 get => _name;
                 set
                 {
-                    if (value == null || _name == null || !value.Equals(_name))
+                    if (value is null || _name is null || !value.Equals(_name))
                     {
                         ((Container)Container).ValidateName(Component, value);
                         _name = value;

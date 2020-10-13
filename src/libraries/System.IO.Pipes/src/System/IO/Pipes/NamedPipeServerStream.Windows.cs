@@ -33,7 +33,7 @@ namespace System.IO.Pipes
         {
             ValidateParameters(pipeName, direction, maxNumberOfServerInstances, transmissionMode, options, inBufferSize, outBufferSize, inheritability);
 
-            if (pipeSecurity != null && IsCurrentUserOnly)
+            if (pipeSecurity is not null && IsCurrentUserOnly)
             {
                 throw new ArgumentException(SR.NotSupported_PipeSecurityIsCurrentUserOnly, nameof(pipeSecurity));
             }
@@ -54,7 +54,7 @@ namespace System.IO.Pipes
                 PipeTransmissionMode transmissionMode, PipeOptions options, int inBufferSize, int outBufferSize,
                 PipeSecurity? pipeSecurity, HandleInheritability inheritability, PipeAccessRights additionalAccessRights)
         {
-            Debug.Assert(pipeName != null && pipeName.Length != 0, "fullPipeName is null or empty");
+            Debug.Assert(pipeName is not null && pipeName.Length != 0, "fullPipeName is null or empty");
             Debug.Assert(direction >= PipeDirection.In && direction <= PipeDirection.InOut, "invalid pipe direction");
             Debug.Assert(inBufferSize >= 0, "inBufferSize is negative");
             Debug.Assert(outBufferSize >= 0, "outBufferSize is negative");
@@ -71,7 +71,7 @@ namespace System.IO.Pipes
 
             if (IsCurrentUserOnly)
             {
-                Debug.Assert(pipeSecurity == null);
+                Debug.Assert(pipeSecurity is null);
 
                 using (WindowsIdentity currentIdentity = WindowsIdentity.GetCurrent())
                 {
@@ -341,7 +341,7 @@ namespace System.IO.Pipes
 
         private void CheckConnectOperationsServerWithHandle()
         {
-            if (InternalHandle == null)
+            if (InternalHandle is null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }

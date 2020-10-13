@@ -15,7 +15,7 @@ namespace System.Collections
             get
             {
                 IComparer? comparer = s_StructuralComparer;
-                if (comparer == null)
+                if (comparer is null)
                 {
                     comparer = new StructuralComparer();
                     s_StructuralComparer = comparer;
@@ -29,7 +29,7 @@ namespace System.Collections
             get
             {
                 IEqualityComparer? comparer = s_StructuralEqualityComparer;
-                if (comparer == null)
+                if (comparer is null)
                 {
                     comparer = new StructuralEqualityComparer();
                     s_StructuralEqualityComparer = comparer;
@@ -43,16 +43,16 @@ namespace System.Collections
     {
         public new bool Equals(object? x, object? y)
         {
-            if (x != null)
+            if (x is not null)
             {
                 IStructuralEquatable? seObj = x as IStructuralEquatable;
 
-                if (seObj != null)
+                if (seObj is not null)
                 {
                     return seObj.Equals(y, this);
                 }
 
-                if (y != null)
+                if (y is not null)
                 {
                     return x.Equals(y);
                 }
@@ -61,17 +61,17 @@ namespace System.Collections
                     return false;
                 }
             }
-            if (y != null) return false;
+            if (y is not null) return false;
             return true;
         }
 
         public int GetHashCode(object obj)
         {
-            if (obj == null) return 0;
+            if (obj is null) return 0;
 
             IStructuralEquatable? seObj = obj as IStructuralEquatable;
 
-            if (seObj != null)
+            if (seObj is not null)
             {
                 return seObj.GetHashCode(this);
             }
@@ -84,12 +84,12 @@ namespace System.Collections
     {
         public int Compare(object? x, object? y)
         {
-            if (x == null) return y == null ? 0 : -1;
-            if (y == null) return 1;
+            if (x is null) return y is null ? 0 : -1;
+            if (y is null) return 1;
 
             IStructuralComparable? scX = x as IStructuralComparable;
 
-            if (scX != null)
+            if (scX is not null)
             {
                 return scX.CompareTo(y, this);
             }

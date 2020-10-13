@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public CmsRecipient(SubjectIdentifierType recipientIdentifierType, X509Certificate2 certificate)
         {
-            if (certificate == null)
+            if (certificate is null)
                 throw new ArgumentNullException(nameof(certificate));
 
             switch (recipientIdentifierType)

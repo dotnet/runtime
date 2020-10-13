@@ -43,7 +43,7 @@ namespace System.Security
             byte[]? publicKey = name.GetPublicKey();
 
             // If we don't have a key, we're not strong named
-            if (publicKey == null || publicKey.Length == 0)
+            if (publicKey is null || publicKey.Length == 0)
                 return null;
 
             // Emulate what we get from StrongName.Normalize().

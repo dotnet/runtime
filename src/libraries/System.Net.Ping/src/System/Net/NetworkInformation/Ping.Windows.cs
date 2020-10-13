@@ -57,7 +57,7 @@ namespace System.Net.NetworkInformation
             // Cache correct handle.
             InitialiseIcmpHandle();
 
-            if (_replyBuffer == null)
+            if (_replyBuffer is null)
             {
                 _replyBuffer = SafeLocalAllocHandle.LocalAlloc(MaxUdpPacket);
             }
@@ -94,7 +94,7 @@ namespace System.Net.NetworkInformation
                 }
             }
 
-            if (tcs != null)
+            if (tcs is not null)
             {
                 return tcs.Task;
             }
@@ -105,7 +105,7 @@ namespace System.Net.NetworkInformation
 
         private void RegisterWaitHandle()
         {
-            if (_pingEvent == null)
+            if (_pingEvent is null)
             {
                 _pingEvent = new ManualResetEvent(false);
             }
@@ -121,7 +121,7 @@ namespace System.Net.NetworkInformation
         {
             lock (_lockObject)
             {
-                if (_registeredWait != null)
+                if (_registeredWait is not null)
                 {
                     // If Unregister returns false, it is sufficient to nullify registeredWait
                     // and let its own finalizer clean up later.
@@ -143,7 +143,7 @@ namespace System.Net.NetworkInformation
 
         private void InitialiseIcmpHandle()
         {
-            if (!_ipv6 && _handlePingV4 == null)
+            if (!_ipv6 && _handlePingV4 is null)
             {
                 _handlePingV4 = Interop.IpHlpApi.IcmpCreateFile();
                 if (_handlePingV4.IsInvalid)
@@ -152,7 +152,7 @@ namespace System.Net.NetworkInformation
                     throw new Win32Exception(); // Gets last error.
                 }
             }
-            else if (_ipv6 && _handlePingV6 == null)
+            else if (_ipv6 && _handlePingV6 is null)
             {
                 _handlePingV6 = Interop.IpHlpApi.Icmp6CreateFile();
                 if (_handlePingV6.IsInvalid)
@@ -230,13 +230,13 @@ namespace System.Net.NetworkInformation
 
         partial void InternalDisposeCore()
         {
-            if (_handlePingV4 != null)
+            if (_handlePingV4 is not null)
             {
                 _handlePingV4.Dispose();
                 _handlePingV4 = null;
             }
 
-            if (_handlePingV6 != null)
+            if (_handlePingV6 is not null)
             {
                 _handlePingV6.Dispose();
                 _handlePingV6 = null;
@@ -244,13 +244,13 @@ namespace System.Net.NetworkInformation
 
             UnregisterWaitHandle();
 
-            if (_pingEvent != null)
+            if (_pingEvent is not null)
             {
                 _pingEvent.Dispose();
                 _pingEvent = null;
             }
 
-            if (_replyBuffer != null)
+            if (_replyBuffer is not null)
             {
                 _replyBuffer.Dispose();
                 _replyBuffer = null;
@@ -262,7 +262,7 @@ namespace System.Net.NetworkInformation
         {
             TaskCompletionSource<PingReply>? tcs = _taskCompletionSource;
             _taskCompletionSource = null;
-            Debug.Assert(tcs != null);
+            Debug.Assert(tcs is not null);
 
             PingReply? reply = null;
             Exception? error = null;
@@ -292,13 +292,13 @@ namespace System.Net.NetworkInformation
             {
                 tcs.SetCanceled();
             }
-            else if (reply != null)
+            else if (reply is not null)
             {
                 tcs.SetResult(reply);
             }
             else
             {
-                Debug.Assert(error != null);
+                Debug.Assert(error is not null);
                 tcs.SetException(error);
             }
         }
@@ -317,7 +317,7 @@ namespace System.Net.NetworkInformation
         // Releases the unmanaged memory after ping completion.
         private void FreeUnmanagedStructures()
         {
-            if (_requestBuffer != null)
+            if (_requestBuffer is not null)
             {
                 _requestBuffer.Dispose();
                 _requestBuffer = null;

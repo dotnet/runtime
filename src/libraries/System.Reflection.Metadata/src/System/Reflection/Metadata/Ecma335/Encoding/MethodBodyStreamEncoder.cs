@@ -12,7 +12,7 @@ namespace System.Reflection.Metadata.Ecma335
 
         public MethodBodyStreamEncoder(BlobBuilder builder)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 Throw.BuilderArgumentNull();
             }
@@ -178,7 +178,7 @@ namespace System.Reflection.Metadata.Ecma335
             var codeBuilder = instructionEncoder.CodeBuilder;
             var flowBuilder = instructionEncoder.ControlFlowBuilder;
 
-            if (codeBuilder == null)
+            if (codeBuilder is null)
             {
                 Throw.ArgumentNull(nameof(instructionEncoder));
             }

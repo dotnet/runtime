@@ -17,7 +17,7 @@ namespace System.IO.MemoryMappedFiles
         // Private constructors to be used by the factory methods.
         private MemoryMappedFile(SafeMemoryMappedFileHandle handle)
         {
-            Debug.Assert(handle != null);
+            Debug.Assert(handle is not null);
             Debug.Assert(!handle.IsClosed);
             Debug.Assert(!handle.IsInvalid);
 
@@ -27,10 +27,10 @@ namespace System.IO.MemoryMappedFiles
 
         private MemoryMappedFile(SafeMemoryMappedFileHandle handle, FileStream fileStream, bool leaveOpen)
         {
-            Debug.Assert(handle != null);
+            Debug.Assert(handle is not null);
             Debug.Assert(!handle.IsClosed);
             Debug.Assert(!handle.IsInvalid);
-            Debug.Assert(fileStream != null);
+            Debug.Assert(fileStream is not null);
 
             _handle = handle;
             _fileStream = fileStream;
@@ -60,7 +60,7 @@ namespace System.IO.MemoryMappedFiles
         public static MemoryMappedFile OpenExisting(string mapName, MemoryMappedFileRights desiredAccessRights,
                                                                     HandleInheritability inheritability)
         {
-            if (mapName == null)
+            if (mapName is null)
             {
                 throw new ArgumentNullException(nameof(mapName), SR.ArgumentNull_MapName);
             }
@@ -114,12 +114,12 @@ namespace System.IO.MemoryMappedFiles
         public static MemoryMappedFile CreateFromFile(string path, FileMode mode, string? mapName, long capacity,
                                                                         MemoryMappedFileAccess access)
         {
-            if (path == null)
+            if (path is null)
             {
                 throw new ArgumentNullException(nameof(path));
             }
 
-            if (mapName != null && mapName.Length == 0)
+            if (mapName is not null && mapName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_MapNameEmptyString);
             }
@@ -174,7 +174,7 @@ namespace System.IO.MemoryMappedFiles
                 throw;
             }
 
-            Debug.Assert(handle != null);
+            Debug.Assert(handle is not null);
             Debug.Assert(!handle.IsInvalid);
             return new MemoryMappedFile(handle, fileStream, false);
         }
@@ -183,12 +183,12 @@ namespace System.IO.MemoryMappedFiles
                                                         MemoryMappedFileAccess access,
                                                         HandleInheritability inheritability, bool leaveOpen)
         {
-            if (fileStream == null)
+            if (fileStream is null)
             {
                 throw new ArgumentNullException(nameof(fileStream), SR.ArgumentNull_FileStream);
             }
 
-            if (mapName != null && mapName.Length == 0)
+            if (mapName is not null && mapName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_MapNameEmptyString);
             }
@@ -234,7 +234,7 @@ namespace System.IO.MemoryMappedFiles
         }
 
         // Factory Method Group #3: Creates a new empty memory mapped file.  Such memory mapped files are ideal
-        // for IPC, when mapName != null.
+        // for IPC, when mapName is not null.
         public static MemoryMappedFile CreateNew(string? mapName, long capacity)
         {
             return CreateNew(mapName, capacity, MemoryMappedFileAccess.ReadWrite, MemoryMappedFileOptions.None,
@@ -251,7 +251,7 @@ namespace System.IO.MemoryMappedFiles
                                                     MemoryMappedFileOptions options,
                                                     HandleInheritability inheritability)
         {
-            if (mapName != null && mapName.Length == 0)
+            if (mapName is not null && mapName.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_MapNameEmptyString);
             }
@@ -314,7 +314,7 @@ namespace System.IO.MemoryMappedFiles
                                                     MemoryMappedFileAccess access, MemoryMappedFileOptions options,
                                                     HandleInheritability inheritability)
         {
-            if (mapName == null)
+            if (mapName is null)
             {
                 throw new ArgumentNullException(nameof(mapName), SR.ArgumentNull_MapName);
             }
@@ -454,7 +454,7 @@ namespace System.IO.MemoryMappedFiles
             }
             finally
             {
-                if (_fileStream != null && _leaveOpen == false)
+                if (_fileStream is not null && _leaveOpen == false)
                 {
                     _fileStream.Dispose();
                 }

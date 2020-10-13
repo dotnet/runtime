@@ -22,7 +22,7 @@ namespace System.Reflection
 
         public static object Box(void* ptr, Type type)
         {
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
             if (!type.IsPointer)
                 throw new ArgumentException(SR.Arg_MustBePointer, nameof(ptr));

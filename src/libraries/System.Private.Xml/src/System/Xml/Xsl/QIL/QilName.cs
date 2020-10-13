@@ -95,7 +95,7 @@ namespace System.Xml.Xsl.Qil
         public override bool Equals(object? other)
         {
             QilName? name = other as QilName;
-            if (name == null)
+            if (name is null)
                 return false;
 
             return _local == name._local && _uri == name._uri;

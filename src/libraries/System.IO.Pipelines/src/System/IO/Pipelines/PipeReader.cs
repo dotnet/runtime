@@ -58,7 +58,7 @@ namespace System.IO.Pipelines
         /// <returns>The <see cref="Stream"/>.</returns>
         public virtual Stream AsStream(bool leaveOpen = false)
         {
-            if (_stream == null)
+            if (_stream is null)
             {
                 _stream = new PipeReaderStream(this, leaveOpen);
             }
@@ -127,7 +127,7 @@ namespace System.IO.Pipelines
         /// <returns>A task that represents the asynchronous copy operation.</returns>
         public virtual Task CopyToAsync(PipeWriter destination, CancellationToken cancellationToken = default)
         {
-            if (destination == null)
+            if (destination is null)
             {
                 throw new ArgumentNullException(nameof(destination));
             }
@@ -157,7 +157,7 @@ namespace System.IO.Pipelines
         /// <returns>A task that represents the asynchronous copy operation.</returns>
         public virtual Task CopyToAsync(Stream destination, CancellationToken cancellationToken = default)
         {
-            if (destination == null)
+            if (destination is null)
             {
                 throw new ArgumentNullException(nameof(destination));
             }

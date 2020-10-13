@@ -27,7 +27,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public void AddPartManager(PartManager part)
             {
-                if (part == null)
+                if (part is null)
                 {
                     throw new ArgumentNullException(nameof(part));
                 }
@@ -40,7 +40,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public void RemovePartManager(PartManager part)
             {
-                if (part == null)
+                if (part is null)
                 {
                     throw new ArgumentNullException(nameof(part));
                 }
@@ -53,7 +53,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public IEnumerable<PartManager>? GetAddedPartManagers()
             {
-                if (_parentEngineContext != null)
+                if (_parentEngineContext is not null)
                 {
                     return _addedPartManagers.ConcatAllowingNull(_parentEngineContext.GetAddedPartManagers());
                 }
@@ -62,7 +62,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public IEnumerable<PartManager>? GetRemovedPartManagers()
             {
-                if (_parentEngineContext != null)
+                if (_parentEngineContext is not null)
                 {
                     return _removedPartManagers.ConcatAllowingNull(_parentEngineContext.GetRemovedPartManagers());
                 }

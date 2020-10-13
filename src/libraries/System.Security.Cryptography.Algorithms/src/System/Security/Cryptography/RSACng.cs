@@ -39,7 +39,7 @@ namespace System.Security.Cryptography
 
                 if (_lastKeySize != keySize)
                 {
-                    if (_keyHandle != null)
+                    if (_keyHandle is not null)
                     {
                         _keyHandle.Dispose();
                     }

@@ -23,7 +23,7 @@ namespace System.Linq.Expressions
         /// Gets the static type of the expression that this <see cref="Expression"/> represents.
         /// </summary>
         /// <returns>The <see cref="System.Type"/> that represents the static type of the expression.</returns>
-        public sealed override Type Type => BreakLabel == null ? typeof(void) : BreakLabel.Type;
+        public sealed override Type Type => BreakLabel is null ? typeof(void) : BreakLabel.Type;
 
         /// <summary>
         /// Returns the node type of this Expression. Extension nodes should return
@@ -107,7 +107,7 @@ namespace System.Linq.Expressions
         public static LoopExpression Loop(Expression body, LabelTarget? @break, LabelTarget? @continue)
         {
             ExpressionUtils.RequiresCanRead(body, nameof(body));
-            if (@continue != null && @continue.Type != typeof(void)) throw Error.LabelTypeMustBeVoid(nameof(@continue));
+            if (@continue is not null && @continue.Type != typeof(void)) throw Error.LabelTypeMustBeVoid(nameof(@continue));
             return new LoopExpression(body, @break, @continue);
         }
     }

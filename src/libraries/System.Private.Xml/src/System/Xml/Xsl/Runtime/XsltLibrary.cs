@@ -72,14 +72,14 @@ namespace System.Xml.Xsl.Runtime
         public static MethodInfo GetMethod(Type className, string methName)
         {
             MethodInfo methInfo = className.GetMethod(methName);
-            Debug.Assert(methInfo != null, "Method " + className.Name + "." + methName + " not found");
+            Debug.Assert(methInfo is not null, "Method " + className.Name + "." + methName + " not found");
             return methInfo;
         }
 
         public static MethodInfo GetMethod(Type className, string methName, params Type[] args)
         {
             MethodInfo methInfo = className.GetMethod(methName, args);
-            Debug.Assert(methInfo != null, "Method " + className.Name + "." + methName + " not found");
+            Debug.Assert(methInfo is not null, "Method " + className.Name + "." + methName + " not found");
             return methInfo;
         }
     }
@@ -110,7 +110,7 @@ namespace System.Xml.Xsl.Runtime
         public int CheckScriptNamespace(string nsUri)
         {
             // Check that extension and script namespaces do not clash
-            if (_runtime.ExternalContext.GetLateBoundObject(nsUri) != null)
+            if (_runtime.ExternalContext.GetLateBoundObject(nsUri) is not null)
             {
                 throw new XslTransformException(SR.Xslt_ScriptAndExtensionClash, nsUri);
             }
@@ -126,14 +126,14 @@ namespace System.Xml.Xsl.Runtime
         // Spec: http://www.w3.org/TR/xslt#function-function-available
         public bool FunctionAvailable(XmlQualifiedName name)
         {
-            if (_functionsAvail == null)
+            if (_functionsAvail is null)
             {
                 _functionsAvail = new HybridDictionary();
             }
             else
             {
                 object obj = _functionsAvail[name];
-                if (obj != null)
+                if (obj is not null)
                 {
                     return (bool)obj;
                 }
@@ -170,7 +170,7 @@ namespace System.Xml.Xsl.Runtime
 
         public int RegisterDecimalFormat(XmlQualifiedName name, string infinitySymbol, string nanSymbol, string characters)
         {
-            if (_decimalFormats == null)
+            if (_decimalFormats is null)
             {
                 _decimalFormats = new Dictionary<XmlQualifiedName, DecimalFormat>();
             }
@@ -196,7 +196,7 @@ namespace System.Xml.Xsl.Runtime
 
         public double RegisterDecimalFormatter(string formatPicture, string infinitySymbol, string nanSymbol, string characters)
         {
-            if (_decimalFormatters == null)
+            if (_decimalFormatters is null)
             {
                 _decimalFormatters = new List<DecimalFormatter>();
             }
@@ -214,7 +214,7 @@ namespace System.Xml.Xsl.Runtime
         public string FormatNumberDynamic(double value, string formatPicture, XmlQualifiedName decimalFormatName, string errorMessageName)
         {
             DecimalFormat format;
-            if (_decimalFormats == null || !_decimalFormats.TryGetValue(decimalFormatName, out format))
+            if (_decimalFormats is null || !_decimalFormats.TryGetValue(decimalFormatName, out format))
             {
                 throw new XslTransformException(SR.Xslt_NoDecimalFormat, errorMessageName);
             }
@@ -243,14 +243,14 @@ namespace System.Xml.Xsl.Runtime
         {
             int lcid = InvariantCultureLcid;
 
-            if (lang != null)
+            if (lang is not null)
             {
                 // The value of the 'lang' attribute must be a non-empty nmtoken
                 if (lang.Length == 0)
                 {
                     if (!forwardCompatibility)
                     {
-                        if (errorHelper != null)
+                        if (errorHelper is not null)
                         {
                             errorHelper.ReportError(SR.Xslt_InvalidAttrValue, nameof(lang), lang);
                         }
@@ -271,7 +271,7 @@ namespace System.Xml.Xsl.Runtime
                     {
                         if (!forwardCompatibility)
                         {
-                            if (errorHelper != null)
+                            if (errorHelper is not null)
                             {
                                 errorHelper.ReportError(SR.Xslt_InvalidLanguage, lang);
                             }
@@ -292,14 +292,14 @@ namespace System.Xml.Xsl.Runtime
         {
             string cultName = InvariantCultureName;
 
-            if (lang != null)
+            if (lang is not null)
             {
                 // The value of the 'lang' attribute must be a non-empty nmtoken
                 if (lang.Length == 0)
                 {
                     if (!forwardCompatibility)
                     {
-                        if (errorHelper != null)
+                        if (errorHelper is not null)
                         {
                             errorHelper.ReportError(/*[XT_032]*/SR.Xslt_InvalidAttrValue, nameof(lang), lang);
                         }
@@ -320,7 +320,7 @@ namespace System.Xml.Xsl.Runtime
                     {
                         if (!forwardCompatibility)
                         {
-                            if (errorHelper != null)
+                            if (errorHelper is not null)
                             {
                                 errorHelper.ReportError(/*[XT_033]*/SR.Xslt_InvalidLanguage, lang);
                             }

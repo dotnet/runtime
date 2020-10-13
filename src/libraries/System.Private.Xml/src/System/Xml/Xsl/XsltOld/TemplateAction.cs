@@ -55,11 +55,11 @@ namespace System.Xml.Xsl.XsltOld
             CompileAttributes(compiler);
             if (_matchKey == Compiler.InvalidQueryKey)
             {
-                if (_name == null)
+                if (_name is null)
                 {
                     throw XsltException.Create(SR.Xslt_TemplateNoAttrib);
                 }
-                if (_mode != null)
+                if (_mode is not null)
                 {
                     throw XsltException.Create(SR.Xslt_InvalidModeAttribute);
                 }
@@ -98,7 +98,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else if (Ref.Equal(name, compiler.Atoms.Name))
             {
-                Debug.Assert(_name == null);
+                Debug.Assert(_name is null);
                 _name = compiler.CreateXPathQName(value);
             }
             else if (Ref.Equal(name, compiler.Atoms.Priority))
@@ -112,7 +112,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else if (Ref.Equal(name, compiler.Atoms.Mode))
             {
-                Debug.Assert(_mode == null);
+                Debug.Assert(_mode is null);
                 if (compiler.AllowBuiltInMode && value == "*")
                 {
                     _mode = Compiler.BuiltInMode;
@@ -141,7 +141,7 @@ namespace System.Xml.Xsl.XsltOld
             CompiledXpathExpr expr = (CompiledXpathExpr)theQuery.CompiledQuery;
             Query query = expr.QueryTree;
             UnionExpr? union;
-            while ((union = query as UnionExpr) != null)
+            while ((union = query as UnionExpr) is not null)
             {
                 Debug.Assert(!(union.qy2 is UnionExpr), "only qy1 can be union");
                 TemplateAction copy = this.CloneWithoutName();
@@ -229,7 +229,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             switch (frame.State)
             {
@@ -238,7 +238,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         frame.AllocateVariables(this.variableCount);
                     }
-                    if (this.containedActions != null && this.containedActions.Count > 0)
+                    if (this.containedActions is not null && this.containedActions.Count > 0)
                     {
                         processor.PushActionFrame(frame);
                         frame.State = ProcessingChildren;

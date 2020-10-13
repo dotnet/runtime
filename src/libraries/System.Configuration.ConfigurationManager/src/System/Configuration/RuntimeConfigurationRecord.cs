@@ -59,7 +59,7 @@ namespace System.Configuration
         {
             object runtimeObject;
             ConfigurationSection section = result as ConfigurationSection;
-            if (section == null) runtimeObject = result;
+            if (section is null) runtimeObject = result;
             else
             {
                 // Call into config section while impersonating process or UNC identity
@@ -121,7 +121,7 @@ namespace System.Configuration
             private static void CheckForLockAttributes(string sectionName, XmlNode xmlNode)
             {
                 XmlAttributeCollection attributes = xmlNode.Attributes;
-                if (attributes != null)
+                if (attributes is not null)
                 {
                     foreach (XmlAttribute attribute in attributes)
                         if (ConfigurationElement.IsLockAttributeName(attribute.Name))
@@ -140,7 +140,7 @@ namespace System.Configuration
             {
                 object config;
 
-                if (_sectionCtor != null)
+                if (_sectionCtor is not null)
                 {
                     ConfigurationSection configSection =
                         (ConfigurationSection)_sectionCtor.Invoke(null);
@@ -153,11 +153,11 @@ namespace System.Configuration
                     ConfigurationSection parentSection = (ConfigurationSection)parentConfig;
                     configSection.Reset(parentSection);
 
-                    if (reader != null) configSection.DeserializeSection(reader);
+                    if (reader is not null) configSection.DeserializeSection(reader);
 
                     // throw if there are any cached errors
                     ConfigurationErrorsException errors = configSection.GetErrors();
-                    if (errors != null) throw errors;
+                    if (errors is not null) throw errors;
 
                     // don't allow changes to sections at runtime
                     configSection.SetReadOnly();
@@ -169,7 +169,7 @@ namespace System.Configuration
                 }
                 else
                 {
-                    if (reader != null)
+                    if (reader is not null)
                     {
                         XmlNode xmlNode = ErrorInfoXmlDocument.CreateSectionXmlNode(reader);
 

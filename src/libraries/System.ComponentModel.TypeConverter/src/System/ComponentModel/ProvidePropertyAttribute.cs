@@ -14,7 +14,7 @@ namespace System.ComponentModel
         /// </summary>
         public ProvidePropertyAttribute(string propertyName, Type receiverType)
         {
-            if (receiverType == null)
+            if (receiverType is null)
             {
                 throw new ArgumentNullException(nameof(receiverType));
             }

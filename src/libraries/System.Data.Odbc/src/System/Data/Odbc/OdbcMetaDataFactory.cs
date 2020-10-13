@@ -50,7 +50,7 @@ namespace System.Data.Odbc
 
             // verify the existance of the table in the data set
             DataTable? metaDataCollectionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections];
-            if (metaDataCollectionsTable == null)
+            if (metaDataCollectionsTable is null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.MetaDataCollections);
             }
@@ -60,7 +60,7 @@ namespace System.Data.Odbc
 
             // verify the existance of the table in the data set
             DataTable? restrictionsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions];
-            if (restrictionsTable != null)
+            if (restrictionsTable is not null)
             {
                 // copy the table filtering out any rows that don't apply to the current version of the provider
                 restrictionsTable = CloneAndFilterCollection(DbMetaDataCollectionNames.Restrictions, null);
@@ -75,11 +75,11 @@ namespace System.Data.Odbc
             DataColumn populationMechanism = metaDataCollectionsTable.Columns[_populationMechanism]!;
             DataColumn collectionName = metaDataCollectionsTable.Columns[_collectionName]!;
             DataColumn? restrictionCollectionName = null;
-            if (restrictionsTable != null)
+            if (restrictionsTable is not null)
             {
                 restrictionCollectionName = restrictionsTable.Columns[_collectionName];
             }
-            Debug.Assert(restrictionCollectionName != null);
+            Debug.Assert(restrictionCollectionName is not null);
 
             foreach (DataRow collection in metaDataCollectionsTable.Rows)
             {
@@ -106,7 +106,7 @@ namespace System.Data.Odbc
                     if (connection.SQLGetFunctions(_schemaMapping[mapping]._odbcFunction) == false)
                     {
                         // but first delete any related restrictions
-                        if (restrictionsTable != null)
+                        if (restrictionsTable is not null)
                         {
                             foreach (DataRow restriction in restrictionsTable.Rows)
                             {
@@ -127,7 +127,7 @@ namespace System.Data.Odbc
             CollectionDataSet.Tables.Remove(CollectionDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]!);
             CollectionDataSet.Tables.Add(metaDataCollectionsTable);
 
-            if (restrictionsTable != null)
+            if (restrictionsTable is not null)
             {
                 CollectionDataSet.Tables.Remove(CollectionDataSet.Tables[DbMetaDataCollectionNames.Restrictions]!);
                 CollectionDataSet.Tables.Add(restrictionsTable);
@@ -276,7 +276,7 @@ namespace System.Data.Odbc
                 }
 
                 // if we have a type map we can determine the dbType and the CLR type if not leave them null
-                if (typeMap != null)
+                if (typeMap is not null)
                 {
                     dataTypesRow[providerDbTypeColumn] = typeMap._odbcType;
                     dataTypesRow[dataTypeColumn] = typeMap._type.FullName;
@@ -505,7 +505,7 @@ namespace System.Data.Odbc
             int i = 0;
 
             // if we have restrictions put them in the restrictions array
-            if (restrictions != null)
+            if (restrictions is not null)
             {
                 if (restrictions.Length > restrictionsCount)
                 {
@@ -514,7 +514,7 @@ namespace System.Data.Odbc
 
                 for (i = 0; i < restrictions.Length; i++)
                 {
-                    if (restrictions[i] != null)
+                    if (restrictions[i] is not null)
                     {
                         allRestrictions[i] = restrictions[i];
                     }
@@ -549,11 +549,11 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
+                if (dataReader is not null)
                 {
                     dataReader.Dispose();
                 };
-                if (command != null)
+                if (command is not null)
                 {
                     command.Dispose();
                 };
@@ -572,7 +572,7 @@ namespace System.Data.Odbc
 
             // verify that the data source information table is in the data set
             DataTable? dataSourceInformationTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataSourceInformation];
-            if (dataSourceInformationTable == null)
+            if (dataSourceInformationTable is null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.DataSourceInformation);
             }
@@ -603,7 +603,7 @@ namespace System.Data.Odbc
 
             // get the DBMS Name
             stringValue = connection.GetInfoStringUnhandled(ODBC32.SQL_INFO.DBMS_NAME);
-            if (stringValue != null)
+            if (stringValue is not null)
             {
                 dataSourceInformation[DbMetaDataColumnNames.DataSourceProductName] = stringValue;
             }
@@ -710,7 +710,7 @@ namespace System.Data.Odbc
 
             // OrderByColumnsInSelect
             stringValue = connection.GetInfoStringUnhandled(ODBC32.SQL_INFO.ORDER_BY_COLUMNS_IN_SELECT);
-            if (stringValue != null)
+            if (stringValue is not null)
             {
                 if (stringValue == "Y")
                 {
@@ -726,7 +726,7 @@ namespace System.Data.Odbc
             // assuming that the quote suffix is escaped via repetition (i.e " becomes "")
             stringValue = connection.QuoteChar(ADP.GetSchema);
 
-            if (stringValue != null)
+            if (stringValue is not null)
             {
                 // by spec a blank identifier quote char indicates that the provider does not suppport
                 // quoted identifiers
@@ -792,7 +792,7 @@ namespace System.Data.Odbc
 
             // verify the existance of the table in the data set
             DataTable? dataTypesTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.DataTypes];
-            if (dataTypesTable == null)
+            if (dataTypesTable is null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.DataTypes);
             }
@@ -817,11 +817,11 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
+                if (dataReader is not null)
                 {
                     dataReader.Dispose();
                 };
-                if (command != null)
+                if (command is not null)
                 {
                     command.Dispose();
                 };
@@ -846,7 +846,7 @@ namespace System.Data.Odbc
                 object[] allRestrictions = new object[nativeRestrictionsCount];
                 FillOutRestrictions(indexRestrictionsCount, restrictions, allRestrictions, OdbcMetaDataCollectionNames.Indexes);
 
-                if (allRestrictions[indexOfTableName] == null)
+                if (allRestrictions[indexOfTableName] is null)
                 {
                     throw ODBC.GetSchemaRestrictionRequired();
                 }
@@ -857,7 +857,7 @@ namespace System.Data.Odbc
                 dataReader = command.ExecuteReaderFromSQLMethod(allRestrictions, ODBC32.SQL_API.SQLSTATISTICS);
 
                 string? indexName = null;
-                if (restrictions != null)
+                if (restrictions is not null)
                 {
                     if (restrictions.Length >= indexOfIndexName + 1)
                     {
@@ -872,11 +872,11 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
+                if (dataReader is not null)
                 {
                     dataReader.Dispose();
                 };
-                if (command != null)
+                if (command is not null)
                 {
                     command.Dispose();
                 };
@@ -915,11 +915,11 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
+                if (dataReader is not null)
                 {
                     dataReader.Dispose();
                 };
-                if (command != null)
+                if (command is not null)
                 {
                     command.Dispose();
                 };
@@ -944,7 +944,7 @@ namespace System.Data.Odbc
 
                 dataReader = command.ExecuteReaderFromSQLMethod(allRestrictions, ODBC32.SQL_API.SQLPROCEDURES);
 
-                if (allRestrictions[indexOfProcedureType] == null)
+                if (allRestrictions[indexOfProcedureType] is null)
                 {
                     resultTable = DataTableFromDataReader(dataReader, OdbcMetaDataCollectionNames.Procedures);
                 }
@@ -977,11 +977,11 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
+                if (dataReader is not null)
                 {
                     dataReader.Dispose();
                 };
-                if (command != null)
+                if (command is not null)
                 {
                     command.Dispose();
                 };
@@ -998,7 +998,7 @@ namespace System.Data.Odbc
 
             // verify the existance of the table in the data set
             DataTable? reservedWordsTable = CollectionDataSet.Tables[DbMetaDataCollectionNames.ReservedWords];
-            if (reservedWordsTable == null)
+            if (reservedWordsTable is null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.ReservedWords);
             }
@@ -1007,7 +1007,7 @@ namespace System.Data.Odbc
             reservedWordsTable = CloneAndFilterCollection(DbMetaDataCollectionNames.ReservedWords, null);
 
             DataColumn? reservedWordColumn = reservedWordsTable.Columns[DbMetaDataColumnNames.ReservedWord];
-            if (reservedWordColumn == null)
+            if (reservedWordColumn is null)
             {
                 throw ADP.UnableToBuildCollection(DbMetaDataCollectionNames.ReservedWords);
             }
@@ -1067,11 +1067,11 @@ namespace System.Data.Odbc
 
             finally
             {
-                if (dataReader != null)
+                if (dataReader is not null)
                 {
                     dataReader.Dispose();
                 };
-                if (command != null)
+                if (command is not null)
                 {
                     command.Dispose();
                 };
@@ -1089,7 +1089,7 @@ namespace System.Data.Odbc
                 return false;
             }
 
-            if ((restrictionIndexName != null) && (restrictionIndexName != (string)rowIndexName))
+            if ((restrictionIndexName is not null) && (restrictionIndexName != (string)rowIndexName))
             {
                 return false;
             }
@@ -1157,7 +1157,7 @@ namespace System.Data.Odbc
                 resultTable = GetReservedWordsCollection(restrictions, odbcConnection);
             }
 
-            if (resultTable == null)
+            if (resultTable is null)
             {
                 throw ADP.UnableToBuildCollection(collectionName);
             }

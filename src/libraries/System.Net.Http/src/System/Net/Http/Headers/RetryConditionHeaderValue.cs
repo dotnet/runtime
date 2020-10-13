@@ -40,7 +40,7 @@ namespace System.Net.Http.Headers
 
         private RetryConditionHeaderValue(RetryConditionHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _delta = source._delta;
             _date = source._date;
@@ -56,7 +56,7 @@ namespace System.Net.Http.Headers
             {
                 return ((int)_delta.Value.TotalSeconds).ToString(NumberFormatInfo.InvariantInfo);
             }
-            Debug.Assert(_date != null);
+            Debug.Assert(_date is not null);
             return HttpDateParser.DateToString(_date.Value);
         }
 
@@ -64,25 +64,25 @@ namespace System.Net.Http.Headers
         {
             RetryConditionHeaderValue? other = obj as RetryConditionHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
 
             if (_delta.HasValue)
             {
-                return (other._delta != null) && (_delta.Value == other._delta.Value);
+                return (other._delta is not null) && (_delta.Value == other._delta.Value);
             }
 
-            Debug.Assert(_date != null);
-            return (other._date != null) && (_date.Value == other._date.Value);
+            Debug.Assert(_date is not null);
+            return (other._date is not null) && (_date.Value == other._date.Value);
         }
 
         public override int GetHashCode()
         {
-            if (_delta == null)
+            if (_delta is null)
             {
-                Debug.Assert(_date != null);
+                Debug.Assert(_date is not null);
                 return _date.Value.GetHashCode();
             }
 

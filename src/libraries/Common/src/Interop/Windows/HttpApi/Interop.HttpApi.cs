@@ -675,7 +675,7 @@ internal static partial class Interop
 
             // For known headers, when header value is empty, RawValueLength will be 0 and
             // pRawValue will point to empty string
-            if (pKnownHeader->pRawValue != null)
+            if (pKnownHeader->pRawValue is not null)
             {
                 header = new string(pKnownHeader->pRawValue + fixup, 0, pKnownHeader->RawValueLength);
             }
@@ -696,7 +696,7 @@ internal static partial class Interop
             {
                 verb = HttpVerbs[(int)request->Verb];
             }
-            else if (request->Verb == HTTP_VERB.HttpVerbUnknown && request->pUnknownVerb != null)
+            else if (request->Verb == HTTP_VERB.HttpVerbUnknown && request->pUnknownVerb is not null)
             {
                 verb = new string(request->pUnknownVerb + fixup, 0, request->UnknownVerbLength);
             }
@@ -733,11 +733,11 @@ internal static partial class Interop
                 {
                     // For unknown headers, when header value is empty, RawValueLength will be 0 and
                     // pRawValue will be null.
-                    if (pUnknownHeader->pName != null && pUnknownHeader->NameLength > 0)
+                    if (pUnknownHeader->pName is not null && pUnknownHeader->NameLength > 0)
                     {
                         string headerName = new string(pUnknownHeader->pName + fixup, 0, pUnknownHeader->NameLength);
                         string headerValue;
-                        if (pUnknownHeader->pRawValue != null && pUnknownHeader->RawValueLength > 0)
+                        if (pUnknownHeader->pRawValue is not null && pUnknownHeader->RawValueLength > 0)
                         {
                             headerValue = new string(pUnknownHeader->pRawValue + fixup, 0, pUnknownHeader->RawValueLength);
                         }
@@ -757,7 +757,7 @@ internal static partial class Interop
             {
                 // For known headers, when header value is empty, RawValueLength will be 0 and
                 // pRawValue will point to empty string ("\0")
-                if (pKnownHeader->pRawValue != null)
+                if (pKnownHeader->pRawValue is not null)
                 {
                     string headerValue = new string(pKnownHeader->pRawValue + fixup, 0, pKnownHeader->RawValueLength);
                     headerCollection.Add(HTTP_REQUEST_HEADER_ID.ToString(index), headerValue);
@@ -841,15 +841,15 @@ internal static partial class Interop
 
             byte* pMemoryBlob = (byte*)memoryBlob;
             HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
-            IntPtr address = request->Address.pRemoteAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pRemoteAddress) : IntPtr.Zero;
+            IntPtr address = request->Address.pRemoteAddress is not null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pRemoteAddress) : IntPtr.Zero;
             CopyOutAddress(address, ref v4address, ref v6address);
 
             IPEndPoint? endpoint = null;
-            if (v4address != null)
+            if (v4address is not null)
             {
                 endpoint = new IPEndPoint(IPAddress.Any, IPEndPoint.MinPort).Create(v4address) as IPEndPoint;
             }
-            else if (v6address != null)
+            else if (v6address is not null)
             {
                 endpoint = new IPEndPoint(IPAddress.IPv6Any, IPEndPoint.MinPort).Create(v6address) as IPEndPoint;
             }
@@ -864,15 +864,15 @@ internal static partial class Interop
 
             byte* pMemoryBlob = (byte*)memoryBlob;
             HTTP_REQUEST* request = (HTTP_REQUEST*)pMemoryBlob;
-            IntPtr address = request->Address.pLocalAddress != null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pLocalAddress) : IntPtr.Zero;
+            IntPtr address = request->Address.pLocalAddress is not null ? (IntPtr)(pMemoryBlob - (byte*)originalAddress + (byte*)request->Address.pLocalAddress) : IntPtr.Zero;
             CopyOutAddress(address, ref v4address, ref v6address);
 
             IPEndPoint? endpoint = null;
-            if (v4address != null)
+            if (v4address is not null)
             {
                 endpoint = s_any.Create(v4address) as IPEndPoint;
             }
-            else if (v6address != null)
+            else if (v6address is not null)
             {
                 endpoint = s_ipv6Any.Create(v6address) as IPEndPoint;
             }

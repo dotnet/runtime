@@ -19,7 +19,7 @@ namespace System.Diagnostics
         /// <param name="version">The version of the component publishing the tracing info.</param>
         public ActivitySource(string name, string? version = "")
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -34,7 +34,7 @@ namespace System.Diagnostics
                 s_allListeners.EnumWithAction((listener, source) =>
                 {
                     Func<ActivitySource, bool>? shouldListenTo = listener.ShouldListenTo;
-                    if (shouldListenTo != null)
+                    if (shouldListenTo is not null)
                     {
                         var activitySource = (ActivitySource)source;
                         if (shouldListenTo(activitySource))
@@ -67,7 +67,7 @@ namespace System.Diagnostics
         public bool HasListeners()
         {
             SynchronizedList<ActivityListener>? listeners = _listeners;
-            return listeners != null && listeners.Count > 0;
+            return listeners is not null && listeners.Count > 0;
         }
 
         /// <summary>
@@ -109,7 +109,7 @@ namespace System.Diagnostics
         {
             // _listeners can get assigned to null in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
-            if (listeners == null || listeners.Count == 0)
+            if (listeners is null || listeners.Count == 0)
             {
                 return null;
             }
@@ -119,14 +119,14 @@ namespace System.Diagnostics
 
             ActivitySamplingResult samplingResult = ActivitySamplingResult.None;
 
-            if (parentId != null)
+            if (parentId is not null)
             {
                 var aco = new ActivityCreationOptions<string>(this, name, parentId, kind, tags, links);
                 var acoContext = new ActivityCreationOptions<ActivityContext>(this, name, aco.GetContext(), kind, tags, links);
 
                 listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<string> data, ref ActivitySamplingResult result, ref ActivityCreationOptions<ActivityContext> dataWithContext) => {
                     SampleActivity<string>? sampleUsingParentId = listener.SampleUsingParentId;
-                    if (sampleUsingParentId != null)
+                    if (sampleUsingParentId is not null)
                     {
                         ActivitySamplingResult sr = sampleUsingParentId(ref data);
                         if (sr > result)
@@ -141,7 +141,7 @@ namespace System.Diagnostics
                         //   - Can convert the parent Id to a Context. ActivityCreationOptions.TraceId != default means parent id converted to a valid context.
                         // Then we can call the listener Sample callback with the constructed context.
                         SampleActivity<ActivityContext>? sample = listener.Sample;
-                        if (sample != null && data.GetContext() != default) // data.GetContext() != default means parent Id parsed correctly to a context
+                        if (sample is not null && data.GetContext() != default) // data.GetContext() != default means parent Id parsed correctly to a context
                         {
                             ActivitySamplingResult sr = sample(ref dataWithContext);
                             if (sr > result)
@@ -160,9 +160,9 @@ namespace System.Diagnostics
 
                 samplerTags = aco.GetSamplingTags();
                 ActivityTagsCollection? atc = acoContext.GetSamplingTags();
-                if (atc != null)
+                if (atc is not null)
                 {
-                    if (samplerTags == null)
+                    if (samplerTags is null)
                     {
                         samplerTags = atc;
                     }
@@ -177,11 +177,11 @@ namespace System.Diagnostics
             }
             else
             {
-                bool useCurrentActivityContext = context == default && Activity.Current != null;
+                bool useCurrentActivityContext = context == default && Activity.Current is not null;
                 var aco = new ActivityCreationOptions<ActivityContext>(this, name, useCurrentActivityContext ? Activity.Current!.Context : context, kind, tags, links);
                 listeners.EnumWithFunc((ActivityListener listener, ref ActivityCreationOptions<ActivityContext> data, ref ActivitySamplingResult result, ref ActivityCreationOptions<ActivityContext> unused) => {
                     SampleActivity<ActivityContext>? sample = listener.Sample;
-                    if (sample != null)
+                    if (sample is not null)
                     {
                         ActivitySamplingResult dr = sample(ref data);
                         if (dr > result)
@@ -226,7 +226,7 @@ namespace System.Diagnostics
         /// <param name="listener"> The <see cref="ActivityListener"/> object to use for listeneing to the <see cref="Activity"/> events.</param>
         public static void AddActivityListener(ActivityListener listener)
         {
-            if (listener == null)
+            if (listener is null)
             {
                 throw new ArgumentNullException(nameof(listener));
             }
@@ -235,7 +235,7 @@ namespace System.Diagnostics
             {
                 s_activeSources.EnumWithAction((source, obj) => {
                     var shouldListenTo = ((ActivityListener)obj).ShouldListenTo;
-                    if (shouldListenTo != null && shouldListenTo(source))
+                    if (shouldListenTo is not null && shouldListenTo(source))
                     {
                         source.AddListener((ActivityListener)obj);
                     }
@@ -247,7 +247,7 @@ namespace System.Diagnostics
 
         internal void AddListener(ActivityListener listener)
         {
-            if (_listeners == null)
+            if (_listeners is null)
             {
                 Interlocked.CompareExchange(ref _listeners, new SynchronizedList<ActivityListener>(), null);
             }
@@ -263,11 +263,11 @@ namespace System.Diagnostics
 
         internal void NotifyActivityStart(Activity activity)
         {
-            Debug.Assert(activity != null);
+            Debug.Assert(activity is not null);
 
             // _listeners can get assigned to null in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
-            if (listeners != null &&  listeners.Count > 0)
+            if (listeners is not null &&  listeners.Count > 0)
             {
                 listeners.EnumWithAction((listener, obj) => listener.ActivityStarted?.Invoke((Activity) obj), activity);
             }
@@ -275,11 +275,11 @@ namespace System.Diagnostics
 
         internal void NotifyActivityStop(Activity activity)
         {
-            Debug.Assert(activity != null);
+            Debug.Assert(activity is not null);
 
             // _listeners can get assigned to null in Dispose.
             SynchronizedList<ActivityListener>? listeners = _listeners;
-            if (listeners != null &&  listeners.Count > 0)
+            if (listeners is not null &&  listeners.Count > 0)
             {
                 listeners.EnumWithAction((listener, obj) => listener.ActivityStopped?.Invoke((Activity) obj), activity);
             }

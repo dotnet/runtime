@@ -31,7 +31,7 @@ namespace System.Security.Principal
             {
                 return true;
             }
-            else if (l == null || r == null)
+            else if (l is null || r is null)
             {
                 return false;
             }

@@ -158,7 +158,7 @@ namespace System.Configuration
                 if (appendCharEntity) charactersWritten += AppendCharEntity(ch);
                 else
                 {
-                    if (entityRef != null) charactersWritten += AppendEntityRef(entityRef);
+                    if (entityRef is not null) charactersWritten += AppendEntityRef(entityRef);
                     else charactersWritten += Write(ch);
                 }
             }

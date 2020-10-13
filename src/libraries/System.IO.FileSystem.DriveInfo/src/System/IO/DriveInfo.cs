@@ -11,7 +11,7 @@ namespace System.IO
 
         public DriveInfo(string driveName)
         {
-            if (driveName == null)
+            if (driveName is null)
             {
                 throw new ArgumentNullException(nameof(driveName));
             }

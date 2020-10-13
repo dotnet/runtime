@@ -57,7 +57,7 @@ namespace System.Net
         [NonEvent]
         public ValueStopwatch BeforeResolution(string hostNameOrAddress)
         {
-            Debug.Assert(hostNameOrAddress != null);
+            Debug.Assert(hostNameOrAddress is not null);
 
             if (IsEnabled())
             {
@@ -77,7 +77,7 @@ namespace System.Net
         [NonEvent]
         public ValueStopwatch BeforeResolution(IPAddress address)
         {
-            Debug.Assert(address != null);
+            Debug.Assert(address is not null);
 
             if (IsEnabled())
             {
@@ -117,7 +117,7 @@ namespace System.Net
         [NonEvent]
         private static Span<char> FormatIPAddressNullTerminated(IPAddress address, Span<char> destination)
         {
-            Debug.Assert(address != null);
+            Debug.Assert(address is not null);
 
             bool success = address.TryFormat(destination, out int charsWritten);
             Debug.Assert(success);

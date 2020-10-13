@@ -72,7 +72,7 @@ namespace System.Xml.Schema
         public int AddName(XmlQualifiedName name, object? particle)
         {
             object? lookup = _names[name];
-            if (lookup != null)
+            if (lookup is not null)
             {
                 int symbol = (int)lookup;
                 if (_particles[symbol] != particle)
@@ -116,20 +116,20 @@ namespace System.Xml.Schema
 
         private void AddWildcard(string wildcard, object? particle)
         {
-            if (_wildcards == null)
+            if (_wildcards is null)
             {
                 _wildcards = new Hashtable();
             }
 
             object? lookup = _wildcards[wildcard];
-            if (lookup == null)
+            if (lookup is null)
             {
                 _wildcards.Add(wildcard, _last);
                 _particles.Add(particle);
                 Debug.Assert(_particles.Count == _last + 1);
                 _last++;
             }
-            else if (particle != null)
+            else if (particle is not null)
             {
                 _particles[(int)lookup] = particle;
             }
@@ -140,14 +140,14 @@ namespace System.Xml.Schema
             ArrayList match = new ArrayList();
             foreach (XmlQualifiedName? name in _names.Keys)
             {
-                Debug.Assert(name != null);
+                Debug.Assert(name is not null);
                 if (name != XmlQualifiedName.Empty && list.Allows(name))
                 {
                     match.Add(_names[name]);
                 }
             }
 
-            if (_wildcards != null)
+            if (_wildcards is not null)
             {
                 foreach (string wildcard in _wildcards.Keys)
                 {
@@ -174,15 +174,15 @@ namespace System.Xml.Schema
             get
             {
                 object? lookup = _names[name];
-                if (lookup != null)
+                if (lookup is not null)
                 {
                     return (int)lookup;
                 }
 
-                if (_wildcards != null)
+                if (_wildcards is not null)
                 {
                     lookup = _wildcards[name.Namespace];
-                    if (lookup != null)
+                    if (lookup is not null)
                     {
                         return (int)lookup;
                     }
@@ -198,7 +198,7 @@ namespace System.Xml.Schema
         public bool Exists(XmlQualifiedName name)
         {
             object? lookup = _names[name];
-            if (lookup != null)
+            if (lookup is not null)
             {
                 return true;
             }
@@ -227,7 +227,7 @@ namespace System.Xml.Schema
                 }
             }
 
-            if (_wildcards != null)
+            if (_wildcards is not null)
             {
                 foreach (DictionaryEntry de in _wildcards)
                 {
@@ -389,7 +389,7 @@ namespace System.Xml.Schema
                 }
 
                 LeafNode node = new LeafNode(positions.Add(symbol, particle));
-                if (replacementNode == null)
+                if (replacementNode is null)
                 {
                     replacementNode = node;
                 }
@@ -469,7 +469,7 @@ namespace System.Xml.Schema
                 this_._leftChild!.ExpandTree(this_, symbols, positions);
 
             ProcessRight:
-                if (this_._rightChild != null)
+                if (this_._rightChild is not null)
                 {
                     this_._rightChild.ExpandTree(this_, symbols, positions);
                 }
@@ -485,7 +485,7 @@ namespace System.Xml.Schema
         public override void ExpandTree(InteriorNode parent, SymbolsDictionary symbols, Positions positions)
         {
             _leftChild!.ExpandTree(this, symbols, positions);
-            if (_rightChild != null)
+            if (_rightChild is not null)
             {
                 _rightChild.ExpandTree(this, symbols, positions);
             }
@@ -577,7 +577,7 @@ namespace System.Xml.Schema
                     n = this_.LeftChild;
                     this_ = n as SequenceNode;
                 }
-                while (this_ != null);
+                while (this_ is not null);
 
                 return n!.IsNullable;
             }
@@ -641,7 +641,7 @@ namespace System.Xml.Schema
                 ConstructChildPos(this_.RightChild!, firstPosTemp, lastPosTemp, followpos);
                 n = this_.LeftChild!;
                 this_ = n as ChoiceNode;
-            } while (this_ != null);
+            } while (this_ is not null);
 
             n!.ConstructPos(firstpos, lastpos, followpos);
             firstpos.Or(firstPosTemp);
@@ -661,7 +661,7 @@ namespace System.Xml.Schema
                     n = this_.LeftChild!;
                     this_ = n as ChoiceNode;
                 }
-                while (this_ != null);
+                while (this_ is not null);
                 return n.IsNullable;
             }
         }
@@ -1042,11 +1042,11 @@ namespace System.Xml.Schema
             }
             //Only then it can be head of substitutionGrp, if it is, add its members
             XmlSchemaElement? elem = p as XmlSchemaElement;
-            if (elem != null && (global || !elem.RefName.IsEmpty))
+            if (elem is not null && (global || !elem.RefName.IsEmpty))
             {
                 XmlSchemaObjectTable substitutionGroups = schemaSet.SubstitutionGroups;
                 XmlSchemaSubstitutionGroup? grp = (XmlSchemaSubstitutionGroup?)substitutionGroups[elem.QualifiedName];
-                if (grp != null)
+                if (grp is not null)
                 {
                     //Grp members wil contain the head as well, so filter head as we added it already
                     for (int i = 0; i < grp.Members.Count; ++i)
@@ -1114,7 +1114,7 @@ namespace System.Xml.Schema
         public void CloseGroup()
         {
             SyntaxTreeNode? node = _stack!.Pop();
-            if (node == null)
+            if (node is null)
             {
                 return;
             }
@@ -1128,7 +1128,7 @@ namespace System.Xml.Schema
             {
                 // some collapsing to do...
                 InteriorNode? inNode = (InteriorNode?)_stack.Pop();
-                if (inNode != null)
+                if (inNode is not null)
                 {
                     inNode.RightChild = node;
                     node = inNode;
@@ -1167,7 +1167,7 @@ namespace System.Xml.Schema
             if (_stack!.Count > 0)
             {
                 InteriorNode? inNode = (InteriorNode?)_stack.Pop();
-                if (inNode != null)
+                if (inNode is not null)
                 {
                     inNode.RightChild = node;
                     node = inNode;
@@ -1231,7 +1231,7 @@ namespace System.Xml.Schema
             {
                 SyntaxTreeNode? topNode = _stack!.Pop();
                 InteriorNode? inNode = topNode as InteriorNode;
-                if (_isPartial && inNode != null)
+                if (_isPartial && inNode is not null)
                 {
                     // need to reach in and wrap right hand side of element.
                     // and n remains the same.
@@ -1246,7 +1246,7 @@ namespace System.Xml.Schema
                 }
                 _stack.Push(topNode);
             }
-            else if (_contentNode != null)
+            else if (_contentNode is not null)
             { //If there is content to wrap
                 // wrap whole content
                 node.LeftChild = _contentNode;
@@ -1257,7 +1257,7 @@ namespace System.Xml.Schema
         public ContentValidator Finish(bool useDFA)
         {
             Debug.Assert(ContentType == XmlSchemaContentType.ElementOnly || ContentType == XmlSchemaContentType.Mixed);
-            if (_contentNode == null)
+            if (_contentNode is null)
             {
                 if (ContentType == XmlSchemaContentType.Mixed)
                 {
@@ -1323,7 +1323,7 @@ namespace System.Xml.Schema
                     transitionTable = BuildTransitionTable(firstpos, followpos, endMarker.Pos);
                 }
 
-                if (transitionTable != null)
+                if (transitionTable is not null)
                 {
                     return new DfaContentValidator(transitionTable, _symbols, this.ContentType, this.IsOpen, contentRoot.LeftChild.IsNullable);
                 }
@@ -1350,7 +1350,7 @@ namespace System.Xml.Schema
                 if (p.symbol == -2)
                 { //P is a LeafRangeNode
                     LeafRangeNode? lrNode = p.particle as LeafRangeNode;
-                    Debug.Assert(lrNode != null);
+                    Debug.Assert(lrNode is not null);
                     BitSet tempFollowPos = new BitSet(positionsCount);
                     tempFollowPos.Clear();
                     tempFollowPos.Or(followpos[i]); //Add the followpos of the range node
@@ -1368,7 +1368,7 @@ namespace System.Xml.Schema
                             if (p1.symbol == -2)
                             {
                                 LeafRangeNode? lrNode1 = p1.particle as LeafRangeNode;
-                                Debug.Assert(lrNode1 != null);
+                                Debug.Assert(lrNode1 is not null);
                                 tempFollowPos.Or(minmaxFollowPos[lrNode1.Pos]);
                             }
                         }
@@ -1391,7 +1391,7 @@ namespace System.Xml.Schema
                 int symbol = currentPosition.symbol;
                 if (symbol >= 0)
                 { //its not a range position
-                    if (symbolMatches[symbol] != null)
+                    if (symbolMatches[symbol] is not null)
                     {
                         throw new UpaException(symbolMatches[symbol], currentPosition.particle);
                     }
@@ -1416,7 +1416,7 @@ namespace System.Xml.Schema
                 for (int pos = newSet.NextSet(-1); pos != -1; pos = newSet.NextSet(pos))
                 {
                     LeafRangeNode? lrNode = _positions[pos].particle as LeafRangeNode;
-                    Debug.Assert(lrNode != null);
+                    Debug.Assert(lrNode is not null);
                     curpos.Or(minmaxFollowPos[lrNode.Pos]);
                 }
             }
@@ -1440,7 +1440,7 @@ namespace System.Xml.Schema
             {
                 // if position can follow
                 int symbol = _positions![pos].symbol;
-                if (particles[symbol] == null)
+                if (particles[symbol] is null)
                 {
                     // set particle for the symbol
                     particles[symbol] = _positions[pos].particle;
@@ -1510,7 +1510,7 @@ namespace System.Xml.Schema
                     // if U is not empty and is not in Dstates then
                     //      add U as an unmarked state to Dstates
                     object? lookup = stateTable[newset];
-                    if (lookup != null)
+                    if (lookup is not null)
                     {
                         transition[symbol] = (int)lookup;
                     }
@@ -1555,7 +1555,7 @@ namespace System.Xml.Schema
                 bb.AppendLine();
             }
 
-            if (transitionTable != null)
+            if (transitionTable is not null)
             {
                 // Temporary printout
                 bb.AppendLine("Transitions");
@@ -1644,19 +1644,19 @@ namespace System.Xml.Schema
         {
             ArrayList? names = null;
             int[] transition = _transitionTable[context.CurrentState.State];
-            if (transition != null)
+            if (transition is not null)
             {
                 for (int i = 0; i < transition.Length - 1; i++)
                 {
                     if (transition[i] != -1)
                     {
-                        if (names == null)
+                        if (names is null)
                         {
                             names = new ArrayList();
                         }
 
                         XmlSchemaParticle? p = (XmlSchemaParticle?)_symbols.GetParticle(i);
-                        if (p == null)
+                        if (p is null)
                         {
                             string s = _symbols.NameOf(i);
                             if (s.Length != 0)
@@ -1683,14 +1683,14 @@ namespace System.Xml.Schema
         {
             ArrayList particles = new ArrayList();
             int[] transition = _transitionTable[context.CurrentState.State];
-            if (transition != null)
+            if (transition is not null)
             {
                 for (int i = 0; i < transition.Length - 1; i++)
                 {
                     if (transition[i] != -1)
                     {
                         XmlSchemaParticle? p = (XmlSchemaParticle?)_symbols.GetParticle(i);
-                        if (p == null)
+                        if (p is null)
                         {
                             continue;
                         }
@@ -1772,7 +1772,7 @@ namespace System.Xml.Schema
 
 #if FINDUPA_PARTICLE
         private bool FindUPAParticle(ref object originalParticle, object newParticle) {
-            if (originalParticle == null) {
+            if (originalParticle is null) {
                 originalParticle = newParticle;
                 if (originalParticle is XmlSchemaElement) { //if the first particle is element, then break, otherwise try to find an element
                     return true;
@@ -1803,12 +1803,12 @@ namespace System.Xml.Schema
             BitSet curpos = context.CurPos[context.CurrentState.CurPosIndex];
             for (int pos = curpos.NextSet(-1); pos != -1; pos = curpos.NextSet(pos))
             {
-                if (names == null)
+                if (names is null)
                 {
                     names = new ArrayList();
                 }
                 XmlSchemaParticle? p = (XmlSchemaParticle?)_positions[pos].particle;
-                if (p == null)
+                if (p is null)
                 {
                     string s = _symbols.NameOf(_positions[pos].symbol);
                     if (s.Length != 0)
@@ -1835,7 +1835,7 @@ namespace System.Xml.Schema
             for (int pos = curpos.NextSet(-1); pos != -1; pos = curpos.NextSet(pos))
             {
                 XmlSchemaParticle? p = (XmlSchemaParticle?)_positions[pos].particle;
-                if (p == null)
+                if (p is null)
                 {
                     continue;
                 }
@@ -1879,7 +1879,7 @@ namespace System.Xml.Schema
         public override void InitValidation(ValidationState context)
         {
             List<RangePositionInfo>? runningPositions = context.RunningPositions;
-            if (runningPositions != null)
+            if (runningPositions is not null)
             {
                 Debug.Assert(_minMaxNodesCount != 0);
                 runningPositions.Clear();
@@ -2002,7 +2002,7 @@ namespace System.Xml.Schema
                         countingPosition.And(_positionsWithRangeTerminals);
                         int cPos = countingPosition.NextSet(-1); //Get the first position where leaf range node appears
                         LeafRangeNode? lrNode = _positions[cPos].particle as LeafRangeNode; //For a position with leaf range node, the particle is the node itself
-                        Debug.Assert(lrNode != null);
+                        Debug.Assert(lrNode is not null);
 
                         rposInfo = runningPositions[j];
                         if (matchCount + 2 >= runningPositions.Count)
@@ -2012,7 +2012,7 @@ namespace System.Xml.Schema
                         }
 
                         RangePositionInfo newRPosInfo = runningPositions[matchCount];
-                        if (newRPosInfo.rangeCounters == null)
+                        if (newRPosInfo.rangeCounters is null)
                         {
                             newRPosInfo.rangeCounters = new decimal[_minMaxNodesCount];
                         }
@@ -2040,7 +2040,7 @@ namespace System.Xml.Schema
                             runningPositions[matchCount] = newRPosInfo;
                             j = matchCount + 1;
                             newRPosInfo = runningPositions[j];
-                            if (newRPosInfo.rangeCounters == null)
+                            if (newRPosInfo.rangeCounters is null)
                             {
                                 newRPosInfo.rangeCounters = new decimal[_minMaxNodesCount];
                             }
@@ -2075,18 +2075,18 @@ namespace System.Xml.Schema
         {
             ArrayList? names = null;
             BitSet expectedPos;
-            if (context.RunningPositions != null)
+            if (context.RunningPositions is not null)
             {
                 List<RangePositionInfo> runningPositions = context.RunningPositions;
                 expectedPos = new BitSet(_positions.Count);
                 for (int i = context.CurrentState.NumberOfRunningPos - 1; i >= 0; i--)
                 {
-                    Debug.Assert(runningPositions[i].curpos != null);
+                    Debug.Assert(runningPositions[i].curpos is not null);
                     expectedPos.Or(runningPositions[i].curpos);
                 }
                 for (int pos = expectedPos.NextSet(-1); pos != -1; pos = expectedPos.NextSet(pos))
                 {
-                    if (names == null)
+                    if (names is null)
                     {
                         names = new ArrayList();
                     }
@@ -2094,7 +2094,7 @@ namespace System.Xml.Schema
                     if (symbol >= 0)
                     { //non range nodes
                         XmlSchemaParticle? p = _positions[pos].particle as XmlSchemaParticle;
-                        if (p == null)
+                        if (p is null)
                         {
                             string s = _symbols.NameOf(_positions[pos].symbol);
                             if (s.Length != 0)
@@ -2121,13 +2121,13 @@ namespace System.Xml.Schema
         {
             ArrayList particles = new ArrayList();
             BitSet expectedPos;
-            if (context.RunningPositions != null)
+            if (context.RunningPositions is not null)
             {
                 List<RangePositionInfo> runningPositions = context.RunningPositions;
                 expectedPos = new BitSet(_positions.Count);
                 for (int i = context.CurrentState.NumberOfRunningPos - 1; i >= 0; i--)
                 {
-                    Debug.Assert(runningPositions[i].curpos != null);
+                    Debug.Assert(runningPositions[i].curpos is not null);
                     expectedPos.Or(runningPositions[i].curpos);
                 }
                 for (int pos = expectedPos.NextSet(-1); pos != -1; pos = expectedPos.NextSet(pos))
@@ -2136,7 +2136,7 @@ namespace System.Xml.Schema
                     if (symbol >= 0)
                     { //non range nodes
                         XmlSchemaParticle? p = _positions[pos].particle as XmlSchemaParticle;
-                        if (p == null)
+                        if (p is null)
                         {
                             continue;
                         }
@@ -2165,7 +2165,7 @@ namespace System.Xml.Schema
 
         public bool AddElement(XmlQualifiedName name, object particle, bool isEmptiable)
         {
-            if (_elements[name] != null)
+            if (_elements[name] is not null)
             {
                 return false;
             }
@@ -2196,7 +2196,7 @@ namespace System.Xml.Schema
         {
             object? lookup = _elements[name];
             errorCode = 0;
-            if (lookup == null)
+            if (lookup is null)
             {
                 context.NeedValidateChildren = false;
                 return null;
@@ -2240,7 +2240,7 @@ namespace System.Xml.Schema
             {
                 if (!context.AllElementsSet![(int)entry.Value!] && (!isRequiredOnly || _isRequired[(int)entry.Value]))
                 {
-                    if (names == null)
+                    if (names is null)
                     {
                         names = new ArrayList();
                     }

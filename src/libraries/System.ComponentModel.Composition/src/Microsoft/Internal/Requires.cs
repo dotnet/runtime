@@ -39,7 +39,7 @@ namespace Microsoft.Internal
         private static void NotNullElements<T>(IEnumerable<T>? values, string parameterName)
             where T : class
         {
-            if (values != null)
+            if (values is not null)
             {
                 foreach (T value in values)
                 {
@@ -62,11 +62,11 @@ namespace Microsoft.Internal
         private static void NotNullElements<T>(T[]? values, string parameterName)
             where T : class
         {
-            if (values != null)
+            if (values is not null)
             {
                 foreach (var value in values)
                 {
-                    if (value == null)
+                    if (value is null)
                     {
                         throw ExceptionBuilder.CreateContainsNullElement(parameterName);
                     }
@@ -79,7 +79,7 @@ namespace Microsoft.Internal
             where TKey : class
             where TValue : class
         {
-            if (values != null)
+            if (values is not null)
             {
                 foreach (KeyValuePair<TKey, TValue> keyValue in values)
                 {
@@ -104,7 +104,7 @@ namespace Microsoft.Internal
         public static void NotNull<T>(T value, string parameterName)
             where T : class
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(parameterName);
             }

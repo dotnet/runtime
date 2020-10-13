@@ -192,7 +192,7 @@ namespace System.Reflection
             get
             {
                 CachePropertyInfo(PInfo.GetMethod);
-                return (info.get_method != null);
+                return (info.get_method is not null);
             }
         }
 
@@ -201,7 +201,7 @@ namespace System.Reflection
             get
             {
                 CachePropertyInfo(PInfo.SetMethod);
-                return (info.set_method != null);
+                return (info.set_method is not null);
             }
         }
 
@@ -211,7 +211,7 @@ namespace System.Reflection
             {
                 CachePropertyInfo(PInfo.GetMethod | PInfo.SetMethod);
 
-                if (info.get_method != null)
+                if (info.get_method is not null)
                 {
                     return info.get_method.ReturnType;
                 }
@@ -260,9 +260,9 @@ namespace System.Reflection
 
             CachePropertyInfo(PInfo.GetMethod | PInfo.SetMethod);
 
-            if (info.set_method != null && (nonPublic || info.set_method.IsPublic))
+            if (info.set_method is not null && (nonPublic || info.set_method.IsPublic))
                 nset = 1;
-            if (info.get_method != null && (nonPublic || info.get_method.IsPublic))
+            if (info.get_method is not null && (nonPublic || info.get_method.IsPublic))
                 nget = 1;
 
             MethodInfo[] res = new MethodInfo[nget + nset];
@@ -277,7 +277,7 @@ namespace System.Reflection
         public override MethodInfo? GetGetMethod(bool nonPublic)
         {
             CachePropertyInfo(PInfo.GetMethod);
-            if (info.get_method != null && (nonPublic || info.get_method.IsPublic))
+            if (info.get_method is not null && (nonPublic || info.get_method.IsPublic))
                 return info.get_method;
             else
                 return null;
@@ -288,12 +288,12 @@ namespace System.Reflection
             CachePropertyInfo(PInfo.GetMethod | PInfo.SetMethod);
             ParameterInfo[] src;
             int length;
-            if (info.get_method != null)
+            if (info.get_method is not null)
             {
                 src = info.get_method.GetParametersInternal();
                 length = src.Length;
             }
-            else if (info.set_method != null)
+            else if (info.set_method is not null)
             {
                 src = info.set_method.GetParametersInternal();
                 length = src.Length - 1;
@@ -312,7 +312,7 @@ namespace System.Reflection
         public override MethodInfo? GetSetMethod(bool nonPublic)
         {
             CachePropertyInfo(PInfo.SetMethod);
-            if (info.set_method != null && (nonPublic || info.set_method.IsPublic))
+            if (info.set_method is not null && (nonPublic || info.set_method.IsPublic))
                 return info.set_method;
             else
                 return null;
@@ -405,13 +405,13 @@ namespace System.Reflection
 
         public override object? GetValue(object? obj, object?[]? index)
         {
-            if ((index == null || index.Length == 0) && RuntimeFeature.IsDynamicCodeSupported)
+            if ((index is null || index.Length == 0) && RuntimeFeature.IsDynamicCodeSupported)
             {
                 /*FIXME we should check if the number of arguments matches the expected one, otherwise the error message will be pretty criptic.*/
-                if (cached_getter == null)
+                if (cached_getter is null)
                 {
                     MethodInfo? method = GetGetMethod(true);
-                    if (method == null)
+                    if (method is null)
                         throw new ArgumentException($"Get Method not found for '{Name}'");
                     if (!DeclaringType.IsValueType && !PropertyType.IsByRef && !method.ContainsGenericParameters)
                     {
@@ -449,10 +449,10 @@ namespace System.Reflection
             object? ret = null;
 
             MethodInfo? method = GetGetMethod(true);
-            if (method == null)
+            if (method is null)
                 throw new ArgumentException($"Get Method not found for '{Name}'");
 
-            if (index == null || index.Length == 0)
+            if (index is null || index.Length == 0)
                 ret = method.Invoke(obj, invokeAttr, binder, null, culture);
             else
                 ret = method.Invoke(obj, invokeAttr, binder, index, culture);
@@ -463,11 +463,11 @@ namespace System.Reflection
         public override void SetValue(object? obj, object? value, BindingFlags invokeAttr, Binder? binder, object?[]? index, CultureInfo? culture)
         {
             MethodInfo? method = GetSetMethod(true);
-            if (method == null)
+            if (method is null)
                 throw new ArgumentException("Set Method not found for '" + Name + "'");
 
             object?[] parms;
-            if (index == null || index.Length == 0)
+            if (index is null || index.Length == 0)
                 parms = new object?[] { value };
             else
             {
@@ -512,7 +512,7 @@ namespace System.Reflection
             if (handle.Value == IntPtr.Zero)
                 throw new ArgumentException("The handle is invalid.");
             PropertyInfo pi = internal_from_handle_type(handle.Value, reflectedType.Value);
-            if (pi == null)
+            if (pi is null)
                 throw new ArgumentException("The property handle and the type handle are incompatible.");
             return pi;
         }

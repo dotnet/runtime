@@ -9,7 +9,7 @@ namespace System.Xml
 
         internal static void Encode(byte[] buffer, int index, int count, XmlWriter writer)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }

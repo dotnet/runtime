@@ -19,7 +19,7 @@ namespace System.Linq.Expressions
         {
             return e.NodeType switch
             {
-                ExpressionType.Constant => ((ConstantExpression)e).Value == null,
+                ExpressionType.Constant => ((ConstantExpression)e).Value is null,
                 ExpressionType.Default => e.Type.IsNullableOrReferenceType(),
 
                 _ => false,

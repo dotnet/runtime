@@ -33,7 +33,7 @@ namespace System.Xml.Xsl.XsltOld
             PrefixQName qname = new PrefixQName();
             qname.SetQName(name);
 
-            if (nsUri == null)
+            if (nsUri is null)
             {
                 qname.Namespace = manager!.ResolveXmlNamespace(qname.Prefix);
             }
@@ -53,7 +53,7 @@ namespace System.Xml.Xsl.XsltOld
             _nsUri = PrecalculateAvt(ref _nsAvt);
 
             // if both name and ns are not AVT we can calculate qname at compile time and will not need namespace manager anymore
-            if (_nameAvt == null && _nsAvt == null)
+            if (_nameAvt is null && _nsAvt is null)
             {
                 if (_name != "xmlns")
                 {
@@ -71,7 +71,7 @@ namespace System.Xml.Xsl.XsltOld
                 CompileTemplate(compiler);
                 compiler.ToParent();
             }
-            _empty = (this.containedActions == null);
+            _empty = (this.containedActions is null);
         }
 
         internal override bool CompileAttribute(Compiler compiler)
@@ -100,20 +100,20 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             switch (frame.State)
             {
                 case Initialized:
-                    if (_qname != null)
+                    if (_qname is not null)
                     {
                         frame.CalulatedName = _qname;
                     }
                     else
                     {
                         frame.CalulatedName = CreateElementQName(
-                            _nameAvt == null ? _name! : _nameAvt.Evaluate(processor, frame),
-                            _nsAvt == null ? _nsUri : _nsAvt.Evaluate(processor, frame),
+                            _nameAvt is null ? _name! : _nameAvt.Evaluate(processor, frame),
+                            _nsAvt is null ? _nsUri : _nsAvt.Evaluate(processor, frame),
                             _manager
                         );
                     }

@@ -98,8 +98,8 @@ namespace System.Collections.Immutable
         /// </remarks>
         internal static bool TryCopyTo<T>(this IEnumerable<T> sequence, T[] array, int arrayIndex)
         {
-            Debug.Assert(sequence != null);
-            Debug.Assert(array != null);
+            Debug.Assert(sequence is not null);
+            Debug.Assert(array is not null);
             Debug.Assert(arrayIndex >= 0 && arrayIndex <= array.Length);
 
             // IList is the GCD of what the following types implement.

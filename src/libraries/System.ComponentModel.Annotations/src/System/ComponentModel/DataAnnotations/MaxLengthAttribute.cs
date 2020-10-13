@@ -66,7 +66,7 @@ namespace System.ComponentModel.DataAnnotations
 
             int length;
             // Automatically pass if value is null. RequiredAttribute should be used to assert a value is not null.
-            if (value == null)
+            if (value is null)
             {
                 return true;
             }
@@ -112,7 +112,7 @@ namespace System.ComponentModel.DataAnnotations
     {
         public static bool TryGetCount(object value, out int count)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             if (value is ICollection collection)
             {
@@ -121,7 +121,7 @@ namespace System.ComponentModel.DataAnnotations
             }
 
             PropertyInfo? property = value.GetType().GetRuntimeProperty("Count");
-            if (property != null && property.CanRead && property.PropertyType == typeof(int))
+            if (property is not null && property.CanRead && property.PropertyType == typeof(int))
             {
                 count = (int)property.GetValue(value)!;
                 return true;

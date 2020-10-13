@@ -27,7 +27,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                return (_cachedXml != null);
+                return (_cachedXml is not null);
             }
         }
 
@@ -36,9 +36,9 @@ namespace System.Security.Cryptography.Xml
             get { return _cipherReference; }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
-                if (CipherValue != null)
+                if (CipherValue is not null)
                     throw new CryptographicException(SR.Cryptography_Xml_CipherValueElementRequired);
 
                 _cipherReference = value;
@@ -51,9 +51,9 @@ namespace System.Security.Cryptography.Xml
             get { return _cipherValue; }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
-                if (CipherReference != null)
+                if (CipherReference is not null)
                     throw new CryptographicException(SR.Cryptography_Xml_CipherValueElementRequired);
 
                 _cipherValue = (byte[])value.Clone();
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Xml
         {
             // Create the CipherData element
             XmlElement cipherDataElement = (XmlElement)document.CreateElement("CipherData", EncryptedXml.XmlEncNamespaceUrl);
-            if (CipherValue != null)
+            if (CipherValue is not null)
             {
                 XmlElement cipherValueElement = document.CreateElement("CipherValue", EncryptedXml.XmlEncNamespaceUrl);
                 cipherValueElement.AppendChild(document.CreateTextNode(Convert.ToBase64String(CipherValue)));
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Xml
             else
             {
                 // No CipherValue specified, see if there is a CipherReference
-                if (CipherReference == null)
+                if (CipherReference is null)
                     throw new CryptographicException(SR.Cryptography_Xml_CipherValueElementRequired);
                 cipherDataElement.AppendChild(CipherReference.GetXml(document));
             }
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
@@ -100,13 +100,13 @@ namespace System.Security.Cryptography.Xml
 
             XmlNode cipherValueNode = value.SelectSingleNode("enc:CipherValue", nsm);
             XmlNode cipherReferenceNode = value.SelectSingleNode("enc:CipherReference", nsm);
-            if (cipherValueNode != null)
+            if (cipherValueNode is not null)
             {
-                if (cipherReferenceNode != null)
+                if (cipherReferenceNode is not null)
                     throw new CryptographicException(SR.Cryptography_Xml_CipherValueElementRequired);
                 _cipherValue = Convert.FromBase64String(Utils.DiscardWhiteSpaces(cipherValueNode.InnerText));
             }
-            else if (cipherReferenceNode != null)
+            else if (cipherReferenceNode is not null)
             {
                 _cipherReference = new CipherReference();
                 _cipherReference.LoadXml((XmlElement)cipherReferenceNode);

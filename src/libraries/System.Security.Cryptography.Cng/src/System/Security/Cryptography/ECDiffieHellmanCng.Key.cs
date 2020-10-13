@@ -36,7 +36,7 @@ namespace System.Security.Cryptography
 
             private set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
                 if (value.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
                     throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(value));

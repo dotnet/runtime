@@ -154,11 +154,11 @@ namespace System.Runtime.Serialization
             element.attributeCount = 0;
             element.childElementIndex = 0;
 
-            if (DataContractName != null)
+            if (DataContractName is not null)
                 AddQualifiedNameAttribute(element, Globals.XsiPrefix, Globals.XsiTypeLocalName, Globals.SchemaInstanceNamespace, DataContractName, DataContractNamespace);
-            if (ClrTypeName != null)
+            if (ClrTypeName is not null)
                 element.AddAttribute(Globals.SerPrefix, Globals.SerializationNamespace, Globals.ClrTypeLocalName, ClrTypeName);
-            if (ClrAssemblyName != null)
+            if (ClrAssemblyName is not null)
                 element.AddAttribute(Globals.SerPrefix, Globals.SerializationNamespace, Globals.ClrAssemblyLocalName, ClrAssemblyName);
         }
 
@@ -174,12 +174,12 @@ namespace System.Runtime.Serialization
             element.AddAttribute(elementPrefix, elementNs, elementName, prefix + ":" + valueName);
 
             bool prefixDeclaredOnElement = false;
-            if (element.attributes != null)
+            if (element.attributes is not null)
             {
                 for (int i = 0; i < element.attributes.Length; i++)
                 {
                     AttributeData attribute = element.attributes[i];
-                    if (attribute != null && attribute.prefix == Globals.XmlnsPrefix && attribute.localName == prefix)
+                    if (attribute is not null && attribute.prefix == Globals.XmlnsPrefix && attribute.localName == prefix)
                     {
                         prefixDeclaredOnElement = true;
                         break;
@@ -335,7 +335,7 @@ namespace System.Runtime.Serialization
         {
             base.GetData(element);
 
-            if (FactoryTypeName != null)
+            if (FactoryTypeName is not null)
                 AddQualifiedNameAttribute(element, Globals.SerPrefix, Globals.ISerializableFactoryTypeLocalName, Globals.SerializationNamespace, FactoryTypeName, FactoryTypeNamespace);
         }
 

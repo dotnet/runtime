@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.Xml
             get
             {
                 // an unspecified value for an XmlAttribute is string.Empty
-                if (_recipient == null)
+                if (_recipient is null)
                     _recipient = string.Empty;
                 return _recipient;
             }
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                if (_referenceList == null)
+                if (_referenceList is null)
                     _referenceList = new ReferenceList();
                 return _referenceList;
             }
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
@@ -78,18 +78,18 @@ namespace System.Security.Cryptography.Xml
 
             // EncryptionMethod
             EncryptionMethod = new EncryptionMethod();
-            if (encryptionMethodNode != null)
+            if (encryptionMethodNode is not null)
                 EncryptionMethod.LoadXml(encryptionMethodNode as XmlElement);
 
             // Key Info
             KeyInfo = new KeyInfo();
             XmlNode keyInfoNode = value.SelectSingleNode("ds:KeyInfo", nsm);
-            if (keyInfoNode != null)
+            if (keyInfoNode is not null)
                 KeyInfo.LoadXml(keyInfoNode as XmlElement);
 
             // CipherData
             XmlNode cipherDataNode = value.SelectSingleNode("enc:CipherData", nsm);
-            if (cipherDataNode == null)
+            if (cipherDataNode is null)
                 throw new CryptographicException(SR.Cryptography_Xml_MissingCipherData);
 
             CipherData = new CipherData();
@@ -97,11 +97,11 @@ namespace System.Security.Cryptography.Xml
 
             // EncryptionProperties
             XmlNode encryptionPropertiesNode = value.SelectSingleNode("enc:EncryptionProperties", nsm);
-            if (encryptionPropertiesNode != null)
+            if (encryptionPropertiesNode is not null)
             {
                 // Select the EncryptionProperty elements inside the EncryptionProperties element
                 XmlNodeList encryptionPropertyNodes = encryptionPropertiesNode.SelectNodes("enc:EncryptionProperty", nsm);
-                if (encryptionPropertyNodes != null)
+                if (encryptionPropertyNodes is not null)
                 {
                     foreach (XmlNode node in encryptionPropertyNodes)
                     {
@@ -114,18 +114,18 @@ namespace System.Security.Cryptography.Xml
 
             // CarriedKeyName
             XmlNode carriedKeyNameNode = value.SelectSingleNode("enc:CarriedKeyName", nsm);
-            if (carriedKeyNameNode != null)
+            if (carriedKeyNameNode is not null)
             {
                 CarriedKeyName = carriedKeyNameNode.InnerText;
             }
 
             // ReferenceList
             XmlNode referenceListNode = value.SelectSingleNode("enc:ReferenceList", nsm);
-            if (referenceListNode != null)
+            if (referenceListNode is not null)
             {
                 // Select the DataReference elements inside the ReferenceList element
                 XmlNodeList dataReferenceNodes = referenceListNode.SelectNodes("enc:DataReference", nsm);
-                if (dataReferenceNodes != null)
+                if (dataReferenceNodes is not null)
                 {
                     foreach (XmlNode node in dataReferenceNodes)
                     {
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Xml
                 }
                 // Select the KeyReference elements inside the ReferenceList element
                 XmlNodeList keyReferenceNodes = referenceListNode.SelectNodes("enc:KeyReference", nsm);
-                if (keyReferenceNodes != null)
+                if (keyReferenceNodes is not null)
                 {
                     foreach (XmlNode node in keyReferenceNodes)
                     {
@@ -178,7 +178,7 @@ namespace System.Security.Cryptography.Xml
                 encryptedKeyElement.SetAttribute("Recipient", Recipient);
 
             // EncryptionMethod
-            if (EncryptionMethod != null)
+            if (EncryptionMethod is not null)
                 encryptedKeyElement.AppendChild(EncryptionMethod.GetXml(document));
 
             // KeyInfo
@@ -186,7 +186,7 @@ namespace System.Security.Cryptography.Xml
                 encryptedKeyElement.AppendChild(KeyInfo.GetXml(document));
 
             // CipherData
-            if (CipherData == null)
+            if (CipherData is null)
                 throw new CryptographicException(SR.Cryptography_Xml_MissingCipherData);
             encryptedKeyElement.AppendChild(CipherData.GetXml(document));
 
@@ -214,7 +214,7 @@ namespace System.Security.Cryptography.Xml
             }
 
             // CarriedKeyName
-            if (CarriedKeyName != null)
+            if (CarriedKeyName is not null)
             {
                 XmlElement carriedKeyNameElement = (XmlElement)document.CreateElement("CarriedKeyName", EncryptedXml.XmlEncNamespaceUrl);
                 XmlText carriedKeyNameText = document.CreateTextNode(CarriedKeyName);

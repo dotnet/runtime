@@ -128,7 +128,7 @@ namespace System.Security.Cryptography
             byte[]? x = null;
             byte[]? y = null;
 
-            if (key.PublicKey != null)
+            if (key.PublicKey is not null)
             {
                 ReadOnlySpan<byte> publicKeyBytes = key.PublicKey.Value.Span;
 
@@ -156,7 +156,7 @@ namespace System.Security.Cryptography
 
             ECDomainParameters domainParameters;
 
-            if (key.Parameters != null)
+            if (key.Parameters is not null)
             {
                 domainParameters = key.Parameters.Value;
             }
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography
                 domainParameters = ECDomainParameters.Decode(algId.Parameters!.Value, AsnEncodingRules.DER);
             }
 
-            Debug.Assert((x == null) == (y == null));
+            Debug.Assert((x is null) == (y is null));
 
             ret = new ECParameters
             {
@@ -186,7 +186,7 @@ namespace System.Security.Cryptography
             in AlgorithmIdentifierAsn algId,
             out ECParameters ret)
         {
-            if (algId.Parameters == null)
+            if (algId.Parameters is null)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
@@ -233,13 +233,13 @@ namespace System.Security.Cryptography
         private static void ValidateParameters(ECDomainParameters? keyParameters, in AlgorithmIdentifierAsn algId)
         {
             // At least one is required
-            if (keyParameters == null && algId.Parameters == null)
+            if (keyParameters is null && algId.Parameters is null)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
 
             // If they are both specified they must match.
-            if (keyParameters != null && algId.Parameters != null)
+            if (keyParameters is not null && algId.Parameters is not null)
             {
                 ReadOnlySpan<byte> algIdParameters = algId.Parameters.Value.Span;
 
@@ -263,7 +263,7 @@ namespace System.Security.Cryptography
                 return GetSpecifiedECCurve(domainParameters.Specified.Value);
             }
 
-            if (domainParameters.Named == null)
+            if (domainParameters.Named is null)
             {
                 throw new CryptographicException(SR.Cryptography_ECC_NamedCurvesOnly);
             }
@@ -495,7 +495,7 @@ namespace System.Security.Cryptography
         {
             ecParameters.Validate();
 
-            if (ecParameters.D == null)
+            if (ecParameters.D is null)
             {
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
             }
@@ -511,7 +511,7 @@ namespace System.Security.Cryptography
         [return: NotNullIfNotNull("attributes")]
         private static AsnWriter? WritePrivateKeyInfoAttributes(AttributeAsn[]? attributes)
         {
-            if (attributes == null)
+            if (attributes is null)
                 return null;
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
@@ -536,7 +536,7 @@ namespace System.Security.Cryptography
                 // On Windows the FriendlyName is populated in places where the Value mightn't be.
                 if (string.IsNullOrEmpty(oid.Value))
                 {
-                    Debug.Assert(oid.FriendlyName != null);
+                    Debug.Assert(oid.FriendlyName is not null);
                     oid = Oid.FromFriendlyName(oid.FriendlyName, OidGroup.All);
                 }
 
@@ -636,7 +636,7 @@ namespace System.Security.Cryptography
                 writer.WriteIntegerUnsigned(ecParameters.Curve.Order);
 
                 // cofactor
-                if (ecParameters.Curve.Cofactor != null)
+                if (ecParameters.Curve.Cofactor is not null)
                 {
                     writer.WriteIntegerUnsigned(ecParameters.Curve.Cofactor);
                 }
@@ -743,7 +743,7 @@ namespace System.Security.Cryptography
             WriteFieldElement(curve.A!, writer);
             WriteFieldElement(curve.B!, writer);
 
-            if (curve.Seed != null)
+            if (curve.Seed is not null)
             {
                 writer.WriteBitString(curve.Seed);
             }
@@ -816,9 +816,9 @@ namespace System.Security.Cryptography
             }
 
             // publicKey
-            if (ecParameters.Q.X != null)
+            if (ecParameters.Q.X is not null)
             {
-                Debug.Assert(ecParameters.Q.Y != null);
+                Debug.Assert(ecParameters.Q.Y is not null);
                 Asn1Tag explicit1 = new Asn1Tag(TagClass.ContextSpecific, 1, isConstructed: true);
                 writer.PushSequence(explicit1);
 

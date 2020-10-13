@@ -64,7 +64,7 @@ namespace System.Reflection
                     if (fetchReturnParameter && position == -1)
                     {
                         // more than one return parameter?
-                        if (returnParameter != null)
+                        if (returnParameter is not null)
                             throw new BadImageFormatException(SR.BadImageFormat_ParameterSignatureMismatch);
 
                         returnParameter = new RuntimeParameterInfo(sig, scope, tkParamDef, position, attr, member);
@@ -92,7 +92,7 @@ namespace System.Reflection
                 {
                     for (int i = 0; i < args.Length; i++)
                     {
-                        if (args[i] != null)
+                        if (args[i] is not null)
                             continue;
 
                         args[i] = new RuntimeParameterInfo(sig, MetadataImport.EmptyImport, 0, i, (ParameterAttributes)0, member);
@@ -125,7 +125,7 @@ namespace System.Reflection
             get
             {
                 MethodBase? result = m_originalMember ?? MemberImpl as MethodBase;
-                Debug.Assert(result != null);
+                Debug.Assert(result is not null);
                 return result;
             }
         }
@@ -159,7 +159,7 @@ namespace System.Reflection
             // The original owner should always be a method, because this method is only used to
             // change the owner from a method to a property.
             m_originalMember = accessor.MemberImpl as MethodBase;
-            Debug.Assert(m_originalMember != null);
+            Debug.Assert(m_originalMember is not null);
 
             // Populate all the caches -- we inherit this behavior from RTM
             NameImpl = accessor.Name;
@@ -178,7 +178,7 @@ namespace System.Reflection
             Signature signature, MetadataImport scope, int tkParamDef,
             int position, ParameterAttributes attributes, MemberInfo member)
         {
-            Debug.Assert(member != null);
+            Debug.Assert(member is not null);
             Debug.Assert(MdToken.IsNullToken(tkParamDef) == scope.Equals(MetadataImport.EmptyImport));
             Debug.Assert(MdToken.IsNullToken(tkParamDef) || MdToken.IsTokenOfType(tkParamDef, MetadataTokenType.ParamDef));
 
@@ -214,9 +214,9 @@ namespace System.Reflection
             get
             {
                 // only instance of ParameterInfo has ClassImpl, all its subclasses don't
-                if (ClassImpl == null)
+                if (ClassImpl is null)
                 {
-                    Debug.Assert(m_signature != null);
+                    Debug.Assert(m_signature is not null);
 
                     RuntimeType parameterType;
                     if (PositionImpl == -1)
@@ -224,7 +224,7 @@ namespace System.Reflection
                     else
                         parameterType = m_signature.Arguments[PositionImpl];
 
-                    Debug.Assert(parameterType != null);
+                    Debug.Assert(parameterType is not null);
                     // different thread could only write ClassImpl to the same value, so a race condition is not a problem here
                     ClassImpl = parameterType;
                 }
@@ -321,13 +321,13 @@ namespace System.Reflection
                         CustomAttributeData.Filter(
                             CustomAttributeData.GetCustomAttributes(this), typeof(DateTimeConstantAttribute), 0);
 
-                    if (value.ArgumentType != null)
+                    if (value.ArgumentType is not null)
                         return new DateTime((long)value.Value!);
                 }
                 else
                 {
                     object[] dt = GetCustomAttributes(typeof(DateTimeConstantAttribute), false);
-                    if (dt != null && dt.Length != 0)
+                    if (dt is not null && dt.Length != 0)
                         return ((DateTimeConstantAttribute)dt[0]).Value;
                 }
             }
@@ -468,11 +468,11 @@ namespace System.Reflection
             RuntimeConstructorInfo? constructor = Member as RuntimeConstructorInfo;
             RuntimePropertyInfo? property = Member as RuntimePropertyInfo;
 
-            if (method != null)
+            if (method is not null)
                 return method.GetRuntimeModule();
-            else if (constructor != null)
+            else if (constructor is not null)
                 return constructor.GetRuntimeModule();
-            else if (property != null)
+            else if (property is not null)
                 return property.GetRuntimeModule();
             else
                 return null;
@@ -507,7 +507,7 @@ namespace System.Reflection
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (MdToken.IsNullToken(m_tkParamDef))
@@ -515,7 +515,7 @@ namespace System.Reflection
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null)
+            if (attributeRuntimeType is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
@@ -523,7 +523,7 @@ namespace System.Reflection
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (MdToken.IsNullToken(m_tkParamDef))
@@ -531,7 +531,7 @@ namespace System.Reflection
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null)
+            if (attributeRuntimeType is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);

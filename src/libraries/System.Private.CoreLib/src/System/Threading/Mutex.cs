@@ -50,7 +50,7 @@ namespace System.Threading
                     throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, name));
 
                 default:
-                    Debug.Assert(result != null, "result should be non-null on success");
+                    Debug.Assert(result is not null, "result should be non-null on success");
                     return result;
             }
         }

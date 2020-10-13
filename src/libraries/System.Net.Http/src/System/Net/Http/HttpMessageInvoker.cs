@@ -22,7 +22,7 @@ namespace System.Net.Http
 
         public HttpMessageInvoker(HttpMessageHandler handler, bool disposeHandler)
         {
-            if (handler == null)
+            if (handler is null)
             {
                 throw new ArgumentNullException(nameof(handler));
             }
@@ -37,13 +37,13 @@ namespace System.Net.Http
         public virtual HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
+            if (request is null)
             {
                 throw new ArgumentNullException(nameof(request));
             }
             CheckDisposed();
 
-            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient() && request.RequestUri != null)
+            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient() && request.RequestUri is not null)
             {
                 HttpTelemetry.Log.RequestStart(request);
 
@@ -70,13 +70,13 @@ namespace System.Net.Http
         public virtual Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
+            if (request is null)
             {
                 throw new ArgumentNullException(nameof(request));
             }
             CheckDisposed();
 
-            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient() && request.RequestUri != null)
+            if (HttpTelemetry.Log.IsEnabled() && !request.WasSentByHttpClient() && request.RequestUri is not null)
             {
                 return SendAsyncWithTelemetry(_handler, request, cancellationToken);
             }

@@ -24,7 +24,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public InnerCatalogExportProvider(CatalogExportProvider outerExportProvider)
             {
-                if (outerExportProvider == null)
+                if (outerExportProvider is null)
                 {
                     throw new ArgumentNullException(nameof(outerExportProvider));
                 }
@@ -115,7 +115,7 @@ namespace System.ComponentModel.Composition.Hosting
             get
             {
                 ThrowIfDisposed();
-                Debug.Assert(_catalog != null);
+                Debug.Assert(_catalog is not null);
 
                 return _catalog;
             }
@@ -192,7 +192,7 @@ namespace System.ComponentModel.Composition.Hosting
                     {
                         sourceProvider.ExportsChanging -= OnExportsChangingInternal;
                         newImportEngine!.Dispose();
-                        if (aggregateExportProvider != null)
+                        if (aggregateExportProvider is not null)
                         {
                             aggregateExportProvider.Dispose();
                         }
@@ -253,27 +253,27 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                     finally
                     {
-                        if (catalogToUnsubscribeFrom != null)
+                        if (catalogToUnsubscribeFrom is not null)
                         {
                             catalogToUnsubscribeFrom.Changing -= OnCatalogChanging;
                         }
 
-                        if (aggregateExportProvider != null)
+                        if (aggregateExportProvider is not null)
                         {
                             aggregateExportProvider.Dispose();
                         }
 
-                        if (sourceProvider != null)
+                        if (sourceProvider is not null)
                         {
                             sourceProvider.ExportsChanging -= OnExportsChangingInternal;
                         }
 
-                        if (importEngine != null)
+                        if (importEngine is not null)
                         {
                             importEngine.Dispose();
                         }
 
-                        if (partsToDispose != null)
+                        if (partsToDispose is not null)
                         {
                             foreach (var part in partsToDispose)
                             {
@@ -310,7 +310,7 @@ namespace System.ComponentModel.Composition.Hosting
             ThrowIfDisposed();
             EnsureRunning();
 
-            if (_innerExportProvider == null)
+            if (_innerExportProvider is null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
@@ -498,7 +498,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     catalogPart = new CatalogPart(newPart);
                     _activatedParts.Add(partDefinition, catalogPart);
-                    if (disposableNewPart != null)
+                    if (disposableNewPart is not null)
                     {
                         _partsToDispose.Add(disposableNewPart);
                     }
@@ -509,9 +509,9 @@ namespace System.ComponentModel.Composition.Hosting
                 }
             }
 
-            // if disposableNewPart != null, this means we have created a new instance of something disposable and not used it
+            // if disposableNewPart is not null, this means we have created a new instance of something disposable and not used it
             // Dispose of it now
-            if (disposableNewPart != null)
+            if (disposableNewPart is not null)
             {
                 disposableNewPart.Dispose();
             }
@@ -523,12 +523,12 @@ namespace System.ComponentModel.Composition.Hosting
         {
             ThrowIfDisposed();
             EnsureRunning();
-            if (part == null)
+            if (part is null)
             {
                 throw new ArgumentNullException(nameof(part));
             }
 
-            if (export == null)
+            if (export is null)
             {
                 throw new ArgumentNullException(nameof(export));
             }
@@ -550,7 +550,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             // Only hold conditional references for recomposable non-shared parts because we are
             // already holding strong references to the shared parts.
-            if (exportedValue != null && !isSharedPart && part.Part.IsRecomposable())
+            if (exportedValue is not null && !isSharedPart && part.Part.IsRecomposable())
             {
                 PreventPartCollection(exportedValue, part.Part);
             }
@@ -568,7 +568,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void DisposePart(object? exportedValue, CatalogPart catalogPart, AtomicComposition? atomicComposition)
         {
-            if (catalogPart == null)
+            if (catalogPart is null)
             {
                 throw new ArgumentNullException(nameof(catalogPart));
             }
@@ -584,11 +584,11 @@ namespace System.ComponentModel.Composition.Hosting
 
                 importEngine = _importEngine;
             }
-            if (importEngine != null)
+            if (importEngine is not null)
             {
                 importEngine.ReleaseImports(catalogPart.Part, atomicComposition);
             }
-            if (exportedValue != null)
+            if (exportedValue is not null)
             {
                 atomicComposition.AddCompleteActionAllowNull(() =>
                 {
@@ -622,12 +622,12 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void PreventPartCollection(object exportedValue, ComposablePart part)
         {
-            if (exportedValue == null)
+            if (exportedValue is null)
             {
                 throw new ArgumentNullException(nameof(exportedValue));
             }
 
-            if (part == null)
+            if (part is null)
             {
                 throw new ArgumentNullException(nameof(part));
             }
@@ -637,7 +637,7 @@ namespace System.ComponentModel.Composition.Hosting
                 List<ComposablePart>? partList;
 
                 ConditionalWeakTable<object, List<ComposablePart>>? gcRoots = _gcRoots;
-                if (gcRoots == null)
+                if (gcRoots is null)
                 {
                     gcRoots = new ConditionalWeakTable<object, List<ComposablePart>>();
                 }
@@ -650,7 +650,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                 partList.Add(part);
 
-                if (_gcRoots == null)
+                if (_gcRoots is null)
                 {
                     Thread.MemoryBarrier();
                     _gcRoots = gcRoots;
@@ -660,7 +660,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void AllowPartCollection(object gcRoot)
         {
-            if (_gcRoots != null)
+            if (_gcRoots is not null)
             {
                 using (_lock.LockStateForWrite())
                 {
@@ -676,7 +676,7 @@ namespace System.ComponentModel.Composition.Hosting
             // been rejected - because if it is we can discard all decisions that were based
             // on the faulty assumption in the first place.
             var forceRejectionTest = false;
-            if (atomicComposition != null)
+            if (atomicComposition is not null)
             {
                 AtomicCompositionQueryState state = QueryPartState(atomicComposition, definition);
                 switch (state)
@@ -722,7 +722,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private bool EnsureRejection(AtomicComposition? atomicComposition)
         {
-            return !(_disableSilentRejection && (atomicComposition == null));
+            return !(_disableSilentRejection && (atomicComposition is null));
         }
 
         private bool DetermineRejection(ComposablePartDefinition definition, AtomicComposition? parentAtomicComposition)
@@ -754,7 +754,7 @@ namespace System.ComponentModel.Composition.Hosting
                 var newPart = definition.CreatePart();
                 try
                 {
-                    Debug.Assert(_importEngine != null);
+                    Debug.Assert(_importEngine is not null);
                     _importEngine.PreviewImports(newPart, localAtomicComposition);
 
                     // Reuse the partially-fleshed out part the next time we need a shared
@@ -802,7 +802,7 @@ namespace System.ComponentModel.Composition.Hosting
                 CompositionTrace.PartDefinitionRejected(definition, exception);
 
             });
-            if (parentAtomicComposition != null)
+            if (parentAtomicComposition is not null)
             {
                 UpdateAtomicCompositionQueryForPartEquals(parentAtomicComposition,
                     definition, AtomicCompositionQueryState.TreatAsRejected);
@@ -899,7 +899,7 @@ namespace System.ComponentModel.Composition.Hosting
         [DebuggerStepThrough]
         private void EnsureCanRun()
         {
-            if ((_sourceProvider == null) || (_importEngine == null))
+            if ((_sourceProvider is null) || (_importEngine is null))
             {
                 throw new InvalidOperationException(SR.Format(SR.ObjectMustBeInitialized, "SourceProvider")); // NOLOC
             }
@@ -930,7 +930,7 @@ namespace System.ComponentModel.Composition.Hosting
         private void EnsureCanSet<T>(T? currentValue)
             where T : class
         {
-            if ((_isRunning) || (currentValue != null))
+            if ((_isRunning) || (currentValue is not null))
             {
                 throw new InvalidOperationException(SR.ObjectAlreadyInitialized);
             }
@@ -939,7 +939,7 @@ namespace System.ComponentModel.Composition.Hosting
         private AtomicCompositionQueryState QueryPartState(AtomicComposition atomicComposition, ComposablePartDefinition definition)
         {
             PartQueryStateNode? node = GetPartQueryStateNode(atomicComposition);
-            if (node == null)
+            if (node is null)
             {
                 return AtomicCompositionQueryState.Unknown;
             }
@@ -1006,7 +1006,7 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                     node = node._previousNode;
                 }
-                while (node != null);
+                while (node is not null);
 
                 return AtomicCompositionQueryState.Unknown;
             }

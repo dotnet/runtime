@@ -41,7 +41,7 @@ namespace Microsoft.Extensions.Logging.Console
         public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter)
         {
             string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
-            if (logEntry.Exception == null && message == null)
+            if (logEntry.Exception is null && message is null)
             {
                 return;
             }
@@ -51,16 +51,16 @@ namespace Microsoft.Extensions.Logging.Console
 
             string timestamp = null;
             string timestampFormat = FormatterOptions.TimestampFormat;
-            if (timestampFormat != null)
+            if (timestampFormat is not null)
             {
                 DateTimeOffset dateTimeOffset = GetCurrentDateTime();
                 timestamp = dateTimeOffset.ToString(timestampFormat);
             }
-            if (timestamp != null)
+            if (timestamp is not null)
             {
                 textWriter.Write(timestamp);
             }
-            if (logLevelString != null)
+            if (logLevelString is not null)
             {
                 textWriter.WriteColoredMessage(logLevelString, logLevelColors.Background, logLevelColors.Foreground);
             }
@@ -91,7 +91,7 @@ namespace Microsoft.Extensions.Logging.Console
             // Example:
             // System.InvalidOperationException
             //    at Namespace.Class.Function() in File:line X
-            if (exception != null)
+            if (exception is not null)
             {
                 // exception message
                 WriteMessage(textWriter, exception.ToString(), singleLine);
@@ -169,7 +169,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         private void WriteScopeInformation(TextWriter textWriter, IExternalScopeProvider scopeProvider, bool singleLine)
         {
-            if (FormatterOptions.IncludeScopes && scopeProvider != null)
+            if (FormatterOptions.IncludeScopes && scopeProvider is not null)
             {
                 bool paddingNeeded = !singleLine;
                 scopeProvider.ForEachScope((scope, state) =>

@@ -60,14 +60,14 @@ namespace System.Xml.Schema
         public XmlQualifiedName RefName
         {
             get { return _refName; }
-            set { _refName = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _refName = (value is null ? XmlQualifiedName.Empty : value); }
         }
 
         [XmlAttribute("type")]
         public XmlQualifiedName SchemaTypeName
         {
             get { return _typeName; }
-            set { _typeName = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _typeName = (value is null ? XmlQualifiedName.Empty : value); }
         }
 
         [XmlElement("simpleType")]
@@ -96,7 +96,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_attributeType == null)
+                if (_attributeType is null)
                     return null;
 
                 if (_attributeType.QualifiedName.Namespace == XmlReservedNs.NsXs)
@@ -116,7 +116,7 @@ namespace System.Xml.Schema
         [return: NotNullIfNotNull("schemaSet")]
         internal XmlReader? Validate(XmlReader reader, XmlResolver? resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
-            if (schemaSet != null)
+            if (schemaSet is not null)
             {
                 XmlReaderSettings readerSettings = new XmlReaderSettings();
                 readerSettings.ValidationType = ValidationType.Schema;
@@ -132,7 +132,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_attributeType != null)
+                if (_attributeType is not null)
                 {
                     return _attributeType.Datatype;
                 }
@@ -158,7 +158,7 @@ namespace System.Xml.Schema
 
         internal bool HasDefault
         {
-            get { return _defaultValue != null; }
+            get { return _defaultValue is not null; }
         }
 
         [XmlIgnore]

@@ -79,7 +79,7 @@ namespace System
             // So our best bet is to simply use the commandLine that was used to invoke the process.
             // in case it is present.
 
-            return s_commandLineArgs != null ?
+            return s_commandLineArgs is not null ?
                 (string[])s_commandLineArgs.Clone() :
                 GetCommandLineArgsNative();
         }

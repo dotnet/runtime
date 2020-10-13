@@ -84,7 +84,7 @@ namespace System.Xml.Xsl.Xslt
         public bool AddVarPar(VarPar var)
         {
             Debug.Assert(var.NodeType == XslNodeType.Variable || var.NodeType == XslNodeType.Param);
-            Debug.Assert(var.Name!.NamespaceUri != null, "Name must be resolved in XsltLoader");
+            Debug.Assert(var.Name!.NamespaceUri is not null, "Name must be resolved in XsltLoader");
             foreach (XslNode prevVar in GlobalVarPars!)
             {
                 if (prevVar.Name!.Equals(var.Name))
@@ -108,7 +108,7 @@ namespace System.Xml.Xsl.Xslt
 
             _compiler.AllTemplates.Add(template);
 
-            if (template.Name != null)
+            if (template.Name is not null)
             {
                 Template? old;
                 if (!_compiler.NamedTemplates.TryGetValue(template.Name, out old))
@@ -125,7 +125,7 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            if (template.Match != null)
+            if (template.Match is not null)
             {
                 Templates.Add(template);
             }

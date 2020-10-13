@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
 
         public RNGCryptoServiceProvider(CspParameters? cspParams)
         {
-            if (cspParams != null)
+            if (cspParams is not null)
                 throw new PlatformNotSupportedException();
 
             // This class wraps RandomNumberGenerator.Create() from Algorithms assembly

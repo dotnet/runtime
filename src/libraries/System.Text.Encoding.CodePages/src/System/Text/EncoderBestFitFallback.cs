@@ -51,7 +51,7 @@ namespace System.Text
         {
             get
             {
-                if (s_InternalSyncObject == null)
+                if (s_InternalSyncObject is null)
                 {
                     object o = new object();
                     Interlocked.CompareExchange<object?>(ref s_InternalSyncObject, o, null);
@@ -65,13 +65,13 @@ namespace System.Text
         {
             _oFallback = fallback;
 
-            if (_oFallback.arrayBestFit == null)
+            if (_oFallback.arrayBestFit is null)
             {
                 // Lock so we don't confuse ourselves.
                 lock (InternalSyncObject)
                 {
                     // Double check before we do it again.
-                    if (_oFallback.arrayBestFit == null)
+                    if (_oFallback.arrayBestFit is null)
                         _oFallback.arrayBestFit = fallback.encoding.GetBestFitUnicodeToBytesData();
                 }
             }

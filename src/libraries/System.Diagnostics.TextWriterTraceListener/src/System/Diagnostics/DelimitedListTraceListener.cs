@@ -63,7 +63,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(Delimiter));
 
                 if (value.Length == 0)
@@ -88,12 +88,12 @@ namespace System.Diagnostics
 
         public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string format, params object?[]? args)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args, null, null))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, eventType, id, format, args, null, null))
                 return;
 
             WriteHeader(source, eventType, id);
 
-            if (args != null)
+            if (args is not null)
                 WriteEscaped(string.Format(CultureInfo.InvariantCulture, format, args));
             else
                 WriteEscaped(format);
@@ -107,7 +107,7 @@ namespace System.Diagnostics
 
         public override void TraceEvent(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, string? message)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, message, null, null, null))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, eventType, id, message, null, null, null))
                 return;
 
             WriteHeader(source, eventType, id);
@@ -123,7 +123,7 @@ namespace System.Diagnostics
 
         public override void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, object? data)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, data, null))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, data, null))
                 return;
 
             WriteHeader(source, eventType, id);
@@ -139,7 +139,7 @@ namespace System.Diagnostics
 
         public override void TraceData(TraceEventCache? eventCache, string source, TraceEventType eventType, int id, params object?[]? data)
         {
-            if (Filter != null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
+            if (Filter is not null && !Filter.ShouldTrace(eventCache, source, eventType, id, null, null, null, data))
                 return;
 
             WriteHeader(source, eventType, id);
@@ -147,7 +147,7 @@ namespace System.Diagnostics
             // first a delimiter for the message
             Write(Delimiter); // Use get_Delimiter
 
-            if (data != null)
+            if (data is not null)
             {
                 for (int i = 0; i < data.Length; i++)
                 {
@@ -175,7 +175,7 @@ namespace System.Diagnostics
 
         private void WriteFooter(TraceEventCache? eventCache)
         {
-            if (eventCache != null)
+            if (eventCache is not null)
             {
                 if (IsEnabled(TraceOptions.ProcessId))
                     Write(eventCache.ProcessId.ToString(CultureInfo.InvariantCulture));

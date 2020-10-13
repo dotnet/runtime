@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             writer.PopSequence();
 
 
-            if (Policies != null)
+            if (Policies is not null)
             {
 
                 writer.PushSequence();

@@ -31,7 +31,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         public override void SetSavedLicenseKey(Type type, string key)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -51,7 +51,7 @@ namespace System.ComponentModel.Design
         /// </summary>
         private string GetLocalPath(string fileName)
         {
-            Debug.Assert(fileName != null && fileName.Length > 0, "Cannot get local path, fileName is not valid");
+            Debug.Assert(fileName is not null && fileName.Length > 0, "Cannot get local path, fileName is not valid");
 
             Uri uri = new Uri(fileName);
             return uri.LocalPath + uri.Fragment;
@@ -59,19 +59,19 @@ namespace System.ComponentModel.Design
 
         public override string GetSavedLicenseKey(Type type, Assembly resourceAssembly)
         {
-            if (_savedLicenseKeys == null || _savedLicenseKeys[type.AssemblyQualifiedName] == null)
+            if (_savedLicenseKeys is null || _savedLicenseKeys[type.AssemblyQualifiedName] is null)
             {
-                if (_savedLicenseKeys == null)
+                if (_savedLicenseKeys is null)
                 {
                     _savedLicenseKeys = new Hashtable();
                 }
 
-                if (resourceAssembly == null)
+                if (resourceAssembly is null)
                 {
                     resourceAssembly = Assembly.GetEntryAssembly();
                 }
 
-                if (resourceAssembly == null)
+                if (resourceAssembly is null)
                 {
                     // If Assembly.EntryAssembly returns null, then we will
                     // try everything.
@@ -85,14 +85,14 @@ namespace System.ComponentModel.Design
                         string fileName = new FileInfo(location).Name;
 
                         Stream s = asm.GetManifestResourceStream(fileName + ".licenses");
-                        if (s == null)
+                        if (s is null)
                         {
                             // Since the casing may be different depending on how the assembly was loaded,
                             // we'll do a case insensitive lookup for this manifest resource stream...
                             s = CaseInsensitiveManifestResourceStreamLookup(asm, fileName + ".licenses");
                         }
 
-                        if (s != null)
+                        if (s is not null)
                         {
                             DesigntimeLicenseContextSerializer.Deserialize(s, fileName.ToUpperInvariant(), this);
                             break;
@@ -109,7 +109,7 @@ namespace System.ComponentModel.Design
 
                         // First try the filename
                         Stream s = resourceAssembly.GetManifestResourceStream(licResourceName);
-                        if (s == null)
+                        if (s is null)
                         {
                             string resolvedName = null;
                             CompareInfo comparer = CultureInfo.InvariantCulture.CompareInfo;
@@ -126,12 +126,12 @@ namespace System.ComponentModel.Design
                                     break;
                                 }
                             }
-                            if (resolvedName != null)
+                            if (resolvedName is not null)
                             {
                                 s = resourceAssembly.GetManifestResourceStream(resolvedName);
                             }
                         }
-                        if (s != null)
+                        if (s is not null)
                         {
                             DesigntimeLicenseContextSerializer.Deserialize(s, fileName.ToUpperInvariant(), this);
                         }

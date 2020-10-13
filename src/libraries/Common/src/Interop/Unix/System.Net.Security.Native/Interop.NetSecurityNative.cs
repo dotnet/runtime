@@ -164,7 +164,7 @@ internal static partial class Interop
             int count,
             ref GssBuffer outBuffer)
         {
-            Debug.Assert(inputBytes != null, "inputBytes must be valid value");
+            Debug.Assert(inputBytes is not null, "inputBytes must be valid value");
             Debug.Assert(offset >= 0 && offset <= inputBytes.Length, "offset must be valid");
             Debug.Assert(count >= 0 && count <= inputBytes.Length, "count must be valid");
 

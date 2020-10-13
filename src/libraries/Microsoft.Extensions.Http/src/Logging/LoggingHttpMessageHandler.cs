@@ -19,7 +19,7 @@ namespace Microsoft.Extensions.Http.Logging
 
         public LoggingHttpMessageHandler(ILogger logger)
         {
-            if (logger == null)
+            if (logger is null)
             {
                 throw new ArgumentNullException(nameof(logger));
             }
@@ -29,12 +29,12 @@ namespace Microsoft.Extensions.Http.Logging
 
         public LoggingHttpMessageHandler(ILogger logger, HttpClientFactoryOptions options)
         {
-            if (logger == null)
+            if (logger is null)
             {
                 throw new ArgumentNullException(nameof(logger));
             }
 
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -45,7 +45,7 @@ namespace Microsoft.Extensions.Http.Logging
 
         protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
+            if (request is null)
             {
                 throw new ArgumentNullException(nameof(request));
             }

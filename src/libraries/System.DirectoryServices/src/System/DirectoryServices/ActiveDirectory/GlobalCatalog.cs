@@ -32,7 +32,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DirectoryEntryManager directoryEntryMgr = null;
 
             // check that the context argument is not null
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
             // target should be GC
@@ -88,7 +88,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static new GlobalCatalog FindOne(DirectoryContext context)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -103,7 +103,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static new GlobalCatalog FindOne(DirectoryContext context, string siteName)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -113,7 +113,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.TargetShouldBeForest, nameof(context));
             }
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -123,7 +123,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static new GlobalCatalog FindOne(DirectoryContext context, LocatorOptions flag)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -138,7 +138,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static new GlobalCatalog FindOne(DirectoryContext context, string siteName, LocatorOptions flag)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -148,7 +148,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.TargetShouldBeForest, nameof(context));
             }
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -158,7 +158,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static new GlobalCatalogCollection FindAll(DirectoryContext context)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -176,7 +176,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static new GlobalCatalogCollection FindAll(DirectoryContext context, string siteName)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -186,7 +186,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.TargetShouldBeForest, nameof(context));
             }
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -216,7 +216,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             try
             {
-                if (serverNtdsaEntry.Properties[PropertyManager.Options].Value != null)
+                if (serverNtdsaEntry.Properties[PropertyManager.Options].Value is not null)
                 {
                     options = (int)serverNtdsaEntry.Properties[PropertyManager.Options].Value;
                 }
@@ -251,7 +251,7 @@ namespace System.DirectoryServices.ActiveDirectory
             CheckIfDisabled();
 
             // create an ActiveDirectorySchema object
-            if (_schema == null)
+            if (_schema is null)
             {
                 string schemaNC = null;
                 try
@@ -371,7 +371,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DomainControllerInfo domainControllerInfo;
             int errorCode = 0;
 
-            if (siteName != null && siteName.Length == 0)
+            if (siteName is not null && siteName.Length == 0)
             {
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
@@ -382,7 +382,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.InvalidFlags, nameof(flag));
             }
 
-            if (forestName == null)
+            if (forestName is null)
             {
                 // get the dns name of the logged on forest
                 DomainControllerInfo tempDomainControllerInfo;
@@ -398,7 +398,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw ExceptionHelper.GetExceptionFromErrorCode(errorCode);
                 }
 
-                Debug.Assert(tempDomainControllerInfo.DnsForestName != null);
+                Debug.Assert(tempDomainControllerInfo.DnsForestName is not null);
                 forestName = tempDomainControllerInfo.DnsForestName;
             }
 
@@ -434,7 +434,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             ArrayList gcList = new ArrayList();
 
-            if (siteName != null && siteName.Length == 0)
+            if (siteName is not null && siteName.Length == 0)
             {
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }

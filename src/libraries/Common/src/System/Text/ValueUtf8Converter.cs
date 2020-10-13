@@ -41,7 +41,7 @@ namespace System.Text
         public void Dispose()
         {
             byte[]? toReturn = _arrayToReturnToPool;
-            if (toReturn != null)
+            if (toReturn is not null)
             {
                 _arrayToReturnToPool = null;
                 ArrayPool<byte>.Shared.Return(toReturn);

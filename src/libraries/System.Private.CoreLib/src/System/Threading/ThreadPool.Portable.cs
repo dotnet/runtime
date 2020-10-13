@@ -29,7 +29,7 @@ namespace System.Threading
 
         ~RegisteredWaitHandle()
         {
-            if (WaitThread != null)
+            if (WaitThread is not null)
             {
                 Unregister(null);
             }
@@ -43,7 +43,7 @@ namespace System.Threading
 
         private static void ReturnEvent(AutoResetEvent resetEvent)
         {
-            if (Interlocked.CompareExchange(ref s_cachedEvent, resetEvent, null) != null)
+            if (Interlocked.CompareExchange(ref s_cachedEvent, resetEvent, null) is not null)
             {
                 resetEvent.Dispose();
             }
@@ -156,12 +156,12 @@ namespace System.Threading
             }
             catch (Exception) // Rollback state on exception
             {
-                if (_removed != null)
+                if (_removed is not null)
                 {
                     ReturnEvent(_removed);
                     _removed = null;
                 }
-                else if (_callbacksComplete != null)
+                else if (_callbacksComplete is not null)
                 {
                     ReturnEvent(_callbacksComplete);
                     _callbacksComplete = null;
@@ -408,10 +408,10 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            if (waitObject == null)
+            if (waitObject is null)
                 throw new ArgumentNullException(nameof(waitObject));
 
-            if (callBack == null)
+            if (callBack is null)
                 throw new ArgumentNullException(nameof(callBack));
 
             RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(

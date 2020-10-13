@@ -43,7 +43,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static LazyMemberInfo ToLazyMember(this MemberInfo member)
         {
-            if (member == null)
+            if (member is null)
             {
                 throw new ArgumentNullException(nameof(member));
             }
@@ -51,7 +51,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             if (member.MemberType == MemberTypes.Property)
             {
                 PropertyInfo? property = member as PropertyInfo;
-                if (property == null)
+                if (property is null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
@@ -73,7 +73,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
 
             ReflectionWritableMember? reflectionMember = lazyMember.ToReflectionMember() as ReflectionWritableMember;
-            if (reflectionMember == null)
+            if (reflectionMember is null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
@@ -83,7 +83,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static ReflectionProperty ToReflectionProperty(this PropertyInfo property)
         {
-            if (property == null)
+            if (property is null)
             {
                 throw new ArgumentNullException(nameof(property));
             }
@@ -93,7 +93,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static ReflectionProperty CreateReflectionProperty(MethodInfo getMethod, MethodInfo setMethod)
         {
-            if (getMethod == null && setMethod == null)
+            if (getMethod is null && setMethod is null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
@@ -103,7 +103,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static ReflectionParameter ToReflectionParameter(this ParameterInfo parameter)
         {
-            if (parameter == null)
+            if (parameter is null)
             {
                 throw new ArgumentNullException(nameof(parameter));
             }
@@ -113,7 +113,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static ReflectionMethod ToReflectionMethod(this MethodInfo method)
         {
-            if (method == null)
+            if (method is null)
             {
                 throw new ArgumentNullException(nameof(method));
             }
@@ -123,7 +123,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static ReflectionField ToReflectionField(this FieldInfo field)
         {
-            if (field == null)
+            if (field is null)
             {
                 throw new ArgumentNullException(nameof(field));
             }
@@ -133,7 +133,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static ReflectionType ToReflectionType(this Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -143,7 +143,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static ReflectionWritableMember ToReflectionWritableMember(this MemberInfo member)
         {
-            if (member == null)
+            if (member is null)
             {
                 throw new ArgumentNullException(nameof(member));
             }

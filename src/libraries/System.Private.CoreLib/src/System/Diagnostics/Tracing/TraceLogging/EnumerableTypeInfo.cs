@@ -42,7 +42,7 @@ namespace System.Diagnostics.Tracing
 
             int count = 0;
             IEnumerable? enumerable = (IEnumerable?)value.ReferenceValue;
-            if (enumerable != null)
+            if (enumerable is not null)
             {
                 foreach (object? element in enumerable)
                 {
@@ -56,7 +56,7 @@ namespace System.Diagnostics.Tracing
 
         public override object? GetData(object? value)
         {
-            Debug.Assert(value != null, "null accepted only for some overrides");
+            Debug.Assert(value is not null, "null accepted only for some overrides");
             var iterType = (IEnumerable)value;
             List<object?> serializedEnumerable = new List<object?>();
             foreach (object? element in iterType)

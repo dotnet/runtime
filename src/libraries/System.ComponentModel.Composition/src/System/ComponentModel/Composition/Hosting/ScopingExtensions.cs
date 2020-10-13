@@ -113,9 +113,9 @@ namespace System.ComponentModel.Composition.Hosting
 
             if (part.Metadata.TryGetValue(key, out object? untypedValue))
             {
-                if (value == null)
+                if (value is null)
                 {
-                    return (untypedValue == null);
+                    return (untypedValue is null);
                 }
                 else
                 {

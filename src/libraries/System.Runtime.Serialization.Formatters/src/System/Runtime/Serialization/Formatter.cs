@@ -45,7 +45,7 @@ namespace System.Runtime.Serialization
 
         protected virtual long Schedule(object? obj)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 return 0;
             }
@@ -87,7 +87,7 @@ namespace System.Runtime.Serialization
 
         protected virtual void WriteMember(string memberName, object? data)
         {
-            if (data == null)
+            if (data is null)
             {
                 WriteObjectRef(data, memberName, typeof(object));
                 return;

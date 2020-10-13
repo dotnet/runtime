@@ -19,7 +19,7 @@ namespace System.Xml.Schema
             _reader = reader;
             _positionInfo = PositionInfo.GetPositionInfo(reader);
             _namespaceManager = reader.NamespaceManager;
-            if (_namespaceManager == null)
+            if (_namespaceManager is null)
             {
                 _namespaceManager = new XmlNamespaceManager(_nameTable);
                 _isProcessNamespaces = true;

@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.Pkcs
 
             protected override bool VerifyKeyType(AsymmetricAlgorithm key)
             {
-                return (key as RSA) != null;
+                return (key as RSA) is not null;
             }
 
             internal override bool VerifySignature(
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 RSA? publicKey = certificate.GetRSAPublicKey();
 
-                if (publicKey == null)
+                if (publicKey is null)
                 {
                     return false;
                 }
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography.Pkcs
                 HashAlgorithmName digestAlgorithmName,
                 int digestValueLength)
             {
-                if (signatureParameters == null)
+                if (signatureParameters is null)
                 {
                     return RSASignaturePadding.Pkcs1;
                 }
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography.Pkcs
                     PkcsPal.Instance.GetPrivateKeyForSigning<RSA>(certificate, silent) ??
                     certPublicKey;
 
-                if (privateKey == null)
+                if (privateKey is null)
                 {
                     signatureAlgorithm = null;
                     signatureValue = null;
@@ -165,7 +165,7 @@ namespace System.Security.Cryptography.Pkcs
                 {
                     signatureValue = signature;
 
-                    if (key != null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, RSASignaturePadding.Pkcs1))
+                    if (key is not null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, RSASignaturePadding.Pkcs1))
                     {
                         // key did not match certificate
                         signatureValue = null;
@@ -184,7 +184,7 @@ namespace System.Security.Cryptography.Pkcs
                     hashAlgorithmName,
                     RSASignaturePadding.Pkcs1);
 
-                if (key != null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, RSASignaturePadding.Pkcs1))
+                if (key is not null && !certPublicKey.VerifyHash(dataHash, signatureValue, hashAlgorithmName, RSASignaturePadding.Pkcs1))
                 {
                     // key did not match certificate
                     signatureValue = null;
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography.Pkcs
                 HashAlgorithmName digestAlgorithmName,
                 int digestValueLength)
             {
-                if (signatureParameters == null)
+                if (signatureParameters is null)
                 {
                     throw new CryptographicException(SR.Cryptography_Pkcs_PssParametersMissing);
                 }
@@ -244,7 +244,7 @@ namespace System.Security.Cryptography.Pkcs
                         pssParams.MaskGenAlgorithm.Algorithm);
                 }
 
-                if (pssParams.MaskGenAlgorithm.Parameters == null)
+                if (pssParams.MaskGenAlgorithm.Parameters is null)
                 {
                     throw new CryptographicException(SR.Cryptography_Pkcs_InvalidSignatureParameters);
                 }

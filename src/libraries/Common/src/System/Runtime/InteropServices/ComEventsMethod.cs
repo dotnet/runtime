@@ -42,7 +42,7 @@ namespace System.Runtime.InteropServices
 
             public object? Invoke(object[] args)
             {
-                if (Delegate == null)
+                if (Delegate is null)
                 {
                     return null;
                 }
@@ -53,11 +53,11 @@ namespace System.Runtime.InteropServices
                     _once = true;
                 }
 
-                if (_cachedTargetTypes != null && _expectedParamsCount == args.Length)
+                if (_cachedTargetTypes is not null && _expectedParamsCount == args.Length)
                 {
                     for (int i = 0; i < _expectedParamsCount; i++)
                     {
-                        if (_cachedTargetTypes[i] != null)
+                        if (_cachedTargetTypes[i] is not null)
                         {
                             args[i] = Enum.ToObject(_cachedTargetTypes[i]!, args[i]); // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                         }
@@ -83,7 +83,7 @@ namespace System.Runtime.InteropServices
                         && pi.ParameterType.HasElementType
                         && pi.ParameterType.GetElementType()!.IsEnum)
                     {
-                        if (targetTypes == null)
+                        if (targetTypes is null)
                         {
                             targetTypes = new Type?[_expectedParamsCount];
                         }
@@ -92,7 +92,7 @@ namespace System.Runtime.InteropServices
                     }
                 }
 
-                if (targetTypes != null)
+                if (targetTypes is not null)
                 {
                     _cachedTargetTypes = targetTypes;
                 }
@@ -116,7 +116,7 @@ namespace System.Runtime.InteropServices
 
         public static ComEventsMethod? Find(ComEventsMethod? methods, int dispid)
         {
-            while (methods != null && methods._dispid != dispid)
+            while (methods is not null && methods._dispid != dispid)
             {
                 methods = methods._next;
             }
@@ -132,8 +132,8 @@ namespace System.Runtime.InteropServices
 
         public static ComEventsMethod? Remove(ComEventsMethod methods, ComEventsMethod method)
         {
-            Debug.Assert(methods != null, "removing method from empty methods collection");
-            Debug.Assert(method != null, "specify method is null");
+            Debug.Assert(methods is not null, "removing method from empty methods collection");
+            Debug.Assert(method is not null, "specify method is null");
 
             if (methods == method)
             {
@@ -143,12 +143,12 @@ namespace System.Runtime.InteropServices
             {
                 ComEventsMethod? current = methods;
 
-                while (current != null && current._next != method)
+                while (current is not null && current._next != method)
                 {
                     current = current._next;
                 }
 
-                if (current != null)
+                if (current is not null)
                 {
                     current._next = method._next;
                 }
@@ -213,7 +213,7 @@ namespace System.Runtime.InteropServices
 
                 // Update wrapper or remove from collection
                 Delegate? newDelegate = Delegate.Remove(wrapper!.Delegate, d);
-                if (newDelegate != null)
+                if (newDelegate is not null)
                 {
                     wrapper.Delegate = newDelegate;
                 }
@@ -239,7 +239,7 @@ namespace System.Runtime.InteropServices
                         if (condition(delegateMaybe))
                         {
                             Delegate? newDelegate = Delegate.Remove(wrapper!.Delegate, delegateMaybe);
-                            if (newDelegate != null)
+                            if (newDelegate is not null)
                             {
                                 wrapper.Delegate = newDelegate;
                             }

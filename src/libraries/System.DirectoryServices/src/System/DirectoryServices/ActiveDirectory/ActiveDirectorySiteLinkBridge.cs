@@ -142,7 +142,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                                       false /* don't need to cache result */);
                 SearchResult srchResult = adSearcher.FindOne();
 
-                if (srchResult == null)
+                if (srchResult is null)
                 {
                     // no such site link bridge object
                     Exception e = new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySiteLinkBridge), bridgeName);
@@ -310,7 +310,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (cachedEntry != null)
+                if (cachedEntry is not null)
                     cachedEntry.Dispose();
             }
 
@@ -322,23 +322,23 @@ namespace System.DirectoryServices.ActiveDirectory
         private static void ValidateArgument(DirectoryContext context, string bridgeName, ActiveDirectoryTransportType transport)
         {
             // basic validation first
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
-            if ((context.Name == null) && (!context.isRootDomain()))
+            if ((context.Name is null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
             // more validation for the context, if the target is not null, then it should be either forest name or server name
-            if (context.Name != null)
+            if (context.Name is not null)
             {
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
                     throw new ArgumentException(SR.NotADOrADAM, nameof(context));
             }
 
-            if (bridgeName == null)
+            if (bridgeName is null)
                 throw new ArgumentNullException(nameof(bridgeName));
 
             if (bridgeName.Length == 0)
@@ -362,7 +362,7 @@ namespace System.DirectoryServices.ActiveDirectory
             ArrayList siteLinkLists = (ArrayList)values[propertyName.ToLowerInvariant()];
 
             // somehow no site link list
-            if (siteLinkLists == null)
+            if (siteLinkLists is null)
                 return;
 
             // construct the site link object
@@ -372,7 +372,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // escaping manipulation
                 pathCracker.Set(dn, NativeComInterfaces.ADS_SETTYPE_DN);
                 string rdn = pathCracker.Retrieve(NativeComInterfaces.ADS_FORMAT_LEAF);
-                Debug.Assert(rdn != null && Utils.Compare(rdn, 0, 3, "CN=", 0, 3) == 0);
+                Debug.Assert(rdn is not null && Utils.Compare(rdn, 0, 3, "CN=", 0, 3) == 0);
                 rdn = rdn.Substring(3);
                 DirectoryEntry entry = DirectoryEntryManager.GetDirectoryEntry(context, dn);
                 ActiveDirectorySiteLink link = new ActiveDirectorySiteLink(context, rdn, _transport, true, entry);

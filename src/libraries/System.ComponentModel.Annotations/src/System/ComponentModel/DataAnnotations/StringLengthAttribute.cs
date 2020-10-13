@@ -49,7 +49,7 @@ namespace System.ComponentModel.DataAnnotations
 
             // Automatically pass if value is null. RequiredAttribute should be used to assert a value is not null.
             // We expect a cast exception if a non-string was passed in.
-            if (value == null)
+            if (value is null)
             {
                 return true;
             }

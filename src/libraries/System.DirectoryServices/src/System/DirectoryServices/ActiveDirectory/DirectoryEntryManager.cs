@@ -22,7 +22,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public bool Equals(DistinguishedName dn)
         {
             bool result = true;
-            if ((dn == null) || (Components.GetLength(0) != dn.Components.GetLength(0)))
+            if ((dn is null) || (Components.GetLength(0) != dn.Components.GetLength(0)))
             {
                 result = false;
             }
@@ -43,7 +43,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public override bool Equals(object obj)
         {
-            if ((obj == null) || (!(obj is DistinguishedName)))
+            if ((obj is null) || (!(obj is DistinguishedName)))
             {
                 return false;
             }
@@ -143,7 +143,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_directoryEntries.ContainsKey(dn))
             {
                 DirectoryEntry tmp = (DirectoryEntry)_directoryEntries[dn];
-                if (tmp != null)
+                if (tmp is not null)
                 {
                     _directoryEntries.Remove(dn);
                     tmp.Dispose();
@@ -153,7 +153,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private DirectoryEntry GetNewDirectoryEntry(string dn)
         {
-            if (_bindingPrefix == null)
+            if (_bindingPrefix is null)
             {
                 _bindingPrefix = "LDAP://" + _context.GetServerName() + "/";
             }

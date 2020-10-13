@@ -92,7 +92,7 @@ namespace System.Threading
         {
             unsafe
             {
-                if (Unsafe.AsPointer(ref location1) == null)
+                if (Unsafe.AsPointer(ref location1) is null)
                     throw new NullReferenceException();
             }
             // Besides avoiding coop handles for efficiency,
@@ -130,7 +130,7 @@ namespace System.Threading
         {
             unsafe
             {
-                if (Unsafe.AsPointer(ref location1) == null)
+                if (Unsafe.AsPointer(ref location1) is null)
                     throw new NullReferenceException();
             }
             // See CompareExchange(T) for comments.

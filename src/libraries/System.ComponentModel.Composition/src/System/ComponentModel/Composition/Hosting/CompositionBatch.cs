@@ -35,11 +35,11 @@ namespace System.ComponentModel.Composition.Hosting
         public CompositionBatch(IEnumerable<ComposablePart>? partsToAdd, IEnumerable<ComposablePart>? partsToRemove)
         {
             _partsToAdd = new List<ComposablePart>();
-            if (partsToAdd != null)
+            if (partsToAdd is not null)
             {
                 foreach (var part in partsToAdd)
                 {
-                    if (part == null)
+                    if (part is null)
                     {
                         throw ExceptionBuilder.CreateContainsNullElement(nameof(partsToAdd));
                     }
@@ -49,11 +49,11 @@ namespace System.ComponentModel.Composition.Hosting
             _readOnlyPartsToAdd = _partsToAdd.AsReadOnly();
 
             _partsToRemove = new List<ComposablePart>();
-            if (partsToRemove != null)
+            if (partsToRemove is not null)
             {
                 foreach (var part in partsToRemove)
                 {
-                    if (part == null)
+                    if (part is null)
                     {
                         throw ExceptionBuilder.CreateContainsNullElement(nameof(partsToRemove));
                     }
@@ -74,7 +74,7 @@ namespace System.ComponentModel.Composition.Hosting
                 lock (_lock)
                 {
                     _copyNeededForAdd = true;
-                    Debug.Assert(_readOnlyPartsToAdd != null);
+                    Debug.Assert(_readOnlyPartsToAdd is not null);
                     return _readOnlyPartsToAdd;
                 }
             }
@@ -91,7 +91,7 @@ namespace System.ComponentModel.Composition.Hosting
                 lock (_lock)
                 {
                     _copyNeededForRemove = true;
-                    Debug.Assert(_readOnlyPartsToRemove != null);
+                    Debug.Assert(_readOnlyPartsToRemove is not null);
                     return _readOnlyPartsToRemove;
                 }
             }

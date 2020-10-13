@@ -38,7 +38,7 @@ namespace System.Net
         private Interop.HttpApi.HTTP_REQUEST* Allocate(ThreadPoolBoundHandle boundHandle, uint size)
         {
             uint newSize = size != 0 ? size : RequestBuffer == IntPtr.Zero ? 4096 : Size;
-            if (_nativeOverlapped != null)
+            if (_nativeOverlapped is not null)
             {
 #if DEBUG
                 DebugRefCountReleaseNativeOverlapped();
@@ -67,7 +67,7 @@ namespace System.Net
 
         protected override void OnReleasePins()
         {
-            if (_nativeOverlapped != null)
+            if (_nativeOverlapped is not null)
             {
 #if DEBUG
                 DebugRefCountReleaseNativeOverlapped();
@@ -81,7 +81,7 @@ namespace System.Net
 
         protected override void Dispose(bool disposing)
         {
-            if (_nativeOverlapped != null)
+            if (_nativeOverlapped is not null)
             {
                 Debug.Assert(!disposing, "AsyncRequestContext::Dispose()|Must call ReleasePins() before calling Dispose().");
                 if (!Environment.HasShutdownStarted || disposing)

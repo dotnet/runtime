@@ -10,7 +10,7 @@ namespace System.Configuration
     {
         public static void HelperParamValidation(object value, Type allowedType)
         {
-            if (value == null) return;
+            if (value is null) return;
 
             if (value.GetType() != allowedType)
                 throw new ArgumentException(SR.Validator_value_type_invalid, string.Empty);

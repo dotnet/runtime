@@ -55,7 +55,7 @@ namespace System.Net.NetworkInformation
                         }
                         catch (Exception e)
                         {
-                            if (exceptions == null)
+                            if (exceptions is null)
                             {
                                 exceptions = new List<Exception>();
                             }
@@ -71,7 +71,7 @@ namespace System.Net.NetworkInformation
                         }
                         catch (Exception e)
                         {
-                            if (exceptions == null)
+                            if (exceptions is null)
                             {
                                 exceptions = new List<Exception>();
                             }
@@ -87,14 +87,14 @@ namespace System.Net.NetworkInformation
                         }
                         catch (Exception e)
                         {
-                            if (exceptions == null)
+                            if (exceptions is null)
                             {
                                 exceptions = new List<Exception>();
                             }
                             exceptions.Add(e);
                         }
                     });
-                if (exceptions != null)
+                if (exceptions is not null)
                 {
                     throw new NetworkInformationException(SR.net_PInvokeError, new AggregateException(exceptions));
                 }

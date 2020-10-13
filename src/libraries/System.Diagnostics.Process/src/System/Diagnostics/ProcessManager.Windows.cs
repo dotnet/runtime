@@ -165,7 +165,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (tokenHandle != null)
+                if (tokenHandle is not null)
                 {
                     tokenHandle.Dispose();
                 }
@@ -589,7 +589,7 @@ namespace System.Diagnostics
 
         private static ValueId GetValueId(string counterName)
         {
-            if (counterName != null)
+            if (counterName is not null)
             {
                 ValueId id;
                 if (s_valueIds.TryGetValue(counterName, out id))

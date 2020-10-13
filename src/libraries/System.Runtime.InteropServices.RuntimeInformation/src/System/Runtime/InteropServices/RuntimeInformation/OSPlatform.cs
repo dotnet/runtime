@@ -17,7 +17,7 @@ namespace System.Runtime.InteropServices
 
         private OSPlatform(string osPlatform)
         {
-            if (osPlatform == null) throw new ArgumentNullException(nameof(osPlatform));
+            if (osPlatform is null) throw new ArgumentNullException(nameof(osPlatform));
             if (osPlatform.Length == 0) throw new ArgumentException(SR.Argument_EmptyValue, nameof(osPlatform));
 
             Name = osPlatform;
@@ -49,7 +49,7 @@ namespace System.Runtime.InteropServices
 
         public override int GetHashCode()
         {
-            return Name == null ? 0 : Name.GetHashCode(StringComparison.OrdinalIgnoreCase);
+            return Name is null ? 0 : Name.GetHashCode(StringComparison.OrdinalIgnoreCase);
         }
 
         public override string ToString()

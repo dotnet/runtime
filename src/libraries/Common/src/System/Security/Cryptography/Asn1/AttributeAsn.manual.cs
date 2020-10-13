@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Asn1
     {
         public AttributeAsn(AsnEncodedData attribute)
         {
-            if (attribute == null)
+            if (attribute is null)
             {
                 throw new ArgumentNullException(nameof(attribute));
             }

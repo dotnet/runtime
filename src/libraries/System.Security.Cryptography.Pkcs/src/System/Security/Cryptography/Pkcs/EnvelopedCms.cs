@@ -27,9 +27,9 @@ namespace System.Security.Cryptography.Pkcs
 
         public EnvelopedCms(ContentInfo contentInfo, AlgorithmIdentifier encryptionAlgorithm)
         {
-            if (contentInfo == null)
+            if (contentInfo is null)
                 throw new ArgumentNullException(nameof(contentInfo));
-            if (encryptionAlgorithm == null)
+            if (encryptionAlgorithm is null)
                 throw new ArgumentNullException(nameof(encryptionAlgorithm));
 
             Version = 0;  // It makes little sense to ask for a version before you've decoded, but since the .NET Framework returns 0 in that case, we will too.
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.Pkcs
 
                     case LastCall.Decode:
                     case LastCall.Decrypt:
-                        Debug.Assert(_decryptorPal != null);
+                        Debug.Assert(_decryptorPal is not null);
                         return _decryptorPal.RecipientInfos;
 
                     default:
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Pkcs
         //
         public void Encrypt(CmsRecipient recipient)
         {
-            if (recipient == null)
+            if (recipient is null)
                 throw new ArgumentNullException(nameof(recipient));
 
             Encrypt(new CmsRecipientCollection(recipient));
@@ -94,14 +94,14 @@ namespace System.Security.Cryptography.Pkcs
 
         public void Encrypt(CmsRecipientCollection recipients)
         {
-            if (recipients == null)
+            if (recipients is null)
                 throw new ArgumentNullException(nameof(recipients));
 
             // .NET Framework compat note: Unlike the desktop, we don't provide a free UI to select the recipient. The app must give it to us programmatically.
             if (recipients.Count == 0)
                 throw new PlatformNotSupportedException(SR.Cryptography_Cms_NoRecipients);
 
-            if (_decryptorPal != null)
+            if (_decryptorPal is not null)
             {
                 _decryptorPal.Dispose();
                 _decryptorPal = null;
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.Pkcs
         //
         public byte[] Encode()
         {
-            if (_encodedMessage == null)
+            if (_encodedMessage is null)
                 throw new InvalidOperationException(SR.Cryptography_Cms_MessageNotEncrypted);
 
             return _encodedMessage.CloneByteArray();
@@ -126,7 +126,7 @@ namespace System.Security.Cryptography.Pkcs
         //
         public void Decode(byte[] encodedMessage)
         {
-            if (encodedMessage == null)
+            if (encodedMessage is null)
                 throw new ArgumentNullException(nameof(encodedMessage));
 
             Decode(new ReadOnlySpan<byte>(encodedMessage));
@@ -143,7 +143,7 @@ namespace System.Security.Cryptography.Pkcs
         /// </exception>
         public void Decode(ReadOnlySpan<byte> encodedMessage)
         {
-            if (_decryptorPal != null)
+            if (_decryptorPal is not null)
             {
                 _decryptorPal.Dispose();
                 _decryptorPal = null;
@@ -177,7 +177,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void Decrypt(RecipientInfo recipientInfo)
         {
-            if (recipientInfo == null)
+            if (recipientInfo is null)
                 throw new ArgumentNullException(nameof(recipientInfo));
 
             DecryptContent(new RecipientInfoCollection(recipientInfo), null);
@@ -185,10 +185,10 @@ namespace System.Security.Cryptography.Pkcs
 
         public void Decrypt(RecipientInfo recipientInfo, X509Certificate2Collection extraStore)
         {
-            if (recipientInfo == null)
+            if (recipientInfo is null)
                 throw new ArgumentNullException(nameof(recipientInfo));
 
-            if (extraStore == null)
+            if (extraStore is null)
                 throw new ArgumentNullException(nameof(extraStore));
 
             DecryptContent(new RecipientInfoCollection(recipientInfo), extraStore);
@@ -196,7 +196,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void Decrypt(X509Certificate2Collection extraStore)
         {
-            if (extraStore == null)
+            if (extraStore is null)
                 throw new ArgumentNullException(nameof(extraStore));
 
             DecryptContent(RecipientInfos, extraStore);
@@ -204,7 +204,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void Decrypt(RecipientInfo recipientInfo, AsymmetricAlgorithm? privateKey)
         {
-            if (recipientInfo == null)
+            if (recipientInfo is null)
                 throw new ArgumentNullException(nameof(recipientInfo));
 
             CheckStateForDecryption();
@@ -218,7 +218,7 @@ namespace System.Security.Cryptography.Pkcs
                 extraStore,
                 out Exception? exception);
 
-            if (exception != null)
+            if (exception is not null)
                 throw exception;
 
             SetContentInfo(contentInfo!);
@@ -240,7 +240,7 @@ namespace System.Security.Cryptography.Pkcs
             foreach (RecipientInfo recipientInfo in recipientInfos)
             {
                 X509Certificate2? cert = certs.TryFindMatchingCertificate(recipientInfo.RecipientIdentifier);
-                if (cert == null)
+                if (cert is null)
                 {
                     exception = PkcsPal.Instance.CreateRecipientsNotFoundException();
                     continue;
@@ -254,13 +254,13 @@ namespace System.Security.Cryptography.Pkcs
                     extraStore,
                     out exception);
 
-                if (exception != null)
+                if (exception is not null)
                     continue;
 
                 break;
             }
 
-            if (exception != null)
+            if (exception is not null)
                 throw exception;
 
             SetContentInfo(newContentInfo!);

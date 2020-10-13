@@ -36,7 +36,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // Use this.roots to impose stable ordering
-            if (_roots == null)
+            if (_roots is null)
                 _roots = new List<XPathNavigator>();
 
             Debug.Assert(GetDocumentIndex(navThis) != GetDocumentIndex(navThat));
@@ -55,7 +55,7 @@ namespace System.Xml.Xsl.Runtime
             XPathNavigator navRoot;
 
             // Use this.roots to impose stable ordering
-            if (_roots == null)
+            if (_roots is null)
                 _roots = new List<XPathNavigator>();
 
             // Position navigator to root

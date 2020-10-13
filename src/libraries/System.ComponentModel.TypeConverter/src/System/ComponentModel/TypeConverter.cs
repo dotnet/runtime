@@ -110,19 +110,19 @@ namespace System.ComponentModel
         /// </summary>
         public virtual object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
             if (destinationType == typeof(string))
             {
-                if (value == null)
+                if (value is null)
                 {
                     return string.Empty;
                 }
 
-                if (culture != null && culture != CultureInfo.CurrentCulture)
+                if (culture is not null && culture != CultureInfo.CurrentCulture)
                 {
                     if (value is IFormattable formattable)
                     {
@@ -192,7 +192,7 @@ namespace System.ComponentModel
         /// </summary>
         protected Exception GetConvertFromException(object value)
         {
-            string valueTypeName = value == null ? SR.Null : value.GetType().FullName;
+            string valueTypeName = value is null ? SR.Null : value.GetType().FullName;
             throw new NotSupportedException(SR.Format(SR.ConvertFromException, GetType().Name, valueTypeName));
         }
 
@@ -202,7 +202,7 @@ namespace System.ComponentModel
         /// </summary>
         protected Exception GetConvertToException(object value, Type destinationType)
         {
-            string valueTypeName = value == null ? SR.Null : value.GetType().FullName;
+            string valueTypeName = value is null ? SR.Null : value.GetType().FullName;
             throw new NotSupportedException(SR.Format(SR.ConvertToException, GetType().Name, valueTypeName, destinationType.FullName));
         }
 
@@ -309,7 +309,7 @@ namespace System.ComponentModel
                 // Because null doesn't have a type, so we couldn't pass this to CanConvertFrom.
                 // Meanwhile, we couldn't silence null value here, such as type converter like
                 // NullableConverter would consider null value as a valid value.
-                if (value == null || CanConvertFrom(context, value.GetType()))
+                if (value is null || CanConvertFrom(context, value.GetType()))
                 {
                     ConvertFrom(context, CultureInfo.InvariantCulture, value);
                 }
@@ -377,7 +377,7 @@ namespace System.ComponentModel
             public override bool CanResetValue(object component)
             {
                 DefaultValueAttribute attr = (DefaultValueAttribute)Attributes[typeof(DefaultValueAttribute)];
-                if (attr == null)
+                if (attr is null)
                 {
                     return false;
                 }
@@ -391,7 +391,7 @@ namespace System.ComponentModel
             public override void ResetValue(object component)
             {
                 DefaultValueAttribute attr = (DefaultValueAttribute)Attributes[typeof(DefaultValueAttribute)];
-                if (attr != null)
+                if (attr is not null)
                 {
                     SetValue(component, attr.Value);
                 }
@@ -418,7 +418,7 @@ namespace System.ComponentModel
             /// </summary>
             public StandardValuesCollection(ICollection values)
             {
-                if (values == null)
+                if (values is null)
                 {
                     values = Array.Empty<object>();
                 }
@@ -440,7 +440,7 @@ namespace System.ComponentModel
             {
                 get
                 {
-                    if (_valueArray != null)
+                    if (_valueArray is not null)
                     {
                         return _valueArray.Length;
                     }
@@ -458,7 +458,7 @@ namespace System.ComponentModel
             {
                 get
                 {
-                    if (_valueArray != null)
+                    if (_valueArray is not null)
                     {
                         return _valueArray.GetValue(index);
                     }

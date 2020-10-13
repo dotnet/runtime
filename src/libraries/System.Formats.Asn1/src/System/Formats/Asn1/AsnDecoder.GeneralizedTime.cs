@@ -69,7 +69,7 @@ namespace System.Formats.Asn1
 
             DateTimeOffset value = ParseGeneralizedTime(ruleSet, contents);
 
-            if (rented != null)
+            if (rented is not null)
             {
                 CryptoPool.Return(rented, contents.Length);
             }
@@ -166,13 +166,13 @@ namespace System.Formats.Asn1
             {
                 byte? nextState = GetNextState(contents[0]);
 
-                if (nextState == null)
+                if (nextState is null)
                 {
-                    if (minute == null)
+                    if (minute is null)
                     {
                         minute = ParseNonNegativeIntAndSlice(ref contents, 2);
                     }
-                    else if (second == null)
+                    else if (second is null)
                     {
                         second = ParseNonNegativeIntAndSlice(ref contents, 2);
                     }
@@ -252,7 +252,7 @@ namespace System.Formats.Asn1
                 {
                     byte? nextState = GetNextState(contents[0]);
 
-                    if (nextState == null)
+                    if (nextState is null)
                     {
                         throw new AsnContentException();
                     }
@@ -378,7 +378,7 @@ namespace System.Formats.Asn1
 
             try
             {
-                if (timeOffset == null)
+                if (timeOffset is null)
                 {
                     // Use the local timezone offset since there's no information in the contents.
                     // T-REC-X.680-201510 sec 46.2(a).

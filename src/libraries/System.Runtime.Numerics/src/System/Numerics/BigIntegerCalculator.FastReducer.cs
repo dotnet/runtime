@@ -25,7 +25,7 @@ namespace System.Numerics
 
             public FastReducer(uint[] modulus)
             {
-                Debug.Assert(modulus != null);
+                Debug.Assert(modulus is not null);
 
                 // Let r = 4^k, with 2^k > m
                 uint[] r = new uint[modulus.Length * 2 + 1];
@@ -44,7 +44,7 @@ namespace System.Numerics
 
             public int Reduce(uint[] value, int length)
             {
-                Debug.Assert(value != null);
+                Debug.Assert(value is not null);
                 Debug.Assert(length <= value.Length);
                 Debug.Assert(value.Length <= _modulus.Length * 2);
 
@@ -69,11 +69,11 @@ namespace System.Numerics
                                              uint[] right, int rightLength,
                                              uint[] bits, int k)
             {
-                Debug.Assert(left != null);
+                Debug.Assert(left is not null);
                 Debug.Assert(left.Length >= leftLength);
-                Debug.Assert(right != null);
+                Debug.Assert(right is not null);
                 Debug.Assert(right.Length >= rightLength);
-                Debug.Assert(bits != null);
+                Debug.Assert(bits is not null);
                 Debug.Assert(bits.Length + k >= leftLength + rightLength);
 
                 // Executes the multiplication algorithm for left and right,
@@ -113,9 +113,9 @@ namespace System.Numerics
                                              uint[] right, int rightLength,
                                              uint[] modulus, int k)
             {
-                Debug.Assert(left != null);
+                Debug.Assert(left is not null);
                 Debug.Assert(left.Length >= leftLength);
-                Debug.Assert(right != null);
+                Debug.Assert(right is not null);
                 Debug.Assert(right.Length >= rightLength);
 
                 // Executes the subtraction algorithm for left and right,

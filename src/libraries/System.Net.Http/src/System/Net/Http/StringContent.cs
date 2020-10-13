@@ -27,8 +27,8 @@ namespace System.Net.Http
             : base(GetContentByteArray(content, encoding))
         {
             // Initialize the 'Content-Type' header with information provided by parameters.
-            MediaTypeHeaderValue headerValue = new MediaTypeHeaderValue((mediaType == null) ? DefaultMediaType : mediaType);
-            headerValue.CharSet = (encoding == null) ? HttpContent.DefaultStringEncoding.WebName : encoding.WebName;
+            MediaTypeHeaderValue headerValue = new MediaTypeHeaderValue((mediaType is null) ? DefaultMediaType : mediaType);
+            headerValue.CharSet = (encoding is null) ? HttpContent.DefaultStringEncoding.WebName : encoding.WebName;
 
             Headers.ContentType = headerValue;
         }
@@ -40,12 +40,12 @@ namespace System.Net.Http
         {
             // In this case we treat 'null' strings different from string.Empty in order to be consistent with our
             // other *Content constructors: 'null' throws, empty values are allowed.
-            if (content == null)
+            if (content is null)
             {
                 throw new ArgumentNullException(nameof(content));
             }
 
-            if (encoding == null)
+            if (encoding is null)
             {
                 encoding = HttpContent.DefaultStringEncoding;
             }

@@ -55,7 +55,7 @@ namespace System.Xml
         /// </devdoc>
         public override string Add(string key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -68,7 +68,7 @@ namespace System.Xml
 
             int hashCode = ComputeHash32(key);
 
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry e = _entries[hashCode & _mask]; e is not null; e = e.next)
             {
                 if (e.hashCode == hashCode && e.str.Equals(key))
                 {
@@ -106,7 +106,7 @@ namespace System.Xml
 
             int hashCode = ComputeHash32(key, start, len);
 
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry e = _entries[hashCode & _mask]; e is not null; e = e.next)
             {
                 if (e.hashCode == hashCode && TextEquals(e.str, key, start, len))
                 {
@@ -122,7 +122,7 @@ namespace System.Xml
         /// </devdoc>
         public override string? Get(string value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -134,7 +134,7 @@ namespace System.Xml
 
             int hashCode = ComputeHash32(value);
 
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry e = _entries[hashCode & _mask]; e is not null; e = e.next)
             {
                 if (e.hashCode == hashCode && e.str.Equals(value))
                 {
@@ -169,7 +169,7 @@ namespace System.Xml
 
             int hashCode = ComputeHash32(key, start, len);
 
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry e = _entries[hashCode & _mask]; e is not null; e = e.next)
             {
                 if (e.hashCode == hashCode && TextEquals(e.str, key, start, len))
                 {
@@ -182,7 +182,7 @@ namespace System.Xml
 
         internal string GetOrAddEntry(string str, int hashCode)
         {
-            for (Entry e = _entries[hashCode & _mask]; e != null; e = e.next)
+            for (Entry e = _entries[hashCode & _mask]; e is not null; e = e.next)
             {
                 if (e.hashCode == hashCode && e.str.Equals(str))
                 {
@@ -227,7 +227,7 @@ namespace System.Xml
             for (int i = 0; i < oldEntries.Length; i++)
             {
                 Entry e = oldEntries[i];
-                while (e != null)
+                while (e is not null)
                 {
                     int newIndex = e.hashCode & newMask;
                     Entry tmp = e.next;

@@ -41,7 +41,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual AttributeCollection GetAttributes()
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.GetAttributes();
             }
@@ -69,7 +69,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual TypeConverter GetConverter()
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.GetConverter();
             }
@@ -104,7 +104,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual EventDescriptorCollection GetEvents()
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.GetEvents();
             }
@@ -121,7 +121,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual EventDescriptorCollection GetEvents(Attribute[] attributes)
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.GetEvents(attributes);
             }
@@ -138,7 +138,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual PropertyDescriptorCollection GetProperties()
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.GetProperties();
             }
@@ -155,7 +155,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual PropertyDescriptorCollection GetProperties(Attribute[] attributes)
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.GetProperties(attributes);
             }

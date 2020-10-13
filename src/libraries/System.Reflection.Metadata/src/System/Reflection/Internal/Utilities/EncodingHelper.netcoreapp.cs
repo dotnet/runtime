@@ -18,9 +18,9 @@ namespace System.Reflection.Internal
     {
         public static string DecodeUtf8(byte* bytes, int byteCount, byte[]? prefix, MetadataStringDecoder utf8Decoder)
         {
-            Debug.Assert(utf8Decoder != null);
+            Debug.Assert(utf8Decoder is not null);
 
-            if (prefix != null)
+            if (prefix is not null)
             {
                 return DecodeUtf8Prefixed(bytes, byteCount, prefix, utf8Decoder);
             }
@@ -35,7 +35,7 @@ namespace System.Reflection.Internal
 
         private static string DecodeUtf8Prefixed(byte* bytes, int byteCount, byte[] prefix, MetadataStringDecoder utf8Decoder)
         {
-            Debug.Assert(utf8Decoder != null);
+            Debug.Assert(utf8Decoder is not null);
 
             int prefixedByteCount = byteCount + prefix.Length;
 

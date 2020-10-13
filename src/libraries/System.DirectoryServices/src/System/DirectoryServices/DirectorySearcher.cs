@@ -125,7 +125,7 @@ namespace System.DirectoryServices
         {
             _searchRoot = searchRoot;
             _filter = filter;
-            if (propertiesToLoad != null)
+            if (propertiesToLoad is not null)
                 PropertiesToLoad.AddRange(propertiesToLoad);
             this.SearchScope = scope;
         }
@@ -200,7 +200,7 @@ namespace System.DirectoryServices
             get => _filter;
             set
             {
-                if (value == null || value.Length == 0)
+                if (value is null || value.Length == 0)
                     value = defaultFilter;
                 _filter = value;
             }
@@ -236,7 +236,7 @@ namespace System.DirectoryServices
         {
             get
             {
-                if (_propertiesToLoad == null)
+                if (_propertiesToLoad is null)
                 {
                     _propertiesToLoad = new StringCollection();
                 }
@@ -350,7 +350,7 @@ namespace System.DirectoryServices
         {
             get
             {
-                if (_searchRoot == null && !DesignMode)
+                if (_searchRoot is null && !DesignMode)
                 {
                     // get the default naming context. This should be the default root for the search.
                     DirectoryEntry rootDSE = new DirectoryEntry("LDAP://RootDSE", true, null, null, AuthenticationTypes.Secure);
@@ -411,7 +411,7 @@ namespace System.DirectoryServices
             get => _attributeScopeQuery;
             set
             {
-                if (value == null)
+                if (value is null)
                     value = "";
 
                 // user explicitly set AttributeScopeQuery and value is not null or empty string
@@ -499,7 +499,7 @@ namespace System.DirectoryServices
             get
             {
                 // if user specifies dirsync search preference and search is executed
-                if (directorySynchronizationSpecified && searchResult != null)
+                if (directorySynchronizationSpecified && searchResult is not null)
                 {
                     _sync.ResetDirectorySynchronizationCookie(searchResult.DirsyncCookie);
                 }
@@ -509,7 +509,7 @@ namespace System.DirectoryServices
             set
             {
                 // specify non-zero pagesize explicitly and also want dirsync
-                if (value != null)
+                if (value is not null)
                 {
                     if (PageSize != 0)
                         throw new ArgumentException(SR.DSBadPageSizeDirsync);
@@ -536,7 +536,7 @@ namespace System.DirectoryServices
             get
             {
                 // if user specifies dirsync search preference and search is executed
-                if (directoryVirtualListViewSpecified && searchResult != null)
+                if (directoryVirtualListViewSpecified && searchResult is not null)
                 {
                     DirectoryVirtualListView tempval = searchResult.VLVResponse;
                     _vlv.Offset = tempval.Offset;
@@ -552,7 +552,7 @@ namespace System.DirectoryServices
             set
             {
                 // if user explicitly set CacheResults to true and also want to set VLV
-                if (value != null)
+                if (value is not null)
                 {
                     if (_cacheResultsSpecified == true && CacheResults == true)
                         throw new ArgumentException(SR.DSBadCacheResultsVLV);
@@ -649,7 +649,7 @@ namespace System.DirectoryServices
             }
 
             IntPtr resultsHandle;
-            if (properties != null)
+            if (properties is not null)
             {
                 adsSearch.ExecuteSearch(Filter, properties, properties.Length, out resultsHandle);
             }
@@ -808,7 +808,7 @@ namespace System.DirectoryServices
             try
             {
                 // sort
-                if (Sort.PropertyName != null && Sort.PropertyName.Length > 0)
+                if (Sort.PropertyName is not null && Sort.PropertyName.Length > 0)
                 {
                     info = default;
                     info.dwSearchPref = (int)AdsSearchPreferences.SORT_ON;
@@ -838,7 +838,7 @@ namespace System.DirectoryServices
                     else
                         vlvValue.target = IntPtr.Zero;
                     ptrVLVToFree = vlvValue.target;
-                    if (_vlv.DirectoryVirtualListViewContext == null)
+                    if (_vlv.DirectoryVirtualListViewContext is null)
                     {
                         vlvValue.contextIDlength = 0;
                         vlvValue.contextID = (IntPtr)0;

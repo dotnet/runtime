@@ -26,7 +26,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         public DirectoryEntry GetDirectoryEntry()
         {
-            if (_parentCredentials != null)
+            if (_parentCredentials is not null)
                 return new DirectoryEntry(Path, true, _parentCredentials.UserName, _parentCredentials.Password, _parentAuthenticationType);
             else
             {

@@ -32,7 +32,7 @@ namespace System.ServiceModel.Syndication
 
         public Rss20FeedFormatter(Type feedTypeToCreate) : base()
         {
-            if (feedTypeToCreate == null)
+            if (feedTypeToCreate is null)
             {
                 throw new ArgumentNullException(nameof(feedTypeToCreate));
             }
@@ -74,7 +74,7 @@ namespace System.ServiceModel.Syndication
 
         public override bool CanRead(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -86,7 +86,7 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -96,7 +96,7 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -116,7 +116,7 @@ namespace System.ServiceModel.Syndication
 
         public override void WriteTo(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -146,11 +146,11 @@ namespace System.ServiceModel.Syndication
 
         protected virtual SyndicationItem ReadItem(XmlReader reader, SyndicationFeed feed)
         {
-            if (feed == null)
+            if (feed is null)
             {
                 throw new ArgumentNullException(nameof(feed));
             }
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -162,11 +162,11 @@ namespace System.ServiceModel.Syndication
 
         protected virtual IEnumerable<SyndicationItem> ReadItems(XmlReader reader, SyndicationFeed feed, out bool areAllItemsRead)
         {
-            if (feed == null)
+            if (feed is null)
             {
                 throw new ArgumentNullException(nameof(feed));
             }
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -189,7 +189,7 @@ namespace System.ServiceModel.Syndication
 
         protected virtual void WriteItems(XmlWriter writer, IEnumerable<SyndicationItem> items, Uri feedBaseUri)
         {
-            if (items == null)
+            if (items is null)
             {
                 return;
             }
@@ -375,7 +375,7 @@ namespace System.ServiceModel.Syndication
                             {
                                 bool isPermalink = true;
                                 string permalinkString = reader.GetAttribute(Rss20Constants.IsPermaLinkTag, Rss20Constants.Rss20Namespace);
-                                if ((permalinkString != null) && (permalinkString.ToUpperInvariant() == "FALSE"))
+                                if ((permalinkString is not null) && (permalinkString.ToUpperInvariant() == "FALSE"))
                                 {
                                     isPermalink = false;
                                 }
@@ -469,14 +469,14 @@ namespace System.ServiceModel.Syndication
                     }
 
                     reader.ReadEndElement(); // item
-                    if (!readAlternateLink && fallbackAlternateLink != null)
+                    if (!readAlternateLink && fallbackAlternateLink is not null)
                     {
                         result.Links.Add(SyndicationLink.CreateAlternateLink(UriFromString(fallbackAlternateLink, UriKind.RelativeOrAbsolute, fallbackAlternateLinkLocalName, fallbackAlternateLinkNamespace, reader)));
                         readAlternateLink = true;
                     }
 
                     // if there's no content and no alternate link set the summary as the item content
-                    if (result.Content == null && !readAlternateLink)
+                    if (result.Content is null && !readAlternateLink)
                     {
                         result.Content = result.Summary;
                         result.Summary = null;
@@ -771,7 +771,7 @@ namespace System.ServiceModel.Syndication
                         }
                     }
 
-                    if (feedItems != null)
+                    if (feedItems is not null)
                     {
                         result.Items = feedItems;
                     }
@@ -802,7 +802,7 @@ namespace System.ServiceModel.Syndication
         {
             writer.WriteStartElement(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, link.BaseUri);
-            if (baseUriToWrite != null)
+            if (baseUriToWrite is not null)
             {
                 writer.WriteAttributeString("xml", "base", Atom10FeedFormatter.XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
@@ -813,7 +813,7 @@ namespace System.ServiceModel.Syndication
 
         private void WriteCategory(XmlWriter writer, SyndicationCategory category)
         {
-            if (category == null)
+            if (category is null)
             {
                 return;
             }
@@ -829,7 +829,7 @@ namespace System.ServiceModel.Syndication
 
         private void WriteFeed(XmlWriter writer)
         {
-            if (Feed == null)
+            if (Feed is null)
             {
                 throw new InvalidOperationException(SR.FeedFormatterDoesNotHaveFeed);
             }
@@ -840,12 +840,12 @@ namespace System.ServiceModel.Syndication
             }
             writer.WriteAttributeString(Rss20Constants.VersionTag, Rss20Constants.Version);
             writer.WriteStartElement(Rss20Constants.ChannelTag, Rss20Constants.Rss20Namespace);
-            if (Feed.BaseUri != null)
+            if (Feed.BaseUri is not null)
             {
                 writer.WriteAttributeString("xml", "base", Atom10FeedFormatter.XmlNs, FeedUtils.GetUriString(Feed.BaseUri));
             }
             WriteAttributeExtensions(writer, Feed, Version);
-            string title = Feed.Title != null ? Feed.Title.Text : string.Empty;
+            string title = Feed.Title is not null ? Feed.Title.Text : string.Empty;
             writer.WriteElementString(Rss20Constants.TitleTag, Rss20Constants.Rss20Namespace, title);
 
             SyndicationLink alternateLink = null;
@@ -859,22 +859,22 @@ namespace System.ServiceModel.Syndication
                 }
             }
 
-            string description = Feed.Description != null ? Feed.Description.Text : string.Empty;
+            string description = Feed.Description is not null ? Feed.Description.Text : string.Empty;
             writer.WriteElementString(Rss20Constants.DescriptionTag, Rss20Constants.Rss20Namespace, description);
 
-            if (Feed.Language != null)
+            if (Feed.Language is not null)
             {
                 writer.WriteElementString(Rss20Constants.LanguageTag, Feed.Language);
             }
 
-            if (Feed.Copyright != null)
+            if (Feed.Copyright is not null)
             {
                 writer.WriteElementString(Rss20Constants.CopyrightTag, Rss20Constants.Rss20Namespace, Feed.Copyright.Text);
             }
 
             // if there's a single author with an email address, then serialize as the managingEditor
             // else serialize the authors as Atom extensions
-            if ((Feed.Authors.Count == 1) && (Feed.Authors[0].Email != null))
+            if ((Feed.Authors.Count == 1) && (Feed.Authors[0].Email is not null))
             {
                 WritePerson(writer, Rss20Constants.ManagingEditorTag, Feed.Authors[0]);
             }
@@ -911,23 +911,23 @@ namespace System.ServiceModel.Syndication
                 }
             }
 
-            if (Feed.ImageUrl != null)
+            if (Feed.ImageUrl is not null)
             {
                 writer.WriteStartElement(Rss20Constants.ImageTag);
                 writer.WriteElementString(Rss20Constants.UrlTag, FeedUtils.GetUriString(Feed.ImageUrl));
                 writer.WriteElementString(Rss20Constants.TitleTag, Rss20Constants.Rss20Namespace, title);
-                string imgAlternateLink = (alternateLink != null) ? FeedUtils.GetUriString(alternateLink.Uri) : string.Empty;
+                string imgAlternateLink = (alternateLink is not null) ? FeedUtils.GetUriString(alternateLink.Uri) : string.Empty;
                 writer.WriteElementString(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace, imgAlternateLink);
                 writer.WriteEndElement(); // image
             }
 
             // Optional spec items
-            if (Feed.InternalDocumentation?.Uri != null)
+            if (Feed.InternalDocumentation?.Uri is not null)
             {
                 writer.WriteElementString(Rss20Constants.DocumentationTag, Feed.InternalDocumentation.Uri.ToString());
             }
 
-            if (Feed.InternalTimeToLive != null)
+            if (Feed.InternalTimeToLive is not null)
             {
                 writer.WriteElementString(Rss20Constants.TimeToLiveTag, ((int)Feed.InternalTimeToLive.Value.TotalMinutes).ToString());
             }
@@ -956,7 +956,7 @@ namespace System.ServiceModel.Syndication
                 writer.WriteEndElement();
             }
 
-            if (Feed.InternalTextInput != null)
+            if (Feed.InternalTextInput is not null)
             {
                 writer.WriteStartElement(Rss20Constants.TextInputTag);
 
@@ -993,7 +993,7 @@ namespace System.ServiceModel.Syndication
         private void WriteItemContents(XmlWriter writer, SyndicationItem item, Uri feedBaseUri)
         {
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(feedBaseUri, item.BaseUri);
-            if (baseUriToWrite != null)
+            if (baseUriToWrite is not null)
             {
                 writer.WriteAttributeString("xml", "base", Atom10FeedFormatter.XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
@@ -1005,7 +1005,7 @@ namespace System.ServiceModel.Syndication
             {
                 if (item.Links[i].RelationshipType == Atom10Constants.AlternateTag)
                 {
-                    if (firstAlternateLink == null)
+                    if (firstAlternateLink is null)
                     {
                         firstAlternateLink = item.Links[i];
                     }
@@ -1030,7 +1030,7 @@ namespace System.ServiceModel.Syndication
                 writer.WriteString(guid);
                 writer.WriteEndElement();
             }
-            if (firstAlternateLink != null)
+            if (firstAlternateLink is not null)
             {
                 WriteAlternateLink(writer, firstAlternateLink, (item.BaseUri ?? feedBaseUri));
             }
@@ -1053,7 +1053,7 @@ namespace System.ServiceModel.Syndication
             }
 
             bool serializedTitle = false;
-            if (item.Title != null)
+            if (item.Title is not null)
             {
                 writer.WriteElementString(Rss20Constants.TitleTag, item.Title.Text);
                 serializedTitle = true;
@@ -1061,22 +1061,22 @@ namespace System.ServiceModel.Syndication
 
             bool serializedContentAsDescription = false;
             TextSyndicationContent summary = item.Summary;
-            if (summary == null)
+            if (summary is null)
             {
                 summary = (item.Content as TextSyndicationContent);
-                serializedContentAsDescription = (summary != null);
+                serializedContentAsDescription = (summary is not null);
             }
             // the spec requires the wire to have a title or a description
-            if (!serializedTitle && summary == null)
+            if (!serializedTitle && summary is null)
             {
                 summary = new TextSyndicationContent(string.Empty);
             }
-            if (summary != null)
+            if (summary is not null)
             {
                 writer.WriteElementString(Rss20Constants.DescriptionTag, Rss20Constants.Rss20Namespace, summary.Text);
             }
 
-            if (item.SourceFeed != null)
+            if (item.SourceFeed is not null)
             {
                 writer.WriteStartElement(Rss20Constants.SourceTag, Rss20Constants.Rss20Namespace);
                 WriteAttributeExtensions(writer, item.SourceFeed, Version);
@@ -1089,11 +1089,11 @@ namespace System.ServiceModel.Syndication
                         break;
                     }
                 }
-                if (selfLink != null && !item.SourceFeed.AttributeExtensions.ContainsKey(s_rss20Url))
+                if (selfLink is not null && !item.SourceFeed.AttributeExtensions.ContainsKey(s_rss20Url))
                 {
                     writer.WriteAttributeString(Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace, FeedUtils.GetUriString(selfLink.Uri));
                 }
-                string title = (item.SourceFeed.Title != null) ? item.SourceFeed.Title.Text : string.Empty;
+                string title = (item.SourceFeed.Title is not null) ? item.SourceFeed.Title.Text : string.Empty;
                 writer.WriteString(title);
                 writer.WriteEndElement();
             }
@@ -1110,7 +1110,7 @@ namespace System.ServiceModel.Syndication
             {
                 if (item.Links[i].RelationshipType == Rss20Constants.EnclosureTag)
                 {
-                    if (firstEnclosureLink == null)
+                    if (firstEnclosureLink is null)
                     {
                         firstEnclosureLink = item.Links[i];
                         WriteMediaEnclosure(writer, item.Links[i], item.BaseUri);
@@ -1167,7 +1167,7 @@ namespace System.ServiceModel.Syndication
         {
             writer.WriteStartElement(Rss20Constants.EnclosureTag, Rss20Constants.Rss20Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, link.BaseUri);
-            if (baseUriToWrite != null)
+            if (baseUriToWrite is not null)
             {
                 writer.WriteAttributeString("xml", "base", Atom10FeedFormatter.XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
@@ -1176,7 +1176,7 @@ namespace System.ServiceModel.Syndication
             {
                 writer.WriteAttributeString(Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace, FeedUtils.GetUriString(link.Uri));
             }
-            if (link.MediaType != null && !link.AttributeExtensions.ContainsKey(s_rss20Type))
+            if (link.MediaType is not null && !link.AttributeExtensions.ContainsKey(s_rss20Type))
             {
                 writer.WriteAttributeString(Rss20Constants.TypeTag, Rss20Constants.Rss20Namespace, link.MediaType);
             }

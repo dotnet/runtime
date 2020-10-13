@@ -24,10 +24,10 @@ namespace System.Xml.Schema
                 return XmlReservedNs.NsXml;
             }
             Dictionary<string, string?> namespaces;
-            for (XmlSchemaObject? current = _node; current != null; current = current.Parent)
+            for (XmlSchemaObject? current = _node; current is not null; current = current.Parent)
             {
                 namespaces = current.Namespaces.Namespaces;
-                if (namespaces != null && namespaces.Count > 0)
+                if (namespaces is not null && namespaces.Count > 0)
                 {
                     string? uri;
                     if (namespaces.TryGetValue(prefix, out uri))
@@ -44,10 +44,10 @@ namespace System.Xml.Schema
                 return "xml";
             }
             Dictionary<string, string?> namespaces;
-            for (XmlSchemaObject? current = _node; current != null; current = current.Parent)
+            for (XmlSchemaObject? current = _node; current is not null; current = current.Parent)
             {
                 namespaces = current.Namespaces.Namespaces;
-                if (namespaces != null && namespaces.Count > 0)
+                if (namespaces is not null && namespaces.Count > 0)
                 {
                     foreach (KeyValuePair<string, string?> entry in namespaces)
                     {

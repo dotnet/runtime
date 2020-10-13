@@ -64,7 +64,7 @@ namespace System.Net
                     break;
             }
 
-            if (statusMessage != null && statusMessage.Length > 0)
+            if (statusMessage is not null && statusMessage.Length > 0)
             {
                 webStatusCode += " " + statusMessage;
             }
@@ -73,7 +73,7 @@ namespace System.Net
                 //
                 // Otherwise try to map the base status.
                 //
-                if (statusDescription != null && statusDescription.Length > 0)
+                if (statusDescription is not null && statusDescription.Length > 0)
                 {
                     webStatusCode += " " + statusDescription;
                 }

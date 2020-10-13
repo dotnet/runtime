@@ -21,17 +21,17 @@ namespace System.ComponentModel.Composition.AttributedModel
         public AttributedExportDefinition(AttributedPartCreationInfo partCreationInfo, MemberInfo member, ExportAttribute exportAttribute, Type? typeIdentityType, string contractName)
             : base(contractName, (IDictionary<string, object?>?)null)
         {
-            if (partCreationInfo == null)
+            if (partCreationInfo is null)
             {
                 throw new ArgumentNullException(nameof(partCreationInfo));
             }
 
-            if (member == null)
+            if (member is null)
             {
                 throw new ArgumentNullException(nameof(member));
             }
 
-            if (exportAttribute == null)
+            if (exportAttribute is null)
             {
                 throw new ArgumentNullException(nameof(exportAttribute));
             }
@@ -46,7 +46,7 @@ namespace System.ComponentModel.Composition.AttributedModel
         {
             get
             {
-                if (_metadata == null)
+                if (_metadata is null)
                 {
                     _member.TryExportMetadataForMember(out IDictionary<string, object?> metadata);
 
@@ -57,12 +57,12 @@ namespace System.ComponentModel.Composition.AttributedModel
                     metadata.Add(CompositionConstants.ExportTypeIdentityMetadataName, typeIdentity);
 
                     var partMetadata = _partCreationInfo.GetMetadata();
-                    if (partMetadata != null && partMetadata.ContainsKey(CompositionConstants.PartCreationPolicyMetadataName))
+                    if (partMetadata is not null && partMetadata.ContainsKey(CompositionConstants.PartCreationPolicyMetadataName))
                     {
                         metadata.Add(CompositionConstants.PartCreationPolicyMetadataName, partMetadata[CompositionConstants.PartCreationPolicyMetadataName]);
                     }
 
-                    if ((_typeIdentityType != null) && (_member.MemberType != MemberTypes.Method) && _typeIdentityType.ContainsGenericParameters)
+                    if ((_typeIdentityType is not null) && (_member.MemberType != MemberTypes.Method) && _typeIdentityType.ContainsGenericParameters)
                     {
                         metadata.Add(CompositionConstants.GenericExportParametersOrderMetadataName, GenericServices.GetGenericParametersOrder(_typeIdentityType));
                     }

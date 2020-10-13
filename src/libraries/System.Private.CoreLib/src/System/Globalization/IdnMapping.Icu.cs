@@ -11,7 +11,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(unicodeString != null && unicodeString.Length >= count);
+            Debug.Assert(unicodeString is not null && unicodeString.Length >= count);
 
             uint flags = IcuFlags;
             CheckInvalidIdnCharacters(unicode, count, flags, nameof(unicode));
@@ -55,7 +55,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(asciiString != null && asciiString.Length >= count);
+            Debug.Assert(asciiString is not null && asciiString.Length >= count);
 
             uint flags = IcuFlags;
             CheckInvalidIdnCharacters(ascii, count, flags, nameof(ascii));
@@ -80,7 +80,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
-            Debug.Assert(asciiString != null && asciiString.Length >= count);
+            Debug.Assert(asciiString is not null && asciiString.Length >= count);
 
             int realLen = Interop.Globalization.ToUnicode(flags, ascii, count, output, outputLength);
 

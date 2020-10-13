@@ -21,7 +21,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 binaryTypeEnum = BinaryTypeEnum.String;
             }
-            else if (((objectInfo == null) || ((objectInfo != null) && !objectInfo._isSi)) && (ReferenceEquals(type, Converter.s_typeofObject)))
+            else if (((objectInfo is null) || ((objectInfo is not null) && !objectInfo._isSi)) && (ReferenceEquals(type, Converter.s_typeofObject)))
             {
                 // If objectInfo.Si then can be a surrogate which will change the type
                 binaryTypeEnum = BinaryTypeEnum.Object;
@@ -45,7 +45,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 {
                     case InternalPrimitiveTypeE.Invalid:
                         string? assembly = null;
-                        if (objectInfo == null)
+                        if (objectInfo is null)
                         {
                             assembly = type.Assembly.FullName;
                             typeInformation = type.FullName;
@@ -56,7 +56,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                             typeInformation = objectInfo.GetTypeFullName();
                         }
 
-                        Debug.Assert(assembly != null);
+                        Debug.Assert(assembly is not null);
                         if (assembly.Equals(Converter.s_urtAssemblyString) || assembly.Equals(Converter.s_urtAlternativeAssemblyString))
                         {
                             binaryTypeEnum = BinaryTypeEnum.ObjectUrt;
@@ -65,7 +65,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         else
                         {
                             binaryTypeEnum = BinaryTypeEnum.ObjectUser;
-                            Debug.Assert(objectInfo != null, "[BinaryConverter.GetBinaryTypeInfo]objectInfo null for user object");
+                            Debug.Assert(objectInfo is not null, "[BinaryConverter.GetBinaryTypeInfo]objectInfo null for user object");
                             assemId = (int)objectInfo._assemId;
                             if (assemId == 0)
                             {
@@ -137,7 +137,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 case BinaryTypeEnum.Primitive:
                 case BinaryTypeEnum.PrimitiveArray:
-                    Debug.Assert(typeInformation != null, "[BinaryConverter.WriteTypeInfo]typeInformation!=null");
+                    Debug.Assert(typeInformation is not null, "[BinaryConverter.WriteTypeInfo]typeInformation!=null");
                     output.WriteByte((byte)((InternalPrimitiveTypeE)typeInformation));
                     break;
                 case BinaryTypeEnum.String:
@@ -146,11 +146,11 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 case BinaryTypeEnum.ObjectArray:
                     break;
                 case BinaryTypeEnum.ObjectUrt:
-                    Debug.Assert(typeInformation != null, "[BinaryConverter.WriteTypeInfo]typeInformation!=null");
+                    Debug.Assert(typeInformation is not null, "[BinaryConverter.WriteTypeInfo]typeInformation!=null");
                     output.WriteString(typeInformation.ToString()!);
                     break;
                 case BinaryTypeEnum.ObjectUser:
-                    Debug.Assert(typeInformation != null, "[BinaryConverter.WriteTypeInfo]typeInformation!=null");
+                    Debug.Assert(typeInformation is not null, "[BinaryConverter.WriteTypeInfo]typeInformation!=null");
                     output.WriteString(typeInformation.ToString()!);
                     output.WriteInt32(assemId);
                     break;
@@ -231,7 +231,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     break;
                 case BinaryTypeEnum.ObjectUser:
                 case BinaryTypeEnum.ObjectUrt:
-                    if (typeInformation != null)
+                    if (typeInformation is not null)
                     {
                         typeString = typeInformation.ToString();
                         type = objectReader.GetType(assemblyInfo!, typeString!);

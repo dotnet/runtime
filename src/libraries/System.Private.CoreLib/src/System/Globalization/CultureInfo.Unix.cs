@@ -15,7 +15,7 @@ namespace System.Globalization
             CultureInfo cultureInfo;
             if (CultureData.GetDefaultLocaleName(out string? localeName))
             {
-                Debug.Assert(localeName != null);
+                Debug.Assert(localeName is not null);
                 cultureInfo = GetCultureByName(localeName);
             }
             else

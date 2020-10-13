@@ -28,7 +28,7 @@ namespace System.Data
 
         public DataTableReader(DataTable dataTable)
         {
-            if (dataTable == null)
+            if (dataTable is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(DataTable));
             }
@@ -39,7 +39,7 @@ namespace System.Data
 
         public DataTableReader(DataTable[] dataTables)
         {
-            if (dataTables == null)
+            if (dataTables is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(DataTable));
             }
@@ -51,7 +51,7 @@ namespace System.Data
             _tables = new DataTable[dataTables.Length];
             for (int i = 0; i < dataTables.Length; i++)
             {
-                if (dataTables[i] == null)
+                if (dataTables[i] is null)
                 {
                     throw ExceptionBuilder.ArgumentNull(nameof(DataTable));
                 }
@@ -72,7 +72,7 @@ namespace System.Data
                 }
 
                 _readerIsInvalid = value;
-                if (_readerIsInvalid && _listener != null)
+                if (_readerIsInvalid && _listener is not null)
                 {
                     _listener.CleanUp();
                 }
@@ -90,7 +90,7 @@ namespace System.Data
                 }
 
                 _schemaIsChanged = value;
-                if (_listener != null)
+                if (_listener is not null)
                 {
                     _listener.CleanUp();
                 }
@@ -120,7 +120,7 @@ namespace System.Data
             }
 
             // no need to listen to events after close
-            if (_listener != null)
+            if (_listener is not null)
             {
                 _listener.CleanUp();
             }
@@ -137,7 +137,7 @@ namespace System.Data
 
             // each time, we just get schema table of current table for once, no need to recreate each time, if schema is changed, reader is already
             // is invalid
-            if (_schemaTable == null)
+            if (_schemaTable is null)
             {
                 _schemaTable = GetSchemaTableFromDataTable(_currentDataTable);
             }
@@ -157,7 +157,7 @@ namespace System.Data
 
             _currentDataTable = _tables[++_tableCounter];
 
-            if (_listener != null)
+            if (_listener is not null)
             {
                 _listener.UpdataTable(_currentDataTable); // it will unsubscribe from preveous tables events and subscribe to new table's events
             }
@@ -194,7 +194,7 @@ namespace System.Data
             if (_rowCounter >= _currentDataTable.Rows.Count - 1)
             {
                 _reachEORows = true;
-                if (_listener != null)
+                if (_listener is not null)
                 {
                     _listener.CleanUp();
                 }
@@ -211,7 +211,7 @@ namespace System.Data
                 if (_rowCounter == _currentDataTable.Rows.Count)
                 {
                     _reachEORows = true;
-                    if (_listener != null)
+                    if (_listener is not null)
                     {
                         _listener.CleanUp();
                     }
@@ -265,7 +265,7 @@ namespace System.Data
             {
                 ValidateOpen("Item");
                 ValidateReader();
-                if ((_currentDataRow == null) || (_currentDataRow.RowState == DataRowState.Deleted))
+                if ((_currentDataRow is null) || (_currentDataRow.RowState == DataRowState.Deleted))
                 {
                     ReaderIsInvalid = true;
                     throw ExceptionBuilder.InvalidDataTableReader(_currentDataTable.TableName);
@@ -289,7 +289,7 @@ namespace System.Data
             {
                 ValidateOpen("Item");
                 ValidateReader();
-                if ((_currentDataRow == null) || (_currentDataRow.RowState == DataRowState.Deleted))
+                if ((_currentDataRow is null) || (_currentDataRow.RowState == DataRowState.Deleted))
                 {
                     ReaderIsInvalid = true;
                     throw ExceptionBuilder.InvalidDataTableReader(_currentDataTable.TableName);
@@ -377,7 +377,7 @@ namespace System.Data
                 throw ExceptionBuilder.ArgumentOutOfRange(nameof(ordinal));
             }
 
-            if (buffer == null)
+            if (buffer is null)
             {
                 return tempBuffer.Length;
             }
@@ -440,7 +440,7 @@ namespace System.Data
                 throw ExceptionBuilder.ArgumentOutOfRange(nameof(ordinal));
             }
 
-            if (buffer == null)
+            if (buffer is null)
             {
                 return tempBuffer.Length;
             }
@@ -642,7 +642,7 @@ namespace System.Data
             ValidateReader();
             DataColumn? dc = _currentDataTable.Columns[name];
 
-            if (dc != null)
+            if (dc is not null)
             {
                 return dc.Ordinal;
             }
@@ -689,7 +689,7 @@ namespace System.Data
             ValidateState(nameof(GetValues));
             ValidateReader();
 
-            if (values == null)
+            if (values is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(values));
             }
@@ -721,7 +721,7 @@ namespace System.Data
 
         internal static DataTable GetSchemaTableFromDataTable(DataTable table)
         {
-            if (table == null)
+            if (table is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(DataTable));
             }
@@ -757,7 +757,7 @@ namespace System.Data
 
             ColumnSize.DefaultValue = -1;
 
-            if (table.DataSet != null)
+            if (table.DataSet is not null)
             {
                 BaseCatalogName.DefaultValue = table.DataSet.DataSetName;
             }
@@ -894,7 +894,7 @@ namespace System.Data
             }
 
             // see if without any event raising, if our current row has some changes!if so reader is invalid.
-            if ((_currentDataRow == null) || (_currentDataTable == null))
+            if ((_currentDataRow is null) || (_currentDataTable is null))
             {
                 ReaderIsInvalid = true;
                 // TODO: This will throw an NRE

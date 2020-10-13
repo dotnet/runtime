@@ -26,7 +26,7 @@ namespace System.Xml.Xsl.XsltOld
             Debug.Assert(Ref.Equal(compiler.Input.LocalName, compiler.Atoms.UseAttributeSets));
             _useString = compiler.Input.Value;
 
-            Debug.Assert(_useAttributeSets == null);
+            Debug.Assert(_useAttributeSets is null);
 
             if (_useString.Length == 0)
             {

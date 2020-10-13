@@ -46,9 +46,9 @@ namespace System.Xml
             {
                 if (_nodeIterator.MoveNext())
                 {
-                    Debug.Assert(_nodeIterator.Current != null);
+                    Debug.Assert(_nodeIterator.Current is not null);
                     XmlNode? n = GetNode(_nodeIterator.Current);
-                    if (n != null)
+                    if (n is not null)
                     {
                         _list.Add(n);
                         count++;
@@ -109,7 +109,7 @@ namespace System.Xml
             {
                 return false;
             }
-            _valid = (_list[_index] != null);
+            _valid = (_list[_index] is not null);
             return _valid;
         }
 

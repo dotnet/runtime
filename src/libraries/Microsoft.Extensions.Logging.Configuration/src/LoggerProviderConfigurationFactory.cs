@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.Logging.Configuration
 
         public IConfiguration GetConfiguration(Type providerType)
         {
-            if (providerType == null)
+            if (providerType is null)
             {
                 throw new ArgumentNullException(nameof(providerType));
             }

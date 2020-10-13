@@ -65,7 +65,7 @@ namespace Microsoft.Extensions.CommandLineUtils
         {
             var expr = Options.AsEnumerable();
             var rootNode = this;
-            while (rootNode.Parent != null)
+            while (rootNode.Parent is not null)
             {
                 rootNode = rootNode.Parent;
                 expr = expr.Concat(rootNode.Options.Where(o => o.Inherited));
@@ -112,7 +112,7 @@ namespace Microsoft.Extensions.CommandLineUtils
         public CommandArgument Argument(string name, string description, Action<CommandArgument> configuration, bool multipleValues = false)
         {
             var lastArg = Arguments.LastOrDefault();
-            if (lastArg != null && lastArg.MultipleValues)
+            if (lastArg is not null && lastArg.MultipleValues)
             {
                 var message = string.Format("The last argument '{0}' accepts multiple values. No more argument can be added.",
                     lastArg.Name);
@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.CommandLineUtils
             {
                 var arg = args[index];
                 var processed = false;
-                if (!processed && option == null)
+                if (!processed && option is null)
                 {
                     string[] longOption = null;
                     string[] shortOption = null;
@@ -159,15 +159,15 @@ namespace Microsoft.Extensions.CommandLineUtils
                         shortOption = arg.Substring(1).Split(new[] { ':', '=' }, 2);
                     }
 
-                    if (longOption != null)
+                    if (longOption is not null)
                     {
                         processed = true;
                         var longOptionName = longOption[0];
                         option = command.GetOptions().SingleOrDefault(opt => string.Equals(opt.LongName, longOptionName, StringComparison.Ordinal));
 
-                        if (option == null && _treatUnmatchedOptionsAsArguments)
+                        if (option is null && _treatUnmatchedOptionsAsArguments)
                         {
-                            if (arguments == null)
+                            if (arguments is null)
                             {
                                 arguments = new CommandArgumentEnumerator(command.Arguments.GetEnumerator());
                             }
@@ -184,7 +184,7 @@ namespace Microsoft.Extensions.CommandLineUtils
                             //}
                         }
 
-                        if (option == null)
+                        if (option is null)
                         {
                             var ignoreContinueAfterUnexpectedArg = false;
                             if (string.IsNullOrEmpty(longOptionName) &&
@@ -239,14 +239,14 @@ namespace Microsoft.Extensions.CommandLineUtils
                         }
                     }
 
-                    if (shortOption != null)
+                    if (shortOption is not null)
                     {
                         processed = true;
                         option = command.GetOptions().SingleOrDefault(opt => string.Equals(opt.ShortName, shortOption[0], StringComparison.Ordinal));
 
-                        if (option == null && _treatUnmatchedOptionsAsArguments)
+                        if (option is null && _treatUnmatchedOptionsAsArguments)
                         {
-                            if (arguments == null)
+                            if (arguments is null)
                             {
                                 arguments = new CommandArgumentEnumerator(command.Arguments.GetEnumerator());
                             }
@@ -264,12 +264,12 @@ namespace Microsoft.Extensions.CommandLineUtils
                         }
 
                         // If not a short option, try symbol option
-                        if (option == null)
+                        if (option is null)
                         {
                             option = command.GetOptions().SingleOrDefault(opt => string.Equals(opt.SymbolName, shortOption[0], StringComparison.Ordinal));
                         }
 
-                        if (option == null)
+                        if (option is null)
                         {
                             if (HandleUnexpectedArg(command, args, index, argTypeName: "option"))
                             {
@@ -309,7 +309,7 @@ namespace Microsoft.Extensions.CommandLineUtils
                     }
                 }
 
-                if (!processed && option != null)
+                if (!processed && option is not null)
                 {
                     processed = true;
                     if (!option.TryParse(arg))
@@ -342,7 +342,7 @@ namespace Microsoft.Extensions.CommandLineUtils
 
                 if (!processed)
                 {
-                    if (arguments == null)
+                    if (arguments is null)
                     {
                         arguments = new CommandArgumentEnumerator(command.Arguments.GetEnumerator());
                     }
@@ -364,7 +364,7 @@ namespace Microsoft.Extensions.CommandLineUtils
                 }
             }
 
-            if (option != null)
+            if (option is not null)
             {
                 command.ShowHint();
                 throw new CommandParsingException(command, $"Missing value for option '{option.LongName}'");
@@ -387,7 +387,7 @@ namespace Microsoft.Extensions.CommandLineUtils
             string shortFormVersion,
             string longFormVersion = null)
         {
-            if (longFormVersion == null)
+            if (longFormVersion is null)
             {
                 return VersionOption(template, () => shortFormVersion);
             }
@@ -414,7 +414,7 @@ namespace Microsoft.Extensions.CommandLineUtils
         // Show short hint that reminds users to use help option
         public void ShowHint()
         {
-            if (OptionHelp != null)
+            if (OptionHelp is not null)
             {
                 Out.WriteLine(string.Format("Specify --{0} for a list of available options and commands.", OptionHelp.LongName));
             }
@@ -423,7 +423,7 @@ namespace Microsoft.Extensions.CommandLineUtils
         // Show full help
         public void ShowHelp(string commandName = null)
         {
-            for (var cmd = this; cmd != null; cmd = cmd.Parent)
+            for (var cmd = this; cmd is not null; cmd = cmd.Parent)
             {
                 cmd.IsShowingInformation = true;
             }
@@ -434,14 +434,14 @@ namespace Microsoft.Extensions.CommandLineUtils
         public virtual string GetHelpText(string commandName = null)
         {
             var headerBuilder = new StringBuilder("Usage:");
-            for (var cmd = this; cmd != null; cmd = cmd.Parent)
+            for (var cmd = this; cmd is not null; cmd = cmd.Parent)
             {
                 headerBuilder.Insert(6, string.Format(" {0}", cmd.Name));
             }
 
             CommandLineApplication target;
 
-            if (commandName == null || string.Equals(Name, commandName, StringComparison.OrdinalIgnoreCase))
+            if (commandName is null || string.Equals(Name, commandName, StringComparison.OrdinalIgnoreCase))
             {
                 target = this;
             }
@@ -449,7 +449,7 @@ namespace Microsoft.Extensions.CommandLineUtils
             {
                 target = Commands.SingleOrDefault(cmd => string.Equals(cmd.Name, commandName, StringComparison.OrdinalIgnoreCase));
 
-                if (target != null)
+                if (target is not null)
                 {
                     headerBuilder.AppendFormat(" {0}", commandName);
                 }
@@ -512,7 +512,7 @@ namespace Microsoft.Extensions.CommandLineUtils
                     commandsBuilder.AppendLine();
                 }
 
-                if (OptionHelp != null)
+                if (OptionHelp is not null)
                 {
                     commandsBuilder.AppendLine();
                     commandsBuilder.AppendFormat($"Use \"{target.Name} [command] --{OptionHelp.LongName}\" for more information about a command.");
@@ -541,7 +541,7 @@ namespace Microsoft.Extensions.CommandLineUtils
 
         public void ShowVersion()
         {
-            for (var cmd = this; cmd != null; cmd = cmd.Parent)
+            for (var cmd = this; cmd is not null; cmd = cmd.Parent)
             {
                 cmd.IsShowingInformation = true;
             }
@@ -552,13 +552,13 @@ namespace Microsoft.Extensions.CommandLineUtils
 
         public string GetFullNameAndVersion()
         {
-            return ShortVersionGetter == null ? FullName : string.Format("{0} {1}", FullName, ShortVersionGetter());
+            return ShortVersionGetter is null ? FullName : string.Format("{0} {1}", FullName, ShortVersionGetter());
         }
 
         public void ShowRootCommandFullNameAndVersion()
         {
             var rootCmd = this;
-            while (rootCmd.Parent != null)
+            while (rootCmd.Parent is not null)
             {
                 rootCmd = rootCmd.Parent;
             }
@@ -625,7 +625,7 @@ namespace Microsoft.Extensions.CommandLineUtils
 
             public bool MoveNext()
             {
-                if (Current == null || !Current.MultipleValues)
+                if (Current is null || !Current.MultipleValues)
                 {
                     return _enumerator.MoveNext();
                 }

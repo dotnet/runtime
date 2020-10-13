@@ -88,7 +88,7 @@ namespace System.Diagnostics.Tracing
                 type,
                 tags,
                 Statics.InTypeCustomCountFlag,
-                checked((ushort)(custom == null ? 0 : custom.Length)),
+                checked((ushort)(custom is null ? 0 : custom.Length)),
                 custom)
         {
         }
@@ -101,7 +101,7 @@ namespace System.Diagnostics.Tracing
             ushort fixedCount = 0,
             byte[]? custom = null)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(
                     nameof(name),
@@ -170,14 +170,14 @@ namespace System.Diagnostics.Tracing
         public void Encode(ref int pos, byte[]? metadata)
         {
             // Write out the null terminated UTF8 encoded name
-            if (metadata != null)
+            if (metadata is not null)
             {
                 Encoding.UTF8.GetBytes(this.name, 0, this.name.Length, metadata, pos);
             }
             pos += this.nameSize;
 
             // Write 1 byte for inType
-            if (metadata != null)
+            if (metadata is not null)
             {
                 metadata[pos] = this.inType;
             }
@@ -186,7 +186,7 @@ namespace System.Diagnostics.Tracing
             // If InTypeChainFlag set, then write out the outType
             if (0 != (this.inType & Statics.InTypeChainFlag))
             {
-                if (metadata != null)
+                if (metadata is not null)
                 {
                     metadata[pos] = this.outType;
                 }
@@ -202,7 +202,7 @@ namespace System.Diagnostics.Tracing
             // If InTypeFixedCountFlag set, write out the fixedCount (2 bytes little endian)
             if (0 != (this.inType & Statics.InTypeFixedCountFlag))
             {
-                if (metadata != null)
+                if (metadata is not null)
                 {
                     metadata[pos + 0] = unchecked((byte)this.fixedCount);
                     metadata[pos + 1] = (byte)(this.fixedCount >> 8);
@@ -213,9 +213,9 @@ namespace System.Diagnostics.Tracing
                 if (Statics.InTypeCustomCountFlag == (this.inType & Statics.InTypeCountMask) &&
                     this.fixedCount != 0)
                 {
-                    if (metadata != null)
+                    if (metadata is not null)
                     {
-                        Debug.Assert(custom != null);
+                        Debug.Assert(custom is not null);
                         Buffer.BlockCopy(custom, 0, metadata, pos, this.fixedCount);
                     }
                     pos += this.fixedCount;

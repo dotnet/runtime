@@ -18,7 +18,7 @@ namespace Microsoft.Win32.SafeHandles
         internal SafeProvOrNCryptKeyHandleUwp(IntPtr handle, SafeHandle parentHandle)
             : this(handle, true, true)
         {
-            Debug.Assert(parentHandle != null && !parentHandle.IsClosed && !parentHandle.IsInvalid);
+            Debug.Assert(parentHandle is not null && !parentHandle.IsClosed && !parentHandle.IsInvalid);
 
             // If the provided handle value wasn't valid we won't call dispose, so we shouldn't be doing this.
             Debug.Assert(!IsInvalid);
@@ -36,7 +36,7 @@ namespace Microsoft.Win32.SafeHandles
 
         protected sealed override bool ReleaseHandle()
         {
-            if (_parentHandle != null)
+            if (_parentHandle is not null)
             {
                 _parentHandle.DangerousRelease();
                 _parentHandle = null;

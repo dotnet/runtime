@@ -27,7 +27,7 @@ namespace System.Xml
             _systemId = systemId;
             _namespaces = true;
             _internalSubset = internalSubset;
-            Debug.Assert(doc != null);
+            Debug.Assert(doc is not null);
             if (!doc.IsLoading)
             {
                 doc.IsLoading = true;
@@ -58,7 +58,7 @@ namespace System.Xml
         // Creates a duplicate of this node.
         public override XmlNode CloneNode(bool deep)
         {
-            Debug.Assert(OwnerDocument != null);
+            Debug.Assert(OwnerDocument is not null);
             return OwnerDocument.CreateDocumentType(_name, _publicId, _systemId, _internalSubset);
         }
 
@@ -80,7 +80,7 @@ namespace System.Xml
         {
             get
             {
-                if (_entities == null)
+                if (_entities is null)
                     _entities = new XmlNamedNodeMap(this);
 
                 return _entities;
@@ -92,7 +92,7 @@ namespace System.Xml
         {
             get
             {
-                if (_notations == null)
+                if (_notations is null)
                     _notations = new XmlNamedNodeMap(this);
 
                 return _notations;

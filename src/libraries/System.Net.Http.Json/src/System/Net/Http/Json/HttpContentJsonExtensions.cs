@@ -13,7 +13,7 @@ namespace System.Net.Http.Json
     {
         public static Task<object?> ReadFromJsonAsync(this HttpContent content, Type type, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
-            if (content == null)
+            if (content is null)
             {
                 throw new ArgumentNullException(nameof(content));
             }
@@ -25,7 +25,7 @@ namespace System.Net.Http.Json
 
         public static Task<T?> ReadFromJsonAsync<T>(this HttpContent content, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
-            if (content == null)
+            if (content is null)
             {
                 throw new ArgumentNullException(nameof(content));
             }
@@ -40,7 +40,7 @@ namespace System.Net.Http.Json
             Stream contentStream = await ReadHttpContentStreamAsync(content, cancellationToken).ConfigureAwait(false);
 
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
-            if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
+            if (sourceEncoding is not null && sourceEncoding != Encoding.UTF8)
             {
                 contentStream = GetTranscodingStream(contentStream, sourceEncoding);
             }
@@ -56,7 +56,7 @@ namespace System.Net.Http.Json
             Stream contentStream = await ReadHttpContentStreamAsync(content, cancellationToken).ConfigureAwait(false);
 
             // Wrap content stream into a transcoding stream that buffers the data transcoded from the sourceEncoding to utf-8.
-            if (sourceEncoding != null && sourceEncoding != Encoding.UTF8)
+            if (sourceEncoding is not null && sourceEncoding != Encoding.UTF8)
             {
                 contentStream = GetTranscodingStream(contentStream, sourceEncoding);
             }

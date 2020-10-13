@@ -151,11 +151,11 @@ namespace System.Net
 
         public override int EndRead(IAsyncResult asyncResult)
         {
-            if (asyncResult == null)
+            if (asyncResult is null)
                 throw new ArgumentNullException(nameof(asyncResult));
 
             HttpStreamAsyncResult? ares = asyncResult as HttpStreamAsyncResult;
-            if (ares == null || !ReferenceEquals(this, ares._parent))
+            if (ares is null || !ReferenceEquals(this, ares._parent))
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
@@ -168,7 +168,7 @@ namespace System.Net
             if (!asyncResult.IsCompleted)
                 asyncResult.AsyncWaitHandle.WaitOne();
 
-            if (ares._error != null)
+            if (ares._error is not null)
                 throw new HttpListenerException((int)HttpStatusCode.BadRequest, SR.Format(SR.net_io_operation_aborted, ares._error.Message));
 
             return ares._count;

@@ -47,7 +47,7 @@ namespace System.Globalization
         private string NlsGetLocaleInfo(LocaleStringData type)
         {
             Debug.Assert(ShouldUseUserOverrideNlsData);
-            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfo] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sWindowsName is not null, "[CultureData.DoGetLocaleInfo] Expected _sWindowsName to be populated by already");
             return NlsGetLocaleInfo(_sWindowsName, type);
         }
 
@@ -74,28 +74,28 @@ namespace System.Globalization
 
             // Ask OS for data, note that we presume it returns success, so we have to know that
             // sWindowsName is valid before calling.
-            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sWindowsName is not null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
             return GetLocaleInfoExInt(_sWindowsName, lctype);
         }
 
         private int[] NlsGetLocaleInfo(LocaleGroupingData type)
         {
             Debug.Assert(ShouldUseUserOverrideNlsData);
-            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sWindowsName is not null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
             return ConvertWin32GroupString(GetLocaleInfoFromLCType(_sWindowsName, (uint)type, _bUseOverrides));
         }
 
         private string? NlsGetTimeFormatString()
         {
             Debug.Assert(ShouldUseUserOverrideNlsData);
-            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sWindowsName is not null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
             return ReescapeWin32String(GetLocaleInfoFromLCType(_sWindowsName, Interop.Kernel32.LOCALE_STIMEFORMAT, _bUseOverrides));
         }
 
         private int NlsGetFirstDayOfWeek()
         {
             Debug.Assert(ShouldUseUserOverrideNlsData);
-            Debug.Assert(_sWindowsName != null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sWindowsName is not null, "[CultureData.DoGetLocaleInfoInt] Expected _sWindowsName to be populated by already");
 
             int result = GetLocaleInfoExInt(_sWindowsName, Interop.Kernel32.LOCALE_IFIRSTDAYOFWEEK | (!_bUseOverrides ? Interop.Kernel32.LOCALE_NOUSEROVERRIDE : 0));
 
@@ -109,7 +109,7 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(regionName != null);
+            Debug.Assert(regionName is not null);
 
             EnumLocaleData context;
             context.cultureName = null;
@@ -120,7 +120,7 @@ namespace System.Globalization
                 Interop.Kernel32.EnumSystemLocalesEx(&EnumSystemLocalesProc, Interop.Kernel32.LOCALE_SPECIFICDATA | Interop.Kernel32.LOCALE_SUPPLEMENTAL, Unsafe.AsPointer(ref context), IntPtr.Zero);
             }
 
-            if (context.cultureName != null)
+            if (context.cultureName is not null)
             {
                 // we got a matched culture
                 return GetCultureData(context.cultureName, true);
@@ -137,8 +137,8 @@ namespace System.Globalization
             // if DefaultThreadCurrentUICulture was set
             CultureInfo? ci;
 
-            if (CultureInfo.DefaultThreadCurrentUICulture != null &&
-                ((ci = CultureInfo.GetUserDefaultCulture()) != null) &&
+            if (CultureInfo.DefaultThreadCurrentUICulture is not null &&
+                ((ci = CultureInfo.GetUserDefaultCulture()) is not null) &&
                 !CultureInfo.DefaultThreadCurrentUICulture.Name.Equals(ci.Name))
             {
                 return NativeName;
@@ -167,7 +167,7 @@ namespace System.Globalization
 
         private static string GetLocaleInfoFromLCType(string localeName, uint lctype, bool useUserOverride)
         {
-            Debug.Assert(localeName != null, "[CultureData.GetLocaleInfoFromLCType] Expected localeName to be not be null");
+            Debug.Assert(localeName is not null, "[CultureData.GetLocaleInfoFromLCType] Expected localeName to be not be null");
 
             // Fix lctype if we don't want overrides
             if (!useUserOverride)
@@ -197,7 +197,7 @@ namespace System.Globalization
         internal static string? ReescapeWin32String(string? str)
         {
             // If we don't have data, then don't try anything
-            if (str == null)
+            if (str is null)
             {
                 return null;
             }
@@ -252,7 +252,7 @@ namespace System.Globalization
             }
 
             // Unchanged string? , just return input string
-            if (result == null)
+            if (result is null)
                 return str;
 
             // String changed, need to use the builder
@@ -262,7 +262,7 @@ namespace System.Globalization
         [return: NotNullIfNotNull("array")]
         internal static string[]? ReescapeWin32Strings(string[]? array)
         {
-            if (array != null)
+            if (array is not null)
             {
                 for (int i = 0; i < array.Length; i++)
                 {
@@ -346,7 +346,7 @@ namespace System.Globalization
             {
                 string cultureName = new string(lpLocaleString);
                 string? regionName = GetLocaleInfoEx(cultureName, Interop.Kernel32.LOCALE_SISO3166CTRYNAME);
-                if (regionName != null && regionName.Equals(context.regionName, StringComparison.OrdinalIgnoreCase))
+                if (regionName is not null && regionName.Equals(context.regionName, StringComparison.OrdinalIgnoreCase))
                 {
                     context.cultureName = cultureName;
                     return Interop.BOOL.FALSE; // we found a match, then stop the enumeration

@@ -10,7 +10,7 @@ namespace System.Threading
     {
         private static ThreadPoolBoundHandle BindHandleCore(SafeHandle handle)
         {
-            Debug.Assert(handle != null);
+            Debug.Assert(handle is not null);
             Debug.Assert(!handle.IsClosed);
             Debug.Assert(!handle.IsInvalid);
 

@@ -40,7 +40,7 @@ namespace System.Security.Cryptography.Asn1
             }
 
 
-            if (Hash != null)
+            if (Hash is not null)
             {
                 try
                 {

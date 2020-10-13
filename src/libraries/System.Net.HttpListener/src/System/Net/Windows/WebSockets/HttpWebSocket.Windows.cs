@@ -93,7 +93,7 @@ namespace System.Net.WebSockets
                 await response.OutputStream.FlushAsync().SuppressContextFlow();
 
                 HttpResponseStream responseStream = (response.OutputStream as HttpResponseStream)!;
-                Debug.Assert(responseStream != null, "'responseStream' MUST be castable to System.Net.HttpResponseStream.");
+                Debug.Assert(responseStream is not null, "'responseStream' MUST be castable to System.Net.HttpResponseStream.");
                 ((HttpResponseStream)response.OutputStream).SwitchToOpaqueMode();
                 HttpRequestStream requestStream = new HttpRequestStream(context);
                 requestStream.SwitchToOpaqueMode();
@@ -173,7 +173,7 @@ namespace System.Net.WebSockets
 
         internal static void ValidateInnerStream(Stream innerStream)
         {
-            if (innerStream == null)
+            if (innerStream is null)
             {
                 throw new ArgumentNullException(nameof(innerStream));
             }

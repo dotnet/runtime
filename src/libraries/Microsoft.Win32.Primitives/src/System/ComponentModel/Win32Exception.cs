@@ -105,14 +105,14 @@ namespace System.ComponentModel
             }
 
             Exception? innerException = InnerException;
-            if (innerException != null)
+            if (innerException is not null)
             {
                 s.Append(" ---> ");
                 s.Append(innerException.ToString());
             }
 
             string? stackTrace = StackTrace;
-            if (stackTrace != null)
+            if (stackTrace is not null)
             {
                 s.AppendLine();
                 s.Append(stackTrace);

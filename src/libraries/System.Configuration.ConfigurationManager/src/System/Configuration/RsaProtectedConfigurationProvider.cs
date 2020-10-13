@@ -182,7 +182,7 @@ namespace System.Configuration
             _keyName = "Rsa Key";
             _keyContainerName = configurationValues["keyContainerName"];
             configurationValues.Remove("keyContainerName");
-            if (_keyContainerName == null || _keyContainerName.Length < 1)
+            if (_keyContainerName is null || _keyContainerName.Length < 1)
                 _keyContainerName = DefaultRsaKeyContainerName;
 
             _cspProviderName = configurationValues["cspProviderName"];
@@ -205,7 +205,7 @@ namespace System.Configuration
                 csp.KeyNumber = 1;
                 csp.ProviderType = 1; // Dev10 Bug #548719: Explicitly require "RSA Full (Signature and Key Exchange)"
 
-                if (CspProviderName != null && CspProviderName.Length > 0)
+                if (CspProviderName is not null && CspProviderName.Length > 0)
                     csp.ProviderName = CspProviderName;
 
                 if (UseMachineContainer)
@@ -236,7 +236,7 @@ namespace System.Configuration
         private static bool GetBooleanValue(NameValueCollection configurationValues, string valueName, bool defaultValue)
         {
             string s = configurationValues[valueName];
-            if (s == null)
+            if (s is null)
                 return defaultValue;
             configurationValues.Remove(valueName);
             if (s == "true")

@@ -255,7 +255,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (_syncRoot == null)
+                    if (_syncRoot is null)
                     {
                         Threading.Interlocked.CompareExchange<object?>(ref _syncRoot, new object(), null);
                     }
@@ -505,7 +505,7 @@ namespace System.Collections.Immutable
                 // Creating an instance of ImmutableSortedMap<T> with our root node automatically freezes our tree,
                 // ensuring that the returned instance is immutable.  Any further mutations made to this builder
                 // will clone (and unfreeze) the spine of modified nodes until the next time this method is invoked.
-                if (_immutable == null)
+                if (_immutable is null)
                 {
                     _immutable = ImmutableDictionary<TKey, TValue>.Wrap(_root, _comparers, _count);
                 }
@@ -748,7 +748,7 @@ namespace System.Collections.Immutable
         {
             get
             {
-                if (_contents == null)
+                if (_contents is null)
                 {
                     _contents = _map.ToArray(_map.Count);
                 }

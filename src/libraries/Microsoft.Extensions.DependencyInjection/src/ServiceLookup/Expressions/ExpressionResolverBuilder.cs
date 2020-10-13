@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public ExpressionResolverBuilder(CallSiteRuntimeResolver runtimeResolver, IServiceScopeFactory serviceScopeFactory, ServiceProviderEngineScope rootScope)
         {
-            if (runtimeResolver == null)
+            if (runtimeResolver is null)
             {
                 throw new ArgumentNullException(nameof(runtimeResolver));
             }

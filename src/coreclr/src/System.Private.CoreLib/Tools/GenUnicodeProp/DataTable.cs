@@ -48,7 +48,7 @@ namespace GenUnicodeProp
 
         private (int Total, string[] Stats) GenerateTable(int level2bits, int level3bits, bool cutOff, string name = null, List<byte> level1Index = null, List<ushort> level2Index = null, List<byte> level3Data = null)
         {
-            if (name != null)
+            if (name is not null)
                 Console.WriteLine($"Process {20 - level3bits - level2bits}:{level2bits}:{level3bits} table {name}.");
 
             var level2Hash = new Dictionary<string, ushort>();
@@ -142,7 +142,7 @@ namespace GenUnicodeProp
             var level1uint = level2Hash.Count < 256 ? 1 : 2;
             var level2uint = level3Hash.Count < 256 ? 1 : 2;
 
-            if (level2Index != null)
+            if (level2Index is not null)
                 Level2HasBytes = level2uint == 1;
 
             var stats = new string[4];

@@ -41,7 +41,7 @@ namespace System.Net.Sockets
         {
             // Fill in Buffer Array structure that will be used for our send/recv Buffer
             _socketAddress = socketAddress;
-            if (_socketAddress != null)
+            if (_socketAddress is not null)
             {
                 object[] objectsToPin = new object[2];
                 objectsToPin[0] = buffer;
@@ -115,7 +115,7 @@ namespace System.Net.Sockets
 
             if (size > -1)
             {
-                if (_wsaBuffers != null)
+                if (_wsaBuffers is not null)
                 {
                     foreach (WSABuffer wsaBuffer in _wsaBuffers)
                     {

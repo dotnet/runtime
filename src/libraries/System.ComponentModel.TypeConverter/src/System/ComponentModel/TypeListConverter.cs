@@ -66,14 +66,14 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
             if (destinationType == typeof(string))
             {
-                if (value == null)
+                if (value is null)
                 {
                     return SR.none;
                 }
@@ -91,11 +91,11 @@ namespace System.ComponentModel
         /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
-            if (_values == null)
+            if (_values is null)
             {
                 object[] objTypes;
 
-                if (_types != null)
+                if (_types is not null)
                 {
                     objTypes = new object[_types.Length];
                     Array.Copy(_types, objTypes, _types.Length);

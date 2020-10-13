@@ -41,7 +41,7 @@ namespace System.Reflection.Internal
 
         internal static bool Equals(byte[] left, int leftStart, byte[] right, int rightStart, int length)
         {
-            if (left == null || right == null)
+            if (left is null || right is null)
             {
                 return ReferenceEquals(left, right);
             }
@@ -69,7 +69,7 @@ namespace System.Reflection.Internal
                 return true;
             }
 
-            if (left == null || right == null || left.Length != right.Length)
+            if (left is null || right is null || left.Length != right.Length)
             {
                 return false;
             }
@@ -89,7 +89,7 @@ namespace System.Reflection.Internal
 
         internal static int GetHashCode(byte[] x)
         {
-            Debug.Assert(x != null);
+            Debug.Assert(x is not null);
             return Hash.GetFNVHashCode(x);
         }
 

@@ -23,14 +23,14 @@ namespace System.DirectoryServices.AccountManagement
                 DirectoryRdnPrefixAttribute[] MyAttribute =
                 (DirectoryRdnPrefixAttribute[])Attribute.GetCustomAttributes(_p.GetType(), typeof(DirectoryRdnPrefixAttribute), false);
 
-                if (MyAttribute == null)
+                if (MyAttribute is null)
                     return null;
 
                 string defaultRdn = null;
 
                 for (int i = 0; i < MyAttribute.Length; i++)
                 {
-                    if (MyAttribute[i].Context == null && null == defaultRdn)
+                    if (MyAttribute[i].Context is null && null == defaultRdn)
                     {
                         defaultRdn = MyAttribute[i].RdnPrefix;
                     }
@@ -49,14 +49,14 @@ namespace System.DirectoryServices.AccountManagement
             DirectoryObjectClassAttribute[] MyAttribute =
             (DirectoryObjectClassAttribute[])Attribute.GetCustomAttributes(principalType, typeof(DirectoryObjectClassAttribute), false);
 
-            if (MyAttribute == null)
+            if (MyAttribute is null)
                 return null;
 
             string defaultObjectClass = null;
 
             for (int i = 0; i < MyAttribute.Length; i++)
             {
-                if (MyAttribute[i].Context == null && null == defaultObjectClass)
+                if (MyAttribute[i].Context is null && null == defaultObjectClass)
                 {
                     defaultObjectClass = MyAttribute[i].ObjectClass;
                 }
@@ -78,14 +78,14 @@ namespace System.DirectoryServices.AccountManagement
                 DirectoryObjectClassAttribute[] MyAttribute =
                 (DirectoryObjectClassAttribute[])Attribute.GetCustomAttributes(_p.GetType(), typeof(DirectoryObjectClassAttribute), false);
 
-                if (MyAttribute == null)
+                if (MyAttribute is null)
                     return null;
 
                 string defaultObjectClass = null;
 
                 for (int i = 0; i < MyAttribute.Length; i++)
                 {
-                    if (MyAttribute[i].Context == null && null == defaultObjectClass)
+                    if (MyAttribute[i].Context is null && null == defaultObjectClass)
                     {
                         defaultObjectClass = MyAttribute[i].ObjectClass;
                     }
@@ -108,14 +108,14 @@ namespace System.DirectoryServices.AccountManagement
 
                     DirectoryPropertyAttribute[] MyAttribute = (DirectoryPropertyAttribute[])Attribute.GetCustomAttributes(propInfo, typeof(DirectoryPropertyAttribute));
 
-                    if (MyAttribute == null)
+                    if (MyAttribute is null)
                         return null;
 
                     string defaultAttribute = null;
 
                     for (int i = 0; i < MyAttribute.Length; i++)
                     {
-                        if (MyAttribute[i].Context == null)
+                        if (MyAttribute[i].Context is null)
                         {
                             defaultAttribute = MyAttribute[i].SchemaAttributeName;
                         }

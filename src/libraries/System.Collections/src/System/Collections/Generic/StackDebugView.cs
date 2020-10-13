@@ -11,7 +11,7 @@ namespace System.Collections.Generic
 
         public StackDebugView(Stack<T> stack)
         {
-            if (stack == null)
+            if (stack is null)
             {
                 throw new ArgumentNullException(nameof(stack));
             }

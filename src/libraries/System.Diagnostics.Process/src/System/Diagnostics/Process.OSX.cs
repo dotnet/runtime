@@ -31,7 +31,7 @@ namespace System.Diagnostics
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(Id);
 
-                if (info == null)
+                if (info is null)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
 
                 DateTime startTime = DateTime.UnixEpoch + TimeSpan.FromSeconds(info.Value.pbsd.pbi_start_tvsec + info.Value.pbsd.pbi_start_tvusec / (double)MicrosecondsToSecondsFactor);
@@ -84,7 +84,7 @@ namespace System.Diagnostics
                 EnsureState(State.HaveNonExitedId);
                 Interop.libproc.proc_taskallinfo? info = Interop.libproc.GetProcessInfoById(Id);
 
-                if (info == null)
+                if (info is null)
                     throw new Win32Exception(SR.ProcessInformationUnavailable);
 
                 return Convert.ToInt32(info.Value.pbsd.pbi_ppid);

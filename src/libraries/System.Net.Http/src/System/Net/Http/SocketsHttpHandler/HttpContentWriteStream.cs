@@ -15,7 +15,7 @@ namespace System.Net.Http
             public long BytesWritten { get; protected set; }
 
             public HttpContentWriteStream(HttpConnection connection) : base(connection) =>
-                Debug.Assert(connection != null);
+                Debug.Assert(connection is not null);
 
             public sealed override bool CanRead => false;
             public sealed override bool CanWrite => true;
@@ -26,7 +26,7 @@ namespace System.Net.Http
             public sealed override Task FlushAsync(CancellationToken ignored)
             {
                 HttpConnection? connection = _connection;
-                return connection != null ?
+                return connection is not null ?
                     connection.FlushAsync(async: true).AsTask() :
                     default!;
             }

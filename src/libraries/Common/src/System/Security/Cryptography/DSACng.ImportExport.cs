@@ -28,15 +28,15 @@ namespace System.Security.Cryptography
 
             public override void ImportParameters(DSAParameters parameters)
             {
-                if (parameters.P == null || parameters.Q == null || parameters.G == null || parameters.Y == null)
+                if (parameters.P is null || parameters.Q is null || parameters.G is null || parameters.Y is null)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MissingFields);
 
                 // J is not required and is not even used on CNG blobs. It should however be less than P (J == (P-1) / Q). This validation check
                 // is just to maintain parity with DSACryptoServiceProvider, which also performs this check.
-                if (parameters.J != null && parameters.J.Length >= parameters.P.Length)
+                if (parameters.J is not null && parameters.J.Length >= parameters.P.Length)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedPJ);
 
-                bool hasPrivateKey = parameters.X != null;
+                bool hasPrivateKey = parameters.X is not null;
 
                 int keySizeInBytes = parameters.P.Length;
                 int keySizeInBits = keySizeInBytes * 8;
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> passwordBytes,
                 PbeParameters pbeParameters)
             {
-                if (pbeParameters == null)
+                if (pbeParameters is null)
                     throw new ArgumentNullException(nameof(pbeParameters));
 
                 return CngPkcs8.ExportEncryptedPkcs8PrivateKey(
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<char> password,
                 PbeParameters pbeParameters)
             {
-                if (pbeParameters == null)
+                if (pbeParameters is null)
                 {
                     throw new ArgumentNullException(nameof(pbeParameters));
                 }
@@ -122,7 +122,7 @@ namespace System.Security.Cryptography
                 Span<byte> destination,
                 out int bytesWritten)
             {
-                if (pbeParameters == null)
+                if (pbeParameters is null)
                     throw new ArgumentNullException(nameof(pbeParameters));
 
                 PasswordBasedEncryption.ValidatePbeParameters(
@@ -144,7 +144,7 @@ namespace System.Security.Cryptography
                 Span<byte> destination,
                 out int bytesWritten)
             {
-                if (pbeParameters == null)
+                if (pbeParameters is null)
                     throw new ArgumentNullException(nameof(pbeParameters));
 
                 PasswordBasedEncryption.ValidatePbeParameters(
@@ -204,7 +204,7 @@ namespace System.Security.Cryptography
 
                         int offset = sizeof(KeyBlobMagicNumber) + sizeof(int); // skip Magic and cbKey
 
-                        if (parameters.Seed != null)
+                        if (parameters.Seed is not null)
                         {
                             // The Seed length is hardcoded into BCRYPT_DSA_KEY_BLOB, so check it now we can give a nicer error message.
                             if (parameters.Seed.Length != Sha1HashOutputSize)
@@ -257,7 +257,7 @@ namespace System.Security.Cryptography
                 {
                     int blobSize =
                         sizeof(BCRYPT_DSA_KEY_BLOB_V2) +
-                        (parameters.Seed == null ? parameters.Q!.Length : parameters.Seed.Length) + // Use Q size if Seed is not present
+                        (parameters.Seed is null ? parameters.Q!.Length : parameters.Seed.Length) + // Use Q size if Seed is not present
                         parameters.Q!.Length +
                         parameters.P!.Length +
                         parameters.G!.Length +
@@ -291,7 +291,7 @@ namespace System.Security.Cryptography
 
                         int offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2) - 4; //skip to Count[4]
 
-                        if (parameters.Seed != null)
+                        if (parameters.Seed is not null)
                         {
                             Interop.BCrypt.EmitBigEndian(blob, ref offset, parameters.Counter);
                             Debug.Assert(offset == sizeof(BCRYPT_DSA_KEY_BLOB_V2), $"Expected offset = sizeof(BCRYPT_DSA_KEY_BLOB_V2), got {offset} != {sizeof(BCRYPT_DSA_KEY_BLOB_V2)}");

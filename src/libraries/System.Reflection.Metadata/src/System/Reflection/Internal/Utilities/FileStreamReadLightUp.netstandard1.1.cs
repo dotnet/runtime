@@ -28,7 +28,7 @@ namespace System.Reflection.Internal
 
         internal static bool IsFileStream(Stream stream)
         {
-            if (FileStreamType.Value == null)
+            if (FileStreamType.Value is null)
             {
                 return false;
             }
@@ -39,7 +39,7 @@ namespace System.Reflection.Internal
 
         internal static SafeHandle GetSafeFileHandle(Stream stream)
         {
-            Debug.Assert(FileStreamType.IsValueCreated && FileStreamType.Value != null && IsFileStream(stream));
+            Debug.Assert(FileStreamType.IsValueCreated && FileStreamType.Value is not null && IsFileStream(stream));
 
             if (safeFileHandleNotAvailable)
             {
@@ -47,7 +47,7 @@ namespace System.Reflection.Internal
             }
 
             PropertyInfo safeFileHandleProperty = SafeFileHandle.Value;
-            if (safeFileHandleProperty == null)
+            if (safeFileHandleProperty is null)
             {
                 safeFileHandleNotAvailable = true;
                 return null;
@@ -76,7 +76,7 @@ namespace System.Reflection.Internal
                 return null;
             }
 
-            if (handle != null && handle.IsInvalid)
+            if (handle is not null && handle.IsInvalid)
             {
                 // Also allow for FileStream implementations that do return a non-null, but invalid underlying OS handle.
                 // This is how brokered files on WinRT will work. Fall back to slow path.
@@ -94,7 +94,7 @@ namespace System.Reflection.Internal
             }
 
             SafeHandle handle = GetSafeFileHandle(stream);
-            if (handle == null)
+            if (handle is null)
             {
                 return false;
             }

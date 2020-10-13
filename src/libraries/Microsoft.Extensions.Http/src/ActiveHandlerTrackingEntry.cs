@@ -75,12 +75,12 @@ namespace Microsoft.Extensions.Http
 
         private void Timer_Tick()
         {
-            Debug.Assert(_callback != null);
-            Debug.Assert(_timer != null);
+            Debug.Assert(_callback is not null);
+            Debug.Assert(_timer is not null);
 
             lock (_lock)
             {
-                if (_timer != null)
+                if (_timer is not null)
                 {
                     _timer.Dispose();
                     _timer = null;

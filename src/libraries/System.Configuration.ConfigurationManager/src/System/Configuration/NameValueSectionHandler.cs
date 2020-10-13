@@ -29,7 +29,7 @@ namespace System.Configuration
 
             // start result off as a shallow clone of the parent
 
-            if (parent == null)
+            if (parent is null)
                 result = new ReadOnlyNameValueCollection(StringComparer.OrdinalIgnoreCase);
             else
             {

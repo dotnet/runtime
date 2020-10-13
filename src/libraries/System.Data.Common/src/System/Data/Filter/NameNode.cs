@@ -33,7 +33,7 @@ namespace System.Data
         internal override void Bind(DataTable table, List<DataColumn> list)
         {
             BindTable(table);
-            if (table == null)
+            if (table is null)
                 throw ExprException.UnboundName(_name);
 
             try
@@ -50,14 +50,14 @@ namespace System.Data
                 throw ExprException.UnboundName(_name);
             }
 
-            if (_column == null)
+            if (_column is null)
                 throw ExprException.UnboundName(_name);
 
             _name = _column.ColumnName;
             _found = true;
 
             // add column to the dependency list, do not add duplicate columns
-            Debug.Assert(_column != null, "Failed to bind column " + _name);
+            Debug.Assert(_column is not null, "Failed to bind column " + _name);
 
             int i;
             for (i = 0; i < list.Count; i++)
@@ -88,7 +88,7 @@ namespace System.Data
                 throw ExprException.UnboundName(_name);
             }
 
-            if (row == null)
+            if (row is null)
             {
                 if (IsTableConstant()) // this column is TableConstant Aggregate Function
                     return _column!.DataExpression!.Evaluate();
@@ -113,7 +113,7 @@ namespace System.Data
 
         internal override bool IsTableConstant()
         {
-            if (_column != null && _column.Computed)
+            if (_column is not null && _column.Computed)
             {
                 return _column.DataExpression!.IsTableAggregate();
             }
@@ -122,7 +122,7 @@ namespace System.Data
 
         internal override bool HasLocalAggregate()
         {
-            if (_column != null && _column.Computed)
+            if (_column is not null && _column.Computed)
             {
                 return _column.DataExpression!.HasLocalAggregate();
             }
@@ -131,7 +131,7 @@ namespace System.Data
 
         internal override bool HasRemoteAggregate()
         {
-            if (_column != null && _column.Computed)
+            if (_column is not null && _column.Computed)
             {
                 return _column.DataExpression!.HasRemoteAggregate();
             }

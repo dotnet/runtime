@@ -172,7 +172,7 @@ namespace Internal.Cryptography
 
             public override void Dispose(bool disposing)
             {
-                if (disposing && _hmacCtx != null)
+                if (disposing && _hmacCtx is not null)
                 {
                     _hmacCtx.Dispose();
                     _hmacCtx = null!;

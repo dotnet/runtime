@@ -14,7 +14,7 @@ namespace System.Net.Security
 
         protected AuthenticatedStream(Stream innerStream, bool leaveInnerStreamOpen)
         {
-            if (innerStream == null || innerStream == Stream.Null)
+            if (innerStream is null || innerStream == Stream.Null)
             {
                 throw new ArgumentNullException(nameof(innerStream));
             }

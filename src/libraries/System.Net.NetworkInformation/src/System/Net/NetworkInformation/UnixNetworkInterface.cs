@@ -69,7 +69,7 @@ namespace System.Net.NetworkInformation
         {
             if (IPAddressUtil.IsMulticast(ipAddress))
             {
-                if (_multicastAddresses == null)
+                if (_multicastAddresses is null)
                 {
                     // Deferred initialization.
                     _multicastAddresses = new List<IPAddress>();

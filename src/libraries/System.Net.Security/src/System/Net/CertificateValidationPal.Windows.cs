@@ -91,7 +91,7 @@ namespace System.Net
         {
             remoteCertificateCollection = null;
 
-            if (securityContext == null)
+            if (securityContext is null)
             {
                 return null;
             }
@@ -101,14 +101,14 @@ namespace System.Net
             try
             {
                 remoteContext = SSPIWrapper.QueryContextAttributes_SECPKG_ATTR_REMOTE_CERT_CONTEXT(GlobalSSPI.SSPISecureChannel, securityContext);
-                if (remoteContext != null && !remoteContext.IsInvalid)
+                if (remoteContext is not null && !remoteContext.IsInvalid)
                 {
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
                 }
             }
             finally
             {
-                if (remoteContext != null && !remoteContext.IsInvalid)
+                if (remoteContext is not null && !remoteContext.IsInvalid)
                 {
                     if (retrieveCollection)
                     {

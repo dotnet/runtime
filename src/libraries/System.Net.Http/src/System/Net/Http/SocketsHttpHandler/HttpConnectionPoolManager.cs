@@ -145,7 +145,7 @@ namespace System.Net.Http
             if (settings._useProxy)
             {
                 _proxy = settings._proxy ?? HttpClient.DefaultProxy;
-                if (_proxy != null)
+                if (_proxy is not null)
                 {
                     _proxyCredentials = _proxy.Credentials ?? settings._defaultProxyCredentials;
                 }
@@ -158,7 +158,7 @@ namespace System.Net.Http
         /// </summary>
         public void StartMonitoringNetworkChanges()
         {
-            if (_networkChangeCleanup != null)
+            if (_networkChangeCleanup is not null)
             {
                 return;
             }
@@ -179,7 +179,7 @@ namespace System.Net.Http
 
             var cleanup = new NetworkChangeCleanup(networkChangedDelegate);
 
-            if (Interlocked.CompareExchange(ref _networkChangeCleanup, cleanup, null) != null)
+            if (Interlocked.CompareExchange(ref _networkChangeCleanup, cleanup, null) is not null)
             {
                 // We lost a race, another thread already started monitoring.
                 GC.SuppressFinalize(cleanup);
@@ -254,7 +254,7 @@ namespace System.Net.Http
         private HttpConnectionKey GetConnectionKey(HttpRequestMessage request, Uri? proxyUri, bool isProxyConnect)
         {
             Uri? uri = request.RequestUri;
-            Debug.Assert(uri != null);
+            Debug.Assert(uri is not null);
 
             if (isProxyConnect)
             {
@@ -266,7 +266,7 @@ namespace System.Net.Http
             if (HttpUtilities.IsSupportedSecureScheme(uri.Scheme))
             {
                 string? hostHeader = request.Headers.Host;
-                if (hostHeader != null)
+                if (hostHeader is not null)
                 {
                     sslHostName = ParseHostNameFromHeader(hostHeader);
                 }
@@ -277,12 +277,12 @@ namespace System.Net.Http
                 }
             }
 
-            string identity = GetIdentityIfDefaultCredentialsUsed(proxyUri != null ? _settings._defaultCredentialsUsedForProxy : _settings._defaultCredentialsUsedForServer);
+            string identity = GetIdentityIfDefaultCredentialsUsed(proxyUri is not null ? _settings._defaultCredentialsUsedForProxy : _settings._defaultCredentialsUsedForServer);
 
-            if (proxyUri != null)
+            if (proxyUri is not null)
             {
                 Debug.Assert(HttpUtilities.IsSupportedNonSecureScheme(proxyUri.Scheme));
-                if (sslHostName == null)
+                if (sslHostName is null)
                 {
                     if (HttpUtilities.IsNonSecureWebSocketScheme(uri.Scheme))
                     {
@@ -303,7 +303,7 @@ namespace System.Net.Http
                     return new HttpConnectionKey(HttpConnectionKind.SslProxyTunnel, uri.IdnHost, uri.Port, sslHostName, proxyUri, identity);
                 }
             }
-            else if (sslHostName != null)
+            else if (sslHostName is not null)
             {
                 return new HttpConnectionKey(HttpConnectionKind.Https, uri.IdnHost, uri.Port, sslHostName, null, identity);
             }
@@ -322,7 +322,7 @@ namespace System.Net.Http
             {
                 pool = new HttpConnectionPool(this, key.Kind, key.Host, key.Port, key.SslHostName, key.ProxyUri, _maxConnectionsPerServer);
 
-                if (_cleaningTimer == null)
+                if (_cleaningTimer is null)
                 {
                     // There's no cleaning timer, which means we're not adding connections into pools, but we still need
                     // the pool object for this request.  We don't need or want to add the pool to the pools, though,
@@ -359,7 +359,7 @@ namespace System.Net.Http
 
         public ValueTask<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, bool doRequestAuth, CancellationToken cancellationToken)
         {
-            if (_proxy == null)
+            if (_proxy is null)
             {
                 return SendAsyncCore(request, null, async, doRequestAuth, isProxyConnect: false, cancellationToken);
             }
@@ -368,7 +368,7 @@ namespace System.Net.Http
             Uri? proxyUri = null;
             try
             {
-                Debug.Assert(request.RequestUri != null);
+                Debug.Assert(request.RequestUri is not null);
                 if (!_proxy.IsBypassed(request.RequestUri))
                 {
                     if (_proxy is IMultiWebProxy multiWebProxy)
@@ -393,7 +393,7 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, $"Exception from {_proxy.GetType().Name}.GetProxy({request.RequestUri}): {ex}");
             }
 
-            if (proxyUri != null && proxyUri.Scheme != UriScheme.Http)
+            if (proxyUri is not null && proxyUri.Scheme != UriScheme.Http)
             {
                 throw new NotSupportedException(SR.net_http_invalid_proxy_scheme);
             }
@@ -464,7 +464,7 @@ namespace System.Net.Http
         /// <summary>Removes unusable connections from each pool, and removes stale pools entirely.</summary>
         private void RemoveStalePools()
         {
-            Debug.Assert(_cleaningTimer != null);
+            Debug.Assert(_cleaningTimer is not null);
 
             // Iterate through each pool in the set of pools.  For each, ask it to clear out
             // any unusable connections (e.g. those which have expired, those which have been closed, etc.)

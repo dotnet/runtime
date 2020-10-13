@@ -23,7 +23,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, localEP);
 
-            if (localEP == null)
+            if (localEP is null)
             {
                 throw new ArgumentNullException(nameof(localEP));
             }
@@ -37,7 +37,7 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, localaddr);
 
-            if (localaddr == null)
+            if (localaddr is null)
             {
                 throw new ArgumentNullException(nameof(localaddr));
             }
@@ -96,7 +96,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                return _serverSocket != null ? _serverSocket.ExclusiveAddressUse : _exclusiveAddressUse;
+                return _serverSocket is not null ? _serverSocket.ExclusiveAddressUse : _exclusiveAddressUse;
             }
             set
             {
@@ -105,7 +105,7 @@ namespace System.Net.Sockets
                     throw new InvalidOperationException(SR.net_tcplistener_mustbestopped);
                 }
 
-                if (_serverSocket != null)
+                if (_serverSocket is not null)
                 {
                     _serverSocket.ExclusiveAddressUse = value;
                 }
@@ -121,7 +121,7 @@ namespace System.Net.Sockets
                 throw new InvalidOperationException(SR.net_tcplistener_mustbestopped);
             }
 
-            if (_serverSocket != null)
+            if (_serverSocket is not null)
             {
                 SetIPProtectionLevel(allowed); // Set it only for the current socket to preserve existing behavior
             }
@@ -276,7 +276,7 @@ namespace System.Net.Sockets
                 _serverSocket.ExclusiveAddressUse = true;
             }
 
-            if (_allowNatTraversal != null)
+            if (_allowNatTraversal is not null)
             {
                 Debug.Assert(OperatingSystem.IsWindows());
                 SetIPProtectionLevel(_allowNatTraversal.GetValueOrDefault());

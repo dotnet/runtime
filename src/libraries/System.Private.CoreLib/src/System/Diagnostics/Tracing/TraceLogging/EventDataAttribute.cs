@@ -38,7 +38,7 @@ namespace System.Diagnostics.Tracing
         ///
         /// The name of the event will be determined as follows:
         ///
-        /// if (T has an EventData attribute and attribute.Name != null)
+        /// if (T has an EventData attribute and attribute.Name is not null)
         ///     eventName = attribute.Name;
         /// else
         ///     eventName = typeof(T).Name;
@@ -49,7 +49,7 @@ namespace System.Diagnostics.Tracing
         ///
         /// The name of the field will be determined as follows:
         ///
-        /// if (T has an EventData attribute and attribute.Name != null)
+        /// if (T has an EventData attribute and attribute.Name is not null)
         ///     fieldName = attribute.Name;
         /// else
         ///     fieldName = typeof(T).Name;

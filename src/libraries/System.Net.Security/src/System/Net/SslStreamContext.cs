@@ -13,7 +13,7 @@ namespace System.Net
 
         internal SslStreamContext(SslStream sslStream)
         {
-            Debug.Assert(sslStream != null);
+            Debug.Assert(sslStream is not null);
             _sslStream = sslStream!;
         }
 

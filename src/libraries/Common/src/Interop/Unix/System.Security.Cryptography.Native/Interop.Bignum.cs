@@ -56,7 +56,7 @@ internal static partial class Interop
 
         private static unsafe byte[]? ExtractBignum(SafeBignumHandle? bignum, int targetSize)
         {
-            if (bignum == null || bignum.IsInvalid)
+            if (bignum is null || bignum.IsInvalid)
             {
                 return null;
             }

@@ -13,7 +13,7 @@ namespace System.Reflection
 
         private RuntimeLocalVariableInfo() { }
 
-        public override Type LocalType { get { Debug.Assert(_type != null, "type must be set!"); return _type; } }
+        public override Type LocalType { get { Debug.Assert(_type is not null, "type must be set!"); return _type; } }
         public override int LocalIndex => _localIndex;
         public override bool IsPinned => _isPinned;
     }

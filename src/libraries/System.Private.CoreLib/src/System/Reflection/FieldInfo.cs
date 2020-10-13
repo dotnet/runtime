@@ -42,7 +42,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(FieldInfo? left, FieldInfo? right)
         {
-            // Test "right" first to allow branch elimination when inlined for null checks (== null)
+            // Test "right" first to allow branch elimination when inlined for null checks (is null)
             // so it can become a simple test
             if (right is null)
             {

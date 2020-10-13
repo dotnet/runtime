@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 Type serviceType = pair.Key;
                 Type implementationType = pair.Value.ImplementationType;
-                if (implementationType == null || serviceType == implementationType)
+                if (implementationType is null || serviceType == implementationType)
                 {
                     builder.Append(TypeNameHelper.GetTypeDisplayName(serviceType));
                 }

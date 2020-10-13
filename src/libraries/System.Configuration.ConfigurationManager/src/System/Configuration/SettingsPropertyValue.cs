@@ -38,7 +38,7 @@ namespace System.Configuration
                     Deserialized = true;
                 }
 
-                if (_value != null && !Property.PropertyType.IsPrimitive && !(_value is string) && !(_value is DateTime))
+                if (_value is not null && !Property.PropertyType.IsPrimitive && !(_value is string) && !(_value is DateTime))
                 {
                     UsingDefaultValue = false;
                     _changedSinceLastSerialized = true;
@@ -78,7 +78,7 @@ namespace System.Configuration
         private bool IsHostedInAspnet()
         {
             // See System.Web.Hosting.ApplicationManager::PopulateDomainBindings
-            return AppDomain.CurrentDomain.GetData(".appDomain") != null;
+            return AppDomain.CurrentDomain.GetData(".appDomain") is not null;
         }
 
         private object Deserialize()
@@ -86,7 +86,7 @@ namespace System.Configuration
             object value = null;
 
             // Attempt 1: Try creating from SerializedValue
-            if (SerializedValue != null)
+            if (SerializedValue is not null)
             {
                 try
                 {
@@ -124,15 +124,15 @@ namespace System.Configuration
                     }
                 }
 
-                if (value != null && !Property.PropertyType.IsAssignableFrom(value.GetType())) // is it the correct type
+                if (value is not null && !Property.PropertyType.IsAssignableFrom(value.GetType())) // is it the correct type
                     value = null;
             }
 
             // Attempt 2: Try creating from default value
-            if (value == null)
+            if (value is null)
             {
                 UsingDefaultValue = true;
-                if (Property.DefaultValue == null || Property.DefaultValue.ToString() == "[null]")
+                if (Property.DefaultValue is null || Property.DefaultValue.ToString() == "[null]")
                 {
                     if (Property.PropertyType.IsValueType)
                         return TypeUtil.CreateInstance(Property.PropertyType);
@@ -155,12 +155,12 @@ namespace System.Configuration
                     }
                 }
 
-                if (value != null && !Property.PropertyType.IsAssignableFrom(value.GetType())) // is it the correct type
+                if (value is not null && !Property.PropertyType.IsAssignableFrom(value.GetType())) // is it the correct type
                     throw new ArgumentException(SR.Format(SR.Could_not_create_from_default_value_2, Property.Name));
             }
 
             // Attempt 3: Create via the parameterless constructor
-            if (value == null)
+            if (value is null)
             {
                 if (Property.PropertyType == typeof(string))
                 {
@@ -182,11 +182,11 @@ namespace System.Configuration
         private static object GetObjectFromString(Type type, SettingsSerializeAs serializeAs, string serializedValue)
         {
             // Deal with string types
-            if (type == typeof(string) && (serializedValue == null || serializedValue.Length < 1 || serializeAs == SettingsSerializeAs.String))
+            if (type == typeof(string) && (serializedValue is null || serializedValue.Length < 1 || serializeAs == SettingsSerializeAs.String))
                 return serializedValue;
 
             // Return null if there is nothing to convert
-            if (serializedValue == null || serializedValue.Length < 1)
+            if (serializedValue is null || serializedValue.Length < 1)
                 return null;
 
             // Convert based on the serialized type
@@ -205,7 +205,7 @@ namespace System.Configuration
                     return xs.Deserialize(sr);
                 case SettingsSerializeAs.String:
                     TypeConverter converter = TypeDescriptor.GetConverter(type);
-                    if (converter != null && converter.CanConvertTo(typeof(string)) && converter.CanConvertFrom(typeof(string)))
+                    if (converter is not null && converter.CanConvertTo(typeof(string)) && converter.CanConvertFrom(typeof(string)))
                         return converter.ConvertFromInvariantString(serializedValue);
                     throw new ArgumentException(SR.Format(SR.Unable_to_convert_type_from_string, type), nameof(type));
                 default:
@@ -215,7 +215,7 @@ namespace System.Configuration
 
         private object SerializePropertyValue()
         {
-            if (_value == null)
+            if (_value is null)
                 return null;
 
             if (Property.SerializeAs != SettingsSerializeAs.Binary)
@@ -246,7 +246,7 @@ namespace System.Configuration
                 {
                     case SettingsSerializeAs.String:
                         TypeConverter converter = TypeDescriptor.GetConverter(type);
-                        if (converter != null && converter.CanConvertTo(typeof(string)) && converter.CanConvertFrom(typeof(string)))
+                        if (converter is not null && converter.CanConvertTo(typeof(string)) && converter.CanConvertFrom(typeof(string)))
                             return converter.ConvertToInvariantString(propertyValue);
                         throw new ArgumentException(SR.Format(SR.Unable_to_convert_type_to_string, type), nameof(type));
                     case SettingsSerializeAs.Xml:

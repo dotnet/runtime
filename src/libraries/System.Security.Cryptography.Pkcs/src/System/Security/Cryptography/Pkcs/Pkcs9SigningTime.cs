@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static DateTime Decode(byte[]? rawData)
         {
-            if (rawData == null)
+            if (rawData is null)
                 return default(DateTime);
 
             return PkcsHelpers.DecodeUtcTime(rawData);

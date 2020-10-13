@@ -26,7 +26,7 @@ namespace System.Data
             _column = null;  // clear for rebinding (if original binding was valid)
             _relation = null;
 
-            if (table == null)
+            if (table is null)
                 throw ExprException.ExpressionUnbound(ToString()!);
 
             // First find parent table
@@ -34,7 +34,7 @@ namespace System.Data
             DataRelationCollection relations;
             relations = table.ParentRelations;
 
-            if (_relationName == null)
+            if (_relationName is null)
             {
                 // must have one and only one relation
 
@@ -54,12 +54,12 @@ namespace System.Data
             }
             DataTable parentTable = _relation.ParentTable;
 
-            Debug.Assert(_relation != null, "Invalid relation: no parent table.");
-            Debug.Assert(_columnName != null, "All Lookup expressions have columnName set.");
+            Debug.Assert(_relation is not null, "Invalid relation: no parent table.");
+            Debug.Assert(_columnName is not null, "All Lookup expressions have columnName set.");
 
             _column = parentTable.Columns[_columnName];
 
-            if (_column == null)
+            if (_column is null)
                 throw ExprException.UnboundName(_columnName);
 
             // add column to the dependency list
@@ -89,11 +89,11 @@ namespace System.Data
 
         internal override object Eval(DataRow? row, DataRowVersion version)
         {
-            if (_column == null || _relation == null)
+            if (_column is null || _relation is null)
                 throw ExprException.ExpressionUnbound(ToString()!);
 
             DataRow? parent = row!.GetParentRow(_relation, version);
-            if (parent == null)
+            if (parent is null)
                 return DBNull.Value;
 
             return parent[_column, parent.HasVersion(version) ? version : DataRowVersion.Current];

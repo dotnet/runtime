@@ -348,7 +348,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 case IteratorState.NeedCurrent:
                     // If there are no more input nodes, then iteration is complete
-                    if (input == null)
+                    if (input is null)
                         return IteratorResult.NoMoreNodes;
 
                     // Save the input node as the current node
@@ -362,7 +362,7 @@ namespace System.Xml.Xsl.Runtime
                     return IteratorResult.NeedInputNode;
 
                 case IteratorState.HaveCurrentNeedNext:
-                    if (input == null)
+                    if (input is null)
                     {
                         // There are no more input nodes, so enter HaveCurrentNoNext state and return Current
                         _state = IteratorState.HaveCurrentNoNext;

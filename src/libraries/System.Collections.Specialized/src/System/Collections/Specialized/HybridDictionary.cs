@@ -68,11 +68,11 @@ namespace System.Collections.Specialized
                 // it is still nice to do the same thing here since we have recommended
                 // HybridDictionary as replacement for Hashtable.
                 ListDictionary? cachedList = list;
-                if (hashtable != null)
+                if (hashtable is not null)
                 {
                     return hashtable[key];
                 }
-                else if (cachedList != null)
+                else if (cachedList is not null)
                 {
                     return cachedList[key];
                 }
@@ -81,7 +81,7 @@ namespace System.Collections.Specialized
                 //   (2) There is writer which is doing ChangeOver. However in that case
                 //       we should see the change to hashtable as well.
                 //       So it should work just fine.
-                else if (key == null)
+                else if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key));
                 }
@@ -89,16 +89,16 @@ namespace System.Collections.Specialized
             }
             set
             {
-                if (hashtable != null)
+                if (hashtable is not null)
                 {
                     hashtable[key] = value;
                 }
-                else if (list != null)
+                else if (list is not null)
                 {
                     if (list.Count >= CutoverPoint - 1)
                     {
                         ChangeOver();
-                        Debug.Assert(hashtable != null);
+                        Debug.Assert(hashtable is not null);
                         hashtable[key] = value;
                     }
                     else
@@ -118,7 +118,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (list == null)
+                if (list is null)
                 {
                     list = new ListDictionary(caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
                 }
@@ -128,7 +128,7 @@ namespace System.Collections.Specialized
 
         private void ChangeOver()
         {
-            Debug.Assert(list != null);
+            Debug.Assert(list is not null);
             IDictionaryEnumerator en = list.GetEnumerator();
             Hashtable newTable;
             if (caseInsensitive)
@@ -156,11 +156,11 @@ namespace System.Collections.Specialized
             get
             {
                 ListDictionary? cachedList = list;
-                if (hashtable != null)
+                if (hashtable is not null)
                 {
                     return hashtable.Count;
                 }
-                else if (cachedList != null)
+                else if (cachedList is not null)
                 {
                     return cachedList.Count;
                 }
@@ -175,7 +175,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (hashtable != null)
+                if (hashtable is not null)
                 {
                     return hashtable.Keys;
                 }
@@ -222,7 +222,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (hashtable != null)
+                if (hashtable is not null)
                 {
                     return hashtable.Values;
                 }
@@ -235,13 +235,13 @@ namespace System.Collections.Specialized
 
         public void Add(object key, object? value)
         {
-            if (hashtable != null)
+            if (hashtable is not null)
             {
                 hashtable.Add(key, value);
             }
             else
             {
-                if (list == null)
+                if (list is null)
                 {
                     list = new ListDictionary(caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
                     list.Add(key, value);
@@ -249,7 +249,7 @@ namespace System.Collections.Specialized
                 else if (list.Count + 1 >= CutoverPoint)
                 {
                     ChangeOver();
-                    Debug.Assert(hashtable != null);
+                    Debug.Assert(hashtable is not null);
                     hashtable.Add(key, value);
                 }
                 else
@@ -261,14 +261,14 @@ namespace System.Collections.Specialized
 
         public void Clear()
         {
-            if (hashtable != null)
+            if (hashtable is not null)
             {
                 Hashtable cachedHashtable = hashtable;
                 hashtable = null;
                 cachedHashtable.Clear();
             }
 
-            if (list != null)
+            if (list is not null)
             {
                 ListDictionary cachedList = list;
                 list = null;
@@ -279,15 +279,15 @@ namespace System.Collections.Specialized
         public bool Contains(object key)
         {
             ListDictionary? cachedList = list;
-            if (hashtable != null)
+            if (hashtable is not null)
             {
                 return hashtable.Contains(key);
             }
-            else if (cachedList != null)
+            else if (cachedList is not null)
             {
                 return cachedList.Contains(key);
             }
-            else if (key == null)
+            else if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -296,7 +296,7 @@ namespace System.Collections.Specialized
 
         public void CopyTo(Array array, int index)
         {
-            if (hashtable != null)
+            if (hashtable is not null)
             {
                 hashtable.CopyTo(array, index);
             }
@@ -308,11 +308,11 @@ namespace System.Collections.Specialized
 
         public IDictionaryEnumerator GetEnumerator()
         {
-            if (hashtable != null)
+            if (hashtable is not null)
             {
                 return hashtable.GetEnumerator();
             }
-            if (list == null)
+            if (list is null)
             {
                 list = new ListDictionary(caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
             }
@@ -321,11 +321,11 @@ namespace System.Collections.Specialized
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            if (hashtable != null)
+            if (hashtable is not null)
             {
                 return hashtable.GetEnumerator();
             }
-            if (list == null)
+            if (list is null)
             {
                 list = new ListDictionary(caseInsensitive ? StringComparer.OrdinalIgnoreCase : null);
             }
@@ -334,15 +334,15 @@ namespace System.Collections.Specialized
 
         public void Remove(object key)
         {
-            if (hashtable != null)
+            if (hashtable is not null)
             {
                 hashtable.Remove(key);
             }
-            else if (list != null)
+            else if (list is not null)
             {
                 list.Remove(key);
             }
-            else if (key == null)
+            else if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }

@@ -449,7 +449,7 @@ namespace System
             Calendar cal = dtfi.Calendar;
 
             bool resultBuilderIsPooled = false;
-            if (result == null)
+            if (result is null)
             {
                 resultBuilderIsPooled = true;
                 result = StringBuilderCache.Acquire();
@@ -988,7 +988,7 @@ namespace System
 
         internal static string Format(DateTime dateTime, string? format, IFormatProvider? provider, TimeSpan offset)
         {
-            if (format != null && format.Length == 1)
+            if (format is not null && format.Length == 1)
             {
                 // Optimize for these standard formats that are not affected by culture.
                 switch (format[0])
@@ -1059,7 +1059,7 @@ namespace System
 
         private static StringBuilder FormatStringBuilder(DateTime dateTime, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, TimeSpan offset)
         {
-            Debug.Assert(dtfi != null);
+            Debug.Assert(dtfi is not null);
             if (format.Length == 0)
             {
                 bool timeOnlySpecialCase = false;
@@ -1316,7 +1316,7 @@ namespace System
 
         internal static string[] GetAllDateTimes(DateTime dateTime, char format, DateTimeFormatInfo dtfi)
         {
-            Debug.Assert(dtfi != null);
+            Debug.Assert(dtfi is not null);
             string[] allFormats;
             string[] results;
 

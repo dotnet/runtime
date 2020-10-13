@@ -29,7 +29,7 @@ namespace System.Reflection.Internal
                 return null;
             }
 
-            if (handle != null && handle.IsInvalid)
+            if (handle is not null && handle.IsInvalid)
             {
                 // Also allow for FileStream implementations that do return a non-null, but invalid underlying OS handle.
                 // This is how brokered files on WinRT will work. Fall back to slow path.
@@ -47,7 +47,7 @@ namespace System.Reflection.Internal
             }
 
             SafeHandle? handle = GetSafeFileHandle(stream);
-            if (handle == null)
+            if (handle is null)
             {
                 return false;
             }

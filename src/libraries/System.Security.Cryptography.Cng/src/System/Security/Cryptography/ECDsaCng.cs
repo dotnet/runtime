@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ArgumentNullException">if <paramref name="key" /> is null.</exception>
         public ECDsaCng(CngKey key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             if (!IsEccAlgorithmGroup(key.AlgorithmGroup))

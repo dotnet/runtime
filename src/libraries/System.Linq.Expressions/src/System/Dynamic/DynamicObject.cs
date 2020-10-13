@@ -459,11 +459,11 @@ namespace System.Dynamic
                 for (int i = 0; i < args.Length; i++)
                 {
                     ParameterExpression? variable = args[i] as ParameterExpression;
-                    ContractUtils.Requires(variable != null, nameof(args));
+                    ContractUtils.Requires(variable is not null, nameof(args));
 
                     if (variable.IsByRef)
                     {
-                        if (block == null)
+                        if (block is null)
                             block = new ReadOnlyCollectionBuilder<Expression>();
 
                         block.Add(
@@ -481,7 +481,7 @@ namespace System.Dynamic
                     }
                 }
 
-                if (block != null)
+                if (block is not null)
                     return Expression.Block(block);
                 else
                     return AstUtils.Empty;
@@ -497,9 +497,9 @@ namespace System.Dynamic
                 where TBinder : DynamicMetaObjectBinder
             {
                 if (!object.ReferenceEquals(parameters, s_noArgs))
-                    return arg1 != null ? new Expression[] { Constant(binder), arg0, arg1 } : new Expression[] { Constant(binder), arg0 };
+                    return arg1 is not null ? new Expression[] { Constant(binder), arg0, arg1 } : new Expression[] { Constant(binder), arg0 };
                 else
-                    return arg1 != null ? new Expression[] { Constant(binder), arg1 } : new Expression[] { Constant(binder) };
+                    return arg1 is not null ? new Expression[] { Constant(binder), arg1 } : new Expression[] { Constant(binder) };
             }
 
             private static ConstantExpression Constant<TBinder>(TBinder binder)
@@ -575,11 +575,11 @@ namespace System.Dynamic
                 // Need to add a conversion if calling TryConvert
                 if (binder.ReturnType != typeof(object))
                 {
-                    Debug.Assert(binder is ConvertBinder && fallbackInvoke == null);
+                    Debug.Assert(binder is ConvertBinder && fallbackInvoke is null);
 
                     UnaryExpression convert = Expression.Convert(resultMO.Expression, binder.ReturnType);
                     // will always be a cast or unbox
-                    Debug.Assert(convert.Method == null);
+                    Debug.Assert(convert.Method is null);
 
                     // Prepare a good exception message in case the convert will fail
                     string convertFailed = System.Linq.Expressions.Strings.DynamicObjectResultNotAssignable(
@@ -591,7 +591,7 @@ namespace System.Dynamic
 
                     Expression condition;
                     // If the return type can not be assigned null then just check for type assignability otherwise allow null.
-                    if (binder.ReturnType.IsValueType && Nullable.GetUnderlyingType(binder.ReturnType) == null)
+                    if (binder.ReturnType.IsValueType && Nullable.GetUnderlyingType(binder.ReturnType) is null)
                     {
                         condition = Expression.TypeIs(resultMO.Expression, binder.ReturnType);
                     }
@@ -637,7 +637,7 @@ namespace System.Dynamic
                     resultMO = new DynamicMetaObject(checkedConvert, resultMO.Restrictions);
                 }
 
-                if (fallbackInvoke != null)
+                if (fallbackInvoke is not null)
                 {
                     resultMO = fallbackInvoke(this, binder, resultMO);
                 }

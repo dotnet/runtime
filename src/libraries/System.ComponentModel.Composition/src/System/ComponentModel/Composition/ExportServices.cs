@@ -25,7 +25,7 @@ namespace System.ComponentModel.Composition
 
         internal static bool IsDefaultMetadataViewType(Type metadataViewType)
         {
-            if (metadataViewType == null)
+            if (metadataViewType is null)
             {
                 throw new ArgumentNullException(nameof(metadataViewType));
             }
@@ -38,7 +38,7 @@ namespace System.ComponentModel.Composition
 
         internal static bool IsDictionaryConstructorViewType(Type metadataViewType)
         {
-            if (metadataViewType == null)
+            if (metadataViewType is null)
             {
                 throw new ArgumentNullException(nameof(metadataViewType));
             }
@@ -47,13 +47,13 @@ namespace System.ComponentModel.Composition
             return metadataViewType.GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic,
                                                     Type.DefaultBinder,
                                                     new Type[] { typeof(IDictionary<string, object>) },
-                                                    Array.Empty<ParameterModifier>()) != null;
+                                                    Array.Empty<ParameterModifier>()) is not null;
         }
 
         internal static Func<Export, object> CreateStronglyTypedLazyFactory(Type? exportType, Type? metadataViewType)
         {
             MethodInfo genericMethod;
-            if (metadataViewType != null)
+            if (metadataViewType is not null)
             {
                 genericMethod = _createStronglyTypedLazyOfTM.MakeGenericMethod(exportType ?? ExportServices.DefaultExportedValueType, metadataViewType);
             }
@@ -62,7 +62,7 @@ namespace System.ComponentModel.Composition
                 genericMethod = _createStronglyTypedLazyOfT.MakeGenericMethod(exportType ?? ExportServices.DefaultExportedValueType);
             }
 
-            if (genericMethod == null)
+            if (genericMethod is null)
             {
                 throw new ArgumentNullException(nameof(genericMethod));
             }
@@ -75,7 +75,7 @@ namespace System.ComponentModel.Composition
             MethodInfo genericMethod = _createSemiStronglyTypedLazy.MakeGenericMethod(
                 exportType ?? ExportServices.DefaultExportedValueType,
                 metadataViewType ?? ExportServices.DefaultMetadataViewType);
-            if (genericMethod == null)
+            if (genericMethod is null)
             {
                 throw new ArgumentNullException(nameof(genericMethod));
             }
@@ -156,7 +156,7 @@ namespace System.ComponentModel.Composition
 
         internal static ExportCardinalityCheckResult CheckCardinality<T>(ImportDefinition definition, IEnumerable<T>? enumerable)
         {
-            EnumerableCardinality actualCardinality = (enumerable != null) ? enumerable.GetCardinality() : EnumerableCardinality.Zero;
+            EnumerableCardinality actualCardinality = (enumerable is not null) ? enumerable.GetCardinality() : EnumerableCardinality.Zero;
 
             return MatchCardinality(actualCardinality, definition.Cardinality);
         }

@@ -42,7 +42,7 @@ namespace System.Data.ProviderBase
                     // or have a disabled pool entry.
                     poolGroup = GetConnectionPoolGroup(owningConnection)!; // previous entry have been disabled
 
-                    if (retry != null)
+                    if (retry is not null)
                     {
                         Task<DbConnectionInternal> newTask;
                         CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
@@ -53,7 +53,7 @@ namespace System.Data.ProviderBase
                             for (idx = 0; idx < s_pendingOpenNonPooled.Length; idx++)
                             {
                                 Task task = s_pendingOpenNonPooled[idx];
-                                if (task == null)
+                                if (task is null)
                                 {
                                     s_pendingOpenNonPooled[idx] = GetCompletedTask();
                                     break;
@@ -80,7 +80,7 @@ namespace System.Data.ProviderBase
                             newTask = s_pendingOpenNonPooled[idx].ContinueWith((_) =>
                             {
                                 var newConnection = CreateNonPooledConnection(owningConnection, poolGroup, userOptions);
-                                if ((oldConnection != null) && (oldConnection.State == ConnectionState.Open))
+                                if ((oldConnection is not null) && (oldConnection.State == ConnectionState.Open))
                                 {
                                     oldConnection.PrepareForReplaceConnection();
                                     oldConnection.Dispose();
@@ -145,7 +145,7 @@ namespace System.Data.ProviderBase
                     }
                     //}
 
-                    if (connection == null)
+                    if (connection is null)
                     {
                         // connection creation failed on semaphore waiting or if max pool reached
                         if (connectionPool.IsRunning)
@@ -163,9 +163,9 @@ namespace System.Data.ProviderBase
                         }
                     }
                 }
-            } while (connection == null && retriesLeft-- > 0);
+            } while (connection is null && retriesLeft-- > 0);
 
-            if (connection == null)
+            if (connection is null)
             {
                 // exhausted all retries or timed out - give up
                 throw ADP.PooledOpenTimeout();

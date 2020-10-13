@@ -138,7 +138,7 @@ namespace System.Reflection.Emit
                 return;
             }
 
-            if (cattrs != null)
+            if (cattrs is not null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
                 cattrs.CopyTo(new_array, 0);

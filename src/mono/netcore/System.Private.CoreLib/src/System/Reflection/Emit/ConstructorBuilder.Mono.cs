@@ -67,10 +67,10 @@ namespace System.Reflection.Emit
         {
             attrs = attributes | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName;
             call_conv = callingConvention;
-            if (parameterTypes != null)
+            if (parameterTypes is not null)
             {
                 for (int i = 0; i < parameterTypes.Length; ++i)
-                    if (parameterTypes[i] == null)
+                    if (parameterTypes[i] is null)
                         throw new ArgumentException("Elements of the parameterTypes array cannot be null", nameof(parameterTypes));
 
                 this.parameters = new Type[parameterTypes.Length];
@@ -128,7 +128,7 @@ namespace System.Reflection.Emit
 
         internal override ParameterInfo[] GetParametersInternal()
         {
-            if (parameters == null)
+            if (parameters is null)
                 return Array.Empty<ParameterInfo>();
 
             ParameterInfo[] retval = new ParameterInfo[parameters.Length];
@@ -140,7 +140,7 @@ namespace System.Reflection.Emit
 
         internal override int GetParametersCount()
         {
-            if (parameters == null)
+            if (parameters is null)
                 return 0;
 
             return parameters.Length;
@@ -258,7 +258,7 @@ namespace System.Reflection.Emit
         {
             if (finished)
                 throw new InvalidOperationException();
-            if (ilgen != null)
+            if (ilgen is not null)
                 return ilgen;
             if (!(((attrs & (MethodAttributes.Abstract | MethodAttributes.PinvokeImpl)) == 0) && ((iattrs & (MethodImplAttributes.Runtime | MethodImplAttributes.InternalCall)) == 0)))
                 throw new InvalidOperationException();
@@ -268,7 +268,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
@@ -281,7 +281,7 @@ namespace System.Reflection.Emit
                 SetImplementationFlags((MethodImplAttributes)impla);
                 return;
             }
-            if (cattrs != null)
+            if (cattrs is not null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
                 cattrs.CopyTo(new_array, 0);
@@ -298,9 +298,9 @@ namespace System.Reflection.Emit
         [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
+            if (con is null)
                 throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
+            if (binaryAttribute is null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
 
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
@@ -336,26 +336,26 @@ namespace System.Reflection.Emit
         {
             if (((attrs & (MethodAttributes.Abstract | MethodAttributes.PinvokeImpl)) == 0) && ((iattrs & (MethodImplAttributes.Runtime | MethodImplAttributes.InternalCall)) == 0))
             {
-                if ((ilgen == null) || (ilgen.ILOffset == 0))
+                if ((ilgen is null) || (ilgen.ILOffset == 0))
                     throw new InvalidOperationException("Method '" + Name + "' does not have a method body.");
             }
             if (IsStatic &&
                 ((call_conv & CallingConventions.VarArgs) != 0 ||
                  (call_conv & CallingConventions.HasThis) != 0))
                 throw new TypeLoadException();
-            if (ilgen != null)
+            if (ilgen is not null)
                 ilgen.label_fixup(this);
         }
 
         internal void ResolveUserTypes()
         {
             TypeBuilder.ResolveUserTypes(parameters);
-            if (paramModReq != null)
+            if (paramModReq is not null)
             {
                 foreach (Type[] types in paramModReq)
                     TypeBuilder.ResolveUserTypes(types);
             }
-            if (paramModOpt != null)
+            if (paramModOpt is not null)
             {
                 foreach (Type[] types in paramModOpt)
                     TypeBuilder.ResolveUserTypes(types);
@@ -364,7 +364,7 @@ namespace System.Reflection.Emit
         /*
                 internal void GenerateDebugInfo (ISymbolWriter symbolWriter)
                 {
-                    if (ilgen != null && ilgen.HasDebugInfo) {
+                    if (ilgen is not null && ilgen.HasDebugInfo) {
                         SymbolToken token = new SymbolToken (GetToken().Token);
                         symbolWriter.OpenMethod (token);
                         symbolWriter.SetSymAttribute (token, "__name", System.Text.Encoding.UTF8.GetBytes (Name));

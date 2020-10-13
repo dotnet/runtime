@@ -48,17 +48,17 @@ namespace System.Reflection.PortableExecutable
             Func<IEnumerable<Blob>, BlobContentId>? deterministicIdProvider = null)
             : base(header, deterministicIdProvider)
         {
-            if (header == null)
+            if (header is null)
             {
                 Throw.ArgumentNull(nameof(header));
             }
 
-            if (metadataRootBuilder == null)
+            if (metadataRootBuilder is null)
             {
                 Throw.ArgumentNull(nameof(metadataRootBuilder));
             }
 
-            if (ilStream == null)
+            if (ilStream is null)
             {
                 Throw.ArgumentNull(nameof(ilStream));
             }
@@ -98,7 +98,7 @@ namespace System.Reflection.PortableExecutable
             var builder = ImmutableArray.CreateBuilder<Section>(3);
             builder.Add(new Section(TextSectionName, SectionCharacteristics.MemRead | SectionCharacteristics.MemExecute | SectionCharacteristics.ContainsCode));
 
-            if (_nativeResourcesOpt != null)
+            if (_nativeResourcesOpt is not null)
             {
                 builder.Add(new Section(ResourceSectionName, SectionCharacteristics.MemRead | SectionCharacteristics.ContainsInitializedData));
             }
@@ -143,7 +143,7 @@ namespace System.Reflection.PortableExecutable
 
             DirectoryEntry debugDirectoryEntry;
             BlobBuilder? debugTableBuilderOpt;
-            if (_debugDirectoryBuilderOpt != null)
+            if (_debugDirectoryBuilderOpt is not null)
             {
                 int debugDirectoryOffset = textSection.ComputeOffsetToDebugDirectory();
                 debugTableBuilderOpt = new BlobBuilder(_debugDirectoryBuilderOpt.TableSize);
@@ -186,7 +186,7 @@ namespace System.Reflection.PortableExecutable
 
         private BlobBuilder SerializeResourceSection(SectionLocation location)
         {
-            Debug.Assert(_nativeResourcesOpt != null);
+            Debug.Assert(_nativeResourcesOpt is not null);
 
             var sectionBuilder = new BlobBuilder();
             _nativeResourcesOpt.Serialize(sectionBuilder, location);
@@ -229,12 +229,12 @@ namespace System.Reflection.PortableExecutable
 
         public void Sign(BlobBuilder peImage, Func<IEnumerable<Blob>, byte[]> signatureProvider)
         {
-            if (peImage == null)
+            if (peImage is null)
             {
                 Throw.ArgumentNull(nameof(peImage));
             }
 
-            if (signatureProvider == null)
+            if (signatureProvider is null)
             {
                 Throw.ArgumentNull(nameof(signatureProvider));
             }

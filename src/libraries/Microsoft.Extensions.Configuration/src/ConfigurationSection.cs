@@ -23,12 +23,12 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="path">The path to this section.</param>
         public ConfigurationSection(IConfigurationRoot root, string path)
         {
-            if (root == null)
+            if (root is null)
             {
                 throw new ArgumentNullException(nameof(root));
             }
 
-            if (path == null)
+            if (path is null)
             {
                 throw new ArgumentNullException(nameof(path));
             }
@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Configuration
         {
             get
             {
-                if (_key == null)
+                if (_key is null)
                 {
                     // Key is calculated lazily as last portion of Path
                     _key = ConfigurationPath.GetSectionKey(_path);

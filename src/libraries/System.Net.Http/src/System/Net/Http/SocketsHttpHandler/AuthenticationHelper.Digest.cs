@@ -109,7 +109,7 @@ namespace System.Net.Http
             // Add nonce
             sb.AppendKeyValue(Nonce, nonce);
 
-            Debug.Assert(request.RequestUri != null);
+            Debug.Assert(request.RequestUri is not null);
             // Add uri
             sb.AppendKeyValue(Uri, request.RequestUri.PathAndQuery);
 
@@ -151,7 +151,7 @@ namespace System.Net.Http
             string a2 = request.Method.Method + ":" + request.RequestUri.PathAndQuery;
             if (qop == AuthInt)
             {
-                string content = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
+                string content = request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync().ConfigureAwait(false);
                 a2 = a2 + ":" + ComputeHash(content, algorithm);
             }
 
@@ -173,10 +173,10 @@ namespace System.Net.Http
             }
 
             // Add response
-            sb.AppendKeyValue(Response, response, includeComma: opaque != null || isAlgorithmSpecified || isQopSpecified);
+            sb.AppendKeyValue(Response, response, includeComma: opaque is not null || isAlgorithmSpecified || isQopSpecified);
 
             // Add opaque
-            if (opaque != null)
+            if (opaque is not null)
             {
                 sb.AppendKeyValue(Opaque, opaque, includeComma: isAlgorithmSpecified || isQopSpecified);
             }
@@ -404,7 +404,7 @@ namespace System.Net.Http
                     string? value = GetNextValue(challenge, parsedIndex, MustValueBeQuoted(key), out parsedIndex);
                     // Ensure value is valid.
                     if (string.IsNullOrEmpty(value)
-                        && (value == null || !key.Equals(Opaque, StringComparison.OrdinalIgnoreCase)))
+                        && (value is null || !key.Equals(Opaque, StringComparison.OrdinalIgnoreCase)))
                         break;
 
                     // Add the key-value pair to Parameters.

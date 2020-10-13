@@ -19,7 +19,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         public ImportingMember(ContractBasedImportDefinition definition, ReflectionWritableMember member, ImportType importType)
             : base(definition, importType)
         {
-            if (member == null)
+            if (member is null)
             {
                 throw new ArgumentNullException(nameof(member));
             }
@@ -107,14 +107,14 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private void SetCollectionMemberValue(object? instance, IEnumerable values)
         {
-            if (values == null)
+            if (values is null)
             {
                 throw new ArgumentNullException(nameof(values));
             }
 
             ICollection<object>? collection = null;
             Type? itemType = CollectionServices.GetCollectionElementType(ImportType.ActualType);
-            if (itemType != null)
+            if (itemType is not null)
             {
                 collection = GetNormalizedCollection(itemType, instance);
             }
@@ -125,7 +125,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private ICollection<object> GetNormalizedCollection(Type itemType, object? instance)
         {
-            if (itemType == null)
+            if (itemType is null)
             {
                 throw new ArgumentNullException(nameof(itemType));
             }
@@ -149,12 +149,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 }
             }
 
-            if (collectionObject == null)
+            if (collectionObject is null)
             {
                 ConstructorInfo? constructor = ImportType.ActualType.GetConstructor(Type.EmptyTypes);
 
                 // If it contains a default public constructor create a new instance.
-                if (constructor != null)
+                if (constructor is not null)
                 {
                     try
                     {
@@ -175,7 +175,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 }
             }
 
-            if (collectionObject == null)
+            if (collectionObject is null)
             {
                 throw new ComposablePartException(
                     SR.Format(
@@ -193,7 +193,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             try
             {
-                if (collection != null)
+                if (collection is not null)
                 {
                     isReadOnly = collection.IsReadOnly;
                 }
@@ -221,12 +221,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private void PopulateCollection(ICollection<object?> collection, IEnumerable values)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
 
-            if (values == null)
+            if (values is null)
             {
                 throw new ArgumentNullException(nameof(values));
             }

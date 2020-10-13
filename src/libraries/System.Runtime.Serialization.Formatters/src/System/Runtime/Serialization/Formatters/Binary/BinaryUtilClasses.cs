@@ -407,7 +407,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 case ValueFixupEnum.Header:
                     throw new PlatformNotSupportedException();
                 case ValueFixupEnum.Member:
-                    Debug.Assert(_objectInfo!._objectManager != null);
+                    Debug.Assert(_objectInfo!._objectManager is not null);
                     if (_objectInfo._isSi)
                     {
                         _objectInfo._objectManager.RecordDelayedFixup(parent._objectId, _memberName!, record._objectId);
@@ -415,7 +415,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                     else
                     {
                         MemberInfo? memberInfo = _objectInfo.GetMemberInfo(_memberName);
-                        if (memberInfo != null)
+                        if (memberInfo is not null)
                         {
                             _objectInfo._objectManager.RecordFixup(parent._objectId, memberInfo, record._objectId);
                         }
@@ -475,7 +475,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
             {
                 if (!_sealedStatusChecked)
                 {
-                    Debug.Assert(_type != null);
+                    Debug.Assert(_type is not null);
                     _isSealed = _type.IsSealed;
                     _sealedStatusChecked = true;
                 }

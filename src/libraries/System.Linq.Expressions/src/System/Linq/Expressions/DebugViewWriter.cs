@@ -79,7 +79,7 @@ namespace System.Linq.Expressions
 
         private static int GetId<T>(T e, ref Dictionary<T, int>? ids) where T : notnull
         {
-            if (ids == null)
+            if (ids is null)
             {
                 ids = new Dictionary<T, int>();
                 ids.Add(e, 1);
@@ -121,8 +121,8 @@ namespace System.Linq.Expressions
         /// </summary>
         internal static void WriteTo(Expression node, TextWriter writer)
         {
-            Debug.Assert(node != null);
-            Debug.Assert(writer != null);
+            Debug.Assert(node is not null);
+            Debug.Assert(writer is not null);
 
             new DebugViewWriter(writer).WriteTo(node);
         }
@@ -143,7 +143,7 @@ namespace System.Linq.Expressions
             // Output all lambda expression definitions.
             // in the order of their appearances in the tree.
             //
-            while (_lambdas != null && _lambdas.Count > 0)
+            while (_lambdas is not null && _lambdas.Count > 0)
             {
                 WriteLine();
                 WriteLine();
@@ -255,7 +255,7 @@ namespace System.Linq.Expressions
         {
             Out(open.ToString());
 
-            if (expressions != null)
+            if (expressions is not null)
             {
                 Indent();
                 bool isFirst = true;
@@ -409,7 +409,7 @@ namespace System.Linq.Expressions
                 )
             );
 
-            if (_lambdas == null)
+            if (_lambdas is null)
             {
                 _lambdas = new Queue<LambdaExpression>();
             }
@@ -426,7 +426,7 @@ namespace System.Linq.Expressions
         private static bool IsSimpleExpression(Expression node)
         {
             var binary = node as BinaryExpression;
-            if (binary != null)
+            if (binary is not null)
             {
                 return !(binary.Left is BinaryExpression || binary.Right is BinaryExpression);
             }
@@ -465,7 +465,7 @@ namespace System.Linq.Expressions
         {
             object? value = node.Value;
 
-            if (value == null)
+            if (value is null)
             {
                 Out("null");
             }
@@ -491,7 +491,7 @@ namespace System.Linq.Expressions
             else
             {
                 string? suffix = GetConstantValueSuffix(node.Type);
-                if (suffix != null)
+                if (suffix is not null)
                 {
                     Out(value.ToString()!);
                     Out(suffix);
@@ -547,7 +547,7 @@ namespace System.Linq.Expressions
         // Prints ".instanceField" or "declaringType.staticField"
         private void OutMember(Expression node, Expression? instance, MemberInfo member)
         {
-            if (instance != null)
+            if (instance is not null)
             {
                 ParenthesizedVisit(node, instance);
                 Out("." + member.Name);
@@ -575,8 +575,8 @@ namespace System.Linq.Expressions
 
         private static bool NeedsParentheses(Expression parent, Expression? child)
         {
-            Debug.Assert(parent != null);
-            if (child == null)
+            Debug.Assert(parent is not null);
+            if (child is null)
             {
                 return false;
             }
@@ -631,7 +631,7 @@ namespace System.Linq.Expressions
                     case ExpressionType.Divide:
                     case ExpressionType.Modulo:
                         BinaryExpression? binary = parent as BinaryExpression;
-                        Debug.Assert(binary != null);
+                        Debug.Assert(binary is not null);
                         // Need to have parenthesis for the right operand.
                         return child == binary.Right;
                 }
@@ -640,7 +640,7 @@ namespace System.Linq.Expressions
 
             // Special case: negate of a constant needs parentheses, to
             // disambiguate it from a negative constant.
-            if (child != null && child.NodeType == ExpressionType.Constant &&
+            if (child is not null && child.NodeType == ExpressionType.Constant &&
                 (parent.NodeType == ExpressionType.Negate || parent.NodeType == ExpressionType.NegateChecked))
             {
                 return true;
@@ -788,11 +788,11 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitMethodCall(MethodCallExpression node)
         {
             Out(".Call ");
-            if (node.Object != null)
+            if (node.Object is not null)
             {
                 ParenthesizedVisit(node, node.Object);
             }
-            else if (node.Method.DeclaringType != null)
+            else if (node.Method.DeclaringType is not null)
             {
                 Out(node.Method.DeclaringType.ToString());
             }
@@ -930,7 +930,7 @@ namespace System.Linq.Expressions
                     Out("'");
                     break;
                 case ExpressionType.Throw:
-                    if (node.Operand == null)
+                    if (node.Operand is null)
                     {
                         Out(".Rethrow");
                     }
@@ -1035,7 +1035,7 @@ namespace System.Linq.Expressions
         protected internal override Expression VisitLoop(LoopExpression node)
         {
             Out(".Loop", Flow.Space);
-            if (node.ContinueLabel != null)
+            if (node.ContinueLabel is not null)
             {
                 DumpLabel(node.ContinueLabel);
             }
@@ -1044,7 +1044,7 @@ namespace System.Linq.Expressions
             Visit(node.Body);
             Dedent();
             Out(Flow.NewLine, "}");
-            if (node.BreakLabel != null)
+            if (node.BreakLabel is not null)
             {
                 Out("", Flow.NewLine);
                 DumpLabel(node.BreakLabel);
@@ -1074,7 +1074,7 @@ namespace System.Linq.Expressions
             Visit(node.SwitchValue);
             Out(") {", Flow.NewLine);
             Visit(node.Cases, VisitSwitchCase);
-            if (node.DefaultBody != null)
+            if (node.DefaultBody is not null)
             {
                 Out(".Default:", Flow.NewLine);
                 Indent(); Indent();
@@ -1089,12 +1089,12 @@ namespace System.Linq.Expressions
         protected override CatchBlock VisitCatchBlock(CatchBlock node)
         {
             Out(Flow.NewLine, "} .Catch (" + node.Test.ToString());
-            if (node.Variable != null)
+            if (node.Variable is not null)
             {
                 Out(Flow.Space, "");
                 VisitParameter(node.Variable);
             }
-            if (node.Filter != null)
+            if (node.Filter is not null)
             {
                 Out(") .If (", Flow.Break);
                 Visit(node.Filter);
@@ -1113,14 +1113,14 @@ namespace System.Linq.Expressions
             Visit(node.Body);
             Dedent();
             Visit(node.Handlers, VisitCatchBlock);
-            if (node.Finally != null)
+            if (node.Finally is not null)
             {
                 Out(Flow.NewLine, "} .Finally {", Flow.NewLine);
                 Indent();
                 Visit(node.Finally);
                 Dedent();
             }
-            else if (node.Fault != null)
+            else if (node.Fault is not null)
             {
                 Out(Flow.NewLine, "} .Fault {", Flow.NewLine);
                 Indent();
@@ -1134,7 +1134,7 @@ namespace System.Linq.Expressions
 
         protected internal override Expression VisitIndex(IndexExpression node)
         {
-            if (node.Indexer != null)
+            if (node.Indexer is not null)
             {
                 OutMember(node, node.Object, node.Indexer);
             }

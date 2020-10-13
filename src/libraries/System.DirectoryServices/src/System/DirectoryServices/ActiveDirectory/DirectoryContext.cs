@@ -47,11 +47,11 @@ namespace System.DirectoryServices.ActiveDirectory
             _name = name;
             _contextType = contextType;
             _credential = new NetworkCredential(username, password);
-            if (username == null)
+            if (username is null)
             {
                 usernameIsNull = true;
             }
-            if (password == null)
+            if (password is null)
             {
                 passwordIsNull = true;
             }
@@ -62,7 +62,7 @@ namespace System.DirectoryServices.ActiveDirectory
             _name = name;
             _contextType = contextType;
 
-            if (context != null)
+            if (context is not null)
             {
                 _credential = context.Credential;
                 this.usernameIsNull = context.usernameIsNull;
@@ -118,7 +118,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new InvalidEnumArgumentException(nameof(contextType), (int)contextType, typeof(DirectoryContextType));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -152,7 +152,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new InvalidEnumArgumentException(nameof(contextType), (int)contextType, typeof(DirectoryContextType));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -189,11 +189,11 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             bool contextIsValid = false;
 
-            if ((contextType == DirectoryContextType.Domain) || ((contextType == DirectoryContextType.Forest) && (context.Name == null)))
+            if ((contextType == DirectoryContextType.Domain) || ((contextType == DirectoryContextType.Forest) && (context.Name is null)))
             {
                 string tmpTarget = context.Name;
 
-                if (tmpTarget == null)
+                if (tmpTarget is null)
                 {
                     // GetLoggedOnDomain returns the dns name of the logged on user's domain
                     context.serverName = GetLoggedOnDomain();
@@ -222,8 +222,8 @@ namespace System.DirectoryServices.ActiveDirectory
                         }
                         else
                         {
-                            Debug.Assert(domainControllerInfo != null);
-                            Debug.Assert(domainControllerInfo.DomainName != null);
+                            Debug.Assert(domainControllerInfo is not null);
+                            Debug.Assert(domainControllerInfo.DomainName is not null);
                             context.serverName = domainControllerInfo.DomainName;
                             contextIsValid = true;
                         }
@@ -239,8 +239,8 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        Debug.Assert(domainControllerInfo != null);
-                        Debug.Assert(domainControllerInfo.DomainName != null);
+                        Debug.Assert(domainControllerInfo is not null);
+                        Debug.Assert(domainControllerInfo.DomainName is not null);
                         context.serverName = domainControllerInfo.DomainName;
                         contextIsValid = true;
                     }
@@ -248,7 +248,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             else if (contextType == DirectoryContextType.Forest)
             {
-                Debug.Assert(context.Name != null);
+                Debug.Assert(context.Name is not null);
 
                 // check for forest
                 int errorCode = 0;
@@ -271,8 +271,8 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     else
                     {
-                        Debug.Assert(domainControllerInfo != null);
-                        Debug.Assert(domainControllerInfo.DnsForestName != null);
+                        Debug.Assert(domainControllerInfo is not null);
+                        Debug.Assert(domainControllerInfo.DnsForestName is not null);
                         context.serverName = domainControllerInfo.DnsForestName;
                         contextIsValid = true;
                     }
@@ -288,15 +288,15 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    Debug.Assert(domainControllerInfo != null);
-                    Debug.Assert(domainControllerInfo.DnsForestName != null);
+                    Debug.Assert(domainControllerInfo is not null);
+                    Debug.Assert(domainControllerInfo.DnsForestName is not null);
                     context.serverName = domainControllerInfo.DnsForestName;
                     contextIsValid = true;
                 }
             }
             else if (contextType == DirectoryContextType.ApplicationPartition)
             {
-                Debug.Assert(context.Name != null);
+                Debug.Assert(context.Name is not null);
 
                 // check for application partition
                 int errorCode = 0;
@@ -453,7 +453,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             bool result = false;
 
-            Debug.Assert(_name != null);
+            Debug.Assert(_name is not null);
             DomainControllerInfo domainControllerInfo = Locator.GetDomainControllerInfo(null, _name, null, (long)(PrivateLocatorFlags.DirectoryServicesRequired | PrivateLocatorFlags.ReturnDNSName));
 
             DomainControllerInfo currentDomainControllerInfo;
@@ -463,8 +463,8 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (errorCode == 0)
             {
-                Debug.Assert(domainControllerInfo.DnsForestName != null);
-                Debug.Assert(currentDomainControllerInfo.DnsForestName != null);
+                Debug.Assert(domainControllerInfo.DnsForestName is not null);
+                Debug.Assert(currentDomainControllerInfo.DnsForestName is not null);
 
                 result = (Utils.Compare(domainControllerInfo.DnsForestName, currentDomainControllerInfo.DnsForestName) == 0);
             }
@@ -486,7 +486,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal string GetServerName()
         {
-            if (serverName == null)
+            if (serverName is null)
             {
                 switch (_contextType)
                 {
@@ -511,7 +511,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             // if the forest name was explicitly specified and the forest is the same as the current forest
                             // we want to find a DC in the current domain
                             //
-                            if ((_name == null) || ((_contextType == DirectoryContextType.Forest) && (isCurrentForest())))
+                            if ((_name is null) || ((_contextType == DirectoryContextType.Forest) && (isCurrentForest())))
                             {
                                 serverName = GetLoggedOnDomain();
                             }
@@ -524,7 +524,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     case DirectoryContextType.ApplicationPartition:
                         {
                             // if this is an appNC the target should not be null
-                            Debug.Assert(_name != null);
+                            Debug.Assert(_name is not null);
 
                             serverName = _name;
                             break;
@@ -532,7 +532,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     case DirectoryContextType.DirectoryServer:
                         {
                             // this should not happen (We should have checks for this earlier itself)
-                            Debug.Assert(_name != null);
+                            Debug.Assert(_name is not null);
                             serverName = _name;
                             break;
                         }
@@ -585,7 +585,7 @@ namespace System.DirectoryServices.ActiveDirectory
                         //
                         // callerName is of the form domain\username
                         //
-                        Debug.Assert((responseBuffer.callerName != null), "NativeMethods.LsaCallAuthenticationPackage returned null callerName.");
+                        Debug.Assert((responseBuffer.callerName is not null), "NativeMethods.LsaCallAuthenticationPackage returned null callerName.");
                         int index = responseBuffer.callerName.IndexOf('\\');
                         Debug.Assert((index != -1), "NativeMethods.LsaCallAuthenticationPackage returned callerName not in domain\\username format.");
                         domainName = responseBuffer.callerName.Substring(0, index);
@@ -635,7 +635,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // domainName will be null and we fall back to the machine's domain
             domainName = GetDnsDomainName(domainName);
 
-            if (domainName == null)
+            if (domainName is null)
             {
                 //
                 // we should never get to this point here since we should have already verified that the context is valid
@@ -674,8 +674,8 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw ExceptionHelper.GetExceptionFromErrorCode(errorCode);
             }
 
-            Debug.Assert(domainControllerInfo != null);
-            Debug.Assert(domainControllerInfo.DomainName != null);
+            Debug.Assert(domainControllerInfo is not null);
+            Debug.Assert(domainControllerInfo.DomainName is not null);
 
             return domainControllerInfo.DomainName;
         }

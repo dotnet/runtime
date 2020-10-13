@@ -70,7 +70,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <returns>Array of individual key members</returns>
         private static string[] GetKeyMembers(string? key)
         {
-            if (key == null)
+            if (key is null)
             {
                 return Array.Empty<string>();
             }

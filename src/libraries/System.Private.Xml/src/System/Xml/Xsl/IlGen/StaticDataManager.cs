@@ -74,7 +74,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public int DeclareName(string name)
         {
-            if (_uniqueNames == null)
+            if (_uniqueNames is null)
                 _uniqueNames = new UniqueList<string>();
 
             return _uniqueNames.Add(name);
@@ -85,7 +85,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public string[]? Names
         {
-            get { return (_uniqueNames != null) ? _uniqueNames.ToArray() : null; }
+            get { return (_uniqueNames is not null) ? _uniqueNames.ToArray() : null; }
         }
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public int DeclareNameFilter(string locName, string nsUri)
         {
-            if (_uniqueFilters == null)
+            if (_uniqueFilters is null)
                 _uniqueFilters = new UniqueList<Int32Pair>();
 
             return _uniqueFilters.Add(new Int32Pair(DeclareName(locName), DeclareName(nsUri)));
@@ -106,7 +106,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public Int32Pair[]? NameFilters
         {
-            get { return (_uniqueFilters != null) ? _uniqueFilters.ToArray() : null; }
+            get { return (_uniqueFilters is not null) ? _uniqueFilters.ToArray() : null; }
         }
 
         /// <summary>
@@ -123,14 +123,14 @@ namespace System.Xml.Xsl.IlGen
             {
                 // Each entry in mappings array must be a constant NamespaceDeclaration
                 QilBinary ndNmspDecl = (QilBinary)list[i];
-                Debug.Assert(ndNmspDecl != null);
+                Debug.Assert(ndNmspDecl is not null);
                 Debug.Assert(ndNmspDecl.Left is QilLiteral && ndNmspDecl.Right is QilLiteral);
 
                 prefixMappings[i] = new StringPair((string)(QilLiteral)ndNmspDecl.Left, (string)(QilLiteral)ndNmspDecl.Right);
             }
 
             // Add mappings to list and return index
-            if (_prefixMappingsList == null)
+            if (_prefixMappingsList is null)
                 _prefixMappingsList = new List<StringPair[]>();
 
             _prefixMappingsList.Add(prefixMappings);
@@ -142,7 +142,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public StringPair[][]? PrefixMappingsList
         {
-            get { return (_prefixMappingsList != null) ? _prefixMappingsList.ToArray() : null; }
+            get { return (_prefixMappingsList is not null) ? _prefixMappingsList.ToArray() : null; }
         }
 
         /// <summary>
@@ -152,7 +152,7 @@ namespace System.Xml.Xsl.IlGen
         {
             int idx;
 
-            if (_globalNames == null)
+            if (_globalNames is null)
                 _globalNames = new List<string>();
 
             idx = _globalNames.Count;
@@ -165,7 +165,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public string[]? GlobalNames
         {
-            get { return (_globalNames != null) ? _globalNames.ToArray() : null; }
+            get { return (_globalNames is not null) ? _globalNames.ToArray() : null; }
         }
 
         /// <summary>
@@ -174,7 +174,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public int DeclareEarlyBound(string namespaceUri, Type ebType)
         {
-            if (_earlyInfo == null)
+            if (_earlyInfo is null)
                 _earlyInfo = new UniqueList<EarlyBoundInfo>();
 
             return _earlyInfo.Add(new EarlyBoundInfo(namespaceUri, ebType));
@@ -187,7 +187,7 @@ namespace System.Xml.Xsl.IlGen
         {
             get
             {
-                if (_earlyInfo != null)
+                if (_earlyInfo is not null)
                     return _earlyInfo.ToArray();
 
                 return null;
@@ -200,7 +200,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public int DeclareXmlType(XmlQueryType type)
         {
-            if (_uniqueXmlTypes == null)
+            if (_uniqueXmlTypes is null)
                 _uniqueXmlTypes = new UniqueList<XmlQueryType>();
 
             XmlQueryTypeFactory.CheckSerializability(type);
@@ -212,7 +212,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public XmlQueryType[]? XmlTypes
         {
-            get { return (_uniqueXmlTypes != null) ? _uniqueXmlTypes.ToArray() : null; }
+            get { return (_uniqueXmlTypes is not null) ? _uniqueXmlTypes.ToArray() : null; }
         }
 
         /// <summary>
@@ -221,7 +221,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public int DeclareCollation(string collation)
         {
-            if (_uniqueCollations == null)
+            if (_uniqueCollations is null)
                 _uniqueCollations = new UniqueList<XmlCollation>();
 
             return _uniqueCollations.Add(XmlCollation.Create(collation));
@@ -232,7 +232,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public XmlCollation[]? Collations
         {
-            get { return (_uniqueCollations != null) ? _uniqueCollations.ToArray() : null; }
+            get { return (_uniqueCollations is not null) ? _uniqueCollations.ToArray() : null; }
         }
     }
 }

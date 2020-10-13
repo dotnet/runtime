@@ -71,7 +71,7 @@ namespace System.IO
 
         protected void ValidateRead(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(offset < 0 ? nameof(offset) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -83,7 +83,7 @@ namespace System.IO
 
         protected void ValidateWrite(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(offset < 0 ? nameof(offset) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);

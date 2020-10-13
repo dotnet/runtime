@@ -226,7 +226,7 @@ namespace System.Linq.Expressions.Compiler
 
         public void FreeLocal(LocalBuilder local)
         {
-            Debug.Assert(local != null);
+            Debug.Assert(local is not null);
             _freeLocals.Push(local.LocalType, local);
         }
 

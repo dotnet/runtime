@@ -23,14 +23,14 @@ namespace System.Data
 #nullable disable
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
             if (destinationType == typeof(string))
             {
-                if (value == null)
+                if (value is null)
                 {
                     return NullString;
                 }
@@ -45,7 +45,7 @@ namespace System.Data
 
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            if (value != null && value.GetType() == typeof(string))
+            if (value is not null && value.GetType() == typeof(string))
             {
                 string strValue = (string)value;
                 if (string.Equals(strValue, NullString, StringComparison.OrdinalIgnoreCase))

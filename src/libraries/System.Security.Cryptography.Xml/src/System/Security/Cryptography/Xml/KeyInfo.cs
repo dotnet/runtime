@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Xml
             for (int i = 0; i < _keyInfoClauses.Count; ++i)
             {
                 XmlElement xmlElement = ((KeyInfoClause)_keyInfoClauses[i]).GetXml(xmlDocument);
-                if (xmlElement != null)
+                if (xmlElement is not null)
                 {
                     keyInfoElement.AppendChild(xmlElement);
                 }
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             XmlElement keyInfoElement = value;
@@ -69,10 +69,10 @@ namespace System.Security.Cryptography.Xml
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "KeyInfo");
 
             XmlNode child = keyInfoElement.FirstChild;
-            while (child != null)
+            while (child is not null)
             {
                 XmlElement elem = child as XmlElement;
-                if (elem != null)
+                if (elem is not null)
                 {
                     // Create the right type of KeyInfoClause; we use a combination of the namespace and tag name (local name)
                     string kicString = elem.NamespaceURI + " " + elem.LocalName;
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.Xml
                         foreach (XmlNode node2 in nodeList2)
                         {
                             XmlElement elem2 = node2 as XmlElement;
-                            if (elem2 != null)
+                            if (elem2 is not null)
                             {
                                 kicString += "/" + elem2.LocalName;
                                 break;
@@ -97,7 +97,7 @@ namespace System.Security.Cryptography.Xml
 
                     KeyInfoClause keyInfoClause = CryptoHelpers.CreateFromName<KeyInfoClause>(kicString);
                     // if we don't know what kind of KeyInfoClause we're looking at, use a generic KeyInfoNode:
-                    if (keyInfoClause == null)
+                    if (keyInfoClause is null)
                         keyInfoClause = new KeyInfoNode();
 
                     // Ask the create clause to fill itself with the corresponding XML

@@ -52,9 +52,9 @@ namespace System.Text
 
         internal TranscodingStream(Stream innerStream, Encoding innerEncoding, Encoding thisEncoding, bool leaveOpen)
         {
-            Debug.Assert(innerStream != null);
-            Debug.Assert(innerEncoding != null);
-            Debug.Assert(thisEncoding != null);
+            Debug.Assert(innerStream is not null);
+            Debug.Assert(innerEncoding is not null);
+            Debug.Assert(thisEncoding is not null);
 
             _innerStream = innerStream;
             _leaveOpen = leaveOpen;

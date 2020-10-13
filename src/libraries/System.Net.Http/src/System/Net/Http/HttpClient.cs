@@ -484,7 +484,7 @@ namespace System.Net.Http
 
         private void CheckRequestBeforeSend(HttpRequestMessage request)
         {
-            if (request == null)
+            if (request is null)
             {
                 throw new ArgumentNullException(nameof(request));
             }
@@ -577,7 +577,7 @@ namespace System.Net.Http
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, e);
 
-            if (toThrow != null)
+            if (toThrow is not null)
             {
                 throw toThrow;
             }
@@ -585,7 +585,7 @@ namespace System.Net.Http
 
         private static bool StartSend(HttpRequestMessage request)
         {
-            if (HttpTelemetry.Log.IsEnabled() && request.RequestUri != null)
+            if (HttpTelemetry.Log.IsEnabled() && request.RequestUri is not null)
             {
                 HttpTelemetry.Log.RequestStart(request);
                 return true;
@@ -708,11 +708,11 @@ namespace System.Net.Http
         private void PrepareRequestMessage(HttpRequestMessage request)
         {
             Uri? requestUri = null;
-            if ((request.RequestUri == null) && (_baseAddress == null))
+            if ((request.RequestUri is null) && (_baseAddress is null))
             {
                 throw new InvalidOperationException(SR.net_http_client_invalid_requesturi);
             }
-            if (request.RequestUri == null)
+            if (request.RequestUri is null)
             {
                 requestUri = _baseAddress;
             }
@@ -721,7 +721,7 @@ namespace System.Net.Http
                 // If the request Uri is an absolute Uri, just use it. Otherwise try to combine it with the base Uri.
                 if (!request.RequestUri.IsAbsoluteUri)
                 {
-                    if (_baseAddress == null)
+                    if (_baseAddress is null)
                     {
                         throw new InvalidOperationException(SR.net_http_client_invalid_requesturi);
                     }
@@ -733,13 +733,13 @@ namespace System.Net.Http
             }
 
             // We modified the original request Uri. Assign the new Uri to the request message.
-            if (requestUri != null)
+            if (requestUri is not null)
             {
                 request.RequestUri = requestUri;
             }
 
             // Add default headers
-            if (_defaultRequestHeaders != null)
+            if (_defaultRequestHeaders is not null)
             {
                 request.Headers.AddHeaders(_defaultRequestHeaders);
             }
@@ -771,7 +771,7 @@ namespace System.Net.Http
 
         private static void CheckBaseAddress(Uri? baseAddress, string parameterName)
         {
-            if (baseAddress == null)
+            if (baseAddress is null)
             {
                 return; // It's OK to not have a base address specified.
             }

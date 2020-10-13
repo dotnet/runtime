@@ -12,18 +12,18 @@ namespace System.Linq
     {
         public static IQueryable<TElement> AsQueryable<TElement>(this IEnumerable<TElement> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source as IQueryable<TElement> ?? new EnumerableQuery<TElement>(source);
         }
 
         public static IQueryable AsQueryable(this IEnumerable source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             if (source is IQueryable queryable) return queryable;
             Type? enumType = TypeHelper.FindGenericType(typeof(IEnumerable<>), source.GetType());
-            if (enumType == null)
+            if (enumType is null)
                 throw Error.ArgumentNotIEnumerableGeneric(nameof(source));
             return EnumerableQuery.Create(enumType.GenericTypeArguments[0], source);
         }
@@ -31,9 +31,9 @@ namespace System.Linq
         [DynamicDependency("Where`1", typeof(Enumerable))]
         public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -46,9 +46,9 @@ namespace System.Linq
         [DynamicDependency("Where`1", typeof(Enumerable))]
         public static IQueryable<TSource> Where<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -61,7 +61,7 @@ namespace System.Linq
         [DynamicDependency("OfType`1", typeof(Enumerable))]
         public static IQueryable<TResult> OfType<TResult>(this IQueryable source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -72,7 +72,7 @@ namespace System.Linq
         [DynamicDependency("Cast`1", typeof(Enumerable))]
         public static IQueryable<TResult> Cast<TResult>(this IQueryable source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -83,9 +83,9 @@ namespace System.Linq
         [DynamicDependency("Select`2", typeof(Enumerable))]
         public static IQueryable<TResult> Select<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -98,9 +98,9 @@ namespace System.Linq
         [DynamicDependency("Select`2", typeof(Enumerable))]
         public static IQueryable<TResult> Select<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, int, TResult>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -113,9 +113,9 @@ namespace System.Linq
         [DynamicDependency("SelectMany`2", typeof(Enumerable))]
         public static IQueryable<TResult> SelectMany<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, IEnumerable<TResult>>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -128,9 +128,9 @@ namespace System.Linq
         [DynamicDependency("SelectMany`2", typeof(Enumerable))]
         public static IQueryable<TResult> SelectMany<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, int, IEnumerable<TResult>>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -143,11 +143,11 @@ namespace System.Linq
         [DynamicDependency("SelectMany`3", typeof(Enumerable))]
         public static IQueryable<TResult> SelectMany<TSource, TCollection, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, int, IEnumerable<TCollection>>> collectionSelector, Expression<Func<TSource, TCollection, TResult>> resultSelector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (collectionSelector == null)
+            if (collectionSelector is null)
                 throw Error.ArgumentNull(nameof(collectionSelector));
-            if (resultSelector == null)
+            if (resultSelector is null)
                 throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -160,11 +160,11 @@ namespace System.Linq
         [DynamicDependency("SelectMany`3", typeof(Enumerable))]
         public static IQueryable<TResult> SelectMany<TSource, TCollection, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, IEnumerable<TCollection>>> collectionSelector, Expression<Func<TSource, TCollection, TResult>> resultSelector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (collectionSelector == null)
+            if (collectionSelector is null)
                 throw Error.ArgumentNull(nameof(collectionSelector));
-            if (resultSelector == null)
+            if (resultSelector is null)
                 throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -177,21 +177,21 @@ namespace System.Linq
         private static Expression GetSourceExpression<TSource>(IEnumerable<TSource> source)
         {
             IQueryable<TSource>? q = source as IQueryable<TSource>;
-            return q != null ? q.Expression : Expression.Constant(source, typeof(IEnumerable<TSource>));
+            return q is not null ? q.Expression : Expression.Constant(source, typeof(IEnumerable<TSource>));
         }
 
         [DynamicDependency("Join`4", typeof(Enumerable))]
         public static IQueryable<TResult> Join<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner, TResult>> resultSelector)
         {
-            if (outer == null)
+            if (outer is null)
                 throw Error.ArgumentNull(nameof(outer));
-            if (inner == null)
+            if (inner is null)
                 throw Error.ArgumentNull(nameof(inner));
-            if (outerKeySelector == null)
+            if (outerKeySelector is null)
                 throw Error.ArgumentNull(nameof(outerKeySelector));
-            if (innerKeySelector == null)
+            if (innerKeySelector is null)
                 throw Error.ArgumentNull(nameof(innerKeySelector));
-            if (resultSelector == null)
+            if (resultSelector is null)
                 throw Error.ArgumentNull(nameof(resultSelector));
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -202,15 +202,15 @@ namespace System.Linq
         [DynamicDependency("Join`4", typeof(Enumerable))]
         public static IQueryable<TResult> Join<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, TInner, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
         {
-            if (outer == null)
+            if (outer is null)
                 throw Error.ArgumentNull(nameof(outer));
-            if (inner == null)
+            if (inner is null)
                 throw Error.ArgumentNull(nameof(inner));
-            if (outerKeySelector == null)
+            if (outerKeySelector is null)
                 throw Error.ArgumentNull(nameof(outerKeySelector));
-            if (innerKeySelector == null)
+            if (innerKeySelector is null)
                 throw Error.ArgumentNull(nameof(innerKeySelector));
-            if (resultSelector == null)
+            if (resultSelector is null)
                 throw Error.ArgumentNull(nameof(resultSelector));
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -221,15 +221,15 @@ namespace System.Linq
         [DynamicDependency("GroupJoin`4", typeof(Enumerable))]
         public static IQueryable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, IEnumerable<TInner>, TResult>> resultSelector)
         {
-            if (outer == null)
+            if (outer is null)
                 throw Error.ArgumentNull(nameof(outer));
-            if (inner == null)
+            if (inner is null)
                 throw Error.ArgumentNull(nameof(inner));
-            if (outerKeySelector == null)
+            if (outerKeySelector is null)
                 throw Error.ArgumentNull(nameof(outerKeySelector));
-            if (innerKeySelector == null)
+            if (innerKeySelector is null)
                 throw Error.ArgumentNull(nameof(innerKeySelector));
-            if (resultSelector == null)
+            if (resultSelector is null)
                 throw Error.ArgumentNull(nameof(resultSelector));
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -240,15 +240,15 @@ namespace System.Linq
         [DynamicDependency("GroupJoin`4", typeof(Enumerable))]
         public static IQueryable<TResult> GroupJoin<TOuter, TInner, TKey, TResult>(this IQueryable<TOuter> outer, IEnumerable<TInner> inner, Expression<Func<TOuter, TKey>> outerKeySelector, Expression<Func<TInner, TKey>> innerKeySelector, Expression<Func<TOuter, IEnumerable<TInner>, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
         {
-            if (outer == null)
+            if (outer is null)
                 throw Error.ArgumentNull(nameof(outer));
-            if (inner == null)
+            if (inner is null)
                 throw Error.ArgumentNull(nameof(inner));
-            if (outerKeySelector == null)
+            if (outerKeySelector is null)
                 throw Error.ArgumentNull(nameof(outerKeySelector));
-            if (innerKeySelector == null)
+            if (innerKeySelector is null)
                 throw Error.ArgumentNull(nameof(innerKeySelector));
-            if (resultSelector == null)
+            if (resultSelector is null)
                 throw Error.ArgumentNull(nameof(resultSelector));
             return outer.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -259,9 +259,9 @@ namespace System.Linq
         [DynamicDependency("OrderBy`2", typeof(Enumerable))]
         public static IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -274,9 +274,9 @@ namespace System.Linq
         [DynamicDependency("OrderBy`2", typeof(Enumerable))]
         public static IOrderedQueryable<TSource> OrderBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -289,9 +289,9 @@ namespace System.Linq
         [DynamicDependency("OrderByDescending`2", typeof(Enumerable))]
         public static IOrderedQueryable<TSource> OrderByDescending<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -304,9 +304,9 @@ namespace System.Linq
         [DynamicDependency("OrderByDescending`2", typeof(Enumerable))]
         public static IOrderedQueryable<TSource> OrderByDescending<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -319,9 +319,9 @@ namespace System.Linq
         [DynamicDependency("ThenBy`2", typeof(Enumerable))]
         public static IOrderedQueryable<TSource> ThenBy<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -334,9 +334,9 @@ namespace System.Linq
         [DynamicDependency("ThenBy`2", typeof(Enumerable))]
         public static IOrderedQueryable<TSource> ThenBy<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -349,9 +349,9 @@ namespace System.Linq
         [DynamicDependency("ThenByDescending`2", typeof(Enumerable))]
         public static IOrderedQueryable<TSource> ThenByDescending<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -364,9 +364,9 @@ namespace System.Linq
         [DynamicDependency("ThenByDescending`2", typeof(Enumerable))]
         public static IOrderedQueryable<TSource> ThenByDescending<TSource, TKey>(this IOrderedQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
             return (IOrderedQueryable<TSource>)source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -379,7 +379,7 @@ namespace System.Linq
         [DynamicDependency("Take`1", typeof(Enumerable))]
         public static IQueryable<TSource> Take<TSource>(this IQueryable<TSource> source, int count)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -392,9 +392,9 @@ namespace System.Linq
         [DynamicDependency("TakeWhile`1", typeof(Enumerable))]
         public static IQueryable<TSource> TakeWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -407,9 +407,9 @@ namespace System.Linq
         [DynamicDependency("TakeWhile`1", typeof(Enumerable))]
         public static IQueryable<TSource> TakeWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -422,7 +422,7 @@ namespace System.Linq
         [DynamicDependency("Skip`1", typeof(Enumerable))]
         public static IQueryable<TSource> Skip<TSource>(this IQueryable<TSource> source, int count)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -435,9 +435,9 @@ namespace System.Linq
         [DynamicDependency("SkipWhile`1", typeof(Enumerable))]
         public static IQueryable<TSource> SkipWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -450,9 +450,9 @@ namespace System.Linq
         [DynamicDependency("SkipWhile`1", typeof(Enumerable))]
         public static IQueryable<TSource> SkipWhile<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -465,9 +465,9 @@ namespace System.Linq
         [DynamicDependency("GroupBy`2", typeof(Enumerable))]
         public static IQueryable<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
             return source.Provider.CreateQuery<IGrouping<TKey, TSource>>(
                 Expression.Call(
@@ -480,11 +480,11 @@ namespace System.Linq
         [DynamicDependency("GroupBy`3", typeof(Enumerable))]
         public static IQueryable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
-            if (elementSelector == null)
+            if (elementSelector is null)
                 throw Error.ArgumentNull(nameof(elementSelector));
             return source.Provider.CreateQuery<IGrouping<TKey, TElement>>(
                 Expression.Call(
@@ -497,9 +497,9 @@ namespace System.Linq
         [DynamicDependency("GroupBy`2", typeof(Enumerable))]
         public static IQueryable<IGrouping<TKey, TSource>> GroupBy<TSource, TKey>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, IEqualityComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
             return source.Provider.CreateQuery<IGrouping<TKey, TSource>>(
                 Expression.Call(
@@ -512,11 +512,11 @@ namespace System.Linq
         [DynamicDependency("GroupBy`3", typeof(Enumerable))]
         public static IQueryable<IGrouping<TKey, TElement>> GroupBy<TSource, TKey, TElement>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, IEqualityComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
-            if (elementSelector == null)
+            if (elementSelector is null)
                 throw Error.ArgumentNull(nameof(elementSelector));
             return source.Provider.CreateQuery<IGrouping<TKey, TElement>>(
                 Expression.Call(
@@ -527,13 +527,13 @@ namespace System.Linq
         [DynamicDependency("GroupBy`4", typeof(Enumerable))]
         public static IQueryable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, Expression<Func<TKey, IEnumerable<TElement>, TResult>> resultSelector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
-            if (elementSelector == null)
+            if (elementSelector is null)
                 throw Error.ArgumentNull(nameof(elementSelector));
-            if (resultSelector == null)
+            if (resultSelector is null)
                 throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -544,11 +544,11 @@ namespace System.Linq
         [DynamicDependency("GroupBy`3", typeof(Enumerable))]
         public static IQueryable<TResult> GroupBy<TSource, TKey, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TKey, IEnumerable<TSource>, TResult>> resultSelector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
-            if (resultSelector == null)
+            if (resultSelector is null)
                 throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -561,11 +561,11 @@ namespace System.Linq
         [DynamicDependency("GroupBy`3", typeof(Enumerable))]
         public static IQueryable<TResult> GroupBy<TSource, TKey, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TKey, IEnumerable<TSource>, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
-            if (resultSelector == null)
+            if (resultSelector is null)
                 throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -576,13 +576,13 @@ namespace System.Linq
         [DynamicDependency("GroupBy`4", typeof(Enumerable))]
         public static IQueryable<TResult> GroupBy<TSource, TKey, TElement, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TKey>> keySelector, Expression<Func<TSource, TElement>> elementSelector, Expression<Func<TKey, IEnumerable<TElement>, TResult>> resultSelector, IEqualityComparer<TKey>? comparer)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (keySelector == null)
+            if (keySelector is null)
                 throw Error.ArgumentNull(nameof(keySelector));
-            if (elementSelector == null)
+            if (elementSelector is null)
                 throw Error.ArgumentNull(nameof(elementSelector));
-            if (resultSelector == null)
+            if (resultSelector is null)
                 throw Error.ArgumentNull(nameof(resultSelector));
             return source.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -593,7 +593,7 @@ namespace System.Linq
         [DynamicDependency("Distinct`1", typeof(Enumerable))]
         public static IQueryable<TSource> Distinct<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -604,7 +604,7 @@ namespace System.Linq
         [DynamicDependency("Distinct`1", typeof(Enumerable))]
         public static IQueryable<TSource> Distinct<TSource>(this IQueryable<TSource> source, IEqualityComparer<TSource>? comparer)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -617,9 +617,9 @@ namespace System.Linq
         [DynamicDependency("Concat`1", typeof(Enumerable))]
         public static IQueryable<TSource> Concat<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
-            if (source1 == null)
+            if (source1 is null)
                 throw Error.ArgumentNull(nameof(source1));
-            if (source2 == null)
+            if (source2 is null)
                 throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -632,12 +632,12 @@ namespace System.Linq
         [DynamicDependency("Zip`2", typeof(Enumerable))]
         public static IQueryable<(TFirst First, TSecond Second)> Zip<TFirst, TSecond>(this IQueryable<TFirst> source1, IEnumerable<TSecond> source2)
         {
-            if (source1 == null)
+            if (source1 is null)
             {
                 throw Error.ArgumentNull(nameof(source1));
             }
 
-            if (source2 == null)
+            if (source2 is null)
             {
                 throw Error.ArgumentNull(nameof(source2));
             }
@@ -652,11 +652,11 @@ namespace System.Linq
         [DynamicDependency("Zip`3", typeof(Enumerable))]
         public static IQueryable<TResult> Zip<TFirst, TSecond, TResult>(this IQueryable<TFirst> source1, IEnumerable<TSecond> source2, Expression<Func<TFirst, TSecond, TResult>> resultSelector)
         {
-            if (source1 == null)
+            if (source1 is null)
                 throw Error.ArgumentNull(nameof(source1));
-            if (source2 == null)
+            if (source2 is null)
                 throw Error.ArgumentNull(nameof(source2));
-            if (resultSelector == null)
+            if (resultSelector is null)
                 throw Error.ArgumentNull(nameof(resultSelector));
             return source1.Provider.CreateQuery<TResult>(
                 Expression.Call(
@@ -669,9 +669,9 @@ namespace System.Linq
         [DynamicDependency("Union`1", typeof(Enumerable))]
         public static IQueryable<TSource> Union<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
-            if (source1 == null)
+            if (source1 is null)
                 throw Error.ArgumentNull(nameof(source1));
-            if (source2 == null)
+            if (source2 is null)
                 throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -684,9 +684,9 @@ namespace System.Linq
         [DynamicDependency("Union`1", typeof(Enumerable))]
         public static IQueryable<TSource> Union<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource>? comparer)
         {
-            if (source1 == null)
+            if (source1 is null)
                 throw Error.ArgumentNull(nameof(source1));
-            if (source2 == null)
+            if (source2 is null)
                 throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -701,9 +701,9 @@ namespace System.Linq
         [DynamicDependency("Intersect`1", typeof(Enumerable))]
         public static IQueryable<TSource> Intersect<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
-            if (source1 == null)
+            if (source1 is null)
                 throw Error.ArgumentNull(nameof(source1));
-            if (source2 == null)
+            if (source2 is null)
                 throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -716,9 +716,9 @@ namespace System.Linq
         [DynamicDependency("Intersect`1", typeof(Enumerable))]
         public static IQueryable<TSource> Intersect<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource>? comparer)
         {
-            if (source1 == null)
+            if (source1 is null)
                 throw Error.ArgumentNull(nameof(source1));
-            if (source2 == null)
+            if (source2 is null)
                 throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -733,9 +733,9 @@ namespace System.Linq
         [DynamicDependency("Except`1", typeof(Enumerable))]
         public static IQueryable<TSource> Except<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
-            if (source1 == null)
+            if (source1 is null)
                 throw Error.ArgumentNull(nameof(source1));
-            if (source2 == null)
+            if (source2 is null)
                 throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -748,9 +748,9 @@ namespace System.Linq
         [DynamicDependency("Except`1", typeof(Enumerable))]
         public static IQueryable<TSource> Except<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource>? comparer)
         {
-            if (source1 == null)
+            if (source1 is null)
                 throw Error.ArgumentNull(nameof(source1));
-            if (source2 == null)
+            if (source2 is null)
                 throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -765,7 +765,7 @@ namespace System.Linq
         [DynamicDependency("First`1", typeof(Enumerable))]
         public static TSource First<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -776,9 +776,9 @@ namespace System.Linq
         [DynamicDependency("First`1", typeof(Enumerable))]
         public static TSource First<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -791,7 +791,7 @@ namespace System.Linq
         [DynamicDependency("FirstOrDefault`1", typeof(Enumerable))]
         public static TSource? FirstOrDefault<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -802,9 +802,9 @@ namespace System.Linq
         [DynamicDependency("FirstOrDefault`1", typeof(Enumerable))]
         public static TSource? FirstOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -817,7 +817,7 @@ namespace System.Linq
         [DynamicDependency("Last`1", typeof(Enumerable))]
         public static TSource Last<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -828,9 +828,9 @@ namespace System.Linq
         [DynamicDependency("Last`1", typeof(Enumerable))]
         public static TSource Last<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -843,7 +843,7 @@ namespace System.Linq
         [DynamicDependency("LastOrDefault`1", typeof(Enumerable))]
         public static TSource? LastOrDefault<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -854,9 +854,9 @@ namespace System.Linq
         [DynamicDependency("LastOrDefault`1", typeof(Enumerable))]
         public static TSource? LastOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -869,7 +869,7 @@ namespace System.Linq
         [DynamicDependency("Single`1", typeof(Enumerable))]
         public static TSource Single<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -880,9 +880,9 @@ namespace System.Linq
         [DynamicDependency("Single`1", typeof(Enumerable))]
         public static TSource Single<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -895,7 +895,7 @@ namespace System.Linq
         [DynamicDependency("SingleOrDefault`1", typeof(Enumerable))]
         public static TSource? SingleOrDefault<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -906,9 +906,9 @@ namespace System.Linq
         [DynamicDependency("SingleOrDefault`1", typeof(Enumerable))]
         public static TSource? SingleOrDefault<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -921,7 +921,7 @@ namespace System.Linq
         [DynamicDependency("ElementAt`1", typeof(Enumerable))]
         public static TSource ElementAt<TSource>(this IQueryable<TSource> source, int index)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             if (index < 0)
                 throw Error.ArgumentOutOfRange(nameof(index));
@@ -936,7 +936,7 @@ namespace System.Linq
         [DynamicDependency("ElementAtOrDefault`1", typeof(Enumerable))]
         public static TSource? ElementAtOrDefault<TSource>(this IQueryable<TSource> source, int index)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -949,7 +949,7 @@ namespace System.Linq
         [DynamicDependency("DefaultIfEmpty`1", typeof(Enumerable))]
         public static IQueryable<TSource> DefaultIfEmpty<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -960,7 +960,7 @@ namespace System.Linq
         [DynamicDependency("DefaultIfEmpty`1", typeof(Enumerable))]
         public static IQueryable<TSource> DefaultIfEmpty<TSource>(this IQueryable<TSource> source, TSource defaultValue)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -973,7 +973,7 @@ namespace System.Linq
         [DynamicDependency("Contains`1", typeof(Enumerable))]
         public static bool Contains<TSource>(this IQueryable<TSource> source, TSource item)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<bool>(
                 Expression.Call(
@@ -986,7 +986,7 @@ namespace System.Linq
         [DynamicDependency("Contains`1", typeof(Enumerable))]
         public static bool Contains<TSource>(this IQueryable<TSource> source, TSource item, IEqualityComparer<TSource>? comparer)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<bool>(
                 Expression.Call(
@@ -999,7 +999,7 @@ namespace System.Linq
         [DynamicDependency("Reverse`1", typeof(Enumerable))]
         public static IQueryable<TSource> Reverse<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -1010,9 +1010,9 @@ namespace System.Linq
         [DynamicDependency("SequenceEqual`1", typeof(Enumerable))]
         public static bool SequenceEqual<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2)
         {
-            if (source1 == null)
+            if (source1 is null)
                 throw Error.ArgumentNull(nameof(source1));
-            if (source2 == null)
+            if (source2 is null)
                 throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.Execute<bool>(
                 Expression.Call(
@@ -1025,9 +1025,9 @@ namespace System.Linq
         [DynamicDependency("SequenceEqual`1", typeof(Enumerable))]
         public static bool SequenceEqual<TSource>(this IQueryable<TSource> source1, IEnumerable<TSource> source2, IEqualityComparer<TSource>? comparer)
         {
-            if (source1 == null)
+            if (source1 is null)
                 throw Error.ArgumentNull(nameof(source1));
-            if (source2 == null)
+            if (source2 is null)
                 throw Error.ArgumentNull(nameof(source2));
             return source1.Provider.Execute<bool>(
                 Expression.Call(
@@ -1042,7 +1042,7 @@ namespace System.Linq
         [DynamicDependency("Any`1", typeof(Enumerable))]
         public static bool Any<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<bool>(
                 Expression.Call(
@@ -1053,9 +1053,9 @@ namespace System.Linq
         [DynamicDependency("Any`1", typeof(Enumerable))]
         public static bool Any<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<bool>(
                 Expression.Call(
@@ -1068,9 +1068,9 @@ namespace System.Linq
         [DynamicDependency("All`1", typeof(Enumerable))]
         public static bool All<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<bool>(
                 Expression.Call(
@@ -1083,7 +1083,7 @@ namespace System.Linq
         [DynamicDependency("Count`1", typeof(Enumerable))]
         public static int Count<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<int>(
                 Expression.Call(
@@ -1094,9 +1094,9 @@ namespace System.Linq
         [DynamicDependency("Count`1", typeof(Enumerable))]
         public static int Count<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<int>(
                 Expression.Call(
@@ -1109,7 +1109,7 @@ namespace System.Linq
         [DynamicDependency("LongCount`1", typeof(Enumerable))]
         public static long LongCount<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<long>(
                 Expression.Call(
@@ -1120,9 +1120,9 @@ namespace System.Linq
         [DynamicDependency("LongCount`1", typeof(Enumerable))]
         public static long LongCount<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, bool>> predicate)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (predicate == null)
+            if (predicate is null)
                 throw Error.ArgumentNull(nameof(predicate));
             return source.Provider.Execute<long>(
                 Expression.Call(
@@ -1135,7 +1135,7 @@ namespace System.Linq
         [DynamicDependency("Min`1", typeof(Enumerable))]
         public static TSource? Min<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -1146,9 +1146,9 @@ namespace System.Linq
         [DynamicDependency("Min`2", typeof(Enumerable))]
         public static TResult? Min<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<TResult>(
                 Expression.Call(
@@ -1161,7 +1161,7 @@ namespace System.Linq
         [DynamicDependency("Max`1", typeof(Enumerable))]
         public static TSource? Max<TSource>(this IQueryable<TSource> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -1172,9 +1172,9 @@ namespace System.Linq
         [DynamicDependency("Max`2", typeof(Enumerable))]
         public static TResult? Max<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<TSource, TResult>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<TResult>(
                 Expression.Call(
@@ -1187,7 +1187,7 @@ namespace System.Linq
         [DynamicDependency("Sum", typeof(Enumerable))]
         public static int Sum(this IQueryable<int> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<int>(
                 Expression.Call(
@@ -1198,7 +1198,7 @@ namespace System.Linq
         [DynamicDependency("Sum", typeof(Enumerable))]
         public static int? Sum(this IQueryable<int?> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<int?>(
                 Expression.Call(
@@ -1209,7 +1209,7 @@ namespace System.Linq
         [DynamicDependency("Sum", typeof(Enumerable))]
         public static long Sum(this IQueryable<long> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<long>(
                 Expression.Call(
@@ -1220,7 +1220,7 @@ namespace System.Linq
         [DynamicDependency("Sum", typeof(Enumerable))]
         public static long? Sum(this IQueryable<long?> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<long?>(
                 Expression.Call(
@@ -1231,7 +1231,7 @@ namespace System.Linq
         [DynamicDependency("Sum", typeof(Enumerable))]
         public static float Sum(this IQueryable<float> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<float>(
                 Expression.Call(
@@ -1242,7 +1242,7 @@ namespace System.Linq
         [DynamicDependency("Sum", typeof(Enumerable))]
         public static float? Sum(this IQueryable<float?> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<float?>(
                 Expression.Call(
@@ -1253,7 +1253,7 @@ namespace System.Linq
         [DynamicDependency("Sum", typeof(Enumerable))]
         public static double Sum(this IQueryable<double> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double>(
                 Expression.Call(
@@ -1264,7 +1264,7 @@ namespace System.Linq
         [DynamicDependency("Sum", typeof(Enumerable))]
         public static double? Sum(this IQueryable<double?> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double?>(
                 Expression.Call(
@@ -1275,7 +1275,7 @@ namespace System.Linq
         [DynamicDependency("Sum", typeof(Enumerable))]
         public static decimal Sum(this IQueryable<decimal> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<decimal>(
                 Expression.Call(
@@ -1286,7 +1286,7 @@ namespace System.Linq
         [DynamicDependency("Sum", typeof(Enumerable))]
         public static decimal? Sum(this IQueryable<decimal?> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
@@ -1297,9 +1297,9 @@ namespace System.Linq
         [DynamicDependency("Sum`1", typeof(Enumerable))]
         public static int Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<int>(
                 Expression.Call(
@@ -1312,9 +1312,9 @@ namespace System.Linq
         [DynamicDependency("Sum`1", typeof(Enumerable))]
         public static int? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int?>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<int?>(
                 Expression.Call(
@@ -1327,9 +1327,9 @@ namespace System.Linq
         [DynamicDependency("Sum`1", typeof(Enumerable))]
         public static long Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, long>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<long>(
                 Expression.Call(
@@ -1342,9 +1342,9 @@ namespace System.Linq
         [DynamicDependency("Sum`1", typeof(Enumerable))]
         public static long? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, long?>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<long?>(
                 Expression.Call(
@@ -1357,9 +1357,9 @@ namespace System.Linq
         [DynamicDependency("Sum`1", typeof(Enumerable))]
         public static float Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, float>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<float>(
                 Expression.Call(
@@ -1372,9 +1372,9 @@ namespace System.Linq
         [DynamicDependency("Sum`1", typeof(Enumerable))]
         public static float? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, float?>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<float?>(
                 Expression.Call(
@@ -1387,9 +1387,9 @@ namespace System.Linq
         [DynamicDependency("Sum`1", typeof(Enumerable))]
         public static double Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, double>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double>(
                 Expression.Call(
@@ -1402,9 +1402,9 @@ namespace System.Linq
         [DynamicDependency("Sum`1", typeof(Enumerable))]
         public static double? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, double?>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double?>(
                 Expression.Call(
@@ -1417,9 +1417,9 @@ namespace System.Linq
         [DynamicDependency("Sum`1", typeof(Enumerable))]
         public static decimal Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, decimal>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<decimal>(
                 Expression.Call(
@@ -1432,9 +1432,9 @@ namespace System.Linq
         [DynamicDependency("Sum`1", typeof(Enumerable))]
         public static decimal? Sum<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, decimal?>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
@@ -1447,7 +1447,7 @@ namespace System.Linq
         [DynamicDependency("Average", typeof(Enumerable))]
         public static double Average(this IQueryable<int> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double>(
                 Expression.Call(
@@ -1458,7 +1458,7 @@ namespace System.Linq
         [DynamicDependency("Average", typeof(Enumerable))]
         public static double? Average(this IQueryable<int?> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double?>(
                 Expression.Call(
@@ -1469,7 +1469,7 @@ namespace System.Linq
         [DynamicDependency("Average", typeof(Enumerable))]
         public static double Average(this IQueryable<long> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double>(
                 Expression.Call(
@@ -1480,7 +1480,7 @@ namespace System.Linq
         [DynamicDependency("Average", typeof(Enumerable))]
         public static double? Average(this IQueryable<long?> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double?>(
                 Expression.Call(
@@ -1491,7 +1491,7 @@ namespace System.Linq
         [DynamicDependency("Average", typeof(Enumerable))]
         public static float Average(this IQueryable<float> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<float>(
                 Expression.Call(
@@ -1502,7 +1502,7 @@ namespace System.Linq
         [DynamicDependency("Average", typeof(Enumerable))]
         public static float? Average(this IQueryable<float?> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<float?>(
                 Expression.Call(
@@ -1513,7 +1513,7 @@ namespace System.Linq
         [DynamicDependency("Average", typeof(Enumerable))]
         public static double Average(this IQueryable<double> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double>(
                 Expression.Call(
@@ -1524,7 +1524,7 @@ namespace System.Linq
         [DynamicDependency("Average", typeof(Enumerable))]
         public static double? Average(this IQueryable<double?> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<double?>(
                 Expression.Call(
@@ -1535,7 +1535,7 @@ namespace System.Linq
         [DynamicDependency("Average", typeof(Enumerable))]
         public static decimal Average(this IQueryable<decimal> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<decimal>(
                 Expression.Call(
@@ -1546,7 +1546,7 @@ namespace System.Linq
         [DynamicDependency("Average", typeof(Enumerable))]
         public static decimal? Average(this IQueryable<decimal?> source)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
@@ -1557,9 +1557,9 @@ namespace System.Linq
         [DynamicDependency("Average`1", typeof(Enumerable))]
         public static double Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double>(
                 Expression.Call(
@@ -1572,9 +1572,9 @@ namespace System.Linq
         [DynamicDependency("Average`1", typeof(Enumerable))]
         public static double? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, int?>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double?>(
                 Expression.Call(
@@ -1587,9 +1587,9 @@ namespace System.Linq
         [DynamicDependency("Average`1", typeof(Enumerable))]
         public static float Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, float>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<float>(
                 Expression.Call(
@@ -1602,9 +1602,9 @@ namespace System.Linq
         [DynamicDependency("Average`1", typeof(Enumerable))]
         public static float? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, float?>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<float?>(
                 Expression.Call(
@@ -1617,9 +1617,9 @@ namespace System.Linq
         [DynamicDependency("Average`1", typeof(Enumerable))]
         public static double Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, long>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double>(
                 Expression.Call(
@@ -1632,9 +1632,9 @@ namespace System.Linq
         [DynamicDependency("Average`1", typeof(Enumerable))]
         public static double? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, long?>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double?>(
                 Expression.Call(
@@ -1647,9 +1647,9 @@ namespace System.Linq
         [DynamicDependency("Average`1", typeof(Enumerable))]
         public static double Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, double>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double>(
                 Expression.Call(
@@ -1662,9 +1662,9 @@ namespace System.Linq
         [DynamicDependency("Average`1", typeof(Enumerable))]
         public static double? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, double?>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<double?>(
                 Expression.Call(
@@ -1677,9 +1677,9 @@ namespace System.Linq
         [DynamicDependency("Average`1", typeof(Enumerable))]
         public static decimal Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, decimal>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<decimal>(
                 Expression.Call(
@@ -1692,9 +1692,9 @@ namespace System.Linq
         [DynamicDependency("Average`1", typeof(Enumerable))]
         public static decimal? Average<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, decimal?>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<decimal?>(
                 Expression.Call(
@@ -1707,9 +1707,9 @@ namespace System.Linq
         [DynamicDependency("Aggregate`1", typeof(Enumerable))]
         public static TSource Aggregate<TSource>(this IQueryable<TSource> source, Expression<Func<TSource, TSource, TSource>> func)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (func == null)
+            if (func is null)
                 throw Error.ArgumentNull(nameof(func));
             return source.Provider.Execute<TSource>(
                 Expression.Call(
@@ -1722,9 +1722,9 @@ namespace System.Linq
         [DynamicDependency("Aggregate`2", typeof(Enumerable))]
         public static TAccumulate Aggregate<TSource, TAccumulate>(this IQueryable<TSource> source, TAccumulate seed, Expression<Func<TAccumulate, TSource, TAccumulate>> func)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (func == null)
+            if (func is null)
                 throw Error.ArgumentNull(nameof(func));
             return source.Provider.Execute<TAccumulate>(
                 Expression.Call(
@@ -1737,11 +1737,11 @@ namespace System.Linq
         [DynamicDependency("Aggregate`3", typeof(Enumerable))]
         public static TResult Aggregate<TSource, TAccumulate, TResult>(this IQueryable<TSource> source, TAccumulate seed, Expression<Func<TAccumulate, TSource, TAccumulate>> func, Expression<Func<TAccumulate, TResult>> selector)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
-            if (func == null)
+            if (func is null)
                 throw Error.ArgumentNull(nameof(func));
-            if (selector == null)
+            if (selector is null)
                 throw Error.ArgumentNull(nameof(selector));
             return source.Provider.Execute<TResult>(
                 Expression.Call(
@@ -1752,7 +1752,7 @@ namespace System.Linq
         [DynamicDependency("SkipLast`1", typeof(Enumerable))]
         public static IQueryable<TSource> SkipLast<TSource>(this IQueryable<TSource> source, int count)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -1765,7 +1765,7 @@ namespace System.Linq
         [DynamicDependency("TakeLast`1", typeof(Enumerable))]
         public static IQueryable<TSource> TakeLast<TSource>(this IQueryable<TSource> source, int count)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -1778,7 +1778,7 @@ namespace System.Linq
         [DynamicDependency("Append`1", typeof(Enumerable))]
         public static IQueryable<TSource> Append<TSource>(this IQueryable<TSource> source, TSource element)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(
@@ -1791,7 +1791,7 @@ namespace System.Linq
         [DynamicDependency("Prepend`1", typeof(Enumerable))]
         public static IQueryable<TSource> Prepend<TSource>(this IQueryable<TSource> source, TSource element)
         {
-            if (source == null)
+            if (source is null)
                 throw Error.ArgumentNull(nameof(source));
             return source.Provider.CreateQuery<TSource>(
                 Expression.Call(

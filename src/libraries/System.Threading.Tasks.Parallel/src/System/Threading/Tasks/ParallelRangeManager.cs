@@ -62,7 +62,7 @@ namespace System.Threading.Tasks
         // whether to use 32-bits or 64-bits of current index in each range
         internal readonly bool _use32BitCurrentIndex;
 
-        internal bool IsInitialized { get { return _indexRanges != null; } }
+        internal bool IsInitialized { get { return _indexRanges is not null; } }
 
         /// <summary>
         /// Initializes a RangeWorker struct
@@ -103,7 +103,7 @@ namespace System.Threading.Tasks
                 if (currentRange._bRangeFinished == 0)
                 {
                     StrongBox<long>? sharedCurrentIndexOffset = _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset;
-                    if (sharedCurrentIndexOffset == null)
+                    if (sharedCurrentIndexOffset is null)
                     {
                         Interlocked.CompareExchange(ref _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset, new StrongBox<long>(0), null);
                         sharedCurrentIndexOffset = _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset!;
@@ -292,7 +292,7 @@ namespace System.Threading.Tasks
         /// </summary>
         internal RangeWorker RegisterNewWorker()
         {
-            Debug.Assert(_indexRanges != null && _indexRanges.Length != 0);
+            Debug.Assert(_indexRanges is not null && _indexRanges.Length != 0);
 
             int nInitialRange = (Interlocked.Increment(ref _nCurrentIndexRangeToAssign) - 1) % _indexRanges.Length;
 

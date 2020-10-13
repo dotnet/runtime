@@ -43,7 +43,7 @@ namespace System.Collections.Specialized
 
         protected NameObjectCollectionBase(IEqualityComparer? equalityComparer)
         {
-            _keyComparer = (equalityComparer == null) ? s_defaultComparer : equalityComparer;
+            _keyComparer = (equalityComparer is null) ? s_defaultComparer : equalityComparer;
             Reset();
         }
 
@@ -118,7 +118,7 @@ namespace System.Collections.Specialized
 
         private NameObjectEntry? FindEntry(string? key)
         {
-            if (key != null)
+            if (key is not null)
                 return (NameObjectEntry?)_entriesTable[key];
             else
                 return _nullKeyEntry;
@@ -171,14 +171,14 @@ namespace System.Collections.Specialized
             NameObjectEntry entry = new NameObjectEntry(name, value);
 
             // insert entry into hashtable
-            if (name != null)
+            if (name is not null)
             {
-                if (_entriesTable[name] == null)
+                if (_entriesTable[name] is null)
                     _entriesTable.Add(name, entry);
             }
             else
             { // null key -- special case -- hashtable doesn't like null keys
-                if (_nullKeyEntry == null)
+                if (_nullKeyEntry is null)
                     _nullKeyEntry = entry;
             }
 
@@ -197,7 +197,7 @@ namespace System.Collections.Specialized
             if (_readOnly)
                 throw new NotSupportedException(SR.CollectionReadOnly);
 
-            if (name != null)
+            if (name is not null)
             {
                 // remove from hashtable
                 _entriesTable.Remove(name);
@@ -217,7 +217,7 @@ namespace System.Collections.Specialized
                 // remove from array
                 for (int i = _entriesArray.Count - 1; i >= 0; i--)
                 {
-                    if (BaseGetKey(i) == null)
+                    if (BaseGetKey(i) is null)
                         _entriesArray.RemoveAt(i);
                 }
             }
@@ -236,7 +236,7 @@ namespace System.Collections.Specialized
 
             string? key = BaseGetKey(index);
 
-            if (key != null)
+            if (key is not null)
             {
                 // remove from hashtable
                 _entriesTable.Remove(key);
@@ -275,7 +275,7 @@ namespace System.Collections.Specialized
         protected object? BaseGet(string? name)
         {
             NameObjectEntry? e = FindEntry(name);
-            return (e != null) ? e.Value : null;
+            return (e is not null) ? e.Value : null;
         }
 
         /// <devdoc>
@@ -290,7 +290,7 @@ namespace System.Collections.Specialized
                 throw new NotSupportedException(SR.CollectionReadOnly);
 
             NameObjectEntry?  entry = FindEntry(name);
-            if (entry != null)
+            if (entry is not null)
             {
                 entry.Value = value;
                 _version++;
@@ -365,7 +365,7 @@ namespace System.Collections.Specialized
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -437,7 +437,7 @@ namespace System.Collections.Specialized
         protected object?[] BaseGetAllValues(Type type)
         {
             int n = _entriesArray.Count;
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -463,7 +463,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (_keys == null)
+                if (_keys is null)
                     _keys = new KeysCollection(this);
                 return _keys;
             }
@@ -603,7 +603,7 @@ namespace System.Collections.Specialized
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array == null)
+                if (array is null)
                 {
                     throw new ArgumentNullException(nameof(array));
                 }

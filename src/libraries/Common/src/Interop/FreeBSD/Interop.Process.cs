@@ -168,7 +168,7 @@ internal static partial class Interop
             try
             {
                 info =  GetProcInfo(pid, (tid != 0), out count);
-                if (info != null && count >= 1)
+                if (info is not null && count >= 1)
                 {
                     if (tid == 0)
                     {

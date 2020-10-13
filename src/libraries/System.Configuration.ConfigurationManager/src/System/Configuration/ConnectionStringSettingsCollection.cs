@@ -19,7 +19,7 @@ namespace System.Configuration
             get { return (ConnectionStringSettings)BaseGet(index); }
             set
             {
-                if (BaseGet(index) != null) BaseRemoveAt(index);
+                if (BaseGet(index) is not null) BaseRemoveAt(index);
                 BaseAdd(index, value);
             }
         }

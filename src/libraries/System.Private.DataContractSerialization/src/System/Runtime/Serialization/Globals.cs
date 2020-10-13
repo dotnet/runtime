@@ -27,7 +27,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_idQualifiedName == null)
+                if (s_idQualifiedName is null)
                     s_idQualifiedName = new XmlQualifiedName(Globals.IdLocalName, Globals.SerializationNamespace);
                 return s_idQualifiedName;
             }
@@ -38,7 +38,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_refQualifiedName == null)
+                if (s_refQualifiedName is null)
                     s_refQualifiedName = new XmlQualifiedName(Globals.RefLocalName, Globals.SerializationNamespace);
                 return s_refQualifiedName;
             }
@@ -49,7 +49,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfObject == null)
+                if (s_typeOfObject is null)
                     s_typeOfObject = typeof(object);
                 return s_typeOfObject;
             }
@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfValueType == null)
+                if (s_typeOfValueType is null)
                     s_typeOfValueType = typeof(ValueType);
                 return s_typeOfValueType;
             }
@@ -71,7 +71,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfArray == null)
+                if (s_typeOfArray is null)
                     s_typeOfArray = typeof(Array);
                 return s_typeOfArray;
             }
@@ -82,7 +82,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfString == null)
+                if (s_typeOfString is null)
                     s_typeOfString = typeof(string);
                 return s_typeOfString;
             }
@@ -93,7 +93,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfInt == null)
+                if (s_typeOfInt is null)
                     s_typeOfInt = typeof(int);
                 return s_typeOfInt;
             }
@@ -104,7 +104,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfULong == null)
+                if (s_typeOfULong is null)
                     s_typeOfULong = typeof(ulong);
                 return s_typeOfULong;
             }
@@ -115,7 +115,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfVoid == null)
+                if (s_typeOfVoid is null)
                     s_typeOfVoid = typeof(void);
                 return s_typeOfVoid;
             }
@@ -126,7 +126,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfByteArray == null)
+                if (s_typeOfByteArray is null)
                     s_typeOfByteArray = typeof(byte[]);
                 return s_typeOfByteArray;
             }
@@ -137,7 +137,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfTimeSpan == null)
+                if (s_typeOfTimeSpan is null)
                     s_typeOfTimeSpan = typeof(TimeSpan);
                 return s_typeOfTimeSpan;
             }
@@ -148,7 +148,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfGuid == null)
+                if (s_typeOfGuid is null)
                     s_typeOfGuid = typeof(Guid);
                 return s_typeOfGuid;
             }
@@ -159,7 +159,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfDateTimeOffset == null)
+                if (s_typeOfDateTimeOffset is null)
                     s_typeOfDateTimeOffset = typeof(DateTimeOffset);
                 return s_typeOfDateTimeOffset;
             }
@@ -170,7 +170,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfDateTimeOffsetAdapter == null)
+                if (s_typeOfDateTimeOffsetAdapter is null)
                     s_typeOfDateTimeOffsetAdapter = typeof(DateTimeOffsetAdapter);
                 return s_typeOfDateTimeOffsetAdapter;
             }
@@ -181,7 +181,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfUri == null)
+                if (s_typeOfUri is null)
                     s_typeOfUri = typeof(Uri);
                 return s_typeOfUri;
             }
@@ -192,7 +192,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfTypeEnumerable == null)
+                if (s_typeOfTypeEnumerable is null)
                     s_typeOfTypeEnumerable = typeof(IEnumerable<Type>);
                 return s_typeOfTypeEnumerable;
             }
@@ -203,7 +203,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfStreamingContext == null)
+                if (s_typeOfStreamingContext is null)
                     s_typeOfStreamingContext = typeof(StreamingContext);
                 return s_typeOfStreamingContext;
             }
@@ -214,7 +214,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfISerializable == null)
+                if (s_typeOfISerializable is null)
                     s_typeOfISerializable = typeof(ISerializable);
                 return s_typeOfISerializable;
             }
@@ -225,7 +225,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfIDeserializationCallback == null)
+                if (s_typeOfIDeserializationCallback is null)
                     s_typeOfIDeserializationCallback = typeof(IDeserializationCallback);
                 return s_typeOfIDeserializationCallback;
             }
@@ -236,7 +236,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfIObjectReference == null)
+                if (s_typeOfIObjectReference is null)
                     s_typeOfIObjectReference = typeof(IObjectReference);
                 return s_typeOfIObjectReference;
             }
@@ -247,7 +247,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfXmlFormatClassWriterDelegate == null)
+                if (s_typeOfXmlFormatClassWriterDelegate is null)
                     s_typeOfXmlFormatClassWriterDelegate = typeof(XmlFormatClassWriterDelegate);
                 return s_typeOfXmlFormatClassWriterDelegate;
             }
@@ -258,7 +258,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfXmlFormatCollectionWriterDelegate == null)
+                if (s_typeOfXmlFormatCollectionWriterDelegate is null)
                     s_typeOfXmlFormatCollectionWriterDelegate = typeof(XmlFormatCollectionWriterDelegate);
                 return s_typeOfXmlFormatCollectionWriterDelegate;
             }
@@ -269,7 +269,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfXmlFormatClassReaderDelegate == null)
+                if (s_typeOfXmlFormatClassReaderDelegate is null)
                     s_typeOfXmlFormatClassReaderDelegate = typeof(XmlFormatClassReaderDelegate);
                 return s_typeOfXmlFormatClassReaderDelegate;
             }
@@ -280,7 +280,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfXmlFormatCollectionReaderDelegate == null)
+                if (s_typeOfXmlFormatCollectionReaderDelegate is null)
                     s_typeOfXmlFormatCollectionReaderDelegate = typeof(XmlFormatCollectionReaderDelegate);
                 return s_typeOfXmlFormatCollectionReaderDelegate;
             }
@@ -291,7 +291,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfXmlFormatGetOnlyCollectionReaderDelegate == null)
+                if (s_typeOfXmlFormatGetOnlyCollectionReaderDelegate is null)
                     s_typeOfXmlFormatGetOnlyCollectionReaderDelegate = typeof(XmlFormatGetOnlyCollectionReaderDelegate);
                 return s_typeOfXmlFormatGetOnlyCollectionReaderDelegate;
             }
@@ -302,7 +302,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfKnownTypeAttribute == null)
+                if (s_typeOfKnownTypeAttribute is null)
                     s_typeOfKnownTypeAttribute = typeof(KnownTypeAttribute);
                 return s_typeOfKnownTypeAttribute;
             }
@@ -313,7 +313,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfDataContractAttribute == null)
+                if (s_typeOfDataContractAttribute is null)
                     s_typeOfDataContractAttribute = typeof(DataContractAttribute);
                 return s_typeOfDataContractAttribute;
             }
@@ -324,7 +324,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfDataMemberAttribute == null)
+                if (s_typeOfDataMemberAttribute is null)
                     s_typeOfDataMemberAttribute = typeof(DataMemberAttribute);
                 return s_typeOfDataMemberAttribute;
             }
@@ -335,7 +335,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfEnumMemberAttribute == null)
+                if (s_typeOfEnumMemberAttribute is null)
                     s_typeOfEnumMemberAttribute = typeof(EnumMemberAttribute);
                 return s_typeOfEnumMemberAttribute;
             }
@@ -346,7 +346,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfCollectionDataContractAttribute == null)
+                if (s_typeOfCollectionDataContractAttribute is null)
                     s_typeOfCollectionDataContractAttribute = typeof(CollectionDataContractAttribute);
                 return s_typeOfCollectionDataContractAttribute;
             }
@@ -357,7 +357,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfOptionalFieldAttribute == null)
+                if (s_typeOfOptionalFieldAttribute is null)
                 {
                     s_typeOfOptionalFieldAttribute = typeof(OptionalFieldAttribute);
                 }
@@ -371,7 +371,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfObjectArray == null)
+                if (s_typeOfObjectArray is null)
                     s_typeOfObjectArray = typeof(object[]);
                 return s_typeOfObjectArray;
             }
@@ -382,7 +382,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfOnSerializingAttribute == null)
+                if (s_typeOfOnSerializingAttribute is null)
                     s_typeOfOnSerializingAttribute = typeof(OnSerializingAttribute);
                 return s_typeOfOnSerializingAttribute;
             }
@@ -393,7 +393,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfOnSerializedAttribute == null)
+                if (s_typeOfOnSerializedAttribute is null)
                     s_typeOfOnSerializedAttribute = typeof(OnSerializedAttribute);
                 return s_typeOfOnSerializedAttribute;
             }
@@ -404,7 +404,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfOnDeserializingAttribute == null)
+                if (s_typeOfOnDeserializingAttribute is null)
                     s_typeOfOnDeserializingAttribute = typeof(OnDeserializingAttribute);
                 return s_typeOfOnDeserializingAttribute;
             }
@@ -415,7 +415,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfOnDeserializedAttribute == null)
+                if (s_typeOfOnDeserializedAttribute is null)
                     s_typeOfOnDeserializedAttribute = typeof(OnDeserializedAttribute);
                 return s_typeOfOnDeserializedAttribute;
             }
@@ -426,7 +426,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfFlagsAttribute == null)
+                if (s_typeOfFlagsAttribute is null)
                     s_typeOfFlagsAttribute = typeof(FlagsAttribute);
                 return s_typeOfFlagsAttribute;
             }
@@ -437,7 +437,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfIXmlSerializable == null)
+                if (s_typeOfIXmlSerializable is null)
                     s_typeOfIXmlSerializable = typeof(IXmlSerializable);
                 return s_typeOfIXmlSerializable;
             }
@@ -448,7 +448,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfXmlSchemaProviderAttribute == null)
+                if (s_typeOfXmlSchemaProviderAttribute is null)
                     s_typeOfXmlSchemaProviderAttribute = typeof(XmlSchemaProviderAttribute);
                 return s_typeOfXmlSchemaProviderAttribute;
             }
@@ -459,7 +459,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfXmlRootAttribute == null)
+                if (s_typeOfXmlRootAttribute is null)
                     s_typeOfXmlRootAttribute = typeof(XmlRootAttribute);
                 return s_typeOfXmlRootAttribute;
             }
@@ -470,7 +470,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfXmlQualifiedName == null)
+                if (s_typeOfXmlQualifiedName is null)
                     s_typeOfXmlQualifiedName = typeof(XmlQualifiedName);
                 return s_typeOfXmlQualifiedName;
             }
@@ -481,7 +481,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfXmlSchemaType == null)
+                if (s_typeOfXmlSchemaType is null)
                 {
                     s_typeOfXmlSchemaType = typeof(XmlSchemaType);
                 }
@@ -501,7 +501,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfISerializableDataNode == null)
+                if (s_typeOfISerializableDataNode is null)
                     s_typeOfISerializableDataNode = typeof(ISerializableDataNode);
                 return s_typeOfISerializableDataNode;
             }
@@ -512,7 +512,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfClassDataNode == null)
+                if (s_typeOfClassDataNode is null)
                     s_typeOfClassDataNode = typeof(ClassDataNode);
                 return s_typeOfClassDataNode;
             }
@@ -523,7 +523,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfCollectionDataNode == null)
+                if (s_typeOfCollectionDataNode is null)
                     s_typeOfCollectionDataNode = typeof(CollectionDataNode);
                 return s_typeOfCollectionDataNode;
             }
@@ -537,7 +537,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfNullable == null)
+                if (s_typeOfNullable is null)
                     s_typeOfNullable = typeof(Nullable<>);
                 return s_typeOfNullable;
             }
@@ -548,7 +548,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfIDictionaryGeneric == null)
+                if (s_typeOfIDictionaryGeneric is null)
                     s_typeOfIDictionaryGeneric = typeof(IDictionary<,>);
                 return s_typeOfIDictionaryGeneric;
             }
@@ -559,7 +559,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfIDictionary == null)
+                if (s_typeOfIDictionary is null)
                     s_typeOfIDictionary = typeof(IDictionary);
                 return s_typeOfIDictionary;
             }
@@ -570,7 +570,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfIListGeneric == null)
+                if (s_typeOfIListGeneric is null)
                     s_typeOfIListGeneric = typeof(IList<>);
                 return s_typeOfIListGeneric;
             }
@@ -581,7 +581,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfIList == null)
+                if (s_typeOfIList is null)
                     s_typeOfIList = typeof(IList);
                 return s_typeOfIList;
             }
@@ -592,7 +592,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfICollectionGeneric == null)
+                if (s_typeOfICollectionGeneric is null)
                     s_typeOfICollectionGeneric = typeof(ICollection<>);
                 return s_typeOfICollectionGeneric;
             }
@@ -603,7 +603,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfICollection == null)
+                if (s_typeOfICollection is null)
                     s_typeOfICollection = typeof(ICollection);
                 return s_typeOfICollection;
             }
@@ -614,7 +614,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfIEnumerableGeneric == null)
+                if (s_typeOfIEnumerableGeneric is null)
                     s_typeOfIEnumerableGeneric = typeof(IEnumerable<>);
                 return s_typeOfIEnumerableGeneric;
             }
@@ -625,7 +625,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfIEnumerable == null)
+                if (s_typeOfIEnumerable is null)
                     s_typeOfIEnumerable = typeof(IEnumerable);
                 return s_typeOfIEnumerable;
             }
@@ -636,7 +636,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfIEnumeratorGeneric == null)
+                if (s_typeOfIEnumeratorGeneric is null)
                     s_typeOfIEnumeratorGeneric = typeof(IEnumerator<>);
                 return s_typeOfIEnumeratorGeneric;
             }
@@ -647,7 +647,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfIEnumerator == null)
+                if (s_typeOfIEnumerator is null)
                     s_typeOfIEnumerator = typeof(IEnumerator);
                 return s_typeOfIEnumerator;
             }
@@ -658,7 +658,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfKeyValuePair == null)
+                if (s_typeOfKeyValuePair is null)
                     s_typeOfKeyValuePair = typeof(KeyValuePair<,>);
                 return s_typeOfKeyValuePair;
             }
@@ -669,7 +669,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfKeyValuePairAdapter == null)
+                if (s_typeOfKeyValuePairAdapter is null)
                     s_typeOfKeyValuePairAdapter = typeof(KeyValuePairAdapter<,>);
                 return s_typeOfKeyValuePairAdapter;
             }
@@ -680,7 +680,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfKeyValue == null)
+                if (s_typeOfKeyValue is null)
                     s_typeOfKeyValue = typeof(KeyValue<,>);
                 return s_typeOfKeyValue;
             }
@@ -691,7 +691,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfIDictionaryEnumerator == null)
+                if (s_typeOfIDictionaryEnumerator is null)
                     s_typeOfIDictionaryEnumerator = typeof(IDictionaryEnumerator);
                 return s_typeOfIDictionaryEnumerator;
             }
@@ -702,7 +702,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfDictionaryEnumerator == null)
+                if (s_typeOfDictionaryEnumerator is null)
                     s_typeOfDictionaryEnumerator = typeof(CollectionDataContract.DictionaryEnumerator);
                 return s_typeOfDictionaryEnumerator;
             }
@@ -713,7 +713,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfGenericDictionaryEnumerator == null)
+                if (s_typeOfGenericDictionaryEnumerator is null)
                     s_typeOfGenericDictionaryEnumerator = typeof(CollectionDataContract.GenericDictionaryEnumerator<,>);
                 return s_typeOfGenericDictionaryEnumerator;
             }
@@ -724,7 +724,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfDictionaryGeneric == null)
+                if (s_typeOfDictionaryGeneric is null)
                     s_typeOfDictionaryGeneric = typeof(Dictionary<,>);
                 return s_typeOfDictionaryGeneric;
             }
@@ -735,7 +735,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfHashtable == null)
+                if (s_typeOfHashtable is null)
                     s_typeOfHashtable = TypeOfDictionaryGeneric.MakeGenericType(TypeOfObject, TypeOfObject);
                 return s_typeOfHashtable;
             }
@@ -746,7 +746,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfXmlElement == null)
+                if (s_typeOfXmlElement is null)
                     s_typeOfXmlElement = typeof(XmlElement);
                 return s_typeOfXmlElement;
             }
@@ -757,7 +757,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfXmlNodeArray == null)
+                if (s_typeOfXmlNodeArray is null)
                     s_typeOfXmlNodeArray = typeof(XmlNode[]);
                 return s_typeOfXmlNodeArray;
             }
@@ -768,7 +768,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_typeOfDBNull == null)
+                if (s_typeOfDBNull is null)
                     s_typeOfDBNull = typeof(DBNull);
                 return s_typeOfDBNull;
             }
@@ -779,7 +779,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_dataContractXsdBaseNamespaceUri == null)
+                if (s_dataContractXsdBaseNamespaceUri is null)
                     s_dataContractXsdBaseNamespaceUri = new Uri(DataContractXsdBaseNamespace);
                 return s_dataContractXsdBaseNamespaceUri;
             }
@@ -789,13 +789,13 @@ namespace System.Runtime.Serialization
 
         internal static ClassDataContract CreateScriptObjectClassDataContract()
         {
-            Debug.Assert(s_typeOfScriptObject != null);
+            Debug.Assert(s_typeOfScriptObject is not null);
             return new ClassDataContract(s_typeOfScriptObject);
         }
 
         internal static bool TypeOfScriptObject_IsAssignableFrom(Type type)
         {
-            return s_typeOfScriptObject != null && s_typeOfScriptObject.IsAssignableFrom(type);
+            return s_typeOfScriptObject is not null && s_typeOfScriptObject.IsAssignableFrom(type);
         }
 
         public const bool DefaultIsRequired = false;

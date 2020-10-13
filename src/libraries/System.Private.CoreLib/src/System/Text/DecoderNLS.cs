@@ -49,7 +49,7 @@ namespace System.Text
         public override unsafe int GetCharCount(byte[] bytes, int index, int count, bool flush)
         {
             // Validate Parameters
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes),
                     SR.ArgumentNull_Array);
 
@@ -69,7 +69,7 @@ namespace System.Text
         public override unsafe int GetCharCount(byte* bytes, int count, bool flush)
         {
             // Validate parameters
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes),
                       SR.ArgumentNull_Array);
 
@@ -82,7 +82,7 @@ namespace System.Text
             _throwOnOverflow = true;
 
             // By default just call the encoding version, no flush by default
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             return _encoding.GetCharCount(bytes, count, this);
         }
 
@@ -96,8 +96,8 @@ namespace System.Text
                                              char[] chars, int charIndex, bool flush)
         {
             // Validate Parameters
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
+            if (bytes is null || chars is null)
+                throw new ArgumentNullException(bytes is null ? nameof(bytes) : nameof(chars),
                     SR.ArgumentNull_Array);
 
             if (byteIndex < 0 || byteCount < 0)
@@ -126,8 +126,8 @@ namespace System.Text
                                               char* chars, int charCount, bool flush)
         {
             // Validate parameters
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
+            if (chars is null || bytes is null)
+                throw new ArgumentNullException(chars is null ? nameof(chars) : nameof(bytes),
                       SR.ArgumentNull_Array);
 
             if (byteCount < 0 || charCount < 0)
@@ -139,7 +139,7 @@ namespace System.Text
             _throwOnOverflow = true;
 
             // By default just call the encodings version
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             return _encoding.GetChars(bytes, byteCount, chars, charCount, this);
         }
 
@@ -150,8 +150,8 @@ namespace System.Text
                                               out int bytesUsed, out int charsUsed, out bool completed)
         {
             // Validate parameters
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars),
+            if (bytes is null || chars is null)
+                throw new ArgumentNullException(bytes is null ? nameof(bytes) : nameof(chars),
                       SR.ArgumentNull_Array);
 
             if (byteIndex < 0 || byteCount < 0)
@@ -188,8 +188,8 @@ namespace System.Text
                                               out int bytesUsed, out int charsUsed, out bool completed)
         {
             // Validate input parameters
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException(chars == null ? nameof(chars) : nameof(bytes),
+            if (chars is null || bytes is null)
+                throw new ArgumentNullException(chars is null ? nameof(chars) : nameof(bytes),
                     SR.ArgumentNull_Array);
 
             if (byteCount < 0 || charCount < 0)
@@ -202,7 +202,7 @@ namespace System.Text
             _bytesUsed = 0;
 
             // Do conversion
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             charsUsed = _encoding.GetChars(bytes, byteCount, chars, charCount, this);
             bytesUsed = _bytesUsed;
 
@@ -256,7 +256,7 @@ namespace System.Text
             combinedBuffer = combinedBuffer.Slice(0, ConcatInto(GetLeftoverData(), bytes, combinedBuffer));
             int charCount = 0;
 
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             switch (_encoding.DecodeFirstRune(combinedBuffer, out Rune value, out int combinedBufferBytesConsumed))
             {
                 case OperationStatus.Done:
@@ -314,7 +314,7 @@ namespace System.Text
 
             bool persistNewCombinedBuffer = false;
 
-            Debug.Assert(_encoding != null);
+            Debug.Assert(_encoding is not null);
             switch (_encoding.DecodeFirstRune(combinedBuffer, out Rune value, out int combinedBufferBytesConsumed))
             {
                 case OperationStatus.Done:

@@ -42,7 +42,7 @@ namespace System.Numerics
 
         public static uint Gcd(uint[] left, uint right)
         {
-            Debug.Assert(left != null);
+            Debug.Assert(left is not null);
             Debug.Assert(left.Length >= 1);
             Debug.Assert(right != 0);
 
@@ -56,9 +56,9 @@ namespace System.Numerics
 
         public static uint[] Gcd(uint[] left, uint[] right)
         {
-            Debug.Assert(left != null);
+            Debug.Assert(left is not null);
             Debug.Assert(left.Length >= 2);
-            Debug.Assert(right != null);
+            Debug.Assert(right is not null);
             Debug.Assert(right.Length >= 2);
             Debug.Assert(Compare(left, right) >= 0);
 

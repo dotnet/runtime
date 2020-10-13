@@ -71,38 +71,38 @@ namespace Internal.NativeCrypto
         internal static byte[] ToKeyBlob(this RSAParameters rsaParameters)
         {
             // Validate the RSA structure first.
-            if (rsaParameters.Modulus == null)
+            if (rsaParameters.Modulus is null)
                 throw GetBadDataException();
 
-            if (rsaParameters.Exponent == null || rsaParameters.Exponent.Length > 4)
+            if (rsaParameters.Exponent is null || rsaParameters.Exponent.Length > 4)
                 throw GetBadDataException();
 
             int modulusLength = rsaParameters.Modulus.Length;
             int halfModulusLength = (modulusLength + 1) / 2;
 
-            // We assume that if P != null, then so are Q, DP, DQ, InverseQ and D
-            if (rsaParameters.P != null)
+            // We assume that if P is not null, then so are Q, DP, DQ, InverseQ and D
+            if (rsaParameters.P is not null)
             {
                 if (rsaParameters.P.Length != halfModulusLength)
                     throw GetBadDataException();
 
-                if (rsaParameters.Q == null || rsaParameters.Q.Length != halfModulusLength)
+                if (rsaParameters.Q is null || rsaParameters.Q.Length != halfModulusLength)
                     throw GetBadDataException();
 
-                if (rsaParameters.DP == null || rsaParameters.DP.Length != halfModulusLength)
+                if (rsaParameters.DP is null || rsaParameters.DP.Length != halfModulusLength)
                     throw GetBadDataException();
 
-                if (rsaParameters.DQ == null || rsaParameters.DQ.Length != halfModulusLength)
+                if (rsaParameters.DQ is null || rsaParameters.DQ.Length != halfModulusLength)
                     throw GetBadDataException();
 
-                if (rsaParameters.InverseQ == null || rsaParameters.InverseQ.Length != halfModulusLength)
+                if (rsaParameters.InverseQ is null || rsaParameters.InverseQ.Length != halfModulusLength)
                     throw GetBadDataException();
 
-                if (rsaParameters.D == null || rsaParameters.D.Length != modulusLength)
+                if (rsaParameters.D is null || rsaParameters.D.Length != modulusLength)
                     throw GetBadDataException();
             }
 
-            bool isPrivate = (rsaParameters.P != null && rsaParameters.P.Length != 0);
+            bool isPrivate = (rsaParameters.P is not null && rsaParameters.P.Length != 0);
 
             MemoryStream ms = new MemoryStream();
             BinaryWriter bw = new BinaryWriter(ms);

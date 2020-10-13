@@ -31,17 +31,17 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public GenericSpecializationPartCreationInfo(IReflectionPartCreationInfo originalPartCreationInfo, ReflectionComposablePartDefinition originalPart, Type[] specialization)
         {
-            if (originalPartCreationInfo == null)
+            if (originalPartCreationInfo is null)
             {
                 throw new ArgumentNullException(nameof(originalPartCreationInfo));
             }
 
-            if (originalPart == null)
+            if (originalPart is null)
             {
                 throw new ArgumentNullException(nameof(originalPart));
             }
 
-            if (specialization == null)
+            if (specialization is null)
             {
                 throw new ArgumentNullException(nameof(specialization));
             }
@@ -80,11 +80,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ConstructorInfo? GetConstructor()
         {
-            if (_constructor == null)
+            if (_constructor is null)
             {
                 ConstructorInfo? genericConstuctor = _originalPartCreationInfo.GetConstructor();
                 ConstructorInfo? result = null;
-                if (genericConstuctor != null)
+                if (genericConstuctor is not null)
                 {
                     foreach (ConstructorInfo constructor in GetPartType().GetConstructors(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance))
                     {
@@ -99,7 +99,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 Thread.MemoryBarrier();
                 lock (_lock)
                 {
-                    if (_constructor == null)
+                    if (_constructor is null)
                     {
                         _constructor = result;
                     }
@@ -123,7 +123,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private MemberInfo[] GetAccessors(LazyMemberInfo originalLazyMember)
         {
             BuildTables();
-            if (_membersTable == null)
+            if (_membersTable is null)
             {
                 throw new ArgumentNullException(nameof(_membersTable));
             }
@@ -134,7 +134,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private ParameterInfo GetParameter(Lazy<ParameterInfo> originalParameter)
         {
             BuildTables();
-            if (_parametersTable == null)
+            if (_parametersTable is null)
             {
                 throw new ArgumentNullException(nameof(_parametersTable));
             }
@@ -144,7 +144,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private void BuildTables()
         {
-            if (_membersTable != null)
+            if (_membersTable is not null)
             {
                 return;
             }
@@ -155,12 +155,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
             List<Lazy<ParameterInfo>>? parameters = null;
             lock (_lock)
             {
-                if (_membersTable == null)
+                if (_membersTable is null)
                 {
                     members = _members;
                     parameters = _parameters;
 
-                    if (members == null)
+                    if (members is null)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
@@ -175,7 +175,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             lock (_lock)
             {
-                if (_membersTable == null)
+                if (_membersTable is null)
                 {
                     _membersTable = membersTable;
                     _parametersTable = parametersTable;
@@ -190,7 +190,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private Dictionary<LazyMemberInfo, MemberInfo[]> BuildMembersTable(List<LazyMemberInfo> members)
         {
-            if (members == null)
+            if (members is null)
             {
                 throw new ArgumentNullException(nameof(members));
             }
@@ -223,7 +223,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             //Walk the base class list
             var baseType = closedGenericPartType.BaseType;
-            while (baseType != null && baseType != typeof(object))
+            while (baseType is not null && baseType != typeof(object))
             {
                 specializedPartMembers[baseType.MetadataToken] = baseType;
                 baseType = baseType.BaseType;
@@ -239,10 +239,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
                 for (int i = 0; i < genericAccessors.Length; i++)
                 {
-                    if (genericAccessors[i] != null)
+                    if (genericAccessors[i] is not null)
                     {
                         specializedPartMembers.TryGetValue(genericAccessors[i].MetadataToken, out accessors[i]!);
-                        if (accessors[i] == null)
+                        if (accessors[i] is null)
                         {
                             throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                         }
@@ -258,7 +258,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         [return: NotNullIfNotNull("parameters")]
         private Dictionary<Lazy<ParameterInfo>, ParameterInfo>? BuildParametersTable(List<Lazy<ParameterInfo>>? parameters)
         {
-            if (parameters != null)
+            if (parameters is not null)
             {
                 Dictionary<Lazy<ParameterInfo>, ParameterInfo> parametersTable = new Dictionary<Lazy<ParameterInfo>, ParameterInfo>();
                 // GENTODO - error case
@@ -283,7 +283,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             foreach (ImportDefinition originalImport in _originalPartCreationInfo.GetImports())
             {
                 ReflectionImportDefinition? reflectionImport = originalImport as ReflectionImportDefinition;
-                if (reflectionImport == null)
+                if (reflectionImport is null)
                 {
                     // we always ignore these
                     continue;
@@ -351,7 +351,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             else
             {
                 ReflectionParameterImportDefinition? parameterImport = reflectionImport as ReflectionParameterImportDefinition;
-                if (parameterImport == null)
+                if (parameterImport is null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
@@ -400,7 +400,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             foreach (ExportDefinition originalExport in _originalPartCreationInfo.GetExports())
             {
                 ReflectionMemberExportDefinition? reflectionExport = originalExport as ReflectionMemberExportDefinition;
-                if (reflectionExport == null)
+                if (reflectionExport is null)
                 {
                     // we always ignore these
                     continue;
@@ -436,7 +436,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private string Translate(string originalValue, int[]? genericParametersOrder)
         {
-            if (genericParametersOrder != null)
+            if (genericParametersOrder is not null)
             {
                 string[] specializationIdentities = GenericServices.Reorder(_specializationIdentities, genericParametersOrder);
                 return string.Format(CultureInfo.InvariantCulture, originalValue, specializationIdentities);
@@ -455,7 +455,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private IDictionary<string, object?> TranslateImportMetadata(ContractBasedImportDefinition originalImport)
         {
             int[]? importParametersOrder = originalImport.Metadata.GetValue<int[]>(CompositionConstants.GenericImportParametersOrderMetadataName);
-            if (importParametersOrder != null)
+            if (importParametersOrder is not null)
             {
                 Dictionary<string, object?> metadata = new Dictionary<string, object?>(originalImport.Metadata, StringComparers.MetadataKeyNames);
 
@@ -488,7 +488,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private void PopulateImportsAndExports()
         {
-            if ((_exports == null) || (_imports == null))
+            if ((_exports is null) || (_imports is null))
             {
                 List<LazyMemberInfo> members = new List<LazyMemberInfo>();
                 List<Lazy<ParameterInfo>> parameters = new List<Lazy<ParameterInfo>>();
@@ -500,7 +500,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
                 lock (_lock)
                 {
-                    if ((_exports == null) || (_imports == null))
+                    if ((_exports is null) || (_imports is null))
                     {
                         _members = members;
                         if (parameters.Count > 0)
@@ -574,17 +574,17 @@ namespace System.ComponentModel.Composition.ReflectionModel
             GenericParameterAttributes[]? genericParameterAttributes = partMetadata.GetValue<GenericParameterAttributes[]>(CompositionConstants.GenericParameterAttributesMetadataName);
 
             // if no constraints and attributes been specifed, anything can be created
-            if ((genericParameterConstraints == null) && (genericParameterAttributes == null))
+            if ((genericParameterConstraints is null) && (genericParameterAttributes is null))
             {
                 return true;
             }
 
-            if ((genericParameterConstraints != null) && (genericParameterConstraints.Length != partArity))
+            if ((genericParameterConstraints is not null) && (genericParameterConstraints.Length != partArity))
             {
                 return false;
             }
 
-            if ((genericParameterAttributes != null) && (genericParameterAttributes.Length != partArity))
+            if ((genericParameterAttributes is not null) && (genericParameterAttributes.Length != partArity))
             {
                 return false;
             }

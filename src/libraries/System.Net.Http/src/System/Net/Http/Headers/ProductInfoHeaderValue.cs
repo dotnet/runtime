@@ -28,7 +28,7 @@ namespace System.Net.Http.Headers
 
         public ProductInfoHeaderValue(ProductHeaderValue product)
         {
-            if (product == null)
+            if (product is null)
             {
                 throw new ArgumentNullException(nameof(product));
             }
@@ -44,7 +44,7 @@ namespace System.Net.Http.Headers
 
         private ProductInfoHeaderValue(ProductInfoHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _product = source._product;
             _comment = source._comment;
@@ -56,9 +56,9 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            if (_product == null)
+            if (_product is null)
             {
-                Debug.Assert(_comment != null);
+                Debug.Assert(_comment is not null);
                 return _comment;
             }
             return _product.ToString();
@@ -68,12 +68,12 @@ namespace System.Net.Http.Headers
         {
             ProductInfoHeaderValue? other = obj as ProductInfoHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
 
-            if (_product == null)
+            if (_product is null)
             {
                 // We compare comments using case-sensitive comparison.
                 return string.Equals(_comment, other._comment, StringComparison.Ordinal);
@@ -84,9 +84,9 @@ namespace System.Net.Http.Headers
 
         public override int GetHashCode()
         {
-            if (_product == null)
+            if (_product is null)
             {
-                Debug.Assert(_comment != null);
+                Debug.Assert(_comment is not null);
                 return _comment.GetHashCode();
             }
             return _product.GetHashCode();

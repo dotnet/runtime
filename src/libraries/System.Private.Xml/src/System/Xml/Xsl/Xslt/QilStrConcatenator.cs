@@ -33,7 +33,7 @@ namespace System.Xml.Xsl.Xslt
 
         private void FlushBuilder()
         {
-            if (_concat == null)
+            if (_concat is null)
             {
                 _concat = _f.BaseFactory.Sequence();
             }
@@ -59,7 +59,7 @@ namespace System.Xml.Xsl.Xslt
         public void Append(QilNode? value)
         {
             Debug.Assert(_inUse, "Reset() wasn't called");
-            if (value != null)
+            if (value is not null)
             {
                 Debug.Assert(value.XmlType!.TypeCode == XmlTypeCode.String);
                 if (value.NodeType == QilNodeType.LiteralString)
@@ -78,7 +78,7 @@ namespace System.Xml.Xsl.Xslt
         {
             Debug.Assert(_inUse); // If we want allow multiple calls to ToQil() this logic should be changed
             _inUse = false;
-            if (_concat == null)
+            if (_concat is null)
             {
                 return _f.String(_builder.ToString());
             }

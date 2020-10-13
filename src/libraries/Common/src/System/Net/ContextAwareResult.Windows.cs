@@ -20,7 +20,7 @@ namespace System.Net
 
         private void CleanupInternal()
         {
-            if (_windowsIdentity != null)
+            if (_windowsIdentity is not null)
             {
                 Debug.Assert(OperatingSystem.IsWindows());
                 _windowsIdentity.Dispose();

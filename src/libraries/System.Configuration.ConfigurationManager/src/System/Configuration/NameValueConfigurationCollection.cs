@@ -17,7 +17,7 @@ namespace System.Configuration
             {
                 int index = -1; // append by default
                 NameValueConfigurationElement tempElement = (NameValueConfigurationElement)BaseGet(name);
-                if (tempElement != null)
+                if (tempElement is not null)
                 {
                     index = BaseIndexOf(tempElement);
                     BaseRemoveAt(index);

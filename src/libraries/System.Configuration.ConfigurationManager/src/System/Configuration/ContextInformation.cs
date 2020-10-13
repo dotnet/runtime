@@ -13,7 +13,7 @@ namespace System.Configuration
 
         internal ContextInformation(BaseConfigurationRecord configRecord)
         {
-            Debug.Assert(configRecord != null, "configRecord != null");
+            Debug.Assert(configRecord is not null, "configRecord is not null");
 
             _hostingContextEvaluated = false;
             _hostingContext = null;

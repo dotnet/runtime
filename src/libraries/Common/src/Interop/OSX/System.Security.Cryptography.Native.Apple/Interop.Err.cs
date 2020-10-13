@@ -25,7 +25,7 @@ internal static partial class Interop
 
         internal static Exception CreateExceptionForCFError(SafeCFErrorHandle cfError)
         {
-            Debug.Assert(cfError != null);
+            Debug.Assert(cfError is not null);
 
             if (cfError.IsInvalid)
             {

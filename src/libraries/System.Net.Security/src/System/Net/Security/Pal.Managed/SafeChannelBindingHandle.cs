@@ -22,7 +22,7 @@ namespace System.Net.Security
 
         internal void SetCertHash(byte[] certHashBytes)
         {
-            Debug.Assert(certHashBytes != null, "check certHashBytes is not null");
+            Debug.Assert(certHashBytes is not null, "check certHashBytes is not null");
             Debug.Assert(certHashBytes.Length <= CertHashMaxSize);
 
             int length = certHashBytes.Length;

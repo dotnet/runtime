@@ -251,7 +251,7 @@ namespace System.Net.Http
                     throw new InvalidOperationException(SR.Format(SR.net_http_invalid_enable_first, "ClientCertificateOptions", "Manual"));
                 }
 
-                if (_clientCertificates == null)
+                if (_clientCertificates is null)
                 {
                     _clientCertificates = new X509Certificate2Collection();
                 }
@@ -478,7 +478,7 @@ namespace System.Net.Http
         {
             get
             {
-                if (_properties == null)
+                if (_properties is null)
                 {
                     _properties = new Dictionary<string, object>();
                 }
@@ -494,7 +494,7 @@ namespace System.Net.Http
             {
                 _disposed = true;
 
-                if (disposing && _sessionHandle != null)
+                if (disposing && _sessionHandle is not null)
                 {
                     SafeWinHttpHandle.DisposeAndClearHandle(ref _sessionHandle);
                 }
@@ -507,24 +507,24 @@ namespace System.Net.Http
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
+            if (request is null)
             {
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
 
             // Check for invalid combinations of properties.
-            if (_proxy != null && _windowsProxyUsePolicy != WindowsProxyUsePolicy.UseCustomProxy)
+            if (_proxy is not null && _windowsProxyUsePolicy != WindowsProxyUsePolicy.UseCustomProxy)
             {
                 throw new InvalidOperationException(SR.net_http_invalid_proxyusepolicy);
             }
 
-            if (_windowsProxyUsePolicy == WindowsProxyUsePolicy.UseCustomProxy && _proxy == null)
+            if (_windowsProxyUsePolicy == WindowsProxyUsePolicy.UseCustomProxy && _proxy is null)
             {
                 throw new InvalidOperationException(SR.net_http_invalid_proxy);
             }
 
             if (_cookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer &&
-                _cookieContainer == null)
+                _cookieContainer is null)
             {
                 throw new InvalidOperationException(SR.net_http_invalid_cookiecontainer);
             }
@@ -568,7 +568,7 @@ namespace System.Net.Http
                 requestMessage.Headers.TransferEncodingChunked.Value;
 
             HttpContent requestContent = requestMessage.Content;
-            if (requestContent != null)
+            if (requestContent is not null)
             {
                 if (requestContent.Headers.ContentLength.HasValue)
                 {
@@ -612,7 +612,7 @@ namespace System.Net.Http
             // Get a StringBuilder to use for creating the request headers.
             // We cache one in TLS to avoid creating a new one for each request.
             StringBuilder requestHeadersBuffer = t_requestHeadersBuilder;
-            if (requestHeadersBuffer != null)
+            if (requestHeadersBuffer is not null)
             {
                 requestHeadersBuffer.Clear();
             }
@@ -642,7 +642,7 @@ namespace System.Net.Http
             }
 
             // Manually add cookies.
-            if (cookies != null && cookies.Count > 0)
+            if (cookies is not null && cookies.Count > 0)
             {
                 string cookieHeader = WinHttpCookieContainerAdapter.GetCookieHeader(requestMessage.RequestUri, cookies);
                 if (!string.IsNullOrEmpty(cookieHeader))
@@ -655,7 +655,7 @@ namespace System.Net.Http
             requestHeadersBuffer.AppendLine(requestMessage.Headers.ToString());
 
             // Serialize entity-body (content) headers.
-            if (requestMessage.Content != null)
+            if (requestMessage.Content is not null)
             {
                 // TODO https://github.com/dotnet/runtime/issues/16162:
                 // Content-Length header isn't getting correctly placed using ToString()
@@ -683,11 +683,11 @@ namespace System.Net.Http
 
         private void EnsureSessionHandleExists(WinHttpRequestState state)
         {
-            if (_sessionHandle == null)
+            if (_sessionHandle is null)
             {
                 lock (_lockObject)
                 {
-                    if (_sessionHandle == null)
+                    if (_sessionHandle is null)
                     {
                         SafeWinHttpHandle sessionHandle;
                         uint accessType;
@@ -697,7 +697,7 @@ namespace System.Net.Http
                         // since that object is only a sentinel.
                         if (state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseCustomProxy)
                         {
-                            Debug.Assert(state.Proxy != null);
+                            Debug.Assert(state.Proxy is not null);
                             try
                             {
                                 state.Proxy.GetProxy(state.RequestMessage.RequestUri);
@@ -875,7 +875,7 @@ namespace System.Net.Http
 
                         await InternalSendRequestAsync(state);
 
-                        if (state.RequestMessage.Content != null)
+                        if (state.RequestMessage.Content is not null)
                         {
                             await InternalSendRequestBodyAsync(state, chunkedModeForSend).ConfigureAwait(false);
                         }
@@ -1032,7 +1032,7 @@ namespace System.Net.Http
 
                 try
                 {
-                    if (state.Proxy != null)
+                    if (state.Proxy is not null)
                     {
                         Debug.Assert(state.WindowsProxyUsePolicy == WindowsProxyUsePolicy.UseCustomProxy);
                         updateProxySettings = true;
@@ -1048,7 +1048,7 @@ namespace System.Net.Http
                             proxyInfo.Proxy = Marshal.StringToHGlobalUni(proxyString);
                         }
                     }
-                    else if (_proxyHelper != null && _proxyHelper.AutoSettingsUsed)
+                    else if (_proxyHelper is not null && _proxyHelper.AutoSettingsUsed)
                     {
                         if (_proxyHelper.GetProxyForUrl(_sessionHandle, uri, out proxyInfo))
                         {
@@ -1152,7 +1152,7 @@ namespace System.Net.Http
             // we need to have WinHTTP ignore some errors so that the callback method
             // will have a chance to be called.
             uint optionData;
-            if (_serverCertificateValidationCallback != null)
+            if (_serverCertificateValidationCallback is not null)
             {
                 optionData =
                     Interop.WinHttp.SECURITY_FLAG_IGNORE_UNKNOWN_CA |
@@ -1186,7 +1186,7 @@ namespace System.Net.Http
                 clientCertificate = CertificateHelper.GetEligibleClientCertificate();
             }
 
-            if (clientCertificate != null)
+            if (clientCertificate is not null)
             {
                 SetWinHttpOption(
                     requestHandle,
@@ -1274,7 +1274,7 @@ namespace System.Net.Http
 
         private void SetRequestHandleHttp2Options(SafeWinHttpHandle requestHandle, Version requestVersion)
         {
-            Debug.Assert(requestHandle != null);
+            Debug.Assert(requestHandle is not null);
             uint optionData = (requestVersion == HttpVersion20) ? Interop.WinHttp.WINHTTP_PROTOCOL_FLAG_HTTP2 : 0;
             if (Interop.WinHttp.WinHttpSetOption(
                 requestHandle,
@@ -1291,7 +1291,7 @@ namespace System.Net.Http
 
         private void SetWinHttpOption(SafeWinHttpHandle handle, uint option, ref uint optionData)
         {
-            Debug.Assert(handle != null);
+            Debug.Assert(handle is not null);
             if (!Interop.WinHttp.WinHttpSetOption(
                 handle,
                 option,
@@ -1307,7 +1307,7 @@ namespace System.Net.Http
             IntPtr optionData,
             uint optionSize)
         {
-            Debug.Assert(handle != null);
+            Debug.Assert(handle is not null);
             if (!Interop.WinHttp.WinHttpSetOption(
                 handle,
                 option,

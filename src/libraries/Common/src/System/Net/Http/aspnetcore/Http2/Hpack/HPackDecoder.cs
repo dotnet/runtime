@@ -185,7 +185,7 @@ namespace System.Net.Http.HPack
             // If a header range was set, but the value was not in the data, then copy the range
             // to the name buffer. Must copy because because the data will be replaced and the range
             // will no longer be valid.
-            if (_headerNameRange != null)
+            if (_headerNameRange is not null)
             {
                 EnsureStringCapacity(ref _headerNameOctets);
                 _headerName = _headerNameOctets;
@@ -493,7 +493,7 @@ namespace System.Net.Http.HPack
 
         private void ProcessHeaderValue(ReadOnlySpan<byte> data, IHttpHeadersHandler handler)
         {
-            ReadOnlySpan<byte> headerValueSpan = _headerValueRange == null
+            ReadOnlySpan<byte> headerValueSpan = _headerValueRange is null
                 ? _headerValueOctets.AsSpan(0, _headerValueLength)
                 : data.Slice(_headerValueRange.GetValueOrDefault().start, _headerValueRange.GetValueOrDefault().length);
 
@@ -508,7 +508,7 @@ namespace System.Net.Http.HPack
             }
             else
             {
-                ReadOnlySpan<byte> headerNameSpan = _headerNameRange == null
+                ReadOnlySpan<byte> headerNameSpan = _headerNameRange is null
                     ? _headerName.AsSpan(0, _headerNameLength)
                     : data.Slice(_headerNameRange.GetValueOrDefault().start, _headerNameRange.GetValueOrDefault().length);
 

@@ -53,7 +53,7 @@ namespace System.Reflection.Emit
 
         public override bool Equals(object? obj)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 return false;
             }
@@ -134,7 +134,7 @@ namespace System.Reflection.Emit
 
         internal ModuleBuilder GetModuleBuilder(InternalModuleBuilder module)
         {
-            Debug.Assert(module != null);
+            Debug.Assert(module is not null);
             Debug.Assert(InternalAssembly == module.Assembly);
 
             lock (SyncRoot)
@@ -164,7 +164,7 @@ namespace System.Reflection.Emit
                                  ref StackCrawlMark stackMark,
                                  IEnumerable<CustomAttributeBuilder>? unsafeAssemblyAttributes)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -180,7 +180,7 @@ namespace System.Reflection.Emit
             // assembly. Currently, we look for any attribute which modifies the security transparency
             // of the assembly.
             List<CustomAttributeBuilder>? assemblyAttributes = null;
-            if (unsafeAssemblyAttributes != null)
+            if (unsafeAssemblyAttributes is not null)
             {
                 // Create a copy to ensure that it cannot be modified from another thread
                 // as it is used further below.
@@ -200,7 +200,7 @@ namespace System.Reflection.Emit
             // We need to do this before setting any CustomAttribute
             InitManifestModule();
 
-            if (assemblyAttributes != null)
+            if (assemblyAttributes is not null)
             {
                 foreach (CustomAttributeBuilder assemblyAttribute in assemblyAttributes)
                 {
@@ -310,7 +310,7 @@ namespace System.Reflection.Emit
 
         private ModuleBuilder DefineDynamicModuleInternalNoLock(string name, bool emitSymbolInfo)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -329,7 +329,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             }
 
-            Debug.Assert(_assemblyData != null, "_assemblyData is null in DefineDynamicModuleInternal");
+            Debug.Assert(_assemblyData is not null, "_assemblyData is null in DefineDynamicModuleInternal");
 
             // Init(...) has already been called on _manifestModuleBuilder in InitManifestModule()
             ModuleBuilder dynModule = _manifestModuleBuilder;
@@ -362,14 +362,14 @@ namespace System.Reflection.Emit
 
         internal static void CheckContext(params Type[]?[]? typess)
         {
-            if (typess == null)
+            if (typess is null)
             {
                 return;
             }
 
             foreach (Type[]? types in typess)
             {
-                if (types != null)
+                if (types is not null)
                 {
                     CheckContext(types);
                 }
@@ -378,19 +378,19 @@ namespace System.Reflection.Emit
 
         internal static void CheckContext(params Type?[]? types)
         {
-            if (types == null)
+            if (types is null)
             {
                 return;
             }
 
             foreach (Type? type in types)
             {
-                if (type == null)
+                if (type is null)
                 {
                     continue;
                 }
 
-                if (type.Module == null || type.Module.Assembly == null)
+                if (type.Module is null || type.Module.Assembly is null)
                 {
                     throw new ArgumentException(SR.Argument_TypeNotValid);
                 }
@@ -550,7 +550,7 @@ namespace System.Reflection.Emit
         /// <param name="name">The name of module for the look up.</param>
         private ModuleBuilder? GetDynamicModuleNoLock(string name)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -575,11 +575,11 @@ namespace System.Reflection.Emit
         /// </summary>
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
+            if (con is null)
             {
                 throw new ArgumentNullException(nameof(con));
             }
-            if (binaryAttribute == null)
+            if (binaryAttribute is null)
             {
                 throw new ArgumentNullException(nameof(binaryAttribute));
             }
@@ -606,7 +606,7 @@ namespace System.Reflection.Emit
         /// </summary>
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
             {
                 throw new ArgumentNullException(nameof(customBuilder));
             }

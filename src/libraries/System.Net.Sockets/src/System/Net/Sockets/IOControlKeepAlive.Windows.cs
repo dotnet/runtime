@@ -24,7 +24,7 @@ namespace System.Net.Sockets
 
         public static SocketError Get(SafeSocketHandle handle, SocketOptionName optionName, byte[] optionValueSeconds, ref int optionLength)
         {
-            if (optionValueSeconds == null ||
+            if (optionValueSeconds is null ||
                 !BitConverter.TryWriteBytes(optionValueSeconds.AsSpan(), Get(handle, optionName)))
             {
                 return SocketError.Fault;
@@ -50,7 +50,7 @@ namespace System.Net.Sockets
 
         public static SocketError Set(SafeSocketHandle handle, SocketOptionName optionName, byte[] optionValueSeconds)
         {
-            if (optionValueSeconds == null ||
+            if (optionValueSeconds is null ||
                 optionValueSeconds.Length < sizeof(int))
             {
                 return SocketError.Fault;
@@ -111,7 +111,7 @@ namespace System.Net.Sockets
 
         private void Fill(byte[] buffer)
         {
-            Debug.Assert(buffer != null);
+            Debug.Assert(buffer is not null);
             Debug.Assert(buffer.Length == 3 * sizeof(uint));
 
             const uint OnOff = 1u;

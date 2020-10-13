@@ -16,8 +16,8 @@ namespace System.Net.Http
 
         public RedirectHandler(int maxAutomaticRedirections, HttpMessageHandlerStage initialInnerHandler, HttpMessageHandlerStage redirectInnerHandler)
         {
-            Debug.Assert(initialInnerHandler != null);
-            Debug.Assert(redirectInnerHandler != null);
+            Debug.Assert(initialInnerHandler is not null);
+            Debug.Assert(redirectInnerHandler is not null);
             Debug.Assert(maxAutomaticRedirections > 0);
 
             _maxAutomaticRedirections = maxAutomaticRedirections;
@@ -31,8 +31,8 @@ namespace System.Net.Http
 
             uint redirectCount = 0;
             Uri? redirectUri;
-            Debug.Assert(request.RequestUri != null);
-            while ((redirectUri = GetUriForRedirect(request.RequestUri, response)) != null)
+            Debug.Assert(request.RequestUri is not null);
+            while ((redirectUri = GetUriForRedirect(request.RequestUri, response)) is not null)
             {
                 redirectCount++;
 
@@ -99,7 +99,7 @@ namespace System.Net.Http
             }
 
             Uri? location = response.Headers.Location;
-            if (location == null)
+            if (location is null)
             {
                 return null;
             }

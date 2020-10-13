@@ -39,7 +39,7 @@ namespace System.Net.Sockets
                     safeHandle.DangerousAddRef(ref refAdded);
                     IntPtr handle = safeHandle.DangerousGetHandle();
 
-                    Debug.Assert(_buffer != null);
+                    Debug.Assert(_buffer is not null);
                     _listenSocket.GetAcceptExSockaddrs(
                         Marshal.UnsafeAddrOfPinnedArrayElement(_buffer, 0),
                         _buffer.Length - (_addressBufferLength * 2),
@@ -111,7 +111,7 @@ namespace System.Net.Sockets
             // condition where tracing is disabled between a calling check and here, in which case the assert
             // may fire erroneously.
             Debug.Assert(NetEventSource.Log.IsEnabled());
-            Debug.Assert(_buffer != null);
+            Debug.Assert(_buffer is not null);
 
             if (size > -1)
             {

@@ -55,7 +55,7 @@ namespace System
             info.AddValue("TypeLoadResourceID", _resourceId);
         }
 
-        // If ClassName != null, GetMessage will construct on the fly using it
+        // If ClassName is not null, GetMessage will construct on the fly using it
         // and ResourceId (mscorrc.dll). This allows customization of the
         // class name format depending on the language environment.
         private string? _className;

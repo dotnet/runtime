@@ -261,7 +261,7 @@ namespace System.Dynamic
                 DynamicMetaObject mo = objects[i];
                 ContractUtils.RequiresNotNull(mo, nameof(objects));
                 Expression expr = mo.Expression;
-                Debug.Assert(expr != null, "Unexpected null expression; ctor should have caught this.");
+                Debug.Assert(expr is not null, "Unexpected null expression; ctor should have caught this.");
                 res[i] = expr;
             }
 
@@ -286,9 +286,9 @@ namespace System.Dynamic
             {
                 var idoMetaObject = ido.GetMetaObject(expression);
 
-                if (idoMetaObject == null ||
+                if (idoMetaObject is null ||
                     !idoMetaObject.HasValue ||
-                    idoMetaObject.Value == null ||
+                    idoMetaObject.Value is null ||
                     (object)idoMetaObject.Expression != (object)expression)
                 {
                     throw System.Linq.Expressions.Error.InvalidMetaObjectCreated(ido.GetType());

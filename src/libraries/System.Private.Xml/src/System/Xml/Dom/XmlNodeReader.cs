@@ -215,7 +215,7 @@ namespace System.Xml
                     Debug.Assert(_nAttrInd >= 0 && _nAttrInd < AttributeCount);
                     return true;
                 }
-                if (_curNode.Value != null || _curNode.NodeType == XmlNodeType.DocumentType)
+                if (_curNode.Value is not null || _curNode.NodeType == XmlNodeType.DocumentType)
                     return true;
                 return false;
             }
@@ -255,7 +255,7 @@ namespace System.Xml
                 }
                 else
                     retValue = _curNode.Value;
-                return (retValue == null) ? string.Empty : retValue;
+                return (retValue is null) ? string.Empty : retValue;
             }
         }
 
@@ -354,21 +354,21 @@ namespace System.Xml
         {
             int i = 0;
             string? strTemp = _doc.Version;
-            if (strTemp != null && strTemp.Length != 0)
+            if (strTemp is not null && strTemp.Length != 0)
             {
                 decNodeAttributes[i].name = strVersion;
                 decNodeAttributes[i].value = strTemp;
                 i++;
             }
             strTemp = _doc.Encoding;
-            if (strTemp != null && strTemp.Length != 0)
+            if (strTemp is not null && strTemp.Length != 0)
             {
                 decNodeAttributes[i].name = strEncoding;
                 decNodeAttributes[i].value = strTemp;
                 i++;
             }
             strTemp = _doc.Standalone;
-            if (strTemp != null && strTemp.Length != 0)
+            if (strTemp is not null && strTemp.Length != 0)
             {
                 decNodeAttributes[i].name = strStandalone;
                 decNodeAttributes[i].value = strTemp;
@@ -412,14 +412,14 @@ namespace System.Xml
         {
             int i = 0;
             XmlDocumentType? docType = _doc.DocumentType;
-            if (docType == null)
+            if (docType is null)
             {
                 _nDocTypeAttrCount = 0;
                 return;
             }
 
             string? strTemp = docType.PublicId;
-            if (strTemp != null)
+            if (strTemp is not null)
             {
                 docTypeNodeAttributes[i].name = strPublicID;
                 docTypeNodeAttributes[i].value = strTemp;
@@ -427,7 +427,7 @@ namespace System.Xml
             }
 
             strTemp = docType.SystemId;
-            if (strTemp != null)
+            if (strTemp is not null)
             {
                 docTypeNodeAttributes[i].name = strSystemID;
                 docTypeNodeAttributes[i].value = strTemp;
@@ -469,7 +469,7 @@ namespace System.Xml
         private string? GetAttributeFromElement(XmlElement elem, string name)
         {
             XmlAttribute? attr = elem.GetAttributeNode(name);
-            if (attr != null)
+            if (attr is not null)
                 return attr.Value;
             return null;
         }
@@ -492,7 +492,7 @@ namespace System.Xml
         private string? GetAttributeFromElement(XmlElement elem, string name, string? ns)
         {
             XmlAttribute? attr = elem.GetAttributeNode(name, ns);
-            if (attr != null)
+            if (attr is not null)
                 return attr.Value;
             return null;
         }
@@ -631,7 +631,7 @@ namespace System.Xml
                 attr = elem.GetAttributeNode(name);
             else
                 attr = elem.GetAttributeNode(name, ns);
-            if (attr != null)
+            if (attr is not null)
             {
                 _bOnAttrVal = false;
                 _elemNode = elem;
@@ -683,7 +683,7 @@ namespace System.Xml
                 case XmlNodeType.Element:
                     CheckIndexCondition(attributeIndex);
                     attr = ((XmlElement)_curNode).Attributes[attributeIndex];
-                    if (attr != null)
+                    if (attr is not null)
                     {
                         _elemNode = _curNode;
                         _curNode = (XmlNode)attr;
@@ -693,7 +693,7 @@ namespace System.Xml
                 case XmlNodeType.Attribute:
                     CheckIndexCondition(attributeIndex);
                     attr = ((XmlElement)_elemNode!).Attributes[attributeIndex];
-                    if (attr != null)
+                    if (attr is not null)
                     {
                         _curNode = (XmlNode)attr;
                         _attrIndex = attributeIndex;
@@ -765,7 +765,7 @@ namespace System.Xml
         public bool MoveToParent()
         {
             XmlNode? parent = _curNode.ParentNode;
-            if (parent != null)
+            if (parent is not null)
             {
                 _curNode = parent;
                 if (!_bOnAttrVal)
@@ -778,7 +778,7 @@ namespace System.Xml
         public bool MoveToFirstChild()
         {
             XmlNode? firstChild = _curNode.FirstChild;
-            if (firstChild != null)
+            if (firstChild is not null)
             {
                 _curNode = firstChild;
                 if (!_bOnAttrVal)
@@ -792,7 +792,7 @@ namespace System.Xml
         private bool MoveToNextSibling(XmlNode node)
         {
             XmlNode? nextSibling = node.NextSibling;
-            if (nextSibling != null)
+            if (nextSibling is not null)
             {
                 _curNode = nextSibling;
                 if (!_bOnAttrVal)
@@ -818,7 +818,7 @@ namespace System.Xml
             switch (_curNode.NodeType)
             {
                 case XmlNodeType.Attribute:
-                    if (_elemNode != null)
+                    if (_elemNode is not null)
                     {
                         _curNode = _elemNode;
                         _attrIndex = -1;
@@ -854,7 +854,7 @@ namespace System.Xml
 
             // construct the name of the xmlns attribute
             string attrName;
-            if (prefix == null)
+            if (prefix is null)
                 prefix = string.Empty;
             if (prefix.Length == 0)
                 attrName = "xmlns";
@@ -863,7 +863,7 @@ namespace System.Xml
 
             // walk up the XmlNode parent chain, looking for the xmlns attribute
             XmlNode? node = _curNode;
-            while (node != null)
+            while (node is not null)
             {
                 if (node.NodeType == XmlNodeType.Element)
                 {
@@ -871,7 +871,7 @@ namespace System.Xml
                     if (elem.HasAttributes)
                     {
                         XmlAttribute? attr = elem.GetAttributeNode(attrName);
-                        if (attr != null)
+                        if (attr is not null)
                         {
                             return attr.Value;
                         }
@@ -913,7 +913,7 @@ namespace System.Xml
 
         internal string? LookupPrefix(string namespaceName)
         {
-            if (_bCreatedOnAttribute || namespaceName == null)
+            if (_bCreatedOnAttribute || namespaceName is null)
             {
                 return null;
             }
@@ -931,7 +931,7 @@ namespace System.Xml
             }
             // walk up the XmlNode parent chain, looking for the xmlns attribute with namespaceName value
             XmlNode? node = _curNode;
-            while (node != null)
+            while (node is not null)
             {
                 if (node.NodeType == XmlNodeType.Element)
                 {
@@ -983,7 +983,7 @@ namespace System.Xml
 
             // walk up the XmlNode parent chain and add all namespace declarations to the dictionary
             XmlNode? node = _curNode;
-            while (node != null)
+            while (node is not null)
             {
                 if (node.NodeType == XmlNodeType.Element)
                 {
@@ -1056,7 +1056,7 @@ namespace System.Xml
             if (_curNode.NodeType == XmlNodeType.Attribute)
             {
                 XmlNode? firstChild = _curNode.FirstChild;
-                if (firstChild != null)
+                if (firstChild is not null)
                 {
                     _curNode = firstChild;
                     nt = _curNode.NodeType;
@@ -1072,7 +1072,7 @@ namespace System.Xml
                 {
                     //going down to ent ref node
                     _curNode = _curNode.FirstChild!;
-                    Debug.Assert(_curNode != null);
+                    Debug.Assert(_curNode is not null);
                     nt = _curNode.NodeType;
                     level++;
                     bResolveEntity = false;
@@ -1080,11 +1080,11 @@ namespace System.Xml
                 }
                 else
                     nextSibling = _curNode.NextSibling;
-                if (nextSibling == null)
+                if (nextSibling is null)
                 {
                     XmlNode? parentNode = _curNode.ParentNode;
                     //Check if its parent is entity ref node is sufficient, because in this senario, ent ref node can't have more than 1 level of children that are not other ent ref nodes
-                    if (parentNode != null && parentNode.NodeType == XmlNodeType.EntityReference)
+                    if (parentNode is not null && parentNode.NodeType == XmlNodeType.EntityReference)
                     {
                         //come back from ent ref node
                         _curNode = parentNode;
@@ -1093,7 +1093,7 @@ namespace System.Xml
                         return true;
                     }
                 }
-                if (nextSibling != null)
+                if (nextSibling is not null)
                 {
                     _curNode = nextSibling;
                     nt = _curNode.NodeType;
@@ -1135,7 +1135,7 @@ namespace System.Xml
         // Creates an instance of the XmlNodeReader class using the specified XmlNode.
         public XmlNodeReader(XmlNode node)
         {
-            if (node == null)
+            if (node is null)
             {
                 throw new ArgumentNullException(nameof(node));
             }
@@ -1343,7 +1343,7 @@ namespace System.Xml
             //if not on Attribute, only element node could have attributes
             if (!IsInReadingStates())
                 return null;
-            string ns = (namespaceURI == null) ? string.Empty : namespaceURI;
+            string ns = (namespaceURI is null) ? string.Empty : namespaceURI;
             return _readerNav.GetAttribute(name, ns);
         }
 
@@ -1383,7 +1383,7 @@ namespace System.Xml
             if (!IsInReadingStates())
                 return false;
             _readerNav.ResetMove(ref _curDepth, ref _nodeType);
-            string ns = (namespaceURI == null) ? string.Empty : namespaceURI;
+            string ns = (namespaceURI is null) ? string.Empty : namespaceURI;
             if (_readerNav.MoveToAttribute(name, ns))
             { //, ref curDepth ) ) {
                 _curDepth++;
@@ -1759,7 +1759,7 @@ namespace System.Xml
             if (!IsInReadingStates())
                 return null;
             string? ns = _readerNav.LookupNamespace(prefix);
-            if (ns != null && ns.Length == 0)
+            if (ns is not null && ns.Length == 0)
             {
                 return null;
             }
@@ -1920,7 +1920,7 @@ namespace System.Xml
             }
 
             string? ns = _readerNav.LookupNamespace(prefix);
-            if (ns != null)
+            if (ns is not null)
             {
                 ns = _readerNav.NameTable.Add(ns);
             }

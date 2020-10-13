@@ -25,7 +25,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override string ToDebugString(int instructionIndex, object? cookie, Func<int, int> labelIndexer, IReadOnlyList<object>? objects)
         {
-            return cookie == null ?
+            return cookie is null ?
                 InstructionName + "(" + _index + ")" :
                 InstructionName + "(" + cookie + ": " + _index + ")";
         }
@@ -225,7 +225,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object? o = frame.Pop();
-            frame.Push(o == null ? o : RuntimeHelpers.GetObjectValue(o));
+            frame.Push(o is null ? o : RuntimeHelpers.GetObjectValue(o));
             return 1;
         }
     }
@@ -269,7 +269,7 @@ namespace System.Linq.Expressions.Interpreter
             internal ImmutableValue(int index, object defaultValue)
                 : base(index)
             {
-                Debug.Assert(defaultValue != null);
+                Debug.Assert(defaultValue is not null);
                 _defaultValue = defaultValue;
             }
 

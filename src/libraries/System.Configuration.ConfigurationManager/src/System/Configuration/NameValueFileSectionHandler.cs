@@ -26,12 +26,12 @@ namespace System.Configuration
 
             result = NameValueSectionHandler.CreateStatic(result, section);
 
-            if (fileAttribute != null && fileAttribute.Value.Length != 0)
+            if (fileAttribute is not null && fileAttribute.Value.Length != 0)
             {
                 string filename = null;
                 filename = fileAttribute.Value;
                 IConfigErrorInfo configXmlNode = fileAttribute as IConfigErrorInfo;
-                if (configXmlNode == null)
+                if (configXmlNode is null)
                 {
                     return null;
                 }

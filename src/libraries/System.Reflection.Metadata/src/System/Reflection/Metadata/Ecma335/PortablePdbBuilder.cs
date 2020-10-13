@@ -50,7 +50,7 @@ namespace System.Reflection.Metadata.Ecma335
             MethodDefinitionHandle entryPoint,
             Func<IEnumerable<Blob>, BlobContentId>? idProvider = null)
         {
-            if (tablesAndHeaps == null)
+            if (tablesAndHeaps is null)
             {
                 Throw.ArgumentNull(nameof(tablesAndHeaps));
             }
@@ -124,7 +124,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="builder"/> is null.</exception>
         public BlobContentId Serialize(BlobBuilder builder)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 Throw.ArgumentNull(nameof(builder));
             }

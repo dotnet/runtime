@@ -57,7 +57,7 @@ namespace System.Dynamic.Utils
         /// </summary>
         public static ReadOnlyCollection<T> ToReadOnly<T>(this IEnumerable<T>? enumerable)
         {
-            if (enumerable == null)
+            if (enumerable is null)
             {
                 return EmptyReadOnlyCollection<T>.Instance;
             }
@@ -85,7 +85,7 @@ namespace System.Dynamic.Utils
             int h = 6551;
             foreach (T t in list)
             {
-                if (t != null)
+                if (t is not null)
                 {
                     h ^= (h << 5) ^ cmp.GetHashCode(t);
                 }

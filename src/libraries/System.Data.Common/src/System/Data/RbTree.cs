@@ -289,12 +289,12 @@ namespace System.Data
                         pageIndex = (pageTableMapPos * TreePage.slotLineSize) + GetIntValueFromBitMap(pageWithFreeSlot); // segment + offset
                         if (allocatedPage)
                         {
-                            if (_pageTable[pageIndex] != null)
+                            if (_pageTable[pageIndex] is not null)
                                 return pageIndex;
                         }
                         else
                         {
-                            if (_pageTable[pageIndex] == null)
+                            if (_pageTable[pageIndex] is null)
                                 return pageIndex;           // pageIndex points to an unallocated Page
                         }
                         pageIndex = -1;
@@ -1623,7 +1623,7 @@ namespace System.Data
 
         public void CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(array));
             }
@@ -1648,7 +1648,7 @@ namespace System.Data
 
         public void CopyTo(K[] array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(array));
             }

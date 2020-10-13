@@ -25,16 +25,16 @@ namespace Microsoft.Extensions.Logging.TraceSource
 
             string message = string.Empty;
 
-            if (formatter != null)
+            if (formatter is not null)
             {
                 message = formatter(state, exception);
             }
-            else if (state != null)
+            else if (state is not null)
             {
                 message += state;
             }
 
-            if (exception != null)
+            if (exception is not null)
             {
                 string exceptionDelimiter = string.IsNullOrEmpty(message) ? string.Empty : " " ;
                 message += exceptionDelimiter + exception;

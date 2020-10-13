@@ -30,10 +30,10 @@ namespace System.Security.Cryptography.Pkcs
         public Pkcs9AttributeObject(AsnEncodedData asnEncodedData)
             : base(asnEncodedData)
         {
-            if (asnEncodedData.Oid == null)
+            if (asnEncodedData.Oid is null)
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "asnEncodedData.Oid"), nameof(asnEncodedData));
             string? szOid = base.Oid!.Value;
-            if (szOid == null)
+            if (szOid is null)
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(asnEncodedData));
             if (szOid.Length == 0)
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(asnEncodedData));
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public override void CopyFrom(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData == null)
+            if (asnEncodedData is null)
                 throw new ArgumentNullException(nameof(asnEncodedData));
             if (!(asnEncodedData is Pkcs9AttributeObject))
                 throw new ArgumentException(SR.Cryptography_Pkcs9_AttributeMismatch);

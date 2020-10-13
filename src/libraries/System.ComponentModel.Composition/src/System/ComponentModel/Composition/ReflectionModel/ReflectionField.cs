@@ -12,7 +12,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionField(FieldInfo field)
         {
-            if (field == null)
+            if (field is null)
             {
                 throw new ArgumentNullException(nameof(field));
             }

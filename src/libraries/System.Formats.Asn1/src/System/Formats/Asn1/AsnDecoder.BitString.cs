@@ -208,7 +208,7 @@ namespace System.Formats.Asn1
                 Slice(source, headerLength, contentsLength),
                 ruleSet,
                 destination,
-                contentsLength == null,
+                contentsLength is null,
                 out localUbc,
                 out int bytesRead,
                 out int written))
@@ -313,7 +313,7 @@ namespace System.Formats.Asn1
                 Slice(source, headerLength, contentsLength),
                 ruleSet,
                 rented,
-                contentsLength == null,
+                contentsLength is null,
                 out localUbc,
                 out int bytesRead,
                 out int written))
@@ -489,7 +489,7 @@ namespace System.Formats.Asn1
                             throw new AsnContentException(SR.ContentException_InvalidUnderCer_TryBerOrDer);
                         }
 
-                        Debug.Assert(length != null);
+                        Debug.Assert(length is not null);
                         ReadOnlySpan<byte> encodedValue = Slice(cur, headerLength, length.Value);
 
                         ParsePrimitiveBitStringContents(
@@ -506,7 +506,7 @@ namespace System.Formats.Asn1
                         totalLength += contents.Length;
                         lastSegmentLength = encodedValue.Length;
 
-                        if (copyAction != null)
+                        if (copyAction is not null)
                         {
                             copyAction(contents, normalizedLastByte, curDest);
                             curDest = curDest.Slice(contents.Length);
@@ -541,7 +541,7 @@ namespace System.Formats.Asn1
                             throw new AsnContentException(SR.ContentException_InvalidUnderCerOrDer_TryBer);
                         }
 
-                        if (readerStack == null)
+                        if (readerStack is null)
                         {
                             readerStack = new Stack<(int, int, bool, int)>();
                         }
@@ -556,7 +556,7 @@ namespace System.Formats.Asn1
 
                         cur = Slice(cur, headerLength, length);
                         bytesRead = headerLength;
-                        isIndefinite = (length == null);
+                        isIndefinite = (length is null);
                     }
                     else
                     {

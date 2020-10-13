@@ -62,7 +62,7 @@ namespace System.Net.NetworkInformation
         public override bool Equals(object? comparand)
         {
             PhysicalAddress? address = comparand as PhysicalAddress;
-            if (address == null)
+            if (address is null)
             {
                 return false;
             }
@@ -98,7 +98,7 @@ namespace System.Net.NetworkInformation
             return (byte[])_address.Clone();
         }
 
-        public static PhysicalAddress Parse(string? address) => address != null ? Parse(address.AsSpan()) : None;
+        public static PhysicalAddress Parse(string? address) => address is not null ? Parse(address.AsSpan()) : None;
 
         public static PhysicalAddress Parse(ReadOnlySpan<char> address)
         {
@@ -110,7 +110,7 @@ namespace System.Net.NetworkInformation
 
         public static bool TryParse(string? address, [NotNullWhen(true)] out PhysicalAddress? value)
         {
-            if (address == null)
+            if (address is null)
             {
                 value = None;
                 return true;

@@ -81,7 +81,7 @@ namespace System.Xml.Xsl.XPath
 
         internal string? MarkOutError()
         {
-            if (queryString == null || queryString.Trim(' ').Length == 0)
+            if (queryString is null || queryString.Trim(' ').Length == 0)
             {
                 return null;
             }
@@ -107,7 +107,7 @@ namespace System.Xml.Xsl.XPath
             string message = Message;
             string? error = MarkOutError();
 
-            if (error != null && error.Length > 0)
+            if (error is not null && error.Length > 0)
             {
                 if (message.Length > 0)
                 {

@@ -129,7 +129,7 @@ namespace System.Threading.Channels
 
                     // There weren't any items.  If we're done writing so that there
                     // will never be more items, fail.
-                    if (parent._doneWriting != null)
+                    if (parent._doneWriting is not null)
                     {
                         return ChannelUtilities.GetInvalidCompletionValueTask<T>(parent._doneWriting);
                     }
@@ -178,7 +178,7 @@ namespace System.Threading.Channels
                     }
 
                     // There were no items available, so if we're done writing, a read will never be possible.
-                    if (parent._doneWriting != null)
+                    if (parent._doneWriting is not null)
                     {
                         return parent._doneWriting != ChannelUtilities.s_doneWritingSentinel ?
                             new ValueTask<bool>(Task.FromException<bool>(parent._doneWriting)) :
@@ -223,7 +223,7 @@ namespace System.Threading.Channels
                 // Dequeue an item.
                 T item = parent._items.DequeueHead();
 
-                if (parent._doneWriting != null)
+                if (parent._doneWriting is not null)
                 {
                     // We're done writing, so if we're now empty, complete the channel.
                     if (parent._items.IsEmpty)
@@ -292,7 +292,7 @@ namespace System.Threading.Channels
                     parent.AssertInvariants();
 
                     // If we've already marked the channel as completed, bail.
-                    if (parent._doneWriting != null)
+                    if (parent._doneWriting is not null)
                     {
                         return false;
                     }
@@ -337,7 +337,7 @@ namespace System.Threading.Channels
                     parent.AssertInvariants();
 
                     // If we're done writing, nothing more to do.
-                    if (parent._doneWriting != null)
+                    if (parent._doneWriting is not null)
                     {
                         return false;
                     }
@@ -362,13 +362,13 @@ namespace System.Threading.Channels
                             }
                         }
 
-                        if (blockedReader == null)
+                        if (blockedReader is null)
                         {
                             // If there wasn't a blocked reader, then store the item. If no one's waiting
                             // to be notified about a 0-to-1 transition, we're done.
                             parent._items.EnqueueTail(item);
                             waitingReadersTail = parent._waitingReadersTail;
-                            if (waitingReadersTail == null)
+                            if (waitingReadersTail is null)
                             {
                                 return true;
                             }
@@ -413,9 +413,9 @@ namespace System.Threading.Channels
                 }
 
                 // We either wrote the item already, or we're transferring it to the blocked reader we grabbed.
-                if (blockedReader != null)
+                if (blockedReader is not null)
                 {
-                    Debug.Assert(waitingReadersTail == null, "Shouldn't have any waiters to wake up");
+                    Debug.Assert(waitingReadersTail is null, "Shouldn't have any waiters to wake up");
 
                     // Transfer the written item to the blocked reader.
                     bool success = blockedReader.TrySetResult(item);
@@ -446,7 +446,7 @@ namespace System.Threading.Channels
                     parent.AssertInvariants();
 
                     // If we're done writing, no writes will ever succeed.
-                    if (parent._doneWriting != null)
+                    if (parent._doneWriting is not null)
                     {
                         return parent._doneWriting != ChannelUtilities.s_doneWritingSentinel ?
                             new ValueTask<bool>(Task.FromException<bool>(parent._doneWriting)) :
@@ -497,7 +497,7 @@ namespace System.Threading.Channels
                     parent.AssertInvariants();
 
                     // If we're done writing, trying to write is an error.
-                    if (parent._doneWriting != null)
+                    if (parent._doneWriting is not null)
                     {
                         return new ValueTask(Task.FromException(ChannelUtilities.CreateInvalidCompletionException(parent._doneWriting)));
                     }
@@ -522,13 +522,13 @@ namespace System.Threading.Channels
                             }
                         }
 
-                        if (blockedReader == null)
+                        if (blockedReader is null)
                         {
                             // If there wasn't a blocked reader, then store the item. If no one's waiting
                             // to be notified about a 0-to-1 transition, we're done.
                             parent._items.EnqueueTail(item);
                             waitingReadersTail = parent._waitingReadersTail;
-                            if (waitingReadersTail == null)
+                            if (waitingReadersTail is null)
                             {
                                 return default;
                             }
@@ -589,7 +589,7 @@ namespace System.Threading.Channels
                 }
 
                 // We either wrote the item already, or we're transfering it to the blocked reader we grabbed.
-                if (blockedReader != null)
+                if (blockedReader is not null)
                 {
                     // Transfer the written item to the blocked reader.
                     bool success = blockedReader.TrySetResult(item);
@@ -620,18 +620,18 @@ namespace System.Threading.Channels
         [Conditional("DEBUG")]
         private void AssertInvariants()
         {
-            Debug.Assert(SyncObj != null, "The sync obj must not be null.");
+            Debug.Assert(SyncObj is not null, "The sync obj must not be null.");
             Debug.Assert(Monitor.IsEntered(SyncObj), "Invariants can only be validated while holding the lock.");
 
             if (!_items.IsEmpty)
             {
                 Debug.Assert(_blockedReaders.IsEmpty, "There are items available, so there shouldn't be any blocked readers.");
-                Debug.Assert(_waitingReadersTail == null, "There are items available, so there shouldn't be any waiting readers.");
+                Debug.Assert(_waitingReadersTail is null, "There are items available, so there shouldn't be any waiting readers.");
             }
             if (_items.Count < _bufferedCapacity)
             {
                 Debug.Assert(_blockedWriters.IsEmpty, "There's space available, so there shouldn't be any blocked writers.");
-                Debug.Assert(_waitingWritersTail == null, "There's space available, so there shouldn't be any waiting writers.");
+                Debug.Assert(_waitingWritersTail is null, "There's space available, so there shouldn't be any waiting writers.");
             }
             if (!_blockedReaders.IsEmpty)
             {
@@ -645,7 +645,7 @@ namespace System.Threading.Channels
             }
             if (_completion.Task.IsCompleted)
             {
-                Debug.Assert(_doneWriting != null, "We can only complete if we're done writing.");
+                Debug.Assert(_doneWriting is not null, "We can only complete if we're done writing.");
             }
         }
 
@@ -653,7 +653,7 @@ namespace System.Threading.Channels
         private int ItemsCountForDebugger => _items.Count;
 
         /// <summary>Report if the channel is closed or not. This should only be used by the debugger.</summary>
-        private bool ChannelIsClosedForDebugger => _doneWriting != null;
+        private bool ChannelIsClosedForDebugger => _doneWriting is not null;
 
         /// <summary>Gets an enumerator the debugger can use to show the contents of the channel.</summary>
         IEnumerator<T> IDebugEnumerable<T>.GetEnumerator() => _items.GetEnumerator();

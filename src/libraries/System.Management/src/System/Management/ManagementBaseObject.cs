@@ -200,7 +200,7 @@ namespace System.Management
         {
             get
             {
-                if (_wbemObject == null)
+                if (_wbemObject is null)
                 {
                     Initialize(true);
                 }
@@ -230,7 +230,7 @@ namespace System.Management
 
         public new void Dispose()
         {
-            if (_wbemObject != null)
+            if (_wbemObject is not null)
             {
                 _wbemObject.Dispose();
                 _wbemObject = null;
@@ -343,7 +343,7 @@ namespace System.Management
             {
                 Initialize(true);
 
-                if (properties == null)
+                if (properties is null)
                     properties = new PropertyDataCollection(this, false);
 
                 return properties;
@@ -365,7 +365,7 @@ namespace System.Management
             {
                 Initialize(false);
 
-                if (systemProperties == null)
+                if (systemProperties is null)
                     systemProperties = new PropertyDataCollection(this, true);
 
                 return systemProperties;
@@ -388,7 +388,7 @@ namespace System.Management
             {
                 Initialize(true);
 
-                if (qualifiers == null)
+                if (qualifiers is null)
                     qualifiers = new QualifierDataCollection(this);
 
                 return qualifiers;
@@ -618,7 +618,7 @@ namespace System.Management
                     ctx.SetValue_("IncludeQualifiers", 0, ref v);
                     ctx.SetValue_("IncludeClassOrigin", 0, ref v);
 
-                    if (wbemTextSrc != null)
+                    if (wbemTextSrc is not null)
                     {
                         status = wbemTextSrc.GetText_(0,
                             (IWbemClassObject_DoNotMarshal)(Marshal.GetObjectForIUnknown(wbemObject)),

@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
                     string? curveName = GetCurveName(out _);
 
                     return new ECDiffieHellmanCngPublicKey(
-                        curveName == null
+                        curveName is null
                             ? ExportFullKeyBlob(includePrivateParameters: false)
                             : ExportKeyBlob(includePrivateParameters: false),
                         curveName);

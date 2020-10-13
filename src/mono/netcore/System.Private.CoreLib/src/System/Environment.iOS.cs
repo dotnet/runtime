@@ -15,7 +15,7 @@ namespace System
 
         private static string GetFolderPathCore(SpecialFolder folder, SpecialFolderOption option)
         {
-            if (s_specialFolders == null)
+            if (s_specialFolders is null)
             {
                 Interlocked.CompareExchange(ref s_specialFolders, new Dictionary<SpecialFolder, string>(), null);
             }
@@ -96,7 +96,7 @@ namespace System
             static string CombineSearchPath(NSSearchPathDirectory searchPath, string subdirectory)
             {
                 string? path = Interop.Sys.SearchPath(searchPath);
-                return path != null ?
+                return path is not null ?
                     Path.Combine(path, subdirectory) :
                     string.Empty;
             }

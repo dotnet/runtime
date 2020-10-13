@@ -13,7 +13,7 @@ namespace System.Reflection
             FieldInfo f = RuntimeType.GetFieldInfo(handle.GetRuntimeFieldInfo());
 
             Type? declaringType = f.DeclaringType;
-            if (declaringType != null && declaringType.IsGenericType)
+            if (declaringType is not null && declaringType.IsGenericType)
                 throw new ArgumentException(SR.Format(
                     SR.Argument_FieldDeclaringTypeGeneric,
                     f.Name, declaringType.GetGenericTypeDefinition()));

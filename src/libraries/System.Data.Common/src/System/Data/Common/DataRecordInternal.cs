@@ -356,7 +356,7 @@ namespace System.Data.Common
 
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
         {
-            if (_propertyDescriptors == null)
+            if (_propertyDescriptors is null)
             {
                 _propertyDescriptors = new PropertyDescriptorCollection(null);
             }

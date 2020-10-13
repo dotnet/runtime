@@ -363,7 +363,7 @@ namespace System.Data
         {
             get
             {
-                if (Table == null)
+                if (Table is null)
                 {
                     return false;
                 }

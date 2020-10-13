@@ -16,8 +16,8 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void OnInstructionExecute(Processor processor)
         {
-            Debug.Assert(processor.Debugger != null, "We don't generate calls this function if ! debugger");
-            Debug.Assert(DbgData.StyleSheet != null, "We call this function from *EventDbg only");
+            Debug.Assert(processor.Debugger is not null, "We don't generate calls this function if ! debugger");
+            Debug.Assert(DbgData.StyleSheet is not null, "We call this function from *EventDbg only");
             processor.OnInstructionExecute();
         }
 

@@ -173,7 +173,7 @@ namespace System.Runtime.Serialization
 
         internal void WriteRootElement(XmlWriterDelegator writer, DataContract contract, XmlDictionaryString? name, XmlDictionaryString? ns, bool needsContractNsAtRoot)
         {
-            if (name == null) // root name not set explicitly
+            if (name is null) // root name not set explicitly
             {
                 if (!contract.HasRoot)
                     return;
@@ -191,7 +191,7 @@ namespace System.Runtime.Serialization
 
         internal bool CheckIfNeedsContractNsAtRoot(XmlDictionaryString? name, XmlDictionaryString? ns, DataContract contract)
         {
-            if (name == null)
+            if (name is null)
                 return false;
 
             if (contract.IsBuiltInDataContract || !contract.CanContainReferences)
@@ -307,7 +307,7 @@ namespace System.Runtime.Serialization
 
         internal bool IsRootXmlAny(XmlDictionaryString? rootName, DataContract contract)
         {
-            return (rootName == null) && !contract.HasRoot;
+            return (rootName is null) && !contract.HasRoot;
         }
 
         internal bool IsStartElement(XmlReaderDelegator reader)
@@ -318,7 +318,7 @@ namespace System.Runtime.Serialization
         internal bool IsRootElement(XmlReaderDelegator reader, DataContract contract, XmlDictionaryString? name, XmlDictionaryString? ns)
         {
             reader.MoveToElement();
-            if (name != null) // root name set explicitly
+            if (name is not null) // root name set explicitly
             {
                 return reader.IsStartElement(name, ns!); // https://github.com/dotnet/runtime/issues/41395
             }
@@ -331,15 +331,15 @@ namespace System.Runtime.Serialization
                     return true;
 
                 ClassDataContract? classContract = contract as ClassDataContract;
-                if (classContract != null)
+                if (classContract is not null)
                     classContract = classContract.BaseContract;
-                while (classContract != null)
+                while (classContract is not null)
                 {
                     if (reader.IsStartElement(classContract.TopLevelElementName!, classContract.TopLevelElementNamespace!))
                         return true;
                     classContract = classContract.BaseContract;
                 }
-                if (classContract == null)
+                if (classContract is null)
                 {
                     DataContract objectContract = PrimitiveDataContract.GetPrimitiveDataContract(Globals.TypeOfObject)!;
                     if (reader.IsStartElement(objectContract.TopLevelElementName!, objectContract.TopLevelElementNamespace!))
@@ -351,7 +351,7 @@ namespace System.Runtime.Serialization
 
         internal static void CheckNull(object obj, string name)
         {
-            if (obj == null)
+            if (obj is null)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(name));
         }
 
@@ -379,14 +379,14 @@ namespace System.Runtime.Serialization
         }
         internal static string GetTypeInfoError(string errorMessage, Type? type, Exception innerException)
         {
-            string typeInfo = (type == null) ? string.Empty : SR.Format(SR.ErrorTypeInfo, DataContract.GetClrTypeFullName(type));
-            string innerExceptionMessage = (innerException == null) ? string.Empty : innerException.Message;
+            string typeInfo = (type is null) ? string.Empty : SR.Format(SR.ErrorTypeInfo, DataContract.GetClrTypeFullName(type));
+            string innerExceptionMessage = (innerException is null) ? string.Empty : innerException.Message;
             return SR.Format(errorMessage, typeInfo, innerExceptionMessage);
         }
 
         internal virtual Type? GetSerializeType(object? graph)
         {
-            return (graph == null) ? null : graph.GetType();
+            return (graph is null) ? null : graph.GetType();
         }
 
         internal virtual Type? GetDeserializeType()
@@ -399,7 +399,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_formatterConverter == null)
+                if (s_formatterConverter is null)
                 {
                     s_formatterConverter = new FormatterConverter();
                 }

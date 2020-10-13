@@ -58,7 +58,7 @@ namespace System.Xml.Xsl.XsltOld
         internal static string? PrecalculateAvt(ref Avt? avt)
         {
             string? result = null;
-            if (avt != null && avt.IsConstant)
+            if (avt is not null && avt.IsConstant)
             {
                 result = avt.Evaluate(null, null);
                 avt = null;
@@ -92,7 +92,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public void CheckRequiredAttribute(Compiler compiler, object? attrValue, string attrName)
         {
-            CheckRequiredAttribute(compiler, attrValue != null, attrName);
+            CheckRequiredAttribute(compiler, attrValue is not null, attrName);
         }
 
         public void CheckRequiredAttribute(Compiler compiler, bool attr, string attrName)

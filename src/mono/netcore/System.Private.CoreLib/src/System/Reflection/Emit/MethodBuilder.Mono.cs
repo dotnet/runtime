@@ -90,10 +90,10 @@ namespace System.Reflection.Emit
             // appends a HasThis flag if the method is not static
             if ((attributes & MethodAttributes.Static) == 0)
                 this.call_conv |= CallingConventions.HasThis;
-            if (parameterTypes != null)
+            if (parameterTypes is not null)
             {
                 for (int i = 0; i < parameterTypes.Length; ++i)
-                    if (parameterTypes[i] == null)
+                    if (parameterTypes[i] is null)
                         throw new ArgumentException("Elements of the parameterTypes array cannot be null", nameof(parameterTypes));
 
                 this.parameters = new Type[parameterTypes.Length];
@@ -250,7 +250,7 @@ namespace System.Reflection.Emit
 
         internal override ParameterInfo[] GetParametersInternal()
         {
-            if (parameters == null)
+            if (parameters is null)
                 return Array.Empty<ParameterInfo>();
 
             ParameterInfo[] retval = new ParameterInfo[parameters.Length];
@@ -263,7 +263,7 @@ namespace System.Reflection.Emit
 
         internal override int GetParametersCount()
         {
-            if (parameters == null)
+            if (parameters is null)
                 return 0;
 
             return parameters.Length;
@@ -327,7 +327,7 @@ namespace System.Reflection.Emit
                 ((iattrs & MethodImplAttributes.ManagedMask) !=
                  MethodImplAttributes.Managed))
                 throw new InvalidOperationException("Method body should not exist.");
-            if (ilgen != null)
+            if (ilgen is not null)
                 return ilgen;
             ilgen = new ILGenerator(type.Module, ((ModuleBuilder)type.Module).GetTokenGenerator(), size);
             return ilgen;
@@ -340,11 +340,11 @@ namespace System.Reflection.Emit
             //
             // Extension: Mono allows position == 0 for the return attribute
             //
-            if ((position < 0) || parameters == null || (position > parameters.Length))
+            if ((position < 0) || parameters is null || (position > parameters.Length))
                 throw new ArgumentOutOfRangeException(nameof(position));
 
             ParameterBuilder pb = new ParameterBuilder(this, position, attributes, strParamName);
-            if (pinfo == null)
+            if (pinfo is null)
                 pinfo = new ParameterBuilder[parameters.Length + 1];
             pinfo[position] = pb;
             return pb;
@@ -352,7 +352,7 @@ namespace System.Reflection.Emit
 
         internal void check_override()
         {
-            if (override_methods != null)
+            if (override_methods is not null)
             {
                 foreach (MethodInfo m in override_methods)
                 {
@@ -367,12 +367,12 @@ namespace System.Reflection.Emit
             if (((attrs & (MethodAttributes.Abstract | MethodAttributes.PinvokeImpl)) == 0) && ((iattrs & (MethodImplAttributes.Runtime | MethodImplAttributes.InternalCall)) == 0))
             {
                 // do not allow zero length method body on MS.NET 2.0 (and higher)
-                if (((ilgen == null) || (ilgen.ILOffset == 0)) && (code == null || code.Length == 0))
+                if (((ilgen is null) || (ilgen.ILOffset == 0)) && (code is null || code.Length == 0))
                     throw new InvalidOperationException(
                                          string.Format("Method '{0}.{1}' does not have a method body.",
                                                 DeclaringType!.FullName, Name));
             }
-            if (ilgen != null)
+            if (ilgen is not null)
                 ilgen.label_fixup(this);
         }
 
@@ -382,12 +382,12 @@ namespace System.Reflection.Emit
             TypeBuilder.ResolveUserTypes(parameters);
             TypeBuilder.ResolveUserTypes(returnModReq);
             TypeBuilder.ResolveUserTypes(returnModOpt);
-            if (paramModReq != null)
+            if (paramModReq is not null)
             {
                 foreach (Type[] types in paramModReq)
                     TypeBuilder.ResolveUserTypes(types);
             }
-            if (paramModOpt != null)
+            if (paramModOpt is not null)
             {
                 foreach (Type[] types in paramModOpt)
                     TypeBuilder.ResolveUserTypes(types);
@@ -396,7 +396,7 @@ namespace System.Reflection.Emit
         /*
                 internal void GenerateDebugInfo (ISymbolWriter symbolWriter)
                 {
-                    if (ilgen != null && ilgen.HasDebugInfo) {
+                    if (ilgen is not null && ilgen.HasDebugInfo) {
                         SymbolToken token = new SymbolToken (GetToken().Token);
                         symbolWriter.OpenMethod (token);
                         symbolWriter.SetSymAttribute (token, "__name", System.Text.Encoding.UTF8.GetBytes (Name));
@@ -407,7 +407,7 @@ namespace System.Reflection.Emit
         */
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
             switch (customBuilder.Ctor.ReflectedType!.FullName)
@@ -436,7 +436,7 @@ namespace System.Reflection.Emit
                      */
 
                     pi_dll = (string?)attr.ctorArgs[0];
-                    if (pi_dll == null || pi_dll.Length == 0)
+                    if (pi_dll is null || pi_dll.Length == 0)
                         throw new ArgumentException("DllName cannot be empty");
 
                     native_cc = Runtime.InteropServices.CallingConvention.Winapi;
@@ -480,7 +480,7 @@ namespace System.Reflection.Emit
                     break;
             }
 
-            if (cattrs != null)
+            if (cattrs is not null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
                 cattrs.CopyTo(new_array, 0);
@@ -497,9 +497,9 @@ namespace System.Reflection.Emit
         [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
+            if (con is null)
                 throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
+            if (binaryAttribute is null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }
@@ -533,7 +533,7 @@ namespace System.Reflection.Emit
 
         private static void ExtendArray<T>([NotNull] ref T[]? array, T elem)
         {
-            if (array == null)
+            if (array is null)
             {
                 array = new T[1];
             }
@@ -566,13 +566,13 @@ namespace System.Reflection.Emit
         {
             if (!IsGenericMethodDefinition)
                 throw new InvalidOperationException("Method is not a generic method definition");
-            if (typeArguments == null)
+            if (typeArguments is null)
                 throw new ArgumentNullException(nameof(typeArguments));
             if (generic_params!.Length != typeArguments.Length)
                 throw new ArgumentException("Incorrect length", nameof(typeArguments));
             foreach (Type type in typeArguments)
             {
-                if (type == null)
+                if (type is null)
                     throw new ArgumentNullException(nameof(typeArguments));
             }
 
@@ -583,7 +583,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                return generic_params != null;
+                return generic_params is not null;
             }
         }
 
@@ -591,7 +591,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                return generic_params != null;
+                return generic_params is not null;
             }
         }
 
@@ -605,7 +605,7 @@ namespace System.Reflection.Emit
 
         public override Type[] GetGenericArguments()
         {
-            if (generic_params == null)
+            if (generic_params is null)
                 return Type.EmptyTypes;
 
             Type[] result = new Type[generic_params.Length];
@@ -617,7 +617,7 @@ namespace System.Reflection.Emit
 
         public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
-            if (names == null)
+            if (names is null)
                 throw new ArgumentNullException(nameof(names));
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
@@ -626,7 +626,7 @@ namespace System.Reflection.Emit
             for (int i = 0; i < names.Length; i++)
             {
                 string item = names[i];
-                if (item == null)
+                if (item is null)
                     throw new ArgumentNullException(nameof(names));
                 generic_params[i] = new GenericTypeParameterBuilder(type, this, item, i);
             }
@@ -641,10 +641,10 @@ namespace System.Reflection.Emit
 
         public void SetParameters(params Type[]? parameterTypes)
         {
-            if (parameterTypes != null)
+            if (parameterTypes is not null)
             {
                 for (int i = 0; i < parameterTypes.Length; ++i)
-                    if (parameterTypes[i] == null)
+                    if (parameterTypes[i] is null)
                         throw new ArgumentNullException(nameof(parameterTypes), "Elements of the parameterTypes array cannot be null");
 
                 this.parameters = new Type[parameterTypes.Length];

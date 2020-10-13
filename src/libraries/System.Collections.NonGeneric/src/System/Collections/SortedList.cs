@@ -117,7 +117,7 @@ namespace System.Collections
         public SortedList(IComparer? comparer)
             : this()
         {
-            if (comparer != null) this.comparer = comparer;
+            if (comparer is not null) this.comparer = comparer;
         }
 
         // Constructs a new sorted list with a given IComparer
@@ -155,9 +155,9 @@ namespace System.Collections
         // subsequently added to the sorted list.
         //
         public SortedList(IDictionary d, IComparer? comparer)
-            : this(comparer, (d != null ? d.Count : 0))
+            : this(comparer, (d is not null ? d.Count : 0))
         {
-            if (d == null)
+            if (d is null)
                 throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
 
             d.Keys.CopyTo(keys, 0);
@@ -178,7 +178,7 @@ namespace System.Collections
         //
         public virtual void Add(object key, object? value)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
+            if (key is null) throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
 
             int i = Array.BinarySearch(keys, 0, _size, key, comparer);
             if (i >= 0)
@@ -339,7 +339,7 @@ namespace System.Collections
         // Copies the values in this SortedList to an array.
         public virtual void CopyTo(Array array, int arrayIndex)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Array);
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -434,7 +434,7 @@ namespace System.Collections
         //
         public virtual IList GetKeyList()
         {
-            if (keyList == null) keyList = new KeyList(this);
+            if (keyList is null) keyList = new KeyList(this);
             return keyList;
         }
 
@@ -451,7 +451,7 @@ namespace System.Collections
         //
         public virtual IList GetValueList()
         {
-            if (valueList == null) valueList = new ValueList(this);
+            if (valueList is null) valueList = new ValueList(this);
             return valueList;
         }
 
@@ -468,7 +468,7 @@ namespace System.Collections
             }
             set
             {
-                if (key == null) throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
+                if (key is null) throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 int i = Array.BinarySearch(keys, 0, _size, key, comparer);
                 if (i >= 0)
                 {
@@ -489,7 +489,7 @@ namespace System.Collections
         //
         public virtual int IndexOfKey(object key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             int ret = Array.BinarySearch(keys, 0, _size, key, comparer);
             return ret >= 0 ? ret : -1;
@@ -563,7 +563,7 @@ namespace System.Collections
         //
         public static SortedList Synchronized(SortedList list)
         {
-            if (list == null)
+            if (list is null)
                 throw new ArgumentNullException(nameof(list));
             return new SyncSortedList(list);
         }
@@ -742,7 +742,7 @@ namespace System.Collections
 
             public override int IndexOfKey(object key)
             {
-                if (key == null)
+                if (key is null)
                     throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
 
                 lock (_root)
@@ -953,7 +953,7 @@ namespace System.Collections
 
             public virtual void CopyTo(Array array, int arrayIndex)
             {
-                if (array != null && array.Rank != 1)
+                if (array is not null && array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
 
                 // defer error checking to Array.Copy
@@ -984,7 +984,7 @@ namespace System.Collections
 
             public virtual int IndexOf(object? key)
             {
-                if (key == null)
+                if (key is null)
                     throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
 
                 int i = Array.BinarySearch(sortedList.keys, 0,
@@ -1057,7 +1057,7 @@ namespace System.Collections
 
             public virtual void CopyTo(Array array, int arrayIndex)
             {
-                if (array != null && array.Rank != 1)
+                if (array is not null && array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
 
                 // defer error checking to Array.Copy
@@ -1109,7 +1109,7 @@ namespace System.Collections
 
             public SortedListDebugView(SortedList sortedList)
             {
-                if (sortedList == null)
+                if (sortedList is null)
                 {
                     throw new ArgumentNullException(nameof(sortedList));
                 }

@@ -62,14 +62,14 @@ namespace System.IO.Pipelines
         public void ResetMemory()
         {
             IMemoryOwner<byte>? memoryOwner = _memoryOwner;
-            if (memoryOwner != null)
+            if (memoryOwner is not null)
             {
                 _memoryOwner = null;
                 memoryOwner.Dispose();
             }
             else
             {
-                Debug.Assert(_array != null);
+                Debug.Assert(_array is not null);
                 ArrayPool<byte>.Shared.Return(_array);
                 _array = null;
             }
@@ -97,16 +97,16 @@ namespace System.IO.Pipelines
 
         public void SetNext(BufferSegment segment)
         {
-            Debug.Assert(segment != null);
-            Debug.Assert(Next == null);
+            Debug.Assert(segment is not null);
+            Debug.Assert(Next is null);
 
             NextSegment = segment;
 
             segment = this;
 
-            while (segment.Next != null)
+            while (segment.Next is not null)
             {
-                Debug.Assert(segment.NextSegment != null);
+                Debug.Assert(segment.NextSegment is not null);
                 segment.NextSegment.RunningIndex = segment.RunningIndex + segment.Length;
                 segment = segment.NextSegment;
             }

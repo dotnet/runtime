@@ -45,7 +45,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                if (_dnsAddresses == null)
+                if (_dnsAddresses is null)
                 {
                     throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
                 }
@@ -58,7 +58,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                if (_dnsSuffix == null)
+                if (_dnsSuffix is null)
                 {
                     throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
                 }
@@ -71,7 +71,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                if (_dnsAddresses == null)
+                if (_dnsAddresses is null)
                 {
                     throw new PlatformNotSupportedException(SR.net_InformationUnavailableOnPlatform);
                 }
@@ -95,7 +95,7 @@ namespace System.Net.NetworkInformation
         {
             var collection = new MulticastIPAddressInformationCollection();
 
-            if (uni.MulticastAddresess != null)
+            if (uni.MulticastAddresess is not null)
             {
                 foreach (IPAddress address in uni.MulticastAddresess)
                 {

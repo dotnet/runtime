@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Xml
                 strBuilder.Append((char)10);
             strBuilder.Append("<?");
             strBuilder.Append(Name);
-            if ((Value != null) && (Value.Length > 0))
+            if ((Value is not null) && (Value.Length > 0))
                 strBuilder.Append(" " + Value);
             strBuilder.Append("?>");
             if (docPos == DocPosition.BeforeRootElement)
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Xml
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
             rgbData = utf8.GetBytes((Name));
             hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);
-            if ((Value != null) && (Value.Length > 0))
+            if ((Value is not null) && (Value.Length > 0))
             {
                 rgbData = utf8.GetBytes(" " + Value);
                 hash.TransformBlock(rgbData, 0, rgbData.Length, rgbData, 0);

@@ -529,14 +529,14 @@ namespace System.Net
         {
             get
             {
-                if (s_internalSetNameMethod == null)
+                if (s_internalSetNameMethod is null)
                 {
                     // TODO https://github.com/dotnet/runtime/issues/19348:
                     // We need to use Cookie.InternalSetName instead of the Cookie.set_Name wrapped in a try catch block, as
                     // Cookie.set_Name keeps the original name if the string is empty or null.
                     // Unfortunately this API is internal so we use reflection to access it. The method is cached for performance reasons.
                     MethodInfo? method = typeof(Cookie).GetMethod("InternalSetName", BindingFlags.Instance | BindingFlags.NonPublic);
-                    Debug.Assert(method != null, "We need to use an internal method named InternalSetName that is declared on Cookie.");
+                    Debug.Assert(method is not null, "We need to use an internal method named InternalSetName that is declared on Cookie.");
                     s_internalSetNameMethod = (Func<Cookie, string?, bool>)Delegate.CreateDelegate(typeof(Func<Cookie, string?, bool>), method);
                 }
 
@@ -550,11 +550,11 @@ namespace System.Net
         {
             get
             {
-                if (s_isQuotedDomainField == null)
+                if (s_isQuotedDomainField is null)
                 {
                     // TODO https://github.com/dotnet/runtime/issues/19348:
                     FieldInfo? field = typeof(Cookie).GetField("IsQuotedDomain", BindingFlags.Instance | BindingFlags.NonPublic);
-                    Debug.Assert(field != null, "We need to use an internal field named IsQuotedDomain that is declared on Cookie.");
+                    Debug.Assert(field is not null, "We need to use an internal field named IsQuotedDomain that is declared on Cookie.");
                     s_isQuotedDomainField = field;
                 }
 
@@ -567,11 +567,11 @@ namespace System.Net
         {
             get
             {
-                if (s_isQuotedVersionField == null)
+                if (s_isQuotedVersionField is null)
                 {
                     // TODO https://github.com/dotnet/runtime/issues/19348:
                     FieldInfo? field = typeof(Cookie).GetField("IsQuotedVersion", BindingFlags.Instance | BindingFlags.NonPublic);
-                    Debug.Assert(field != null, "We need to use an internal field named IsQuotedVersion that is declared on Cookie.");
+                    Debug.Assert(field is not null, "We need to use an internal field named IsQuotedVersion that is declared on Cookie.");
                     s_isQuotedVersionField = field;
                 }
 
@@ -599,8 +599,8 @@ namespace System.Net
 
             do
             {
-                CookieToken token = _tokenizer.Next(cookie == null, true);
-                if (cookie == null && (token == CookieToken.NameValuePair || token == CookieToken.Attribute))
+                CookieToken token = _tokenizer.Next(cookie is null, true);
+                if (cookie is null && (token == CookieToken.NameValuePair || token == CookieToken.Attribute))
                 {
                     cookie = new Cookie();
                     InternalSetNameMethod(cookie, _tokenizer.Name);
@@ -770,12 +770,12 @@ namespace System.Net
 
             do
             {
-                bool first = cookie == null || string.IsNullOrEmpty(cookie.Name);
+                bool first = cookie is null || string.IsNullOrEmpty(cookie.Name);
                 CookieToken token = _tokenizer.Next(first, false);
 
                 if (first && (token == CookieToken.NameValuePair || token == CookieToken.Attribute))
                 {
-                    if (cookie == null)
+                    if (cookie is null)
                     {
                         cookie = new Cookie();
                     }

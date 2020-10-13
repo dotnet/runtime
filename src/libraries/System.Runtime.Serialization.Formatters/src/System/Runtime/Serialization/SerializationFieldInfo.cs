@@ -14,8 +14,8 @@ namespace System.Runtime.Serialization
 
         internal SerializationFieldInfo(FieldInfo field, string namePrefix)
         {
-            Debug.Assert(field != null);
-            Debug.Assert(namePrefix != null);
+            Debug.Assert(field is not null);
+            Debug.Assert(namePrefix is not null);
 
             m_field = field;
             m_serializationName = namePrefix + "+" + m_field.Name;

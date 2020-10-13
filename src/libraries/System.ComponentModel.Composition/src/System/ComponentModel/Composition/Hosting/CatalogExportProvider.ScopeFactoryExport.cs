@@ -48,15 +48,15 @@ namespace System.ComponentModel.Composition.Hosting
 
                 protected override object? GetExportedValueCore()
                 {
-                    if (_export == null)
+                    if (_export is null)
                     {
                         CompositionContainer? childContainer = _scopeFactoryExport._scopeManager.CreateChildContainer(_scopeFactoryExport._catalog);
 
-                        Debug.Assert(childContainer.CatalogExportProvider != null);
+                        Debug.Assert(childContainer.CatalogExportProvider is not null);
                         Export? export = childContainer.CatalogExportProvider.CreateExport(_scopeFactoryExport.UnderlyingPartDefinition, _scopeFactoryExport.UnderlyingExportDefinition, false, CreationPolicy.Any);
                         lock (_lock)
                         {
-                            if (_export == null)
+                            if (_export is null)
                             {
                                 _childContainer = childContainer;
                                 Thread.MemoryBarrier();
@@ -66,7 +66,7 @@ namespace System.ComponentModel.Composition.Hosting
                                 export = null;
                             }
                         }
-                        if (childContainer != null)
+                        if (childContainer is not null)
                         {
                             childContainer.Dispose();
                         }
@@ -80,7 +80,7 @@ namespace System.ComponentModel.Composition.Hosting
                     CompositionContainer? childContainer = null;
                     Export? export = null;
 
-                    if (_export != null)
+                    if (_export is not null)
                     {
                         lock (_lock)
                         {
@@ -93,7 +93,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                     }
 
-                    if (childContainer != null)
+                    if (childContainer is not null)
                     {
                         childContainer.Dispose();
                     }

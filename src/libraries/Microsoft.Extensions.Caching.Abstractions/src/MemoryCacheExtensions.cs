@@ -24,7 +24,7 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             if (cache.TryGetValue(key, out object result))
             {
-                if (result == null)
+                if (result is null)
                 {
                     value = default;
                     return true;
@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.Caching.Memory
         public static TItem Set<TItem>(this IMemoryCache cache, object key, TItem value, MemoryCacheEntryOptions options)
         {
             using ICacheEntry entry = cache.CreateEntry(key);
-            if (options != null)
+            if (options is not null)
             {
                 entry.SetOptions(options);
             }

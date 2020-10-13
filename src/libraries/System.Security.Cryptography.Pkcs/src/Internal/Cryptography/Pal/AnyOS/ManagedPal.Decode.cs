@@ -39,11 +39,11 @@ namespace Internal.Cryptography.Pal.AnyOS
 
             originatorCerts = new X509Certificate2Collection();
 
-            if (data.OriginatorInfo.HasValue && data.OriginatorInfo.Value.CertificateSet != null)
+            if (data.OriginatorInfo.HasValue && data.OriginatorInfo.Value.CertificateSet is not null)
             {
                 foreach (CertificateChoiceAsn certChoice in data.OriginatorInfo.Value.CertificateSet)
                 {
-                    if (certChoice.Certificate != null)
+                    if (certChoice.Certificate is not null)
                     {
                         originatorCerts.Add(new X509Certificate2(certChoice.Certificate.Value.ToArray()));
                     }

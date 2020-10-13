@@ -19,7 +19,7 @@ namespace System.Security.Cryptography
             Type t = Type.GetType(CryptoConfigTypeName, throwOnError: true)!;
             MethodInfo? createFromName = t.GetMethod(CreateFromNameMethodName, new[] { typeof(string) });
 
-            if (createFromName == null)
+            if (createFromName is null)
             {
                 throw new MissingMethodException(t.FullName, CreateFromNameMethodName);
             }

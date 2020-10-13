@@ -20,13 +20,13 @@ namespace System.Configuration
 
         internal static void AddError(ref List<ConfigurationException> errors, ConfigurationException e)
         {
-            Debug.Assert(e != null, "e != null");
+            Debug.Assert(e is not null, "e is not null");
 
             // Create on demand
-            if (errors == null) errors = new List<ConfigurationException>();
+            if (errors is null) errors = new List<ConfigurationException>();
 
             ConfigurationErrorsException ce = e as ConfigurationErrorsException;
-            if (ce == null) errors.Add(e);
+            if (ce is null) errors.Add(e);
             else
             {
                 ICollection<ConfigurationException> col = ce.ErrorsGeneric;
@@ -37,7 +37,7 @@ namespace System.Configuration
 
         internal static void AddErrors(ref List<ConfigurationException> errors, ICollection<ConfigurationException> coll)
         {
-            if ((coll == null) || (coll.Count == 0))
+            if ((coll is null) || (coll.Count == 0))
             {
                 // Nothing to do here, bail
                 return;
@@ -48,7 +48,7 @@ namespace System.Configuration
 
         internal static ConfigurationErrorsException GetErrorsException(List<ConfigurationException> errors)
         {
-            if (errors == null) return null;
+            if (errors is null) return null;
 
             Debug.Assert(errors.Count != 0, "errors.Count != 0");
             return new ConfigurationErrorsException(errors);
@@ -57,7 +57,7 @@ namespace System.Configuration
         internal static void ThrowOnErrors(List<ConfigurationException> errors)
         {
             ConfigurationErrorsException e = GetErrorsException(errors);
-            if (e != null) throw e;
+            if (e is not null) throw e;
         }
     }
 }

@@ -70,14 +70,14 @@ namespace System.Xml.Xsl.IlGen
         public static OptimizerPatterns Read(QilNode nd)
         {
             XmlILAnnotation? ann = nd.Annotation as XmlILAnnotation;
-            OptimizerPatterns? optPatt = (ann != null) ? ann.Patterns : null;
+            OptimizerPatterns? optPatt = (ann is not null) ? ann.Patterns : null;
 
-            if (optPatt == null)
+            if (optPatt is null)
             {
                 if (!nd.XmlType!.MaybeMany)
                 {
                     // Expressions with ZeroOrOne cardinality should always report IsDocOrderDistinct and NoContainedNodes
-                    if (s_zeroOrOneDefault == null)
+                    if (s_zeroOrOneDefault is null)
                     {
                         optPatt = new OptimizerPatterns();
                         optPatt.AddPattern(OptimizerPatternName.IsDocOrderDistinct);
@@ -93,7 +93,7 @@ namespace System.Xml.Xsl.IlGen
                 }
                 else if (nd.XmlType.IsDod)
                 {
-                    if (s_dodDefault == null)
+                    if (s_dodDefault is null)
                     {
                         optPatt = new OptimizerPatterns();
                         optPatt.AddPattern(OptimizerPatternName.IsDocOrderDistinct);
@@ -108,7 +108,7 @@ namespace System.Xml.Xsl.IlGen
                 }
                 else
                 {
-                    if (s_maybeManyDefault == null)
+                    if (s_maybeManyDefault is null)
                     {
                         optPatt = new OptimizerPatterns();
                         optPatt._isReadOnly = true;
@@ -133,7 +133,7 @@ namespace System.Xml.Xsl.IlGen
             XmlILAnnotation ann = XmlILAnnotation.Write(nd);
             OptimizerPatterns? optPatt = ann.Patterns;
 
-            if (optPatt == null || optPatt._isReadOnly)
+            if (optPatt is null || optPatt._isReadOnly)
             {
                 optPatt = new OptimizerPatterns();
                 ann.Patterns = optPatt;
@@ -233,7 +233,7 @@ namespace System.Xml.Xsl.IlGen
                 case 2: arg = _arg2; break;
             }
 
-            Debug.Assert(arg != null, "There is no '" + argNum + "' argument.");
+            Debug.Assert(arg is not null, "There is no '" + argNum + "' argument.");
             return arg;
         }
 

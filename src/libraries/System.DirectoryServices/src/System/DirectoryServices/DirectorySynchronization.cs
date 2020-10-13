@@ -21,7 +21,7 @@ namespace System.DirectoryServices
 
         public DirectorySynchronization(DirectorySynchronization sync)
         {
-            if (sync != null)
+            if (sync is not null)
             {
                 Option = sync.Option;
                 ResetDirectorySynchronizationCookie(sync.GetDirectorySynchronizationCookie());
@@ -69,7 +69,7 @@ namespace System.DirectoryServices
 
         public void ResetDirectorySynchronizationCookie(byte[] cookie)
         {
-            if (cookie == null)
+            if (cookie is null)
             {
                 _cookie = Array.Empty<byte>();
             }

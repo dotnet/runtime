@@ -84,7 +84,7 @@ namespace System.Security.Cryptography
             {
                 // Force-read the SafeKeyHandle property, which will summon it into existence.
                 SafeKeyHandle localHandle = SafeKeyHandle;
-                Debug.Assert(localHandle != null);
+                Debug.Assert(localHandle is not null);
             }
         }
 
@@ -92,15 +92,15 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (_safeProvHandle == null)
+                if (_safeProvHandle is null)
                 {
                     lock (_parameters)
                     {
-                        if (_safeProvHandle == null)
+                        if (_safeProvHandle is null)
                         {
                             SafeProvHandle hProv = CapiHelper.CreateProvHandle(_parameters, _randomKeyContainer);
 
-                            Debug.Assert(hProv != null);
+                            Debug.Assert(hProv is not null);
                             Debug.Assert(!hProv.IsInvalid);
                             Debug.Assert(!hProv.IsClosed);
 
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography
                         return;
                     }
 
-                    if (current != null)
+                    if (current is not null)
                     {
                         SafeKeyHandle? keyHandle = _safeKeyHandle;
                         _safeKeyHandle = null;
@@ -141,11 +141,11 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (_safeKeyHandle == null)
+                if (_safeKeyHandle is null)
                 {
                     lock (_parameters)
                     {
-                        if (_safeKeyHandle == null)
+                        if (_safeKeyHandle is null)
                         {
                             SafeKeyHandle hKey = CapiHelper.GetKeyPairHelper(
                                 CapiHelper.CspAlgorithmType.Dss,
@@ -153,7 +153,7 @@ namespace System.Security.Cryptography
                                 _keySize,
                                 SafeProvHandle);
 
-                            Debug.Assert(hKey != null);
+                            Debug.Assert(hKey is not null);
                             Debug.Assert(!hKey.IsInvalid);
                             Debug.Assert(!hKey.IsClosed);
 
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography
                 // .NET Framework compat: Read the SafeKeyHandle property to force the key to load,
                 // because it might throw here.
                 SafeKeyHandle localHandle = SafeKeyHandle;
-                Debug.Assert(localHandle != null);
+                Debug.Assert(localHandle is not null);
 
                 return new CspKeyContainerInfo(_parameters, _randomKeyContainer);
             }
@@ -274,12 +274,12 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                if (_safeKeyHandle != null && !_safeKeyHandle.IsClosed)
+                if (_safeKeyHandle is not null && !_safeKeyHandle.IsClosed)
                 {
                     _safeKeyHandle.Dispose();
                 }
 
-                if (_safeProvHandle != null && !_safeProvHandle.IsClosed)
+                if (_safeProvHandle is not null && !_safeProvHandle.IsClosed)
                 {
                     _safeProvHandle.Dispose();
                 }
@@ -444,7 +444,7 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
             // we're sealed and the base should have checked this before calling us
-            Debug.Assert(data != null);
+            Debug.Assert(data is not null);
             Debug.Assert(offset >= 0 && offset <= data.Length);
             Debug.Assert(count >= 0 && count <= data.Length - offset);
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
@@ -460,7 +460,7 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
         {
             // we're sealed and the base should have checked this before calling us
-            Debug.Assert(data != null);
+            Debug.Assert(data is not null);
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
             if (hashAlgorithm != HashAlgorithmName.SHA1)
@@ -479,7 +479,7 @@ namespace System.Security.Cryptography
         /// <returns>The DSA signature for the specified hash value.</returns>
         public byte[] SignHash(byte[] rgbHash, string? str)
         {
-            if (rgbHash == null)
+            if (rgbHash is null)
                 throw new ArgumentNullException(nameof(rgbHash));
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
@@ -507,9 +507,9 @@ namespace System.Security.Cryptography
         /// <returns>true if the signature verifies as valid; otherwise, false.</returns>
         public bool VerifyHash(byte[] rgbHash, string? str, byte[] rgbSignature)
         {
-            if (rgbHash == null)
+            if (rgbHash is null)
                 throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
+            if (rgbSignature is null)
                 throw new ArgumentNullException(nameof(rgbSignature));
 
             int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
@@ -528,7 +528,7 @@ namespace System.Security.Cryptography
         /// </summary>
         private static bool IsPublic(byte[] keyBlob)
         {
-            if (keyBlob == null)
+            if (keyBlob is null)
             {
                 throw new ArgumentNullException(nameof(keyBlob));
             }

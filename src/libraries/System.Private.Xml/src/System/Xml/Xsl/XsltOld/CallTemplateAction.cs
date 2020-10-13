@@ -27,7 +27,7 @@ namespace System.Xml.Xsl.XsltOld
             string value = compiler.Input.Value;
             if (Ref.Equal(name, compiler.Atoms.Name))
             {
-                Debug.Assert(_name == null);
+                Debug.Assert(_name is null);
                 _name = compiler.CreateXPathQName(value);
             }
             else
@@ -81,12 +81,12 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
             switch (frame.State)
             {
                 case Initialized:
                     processor.ResetParams();
-                    if (this.containedActions != null && this.containedActions.Count > 0)
+                    if (this.containedActions is not null && this.containedActions.Count > 0)
                     {
                         processor.PushActionFrame(frame);
                         frame.State = ProcessedChildren;
@@ -95,7 +95,7 @@ namespace System.Xml.Xsl.XsltOld
                     goto case ProcessedChildren;
                 case ProcessedChildren:
                     TemplateAction? action = processor.Stylesheet.FindTemplate(_name!);
-                    if (action != null)
+                    if (action is not null)
                     {
                         frame.State = ProcessedTemplate;
                         processor.PushActionFrame(action, frame.NodeSet);

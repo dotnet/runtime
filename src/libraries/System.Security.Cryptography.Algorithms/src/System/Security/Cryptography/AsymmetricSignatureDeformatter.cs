@@ -17,11 +17,11 @@ namespace System.Security.Cryptography
 
         public virtual bool VerifySignature(HashAlgorithm hash, byte[] rgbSignature)
         {
-            if (hash == null)
+            if (hash is null)
                 throw new ArgumentNullException(nameof(hash));
 
             SetHashAlgorithm(hash.ToAlgorithmName()!);
-            Debug.Assert(hash.Hash != null);
+            Debug.Assert(hash.Hash is not null);
             return VerifySignature(hash.Hash, rgbSignature);
         }
 

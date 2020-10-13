@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         public void Write(BinaryFormatterWriter output)
         {
-            Debug.Assert(_name != null && _memberNames != null);
+            Debug.Assert(_name is not null && _memberNames is not null);
             output.WriteByte((byte)_binaryHeaderEnum);
             output.WriteInt32(_objectId);
             output.WriteString(_name);

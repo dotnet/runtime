@@ -110,11 +110,11 @@ namespace System.ComponentModel.DataAnnotations
         /// </returns>
         public string? GetLocalizableValue()
         {
-            if (_cachedResult == null)
+            if (_cachedResult is null)
             {
                 // If the property value is null, then just cache that value
                 // If the resource type is null, then property value is literal, so cache it
-                if (_propertyValue == null || _resourceType == null)
+                if (_propertyValue is null || _resourceType is null)
                 {
                     _cachedResult = () => _propertyValue;
                 }
@@ -127,7 +127,7 @@ namespace System.ComponentModel.DataAnnotations
                     var badlyConfigured = false;
 
                     // Make sure we found the property and it's the correct type, and that the type itself is public
-                    if (!_resourceType.IsVisible || property == null ||
+                    if (!_resourceType.IsVisible || property is null ||
                         property.PropertyType != typeof(string))
                     {
                         badlyConfigured = true;
@@ -138,7 +138,7 @@ namespace System.ComponentModel.DataAnnotations
                         // TODO - check that GetMethod returns the same as old GetGetMethod()
                         // in all situations regardless of modifiers
                         var getter = property.GetMethod;
-                        if (getter == null || !(getter.IsPublic && getter.IsStatic))
+                        if (getter is null || !(getter.IsPublic && getter.IsStatic))
                         {
                             badlyConfigured = true;
                         }

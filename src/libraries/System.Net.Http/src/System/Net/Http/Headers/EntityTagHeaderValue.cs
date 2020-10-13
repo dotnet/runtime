@@ -27,7 +27,7 @@ namespace System.Net.Http.Headers
         {
             get
             {
-                if (s_any == null)
+                if (s_any is null)
                 {
                     s_any = new EntityTagHeaderValue();
                     s_any._tag = "*";
@@ -63,7 +63,7 @@ namespace System.Net.Http.Headers
 
         private EntityTagHeaderValue(EntityTagHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _tag = source._tag;
             _isWeak = source._isWeak;
@@ -86,7 +86,7 @@ namespace System.Net.Http.Headers
         {
             EntityTagHeaderValue? other = obj as EntityTagHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }

@@ -28,7 +28,7 @@ namespace System.ComponentModel.Design.Serialization
             MemberInfo = member;
             IsComplete = isComplete;
 
-            if (arguments == null)
+            if (arguments is null)
             {
                 Arguments = Array.Empty<object>();
             }
@@ -79,7 +79,7 @@ namespace System.ComponentModel.Design.Serialization
                     throw new ArgumentException(SR.InstanceDescriptorMustBeReadable);
                 }
                 MethodInfo getMethod = pi.GetGetMethod();
-                if (getMethod != null && !getMethod.IsStatic)
+                if (getMethod is not null && !getMethod.IsStatic)
                 {
                     throw new ArgumentException(SR.InstanceDescriptorMustBeStatic);
                 }

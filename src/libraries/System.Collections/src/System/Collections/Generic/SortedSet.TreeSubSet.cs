@@ -129,7 +129,7 @@ namespace System.Collections.Generic
                     Node? current = root;
                     T? result = default;
 
-                    while (current != null)
+                    while (current is not null)
                     {
 
                         int comp = _lBoundActive ? Comparer.Compare(_min, current.Item) : -1;
@@ -159,7 +159,7 @@ namespace System.Collections.Generic
                     Node? current = root;
                     T? result = default;
 
-                    while (current != null)
+                    while (current is not null)
                     {
                         int comp = _uBoundActive ? Comparer.Compare(_max, current.Item) : 1;
                         if (comp == -1)
@@ -185,7 +185,7 @@ namespace System.Collections.Generic
             {
                 VersionCheck();
 
-                if (root == null)
+                if (root is null)
                 {
                     return true;
                 }
@@ -194,7 +194,7 @@ namespace System.Collections.Generic
                 // See page 264 of "Introduction to algorithms" by Thomas H. Cormen
                 Stack<Node> stack = new Stack<Node>(2 * (int)SortedSet<T>.Log2(count + 1)); // this is not exactly right if count is out of date, but the stack can grow
                 Node? current = root;
-                while (current != null)
+                while (current is not null)
                 {
                     if (IsWithinRange(current.Item))
                     {
@@ -220,7 +220,7 @@ namespace System.Collections.Generic
                     }
 
                     Node? node = current.Right;
-                    while (node != null)
+                    while (node is not null)
                     {
                         if (IsWithinRange(node.Item))
                         {
@@ -244,7 +244,7 @@ namespace System.Collections.Generic
             {
                 VersionCheck();
 
-                if (root == null)
+                if (root is null)
                 {
                     return true;
                 }
@@ -260,11 +260,11 @@ namespace System.Collections.Generic
                     {
                         return false;
                     }
-                    if (current.Left != null && (!_lBoundActive || Comparer.Compare(_min, current.Item) < 0))
+                    if (current.Left is not null && (!_lBoundActive || Comparer.Compare(_min, current.Item) < 0))
                     {
                         processQueue.Enqueue(current.Left);
                     }
-                    if (current.Right != null && (!_uBoundActive || Comparer.Compare(_max, current.Item) > 0))
+                    if (current.Right is not null && (!_uBoundActive || Comparer.Compare(_max, current.Item) > 0))
                     {
                         processQueue.Enqueue(current.Right);
                     }
@@ -311,7 +311,7 @@ namespace System.Collections.Generic
 
             private void VersionCheckImpl(bool updateCount)
             {
-                Debug.Assert(_underlying != null);
+                Debug.Assert(_underlying is not null);
                 if (version != _underlying.version)
                 {
                     root = _underlying.FindRange(_min, _max, _lBoundActive, _uBoundActive);
@@ -331,7 +331,7 @@ namespace System.Collections.Generic
             /// </summary>
             internal override int TotalCount()
             {
-                Debug.Assert(_underlying != null);
+                Debug.Assert(_underlying is not null);
                 return _underlying.Count;
             }
 

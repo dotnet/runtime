@@ -49,7 +49,7 @@ namespace System.Net.WebSockets
 
         private Task ValidateAndReceiveAsync(Task receiveTask, byte[] buffer, CancellationToken cancellationToken)
         {
-            if (receiveTask == null ||
+            if (receiveTask is null ||
                         (receiveTask.IsCompletedSuccessfully &&
                          !(receiveTask is Task<WebSocketReceiveResult> wsrr && wsrr.Result.MessageType == WebSocketMessageType.Close) &&
                          !(receiveTask is Task<ValueWebSocketReceiveResult> vwsrr && vwsrr.Result.MessageType == WebSocketMessageType.Close)))

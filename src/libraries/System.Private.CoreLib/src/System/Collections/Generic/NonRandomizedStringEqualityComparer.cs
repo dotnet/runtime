@@ -28,7 +28,7 @@ namespace System.Collections.Generic
 
         private NonRandomizedStringEqualityComparer(IEqualityComparer<string?> underlyingComparer)
         {
-            Debug.Assert(underlyingComparer != null);
+            Debug.Assert(underlyingComparer is not null);
             _underlyingComparer = underlyingComparer;
         }
 
@@ -83,7 +83,7 @@ namespace System.Collections.Generic
 
             public override int GetHashCode(string? obj)
             {
-                Debug.Assert(obj != null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
+                Debug.Assert(obj is not null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
                 return obj.GetNonRandomizedHashCode();
             }
 
@@ -100,7 +100,7 @@ namespace System.Collections.Generic
 
             public override int GetHashCode(string? obj)
             {
-                Debug.Assert(obj != null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
+                Debug.Assert(obj is not null, "This implementation is only called from first-party collection types that guarantee non-null parameters.");
                 return obj.GetNonRandomizedHashCodeOrdinalIgnoreCase();
             }
 

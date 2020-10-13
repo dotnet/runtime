@@ -75,7 +75,7 @@ namespace System.Xml
         {
             get
             {
-                if (_lastChild == null && !_childrenFoliating)
+                if (_lastChild is null && !_childrenFoliating)
                 { //expand the unparsedreplacementstring
                     _childrenFoliating = true;
                     //wrap the replacement string with an element

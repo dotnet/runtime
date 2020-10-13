@@ -103,11 +103,11 @@ namespace System.Data
         /// </summary>
         PropertyDescriptorCollection ICustomTypeDescriptor.GetProperties(Attribute[] attributes)
         {
-            if (_propsCollection == null)
+            if (_propsCollection is null)
             {
                 PropertyDescriptor[] props = null;
                 DataSet dataSet = _dataViewManager.DataSet;
-                if (dataSet != null)
+                if (dataSet is not null)
                 {
                     int tableCount = dataSet.Tables.Count;
                     props = new PropertyDescriptor[tableCount];

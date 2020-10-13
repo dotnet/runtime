@@ -10,7 +10,7 @@ namespace System.CodeDom.Compiler
     {
         public ExposedTabStringIndentedTextWriter(TextWriter writer, string tabString) : base(writer, tabString)
         {
-            Debug.Assert(tabString != null, "CodeGeneratorOptions can never have a null TabString");
+            Debug.Assert(tabString is not null, "CodeGeneratorOptions can never have a null TabString");
             TabString = tabString;
         }
 
@@ -42,7 +42,7 @@ namespace System.CodeDom.Compiler
         {
             get
             {
-                if (_s == null)
+                if (_s is null)
                 {
                     string tabString = _writer.TabString;
 

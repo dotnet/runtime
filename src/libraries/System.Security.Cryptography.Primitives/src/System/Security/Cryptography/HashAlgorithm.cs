@@ -43,7 +43,7 @@ namespace System.Security.Cryptography
         {
             if (_disposed)
                 throw new ObjectDisposedException(null);
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
 
             HashCore(buffer, 0, buffer.Length);
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography
 
         public byte[] ComputeHash(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography
             Stream inputStream,
             CancellationToken cancellationToken = default)
         {
-            if (inputStream == null)
+            if (inputStream is null)
                 throw new ArgumentNullException(nameof(inputStream));
             if (_disposed)
                 throw new ObjectDisposedException(null);
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography
             State = 1;
 
             HashCore(inputBuffer, inputOffset, inputCount);
-            if ((outputBuffer != null) && ((inputBuffer != outputBuffer) || (inputOffset != outputOffset)))
+            if ((outputBuffer is not null) && ((inputBuffer != outputBuffer) || (inputOffset != outputOffset)))
             {
                 // We let BlockCopy do the destination array validation
                 Buffer.BlockCopy(inputBuffer, inputOffset, outputBuffer, outputOffset, inputCount);
@@ -240,7 +240,7 @@ namespace System.Security.Cryptography
 
         private void ValidateTransformBlock(byte[] inputBuffer, int inputOffset, int inputCount)
         {
-            if (inputBuffer == null)
+            if (inputBuffer is null)
                 throw new ArgumentNullException(nameof(inputBuffer));
             if (inputOffset < 0)
                 throw new ArgumentOutOfRangeException(nameof(inputOffset), SR.ArgumentOutOfRange_NeedNonNegNum);

@@ -196,8 +196,6 @@ internal static partial class Interop
 
         internal static SafeSecKeyRefHandle ImportEphemeralKey(ReadOnlySpan<byte> keyBlob, bool hasPrivateKey)
         {
-            Debug.Assert(keyBlob != null);
-
             SafeSecKeyRefHandle keyHandle;
             int osStatus;
 
@@ -223,7 +221,7 @@ internal static partial class Interop
 
         internal static byte[] GenerateSignature(SafeSecKeyRefHandle privateKey, ReadOnlySpan<byte> dataHash)
         {
-            Debug.Assert(privateKey != null, "privateKey != null");
+            Debug.Assert(privateKey is not null, "privateKey is not null");
 
             return ExecuteTransform(
                 dataHash,
@@ -240,7 +238,7 @@ internal static partial class Interop
             ReadOnlySpan<byte> dataHash,
             PAL_HashAlgorithm hashAlgorithm)
         {
-            Debug.Assert(privateKey != null, "privateKey != null");
+            Debug.Assert(privateKey is not null, "privateKey is not null");
             Debug.Assert(hashAlgorithm != PAL_HashAlgorithm.Unknown, "hashAlgorithm != PAL_HashAlgorithm.Unknown");
 
             return ExecuteTransform(
@@ -261,7 +259,7 @@ internal static partial class Interop
             PAL_HashAlgorithm hashAlgorithm,
             out int bytesWritten)
         {
-            Debug.Assert(privateKey != null, "privateKey != null");
+            Debug.Assert(privateKey is not null, "privateKey is not null");
             Debug.Assert(hashAlgorithm != PAL_HashAlgorithm.Unknown, "hashAlgorithm != PAL_HashAlgorithm.Unknown");
 
             return TryExecuteTransform(
@@ -280,7 +278,7 @@ internal static partial class Interop
             ReadOnlySpan<byte> dataHash,
             ReadOnlySpan<byte> signature)
         {
-            Debug.Assert(publicKey != null, "publicKey != null");
+            Debug.Assert(publicKey is not null, "publicKey is not null");
 
             SafeCFErrorHandle error;
 
@@ -317,7 +315,7 @@ internal static partial class Interop
             ReadOnlySpan<byte> signature,
             PAL_HashAlgorithm hashAlgorithm)
         {
-            Debug.Assert(publicKey != null, "publicKey != null");
+            Debug.Assert(publicKey is not null, "publicKey is not null");
             Debug.Assert(hashAlgorithm != PAL_HashAlgorithm.Unknown);
 
             SafeCFErrorHandle error;

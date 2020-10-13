@@ -70,7 +70,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             get => _tokenSource;
             set
             {
-                Debug.Assert(_tokenSource == null, "We expect CancellationTokenSource to be initialized exactly once.");
+                Debug.Assert(_tokenSource is null, "We expect CancellationTokenSource to be initialized exactly once.");
 
                 _tokenSource = value;
                 _changeToken = new CancellationChangeToken(_tokenSource.Token);
@@ -113,7 +113,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
                 foreach (FilePatternMatch file in files)
                 {
                     DateTime lastWriteTimeUtc = GetLastWriteUtc(file.Path);
-                    if (_lastScanTimeUtc != null && _lastScanTimeUtc < lastWriteTimeUtc)
+                    if (_lastScanTimeUtc is not null && _lastScanTimeUtc < lastWriteTimeUtc)
                     {
                         // _lastScanTimeUtc is the greatest timestamp that any last writes could have been.
                         // If a file has a newer timestamp than this value, it must've changed.
@@ -148,7 +148,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
 
         private static bool ArrayEquals(byte[] previousHash, byte[] currentHash)
         {
-            if (previousHash == null)
+            if (previousHash is null)
             {
                 // First run
                 return true;
@@ -169,7 +169,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
         private void ComputeHash(IncrementalHash sha256, string path, DateTime lastChangedUtc)
         {
             int byteCount = Encoding.Unicode.GetByteCount(path);
-            if (_byteBuffer == null || byteCount > _byteBuffer.Length)
+            if (_byteBuffer is null || byteCount > _byteBuffer.Length)
             {
                 _byteBuffer = new byte[Math.Max(byteCount, 256)];
             }

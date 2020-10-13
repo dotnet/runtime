@@ -32,20 +32,20 @@ namespace System.Linq.Expressions
 
         internal static PropertyExpression Make(Expression? expression, PropertyInfo property)
         {
-            Debug.Assert(property != null);
+            Debug.Assert(property is not null);
             return new PropertyExpression(expression, property);
         }
 
         internal static FieldExpression Make(Expression? expression, FieldInfo field)
         {
-            Debug.Assert(field != null);
+            Debug.Assert(field is not null);
             return new FieldExpression(expression, field);
         }
 
         internal static MemberExpression Make(Expression? expression, MemberInfo member)
         {
             FieldInfo? fi = member as FieldInfo;
-            return fi == null ? (MemberExpression)Make(expression, (PropertyInfo)member) : Make(expression, fi);
+            return fi is null ? (MemberExpression)Make(expression, (PropertyInfo)member) : Make(expression, fi);
         }
 
         /// <summary>
@@ -130,11 +130,11 @@ namespace System.Linq.Expressions
 
             if (field.IsStatic)
             {
-                if (expression != null) throw Error.OnlyStaticFieldsHaveNullInstance(nameof(expression));
+                if (expression is not null) throw Error.OnlyStaticFieldsHaveNullInstance(nameof(expression));
             }
             else
             {
-                if (expression == null) throw Error.OnlyStaticFieldsHaveNullInstance(nameof(field));
+                if (expression is null) throw Error.OnlyStaticFieldsHaveNullInstance(nameof(field));
                 ExpressionUtils.RequiresCanRead(expression, nameof(expression));
                 if (!TypeUtils.AreReferenceAssignable(field.DeclaringType!, expression.Type))
                 {
@@ -158,7 +158,7 @@ namespace System.Linq.Expressions
             // bind to public names first
             FieldInfo? fi = expression.Type.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy)
                            ?? expression.Type.GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            if (fi == null)
+            if (fi is null)
             {
                 throw Error.InstanceFieldNotDefinedForType(fieldName, expression.Type);
             }
@@ -182,7 +182,7 @@ namespace System.Linq.Expressions
             FieldInfo? fi = type.GetField(fieldName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy)
                            ?? type.GetField(fieldName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
 
-            if (fi == null)
+            if (fi is null)
             {
                 throw Error.FieldNotDefinedForType(fieldName, type);
             }
@@ -206,7 +206,7 @@ namespace System.Linq.Expressions
             // bind to public names first
             PropertyInfo? pi = expression.Type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy)
                               ?? expression.Type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            if (pi == null)
+            if (pi is null)
             {
                 throw Error.InstancePropertyNotDefinedForType(propertyName, expression.Type, nameof(propertyName));
             }
@@ -227,7 +227,7 @@ namespace System.Linq.Expressions
             // bind to public names first
             PropertyInfo? pi = type.GetProperty(propertyName, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy)
                               ?? type.GetProperty(propertyName, BindingFlags.Static | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            if (pi == null)
+            if (pi is null)
             {
                 throw Error.PropertyNotDefinedForType(propertyName, type, nameof(propertyName));
             }
@@ -246,11 +246,11 @@ namespace System.Linq.Expressions
 
             MethodInfo? mi = property.GetGetMethod(nonPublic: true);
 
-            if (mi == null)
+            if (mi is null)
             {
                 mi = property.GetSetMethod(nonPublic: true);
 
-                if (mi == null)
+                if (mi is null)
                 {
                     throw Error.PropertyDoesNotHaveAccessor(property, nameof(property));
                 }
@@ -266,11 +266,11 @@ namespace System.Linq.Expressions
 
             if (mi.IsStatic)
             {
-                if (expression != null) throw Error.OnlyStaticPropertiesHaveNullInstance(nameof(expression));
+                if (expression is not null) throw Error.OnlyStaticPropertiesHaveNullInstance(nameof(expression));
             }
             else
             {
-                if (expression == null) throw Error.OnlyStaticPropertiesHaveNullInstance(nameof(property));
+                if (expression is null) throw Error.OnlyStaticPropertiesHaveNullInstance(nameof(property));
                 ExpressionUtils.RequiresCanRead(expression, nameof(expression));
                 if (!TypeUtils.IsValidInstanceType(property, expression.Type))
                 {
@@ -299,7 +299,7 @@ namespace System.Linq.Expressions
         private static PropertyInfo GetProperty(MethodInfo mi, string? paramName, int index = -1)
         {
             Type? type = mi.DeclaringType;
-            if (type != null)
+            if (type is not null)
             {
                 BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic;
                 flags |= (mi.IsStatic) ? BindingFlags.Static : BindingFlags.Instance;
@@ -350,16 +350,16 @@ namespace System.Linq.Expressions
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             // bind to public names first
             PropertyInfo? pi = expression.Type.GetProperty(propertyOrFieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            if (pi != null)
+            if (pi is not null)
                 return Property(expression, pi);
             FieldInfo? fi = expression.Type.GetField(propertyOrFieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            if (fi != null)
+            if (fi is not null)
                 return Field(expression, fi);
             pi = expression.Type.GetProperty(propertyOrFieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            if (pi != null)
+            if (pi is not null)
                 return Property(expression, pi);
             fi = expression.Type.GetField(propertyOrFieldName, BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy);
-            if (fi != null)
+            if (fi is not null)
                 return Field(expression, fi);
 
             throw Error.NotAMemberOfType(propertyOrFieldName, expression.Type, nameof(propertyOrFieldName));

@@ -34,7 +34,7 @@ namespace System.Net
         public string[]? ProtectionRealm
         {
             get { return _protectionRealm; }
-            set { _protectionRealm = value != null && value.Length != 0 ? value : null; }
+            set { _protectionRealm = value is not null && value.Length != 0 ? value : null; }
         }
 
         public bool MutuallyAuthenticated

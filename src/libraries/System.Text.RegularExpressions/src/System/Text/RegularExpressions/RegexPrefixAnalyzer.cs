@@ -109,7 +109,7 @@ namespace System.Text.RegularExpressions
                         return (string.Empty, false);
                 }
 
-                if (concatNode == null || nextChild >= concatNode.ChildCount())
+                if (concatNode is null || nextChild >= concatNode.ChildCount())
                 {
                     return (string.Empty, false);
                 }
@@ -126,7 +126,7 @@ namespace System.Text.RegularExpressions
             RegexFC? fc = s.RegexFCFromRegexTree(tree);
             s.Dispose();
 
-            if (fc == null || fc._nullable)
+            if (fc is null || fc._nullable)
             {
                 return null;
             }
@@ -346,7 +346,7 @@ namespace System.Text.RegularExpressions
                         return 0;
                 }
 
-                if (concatNode == null || nextChild >= concatNode.ChildCount())
+                if (concatNode is null || nextChild >= concatNode.ChildCount())
                 {
                     return 0;
                 }

@@ -56,7 +56,7 @@ namespace System
             {
                 return true;
             }
-            if (objA == null || objB == null)
+            if (objA is null || objB is null)
             {
                 return false;
             }

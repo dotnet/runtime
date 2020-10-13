@@ -202,7 +202,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(source, nameof(source));
 
             var existingDictionary = source as ImmutableSortedDictionary<TKey, TValue>;
-            if (existingDictionary != null)
+            if (existingDictionary is not null)
             {
                 return existingDictionary.WithComparers(keyComparer, valueComparer);
             }

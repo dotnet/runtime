@@ -68,14 +68,14 @@ namespace System.CodeDom.Compiler
                 {
                     p.OutputDataReceived += (s, e) =>
                     {
-                        if (e.Data != null)
+                        if (e.Data is not null)
                         {
                             outputWriter.WriteLine(e.Data);
                         }
                     };
                     p.ErrorDataReceived += (s, e) =>
                     {
-                        if (e.Data != null)
+                        if (e.Data is not null)
                         {
                             errorWriter.WriteLine(e.Data);
                         }

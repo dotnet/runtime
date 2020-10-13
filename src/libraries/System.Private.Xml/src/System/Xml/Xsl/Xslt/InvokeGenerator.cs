@@ -52,14 +52,14 @@ namespace System.Xml.Xsl.Xslt
                 QilNode? invokeArg = FindActualArg(formalArg, actualArgs);
 
                 // If actual value was not specified, use the default value and copy its debug comment
-                if (invokeArg == null)
+                if (invokeArg is null)
                 {
                     if (_debug)
                     {
                         if (formalArg.Name!.NamespaceUri == XmlReservedNs.NsXslDebug)
                         {
                             Debug.Assert(formalArg.Name.LocalName == "namespaces", "Cur,Pos,Last don't have default values and should be always added to by caller in AddImplicitArgs()");
-                            Debug.Assert(formalArg.DefaultValue != null, "PrecompileProtoTemplatesHeaders() set it");
+                            Debug.Assert(formalArg.DefaultValue is not null, "PrecompileProtoTemplatesHeaders() set it");
                             invokeArg = Clone(formalArg.DefaultValue);
                         }
                         else
@@ -102,7 +102,7 @@ namespace System.Xml.Xsl.Xslt
         private QilNode? FindActualArg(QilParameter formalArg, IList<XslNode> actualArgs)
         {
             QilName? argName = formalArg.Name;
-            Debug.Assert(argName != null);
+            Debug.Assert(argName is not null);
             foreach (XslNode actualArg in actualArgs)
             {
                 if (actualArg.Name!.Equals(argName))
@@ -120,7 +120,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode? replacement = FindClonedReference(n);
 
             // If the reference is internal for the subtree being cloned, return it as is
-            if (replacement != null)
+            if (replacement is not null)
             {
                 return replacement;
             }
@@ -130,8 +130,8 @@ namespace System.Xml.Xsl.Xslt
             // xsl:param's) must be taken care of.
             for (int prevArg = 0; prevArg < _curArg; prevArg++)
             {
-                Debug.Assert(_formalArgs![prevArg] != null, "formalArg must be in the list");
-                Debug.Assert(_invokeArgs![prevArg] != null, "This arg should be compiled already");
+                Debug.Assert(_formalArgs![prevArg] is not null, "formalArg must be in the list");
+                Debug.Assert(_invokeArgs![prevArg] is not null, "This arg should be compiled already");
 
                 // Is this a reference to prevArg?
                 if (n == _formalArgs[prevArg])

@@ -40,7 +40,7 @@ namespace System.Net.Sockets
 
         public NetworkStream(Socket socket, FileAccess access, bool ownsSocket)
         {
-            if (socket == null)
+            if (socket is null)
             {
                 throw new ArgumentNullException(nameof(socket));
             }
@@ -224,7 +224,7 @@ namespace System.Net.Sockets
             }
 
             // Validate input parameters.
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -305,7 +305,7 @@ namespace System.Net.Sockets
             }
 
             // Validate input parameters.
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -424,7 +424,7 @@ namespace System.Net.Sockets
             }
 
             // Validate input parameters.
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -470,7 +470,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             // Validate input parameters.
-            if (asyncResult == null)
+            if (asyncResult is null)
             {
                 throw new ArgumentNullException(nameof(asyncResult));
             }
@@ -513,7 +513,7 @@ namespace System.Net.Sockets
             }
 
             // Validate input parameters.
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -556,7 +556,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             // Validate input parameters.
-            if (asyncResult == null)
+            if (asyncResult is null)
             {
                 throw new ArgumentNullException(nameof(asyncResult));
             }
@@ -600,7 +600,7 @@ namespace System.Net.Sockets
             }
 
             // Validate input parameters.
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -683,7 +683,7 @@ namespace System.Net.Sockets
             }
 
             // Validate input parameters.
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }

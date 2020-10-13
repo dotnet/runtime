@@ -38,7 +38,7 @@ namespace System.Configuration
             if (_readOnly)
                 throw new NotSupportedException();
             SettingsProperty toRemove = (SettingsProperty)_hashtable[name];
-            if (toRemove == null)
+            if (toRemove is null)
                 return;
             OnRemove(toRemove);
             _hashtable.Remove(name);

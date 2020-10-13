@@ -46,7 +46,7 @@ namespace System.Data
         /// </summary>
         public void Add(DataRelation relation)
         {
-            long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataRelationCollection.Add|API> {0}, relation={1}", ObjectID, (relation != null) ? relation.ObjectID : 0);
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataRelationCollection.Add|API> {0}, relation={1}", ObjectID, (relation is not null) ? relation.ObjectID : 0);
             try
             {
                 if (_inTransition == relation)
@@ -74,11 +74,11 @@ namespace System.Data
 
         public virtual void AddRange(DataRelation[]? relations)
         {
-            if (relations != null)
+            if (relations is not null)
             {
                 foreach (DataRelation relation in relations)
                 {
-                    if (relation != null)
+                    if (relation is not null)
                     {
                         Add(relation);
                     }
@@ -182,8 +182,8 @@ namespace System.Data
         /// </summary>
         protected virtual void AddCore(DataRelation relation)
         {
-            DataCommonEventSource.Log.Trace("<ds.DataRelationCollection.AddCore|INFO> {0}, relation={1}", ObjectID, (relation != null) ? relation.ObjectID : 0);
-            if (relation == null)
+            DataCommonEventSource.Log.Trace("<ds.DataRelationCollection.AddCore|INFO> {0}, relation={1}", ObjectID, (relation is not null) ? relation.ObjectID : 0);
+            if (relation is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(relation));
             }
@@ -194,7 +194,7 @@ namespace System.Data
             {
                 throw ExceptionBuilder.RelationAlreadyInTheDataSet();
             }
-            if (relation.DataSet != null)
+            if (relation.DataSet is not null)
             {
                 throw ExceptionBuilder.RelationAlreadyInOtherDataSet();
             }
@@ -281,7 +281,7 @@ namespace System.Data
 
         public void CopyTo(DataRelation[] array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(array));
             }
@@ -373,7 +373,7 @@ namespace System.Data
         /// </summary>
         protected virtual void OnCollectionChanged(CollectionChangeEventArgs ccevent)
         {
-            if (_onCollectionChangedDelegate != null)
+            if (_onCollectionChangedDelegate is not null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataRelationCollection.OnCollectionChanged|INFO> {0}", ObjectID);
                 _onCollectionChangedDelegate(this, ccevent);
@@ -382,7 +382,7 @@ namespace System.Data
 
         protected virtual void OnCollectionChanging(CollectionChangeEventArgs ccevent)
         {
-            if (_onCollectionChangingDelegate != null)
+            if (_onCollectionChangingDelegate is not null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataRelationCollection.OnCollectionChanging|INFO> {0}", ObjectID);
                 _onCollectionChangingDelegate(this, ccevent);
@@ -397,7 +397,7 @@ namespace System.Data
         internal void RegisterName(string name)
         {
             DataCommonEventSource.Log.Trace("<ds.DataRelationCollection.RegisterName|INFO> {0}, name='{1}'", ObjectID, name);
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
 
             CultureInfo locale = GetDataSet().Locale;
             int relationCount = Count;
@@ -417,7 +417,7 @@ namespace System.Data
         /// <summary>
         /// Verifies if a given relation can be removed from the collection.
         /// </summary>
-        public virtual bool CanRemove(DataRelation? relation) => relation != null && relation.DataSet == GetDataSet();
+        public virtual bool CanRemove(DataRelation? relation) => relation is not null && relation.DataSet == GetDataSet();
 
         /// <summary>
         /// Removes the given relation from the collection.
@@ -427,7 +427,7 @@ namespace System.Data
         /// </summary>
         public void Remove(DataRelation relation)
         {
-            DataCommonEventSource.Log.Trace("<ds.DataRelationCollection.Remove|API> {0}, relation={1}", ObjectID, (relation != null) ? relation.ObjectID : 0);
+            DataCommonEventSource.Log.Trace("<ds.DataRelationCollection.Remove|API> {0}, relation={1}", ObjectID, (relation is not null) ? relation.ObjectID : 0);
             if (_inTransition == relation)
             {
                 return;
@@ -455,7 +455,7 @@ namespace System.Data
         {
             DataRelation dr = this[index];
             // TODO: Not needed, this[] throws
-            if (dr == null)
+            if (dr is null)
             {
                 throw ExceptionBuilder.RelationOutOfRange(index);
             }
@@ -470,7 +470,7 @@ namespace System.Data
         public void Remove(string name)
         {
             DataRelation? dr = this[name];
-            if (dr == null)
+            if (dr is null)
             {
                 throw ExceptionBuilder.RelationNotInTheDataSet(name);
             }
@@ -484,8 +484,8 @@ namespace System.Data
         /// </summary>
         protected virtual void RemoveCore(DataRelation relation)
         {
-            DataCommonEventSource.Log.Trace("<ds.DataRelationCollection.RemoveCore|INFO> {0}, relation={1}", ObjectID, (relation != null) ? relation.ObjectID : 0);
-            if (relation == null)
+            DataCommonEventSource.Log.Trace("<ds.DataRelationCollection.RemoveCore|INFO> {0}, relation={1}", ObjectID, (relation is not null) ? relation.ObjectID : 0);
+            if (relation is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(relation));
             }
@@ -528,7 +528,7 @@ namespace System.Data
 
             internal DataTableRelationCollection(DataTable table, bool fParentCollection)
             {
-                if (table == null)
+                if (table is null)
                 {
                     throw ExceptionBuilder.RelationTableNull();
                 }
@@ -541,7 +541,7 @@ namespace System.Data
 
             private void EnsureDataSet()
             {
-                if (_table.DataSet == null)
+                if (_table.DataSet is null)
                 {
                     throw ExceptionBuilder.RelationTableWasRemoved();
                 }
@@ -626,7 +626,7 @@ namespace System.Data
                     return false;
                 }
 
-                Debug.Assert(relation != null);
+                Debug.Assert(relation is not null);
 
                 if (_fParentCollection)
                 {
@@ -693,7 +693,7 @@ namespace System.Data
 
             internal DataSetRelationCollection(DataSet dataSet)
             {
-                if (dataSet == null)
+                if (dataSet is null)
                 {
                     throw ExceptionBuilder.RelationDataSetNull();
                 }
@@ -711,11 +711,11 @@ namespace System.Data
                     return;
                 }
 
-                if (relations != null)
+                if (relations is not null)
                 {
                     foreach (DataRelation relation in relations)
                     {
-                        if (relation != null)
+                        if (relation is not null)
                         {
                             Add(relation);
                         }
@@ -726,7 +726,7 @@ namespace System.Data
             public override void Clear()
             {
                 base.Clear();
-                if (_dataSet._fInitInProgress && _delayLoadingRelations != null)
+                if (_dataSet._fInitInProgress && _delayLoadingRelations is not null)
                 {
                     _delayLoadingRelations = null;
                 }
@@ -807,7 +807,7 @@ namespace System.Data
                 ForeignKeyConstraint? foreignKey = relation.ChildTable.Constraints.FindForeignKeyConstraint(relation.ParentColumnsReference, relation.ChildColumnsReference);
                 if (relation._createConstraints)
                 {
-                    if (foreignKey == null)
+                    if (foreignKey is null)
                     {
                         relation.ChildTable.Constraints.Add(foreignKey = new ForeignKeyConstraint(relation.ParentColumnsReference, relation.ChildColumnsReference));
 
@@ -865,7 +865,7 @@ namespace System.Data
 
             internal void FinishInitRelations()
             {
-                if (_delayLoadingRelations == null)
+                if (_delayLoadingRelations is null)
                 {
                     return;
                 }
@@ -876,7 +876,7 @@ namespace System.Data
                 for (int i = 0; i < _delayLoadingRelations.Length; i++)
                 {
                     rel = _delayLoadingRelations[i];
-                    if (rel._parentColumnNames == null || rel._childColumnNames == null)
+                    if (rel._parentColumnNames is null || rel._childColumnNames is null)
                     {
                         Add(rel);
                         continue;
@@ -888,7 +888,7 @@ namespace System.Data
 
                     for (int j = 0; j < colCount; j++)
                     {
-                        if (rel._parentTableNamespace == null)
+                        if (rel._parentTableNamespace is null)
                         {
                             parents[j] = _dataSet.Tables[rel._parentTableName!]!.Columns[rel._parentColumnNames[j]]!;
                         }
@@ -897,7 +897,7 @@ namespace System.Data
                             parents[j] = _dataSet.Tables[rel._parentTableName!, rel._parentTableNamespace]!.Columns[rel._parentColumnNames[j]]!;
                         }
 
-                        if (rel._childTableNamespace == null)
+                        if (rel._childTableNamespace is null)
                         {
                             childs[j] = _dataSet.Tables[rel._childTableName!]!.Columns[rel._childColumnNames[j]]!;
                         }

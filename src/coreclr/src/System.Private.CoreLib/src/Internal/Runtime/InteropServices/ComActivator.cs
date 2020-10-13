@@ -159,7 +159,7 @@ namespace Internal.Runtime.InteropServices
             // registration function.
             string attributeName = register ? "ComRegisterFunctionAttribute" : "ComUnregisterFunctionAttribute";
             Type? regFuncAttrType = Type.GetType($"System.Runtime.InteropServices.{attributeName}, System.Runtime.InteropServices", throwOnError: false);
-            if (regFuncAttrType == null)
+            if (regFuncAttrType is null)
             {
                 // If the COM registration attributes can't be found then it is not on the type.
                 return;
@@ -176,7 +176,7 @@ namespace Internal.Runtime.InteropServices
             bool calledFunction = false;
 
             // Walk up the inheritance hierarchy. The first register/unregister function found is called; any additional functions on base types are ignored.
-            while (currentType != null && !calledFunction)
+            while (currentType is not null && !calledFunction)
             {
                 // Retrieve all the methods.
                 MethodInfo[] methods = currentType.GetMethods(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static);
@@ -200,7 +200,7 @@ namespace Internal.Runtime.InteropServices
                     // Finally validate signature
                     ParameterInfo[] methParams = method.GetParameters();
                     if (method.ReturnType != typeof(void)
-                        || methParams == null
+                        || methParams is null
                         || methParams.Length != 1
                         || (methParams[0].ParameterType != typeof(string) && methParams[0].ParameterType != typeof(Type)))
                     {
@@ -403,7 +403,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 var assemblyNameLocal = new AssemblyName(assemblyName);
                 Assembly assem = alc.LoadFromAssemblyName(assemblyNameLocal);
                 Type? t = assem.GetType(typeName);
-                if (t != null)
+                if (t is not null)
                 {
                     return t;
                 }
@@ -464,14 +464,14 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             public static Type GetValidatedInterfaceType(Type classType, ref Guid riid, object? outer)
             {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-                Debug.Assert(classType != null);
+                Debug.Assert(classType is not null);
                 if (riid == Marshal.IID_IUnknown)
                 {
                     return typeof(object);
                 }
 
                 // Aggregation can only be done when requesting IUnknown.
-                if (outer != null)
+                if (outer is not null)
                 {
                     const int CLASS_E_NOAGGREGATION = unchecked((int)0x80040110);
                     throw new COMException(string.Empty, CLASS_E_NOAGGREGATION);
@@ -527,7 +527,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             public static object CreateAggregatedObject(object pUnkOuter, object comObject)
             {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-                Debug.Assert(pUnkOuter != null && comObject != null);
+                Debug.Assert(pUnkOuter is not null && comObject is not null);
                 IntPtr outerPtr = Marshal.GetIUnknownForObject(pUnkOuter);
 
                 try
@@ -554,7 +554,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 Type interfaceType = BasicClassFactory.GetValidatedInterfaceType(_classType, ref riid, pUnkOuter);
 
                 object obj = Activator.CreateInstance(_classType)!;
-                if (pUnkOuter != null)
+                if (pUnkOuter is not null)
                 {
                     obj = BasicClassFactory.CreateAggregatedObject(pUnkOuter, obj);
                 }
@@ -647,7 +647,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 out IntPtr ppvObject)
             {
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
-                Debug.Assert(pUnkReserved == null);
+                Debug.Assert(pUnkReserved is null);
                 CreateInstanceInner(pUnkOuter, ref riid, bstrKey, isDesignTime: false, out ppvObject);
 #else
                 throw new PlatformNotSupportedException();
@@ -665,7 +665,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
                 Type interfaceType = BasicClassFactory.GetValidatedInterfaceType(_classType, ref riid, pUnkOuter);
 
                 object obj = _licenseProxy.AllocateAndValidateLicense(_classType, key, isDesignTime);
-                if (pUnkOuter != null)
+                if (pUnkOuter is not null)
                 {
                     obj = BasicClassFactory.CreateAggregatedObject(pUnkOuter, obj);
                 }
@@ -754,7 +754,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
 #if FEATURE_COMINTEROP_UNMANAGED_ACTIVATION
             // If the attribute type can't be found, then the type
             // definitely doesn't support licensing.
-            if (s_licenseAttrType == null)
+            if (s_licenseAttrType is null)
             {
                 return false;
             }
@@ -787,7 +787,7 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             }
 
             var license = (IDisposable?)parameters[2];
-            if (license != null)
+            if (license is not null)
             {
                 license.Dispose();
                 licVerified = true;
@@ -822,13 +822,13 @@ $@"{nameof(UnregisterClassForTypeInternal)} arguments:
             }
 
             var license = (IDisposable?)parameters[2];
-            if (license != null)
+            if (license is not null)
             {
                 license.Dispose();
             }
 
             var licenseKey = (string?)parameters[3];
-            if (licenseKey == null)
+            if (licenseKey is null)
             {
                 throw new COMException(); // E_FAIL
             }

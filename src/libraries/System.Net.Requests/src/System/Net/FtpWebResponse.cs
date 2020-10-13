@@ -24,7 +24,7 @@ namespace System.Net
         internal FtpWebResponse(Stream? responseStream, long contentLength, Uri responseUri, FtpStatusCode statusCode, string? statusLine, DateTime lastModified, string? bannerMessage, string? welcomeMessage, string? exitMessage)
         {
             _responseStream = responseStream;
-            if (responseStream == null && contentLength < 0)
+            if (responseStream is null && contentLength < 0)
             {
                 contentLength = 0;
             }
@@ -49,7 +49,7 @@ namespace System.Net
         {
             Stream? responseStream = null;
 
-            if (_responseStream != null)
+            if (_responseStream is not null)
             {
                 responseStream = _responseStream;
             }
@@ -69,7 +69,7 @@ namespace System.Net
 
         internal void SetResponseStream(Stream? stream)
         {
-            if (stream == null || stream == Stream.Null || stream is EmptyStream)
+            if (stream is null || stream == Stream.Null || stream is EmptyStream)
                 return;
             _responseStream = stream;
         }
@@ -97,11 +97,11 @@ namespace System.Net
         {
             get
             {
-                if (_ftpRequestHeaders == null)
+                if (_ftpRequestHeaders is null)
                 {
                     lock (this)
                     {
-                        if (_ftpRequestHeaders == null)
+                        if (_ftpRequestHeaders is null)
                         {
                             _ftpRequestHeaders = new WebHeaderCollection();
                         }

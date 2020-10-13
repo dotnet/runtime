@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
     {
         public CngProvider(string provider)
         {
-            if (provider == null)
+            if (provider is null)
                 throw new ArgumentNullException(nameof(provider));
             if (provider.Length == 0)
                 throw new ArgumentException(SR.Format(SR.Cryptography_InvalidProviderName, provider), nameof(provider));
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography
 
         public override bool Equals(object? obj)
         {
-            Debug.Assert(_provider != null);
+            Debug.Assert(_provider is not null);
 
             return Equals(obj as CngProvider);
         }
@@ -72,13 +72,13 @@ namespace System.Security.Cryptography
 
         public override int GetHashCode()
         {
-            Debug.Assert(_provider != null);
+            Debug.Assert(_provider is not null);
             return _provider.GetHashCode();
         }
 
         public override string ToString()
         {
-            Debug.Assert(_provider != null);
+            Debug.Assert(_provider is not null);
             return _provider.ToString();
         }
 

@@ -71,7 +71,7 @@ namespace System.Net.Quic.Implementations.MsQuic
         // Creates a new MsQuicStream
         internal MsQuicStream(MsQuicConnection connection, QUIC_STREAM_OPEN_FLAG flags, IntPtr nativeObjPtr, bool inbound)
         {
-            Debug.Assert(connection != null);
+            Debug.Assert(connection is not null);
 
             _ptr = nativeObjPtr;
 

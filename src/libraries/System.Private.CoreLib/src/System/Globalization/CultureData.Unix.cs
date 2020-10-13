@@ -15,7 +15,7 @@ namespace System.Globalization
         /// </summary>
         private bool InitCultureDataCore()
         {
-            Debug.Assert(_sRealName != null);
+            Debug.Assert(_sRealName is not null);
             Debug.Assert(!GlobalizationMode.Invariant);
 
             string realNameBuffer = _sRealName;
@@ -47,7 +47,7 @@ namespace System.Globalization
             }
 
             // Replace the ICU collation keyword with an _
-            Debug.Assert(_sWindowsName != null);
+            Debug.Assert(_sWindowsName is not null);
             index = _sWindowsName.IndexOf(ICU_COLLATION_KEYWORD, StringComparison.Ordinal);
             if (index >= 0)
             {

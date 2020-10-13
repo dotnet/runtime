@@ -73,8 +73,8 @@ namespace System.Runtime.CompilerServices
 
             internal RuntimeVariableList(object[] data, long[] indexes)
             {
-                Debug.Assert(data != null);
-                Debug.Assert(indexes != null);
+                Debug.Assert(data is not null);
+                Debug.Assert(indexes is not null);
 
                 _data = data;
                 _indexes = indexes;

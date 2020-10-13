@@ -63,7 +63,7 @@ namespace System.Net.Security
 
         internal static byte[]? GetNegotiatedApplicationProtocol(SafeDeleteContext? context)
         {
-            if (context == null)
+            if (context is null)
                 return null;
 
             return Interop.AppleCrypto.SslGetAlpnSelected(((SafeDeleteSslContext)context).SslContext);

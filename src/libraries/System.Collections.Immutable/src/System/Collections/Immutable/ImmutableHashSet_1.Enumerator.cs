@@ -45,7 +45,7 @@ namespace System.Collections.Immutable
                 _builder = builder;
                 _mapEnumerator = new SortedInt32KeyNode<HashBucket>.Enumerator(root);
                 _bucketEnumerator = default(HashBucket.Enumerator);
-                _enumeratingBuilderVersion = builder != null ? builder.Version : -1;
+                _enumeratingBuilderVersion = builder is not null ? builder.Version : -1;
             }
 
             /// <summary>
@@ -99,7 +99,7 @@ namespace System.Collections.Immutable
             /// <exception cref="InvalidOperationException">The collection was modified after the enumerator was created. </exception>
             public void Reset()
             {
-                _enumeratingBuilderVersion = _builder != null ? _builder.Version : -1;
+                _enumeratingBuilderVersion = _builder is not null ? _builder.Version : -1;
                 _mapEnumerator.Reset();
 
                 // Resetting the bucket enumerator is pointless because we'll start on a new bucket later anyway.
@@ -122,7 +122,7 @@ namespace System.Collections.Immutable
             /// <exception cref="System.InvalidOperationException">Thrown if the collection has changed.</exception>
             private void ThrowIfChanged()
             {
-                if (_builder != null && _builder.Version != _enumeratingBuilderVersion)
+                if (_builder is not null && _builder.Version != _enumeratingBuilderVersion)
                 {
                     throw new InvalidOperationException(SR.CollectionModifiedDuringEnumeration);
                 }

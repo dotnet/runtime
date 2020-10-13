@@ -17,12 +17,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ExportingMember(ExportDefinition definition, ReflectionMember member)
         {
-            if (definition == null)
+            if (definition is null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
 
-            if (member == null)
+            if (member is null)
             {
                 throw new ArgumentNullException(nameof(member));
             }

@@ -11,7 +11,7 @@ namespace System.Numerics
         public static uint[] Divide(uint[] left, uint right,
                                     out uint remainder)
         {
-            Debug.Assert(left != null);
+            Debug.Assert(left is not null);
             Debug.Assert(left.Length >= 1);
 
             // Executes the division for one big and one 32-bit integer.
@@ -35,7 +35,7 @@ namespace System.Numerics
 
         public static uint[] Divide(uint[] left, uint right)
         {
-            Debug.Assert(left != null);
+            Debug.Assert(left is not null);
             Debug.Assert(left.Length >= 1);
 
             // Same as above, but only computing the quotient.
@@ -56,7 +56,7 @@ namespace System.Numerics
 
         public static uint Remainder(uint[] left, uint right)
         {
-            Debug.Assert(left != null);
+            Debug.Assert(left is not null);
             Debug.Assert(left.Length >= 1);
 
             // Same as above, but only computing the remainder.
@@ -74,8 +74,8 @@ namespace System.Numerics
         public static unsafe uint[] Divide(uint[] left, uint[] right,
                                            out uint[] remainder)
         {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
+            Debug.Assert(left is not null);
+            Debug.Assert(right is not null);
             Debug.Assert(left.Length >= 1);
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
@@ -102,8 +102,8 @@ namespace System.Numerics
 
         public static unsafe uint[] Divide(uint[] left, uint[] right)
         {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
+            Debug.Assert(left is not null);
+            Debug.Assert(right is not null);
             Debug.Assert(left.Length >= 1);
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
@@ -127,8 +127,8 @@ namespace System.Numerics
 
         public static unsafe uint[] Remainder(uint[] left, uint[] right)
         {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
+            Debug.Assert(left is not null);
+            Debug.Assert(right is not null);
             Debug.Assert(left.Length >= 1);
             Debug.Assert(right.Length >= 1);
             Debug.Assert(left.Length >= right.Length);
@@ -314,7 +314,7 @@ namespace System.Numerics
 
         private static uint[] CreateCopy(uint[] value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
             Debug.Assert(value.Length != 0);
 
             uint[] bits = new uint[value.Length];

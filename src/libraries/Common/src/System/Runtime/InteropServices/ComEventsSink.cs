@@ -28,7 +28,7 @@ namespace System.Runtime.InteropServices
         public static ComEventsSink? Find(ComEventsSink? sinks, ref Guid iid)
         {
             ComEventsSink? sink = sinks;
-            while (sink != null && sink._iidSourceItf != iid)
+            while (sink is not null && sink._iidSourceItf != iid)
             {
                 sink = sink._next;
             }
@@ -44,7 +44,7 @@ namespace System.Runtime.InteropServices
 
         public static ComEventsSink? RemoveAll(ComEventsSink? sinks)
         {
-            while (sinks != null)
+            while (sinks is not null)
             {
                 sinks.Unadvise();
                 sinks = sinks._next;
@@ -55,8 +55,8 @@ namespace System.Runtime.InteropServices
 
         public static ComEventsSink? Remove(ComEventsSink sinks, ComEventsSink sink)
         {
-            Debug.Assert(sinks != null, "removing event sink from empty sinks collection");
-            Debug.Assert(sink != null, "specify event sink is null");
+            Debug.Assert(sinks is not null, "removing event sink from empty sinks collection");
+            Debug.Assert(sink is not null, "specify event sink is null");
 
             ComEventsSink? toReturn = sinks;
 
@@ -67,12 +67,12 @@ namespace System.Runtime.InteropServices
             else
             {
                 ComEventsSink? current = sinks;
-                while (current != null && current._next != sink)
+                while (current is not null && current._next != sink)
                 {
                     current = current._next;
                 }
 
-                if (current != null)
+                if (current is not null)
                 {
                     current._next = sink._next;
                 }
@@ -149,7 +149,7 @@ namespace System.Runtime.InteropServices
             IntPtr puArgErr)
         {
             ComEventsMethod? method = FindMethod(dispid);
-            if (method == null)
+            if (method is null)
             {
                 return;
             }
@@ -246,7 +246,7 @@ namespace System.Runtime.InteropServices
 
         private void Advise(object rcw)
         {
-            Debug.Assert(_connectionPoint == null, "COM event sink is already advised");
+            Debug.Assert(_connectionPoint is null, "COM event sink is already advised");
 
             ComTypes.IConnectionPointContainer cpc = (ComTypes.IConnectionPointContainer)rcw;
             ComTypes.IConnectionPoint cp;
@@ -260,8 +260,8 @@ namespace System.Runtime.InteropServices
 
         private void Unadvise()
         {
-            Debug.Assert(_connectionPoint != null, "Can not unadvise from empty connection point");
-            if (_connectionPoint == null)
+            Debug.Assert(_connectionPoint is not null, "Can not unadvise from empty connection point");
+            if (_connectionPoint is null)
                 return;
 
             try

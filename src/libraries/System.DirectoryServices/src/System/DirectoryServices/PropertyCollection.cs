@@ -30,7 +30,7 @@ namespace System.DirectoryServices
         {
             get
             {
-                if (propertyName == null)
+                if (propertyName is null)
                     throw new ArgumentNullException(nameof(propertyName));
 
                 string name = propertyName.ToLowerInvariant();
@@ -152,7 +152,7 @@ namespace System.DirectoryServices
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
 
             if (array.Rank != 1)
@@ -205,7 +205,7 @@ namespace System.DirectoryServices
             {
                 get
                 {
-                    if (_currentPropName == null)
+                    if (_currentPropName is null)
                         throw new InvalidOperationException(SR.DSNoCurrentProperty);
 
                     return new DictionaryEntry(_currentPropName, new PropertyValueCollection(_parentEntry, _currentPropName));
@@ -231,7 +231,7 @@ namespace System.DirectoryServices
                 }
                 if (hr == 0)
                 {
-                    if (prop != null)
+                    if (prop is not null)
                         _currentPropName = ((UnsafeNativeMethods.IAdsPropertyEntry)prop).Name;
                     else
                         _currentPropName = null;

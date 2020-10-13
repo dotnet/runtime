@@ -15,7 +15,7 @@ namespace System.Collections.Generic
 
         public static Comparer<T> Create(Comparison<T> comparison)
         {
-            if (comparison == null)
+            if (comparison is null)
                 throw new ArgumentNullException(nameof(comparison));
 
             return new ComparisonComparer<T>(comparison);
@@ -25,8 +25,8 @@ namespace System.Collections.Generic
 
         int IComparer.Compare(object? x, object? y)
         {
-            if (x == null) return y == null ? 0 : -1;
-            if (y == null) return 1;
+            if (x is null) return y is null ? 0 : -1;
+            if (y is null) return 1;
             if (x is T && y is T) return Compare((T)x, (T)y);
             ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidArgumentForComparison);
             return 0;
@@ -57,18 +57,18 @@ namespace System.Collections.Generic
     {
         public override int Compare(T? x, T? y)
         {
-            if (x != null)
+            if (x is not null)
             {
-                if (y != null) return x.CompareTo(y);
+                if (y is not null) return x.CompareTo(y);
                 return 1;
             }
-            if (y != null) return -1;
+            if (y is not null) return -1;
             return 0;
         }
 
         // Equals method for the comparer itself.
         public override bool Equals(object? obj) =>
-            obj != null && GetType() == obj.GetType();
+            obj is not null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
             GetType().GetHashCode();
@@ -92,7 +92,7 @@ namespace System.Collections.Generic
 
         // Equals method for the comparer itself.
         public override bool Equals(object? obj) =>
-            obj != null && GetType() == obj.GetType();
+            obj is not null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
             GetType().GetHashCode();
@@ -110,7 +110,7 @@ namespace System.Collections.Generic
 
         // Equals method for the comparer itself.
         public override bool Equals(object? obj) =>
-            obj != null && GetType() == obj.GetType();
+            obj is not null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
             GetType().GetHashCode();
@@ -128,7 +128,7 @@ namespace System.Collections.Generic
 
         // Equals method for the comparer itself.
         public override bool Equals(object? obj) =>
-            obj != null && GetType() == obj.GetType();
+            obj is not null && GetType() == obj.GetType();
 
         public override int GetHashCode() =>
             GetType().GetHashCode();

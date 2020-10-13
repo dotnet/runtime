@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public byte[] Export(CngKeyBlobFormat format)
         {
-            if (format == null)
+            if (format is null)
                 throw new ArgumentNullException(nameof(format));
 
             int numBytesNeeded;
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography
                 out byte[]? allocated);
 
             Debug.Assert(ret);
-            Debug.Assert(allocated != null); // since `allocate: true`
+            Debug.Assert(allocated is not null); // since `allocate: true`
             return allocated;
         }
 

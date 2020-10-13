@@ -31,7 +31,7 @@ namespace System.Management
         //Fires IdentifierChanged event
         internal void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
+            if (IdentifierChanged is not null)
                 IdentifierChanged(this, null);
         }
 
@@ -125,7 +125,7 @@ namespace System.Management
             q = q.Remove(0, token.Length).TrimStart(null);
 
             // Next character should be the operator if any
-            if (op != null)
+            if (op is not null)
             {
                 if (0 != q.IndexOf(op, StringComparison.Ordinal))
                     throw new ArgumentException(SR.InvalidQuery);    // Invalid query
@@ -915,10 +915,10 @@ namespace System.Management
             {
                 //If the class name is not set we can't build a query
                 //Shouldn't throw here because the user may be in the process of filling in the properties...
-                if (className == null)
+                if (className is null)
                     SetQueryString(string.Empty);
 
-                if ((className == null) || (className.Length == 0))
+                if ((className is null) || (className.Length == 0))
                     return;
 
                 //Select clause
@@ -946,7 +946,7 @@ namespace System.Management
             }
 
             //Where clause
-            if ((Condition != null) && (Condition.Length != 0))
+            if ((Condition is not null) && (Condition.Length != 0))
                 s = s + " where " + condition;
 
             //Set the queryString member to the built query (NB: note we set
@@ -965,7 +965,7 @@ namespace System.Management
             //Clear out previous property values
             className = null;
             condition = null;
-            if (selectedProperties != null)
+            if (selectedProperties is not null)
                 selectedProperties.Clear();
 
             //Trim whitespaces
@@ -1563,10 +1563,10 @@ namespace System.Management
         {
             //If the source object is not set we can't build a query
             //Shouldn't throw here because the user may be in the process of filling in the properties...
-            if (sourceObject == null)
+            if (sourceObject is null)
                 SetQueryString(string.Empty);
 
-            if ((sourceObject == null) || (sourceObject.Length == 0))
+            if ((sourceObject is null) || (sourceObject.Length == 0))
                 return;
 
             //"associators" clause
@@ -2098,10 +2098,10 @@ namespace System.Management
         {
             //If the source object is not set we can't build a query
             //Shouldn't throw here because the user may be in the process of filling in the properties...
-            if (sourceObject == null)
+            if (sourceObject is null)
                 SetQueryString(string.Empty);
 
-            if ((sourceObject == null) || (sourceObject.Length == 0))
+            if ((sourceObject is null) || (sourceObject.Length == 0))
                 return;
 
             //"references" clause
@@ -2965,7 +2965,7 @@ namespace System.Management
         {
             //If the event class name is not set we can't build a query
             //This shouldn't throw because the user may be in the process of setting properties...
-            if ((eventClassName == null) || (eventClassName.Length == 0))
+            if ((eventClassName is null) || (eventClassName.Length == 0))
             {
                 SetQueryString(string.Empty);
                 return;
@@ -3025,7 +3025,7 @@ namespace System.Management
             withinInterval = TimeSpan.Zero;
             condition = null;
             groupWithinInterval = TimeSpan.Zero;
-            if (groupByPropertyList != null)
+            if (groupByPropertyList is not null)
                 groupByPropertyList.Clear();
             havingCondition = null;
 
@@ -3221,7 +3221,7 @@ namespace System.Management
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
 
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
@@ -3230,7 +3230,7 @@ namespace System.Management
             {
                 EventQuery obj = ((EventQuery)(value));
                 ConstructorInfo ctor = typeof(EventQuery).GetConstructor(new Type[] { typeof(string) });
-                if (ctor != null)
+                if (ctor is not null)
                 {
                     return new InstanceDescriptor(ctor, new object[] { obj.QueryString });
                 }
@@ -3240,7 +3240,7 @@ namespace System.Management
             {
                 ObjectQuery obj = ((ObjectQuery)(value));
                 ConstructorInfo ctor = typeof(ObjectQuery).GetConstructor(new Type[] { typeof(string) });
-                if (ctor != null)
+                if (ctor is not null)
                 {
                     return new InstanceDescriptor(ctor, new object[] { obj.QueryString });
                 }

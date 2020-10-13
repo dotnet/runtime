@@ -68,12 +68,12 @@ namespace Microsoft.Internal
         /// <param name="value"></param>
         public static void LoadValue(this ILGenerator ilGenerator, object? value)
         {
-            Debug.Assert(ilGenerator != null);
+            Debug.Assert(ilGenerator is not null);
 
             //
             // Get nulls out of the way - they are basically typeless, so we just load null
             //
-            if (value == null)
+            if (value is null)
             {
                 ilGenerator.LoadNull();
                 return;
@@ -164,19 +164,19 @@ namespace Microsoft.Internal
         /// <param name="value"></param>
         public static void AddItemToLocalDictionary(this ILGenerator ilGenerator, LocalBuilder dictionary, object key, object value)
         {
-            Debug.Assert(ilGenerator != null);
+            Debug.Assert(ilGenerator is not null);
 
-            if (dictionary == null)
+            if (dictionary is null)
             {
                 throw new ArgumentNullException(nameof(dictionary));
             }
 
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -194,19 +194,19 @@ namespace Microsoft.Internal
         /// <param name="value"></param>
         public static void AddLocalToLocalDictionary(this ILGenerator ilGenerator, LocalBuilder dictionary, object key, LocalBuilder value)
         {
-            Debug.Assert(ilGenerator != null);
+            Debug.Assert(ilGenerator is not null);
 
-            if (dictionary == null)
+            if (dictionary is null)
             {
                 throw new ArgumentNullException(nameof(dictionary));
             }
 
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -223,14 +223,14 @@ namespace Microsoft.Internal
         /// <param name="dataStore"></param>
         public static void GetExceptionDataAndStoreInLocal(this ILGenerator ilGenerator, LocalBuilder exception, LocalBuilder dataStore)
         {
-            Debug.Assert(ilGenerator != null);
+            Debug.Assert(ilGenerator is not null);
 
-            if (exception == null)
+            if (exception is null)
             {
                 throw new ArgumentNullException(nameof(exception));
             }
 
-            if (dataStore == null)
+            if (dataStore is null)
             {
                 throw new ArgumentNullException(nameof(dataStore));
             }
@@ -242,9 +242,9 @@ namespace Microsoft.Internal
 
         private static void LoadEnumerable(this ILGenerator ilGenerator, IEnumerable enumerable)
         {
-            Debug.Assert(ilGenerator != null);
+            Debug.Assert(ilGenerator is not null);
 
-            if (enumerable == null)
+            if (enumerable is null)
             {
                 throw new ArgumentNullException(nameof(enumerable));
             }
@@ -292,7 +292,7 @@ namespace Microsoft.Internal
 
         private static bool IsBoxingRequiredForValue(object? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 return false;
             }
@@ -309,9 +309,9 @@ namespace Microsoft.Internal
 
         private static void LoadString(this ILGenerator ilGenerator, string s)
         {
-            Debug.Assert(ilGenerator != null);
+            Debug.Assert(ilGenerator is not null);
 
-            if (s == null)
+            if (s is null)
             {
                 ilGenerator.LoadNull();
             }
@@ -323,35 +323,35 @@ namespace Microsoft.Internal
 
         private static void LoadInt(this ILGenerator ilGenerator, int value)
         {
-            Debug.Assert(ilGenerator != null);
+            Debug.Assert(ilGenerator is not null);
 
             ilGenerator.Emit(OpCodes.Ldc_I4, value);
         }
 
         private static void LoadLong(this ILGenerator ilGenerator, long value)
         {
-            Debug.Assert(ilGenerator != null);
+            Debug.Assert(ilGenerator is not null);
 
             ilGenerator.Emit(OpCodes.Ldc_I8, value);
         }
 
         private static void LoadFloat(this ILGenerator ilGenerator, float value)
         {
-            Debug.Assert(ilGenerator != null);
+            Debug.Assert(ilGenerator is not null);
 
             ilGenerator.Emit(OpCodes.Ldc_R4, value);
         }
 
         private static void LoadDouble(this ILGenerator ilGenerator, double value)
         {
-            Debug.Assert(ilGenerator != null);
+            Debug.Assert(ilGenerator is not null);
 
             ilGenerator.Emit(OpCodes.Ldc_R8, value);
         }
 
         private static void LoadTypeOf(this ILGenerator ilGenerator, Type type)
         {
-            Debug.Assert(ilGenerator != null);
+            Debug.Assert(ilGenerator is not null);
 
             //typeofs() translate into ldtoken and Type::GetTypeFromHandle call
             ilGenerator.Emit(OpCodes.Ldtoken, type);

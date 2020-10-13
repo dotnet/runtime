@@ -170,7 +170,7 @@ namespace System.IO.Enumeration
                             {
                                 try
                                 {
-                                    if (_pending == null)
+                                    if (_pending is null)
                                         _pending = new Queue<(IntPtr, string)>();
                                     _pending.Enqueue((subDirectoryHandle, subDirectory));
                                 }
@@ -196,7 +196,7 @@ namespace System.IO.Enumeration
         private unsafe void FindNextEntry()
         {
             _entry = Interop.NtDll.FILE_FULL_DIR_INFORMATION.GetNextInfo(_entry);
-            if (_entry != null)
+            if (_entry is not null)
                 return;
 
             // We need more data
@@ -206,7 +206,7 @@ namespace System.IO.Enumeration
 
         private bool DequeueNextDirectory()
         {
-            if (_pending == null || _pending.Count == 0)
+            if (_pending is null || _pending.Count == 0)
                 return false;
 
             (_directoryHandle, _currentPath) = _pending.Dequeue();
@@ -216,7 +216,7 @@ namespace System.IO.Enumeration
         private void InternalDispose(bool disposing)
         {
             // It is possible to fail to allocate the lock, but the finalizer will still run
-            if (_lock != null)
+            if (_lock is not null)
             {
                 lock (_lock)
                 {
@@ -224,7 +224,7 @@ namespace System.IO.Enumeration
 
                     CloseDirectoryHandle();
 
-                    if (_pending != null)
+                    if (_pending is not null)
                     {
                         while (_pending.Count > 0)
                             Interop.Kernel32.CloseHandle(_pending.Dequeue().Handle);

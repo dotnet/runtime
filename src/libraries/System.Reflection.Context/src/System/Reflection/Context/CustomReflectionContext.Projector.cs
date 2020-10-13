@@ -23,7 +23,7 @@ namespace System.Reflection.Context
                 if (NeedsProjection(value))
                 {
                     // Map the assembly to the underlying context first
-                    Debug.Assert(ReflectionContext.SourceContext != null);
+                    Debug.Assert(ReflectionContext.SourceContext is not null);
                     value = ReflectionContext.SourceContext.MapType(value);
                     return ProjectType(value);
                 }
@@ -36,7 +36,7 @@ namespace System.Reflection.Context
                 if (NeedsProjection(value))
                 {
                     // Map the assembly to the underlying context first
-                    Debug.Assert(ReflectionContext.SourceContext != null);
+                    Debug.Assert(ReflectionContext.SourceContext is not null);
                     value = ReflectionContext.SourceContext.MapAssembly(value);
 
                     return ProjectAssembly(value);
@@ -47,7 +47,7 @@ namespace System.Reflection.Context
 
             public override TypeInfo ProjectType(Type value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -57,7 +57,7 @@ namespace System.Reflection.Context
 
             public override Assembly ProjectAssembly(Assembly value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -67,7 +67,7 @@ namespace System.Reflection.Context
 
             public override Module ProjectModule(Module value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -77,7 +77,7 @@ namespace System.Reflection.Context
 
             public override FieldInfo ProjectField(FieldInfo value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -87,7 +87,7 @@ namespace System.Reflection.Context
 
             public override EventInfo ProjectEvent(EventInfo value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -97,7 +97,7 @@ namespace System.Reflection.Context
 
             public override ConstructorInfo ProjectConstructor(ConstructorInfo value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -107,7 +107,7 @@ namespace System.Reflection.Context
 
             public override MethodInfo ProjectMethod(MethodInfo value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -117,15 +117,15 @@ namespace System.Reflection.Context
 
             public override MethodBase ProjectMethodBase(MethodBase value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 MethodInfo method = value as MethodInfo;
-                if (method != null)
+                if (method is not null)
                     return ProjectMethod(method);
 
                 ConstructorInfo constructor = value as ConstructorInfo;
-                if (constructor != null)
+                if (constructor is not null)
                     return ProjectConstructor(constructor);
 
                 throw new InvalidOperationException(SR.Format(SR.InvalidOperation_InvalidMethodType, value.GetType()));
@@ -133,7 +133,7 @@ namespace System.Reflection.Context
 
             public override PropertyInfo ProjectProperty(PropertyInfo value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -143,7 +143,7 @@ namespace System.Reflection.Context
 
             public override ParameterInfo ProjectParameter(ParameterInfo value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -153,7 +153,7 @@ namespace System.Reflection.Context
 
             public override MethodBody ProjectMethodBody(MethodBody value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -163,7 +163,7 @@ namespace System.Reflection.Context
 
             public override LocalVariableInfo ProjectLocalVariable(LocalVariableInfo value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -173,7 +173,7 @@ namespace System.Reflection.Context
 
             public override ExceptionHandlingClause ProjectExceptionHandlingClause(ExceptionHandlingClause value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -183,7 +183,7 @@ namespace System.Reflection.Context
 
             public override CustomAttributeData ProjectCustomAttributeData(CustomAttributeData value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -193,7 +193,7 @@ namespace System.Reflection.Context
 
             public override ManifestResourceInfo ProjectManifestResource(ManifestResourceInfo value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 Debug.Assert(NeedsProjection(value));
@@ -203,7 +203,7 @@ namespace System.Reflection.Context
 
             public override MemberInfo ProjectMember(MemberInfo value)
             {
-                if (value == null)
+                if (value is null)
                     return null;
 
                 MemberInfo output = null;

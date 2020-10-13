@@ -82,7 +82,7 @@ namespace System.Xml.Xsl.XsltOld
             _isHtmlOutput = _output.Method == XsltOutput.OutputMethod.Html;
             _cdataElements = _output.CDataElements;
             _indentOutput = _output.Indent;
-            _outputDoctype = _output.DoctypeSystem != null || (_isHtmlOutput && _output.DoctypePublic != null);
+            _outputDoctype = _output.DoctypeSystem is not null || (_isHtmlOutput && _output.DoctypePublic is not null);
             _outputXmlDecl = _isXmlOutput && !_output.OmitXmlDeclaration && !_omitXmlDeclCalled;
         }
 
@@ -114,7 +114,7 @@ namespace System.Xml.Xsl.XsltOld
                 if (mainNode.Prefix.Length == 0)
                 {
                     htmlProps = mainNode.htmlProps;
-                    if (htmlProps == null && mainNode.search)
+                    if (htmlProps is null && mainNode.search)
                     {
                         htmlProps = HtmlElementProps.GetProps(mainNode.LocalName);
                     }
@@ -128,7 +128,7 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     if (
                         _secondRoot && (
-                            _output.DoctypeSystem != null ||
+                            _output.DoctypeSystem is not null ||
                             _output.Standalone
                         )
                     )
@@ -145,7 +145,7 @@ namespace System.Xml.Xsl.XsltOld
                 _outputDoctype = false;
             }
 
-            if (_cdataElements != null && _cdataElements.Contains(new XmlQualifiedName(mainNode.LocalName, mainNode.NamespaceURI)) && _isXmlOutput)
+            if (_cdataElements is not null && _cdataElements.Contains(new XmlQualifiedName(mainNode.LocalName, mainNode.NamespaceURI)) && _isXmlOutput)
             {
                 record.Manager.CurrentElementScope.ToCData = true;
             }
@@ -159,7 +159,7 @@ namespace System.Xml.Xsl.XsltOld
 
             if (mainNode.IsEmptyTag)
             {
-                Debug.Assert(!_isHtmlOutput || mainNode.Prefix != null, "Html can't have abbreviated elements");
+                Debug.Assert(!_isHtmlOutput || mainNode.Prefix is not null, "Html can't have abbreviated elements");
                 Write(s_SlashGreaterThan);
             }
             else
@@ -167,7 +167,7 @@ namespace System.Xml.Xsl.XsltOld
                 Write(s_GreaterThan);
             }
 
-            if (htmlProps != null && htmlProps.Head)
+            if (htmlProps is not null && htmlProps.Head)
             {
                 mainNode.Depth++;
                 Indent(record);
@@ -187,7 +187,7 @@ namespace System.Xml.Xsl.XsltOld
 
             scope.Mixed = true;
 
-            if (scope.HtmlElementProps != null && scope.HtmlElementProps.NoEntities)
+            if (scope.HtmlElementProps is not null && scope.HtmlElementProps.NoEntities)
             {
                 // script or stile
                 Write(mainNode.Value);
@@ -207,7 +207,7 @@ namespace System.Xml.Xsl.XsltOld
             for (int i = 0; i < node.TextInfoCount; i++)
             {
                 string? text = node.TextInfo[i];
-                if (text == null)
+                if (text is null)
                 { // disableEscaping marker
                     i++;
                     Debug.Assert(i < node.TextInfoCount, "disableEscaping marker can't be last TextInfo record");
@@ -230,7 +230,7 @@ namespace System.Xml.Xsl.XsltOld
         private void WriteDoctype(BuilderInfo mainNode)
         {
             Debug.Assert(_outputDoctype == true, "It supposed to check this condition before actual call");
-            Debug.Assert(_output.DoctypeSystem != null || (_isHtmlOutput && _output.DoctypePublic != null), "We set outputDoctype == true only if");
+            Debug.Assert(_output.DoctypeSystem is not null || (_isHtmlOutput && _output.DoctypePublic is not null), "We set outputDoctype == true only if");
             Indent(0);
             Write(s_DocType);
             if (_isXmlOutput)
@@ -242,7 +242,7 @@ namespace System.Xml.Xsl.XsltOld
                 WriteName(string.Empty, "html");
             }
             Write(s_Space);
-            if (_output.DoctypePublic != null)
+            if (_output.DoctypePublic is not null)
             {
                 Write(s_Public);
                 Write(s_Quote);
@@ -253,7 +253,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 Write(s_System);
             }
-            if (_output.DoctypeSystem != null)
+            if (_output.DoctypeSystem is not null)
             {
                 Write(s_Quote);
                 Write(_output.DoctypeSystem);
@@ -272,7 +272,7 @@ namespace System.Xml.Xsl.XsltOld
             Write(s_LessThanQuestion);
             WriteName(string.Empty, "xml");
             Write(s_VersionAll);
-            if (this.encoding != null)
+            if (this.encoding is not null)
             {
                 Write(s_EncodingStart);
                 Write(this.encoding.WebName);
@@ -314,7 +314,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             HtmlElementProps? htmlProps = record.Manager.CurrentElementScope.HtmlElementProps;
 
-            if (htmlProps != null && htmlProps.Empty)
+            if (htmlProps is not null && htmlProps.Empty)
             {
                 return;
             }
@@ -390,7 +390,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void CacheRecord(RecordBuilder record)
         {
-            if (_outputCache == null)
+            if (_outputCache is null)
             {
                 _outputCache = new ArrayList();
             }
@@ -400,7 +400,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void OutputCachedRecords()
         {
-            if (_outputCache == null)
+            if (_outputCache is null)
             {
                 return;
             }
@@ -519,10 +519,10 @@ namespace System.Xml.Xsl.XsltOld
 
         private void WriteName(string prefix, string name)
         {
-            if (prefix != null && prefix.Length > 0)
+            if (prefix is not null && prefix.Length > 0)
             {
                 Write(prefix);
-                if (name != null && name.Length > 0)
+                if (name is not null && name.Length > 0)
                 {
                     Write(s_Colon);
                 }
@@ -536,13 +536,13 @@ namespace System.Xml.Xsl.XsltOld
 
         private void WriteXmlAttributeValue(string value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
             WriteWithReplace(value, s_XmlAttributeValueFind, s_XmlAttributeValueReplace);
         }
 
         private void WriteHtmlAttributeValue(string value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             int length = value.Length;
             int i = 0;
@@ -574,7 +574,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void WriteHtmlUri(string value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
             Debug.Assert(_isHtmlOutput);
 
             int length = value.Length;
@@ -607,7 +607,7 @@ namespace System.Xml.Xsl.XsltOld
                     default:
                         if (127 < ch)
                         {
-                            if (_utf8Encoding == null)
+                            if (_utf8Encoding is null)
                             {
                                 _utf8Encoding = Encoding.UTF8;
                                 _byteBuffer = new byte[_utf8Encoding.GetMaxByteCount(1)];
@@ -630,7 +630,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void WriteWithReplace(string value, char[] find, string[] replace)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
             Debug.Assert(find.Length == replace.Length);
 
             int length = value.Length;
@@ -681,7 +681,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void WriteCData(string value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
             Write(value.Replace(s_CDataEnd, s_CDataSplit));
         }
 
@@ -695,14 +695,14 @@ namespace System.Xml.Xsl.XsltOld
                 string attrValue = attribute.Value;
                 bool abr = false, uri = false;
                 {
-                    if (htmlElementsProps != null && attribute.Prefix.Length == 0)
+                    if (htmlElementsProps is not null && attribute.Prefix.Length == 0)
                     {
                         HtmlAttributeProps? htmlAttrProps = attribute.htmlAttrProps;
-                        if (htmlAttrProps == null && attribute.search)
+                        if (htmlAttrProps is null && attribute.search)
                         {
                             htmlAttrProps = HtmlAttributeProps.GetProps(attribute.LocalName);
                         }
-                        if (htmlAttrProps != null)
+                        if (htmlAttrProps is not null)
                         {
                             abr = htmlElementsProps.AbrParent && htmlAttrProps.Abr;
                             uri = htmlElementsProps.UriParent && (htmlAttrProps.Uri ||

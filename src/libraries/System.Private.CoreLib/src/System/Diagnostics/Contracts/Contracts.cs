@@ -517,7 +517,7 @@ namespace System.Diagnostics.Contracts
         {
             if (fromInclusive > toExclusive)
                 throw new ArgumentException(SR.Argument_ToExclusiveLessThanFromExclusive);
-            if (predicate == null)
+            if (predicate is null)
                 throw new ArgumentNullException(nameof(predicate));
 
             for (int i = fromInclusive; i < toExclusive; i++)
@@ -538,9 +538,9 @@ namespace System.Diagnostics.Contracts
         [Pure]
         public static bool ForAll<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
-            if (collection == null)
+            if (collection is null)
                 throw new ArgumentNullException(nameof(collection));
-            if (predicate == null)
+            if (predicate is null)
                 throw new ArgumentNullException(nameof(predicate));
 
             foreach (T t in collection)
@@ -567,7 +567,7 @@ namespace System.Diagnostics.Contracts
         {
             if (fromInclusive > toExclusive)
                 throw new ArgumentException(SR.Argument_ToExclusiveLessThanFromExclusive);
-            if (predicate == null)
+            if (predicate is null)
                 throw new ArgumentNullException(nameof(predicate));
 
             for (int i = fromInclusive; i < toExclusive; i++)
@@ -587,9 +587,9 @@ namespace System.Diagnostics.Contracts
         [Pure]
         public static bool Exists<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
-            if (collection == null)
+            if (collection is null)
                 throw new ArgumentNullException(nameof(collection));
-            if (predicate == null)
+            if (predicate is null)
                 throw new ArgumentNullException(nameof(predicate));
 
             foreach (T t in collection)
@@ -629,7 +629,7 @@ namespace System.Diagnostics.Contracts
             for (int i = 0; i < stack.FrameCount; i++)
             {
                 Assembly? caller = stack.GetFrame(i)!.GetMethod()?.DeclaringType?.Assembly;
-                if (caller != null && caller != thisAssembly)
+                if (caller is not null && caller != thisAssembly)
                 {
                     probablyNotRewritten = caller;
                     break;
@@ -656,9 +656,9 @@ namespace System.Diagnostics.Contracts
             if (failureKind < ContractFailureKind.Precondition || failureKind > ContractFailureKind.Assume)
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, failureKind), nameof(failureKind));
 
-            // displayMessage == null means: yes we handled it. Otherwise it is the localized failure message
+            // displayMessage is null means: yes we handled it. Otherwise it is the localized failure message
             string? displayMessage = ContractHelper.RaiseContractFailedEvent(failureKind, userMessage, conditionText, innerException);
-            if (displayMessage == null)
+            if (displayMessage is null)
                 return;
 
             ContractHelper.TriggerFailure(failureKind, displayMessage, userMessage, conditionText, innerException);

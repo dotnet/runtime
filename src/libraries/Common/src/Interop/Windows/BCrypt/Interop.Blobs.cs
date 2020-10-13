@@ -17,7 +17,7 @@ internal partial class Interop
         /// </summary>
         internal static void Emit(byte[] blob, ref int offset, byte[] value)
         {
-            Debug.Assert(blob != null);
+            Debug.Assert(blob is not null);
             Debug.Assert(offset >= 0);
 
             Buffer.BlockCopy(value, 0, blob, offset, value.Length);
@@ -29,7 +29,7 @@ internal partial class Interop
         /// </summary>
         internal static void EmitByte(byte[] blob, ref int offset, byte value, int count = 1)
         {
-            Debug.Assert(blob != null);
+            Debug.Assert(blob is not null);
             Debug.Assert(offset >= 0);
             Debug.Assert(count > 0);
 
@@ -46,7 +46,7 @@ internal partial class Interop
         /// </summary>
         internal static void EmitBigEndian(byte[] blob, ref int offset, int value)
         {
-            Debug.Assert(blob != null);
+            Debug.Assert(blob is not null);
             Debug.Assert(offset >= 0);
 
             unchecked

@@ -116,7 +116,7 @@ namespace System.Threading.Channels
 
             return
                 !IsCompleted ? ValueTaskSourceStatus.Pending :
-                _error == null ? ValueTaskSourceStatus.Succeeded :
+                _error is null ? ValueTaskSourceStatus.Succeeded :
                 _error.SourceException is OperationCanceledException ? ValueTaskSourceStatus.Canceled :
                 ValueTaskSourceStatus.Faulted;
         }
@@ -210,27 +210,27 @@ namespace System.Threading.Channels
             // after the CompareExchange, it'll find the state already stored.  If someone misuses this
             // and schedules multiple continuations erroneously, we could end up using the wrong state.
             // Make a best-effort attempt to catch such misuse.
-            if (_continuationState != null)
+            if (_continuationState is not null)
             {
                 ThrowMultipleContinuations();
             }
             _continuationState = state;
 
             // Capture the execution context if necessary.
-            Debug.Assert(_executionContext == null);
+            Debug.Assert(_executionContext is null);
             if ((flags & ValueTaskSourceOnCompletedFlags.FlowExecutionContext) != 0)
             {
                 _executionContext = ExecutionContext.Capture();
             }
 
             // Capture the scheduling context if necessary.
-            Debug.Assert(_schedulingContext == null);
+            Debug.Assert(_schedulingContext is null);
             SynchronizationContext? sc = null;
             TaskScheduler? ts = null;
             if ((flags & ValueTaskSourceOnCompletedFlags.UseSchedulingContext) != 0)
             {
                 sc = SynchronizationContext.Current;
-                if (sc != null && sc.GetType() != typeof(SynchronizationContext))
+                if (sc is not null && sc.GetType() != typeof(SynchronizationContext))
                 {
                     _schedulingContext = sc;
                 }
@@ -251,7 +251,7 @@ namespace System.Threading.Channels
             // inside the awaiter's OnCompleted method and we want to avoid possible stack dives, we must invoke
             // the continuation asynchronously rather than synchronously.
             Action<object?>? prevContinuation = Interlocked.CompareExchange(ref _continuation, continuation, null);
-            if (prevContinuation != null)
+            if (prevContinuation is not null)
             {
                 // If the set failed because there's already a delegate in _continuation, but that delegate is
                 // something other than s_completedSentinel, something went wrong, which should only happen if
@@ -266,11 +266,11 @@ namespace System.Threading.Channels
                 // Queue the continuation.  We always queue here, even if !RunContinuationsAsynchronously, in order
                 // to avoid stack diving; this path happens in the rare race when we're setting up to await and the
                 // object is completed after the awaiter.IsCompleted but before the awaiter.OnCompleted.
-                if (_schedulingContext == null)
+                if (_schedulingContext is null)
                 {
                     QueueUserWorkItem(continuation, state);
                 }
-                else if (sc != null)
+                else if (sc is not null)
                 {
                     sc.Post(static s =>
                     {
@@ -280,7 +280,7 @@ namespace System.Threading.Channels
                 }
                 else
                 {
-                    Debug.Assert(ts != null);
+                    Debug.Assert(ts is not null);
                     Task.Factory.StartNew(continuation, state, CancellationToken.None, TaskCreationOptions.DenyChildAttach, ts);
                 }
             }
@@ -372,12 +372,12 @@ namespace System.Threading.Channels
         /// <summary>Signals to a registered continuation that the operation has now completed.</summary>
         private void SignalCompletion()
         {
-            if (_continuation != null || Interlocked.CompareExchange(ref _continuation, s_completedSentinel, null) != null)
+            if (_continuation is not null || Interlocked.CompareExchange(ref _continuation, s_completedSentinel, null) is not null)
             {
                 Debug.Assert(_continuation != s_completedSentinel, $"The continuation was the completion sentinel.");
                 Debug.Assert(_continuation != s_availableSentinel, $"The continuation was the available sentinel.");
 
-                if (_schedulingContext == null)
+                if (_schedulingContext is null)
                 {
                     // There's no captured scheduling context.  If we're forced to run continuations asynchronously, queue it.
                     // Otherwise fall through to invoke it synchronously.
@@ -404,7 +404,7 @@ namespace System.Threading.Channels
                     // or if there's a current scheduler that's not the one we're targeting, queue it.
                     // Otherwise fall through to invoke it synchronously.
                     TaskScheduler ts = (TaskScheduler)_schedulingContext;
-                    Debug.Assert(ts != null, "Expected a TaskScheduler");
+                    Debug.Assert(ts is not null, "Expected a TaskScheduler");
                     if (_runContinuationsAsynchronously || ts != TaskScheduler.Current)
                     {
                         Task.Factory.StartNew(static s => ((AsyncOperation<TResult>)s!).SetCompletionAndInvokeContinuation(), this,
@@ -420,7 +420,7 @@ namespace System.Threading.Channels
 
         private void SetCompletionAndInvokeContinuation()
         {
-            if (_executionContext == null)
+            if (_executionContext is null)
             {
                 Action<object?> c = _continuation!;
                 _continuation = s_completedSentinel;

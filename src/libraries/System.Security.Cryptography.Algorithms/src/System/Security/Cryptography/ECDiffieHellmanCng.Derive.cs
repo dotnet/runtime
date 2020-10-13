@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
             // for DeriveKeyMaterial.
             public override byte[] DeriveKeyMaterial(ECDiffieHellmanPublicKey otherPartyPublicKey)
             {
-                if (otherPartyPublicKey == null)
+                if (otherPartyPublicKey is null)
                 {
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
                 }
@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
 
             private SafeNCryptSecretHandle DeriveSecretAgreementHandle(ECDiffieHellmanPublicKey otherPartyPublicKey)
             {
-                if (otherPartyPublicKey == null)
+                if (otherPartyPublicKey is null)
                 {
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
                 }

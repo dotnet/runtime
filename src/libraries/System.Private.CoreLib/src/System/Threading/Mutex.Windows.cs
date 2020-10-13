@@ -41,7 +41,7 @@ namespace System.Threading
 
         private static OpenExistingResult OpenExistingWorker(string name, out Mutex? result)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }

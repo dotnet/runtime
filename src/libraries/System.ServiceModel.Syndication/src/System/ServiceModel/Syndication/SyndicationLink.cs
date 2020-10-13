@@ -37,7 +37,7 @@ namespace System.ServiceModel.Syndication
 
         protected SyndicationLink(SyndicationLink source)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -108,13 +108,13 @@ namespace System.ServiceModel.Syndication
 
         public Uri GetAbsoluteUri()
         {
-            if (Uri != null)
+            if (Uri is not null)
             {
                 if (Uri.IsAbsoluteUri)
                 {
                     return Uri;
                 }
-                else if (BaseUri != null)
+                else if (BaseUri is not null)
                 {
                     return new Uri(BaseUri, Uri);
                 }

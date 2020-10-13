@@ -53,7 +53,7 @@ namespace System.Threading
             get
             {
                 ThreadLocalLockEntry? threadLocalLockEntry = ThreadLocalLockEntry.GetCurrent(_lockID);
-                if (threadLocalLockEntry != null)
+                if (threadLocalLockEntry is not null)
                 {
                     return threadLocalLockEntry._readerLevel > 0;
                 }
@@ -226,10 +226,10 @@ namespace System.Threading
                             if ((knownState & LockStates.ReaderSignaled) != 0 &&
                                 (knownState & LockStates.WaitingReadersMask) == LockStates.WaitingReader)
                             {
-                                if (readerEvent == null)
+                                if (readerEvent is null)
                                 {
                                     readerEvent = _readerEvent;
-                                    Debug.Assert(readerEvent != null);
+                                    Debug.Assert(readerEvent is not null);
                                 }
 
                                 // Ensure the event is signaled before resetting it, since the ReaderSignaled state is set
@@ -386,10 +386,10 @@ namespace System.Threading
                             (knownState & LockStates.WriterSignaled) != 0 &&
                             (knownState & LockStates.WaitingWritersMask) == LockStates.WaitingWriter)
                         {
-                            if (writerEvent == null)
+                            if (writerEvent is null)
                             {
                                 writerEvent = _writerEvent;
-                                Debug.Assert(writerEvent != null);
+                                Debug.Assert(writerEvent is not null);
                             }
 
                             while (true)
@@ -453,7 +453,7 @@ namespace System.Threading
             }
 
             ThreadLocalLockEntry? threadLocalLockEntry = ThreadLocalLockEntry.GetCurrent(_lockID);
-            if (threadLocalLockEntry == null)
+            if (threadLocalLockEntry is null)
             {
                 throw GetNotOwnerException();
             }
@@ -488,7 +488,7 @@ namespace System.Threading
                     if ((knownState & LockStates.WaitingWritersMask) != 0)
                     {
                         writerEvent = TryGetOrCreateWriterEvent();
-                        if (writerEvent == null)
+                        if (writerEvent is null)
                         {
                             // Similar to below, wait for some time and try again
                             Thread.Sleep(100);
@@ -502,7 +502,7 @@ namespace System.Threading
                     else if ((knownState & LockStates.WaitingReadersMask) != 0)
                     {
                         readerEvent = TryGetOrCreateReaderEvent();
-                        if (readerEvent == null)
+                        if (readerEvent is null)
                         {
                             // Wait for some time and try again. Since a WaitingReaders bit is set, the event would usually
                             // already be created (if the waiting reader that called AcquireReaderLock is already waiting on the
@@ -524,7 +524,7 @@ namespace System.Threading
                         }
                         modifyState += LockStates.ReaderSignaled;
                     }
-                    else if (knownState == LockStates.Reader && (_readerEvent != null || _writerEvent != null))
+                    else if (knownState == LockStates.Reader && (_readerEvent is not null || _writerEvent is not null))
                     {
                         cacheEvents = true;
                         modifyState += LockStates.CachingEvents;
@@ -543,14 +543,14 @@ namespace System.Threading
                 if ((knownState & LockStates.WaitingWritersMask) != 0)
                 {
                     Debug.Assert((_state & LockStates.WriterSignaled) != 0);
-                    Debug.Assert(writerEvent != null);
+                    Debug.Assert(writerEvent is not null);
                     writerEvent.Set();
                 }
                 // Check for waiting readers
                 else if ((knownState & LockStates.WaitingReadersMask) != 0)
                 {
                     Debug.Assert((_state & LockStates.ReaderSignaled) != 0);
-                    Debug.Assert(readerEvent != null);
+                    Debug.Assert(readerEvent is not null);
                     readerEvent.Set();
                 }
                 // Check for the need to release events
@@ -597,7 +597,7 @@ namespace System.Threading
                 if ((knownState & LockStates.WaitingReadersMask) != 0)
                 {
                     readerEvent = TryGetOrCreateReaderEvent();
-                    if (readerEvent == null)
+                    if (readerEvent is null)
                     {
                         // Wait for some time and try again. Since a WaitingReaders bit is set, the event would usually
                         // already be created (if the waiting reader that called AcquireReaderLock is already waiting on the
@@ -622,7 +622,7 @@ namespace System.Threading
                 else if ((knownState & LockStates.WaitingWritersMask) != 0)
                 {
                     writerEvent = TryGetOrCreateWriterEvent();
-                    if (writerEvent == null)
+                    if (writerEvent is null)
                     {
                         // Similar to above, wait for some time and try again
                         Thread.Sleep(100);
@@ -633,7 +633,7 @@ namespace System.Threading
                     }
                     modifyState += LockStates.WriterSignaled;
                 }
-                else if (knownState == LockStates.Writer && (_readerEvent != null || _writerEvent != null))
+                else if (knownState == LockStates.Writer && (_readerEvent is not null || _writerEvent is not null))
                 {
                     cacheEvents = true;
                     modifyState += LockStates.CachingEvents;
@@ -648,14 +648,14 @@ namespace System.Threading
             if ((knownState & LockStates.WaitingReadersMask) != 0)
             {
                 Debug.Assert((_state & LockStates.ReaderSignaled) != 0);
-                Debug.Assert(readerEvent != null);
+                Debug.Assert(readerEvent is not null);
                 readerEvent.Set();
             }
             // Check for waiting writers
             else if ((knownState & LockStates.WaitingWritersMask) != 0)
             {
                 Debug.Assert((_state & LockStates.WriterSignaled) != 0);
-                Debug.Assert(writerEvent != null);
+                Debug.Assert(writerEvent is not null);
                 writerEvent.Set();
             }
             // Check for the need to release events
@@ -689,7 +689,7 @@ namespace System.Threading
             }
 
             ThreadLocalLockEntry? threadLocalLockEntry = ThreadLocalLockEntry.GetCurrent(_lockID);
-            if (threadLocalLockEntry == null)
+            if (threadLocalLockEntry is null)
             {
                 lockCookie._flags = LockCookieFlags.Upgrade | LockCookieFlags.OwnedNone;
             }
@@ -788,7 +788,7 @@ namespace System.Threading
                     if ((knownState & LockStates.WaitingReadersMask) != 0)
                     {
                         readerEvent = TryGetOrCreateReaderEvent();
-                        if (readerEvent == null)
+                        if (readerEvent is null)
                         {
                             // Wait for some time and try again. Since a WaitingReaders bit is set, the event would usually
                             // already be created (if the waiting reader that called AcquireReaderLock is already waiting on the
@@ -819,7 +819,7 @@ namespace System.Threading
                 if ((knownState & LockStates.WaitingReadersMask) != 0)
                 {
                     Debug.Assert((_state & LockStates.ReaderSignaled) != 0);
-                    Debug.Assert(readerEvent != null);
+                    Debug.Assert(readerEvent is not null);
                     readerEvent.Set();
                 }
 
@@ -892,7 +892,7 @@ namespace System.Threading
             }
 
             ThreadLocalLockEntry? threadLocalLockEntry = ThreadLocalLockEntry.GetCurrent(_lockID);
-            if (threadLocalLockEntry == null)
+            if (threadLocalLockEntry is null)
             {
                 lockCookie._flags = LockCookieFlags.Release | LockCookieFlags.OwnedNone;
                 return lockCookie;
@@ -920,7 +920,7 @@ namespace System.Threading
                 throw GetInvalidLockCookieException();
             }
 
-            if (_writerID == threadID || ThreadLocalLockEntry.GetCurrent(_lockID) != null)
+            if (_writerID == threadID || ThreadLocalLockEntry.GetCurrent(_lockID) is not null)
             {
                 throw new SynchronizationLockException(SR.ReaderWriterLock_RestoreLockWithOwnedLocks);
             }
@@ -994,7 +994,7 @@ namespace System.Threading
             {
                 AcquireReaderLock(Timeout.Infinite);
                 ThreadLocalLockEntry? threadLocalLockEntry = ThreadLocalLockEntry.GetCurrent(_lockID);
-                Debug.Assert(threadLocalLockEntry != null);
+                Debug.Assert(threadLocalLockEntry is not null);
                 threadLocalLockEntry._readerLevel = lockCookie._readerLevel;
             }
         }
@@ -1019,14 +1019,14 @@ namespace System.Threading
         private ManualResetEventSlim GetOrCreateReaderEvent()
         {
             ManualResetEventSlim? currentEvent = _readerEvent;
-            if (currentEvent != null)
+            if (currentEvent is not null)
             {
                 return currentEvent;
             }
 
             currentEvent = new ManualResetEventSlim(false, 0);
             ManualResetEventSlim? previousEvent = Interlocked.CompareExchange(ref _readerEvent, currentEvent, null);
-            if (previousEvent == null)
+            if (previousEvent is null)
             {
                 return currentEvent;
             }
@@ -1040,14 +1040,14 @@ namespace System.Threading
         private AutoResetEvent GetOrCreateWriterEvent()
         {
             AutoResetEvent? currentEvent = _writerEvent;
-            if (currentEvent != null)
+            if (currentEvent is not null)
             {
                 return currentEvent;
             }
 
             currentEvent = new AutoResetEvent(false);
             AutoResetEvent? previousEvent = Interlocked.CompareExchange(ref _writerEvent, currentEvent, null);
-            if (previousEvent == null)
+            if (previousEvent is null)
             {
                 return currentEvent;
             }
@@ -1229,10 +1229,10 @@ namespace System.Threading
             private static void VerifyNoNonemptyEntryInListAfter(long lockID, ThreadLocalLockEntry afterEntry)
             {
                 Debug.Assert(lockID != 0);
-                Debug.Assert(afterEntry != null);
+                Debug.Assert(afterEntry is not null);
 
                 for (ThreadLocalLockEntry? currentEntry = afterEntry._next;
-                    currentEntry != null;
+                    currentEntry is not null;
                     currentEntry = currentEntry._next)
                 {
                     Debug.Assert(currentEntry._lockID != lockID || currentEntry.IsFree);
@@ -1244,7 +1244,7 @@ namespace System.Threading
                 Debug.Assert(lockID != 0);
 
                 ThreadLocalLockEntry? headEntry = t_lockEntryHead;
-                for (ThreadLocalLockEntry? currentEntry = headEntry; currentEntry != null; currentEntry = currentEntry._next)
+                for (ThreadLocalLockEntry? currentEntry = headEntry; currentEntry is not null; currentEntry = currentEntry._next)
                 {
                     if (currentEntry._lockID == lockID)
                     {
@@ -1263,7 +1263,7 @@ namespace System.Threading
                 Debug.Assert(lockID != 0);
 
                 ThreadLocalLockEntry? headEntry = t_lockEntryHead;
-                if (headEntry != null)
+                if (headEntry is not null)
                 {
                     if (headEntry._lockID == lockID)
                     {
@@ -1286,13 +1286,13 @@ namespace System.Threading
             {
                 Debug.Assert(lockID != 0);
                 Debug.Assert(headEntry == t_lockEntryHead);
-                Debug.Assert(headEntry == null || headEntry._lockID != lockID);
+                Debug.Assert(headEntry is null || headEntry._lockID != lockID);
 
                 ThreadLocalLockEntry? entry = null;
                 ThreadLocalLockEntry? emptyEntryPrevious = null;
                 ThreadLocalLockEntry? emptyEntry = null;
 
-                if (headEntry != null)
+                if (headEntry is not null)
                 {
                     if (headEntry.IsFree)
                     {
@@ -1300,7 +1300,7 @@ namespace System.Threading
                     }
 
                     for (ThreadLocalLockEntry? previousEntry = headEntry, currentEntry = headEntry._next;
-                        currentEntry != null;
+                        currentEntry is not null;
                         previousEntry = currentEntry, currentEntry = currentEntry._next)
                     {
                         if (currentEntry._lockID == lockID)
@@ -1313,7 +1313,7 @@ namespace System.Threading
                             break;
                         }
 
-                        if (emptyEntry == null && currentEntry.IsFree)
+                        if (emptyEntry is null && currentEntry.IsFree)
                         {
                             // Record the first empty entry in case there is no existing entry
                             emptyEntryPrevious = previousEntry;
@@ -1322,15 +1322,15 @@ namespace System.Threading
                     }
                 }
 
-                if (entry == null)
+                if (entry is null)
                 {
-                    if (emptyEntry != null)
+                    if (emptyEntry is not null)
                     {
                         // Claim the first empty entry that was found
                         emptyEntry._lockID = lockID;
 
                         // Unlink the empty entry, preparing to move it to the head of the list
-                        if (emptyEntryPrevious == null)
+                        if (emptyEntryPrevious is null)
                         {
                             Debug.Assert(emptyEntry == headEntry);
                             return emptyEntry;

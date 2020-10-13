@@ -13,7 +13,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(AttributeMetadata metadata)
         {
-            if (metadata == null)
+            if (metadata is null)
                 throw new ArgumentNullException(nameof(metadata));
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -31,7 +31,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(AttributeMetadata metadata)
         {
-            if (metadata == null)
+            if (metadata is null)
                 throw new ArgumentNullException(nameof(metadata));
 
             for (int i = 0; i < InnerList.Count; i++)

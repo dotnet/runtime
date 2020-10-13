@@ -194,7 +194,7 @@ namespace System.Text
         {
             int originalBytesLength = bytes.Length;
 
-            Debug.Assert(encoding != null);
+            Debug.Assert(encoding is not null);
             Rune thisRune;
             while ((thisRune = GetNextRune()).Value != 0)
             {
@@ -244,7 +244,7 @@ namespace System.Text
         {
             int totalByteCount = 0;
 
-            Debug.Assert(encoding != null);
+            Debug.Assert(encoding is not null);
             Rune thisRune;
             while ((thisRune = GetNextRune()).Value != 0)
             {
@@ -296,7 +296,7 @@ namespace System.Text
         internal virtual unsafe bool InternalFallback(char ch, ref char* chars)
         {
             // Shouldn't have null charStart
-            Debug.Assert(charStart != null,
+            Debug.Assert(charStart is not null,
                 "[EncoderFallback.InternalFallbackBuffer]Fallback buffer is not initialized");
 
             // Get our index, remember chars was preincremented to point at next char, so have to -1
@@ -310,7 +310,7 @@ namespace System.Text
                 {
                     // Nothing left in input buffer
                     // No input, return 0 if mustflush is false
-                    if (this.encoder != null && !this.encoder.MustFlush)
+                    if (this.encoder is not null && !this.encoder.MustFlush)
                     {
                         // Done, nothing to fallback
                         if (this.setEncoder)

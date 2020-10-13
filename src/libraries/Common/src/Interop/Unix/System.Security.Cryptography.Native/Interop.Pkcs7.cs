@@ -38,7 +38,7 @@ internal static partial class Interop
 
         internal static SafeSharedX509StackHandle GetPkcs7Certificates(SafePkcs7Handle p7)
         {
-            if (p7 == null || p7.IsInvalid)
+            if (p7 is null || p7.IsInvalid)
             {
                 return SafeSharedX509StackHandle.InvalidHandle;
             }

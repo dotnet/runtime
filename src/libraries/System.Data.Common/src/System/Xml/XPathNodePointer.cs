@@ -65,7 +65,7 @@ namespace System.Xml
             Debug.Assert(XmlDataDocument.IsTextNode(node.NodeType));
             XPathNodeType xnt = XPathNodeType.Whitespace;
             XmlNode? n = node;
-            while (n != null)
+            while (n is not null)
             {
                 switch (n.NodeType)
                 {
@@ -118,7 +118,7 @@ namespace System.Xml
 
         private XPathNodePointer(DataDocumentXPathNavigator owner, XmlDataDocument doc, XmlNode node, DataColumn? c, bool bOnValue, XmlBoundElement? parentOfNS)
         {
-            Debug.Assert(owner != null);
+            Debug.Assert(owner is not null);
             _owner = new WeakReference(owner);
             _doc = doc;
             _node = node;
@@ -143,7 +143,7 @@ namespace System.Xml
             get
             {
                 AssertValid();
-                if (_node != null && _column == null)
+                if (_node is not null && _column is null)
                 {
                     if (_node.NodeType == XmlNodeType.Element)
                     {
@@ -160,11 +160,11 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                 {
                     return XPathNodeType.All;
                 }
-                else if (_column == null)
+                else if (_column is null)
                 {
                     return ConvertNodeType(_node);
                 }
@@ -195,11 +195,11 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                 {
                     return string.Empty;
                 }
-                else if (_column == null)
+                else if (_column is null)
                 {
                     XmlNodeType nt = _node.NodeType;
                     if (IsNamespaceNode(nt, _node.NamespaceURI) && _node.LocalName == StrXmlNS)
@@ -224,11 +224,11 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                 {
                     return string.Empty;
                 }
-                else if (_column == null)
+                else if (_column is null)
                 {
                     XmlNodeType nt = _node.NodeType;
                     if (IsNamespaceNode(nt, _node.NamespaceURI))
@@ -260,11 +260,11 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                 {
                     return string.Empty;
                 }
-                else if (_column == null)
+                else if (_column is null)
                 {
                     XPathNodeType xnt = ConvertNodeType(_node);
                     if (xnt == XPathNodeType.Element || xnt == XPathNodeType.Root || xnt == XPathNodeType.Attribute)
@@ -295,11 +295,11 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                 {
                     return string.Empty;
                 }
-                else if (_column == null)
+                else if (_column is null)
                 {
                     if (IsNamespaceNode(_node.NodeType, _node.NamespaceURI))
                         return string.Empty;
@@ -315,19 +315,19 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                     return null;
-                else if (_column == null)
+                else if (_column is null)
                 {
                     string? strRet = _node.Value;
                     if (XmlDataDocument.IsTextNode(_node.NodeType))
                     {
                         //concatenate adjacent textlike nodes
                         XmlNode? parent = _node.ParentNode;
-                        if (parent == null)
+                        if (parent is null)
                             return strRet;
                         XmlNode? n = _doc.SafeNextSibling(_node);
-                        while (n != null && XmlDataDocument.IsTextNode(n.NodeType))
+                        while (n is not null && XmlDataDocument.IsTextNode(n.NodeType))
                         {
                             strRet += n.Value;
                             n = _doc.SafeNextSibling(n);
@@ -355,17 +355,17 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                 {
                     return string.Empty;
                 }
-                else if (_column == null)
+                else if (_column is null)
                 {
                     if (_node.NodeType == XmlNodeType.Document)
                     {
                         //document node's region should always be uncompressed
                         XmlElement? rootElem = ((XmlDocument)_node).DocumentElement;
-                        if (rootElem != null)
+                        if (rootElem is not null)
                             return rootElem.InnerText;
                         return string.Empty;
                     }
@@ -389,7 +389,7 @@ namespace System.Xml
             get
             {
                 RealFoliate();
-                if (_node != null)
+                if (_node is not null)
                     return _node.BaseURI;
                 return string.Empty;
             }
@@ -403,10 +403,10 @@ namespace System.Xml
                 XmlNode curNode = _node;
                 XmlBoundElement? curBoundElem = null;
                 object? colVal = null;
-                while (curNode != null)
+                while (curNode is not null)
                 {
                     curBoundElem = curNode as XmlBoundElement;
-                    if (curBoundElem != null)
+                    if (curBoundElem is not null)
                     {
                         if (curBoundElem.ElementState == ElementState.Defoliated)
                         {
@@ -442,11 +442,11 @@ namespace System.Xml
         private XmlBoundElement? GetRowElement()
         {
             XmlBoundElement? rowElem;
-            if (_column != null)
+            if (_column is not null)
             {
                 rowElem = (XmlBoundElement)_node;
-                Debug.Assert(rowElem != null);
-                Debug.Assert(rowElem.Row != null);
+                Debug.Assert(rowElem is not null);
+                Debug.Assert(rowElem.Row is not null);
                 return rowElem;
             }
 
@@ -459,10 +459,10 @@ namespace System.Xml
             get
             {
                 XmlBoundElement? rowElem = GetRowElement();
-                if (rowElem == null)
+                if (rowElem is null)
                     return null;
 
-                Debug.Assert(rowElem.Row != null);
+                Debug.Assert(rowElem.Row is not null);
                 return rowElem.Row;
             }
         }
@@ -503,7 +503,7 @@ namespace System.Xml
 
         private bool IsFoliated(XmlNode node)
         {
-            if (node != null && node is XmlBoundElement)
+            if (node is not null && node is XmlBoundElement)
                 return ((XmlBoundElement)node).IsFoliated;
             return true;
         }
@@ -512,7 +512,7 @@ namespace System.Xml
         {
             DataColumn? c = null;
             int count = 0;
-            while ((c = NextColumn(row, c, fAttribute)) != null)
+            while ((c = NextColumn(row, c, fAttribute)) is not null)
             {
                 if (c.Namespace != StrReservedXmlns)
                     count++;
@@ -526,9 +526,9 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node != null)
+                if (_node is not null)
                 {
-                    if (_column == null && _node.NodeType == XmlNodeType.Element)
+                    if (_column is null && _node.NodeType == XmlNodeType.Element)
                     {
                         if (!IsFoliated(_node))
                             return ColumnCount(Row!, true);
@@ -555,7 +555,7 @@ namespace System.Xml
 
             DataTable table = row.Table;
             DataColumnCollection columns = table.Columns;
-            int iColumn = (col != null) ? col.Ordinal + 1 : 0;
+            int iColumn = (col is not null) ? col.Ordinal + 1 : 0;
             int cColumns = columns.Count;
             DataRowVersion rowVersion = (row.RowState == DataRowState.Detached) ? DataRowVersion.Proposed : DataRowVersion.Current;
 
@@ -576,7 +576,7 @@ namespace System.Xml
 
             DataTable table = row.Table;
             DataColumnCollection columns = table.Columns;
-            int iColumn = (col != null) ? col.Ordinal - 1 : columns.Count - 1;
+            int iColumn = (col is not null) ? col.Ordinal - 1 : columns.Count - 1;
             DataRowVersion rowVersion = (row.RowState == DataRowState.Detached) ? DataRowVersion.Proposed : DataRowVersion.Current;
 
             for (; iColumn >= 0; iColumn--)
@@ -595,16 +595,16 @@ namespace System.Xml
             AssertValid();
             if (namespaceURI == StrReservedXmlns)
                 return false;
-            if (_node != null)
+            if (_node is not null)
             {
                 //_column.ColumnMapping checkin below is not really needed since the pointer should be pointing at the node before this
                 // function should even be called ( there is always a call MoveToOwnerElement() before MoveToAttribute(..)
-                if ((_column == null || _column.ColumnMapping == MappingType.Attribute) && _node.NodeType == XmlNodeType.Element)
+                if ((_column is null || _column.ColumnMapping == MappingType.Attribute) && _node.NodeType == XmlNodeType.Element)
                 {
                     if (!IsFoliated(_node))
                     {
                         DataColumn? c = null;
-                        while ((c = NextColumn(Row!, c, true)) != null)
+                        while ((c = NextColumn(Row!, c, true)) is not null)
                         {
                             if (c.EncodedColumnName == localName && c.Namespace == namespaceURI)
                             {
@@ -615,9 +615,9 @@ namespace System.Xml
                     }
                     else
                     {
-                        Debug.Assert(_node.Attributes != null);
+                        Debug.Assert(_node.Attributes is not null);
                         XmlNode? n = _node.Attributes.GetNamedItem(localName, namespaceURI);
-                        if (n != null)
+                        if (n is not null)
                         {
                             MoveTo(n, null, false);
                             return true;
@@ -632,21 +632,21 @@ namespace System.Xml
         {
             RealFoliate();
             AssertValid();
-            if (_node != null)
+            if (_node is not null)
             {
-                if (bFirst && (_column != null || _node.NodeType != XmlNodeType.Element))
+                if (bFirst && (_column is not null || _node.NodeType != XmlNodeType.Element))
                     return false;
                 if (!bFirst)
                 {
-                    if (_column != null && _column.ColumnMapping != MappingType.Attribute)
+                    if (_column is not null && _column.ColumnMapping != MappingType.Attribute)
                         return false;
-                    if (_column == null && _node.NodeType != XmlNodeType.Attribute)
+                    if (_column is null && _node.NodeType != XmlNodeType.Attribute)
                         return false;
                 }
                 if (!IsFoliated(_node))
                 {
                     DataColumn? c = _column;
-                    while ((c = NextColumn(Row!, c, true)) != null)
+                    while ((c = NextColumn(Row!, c, true)) is not null)
                     {
                         if (c.Namespace != StrReservedXmlns)
                         {
@@ -732,9 +732,9 @@ namespace System.Xml
         {
             RealFoliate();
             AssertValid();
-            if (_node != null)
+            if (_node is not null)
             {
-                if (_column != null)
+                if (_column is not null)
                 {
                     if (_fOnValue)
                     {
@@ -744,7 +744,7 @@ namespace System.Xml
                     }
                     DataRow curRow = Row!;
                     DataColumn? c = NextColumn(curRow, _column, false);
-                    while (c != null)
+                    while (c is not null)
                     {
                         if (IsValidChild(_node, c))
                         {
@@ -754,7 +754,7 @@ namespace System.Xml
                         c = NextColumn(curRow, c, false);
                     }
                     XmlNode? n = _doc.SafeFirstChild(_node);
-                    if (n != null)
+                    if (n is not null)
                     {
                         MoveTo(n);
                         return true;
@@ -764,7 +764,7 @@ namespace System.Xml
                 {
                     XmlNode? n = _node;
                     XmlNode? parent = _node.ParentNode;
-                    if (parent == null)
+                    if (parent is null)
                         return false;
                     bool bTextLike = XmlDataDocument.IsTextNode(_node.NodeType);
                     do
@@ -772,9 +772,9 @@ namespace System.Xml
                         do
                         {
                             n = _doc.SafeNextSibling(n);
-                        } while (n != null && bTextLike && XmlDataDocument.IsTextNode(n.NodeType));
-                    } while (n != null && !IsValidChild(parent, n));
-                    if (n != null)
+                        } while (n is not null && bTextLike && XmlDataDocument.IsTextNode(n.NodeType));
+                    } while (n is not null && !IsValidChild(parent, n));
+                    if (n is not null)
                     {
                         MoveTo(n);
                         return true;
@@ -788,15 +788,15 @@ namespace System.Xml
         {
             RealFoliate();
             AssertValid();
-            if (_node != null)
+            if (_node is not null)
             {
-                if (_column != null)
+                if (_column is not null)
                 {
                     if (_fOnValue)
                         return false;
                     DataRow curRow = Row!;
                     DataColumn? c = PreviousColumn(curRow, _column, false);
-                    while (c != null)
+                    while (c is not null)
                     {
                         if (IsValidChild(_node, c))
                         {
@@ -810,7 +810,7 @@ namespace System.Xml
                 {
                     XmlNode? n = _node;
                     XmlNode? parent = _node.ParentNode;
-                    if (parent == null)
+                    if (parent is null)
                         return false;
                     bool bTextLike = XmlDataDocument.IsTextNode(_node.NodeType);
                     do
@@ -818,9 +818,9 @@ namespace System.Xml
                         do
                         {
                             n = _doc.SafePreviousSibling(n);
-                        } while (n != null && bTextLike && XmlDataDocument.IsTextNode(n.NodeType));
-                    } while (n != null && !IsValidChild(parent, n));
-                    if (n != null)
+                        } while (n is not null && bTextLike && XmlDataDocument.IsTextNode(n.NodeType));
+                    } while (n is not null && !IsValidChild(parent, n));
+                    if (n is not null)
                     {
                         MoveTo(n);
                         return true;
@@ -828,10 +828,10 @@ namespace System.Xml
                     if (!IsFoliated(parent) && (parent is XmlBoundElement))
                     {
                         DataRow? row = ((XmlBoundElement)parent).Row;
-                        if (row != null)
+                        if (row is not null)
                         {
                             DataColumn? c = PreviousColumn(row, null, false);
-                            if (c != null)
+                            if (c is not null)
                             {
                                 MoveTo(parent, c, _doc.IsTextOnly(c));
                                 return true;
@@ -847,11 +847,11 @@ namespace System.Xml
         {
             RealFoliate();
             AssertValid();
-            if (_node != null)
+            if (_node is not null)
             {
                 DataRow? curRow = null;
                 XmlNode? parent = null;
-                if (_column != null)
+                if (_column is not null)
                 {
                     curRow = Row;
                     parent = _node;
@@ -859,16 +859,16 @@ namespace System.Xml
                 else
                 {
                     parent = _node.ParentNode;
-                    if (parent == null)
+                    if (parent is null)
                         return false;
                     if (!IsFoliated(parent) && (parent is XmlBoundElement))
                         curRow = ((XmlBoundElement)parent).Row;
                 }
                 //first check with the columns in the row
-                if (curRow != null)
+                if (curRow is not null)
                 {
                     DataColumn? c = NextColumn(curRow, null, false);
-                    while (c != null)
+                    while (c is not null)
                     {
                         if (IsValidChild(_node, c))
                         {
@@ -880,7 +880,7 @@ namespace System.Xml
                 }
                 //didn't find a valid column or maybe already Foliated, go through its children nodes
                 XmlNode? n = _doc.SafeFirstChild(parent);
-                while (n != null)
+                while (n is not null)
                 {
                     if (IsValidChild(parent, n))
                     {
@@ -899,10 +899,10 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                     return false;
 
-                if (_column != null)
+                if (_column is not null)
                 {
                     if (_column.ColumnMapping == MappingType.Attribute || _column.ColumnMapping == MappingType.Hidden)
                         return false;
@@ -913,7 +913,7 @@ namespace System.Xml
                     // find virtual column elements first
                     DataRow curRow = Row!;
                     DataColumn? c = NextColumn(curRow, null, false);
-                    while (c != null)
+                    while (c is not null)
                     {
                         if (IsValidChild(_node, c))
                             return true;
@@ -922,7 +922,7 @@ namespace System.Xml
                 }
                 // look for anything
                 XmlNode? n = _doc.SafeFirstChild(_node);
-                while (n != null)
+                while (n is not null)
                 {
                     if (IsValidChild(_node, n))
                         return true;
@@ -937,10 +937,10 @@ namespace System.Xml
         {
             RealFoliate();
             AssertValid();
-            if (_node == null)
+            if (_node is null)
                 return false;
 
-            if (_column != null)
+            if (_column is not null)
             {
                 if (_column.ColumnMapping == MappingType.Attribute || _column.ColumnMapping == MappingType.Hidden)
                     return false;
@@ -954,7 +954,7 @@ namespace System.Xml
                 // find virtual column elements first
                 DataRow curRow = Row!;
                 DataColumn? c = NextColumn(curRow, null, false);
-                while (c != null)
+                while (c is not null)
                 {
                     if (IsValidChild(_node, c))
                     {
@@ -966,7 +966,7 @@ namespace System.Xml
             }
             // look for anything
             XmlNode? n = _doc.SafeFirstChild(_node);
-            while (n != null)
+            while (n is not null)
             {
                 if (IsValidChild(_node, n))
                 {
@@ -989,9 +989,9 @@ namespace System.Xml
                 MoveTo(_parentOfNS!);
                 return true;
             }
-            if (_node != null)
+            if (_node is not null)
             {
-                if (_column != null)
+                if (_column is not null)
                 {
                     if (_fOnValue && !_doc.IsTextOnly(_column))
                     {
@@ -1008,7 +1008,7 @@ namespace System.Xml
                         n = ((XmlAttribute)_node).OwnerElement;
                     else
                         n = _node.ParentNode;
-                    if (n != null)
+                    if (n is not null)
                     {
                         MoveTo(n);
                         return true;
@@ -1023,7 +1023,7 @@ namespace System.Xml
             XPathNodeType xnt = ConvertNodeType(node);
             if (xnt == XPathNodeType.Namespace)
             {
-                Debug.Assert(_parentOfNS != null);
+                Debug.Assert(_parentOfNS is not null);
                 return _parentOfNS;
             }
             if (xnt == XPathNodeType.Attribute)
@@ -1035,7 +1035,7 @@ namespace System.Xml
         {
             XmlNode node = _node;
             XmlNode? parent = _node;
-            while (parent != null)
+            while (parent is not null)
             {
                 node = parent;
                 parent = GetParent(parent);
@@ -1052,7 +1052,7 @@ namespace System.Xml
             pointer.RealFoliate();
             AssertValid();
             pointer.AssertValid();
-            if (_column == null && pointer._column == null)
+            if (_column is null && pointer._column is null)
                 return (pointer._node == _node && pointer._parentOfNS == _parentOfNS);
 
             return (pointer._doc == _doc
@@ -1079,7 +1079,7 @@ namespace System.Xml
             depth = 0;
             XmlNode curNode = node;
             XmlNode? parent = ((curNode.NodeType == XmlNodeType.Attribute) ? (((XmlAttribute)curNode).OwnerElement) : (curNode.ParentNode));
-            for (; parent != null; depth++)
+            for (; parent is not null; depth++)
             {
                 curNode = parent;
                 parent = curNode.ParentNode; // no need to check for attribute since navigator can't be built on its children or navigate to its children
@@ -1111,7 +1111,7 @@ namespace System.Xml
                 if (_parentOfNS == other._node)
                 {
                     //from the same region, NS nodes come before all other nodes
-                    if (other._column == null)
+                    if (other._column is null)
                         return XmlNodeOrder.After;
                     else
                         return XmlNodeOrder.Before;
@@ -1126,7 +1126,7 @@ namespace System.Xml
                 if (_node == other._parentOfNS)
                 {
                     //from the same region
-                    if (_column == null)
+                    if (_column is null)
                         return XmlNodeOrder.Before;
                     else
                         return XmlNodeOrder.After;
@@ -1152,9 +1152,9 @@ namespace System.Xml
                     else
                     {
                         Debug.Assert(Row == other.Row); //in the same row
-                        if (_column == null)
+                        if (_column is null)
                             return XmlNodeOrder.Before;
-                        else if (other._column == null)
+                        else if (other._column is null)
                             return XmlNodeOrder.After;
                         else if (_column.Ordinal < other._column.Ordinal)
                             return XmlNodeOrder.Before;
@@ -1166,10 +1166,10 @@ namespace System.Xml
                 curNode2 = other._node;
             }
 
-            Debug.Assert(curNode1 != null);
-            Debug.Assert(curNode2 != null);
+            Debug.Assert(curNode1 is not null);
+            Debug.Assert(curNode2 is not null);
 
-            if (curNode1 == null || curNode2 == null)
+            if (curNode1 is null || curNode2 is null)
             {
                 return XmlNodeOrder.Unknown;
             }
@@ -1183,7 +1183,7 @@ namespace System.Xml
 
             if (depth1 > depth2)
             {
-                while (curNode1 != null && depth1 > depth2)
+                while (curNode1 is not null && depth1 > depth2)
                 {
                     curNode1 = ((curNode1.NodeType == XmlNodeType.Attribute) ? (((XmlAttribute)curNode1).OwnerElement) : (curNode1.ParentNode));
                     depth1--;
@@ -1193,7 +1193,7 @@ namespace System.Xml
             }
             else if (depth2 > depth1)
             {
-                while (curNode2 != null && depth2 > depth1)
+                while (curNode2 is not null && depth2 > depth1)
                 {
                     curNode2 = ((curNode2.NodeType == XmlNodeType.Attribute) ? (((XmlAttribute)curNode2).OwnerElement) : (curNode2.ParentNode));
                     depth2--;
@@ -1205,11 +1205,11 @@ namespace System.Xml
             XmlNode? parent1 = GetParent(curNode1!);
             XmlNode? parent2 = GetParent(curNode2!);
             XmlNode? nextNode = null;
-            while (parent1 != null && parent2 != null)
+            while (parent1 is not null && parent2 is not null)
             {
                 if (parent1 == parent2)
                 {
-                    while (curNode1 != null)
+                    while (curNode1 is not null)
                     {
                         nextNode = curNode1.NextSibling;
                         if (nextNode == curNode2)
@@ -1235,11 +1235,11 @@ namespace System.Xml
                 RealFoliate();
                 AssertValid();
 
-                if (_node == null)
+                if (_node is null)
                     return null;
 
                 XmlBoundElement? rowElem = GetRowElement();
-                if (rowElem != null)
+                if (rowElem is not null)
                 {
                     bool wasFoliationEnabled = _doc.IsFoliationEnabled;
                     _doc.IsFoliationEnabled = true;
@@ -1270,7 +1270,7 @@ namespace System.Xml
             if (_node == foliatedNode)
             {
                 // if already on this node, nothing to do!
-                if (_column == null)
+                if (_column is null)
                     return;
                 _bNeedFoliate = true;
             }
@@ -1283,7 +1283,7 @@ namespace System.Xml
 
             _bNeedFoliate = false;
 
-            Debug.Assert(_column != null);
+            Debug.Assert(_column is not null);
 
             XmlNode? n = null;
 
@@ -1297,18 +1297,18 @@ namespace System.Xml
                 }
                 else
                 {
-                    for (n = _node.FirstChild; n != null; n = n.NextSibling)
+                    for (n = _node.FirstChild; n is not null; n = n.NextSibling)
                     {
                         if (n.LocalName == _column.EncodedColumnName && n.NamespaceURI == _column.Namespace)
                             break;
                     }
                 }
 
-                if (n != null && _fOnValue)
+                if (n is not null && _fOnValue)
                     n = n.FirstChild;
             }
 
-            if (n == null)
+            if (n is null)
                 throw new InvalidOperationException(SR.DataDom_Foliation);
 
             // Cannot use MoveTo( n ); b/c the initial state for MoveTo is invalid (region is foliated but this is not)
@@ -1324,13 +1324,13 @@ namespace System.Xml
         //It will not check the ancestor of the given node.
         private string? GetNamespace(XmlBoundElement be, string name)
         {
-            if (be == null)
+            if (be is null)
                 return null;
             XmlAttribute? attr = null;
             if (be.IsFoliated)
             {
                 attr = be.GetAttributeNode(name, StrReservedXmlns);
-                if (attr != null)
+                if (attr is not null)
                     return attr.Value;
                 else
                     return null;
@@ -1338,11 +1338,11 @@ namespace System.Xml
             else
             { //defoliated so that we need to search through its column
                 DataRow? curRow = be.Row;
-                if (curRow == null)
+                if (curRow is null)
                     return null;
                 //going through its attribute columns
                 DataColumn? curCol = PreviousColumn(curRow, null, true);
-                while (curCol != null)
+                while (curCol is not null)
                 {
                     if (curCol.Namespace == StrReservedXmlns)
                     {
@@ -1362,16 +1362,16 @@ namespace System.Xml
                 return StrReservedXml;
             if (name == "xmlns")
                 return StrReservedXmlns;
-            if (name != null && name.Length == 0)
+            if (name is not null && name.Length == 0)
                 name = "xmlns";
             RealFoliate();
             XmlNode? node = _node;
             XmlNodeType nt = node.NodeType;
             string? retVal = null;
-            while (node != null)
+            while (node is not null)
             {
                 //first identify an element node in the ancestor + itself
-                while (node != null && ((nt = node.NodeType) != XmlNodeType.Element))
+                while (node is not null && ((nt = node.NodeType) != XmlNodeType.Element))
                 {
                     if (nt == XmlNodeType.Attribute)
                         node = ((XmlAttribute)node).OwnerElement;
@@ -1379,11 +1379,11 @@ namespace System.Xml
                         node = node.ParentNode;
                 }
                 //found one -- inside if
-                if (node != null)
+                if (node is not null)
                 {
                     //must be element node
                     retVal = GetNamespace((XmlBoundElement)node, name!);
-                    if (retVal != null)
+                    if (retVal is not null)
                         return retVal;
                     //didn't find it, try the next parentnode
                     node = node.ParentNode;
@@ -1397,27 +1397,27 @@ namespace System.Xml
         {
             _parentOfNS = _node as XmlBoundElement;
             //only need to check with _node, even if _column is not null and its mapping type is element, it can't have attributes
-            if (_parentOfNS == null)
+            if (_parentOfNS is null)
                 return false;
             string attrName = name;
             if (attrName == "xmlns")
                 attrName = "xmlns:xmlns";
-            if (attrName != null && attrName.Length == 0)
+            if (attrName is not null && attrName.Length == 0)
                 attrName = "xmlns";
             RealFoliate();
             XmlNode? node = _node;
             XmlAttribute? attr = null;
             XmlBoundElement? be = null;
-            while (node != null)
+            while (node is not null)
             {
                 //check current element node
                 be = node as XmlBoundElement;
-                if (be != null)
+                if (be is not null)
                 {
                     if (be.IsFoliated)
                     {
                         attr = be.GetAttributeNode(name, StrReservedXmlns);
-                        if (attr != null)
+                        if (attr is not null)
                         {
                             MoveTo(attr);
                             return true;
@@ -1426,11 +1426,11 @@ namespace System.Xml
                     else
                     {//defoliated so that we need to search through its column
                         DataRow? curRow = be.Row;
-                        if (curRow == null)
+                        if (curRow is null)
                             return false;
                         //going through its attribute columns
                         DataColumn? curCol = PreviousColumn(curRow, null, true);
-                        while (curCol != null)
+                        while (curCol is not null)
                         {
                             if (curCol.Namespace == StrReservedXmlns && curCol.ColumnName == name)
                             {
@@ -1445,7 +1445,7 @@ namespace System.Xml
                 do
                 {
                     node = node.ParentNode;
-                } while (node != null && node.NodeType != XmlNodeType.Element);
+                } while (node is not null && node.NodeType != XmlNodeType.Element);
             }
             //nothing happens, the name doesn't exist as a namespace node.
             _parentOfNS = null;
@@ -1456,20 +1456,20 @@ namespace System.Xml
         // whether to use column or attribute depends on if the bound element is foliated or not.
         private bool MoveToNextNamespace(XmlBoundElement? be, DataColumn? col, XmlAttribute? curAttr)
         {
-            if (be != null)
+            if (be is not null)
             {
                 if (be.IsFoliated)
                 {
                     XmlAttributeCollection attrs = be.Attributes;
                     XmlAttribute? attr = null;
                     bool bFound = false;
-                    if (curAttr == null)
+                    if (curAttr is null)
                         bFound = true; //the first namespace will be the one
 #if DEBUG
-                    if (curAttr != null)
+                    if (curAttr is not null)
                         Debug.Assert(curAttr.NamespaceURI == StrReservedXmlns);
 #endif
-                    Debug.Assert(attrs != null);
+                    Debug.Assert(attrs is not null);
                     int attrInd = attrs.Count;
                     while (attrInd > 0)
                     {
@@ -1487,11 +1487,11 @@ namespace System.Xml
                 else
                 {//defoliated so that we need to search through its column
                     DataRow? curRow = be.Row;
-                    if (curRow == null)
+                    if (curRow is null)
                         return false;
                     //going through its attribute columns
                     DataColumn? curCol = PreviousColumn(curRow, col, true);
-                    while (curCol != null)
+                    while (curCol is not null)
                     {
                         if (curCol.Namespace == StrReservedXmlns && !DuplicateNS(be, curCol.ColumnName))
                         {
@@ -1511,11 +1511,11 @@ namespace System.Xml
             RealFoliate();
             _parentOfNS = _node as XmlBoundElement;
             //only need to check with _node, even if _column is not null and its mapping type is element, it can't have attributes
-            if (_parentOfNS == null)
+            if (_parentOfNS is null)
                 return false;
             XmlNode? node = _node;
             XmlBoundElement? be = null;
-            while (node != null)
+            while (node is not null)
             {
                 be = node as XmlBoundElement;
                 if (MoveToNextNamespace(be, null, null))
@@ -1527,7 +1527,7 @@ namespace System.Xml
                 do
                 {
                     node = node.ParentNode;
-                } while (node != null && node.NodeType != XmlNodeType.Element);
+                } while (node is not null && node.NodeType != XmlNodeType.Element);
             }
             if (namespaceScope == XPathNamespaceScope.All)
             {
@@ -1543,19 +1543,19 @@ namespace System.Xml
         //endElem is on the path from startElem to root is enforced by the caller
         private bool DuplicateNS(XmlBoundElement endElem, string lname)
         {
-            if (_parentOfNS == null || endElem == null)
+            if (_parentOfNS is null || endElem is null)
                 return false;
             XmlBoundElement? be = _parentOfNS;
             XmlNode? node = null;
-            while (be != null && be != endElem)
+            while (be is not null && be != endElem)
             {
-                if (GetNamespace(be, lname) != null)
+                if (GetNamespace(be, lname) is not null)
                     return true;
                 node = be;
                 do
                 {
                     node = node.ParentNode;
-                } while (node != null && node.NodeType != XmlNodeType.Element);
+                } while (node is not null && node.NodeType != XmlNodeType.Element);
                 be = node as XmlBoundElement;
             }
             return false;
@@ -1565,20 +1565,20 @@ namespace System.Xml
         internal bool MoveToNextNamespace(XPathNamespaceScope namespaceScope)
         {
             RealFoliate();
-            Debug.Assert(_parentOfNS != null);
+            Debug.Assert(_parentOfNS is not null);
             XmlNode? node = _node;
             //first check within the same boundelement
-            if (_column != null)
+            if (_column is not null)
             {
                 Debug.Assert(_column.Namespace == StrReservedXmlns);
                 if (namespaceScope == XPathNamespaceScope.Local && _parentOfNS != _node) //already outside scope
                     return false;
                 XmlBoundElement? be = _node as XmlBoundElement;
-                Debug.Assert(be != null);
+                Debug.Assert(be is not null);
                 DataRow? curRow = be.Row;
-                Debug.Assert(curRow != null);
+                Debug.Assert(curRow is not null);
                 DataColumn? curCol = PreviousColumn(curRow, _column, true);
-                while (curCol != null)
+                while (curCol is not null)
                 {
                     if (curCol.Namespace == StrReservedXmlns)
                     {
@@ -1594,14 +1594,14 @@ namespace System.Xml
                 do
                 {
                     node = node.ParentNode;
-                } while (node != null && node.NodeType != XmlNodeType.Element);
+                } while (node is not null && node.NodeType != XmlNodeType.Element);
             }
             else if (_node.NodeType == XmlNodeType.Attribute)
             {
                 XmlAttribute attr = (XmlAttribute)(_node);
-                Debug.Assert(attr != null);
+                Debug.Assert(attr is not null);
                 node = attr.OwnerElement;
-                if (node == null)
+                if (node is null)
                     return false;
                 if (namespaceScope == XPathNamespaceScope.Local && _parentOfNS != node) //already outside scope
                     return false;
@@ -1613,10 +1613,10 @@ namespace System.Xml
                 do
                 {
                     node = node.ParentNode;
-                } while (node != null && node.NodeType != XmlNodeType.Element);
+                } while (node is not null && node.NodeType != XmlNodeType.Element);
             }
             // till now, node should be the next ancestor (bound) element of the element parent of current namespace node (attribute or data column)
-            while (node != null)
+            while (node is not null)
             {
                 //try the namespace attributes from the same element
                 XmlBoundElement? be = node as XmlBoundElement;
@@ -1626,7 +1626,7 @@ namespace System.Xml
                 do
                 {
                     node = node.ParentNode;
-                } while (node != null && node.NodeType == XmlNodeType.Element);
+                } while (node is not null && node.NodeType == XmlNodeType.Element);
             }
             //didn't find the next namespace, thus return
             if (namespaceScope == XPathNamespaceScope.All)
@@ -1643,14 +1643,14 @@ namespace System.Xml
             // This pointer must be int the document list
             //RealFoliate();
             _doc.AssertPointerPresent(this);
-            if (_column != null)
+            if (_column is not null)
             {
                 // We must be on a de-foliated region
                 XmlBoundElement? rowElem = _node as XmlBoundElement;
-                Debug.Assert(rowElem != null);
+                Debug.Assert(rowElem is not null);
 
                 DataRow? row = rowElem.Row;
-                Debug.Assert(row != null);
+                Debug.Assert(row is not null);
 
                 // We cannot be on a column for which the value is DBNull
                 DataRowVersion rowVersion = (row.RowState == DataRowState.Detached) ? DataRowVersion.Proposed : DataRowVersion.Current;
@@ -1659,7 +1659,7 @@ namespace System.Xml
                 // If we are on the Text column, we should always have _fOnValue == true
                 Debug.Assert((_column.ColumnMapping == MappingType.SimpleContent) ? (_fOnValue == true) : true);
             }
-            if (_column == null)
+            if (_column is null)
                 Debug.Assert(!_fOnValue);
         }
 

@@ -28,7 +28,7 @@ namespace System.Collections.Generic
 
         public void AddRange(IEnumerable<T> items)
         {
-            Debug.Assert(items != null);
+            Debug.Assert(items is not null);
             foreach (T item in items)
             {
                 _builder.Add(item);

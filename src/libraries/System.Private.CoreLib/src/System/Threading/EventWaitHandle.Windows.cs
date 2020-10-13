@@ -19,7 +19,7 @@ namespace System.Threading
         private void CreateEventCore(bool initialState, EventResetMode mode, string? name, out bool createdNew)
         {
 #if TARGET_UNIX || TARGET_BROWSER
-            if (name != null)
+            if (name is not null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #endif
             uint eventFlags = initialState ? Interop.Kernel32.CREATE_EVENT_INITIAL_SET : 0;
@@ -44,7 +44,7 @@ namespace System.Threading
         private static OpenExistingResult OpenExistingWorker(string name, out EventWaitHandle? result)
         {
 #if TARGET_WINDOWS
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));

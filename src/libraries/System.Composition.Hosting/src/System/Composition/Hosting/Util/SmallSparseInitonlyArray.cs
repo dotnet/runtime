@@ -19,14 +19,14 @@ namespace System.Composition.Hosting.Util
 
         public void Add(int index, object value)
         {
-            if (_elements == null)
+            if (_elements is null)
                 _elements = new Element[ElementsCapacity];
 
             var newElement = new Element { Index = index, Value = value };
 
             var elementIndex = index & ElementIndexMask;
             var e = _elements[elementIndex];
-            if (e == null)
+            if (e is null)
             {
                 _elements[elementIndex] = newElement;
                 return;
@@ -41,7 +41,7 @@ namespace System.Composition.Hosting.Util
             {
                 var nextIndex = (index + offset) & ElementIndexMask;
                 e = _elements[nextIndex];
-                if (e == null)
+                if (e is null)
                 {
                     _elements[nextIndex] = newElement;
                     return;
@@ -53,7 +53,7 @@ namespace System.Composition.Hosting.Util
                 }
             }
 
-            if (_overflow == null)
+            if (_overflow is null)
                 _overflow = new SmallSparseInitonlyArray();
 
             _overflow.Add(index, value);
@@ -61,7 +61,7 @@ namespace System.Composition.Hosting.Util
 
         public bool TryGetValue(int index, out object value)
         {
-            if (_elements == null)
+            if (_elements is null)
             {
                 value = null;
                 return false;
@@ -69,7 +69,7 @@ namespace System.Composition.Hosting.Util
 
             var elementIndex = index & ElementIndexMask;
             var e = _elements[elementIndex];
-            if (e != null && e.Index == index)
+            if (e is not null && e.Index == index)
             {
                 value = e.Value;
                 return true;
@@ -78,7 +78,7 @@ namespace System.Composition.Hosting.Util
             for (int offset = 1; offset <= LocalOffsetMax; ++offset)
             {
                 e = _elements[(index + offset) & ElementIndexMask];
-                if (e == null)
+                if (e is null)
                 {
                     value = null;
                     return false;
@@ -91,7 +91,7 @@ namespace System.Composition.Hosting.Util
                 }
             }
 
-            if (_overflow != null)
+            if (_overflow is not null)
                 return _overflow.TryGetValue(index, out value);
 
             value = null;

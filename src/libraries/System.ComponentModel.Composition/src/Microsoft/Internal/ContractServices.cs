@@ -10,7 +10,7 @@ namespace Microsoft.Internal
     {
         public static bool TryCast(Type contractType, object? value, out object? result)
         {
-            if (value == null)
+            if (value is null)
             {
                 result = null;
                 return true;
@@ -27,7 +27,7 @@ namespace Microsoft.Internal
                 if (value is ExportedDelegate exportedDelegate)
                 {
                     result = exportedDelegate.CreateDelegate(contractType.UnderlyingSystemType);
-                    return (result != null);
+                    return (result is not null);
                 }
             }
 

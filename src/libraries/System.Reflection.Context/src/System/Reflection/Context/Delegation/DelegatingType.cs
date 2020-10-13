@@ -17,7 +17,7 @@ namespace System.Reflection.Context.Delegation
             Debug.Assert(null != type);
 
             _typeInfo = type.GetTypeInfo();
-            if (_typeInfo == null)
+            if (_typeInfo is null)
             {
                 throw new InvalidOperationException(SR.Format(SR.InvalidOperation_NoTypeInfoForThisType, type.FullName));
             }
@@ -349,7 +349,7 @@ namespace System.Reflection.Context.Delegation
         protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
             // Unfortunately we cannot directly call the protected GetMethodImpl on _typeInfo.
-            return (types == null) ?
+            return (types is null) ?
                 _typeInfo.GetMethod(name, bindingAttr) :
                 _typeInfo.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -379,10 +379,10 @@ namespace System.Reflection.Context.Delegation
             // Unfortunately we cannot directly call the protected GetPropertyImpl on _typeInfo.
             PropertyInfo property;
 
-            if (types == null)
+            if (types is null)
             {
                 // if types is null, we can ignore binder and modifiers
-                if (returnType == null)
+                if (returnType is null)
                 {
                     property = _typeInfo.GetProperty(name, bindingAttr);
                 }

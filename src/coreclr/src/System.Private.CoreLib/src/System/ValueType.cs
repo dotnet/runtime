@@ -51,9 +51,9 @@ namespace System
                 thisResult = thisFields[i].GetValue(thisObj);
                 thatResult = thisFields[i].GetValue(obj);
 
-                if (thisResult == null)
+                if (thisResult is null)
                 {
-                    if (thatResult != null)
+                    if (thatResult is not null)
                         return false;
                 }
                 else

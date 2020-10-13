@@ -119,7 +119,7 @@ namespace System.Xml.Xsl.Runtime
                     else if (value[idx] != ' ' || idxSpace == idx)
                     {
                         // Space was previous character or this is a non-space character
-                        if (sb == null)
+                        if (sb is null)
                             sb = new StringBuilder(value.Length);
                         else
                             sb.Append(' ');
@@ -140,7 +140,7 @@ namespace System.Xml.Xsl.Runtime
                 }
             }
 
-            if (sb == null)
+            if (sb is null)
             {
                 // Check for string that is entirely composed of whitespace
                 if (idxStart == idx) return string.Empty;
@@ -248,7 +248,7 @@ namespace System.Xml.Xsl.Runtime
         public static string OuterXml(XPathNavigator navigator)
         {
             RtfNavigator rtf = navigator as RtfNavigator;
-            if (rtf == null)
+            if (rtf is null)
             {
                 return navigator.OuterXml;
             }
@@ -345,9 +345,9 @@ namespace System.Xml.Xsl.Runtime
                 }
             }
 
-            Debug.Assert(stringValue != null);
+            Debug.Assert(stringValue is not null);
             double d;
-            if (XmlConvert.TryToDouble(stringValue, out d) != null)
+            if (XmlConvert.TryToDouble(stringValue, out d) is not null)
             {
                 d = double.NaN;
             }
@@ -517,7 +517,7 @@ namespace System.Xml.Xsl.Runtime
                 return string.Empty;
             }
             string ns = currentNode.LookupNamespace(prefix);
-            if (ns != null)
+            if (ns is not null)
             {
                 return ns;
             }
@@ -535,7 +535,7 @@ namespace System.Xml.Xsl.Runtime
 
         private static CultureInfo GetCultureInfo(string lang)
         {
-            Debug.Assert(lang != null);
+            Debug.Assert(lang is not null);
             if (lang.Length == 0)
             {
                 return CultureInfo.CurrentCulture;

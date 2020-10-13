@@ -34,7 +34,7 @@ namespace System.Net
             while (true)
             {
                 Cookie? cookie = parser.GetServer();
-                if (cookie == null)
+                if (cookie is null)
                 {
                     // EOF, done.
                     break;
@@ -54,14 +54,14 @@ namespace System.Net
         {
             get
             {
-                if (_cookies == null)
+                if (_cookies is null)
                 {
                     string? cookieString = Headers[HttpKnownHeaderNames.Cookie];
                     if (!string.IsNullOrEmpty(cookieString))
                     {
                         _cookies = ParseCookies(RequestUri, cookieString);
                     }
-                    if (_cookies == null)
+                    if (_cookies is null)
                     {
                         _cookies = new CookieCollection();
                     }
@@ -74,10 +74,10 @@ namespace System.Net
         {
             get
             {
-                if (UserAgent != null && CultureInfo.InvariantCulture.CompareInfo.IsPrefix(UserAgent, "UP"))
+                if (UserAgent is not null && CultureInfo.InvariantCulture.CompareInfo.IsPrefix(UserAgent, "UP"))
                 {
                     string? postDataCharset = Headers["x-up-devcap-post-charset"];
-                    if (postDataCharset != null && postDataCharset.Length > 0)
+                    if (postDataCharset is not null && postDataCharset.Length > 0)
                     {
                         try
                         {
@@ -90,10 +90,10 @@ namespace System.Net
                 }
                 if (HasEntityBody)
                 {
-                    if (ContentType != null)
+                    if (ContentType is not null)
                     {
                         string? charSet = Helpers.GetCharSetValueFromHeader(ContentType);
-                        if (charSet != null)
+                        if (charSet is not null)
                         {
                             try
                             {
@@ -218,7 +218,7 @@ namespace System.Net
             get
             {
                 string? referrer = Headers[HttpKnownHeaderNames.Referer];
-                if (referrer == null)
+                if (referrer is null)
                 {
                     return null;
                 }
@@ -289,7 +289,7 @@ namespace System.Net
             {
                 const string AttrName = "charset";
 
-                if (headerValue == null)
+                if (headerValue is null)
                     return null;
 
                 int l = headerValue.Length;
@@ -363,7 +363,7 @@ namespace System.Net
 
             internal static string[]? ParseMultivalueHeader(string s)
             {
-                if (s == null)
+                if (s is null)
                     return null;
 
                 int l = s.Length;
@@ -518,7 +518,7 @@ namespace System.Net
                 internal void AddByte(byte b)
                 {
                     {
-                        if (_byteBuffer == null)
+                        if (_byteBuffer is null)
                             _byteBuffer = new byte[_bufferSize];
 
                         _byteBuffer[_numBytes++] = b;
@@ -586,7 +586,7 @@ namespace System.Net
 
                     if (urlencoded)
                         nvc.Add(
-                           name == null ? null : UrlDecodeStringFromStringInternal(name, encoding),
+                           name is null ? null : UrlDecodeStringFromStringInternal(name, encoding),
                            UrlDecodeStringFromStringInternal(value, encoding));
                     else
                         nvc.Add(name, value);

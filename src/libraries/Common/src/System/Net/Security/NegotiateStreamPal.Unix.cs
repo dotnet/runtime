@@ -68,7 +68,7 @@ namespace System.Net.Security
             int offset,
             int count)
         {
-            Debug.Assert((buffer != null) && (buffer.Length > 0), "Invalid input buffer passed to Decrypt");
+            Debug.Assert((buffer is not null) && (buffer.Length > 0), "Invalid input buffer passed to Decrypt");
             Debug.Assert((offset >= 0) && (offset <= buffer.Length), "Invalid input offset passed to Decrypt");
             Debug.Assert((count >= 0) && (count <= (buffer.Length - offset)), "Invalid input count passed to Decrypt");
 
@@ -109,7 +109,7 @@ namespace System.Net.Security
             // In each call, we need to pass the context handle from the previous call.
             // For the first call, the context handle will be null.
             bool newContext = false;
-            if (context == null)
+            if (context is null)
             {
                 newContext = true;
                 context = new SafeGssContextHandle();
@@ -122,7 +122,7 @@ namespace System.Net.Security
             {
                 Interop.NetSecurityNative.Status minorStatus;
 
-                if (channelBinding != null)
+                if (channelBinding is not null)
                 {
                     // If a TLS channel binding token (cbt) is available then get the pointer
                     // to the application specific data.
@@ -139,7 +139,7 @@ namespace System.Net.Security
                                                                       targetName,
                                                                       (uint)inFlags,
                                                                       buffer,
-                                                                      (buffer == null) ? 0 : buffer.Length,
+                                                                      (buffer is null) ? 0 : buffer.Length,
                                                                       ref token,
                                                                       out outFlags,
                                                                       out isNtlmUsed);
@@ -153,7 +153,7 @@ namespace System.Net.Security
                                                                       targetName,
                                                                       (uint)inFlags,
                                                                       buffer,
-                                                                      (buffer == null) ? 0 : buffer.Length,
+                                                                      (buffer is null) ? 0 : buffer.Length,
                                                                       ref token,
                                                                       out outFlags,
                                                                       out isNtlmUsed);
@@ -188,10 +188,10 @@ namespace System.Net.Security
             out uint outFlags,
             out bool isNtlmUsed)
         {
-            Debug.Assert(credential != null);
+            Debug.Assert(credential is not null);
 
             bool newContext = false;
-            if (context == null)
+            if (context is null)
             {
                 newContext = true;
                 context = new SafeGssContextHandle();
@@ -282,7 +282,7 @@ namespace System.Net.Security
         {
             bool isNtlmOnly = credential.IsNtlmOnly;
 
-            if (context == null)
+            if (context is null)
             {
                 if (NetEventSource.Log.IsEnabled())
                 {
@@ -325,13 +325,13 @@ namespace System.Net.Security
                     negoContext.SetAuthenticationPackage(isNtlmUsed);
                 }
 
-                Debug.Assert(resultBuffer != null, "Unexpected null buffer returned by GssApi");
+                Debug.Assert(resultBuffer is not null, "Unexpected null buffer returned by GssApi");
                 outFlags = ContextFlagsAdapterPal.GetContextFlagsPalFromInterop(
                     (Interop.NetSecurityNative.GssFlags)outputFlags, isServer: false);
-                Debug.Assert(negoContext.GssContext == null || contextHandle == negoContext.GssContext);
+                Debug.Assert(negoContext.GssContext is null || contextHandle == negoContext.GssContext);
 
                 // Save the inner context handle for further calls to NetSecurity
-                Debug.Assert(negoContext.GssContext == null || contextHandle == negoContext.GssContext);
+                Debug.Assert(negoContext.GssContext is null || contextHandle == negoContext.GssContext);
                 if (null == negoContext.GssContext)
                 {
                     negoContext.SetGssContext(contextHandle!);
@@ -398,7 +398,7 @@ namespace System.Net.Security
             ref byte[] resultBlob,
             ref ContextFlagsPal contextFlags)
         {
-            if (securityContext == null)
+            if (securityContext is null)
             {
                 securityContext = new SafeDeleteNegoContext((SafeFreeNegoCredentials)credentialsHandle!);
             }
@@ -415,11 +415,11 @@ namespace System.Net.Security
                    out uint outputFlags,
                    out bool isNtlmUsed);
 
-                Debug.Assert(resultBlob != null, "Unexpected null buffer returned by GssApi");
-                Debug.Assert(negoContext.GssContext == null || contextHandle == negoContext.GssContext);
+                Debug.Assert(resultBlob is not null, "Unexpected null buffer returned by GssApi");
+                Debug.Assert(negoContext.GssContext is null || contextHandle == negoContext.GssContext);
 
                 // Save the inner context handle for further calls to NetSecurity
-                Debug.Assert(negoContext.GssContext == null || contextHandle == negoContext.GssContext);
+                Debug.Assert(negoContext.GssContext is null || contextHandle == negoContext.GssContext);
                 if (null == negoContext.GssContext)
                 {
                     negoContext.SetGssContext(contextHandle!);
@@ -502,7 +502,7 @@ namespace System.Net.Security
 
         internal static Win32Exception CreateExceptionFromError(SecurityStatusPal statusCode)
         {
-            return new Win32Exception(NTE_FAIL, (statusCode.Exception != null) ? statusCode.Exception.Message : statusCode.ErrorCode.ToString());
+            return new Win32Exception(NTE_FAIL, (statusCode.Exception is not null) ? statusCode.Exception.Message : statusCode.ErrorCode.ToString());
         }
 
         internal static int QueryMaxTokenSize(string package)
@@ -583,13 +583,13 @@ namespace System.Net.Security
             out int newOffset,
             uint sequenceNumber)
         {
-            if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
+            if (offset < 0 || offset > (buffer is null ? 0 : buffer.Length))
             {
                 NetEventSource.Fail(securityContext, "Argument 'offset' out of range");
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
+            if (count < 0 || count > (buffer is null ? 0 : buffer.Length - offset))
             {
                 NetEventSource.Fail(securityContext, "Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -601,13 +601,13 @@ namespace System.Net.Security
 
         internal static int VerifySignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count)
         {
-            if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
+            if (offset < 0 || offset > (buffer is null ? 0 : buffer.Length))
             {
                 NetEventSource.Fail(securityContext, "Argument 'offset' out of range");
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
+            if (count < 0 || count > (buffer is null ? 0 : buffer.Length - offset))
             {
                 NetEventSource.Fail(securityContext, "Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));

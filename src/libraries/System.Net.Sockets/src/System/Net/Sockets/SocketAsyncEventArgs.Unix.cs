@@ -47,7 +47,7 @@ namespace System.Net.Sockets
         private void CompleteAcceptOperation(IntPtr acceptedFileDescriptor, byte[] socketAddress, int socketAddressSize, SocketError socketError)
         {
             _acceptedFileDescriptor = acceptedFileDescriptor;
-            Debug.Assert(socketAddress == null || socketAddress == _acceptBuffer, $"Unexpected socketAddress: {socketAddress}");
+            Debug.Assert(socketAddress is null || socketAddress == _acceptBuffer, $"Unexpected socketAddress: {socketAddress}");
             _acceptAddressBufferCount = socketAddressSize;
         }
 
@@ -60,7 +60,7 @@ namespace System.Net.Sockets
 
             _acceptedFileDescriptor = (IntPtr)(-1);
 
-            Debug.Assert(acceptHandle == null, $"Unexpected acceptHandle: {acceptHandle}");
+            Debug.Assert(acceptHandle is null, $"Unexpected acceptHandle: {acceptHandle}");
 
             IntPtr acceptedFd;
             int socketAddressLen = _acceptAddressBufferCount / 2;
@@ -112,7 +112,7 @@ namespace System.Net.Sockets
 
         private void CompleteTransferOperation(int bytesTransferred, byte[]? socketAddress, int socketAddressSize, SocketFlags receivedFlags, SocketError socketError)
         {
-            Debug.Assert(socketAddress == null || socketAddress == _socketAddress!.Buffer, $"Unexpected socketAddress: {socketAddress}");
+            Debug.Assert(socketAddress is null || socketAddress == _socketAddress!.Buffer, $"Unexpected socketAddress: {socketAddress}");
             _socketAddressSize = socketAddressSize;
             _receivedFlags = receivedFlags;
         }
@@ -125,7 +125,7 @@ namespace System.Net.Sockets
             SocketFlags flags;
             int bytesReceived;
             SocketError errorCode;
-            if (_bufferList == null)
+            if (_bufferList is null)
             {
                 // TCP has no out-going receive flags. We can use different syscalls which give better performance.
                 bool noReceivedFlags = _currentSocket!.ProtocolType == ProtocolType.Tcp;
@@ -162,7 +162,7 @@ namespace System.Net.Sockets
             SocketError errorCode;
             int bytesReceived = 0;
             int socketAddressLen = _socketAddress!.Size;
-            if (_bufferList == null)
+            if (_bufferList is null)
             {
                 errorCode = handle.AsyncContext.ReceiveFromAsync(_buffer.Slice(_offset, _count), _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesReceived, out flags, TransferCompletionCallback);
             }
@@ -189,8 +189,8 @@ namespace System.Net.Sockets
 
         private void CompleteReceiveMessageFromOperation(int bytesTransferred, byte[] socketAddress, int socketAddressSize, SocketFlags receivedFlags, IPPacketInformation ipPacketInformation, SocketError errorCode)
         {
-            Debug.Assert(_socketAddress != null, "Expected non-null _socketAddress");
-            Debug.Assert(socketAddress == null || _socketAddress.Buffer == socketAddress, $"Unexpected socketAddress: {socketAddress}");
+            Debug.Assert(_socketAddress is not null, "Expected non-null _socketAddress");
+            Debug.Assert(socketAddress is null || _socketAddress.Buffer == socketAddress, $"Unexpected socketAddress: {socketAddress}");
 
             _socketAddressSize = socketAddressSize;
             _receivedFlags = receivedFlags;
@@ -226,7 +226,7 @@ namespace System.Net.Sockets
 
             int bytesSent;
             SocketError errorCode;
-            if (_bufferList == null)
+            if (_bufferList is null)
             {
                 errorCode = handle.AsyncContext.SendAsync(_buffer, _offset, _count, _socketFlags, out bytesSent, TransferCompletionCallback, cancellationToken);
             }
@@ -246,7 +246,7 @@ namespace System.Net.Sockets
 
         internal SocketError DoOperationSendPackets(Socket socket, SafeSocketHandle handle)
         {
-            Debug.Assert(_sendPacketsElements != null);
+            Debug.Assert(_sendPacketsElements is not null);
             SendPacketsElement[] elements = (SendPacketsElement[])_sendPacketsElements.Clone();
             FileStream[] files = new FileStream[elements.Length];
 
@@ -257,7 +257,7 @@ namespace System.Net.Sockets
                 for (int i = 0; i < elements.Length; i++)
                 {
                     string? path = elements[i]?.FilePath;
-                    if (path != null)
+                    if (path is not null)
                     {
                         files[i] = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 0x1000, useAsync: true);
                     }
@@ -311,7 +311,7 @@ namespace System.Net.Sockets
             int bytesSent;
             int socketAddressLen = _socketAddress!.Size;
             SocketError errorCode;
-            if (_bufferList == null)
+            if (_bufferList is null)
             {
                 errorCode = handle.AsyncContext.SendToAsync(_buffer, _offset, _count, _socketFlags, _socketAddress.Buffer, ref socketAddressLen, out bytesSent, TransferCompletionCallback);
             }
@@ -336,11 +336,11 @@ namespace System.Net.Sockets
             // may fire erroneously.
             Debug.Assert(NetEventSource.Log.IsEnabled());
 
-            if (_bufferList == null)
+            if (_bufferList is null)
             {
                 NetEventSource.DumpBuffer(this, _buffer, _offset, size);
             }
-            else if (_acceptBuffer != null)
+            else if (_acceptBuffer is not null)
             {
                 NetEventSource.DumpBuffer(this, _acceptBuffer, 0, size);
             }

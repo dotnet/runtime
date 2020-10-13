@@ -271,7 +271,7 @@ namespace System.Runtime.CompilerServices
         public static IntPtr AllocateTypeAssociatedMemory(Type type, int size)
         {
             RuntimeType? rt = type as RuntimeType;
-            if (rt == null)
+            if (rt is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(type));
 
             if (size < 0)
@@ -315,7 +315,7 @@ namespace System.Runtime.CompilerServices
                     newFrame.NextCall = null;
                     callTarget(tls->ArgBuffer, retVal, &newFrame.TailCallAwareReturnAddress);
                     callTarget = newFrame.NextCall;
-                } while (callTarget != null);
+                } while (callTarget is not null);
             }
             finally
             {

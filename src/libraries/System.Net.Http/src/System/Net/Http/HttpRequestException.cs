@@ -21,7 +21,7 @@ namespace System.Net.Http
         public HttpRequestException(string? message, Exception? inner)
             : base(message, inner)
         {
-            if (inner != null)
+            if (inner is not null)
             {
                 HResult = inner.HResult;
             }

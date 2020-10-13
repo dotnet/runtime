@@ -22,11 +22,11 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="key"/> or <paramref name="value"/> is null.</exception>
         public static void Set(this IDistributedCache cache, string key, byte[] value)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -45,11 +45,11 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="key"/> or <paramref name="value"/> is null.</exception>
         public static Task SetAsync(this IDistributedCache cache, string key, byte[] value, CancellationToken token = default(CancellationToken))
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -79,11 +79,11 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="key"/> or <paramref name="value"/> is null.</exception>
         public static void SetString(this IDistributedCache cache, string key, string value, DistributedCacheEntryOptions options)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -116,11 +116,11 @@ namespace Microsoft.Extensions.Caching.Distributed
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="key"/> or <paramref name="value"/> is null.</exception>
         public static Task SetStringAsync(this IDistributedCache cache, string key, string value, DistributedCacheEntryOptions options, CancellationToken token = default(CancellationToken))
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -136,7 +136,7 @@ namespace Microsoft.Extensions.Caching.Distributed
         public static string GetString(this IDistributedCache cache, string key)
         {
             byte[] data = cache.Get(key);
-            if (data == null)
+            if (data is null)
             {
                 return null;
             }
@@ -153,7 +153,7 @@ namespace Microsoft.Extensions.Caching.Distributed
         public static async Task<string> GetStringAsync(this IDistributedCache cache, string key, CancellationToken token = default(CancellationToken))
         {
             byte[] data = await cache.GetAsync(key, token).ConfigureAwait(false);
-            if (data == null)
+            if (data is null)
             {
                 return null;
             }

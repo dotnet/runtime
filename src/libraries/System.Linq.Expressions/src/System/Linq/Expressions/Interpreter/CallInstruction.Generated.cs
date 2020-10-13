@@ -37,7 +37,7 @@ namespace System.Linq.Expressions.Interpreter
         private static CallInstruction FastCreate(MethodInfo target, ParameterInfo[] pi)
         {
             Type t = TryGetParameterOrReturnType(target, pi, 0);
-            if (t == null)
+            if (t is null)
             {
                 return new ActionCallInstruction(target);
             }
@@ -76,7 +76,7 @@ namespace System.Linq.Expressions.Interpreter
         private static CallInstruction FastCreate<T0>(MethodInfo target, ParameterInfo[] pi)
         {
             Type t = TryGetParameterOrReturnType(target, pi, 1);
-            if (t == null)
+            if (t is null)
             {
                 if (target.ReturnType == typeof(void))
                 {
@@ -119,7 +119,7 @@ namespace System.Linq.Expressions.Interpreter
         private static CallInstruction FastCreate<T0, T1>(MethodInfo target, ParameterInfo[] pi)
         {
             Type t = TryGetParameterOrReturnType(target, pi, 2);
-            if (t == null)
+            if (t is null)
             {
                 if (target.ReturnType == typeof(void))
                 {

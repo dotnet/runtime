@@ -32,7 +32,7 @@ namespace System.Security.Principal
 
         public NTAccount(string domainName, string accountName)
         {
-            if (accountName == null)
+            if (accountName is null)
             {
                 throw new ArgumentNullException(nameof(accountName));
             }
@@ -47,12 +47,12 @@ namespace System.Security.Principal
                 throw new ArgumentException(SR.IdentityReference_AccountNameTooLong, nameof(accountName));
             }
 
-            if (domainName != null && domainName.Length > MaximumDomainNameLength)
+            if (domainName is not null && domainName.Length > MaximumDomainNameLength)
             {
                 throw new ArgumentException(SR.IdentityReference_DomainNameTooLong, nameof(domainName));
             }
 
-            if (domainName == null || domainName.Length == 0)
+            if (domainName is null || domainName.Length == 0)
             {
                 _name = accountName;
             }
@@ -64,7 +64,7 @@ namespace System.Security.Principal
 
         public NTAccount(string name)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -111,7 +111,7 @@ namespace System.Security.Principal
 
         public override IdentityReference Translate(Type targetType)
         {
-            if (targetType == null)
+            if (targetType is null)
             {
                 throw new ArgumentNullException(nameof(targetType));
             }
@@ -175,7 +175,7 @@ namespace System.Security.Principal
 
         internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceAccounts, Type targetType, out bool someFailed)
         {
-            if (sourceAccounts == null)
+            if (sourceAccounts is null)
             {
                 throw new ArgumentNullException(nameof(sourceAccounts));
             }
@@ -201,7 +201,7 @@ namespace System.Security.Principal
             {
                 return true;
             }
-            else if (l == null || r == null)
+            else if (l is null || r is null)
             {
                 return false;
             }
@@ -223,7 +223,7 @@ namespace System.Security.Principal
 
         private static IdentityReferenceCollection TranslateToSids(IdentityReferenceCollection sourceAccounts, out bool someFailed)
         {
-            if (sourceAccounts == null)
+            if (sourceAccounts is null)
             {
                 throw new ArgumentNullException(nameof(sourceAccounts));
             }

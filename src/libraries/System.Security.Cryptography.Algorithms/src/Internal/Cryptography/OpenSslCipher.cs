@@ -30,7 +30,7 @@ namespace Internal.Cryptography
         {
             if (disposing)
             {
-                if (_ctx != null)
+                if (_ctx is not null)
                 {
                     _ctx.Dispose();
                     _ctx = null!;

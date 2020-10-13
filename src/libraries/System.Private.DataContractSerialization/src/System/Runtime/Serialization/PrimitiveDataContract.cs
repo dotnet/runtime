@@ -53,7 +53,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_helper.XmlFormatWriterMethod == null)
+                if (_helper.XmlFormatWriterMethod is null)
                 {
                     if (UnderlyingType.IsValueType)
                         _helper.XmlFormatWriterMethod = typeof(XmlWriterDelegator).GetMethod(WriteMethodName, Globals.ScanAllMembers, null, new Type[] { UnderlyingType, typeof(XmlDictionaryString), typeof(XmlDictionaryString) }, null)!;
@@ -68,7 +68,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_helper.XmlFormatContentWriterMethod == null)
+                if (_helper.XmlFormatContentWriterMethod is null)
                 {
                     if (UnderlyingType.IsValueType)
                         _helper.XmlFormatContentWriterMethod = typeof(XmlWriterDelegator).GetMethod(WriteMethodName, Globals.ScanAllMembers, null, new Type[] { UnderlyingType }, null)!;
@@ -83,7 +83,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_helper.XmlFormatReaderMethod == null)
+                if (_helper.XmlFormatReaderMethod is null)
                 {
                     _helper.XmlFormatReaderMethod = typeof(XmlReaderDelegator).GetMethod(ReadMethodName, Globals.ScanAllMembers)!;
                 }
@@ -167,7 +167,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsChar()
+            return (context is null) ? reader.ReadElementContentAsChar()
                 : HandleReadValue(reader.ReadElementContentAsChar(), context);
         }
 
@@ -198,7 +198,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsBoolean()
+            return (context is null) ? reader.ReadElementContentAsBoolean()
                 : HandleReadValue(reader.ReadElementContentAsBoolean(), context);
         }
 
@@ -224,7 +224,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsSignedByte()
+            return (context is null) ? reader.ReadElementContentAsSignedByte()
                 : HandleReadValue(reader.ReadElementContentAsSignedByte(), context);
         }
 
@@ -250,7 +250,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsUnsignedByte()
+            return (context is null) ? reader.ReadElementContentAsUnsignedByte()
                 : HandleReadValue(reader.ReadElementContentAsUnsignedByte(), context);
         }
 
@@ -276,7 +276,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsShort()
+            return (context is null) ? reader.ReadElementContentAsShort()
                 : HandleReadValue(reader.ReadElementContentAsShort(), context);
         }
 
@@ -302,7 +302,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsUnsignedShort()
+            return (context is null) ? reader.ReadElementContentAsUnsignedShort()
                 : HandleReadValue(reader.ReadElementContentAsUnsignedShort(), context);
         }
 
@@ -367,7 +367,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsInt()
+            return (context is null) ? reader.ReadElementContentAsInt()
                 : HandleReadValue(reader.ReadElementContentAsInt(), context);
         }
 
@@ -393,7 +393,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsUnsignedInt()
+            return (context is null) ? reader.ReadElementContentAsUnsignedInt()
                 : HandleReadValue(reader.ReadElementContentAsUnsignedInt(), context);
         }
 
@@ -423,7 +423,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsLong()
+            return (context is null) ? reader.ReadElementContentAsLong()
                 : HandleReadValue(reader.ReadElementContentAsLong(), context);
         }
 
@@ -474,7 +474,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsUnsignedLong()
+            return (context is null) ? reader.ReadElementContentAsUnsignedLong()
                 : HandleReadValue(reader.ReadElementContentAsUnsignedLong(), context);
         }
 
@@ -500,7 +500,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsFloat()
+            return (context is null) ? reader.ReadElementContentAsFloat()
                 : HandleReadValue(reader.ReadElementContentAsFloat(), context);
         }
 
@@ -526,7 +526,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsDouble()
+            return (context is null) ? reader.ReadElementContentAsDouble()
                 : HandleReadValue(reader.ReadElementContentAsDouble(), context);
         }
 
@@ -552,7 +552,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsDecimal()
+            return (context is null) ? reader.ReadElementContentAsDecimal()
                 : HandleReadValue(reader.ReadElementContentAsDecimal(), context);
         }
 
@@ -578,7 +578,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsDateTime()
+            return (context is null) ? reader.ReadElementContentAsDateTime()
                 : HandleReadValue(reader.ReadElementContentAsDateTime(), context);
         }
 
@@ -608,7 +608,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            if (context == null)
+            if (context is null)
             {
                 return TryReadNullAtTopLevel(reader) ? null : reader.ReadElementContentAsString();
             }
@@ -740,7 +740,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            if (context == null)
+            if (context is null)
             {
                 return TryReadNullAtTopLevel(reader) ? null : reader.ReadElementContentAsBase64();
             }
@@ -795,7 +795,7 @@ namespace System.Runtime.Serialization
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.XmlForObjectCannotHaveContent, localName, ns), xes));
                 }
             }
-            return (context == null) ? obj : HandleReadValue(obj, context);
+            return (context is null) ? obj : HandleReadValue(obj, context);
         }
 
         internal override bool CanContainReferences
@@ -829,7 +829,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsTimeSpan()
+            return (context is null) ? reader.ReadElementContentAsTimeSpan()
                 : HandleReadValue(reader.ReadElementContentAsTimeSpan(), context);
         }
 
@@ -864,7 +864,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            return (context == null) ? reader.ReadElementContentAsGuid()
+            return (context is null) ? reader.ReadElementContentAsGuid()
                 : HandleReadValue(reader.ReadElementContentAsGuid(), context);
         }
 
@@ -895,7 +895,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            if (context == null)
+            if (context is null)
             {
                 return TryReadNullAtTopLevel(reader) ? null : reader.ReadElementContentAsUri();
             }
@@ -932,7 +932,7 @@ namespace System.Runtime.Serialization
 
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
-            if (context == null)
+            if (context is null)
             {
                 return TryReadNullAtTopLevel(reader) ? null : reader.ReadElementContentAsQName();
             }
@@ -951,7 +951,7 @@ namespace System.Runtime.Serialization
         {
             if (object.ReferenceEquals(ns, DictionaryGlobals.SerializationNamespace))
                 writer.WriteStartElement(Globals.SerPrefix, name, ns);
-            else if (ns != null && ns.Value != null && ns.Value.Length > 0)
+            else if (ns is not null && ns.Value is not null && ns.Value.Length > 0)
                 writer.WriteStartElement(Globals.ElementPrefix, name, ns);
             else
                 writer.WriteStartElement(name, ns);

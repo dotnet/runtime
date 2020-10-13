@@ -80,7 +80,7 @@ namespace System.Xml.Xsl.Qil
         /// </summary>
         protected override QilNode Visit(QilNode node)
         {
-            if (node == null)
+            if (node is null)
                 return VisitNull()!;
 
             node = VisitChildren(node);

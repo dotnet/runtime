@@ -26,12 +26,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         public static IHttpClientBuilder ConfigureHttpClient(this IHttpClientBuilder builder, Action<HttpClient> configureClient)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (configureClient == null)
+            if (configureClient is null)
             {
                 throw new ArgumentNullException(nameof(configureClient));
             }
@@ -53,12 +53,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder ConfigureHttpClient(this IHttpClientBuilder builder, Action<IServiceProvider, HttpClient> configureClient)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (configureClient == null)
+            if (configureClient is null)
             {
                 throw new ArgumentNullException(nameof(configureClient));
             }
@@ -86,12 +86,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder AddHttpMessageHandler(this IHttpClientBuilder builder, Func<DelegatingHandler> configureHandler)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (configureHandler == null)
+            if (configureHandler is null)
             {
                 throw new ArgumentNullException(nameof(configureHandler));
             }
@@ -121,12 +121,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder AddHttpMessageHandler(this IHttpClientBuilder builder, Func<IServiceProvider, DelegatingHandler> configureHandler)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (configureHandler == null)
+            if (configureHandler is null)
             {
                 throw new ArgumentNullException(nameof(configureHandler));
             }
@@ -156,7 +156,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IHttpClientBuilder AddHttpMessageHandler<THandler>(this IHttpClientBuilder builder)
             where THandler : DelegatingHandler
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
@@ -182,12 +182,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder ConfigurePrimaryHttpMessageHandler(this IHttpClientBuilder builder, Func<HttpMessageHandler> configureHandler)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (configureHandler == null)
+            if (configureHandler is null)
             {
                 throw new ArgumentNullException(nameof(configureHandler));
             }
@@ -219,12 +219,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder ConfigurePrimaryHttpMessageHandler(this IHttpClientBuilder builder, Func<IServiceProvider, HttpMessageHandler> configureHandler)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (configureHandler == null)
+            if (configureHandler is null)
             {
                 throw new ArgumentNullException(nameof(configureHandler));
             }
@@ -255,7 +255,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IHttpClientBuilder ConfigurePrimaryHttpMessageHandler<THandler>(this IHttpClientBuilder builder)
             where THandler : HttpMessageHandler
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
@@ -277,12 +277,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>An <see cref="IHttpClientBuilder"/> that can be used to configure the client.</returns>
         public static IHttpClientBuilder ConfigureHttpMessageHandlerBuilder(this IHttpClientBuilder builder, Action<HttpMessageHandlerBuilder> configureBuilder)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (configureBuilder == null)
+            if (configureBuilder is null)
             {
                 throw new ArgumentNullException(nameof(configureBuilder));
             }
@@ -321,7 +321,7 @@ namespace Microsoft.Extensions.DependencyInjection
             this IHttpClientBuilder builder)
             where TClient : class
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
@@ -383,7 +383,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TClient : class
             where TImplementation : class, TClient
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
@@ -434,12 +434,12 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IHttpClientBuilder AddTypedClient<TClient>(this IHttpClientBuilder builder, Func<HttpClient, TClient> factory)
             where TClient : class
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (factory == null)
+            if (factory is null)
             {
                 throw new ArgumentNullException(nameof(factory));
             }
@@ -487,12 +487,12 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IHttpClientBuilder AddTypedClient<TClient>(this IHttpClientBuilder builder, Func<HttpClient, IServiceProvider, TClient> factory)
             where TClient : class
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (factory == null)
+            if (factory is null)
             {
                 throw new ArgumentNullException(nameof(factory));
             }
@@ -503,12 +503,12 @@ namespace Microsoft.Extensions.DependencyInjection
         internal static IHttpClientBuilder AddTypedClientCore<TClient>(this IHttpClientBuilder builder, Func<HttpClient, IServiceProvider, TClient> factory, bool validateSingleType)
             where TClient : class
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (factory == null)
+            if (factory is null)
             {
                 throw new ArgumentNullException(nameof(factory));
             }
@@ -536,12 +536,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder RedactLoggedHeaders(this IHttpClientBuilder builder, Func<string, bool> shouldRedactHeaderValue)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (shouldRedactHeaderValue == null)
+            if (shouldRedactHeaderValue is null)
             {
                 throw new ArgumentNullException(nameof(shouldRedactHeaderValue));
             }
@@ -562,12 +562,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="IHttpClientBuilder"/>.</returns>
         public static IHttpClientBuilder RedactLoggedHeaders(this IHttpClientBuilder builder, IEnumerable<string> redactedLoggedHeaderNames)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (redactedLoggedHeaderNames == null)
+            if (redactedLoggedHeaderNames is null)
             {
                 throw new ArgumentNullException(nameof(redactedLoggedHeaderNames));
             }
@@ -608,7 +608,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </remarks>
         public static IHttpClientBuilder SetHandlerLifetime(this IHttpClientBuilder builder, TimeSpan handlerLifetime)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
@@ -626,7 +626,7 @@ namespace Microsoft.Extensions.DependencyInjection
         private static void ReserveClient(IHttpClientBuilder builder, Type type, string name, bool validateSingleType)
         {
             var registry = (HttpClientMappingRegistry)builder.Services.Single(sd => sd.ServiceType == typeof(HttpClientMappingRegistry)).ImplementationInstance;
-            Debug.Assert(registry != null);
+            Debug.Assert(registry is not null);
 
             // Check for same name registered to two types. This won't work because we rely on named options for the configuration.
             if (registry.NamedClientRegistrations.TryGetValue(name, out Type otherType) &&

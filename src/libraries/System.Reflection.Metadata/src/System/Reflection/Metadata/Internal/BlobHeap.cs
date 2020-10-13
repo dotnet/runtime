@@ -18,7 +18,7 @@ namespace System.Reflection.Metadata.Ecma335
             _lazyVirtualHeap = null;
             Block = block;
 
-            if (s_virtualValues == null && metadataKind != MetadataKind.Ecma335)
+            if (s_virtualValues is null && metadataKind != MetadataKind.Ecma335)
             {
                 var blobs = new byte[(int)BlobHandle.VirtualIndex.Count][];
 

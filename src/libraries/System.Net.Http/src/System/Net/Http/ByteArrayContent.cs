@@ -16,7 +16,7 @@ namespace System.Net.Http
 
         public ByteArrayContent(byte[] content)
         {
-            if (content == null)
+            if (content is null)
             {
                 throw new ArgumentNullException(nameof(content));
             }
@@ -27,7 +27,7 @@ namespace System.Net.Http
 
         public ByteArrayContent(byte[] content, int offset, int count)
         {
-            if (content == null)
+            if (content is null)
             {
                 throw new ArgumentNullException(nameof(content));
             }

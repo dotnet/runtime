@@ -25,7 +25,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public Processor.OutputResult RecordDone(RecordBuilder record)
         {
-            Debug.Assert(record != null);
+            Debug.Assert(record is not null);
 
             BuilderInfo mainNode = record.MainNode;
             _documentIndex++;

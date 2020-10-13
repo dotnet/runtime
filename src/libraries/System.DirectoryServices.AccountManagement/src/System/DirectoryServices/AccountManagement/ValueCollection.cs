@@ -32,7 +32,7 @@ namespace System.DirectoryServices.AccountManagement
 
         int IList.Add(object value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             _inner.Add((T)value);
@@ -46,7 +46,7 @@ namespace System.DirectoryServices.AccountManagement
 
         bool IList.Contains(object value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             return _inner.Contains((T)value);
@@ -54,7 +54,7 @@ namespace System.DirectoryServices.AccountManagement
 
         int IList.IndexOf(object value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             return IndexOf((T)value);
@@ -62,7 +62,7 @@ namespace System.DirectoryServices.AccountManagement
 
         void IList.Insert(int index, object value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             Insert(index, (T)value);
@@ -70,7 +70,7 @@ namespace System.DirectoryServices.AccountManagement
 
         void IList.Remove(object value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             _inner.Remove((T)value);
@@ -90,7 +90,7 @@ namespace System.DirectoryServices.AccountManagement
 
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 this[index] = (T)value;
@@ -175,7 +175,7 @@ namespace System.DirectoryServices.AccountManagement
         // Adds obj to the end of the list by inserting it into insertedValues.
         public void Add(T value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             _inner.Add(value);
@@ -188,7 +188,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public bool Contains(T value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             return _inner.Contains(value);
@@ -196,7 +196,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public int IndexOf(T value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             int index = 0;
@@ -225,7 +225,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             _inner.MarkChange();
 
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             if ((index < 0) || (index > _inner.combinedValues.Count))
@@ -243,7 +243,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public bool Remove(T value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             return _inner.Remove(value);
@@ -311,7 +311,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new ArgumentOutOfRangeException(nameof(index));
                 }
 
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 TrackedCollection<T>.ValueEl el = _inner.combinedValues[index];

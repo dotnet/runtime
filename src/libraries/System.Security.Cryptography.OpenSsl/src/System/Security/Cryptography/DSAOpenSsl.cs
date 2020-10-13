@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException"><paramref name="pkeyHandle"/> is not a valid enveloped <c>DSA*</c></exception>
         public DSAOpenSsl(SafeEvpPKeyHandle pkeyHandle)
         {
-            if (pkeyHandle == null)
+            if (pkeyHandle is null)
                 throw new ArgumentNullException(nameof(pkeyHandle));
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));

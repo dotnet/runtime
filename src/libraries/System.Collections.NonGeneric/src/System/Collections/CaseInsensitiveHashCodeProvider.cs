@@ -22,7 +22,7 @@ namespace System.Collections
 
         public CaseInsensitiveHashCodeProvider(CultureInfo culture)
         {
-            if (culture == null)
+            if (culture is null)
             {
                 throw new ArgumentNullException(nameof(culture));
             }
@@ -36,13 +36,13 @@ namespace System.Collections
 
         public int GetHashCode(object obj)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
 
             string? s = obj as string;
-            return s != null ?
+            return s is not null ?
                 _compareInfo.GetHashCode(s, CompareOptions.IgnoreCase) :
                 obj.GetHashCode();
         }

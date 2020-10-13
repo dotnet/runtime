@@ -13,7 +13,7 @@ namespace System.Runtime.Serialization
     {
         internal static Type GetDataContractType(ISerializationSurrogateProvider surrogateProvider, Type type)
         {
-            if (DataContract.GetBuiltInDataContract(type) != null)
+            if (DataContract.GetBuiltInDataContract(type) is not null)
                 return type;
             return surrogateProvider.GetSurrogateType(type) ?? type;
         }
@@ -21,9 +21,9 @@ namespace System.Runtime.Serialization
         [return: NotNullIfNotNull("obj")]
         internal static object? GetObjectToSerialize(ISerializationSurrogateProvider surrogateProvider, object? obj, Type objType, Type membertype)
         {
-            if (obj == null)
+            if (obj is null)
                 return null;
-            if (DataContract.GetBuiltInDataContract(objType) != null)
+            if (DataContract.GetBuiltInDataContract(objType) is not null)
                 return obj;
             return surrogateProvider.GetObjectToSerialize(obj, membertype);
         }
@@ -31,9 +31,9 @@ namespace System.Runtime.Serialization
         [return: NotNullIfNotNull("obj")]
         internal static object? GetDeserializedObject(ISerializationSurrogateProvider surrogateProvider, object? obj, Type objType, Type memberType)
         {
-            if (obj == null)
+            if (obj is null)
                 return null;
-            if (DataContract.GetBuiltInDataContract(objType) != null)
+            if (DataContract.GetBuiltInDataContract(objType) is not null)
                 return obj;
             return surrogateProvider.GetDeserializedObject(obj, memberType);
         }

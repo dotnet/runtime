@@ -31,7 +31,7 @@ namespace System
         {
             EnumInfo? entry = enumType.GenericCache as EnumInfo;
 
-            if (entry == null || (getNames && entry.Names == null))
+            if (entry is null || (getNames && entry.Names is null))
             {
                 ulong[]? values = null;
                 string[]? names = null;

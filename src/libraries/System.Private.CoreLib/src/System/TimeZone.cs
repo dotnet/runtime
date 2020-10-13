@@ -33,7 +33,7 @@ namespace System
         {
             get
             {
-                if (s_InternalSyncObject == null)
+                if (s_InternalSyncObject is null)
                 {
                     object o = new object();
                     Interlocked.CompareExchange<object?>(ref s_InternalSyncObject, o, null);
@@ -53,7 +53,7 @@ namespace System
                 // Grabbing the cached value is required at the top of this function so that
                 // we don't incur a race condition with the ResetTimeZone method below.
                 TimeZone? tz = currentTimeZone;
-                if (tz == null)
+                if (tz is null)
                 {
                     lock (InternalSyncObject)
                     {
@@ -71,7 +71,7 @@ namespace System
         // with the CurrentTimeZone property above.
         internal static void ResetTimeZone()
         {
-            if (currentTimeZone != null)
+            if (currentTimeZone is not null)
             {
                 lock (InternalSyncObject)
                 {
@@ -206,7 +206,7 @@ namespace System
         //
         internal static TimeSpan CalculateUtcOffset(DateTime time, DaylightTime daylightTimes)
         {
-            if (daylightTimes == null)
+            if (daylightTimes is null)
             {
                 return TimeSpan.Zero;
             }

@@ -331,7 +331,7 @@ namespace Microsoft.Win32
 
             lock (s_eventLockObject)
             {
-                if (s_handlers == null)
+                if (s_handlers is null)
                 {
                     s_handlers = new Dictionary<object, List<SystemEventInvokeInfo>>();
                     EnsureSystemEvents(requireHandle: false);
@@ -451,7 +451,7 @@ namespace Microsoft.Win32
                 }
             }
 
-            if (_consoleHandler != null)
+            if (_consoleHandler is not null)
             {
                 Interop.Kernel32.SetConsoleCtrlHandler(_consoleHandler, false);
                 _consoleHandler = null;
@@ -463,11 +463,11 @@ namespace Microsoft.Win32
         /// </summary>
         private static void EnsureSystemEvents(bool requireHandle)
         {
-            if (s_systemEvents == null)
+            if (s_systemEvents is null)
             {
                 lock (s_procLockObject)
                 {
-                    if (s_systemEvents == null)
+                    if (s_systemEvents is null)
                     {
                         // If we are creating system events on a thread declared as STA, then
                         // just share the thread.
@@ -715,7 +715,7 @@ namespace Microsoft.Win32
         /// </summary>
         private void InvokeMarshaledCallbacks()
         {
-            Debug.Assert(s_threadCallbackList != null, "Invoking marshaled callbacks before there are any");
+            Debug.Assert(s_threadCallbackList is not null, "Invoking marshaled callbacks before there are any");
 
             Delegate? current = null;
             lock (s_threadCallbackList!)
@@ -727,7 +727,7 @@ namespace Microsoft.Win32
             }
 
             // Now invoke on all the queued items.
-            while (current != null)
+            while (current is not null)
             {
                 try
                 {
@@ -767,14 +767,14 @@ namespace Microsoft.Win32
 #if DEBUG
             int pid;
             int thread = Interop.User32.GetWindowThreadProcessId(new HandleRef(s_systemEvents, s_systemEvents!._windowHandle), out pid);
-            Debug.Assert(s_windowThread == null || thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call MarshaledInvoke on the system events thread");
+            Debug.Assert(s_windowThread is null || thread != Interop.Kernel32.GetCurrentThreadId(), "Don't call MarshaledInvoke on the system events thread");
 #endif
 
-            if (s_threadCallbackList == null)
+            if (s_threadCallbackList is null)
             {
                 lock (s_eventLockObject)
                 {
-                    if (s_threadCallbackList == null)
+                    if (s_threadCallbackList is null)
                     {
                         s_threadCallbackMessage = Interop.User32.RegisterWindowMessageW("SystemEventsThreadCallbackMessage");
                         s_threadCallbackList = new Queue<Delegate>();
@@ -996,7 +996,7 @@ namespace Microsoft.Win32
 
         private static void RaiseEvent(bool checkFinalization, object key, params object[] args)
         {
-            Debug.Assert(args != null && args.Length == 2);
+            Debug.Assert(args is not null && args.Length == 2);
 
             // If the AppDomain's unloading, we shouldn't fire SystemEvents other than Shutdown.
             if (checkFinalization && AppDomain.CurrentDomain.IsFinalizingForUnload())
@@ -1008,20 +1008,20 @@ namespace Microsoft.Win32
 
             lock (s_eventLockObject)
             {
-                if (s_handlers != null && s_handlers.ContainsKey(key))
+                if (s_handlers is not null && s_handlers.ContainsKey(key))
                 {
                     List<SystemEventInvokeInfo> invokeItems = s_handlers[key];
 
                     // clone the list so we don't have this type locked and cause
                     // a deadlock if someone tries to modify handlers during an invoke.
-                    if (invokeItems != null)
+                    if (invokeItems is not null)
                     {
                         invokeItemArray = invokeItems.ToArray();
                     }
                 }
             }
 
-            if (invokeItemArray != null)
+            if (invokeItemArray is not null)
             {
                 for (int i = 0; i < invokeItemArray.Length; i++)
                 {
@@ -1045,9 +1045,9 @@ namespace Microsoft.Win32
                     for (int i = 0; i < invokeItemArray.Length; i++)
                     {
                         SystemEventInvokeInfo? info = invokeItemArray[i];
-                        if (info != null)
+                        if (info is not null)
                         {
-                            if (invokeItems == null)
+                            if (invokeItems is null)
                             {
                                 if (!s_handlers!.TryGetValue(key, out invokeItems))
                                 {
@@ -1072,7 +1072,7 @@ namespace Microsoft.Win32
 
             lock (s_eventLockObject)
             {
-                if (s_handlers != null && s_handlers.ContainsKey(key))
+                if (s_handlers is not null && s_handlers.ContainsKey(key))
                 {
                     List<SystemEventInvokeInfo> invokeItems = s_handlers[key];
 
@@ -1083,14 +1083,14 @@ namespace Microsoft.Win32
 
         private static void Shutdown()
         {
-            if (s_systemEvents != null && s_systemEvents._windowHandle != IntPtr.Zero)
+            if (s_systemEvents is not null && s_systemEvents._windowHandle != IntPtr.Zero)
             {
                 lock (s_procLockObject)
                 {
-                    if (s_systemEvents != null)
+                    if (s_systemEvents is not null)
                     {
                         // If we are using system events from another thread, request that it terminate
-                        if (s_windowThread != null)
+                        if (s_windowThread is not null)
                         {
                             s_eventThreadTerminated = new ManualResetEvent(false);
 
@@ -1135,7 +1135,7 @@ namespace Microsoft.Win32
                     if (lParam != IntPtr.Zero)
                     {
                         newString = Marshal.PtrToStringUni(lParam);
-                        if (newString != null)
+                        if (newString is not null)
                         {
                             newStringPtr = Marshal.StringToHGlobalUni(newString);
                         }
@@ -1305,7 +1305,7 @@ namespace Microsoft.Win32
             }
 
             Dispose();
-            if (s_eventThreadTerminated != null)
+            if (s_eventThreadTerminated is not null)
             {
                 s_eventThreadTerminated.Set();
             }
@@ -1328,7 +1328,7 @@ namespace Microsoft.Win32
                 try
                 {
                     // If we didn't get call back invoke directly.
-                    if (_syncContext == null)
+                    if (_syncContext is null)
                     {
                         InvokeCallback(args);
                     }

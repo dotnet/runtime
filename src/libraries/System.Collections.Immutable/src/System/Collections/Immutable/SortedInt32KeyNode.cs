@@ -97,7 +97,7 @@ namespace System.Collections.Immutable
         /// <value>
         /// <c>true</c> if this instance is empty; otherwise, <c>false</c>.
         /// </value>
-        public bool IsEmpty { get { return _left == null; } }
+        public bool IsEmpty { get { return _left is null; } }
 
         /// <summary>
         /// Gets the height of the tree beneath this node.
@@ -486,7 +486,7 @@ namespace System.Collections.Immutable
             }
             else
             {
-                Debug.Assert(_right != null && _left != null);
+                Debug.Assert(_right is not null && _left is not null);
                 SortedInt32KeyNode<TValue> result = this;
                 if (key == _key)
                 {
@@ -554,19 +554,19 @@ namespace System.Collections.Immutable
         /// <returns>The mutated (or created) node.</returns>
         private SortedInt32KeyNode<TValue> Mutate(SortedInt32KeyNode<TValue>? left = null, SortedInt32KeyNode<TValue>? right = null)
         {
-            Debug.Assert(_right != null && _left != null);
+            Debug.Assert(_right is not null && _left is not null);
             if (_frozen)
             {
                 return new SortedInt32KeyNode<TValue>(_key, _value!, left ?? _left, right ?? _right);
             }
             else
             {
-                if (left != null)
+                if (left is not null)
                 {
                     _left = left;
                 }
 
-                if (right != null)
+                if (right is not null)
                 {
                     _right = right;
                 }

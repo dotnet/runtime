@@ -540,7 +540,7 @@ namespace System.Net.Http.HPack
 
             if (destination.Length != 0)
             {
-                Debug.Assert(separator != null);
+                Debug.Assert(separator is not null);
                 int valueLength;
 
                 // Calculate length of all parts and separators.

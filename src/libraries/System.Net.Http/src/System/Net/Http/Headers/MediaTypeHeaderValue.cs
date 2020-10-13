@@ -21,7 +21,7 @@ namespace System.Net.Http.Headers
             get
             {
                 NameValueHeaderValue? charSetParameter = NameValueHeaderValue.Find(_parameters, charSet);
-                if (charSetParameter != null)
+                if (charSetParameter is not null)
                 {
                     return charSetParameter.Value;
                 }
@@ -35,14 +35,14 @@ namespace System.Net.Http.Headers
                 if (string.IsNullOrEmpty(value))
                 {
                     // Remove charset parameter
-                    if (charSetParameter != null)
+                    if (charSetParameter is not null)
                     {
                         _parameters!.Remove(charSetParameter);
                     }
                 }
                 else
                 {
-                    if (charSetParameter != null)
+                    if (charSetParameter is not null)
                     {
                         charSetParameter.Value = value;
                     }
@@ -74,11 +74,11 @@ namespace System.Net.Http.Headers
 
         protected MediaTypeHeaderValue(MediaTypeHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _mediaType = source._mediaType;
 
-            if (source._parameters != null)
+            if (source._parameters is not null)
             {
                 foreach (var parameter in source._parameters)
                 {
@@ -105,7 +105,7 @@ namespace System.Net.Http.Headers
         {
             MediaTypeHeaderValue? other = obj as MediaTypeHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -142,7 +142,7 @@ namespace System.Net.Http.Headers
         internal static int GetMediaTypeLength(string? input, int startIndex,
             Func<MediaTypeHeaderValue> mediaTypeCreator, out MediaTypeHeaderValue? parsedValue)
         {
-            Debug.Assert(mediaTypeCreator != null);
+            Debug.Assert(mediaTypeCreator is not null);
             Debug.Assert(startIndex >= 0);
 
             parsedValue = null;
@@ -192,7 +192,7 @@ namespace System.Net.Http.Headers
 
         private static int GetMediaTypeExpressionLength(string input, int startIndex, out string? mediaType)
         {
-            Debug.Assert((input != null) && (input.Length > 0) && (startIndex < input.Length));
+            Debug.Assert((input is not null) && (input.Length > 0) && (startIndex < input.Length));
 
             // This method just parses the "type/subtype" string, it does not parse parameters.
             mediaType = null;

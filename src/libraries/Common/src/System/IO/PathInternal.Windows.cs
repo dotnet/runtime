@@ -77,7 +77,7 @@ namespace System.IO
         [return: NotNullIfNotNull("path")]
         internal static string? EnsureExtendedPrefixIfNeeded(string? path)
         {
-            if (path != null && (path.Length >= MaxShortPath || EndsWithPeriodOrSpace(path)))
+            if (path is not null && (path.Length >= MaxShortPath || EndsWithPeriodOrSpace(path)))
             {
                 return EnsureExtendedPrefix(path);
             }

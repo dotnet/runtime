@@ -58,7 +58,7 @@ namespace System.Net.Security
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN));
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
 
-            if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
+            if (sslAuthenticationOptions.ApplicationProtocols is not null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
             {
                 byte[] alpnBytes = ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
                 inputBuffers.SetNextBuffer(new InputSecurityBuffer(new ReadOnlySpan<byte>(alpnBytes), SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
@@ -87,7 +87,7 @@ namespace System.Net.Security
             InputSecurityBuffers inputBuffers = default;
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(inputBuffer, SecurityBufferType.SECBUFFER_TOKEN));
             inputBuffers.SetNextBuffer(new InputSecurityBuffer(default, SecurityBufferType.SECBUFFER_EMPTY));
-            if (sslAuthenticationOptions.ApplicationProtocols != null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
+            if (sslAuthenticationOptions.ApplicationProtocols is not null && sslAuthenticationOptions.ApplicationProtocols.Count != 0)
             {
                 byte[] alpnBytes = ConvertAlpnProtocolListToByteArray(sslAuthenticationOptions.ApplicationProtocols);
                 inputBuffers.SetNextBuffer(new InputSecurityBuffer(new ReadOnlySpan<byte>(alpnBytes), SecurityBufferType.SECBUFFER_APPLICATION_PROTOCOLS));
@@ -155,7 +155,7 @@ namespace System.Net.Security
                 policy);
 
             Interop.Crypt32.CERT_CONTEXT* certificateHandle = null;
-            if (certificate != null)
+            if (certificate is not null)
             {
                 secureCredential.cCreds = 1;
                 certificateHandle = (Interop.Crypt32.CERT_CONTEXT*)certificate.Handle;
@@ -209,7 +209,7 @@ namespace System.Net.Security
             credential.dwFlags = flags;
 
             Interop.Crypt32.CERT_CONTEXT *certificateHandle = null;
-            if (certificate != null)
+            if (certificate is not null)
             {
                 credential.cCreds = 1;
                 certificateHandle = (Interop.Crypt32.CERT_CONTEXT *)certificate.Handle;
@@ -260,7 +260,7 @@ namespace System.Net.Security
                 NetEventSource.Fail(securityContext, "Arguments out of range");
                 throw;
             }
-            if (output == null || output.Length < bufferSizeNeeded)
+            if (output is null || output.Length < bufferSizeNeeded)
             {
                 output = new byte[bufferSizeNeeded];
             }

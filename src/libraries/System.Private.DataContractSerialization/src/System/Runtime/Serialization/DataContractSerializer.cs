@@ -95,7 +95,7 @@ namespace System.Runtime.Serialization
 
         public DataContractSerializer(Type type, DataContractSerializerSettings? settings)
         {
-            if (settings == null)
+            if (settings is null)
             {
                 settings = new DataContractSerializerSettings();
             }
@@ -115,7 +115,7 @@ namespace System.Runtime.Serialization
             CheckNull(type, nameof(type));
             _rootType = type;
 
-            if (knownTypes != null)
+            if (knownTypes is not null)
             {
                 this.knownTypeList = new List<Type>();
                 foreach (Type knownType in knownTypes)
@@ -154,9 +154,9 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_knownTypeCollection == null)
+                if (_knownTypeCollection is null)
                 {
-                    if (knownTypeList != null)
+                    if (knownTypeList is not null)
                     {
                         _knownTypeCollection = new ReadOnlyCollection<Type>(knownTypeList);
                     }
@@ -173,7 +173,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (this.knownDataContracts == null && this.knownTypeList != null)
+                if (this.knownDataContracts is null && this.knownTypeList is not null)
                 {
                     // This assignment may be performed concurrently and thus is a race condition.
                     // It's safe, however, because at worse a new (and identical) dictionary of
@@ -220,9 +220,9 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_rootContract == null)
+                if (_rootContract is null)
                 {
-                    _rootContract = DataContract.GetDataContract((_serializationSurrogateProvider == null) ? _rootType : GetSurrogatedType(_serializationSurrogateProvider, _rootType));
+                    _rootContract = DataContract.GetDataContract((_serializationSurrogateProvider is null) ? _rootType : GetSurrogatedType(_serializationSurrogateProvider, _rootType));
                     _needsContractNsAtRoot = CheckIfNeedsContractNsAtRoot(_rootName, _rootNamespace, _rootContract);
                 }
                 return _rootContract;
@@ -328,17 +328,17 @@ namespace System.Runtime.Serialization
 
             DataContract contract = RootContract;
             Type declaredType = contract.UnderlyingType;
-            Type graphType = (graph == null) ? declaredType : graph.GetType();
+            Type graphType = (graph is null) ? declaredType : graph.GetType();
 
-            if (_serializationSurrogateProvider != null)
+            if (_serializationSurrogateProvider is not null)
             {
                 graph = SurrogateToDataContractType(_serializationSurrogateProvider, graph, declaredType, ref graphType);
             }
 
-            if (dataContractResolver == null)
+            if (dataContractResolver is null)
                 dataContractResolver = this.DataContractResolver;
 
-            if (graph == null)
+            if (graph is null)
             {
                 if (IsRootXmlAny(_rootName, contract))
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.IsAnyCannotBeNull, declaredType)));
@@ -411,7 +411,7 @@ namespace System.Runtime.Serialization
             if (MaxItemsInObjectGraph == 0)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.ExceededMaxItemsQuota, MaxItemsInObjectGraph)));
 
-            if (dataContractResolver == null)
+            if (dataContractResolver is null)
                 dataContractResolver = this.DataContractResolver;
 
             if (verifyObjectName)
@@ -420,7 +420,7 @@ namespace System.Runtime.Serialization
                 {
                     XmlDictionaryString? expectedName;
                     XmlDictionaryString? expectedNs;
-                    if (_rootName == null)
+                    if (_rootName is null)
                     {
                         expectedName = RootContract.TopLevelElementName;
                         expectedNs = RootContract.TopLevelElementNamespace;
@@ -461,7 +461,7 @@ namespace System.Runtime.Serialization
 
         internal override Type? GetSerializeType(object? graph)
         {
-            return (graph == null) ? _rootType : graph.GetType();
+            return (graph is null) ? _rootType : graph.GetType();
         }
 
         internal override Type? GetDeserializeType()
@@ -475,7 +475,7 @@ namespace System.Runtime.Serialization
             object? obj = DataContractSurrogateCaller.GetObjectToSerialize(serializationSurrogateProvider, oldObj, objType, surrogatedDeclaredType);
             if (obj != oldObj)
             {
-                objType = obj != null ? obj.GetType() : Globals.TypeOfObject;
+                objType = obj is not null ? obj.GetType() : Globals.TypeOfObject;
             }
             return obj;
         }

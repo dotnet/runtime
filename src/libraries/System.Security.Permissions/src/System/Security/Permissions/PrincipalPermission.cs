@@ -50,7 +50,7 @@ namespace System.Security.Permissions
         {
             foreach (IDRole idRole in _idArray)
             {
-                if (idRole.ID == null || idRole.ID.Length != 0 || idRole.Role == null || idRole.Role.Length != 0 || idRole.Authenticated)
+                if (idRole.ID is null || idRole.ID.Length != 0 || idRole.Role is null || idRole.Role.Length != 0 || idRole.Authenticated)
                     return false;
             }
             return true;
@@ -59,14 +59,14 @@ namespace System.Security.Permissions
         private bool VerifyType(IPermission perm)
         {
             // if perm is null, then obviously not of the same type
-            return (perm != null) && (perm.GetType() == GetType());
+            return (perm is not null) && (perm.GetType() == GetType());
         }
 
         public bool IsUnrestricted()
         {
             foreach (IDRole idRole in _idArray)
             {
-                if (idRole.ID != null || idRole.Role != null || !idRole.Authenticated)
+                if (idRole.ID is not null || idRole.Role is not null || !idRole.Authenticated)
                     return false;
             }
             return true;
@@ -74,7 +74,7 @@ namespace System.Security.Permissions
 
         public bool IsSubsetOf(IPermission target)
         {
-            if (target == null)
+            if (target is null)
             {
                 return IsEmpty();
             }
@@ -100,8 +100,8 @@ namespace System.Security.Permissions
                 foreach (IDRole operandIdRole in operand._idArray)
                 {
                     if ((operandIdRole.Authenticated == idRole.Authenticated) &&
-                        (operandIdRole.ID == null || (idRole.ID != null && idRole.ID.Equals(operandIdRole.ID))) &&
-                        (operandIdRole.Role == null || (idRole.Role != null && idRole.Role.Equals(operandIdRole.Role))))
+                        (operandIdRole.ID is null || (idRole.ID is not null && idRole.ID.Equals(operandIdRole.ID))) &&
+                        (operandIdRole.Role is null || (idRole.Role is not null && idRole.Role.Equals(operandIdRole.Role))))
                     {
                         foundMatch = true;
                         break;
@@ -117,7 +117,7 @@ namespace System.Security.Permissions
 
         public IPermission Intersect(IPermission target)
         {
-            if (target == null)
+            if (target is null)
             {
                 return null;
             }
@@ -149,19 +149,19 @@ namespace System.Security.Permissions
                         bool newAuthenticated = operandIdRole.Authenticated;
                         bool addToNewIDRoles = false;
 
-                        if (operandIdRole.ID == null || idRole.ID == null || idRole.ID.Equals(operandIdRole.ID))
+                        if (operandIdRole.ID is null || idRole.ID is null || idRole.ID.Equals(operandIdRole.ID))
                         {
-                            newID = operandIdRole.ID == null ? idRole.ID : operandIdRole.ID;
+                            newID = operandIdRole.ID is null ? idRole.ID : operandIdRole.ID;
                             addToNewIDRoles = true;
                         }
-                        if (operandIdRole.Role == null || idRole.Role == null || idRole.Role.Equals(operandIdRole.Role))
+                        if (operandIdRole.Role is null || idRole.Role is null || idRole.Role.Equals(operandIdRole.Role))
                         {
-                            newRole = operandIdRole.Role == null ? idRole.Role : operandIdRole.Role;
+                            newRole = operandIdRole.Role is null ? idRole.Role : operandIdRole.Role;
                             addToNewIDRoles = true;
                         }
                         if (addToNewIDRoles)
                         {
-                            if (idroles == null)
+                            if (idroles is null)
                                 idroles = new List<IDRole>();
                             idroles.Add(new IDRole(newAuthenticated, newID, newRole));
                         }
@@ -169,12 +169,12 @@ namespace System.Security.Permissions
                 }
             }
 
-            return (idroles == null) ? null : new PrincipalPermission(idroles.ToArray());
+            return (idroles is null) ? null : new PrincipalPermission(idroles.ToArray());
         }
 
         public IPermission Union(IPermission other)
         {
-            if (other == null)
+            if (other is null)
             {
                 return Copy();
             }
@@ -200,11 +200,11 @@ namespace System.Security.Permissions
         public override bool Equals(object obj)
         {
             IPermission perm = obj as IPermission;
-            if (obj != null && perm == null)
+            if (obj is not null && perm is null)
                 return false;
             if (!IsSubsetOf(perm))
                 return false;
-            if (perm != null && !perm.IsSubsetOf(this))
+            if (perm is not null && !perm.IsSubsetOf(this))
                 return false;
             return true;
         }
@@ -225,9 +225,9 @@ namespace System.Security.Permissions
         public void Demand()
         {
             IPrincipal principal = Thread.CurrentPrincipal;
-            if (principal == null)
+            if (principal is null)
                 throw new SecurityException(SR.Security_PrincipalPermission);
-            if (_idArray == null)
+            if (_idArray is null)
                 return;
 
             // A demand passes when the grant satisfies all entries.
@@ -239,9 +239,9 @@ namespace System.Security.Permissions
                     return;
                 }
                 else if (principal.Identity.IsAuthenticated &&
-                         (idRole.ID == null || string.Equals(principal.Identity.Name, idRole.ID, StringComparison.OrdinalIgnoreCase)))
+                         (idRole.ID is null || string.Equals(principal.Identity.Name, idRole.ID, StringComparison.OrdinalIgnoreCase)))
                 {
-                    if (idRole.Role == null || principal.IsInRole(idRole.Role))
+                    if (idRole.Role is null || principal.IsInRole(idRole.Role))
                         return;
                 }
             }
@@ -257,7 +257,7 @@ namespace System.Security.Permissions
             root.AddAttribute("class", typename + ", " + GetType().Module.Assembly.FullName.Replace('\"', '\''));
             root.AddAttribute("version", "1");
 
-            if (_idArray != null)
+            if (_idArray is not null)
             {
                 foreach (IDRole idRole in _idArray)
                 {
@@ -270,18 +270,18 @@ namespace System.Security.Permissions
 
         public void FromXml(SecurityElement elem)
         {
-            if (elem == null)
+            if (elem is null)
                 throw new ArgumentNullException(nameof(elem));
 
-            if (elem.Tag == null || !elem.Tag.Equals("Permission") && !elem.Tag.Equals("IPermission"))
+            if (elem.Tag is null || !elem.Tag.Equals("Permission") && !elem.Tag.Equals("IPermission"))
                 throw new ArgumentException(SR.Argument_NotAPermissionElement);
 
             string version = elem.Attribute("version");
 
-            if (version == null || (version != null && !version.Equals("1")))
+            if (version is null || (version is not null && !version.Equals("1")))
                 throw new ArgumentException(SR.Argument_InvalidXMLBadVersion);
 
-            if (elem.Children != null && elem.Children.Count != 0)
+            if (elem.Children is not null && elem.Children.Count != 0)
             {
                 int numChildren = elem.Children.Count;
                 int count = 0;

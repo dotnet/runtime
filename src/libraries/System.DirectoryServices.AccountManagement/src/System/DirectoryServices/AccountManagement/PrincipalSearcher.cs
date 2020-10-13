@@ -58,10 +58,10 @@ namespace System.DirectoryServices.AccountManagement
                     throw new ArgumentNullException(nameof(QueryFilter));
 
                 CheckDisposed();
-                Debug.Assert(value.Context != null);
+                Debug.Assert(value.Context is not null);
 
                 // Make sure they're not passing in a persisted Principal object
-                if ((value != null) && (!value.unpersisted))
+                if ((value is not null) && (!value.unpersisted))
                     throw new ArgumentException(SR.PrincipalSearcherPersistedPrincipal);
 
                 _qbeFilter = value;
@@ -126,7 +126,7 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             // We have to have a filter
-            if (_qbeFilter == null)
+            if (_qbeFilter is null)
                 throw new InvalidOperationException(SR.PrincipalSearcherMustSetFilter);
 
             // Double-check that the Principal isn't persisted.  We don't allow them to assign a persisted
@@ -140,7 +140,7 @@ namespace System.DirectoryServices.AccountManagement
                 throw new InvalidOperationException(SR.PrincipalSearcherNonReferentialProps);
 
             StoreCtx storeCtx = _ctx.QueryCtx;
-            Debug.Assert(storeCtx != null);
+            Debug.Assert(storeCtx is not null);
 
             // The underlying context must actually support search (i.e., no MSAM/reg-SAM)
             if (storeCtx.SupportsSearchNatively == false)
@@ -160,11 +160,11 @@ namespace System.DirectoryServices.AccountManagement
             CheckDisposed();
 
             // We have to have a filter
-            if (_qbeFilter == null)
+            if (_qbeFilter is null)
                 throw new InvalidOperationException(SR.PrincipalSearcherMustSetFilter);
 
             StoreCtx storeCtx = _ctx.QueryCtx;
-            Debug.Assert(storeCtx != null);
+            Debug.Assert(storeCtx is not null);
 
             // The underlying context must actually support search (i.e., no MSAM/reg-SAM)
             if (storeCtx.SupportsSearchNatively == false)
@@ -179,7 +179,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Dispose: disposing");
 
-                if ((this.UnderlyingSearcher != null) && (this.UnderlyingSearcher is IDisposable))
+                if ((this.UnderlyingSearcher is not null) && (this.UnderlyingSearcher is IDisposable))
                 {
                     GlobalDebug.WriteLineIf(
                             GlobalDebug.Info,
@@ -247,7 +247,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearcher", "Entering FindAll, returnOne=" + returnOne.ToString());
 
-            if (_qbeFilter == null)
+            if (_qbeFilter is null)
                 throw new InvalidOperationException(SR.PrincipalSearcherMustSetFilter);
             // Double-check that the Principal isn't persisted.  We don't allow them to assign a persisted
             // Principal as the filter, but they could have persisted it after assigning it to the QueryFilter
@@ -271,7 +271,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             _pageSize = 0;
 
-            if (_qbeFilter != null)
+            if (_qbeFilter is not null)
             {
                 // If our context is AD-backed (has an ADStoreCtx), use pagesize of 256.
                 // Otherwise, turn off paging.
@@ -295,7 +295,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             // If using a null query filter, nothing to validate, as it can't have any referential
             // properties set.
-            if (_qbeFilter == null)
+            if (_qbeFilter is null)
                 return false;
 
             // Since the QBE filter must be in the "unpersisted" state, any set properties have their changed
@@ -311,7 +311,7 @@ namespace System.DirectoryServices.AccountManagement
 
             ArrayList referentialProperties = (ArrayList)ReferentialProperties.Properties[t];
 
-            if (referentialProperties != null)
+            if (referentialProperties is not null)
             {
                 foreach (string propertyName in referentialProperties)
                 {

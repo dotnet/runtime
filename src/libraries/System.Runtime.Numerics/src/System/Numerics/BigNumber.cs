@@ -324,7 +324,7 @@ namespace System.Numerics
 
         internal static bool TryParseBigInteger(string? value, NumberStyles style, NumberFormatInfo info, out BigInteger result)
         {
-            if (value == null)
+            if (value is null)
             {
                 result = default(BigInteger);
                 return false;
@@ -366,7 +366,7 @@ namespace System.Numerics
 
         internal static BigInteger ParseBigInteger(string value, NumberStyles style, NumberFormatInfo info)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -390,7 +390,7 @@ namespace System.Numerics
 
         private static unsafe bool HexNumberToBigInteger(ref BigNumberBuffer number, ref BigInteger value)
         {
-            if (number.digits == null || number.digits.Length == 0)
+            if (number.digits is null || number.digits.Length == 0)
                 return false;
 
             int len = number.digits.Length - 1; // Ignore trailing '\0'
@@ -555,7 +555,7 @@ namespace System.Numerics
                     digits - sb.Length);
             }
 
-            if (arrayToReturnToPool != null)
+            if (arrayToReturnToPool is not null)
             {
                 ArrayPool<byte>.Shared.Return(arrayToReturnToPool);
             }
@@ -589,7 +589,7 @@ namespace System.Numerics
             string? formatString, ReadOnlySpan<char> formatSpan,
             NumberFormatInfo info, Span<char> destination, out int charsWritten, out bool spanSuccess)
         {
-            Debug.Assert(formatString == null || formatString.Length == formatSpan.Length);
+            Debug.Assert(formatString is null || formatString.Length == formatSpan.Length);
 
             int digits = 0;
             char fmt = ParseFormatSpecifier(formatSpan, out digits);
@@ -599,7 +599,7 @@ namespace System.Numerics
             }
 
 
-            if (value._bits == null)
+            if (value._bits is null)
             {
                 if (fmt == 'g' || fmt == 'G' || fmt == 'r' || fmt == 'R')
                 {

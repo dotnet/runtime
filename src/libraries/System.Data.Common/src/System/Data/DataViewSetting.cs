@@ -58,7 +58,7 @@ namespace System.Data
             get { return _rowFilter; }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     value = string.Empty;
                 }
@@ -88,7 +88,7 @@ namespace System.Data
             get { return _sort; }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     value = string.Empty;
                 }

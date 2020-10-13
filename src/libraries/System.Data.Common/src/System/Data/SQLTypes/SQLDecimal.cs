@@ -579,7 +579,7 @@ namespace System.Data.SqlTypes
         public SqlDecimal(byte bPrecision, byte bScale, bool fPositive, int[] bits)
         {
             CheckValidPrecScale(bPrecision, bScale);
-            if (bits == null)
+            if (bits is null)
                 throw new ArgumentNullException(nameof(bits));
             else if (bits.Length != 4)
                 throw new ArgumentException(SQLResource.InvalidArraySizeMessage, nameof(bits));
@@ -988,7 +988,7 @@ namespace System.Data.SqlTypes
 
         public static SqlDecimal Parse(string s)
         {
-            if (s == null)
+            if (s is null)
                 throw new ArgumentNullException(nameof(s));
 
             if (s == SQLResource.NullString)
@@ -3335,7 +3335,7 @@ namespace System.Data.SqlTypes
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
             string? isNull = reader.GetAttribute("nil", XmlSchema.InstanceNamespace);
-            if (isNull != null && XmlConvert.ToBoolean(isNull))
+            if (isNull is not null && XmlConvert.ToBoolean(isNull))
             {
                 // Read the next value.
                 reader.ReadElementString();

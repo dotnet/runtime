@@ -21,12 +21,12 @@ namespace System.Xml
 
         public static XmlDictionaryReader CreateDictionaryReader(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(reader));
 
             XmlDictionaryReader? dictionaryReader = reader as XmlDictionaryReader;
 
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
             {
                 dictionaryReader = new XmlWrappedReader(reader, null);
             }
@@ -36,7 +36,7 @@ namespace System.Xml
 
         public static XmlDictionaryReader CreateBinaryReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
         {
-            if (buffer == null)
+            if (buffer is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(buffer));
             return CreateBinaryReader(buffer, 0, buffer.Length, quotas);
         }
@@ -95,7 +95,7 @@ namespace System.Xml
 
         public static XmlDictionaryReader CreateTextReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
         {
-            if (buffer == null)
+            if (buffer is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(buffer));
             return CreateTextReader(buffer, 0, buffer.Length, quotas);
         }
@@ -131,7 +131,7 @@ namespace System.Xml
 
         public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas)
         {
-            if (encoding == null)
+            if (encoding is null)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(encoding));
 
             return CreateMtomReader(stream, new Encoding[1] { encoding }, quotas);
@@ -155,7 +155,7 @@ namespace System.Xml
 
         public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding encoding, XmlDictionaryReaderQuotas quotas)
         {
-            if (encoding == null)
+            if (encoding is null)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(encoding));
 
             return CreateMtomReader(buffer, offset, count, new Encoding[1] { encoding }, quotas);
@@ -234,7 +234,7 @@ namespace System.Xml
 
         public virtual bool IsLocalName(XmlDictionaryString localName)
         {
-            if (localName == null)
+            if (localName is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(localName));
 
             return IsLocalName(localName.Value);
@@ -242,14 +242,14 @@ namespace System.Xml
 
         public virtual bool IsNamespaceUri(string namespaceUri)
         {
-            if (namespaceUri == null)
+            if (namespaceUri is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
             return this.NamespaceURI == namespaceUri;
         }
 
         public virtual bool IsNamespaceUri(XmlDictionaryString namespaceUri)
         {
-            if (namespaceUri == null)
+            if (namespaceUri is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
             return IsNamespaceUri(namespaceUri.Value);
         }
@@ -299,10 +299,10 @@ namespace System.Xml
 
         public virtual int IndexOfLocalName(string[] localNames, string namespaceUri)
         {
-            if (localNames == null)
+            if (localNames is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(localNames));
 
-            if (namespaceUri == null)
+            if (namespaceUri is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
 
             if (this.NamespaceURI == namespaceUri)
@@ -311,7 +311,7 @@ namespace System.Xml
                 for (int i = 0; i < localNames.Length; i++)
                 {
                     string value = localNames[i];
-                    if (value == null)
+                    if (value is null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(string.Format(CultureInfo.InvariantCulture, "localNames[{0}]", i));
                     if (localName == value)
                     {
@@ -325,10 +325,10 @@ namespace System.Xml
 
         public virtual int IndexOfLocalName(XmlDictionaryString[] localNames, XmlDictionaryString namespaceUri)
         {
-            if (localNames == null)
+            if (localNames is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(localNames));
 
-            if (namespaceUri == null)
+            if (namespaceUri is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
 
             if (this.NamespaceURI == namespaceUri.Value)
@@ -337,7 +337,7 @@ namespace System.Xml
                 for (int i = 0; i < localNames.Length; i++)
                 {
                     XmlDictionaryString value = localNames[i];
-                    if (value == null)
+                    if (value is null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(string.Format(CultureInfo.InvariantCulture, "localNames[{0}]", i));
                     if (localName == value.Value)
                     {
@@ -421,7 +421,7 @@ namespace System.Xml
                         }
                         else
                         {
-                            if (sb == null)
+                            if (sb is null)
                                 sb = new StringBuilder(result);
                             if (sb.Length > maxStringContentLength - value.Length)
                                 XmlExceptionHelper.ThrowMaxStringContentLengthExceeded(this, maxStringContentLength);
@@ -453,7 +453,7 @@ namespace System.Xml
                 else
                     Read();
             }
-            if (sb != null)
+            if (sb is not null)
                 result = sb.ToString();
             if (result.Length > maxStringContentLength)
                 XmlExceptionHelper.ThrowMaxStringContentLengthExceeded(this, maxStringContentLength);
@@ -491,7 +491,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    if (sb == null)
+                    if (sb is null)
                         sb = new StringBuilder(result);
                     if (sb.Length > maxStringContentLength - value.Length)
                         XmlExceptionHelper.ThrowMaxStringContentLengthExceeded(this, maxStringContentLength);
@@ -500,7 +500,7 @@ namespace System.Xml
                 if (!Read())
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.XmlInvalidOperation));
             }
-            if (sb != null)
+            if (sb is not null)
                 result = sb.ToString();
             if (result.Length > maxStringContentLength)
                 XmlExceptionHelper.ThrowMaxStringContentLengthExceeded(this, maxStringContentLength);
@@ -622,14 +622,14 @@ namespace System.Xml
 
         public virtual string ReadContentAsString(string[] strings, out int index)
         {
-            if (strings == null)
+            if (strings is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(strings));
             string s = ReadContentAsString();
             index = -1;
             for (int i = 0; i < strings.Length; i++)
             {
                 string value = strings[i];
-                if (value == null)
+                if (value is null)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(string.Format(CultureInfo.InvariantCulture, "strings[{0}]", i));
                 if (value == s)
                 {
@@ -642,14 +642,14 @@ namespace System.Xml
 
         public virtual string ReadContentAsString(XmlDictionaryString[] strings, out int index)
         {
-            if (strings == null)
+            if (strings is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(strings));
             string s = ReadContentAsString();
             index = -1;
             for (int i = 0; i < strings.Length; i++)
             {
                 XmlDictionaryString value = strings[i];
-                if (value == null)
+                if (value is null)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(string.Format(CultureInfo.InvariantCulture, "strings[{0}]", i));
                 if (value.Value == s)
                 {
@@ -690,7 +690,7 @@ namespace System.Xml
             string prefix;
             XmlConverter.ToQualifiedName(ReadContentAsString(), out prefix, out localName);
             namespaceUri = LookupNamespace(prefix)!;
-            if (namespaceUri == null)
+            if (namespaceUri is null)
                 XmlExceptionHelper.ThrowUndefinedPrefix(this, prefix);
         }
 
@@ -1018,7 +1018,7 @@ namespace System.Xml
 
         private void CheckArray(Array array, int offset, int count)
         {
-            if (array == null)
+            if (array is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(array)));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
@@ -1794,7 +1794,7 @@ namespace System.Xml
             {
                 IXmlLineInfo? lineInfo = _reader as IXmlLineInfo;
 
-                if (lineInfo == null)
+                if (lineInfo is null)
                     return false;
 
                 return lineInfo.HasLineInfo();
@@ -1806,7 +1806,7 @@ namespace System.Xml
                 {
                     IXmlLineInfo? lineInfo = _reader as IXmlLineInfo;
 
-                    if (lineInfo == null)
+                    if (lineInfo is null)
                         return 1;
 
                     return lineInfo.LineNumber;
@@ -1819,7 +1819,7 @@ namespace System.Xml
                 {
                     IXmlLineInfo? lineInfo = _reader as IXmlLineInfo;
 
-                    if (lineInfo == null)
+                    if (lineInfo is null)
                         return 1;
 
                     return lineInfo.LinePosition;

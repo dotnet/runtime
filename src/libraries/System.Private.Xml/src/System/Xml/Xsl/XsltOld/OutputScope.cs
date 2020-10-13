@@ -82,12 +82,12 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool FindPrefix(string urn, out string prefix)
         {
-            Debug.Assert(urn != null);
+            Debug.Assert(urn is not null);
 
-            for (NamespaceDecl? scope = this.scopes; scope != null; scope = scope.Next)
+            for (NamespaceDecl? scope = this.scopes; scope is not null; scope = scope.Next)
             {
                 if (Ref.Equal(scope.Uri, urn) &&
-                    scope.Prefix != null &&
+                    scope.Prefix is not null &&
                     scope.Prefix.Length > 0)
                 {
                     prefix = scope.Prefix;

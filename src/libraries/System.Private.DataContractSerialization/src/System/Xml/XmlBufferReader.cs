@@ -65,14 +65,14 @@ namespace System.Xml
         {
             get
             {
-                return _stream != null;
+                return _stream is not null;
             }
         }
 
 
         public void SetBuffer(Stream stream, IXmlDictionary? dictionary, XmlBinaryReaderSession? session)
         {
-            if (_streamBuffer == null)
+            if (_streamBuffer is null)
             {
                 _streamBuffer = new byte[128];
             }
@@ -99,11 +99,11 @@ namespace System.Xml
 
         public void Close()
         {
-            if (_streamBuffer != null && _streamBuffer.Length > 4096)
+            if (_streamBuffer is not null && _streamBuffer.Length > 4096)
             {
                 _streamBuffer = null;
             }
-            if (_stream != null)
+            if (_stream is not null)
             {
                 _stream.Dispose();
                 _stream = null;
@@ -190,7 +190,7 @@ namespace System.Xml
 
         private bool TryEnsureByte()
         {
-            if (_stream == null)
+            if (_stream is null)
                 return false;
             DiagnosticUtility.DebugAssert(_offsetMax < _windowOffsetMax, "");
             if (_offsetMax >= _buffer.Length)
@@ -210,7 +210,7 @@ namespace System.Xml
 
         private bool TryEnsureBytes(int count)
         {
-            if (_stream == null)
+            if (_stream is null)
                 return false;
 
             // The data could be coming from an untrusted source, so we use a standard
@@ -253,7 +253,7 @@ namespace System.Xml
 
         public void InsertBytes(byte[] buffer, int offset, int count)
         {
-            DiagnosticUtility.DebugAssert(_stream != null, "");
+            DiagnosticUtility.DebugAssert(_stream is not null, "");
             if (_offsetMax > buffer.Length - count)
             {
                 byte[] newBuffer = new byte[_offsetMax + count];
@@ -523,7 +523,7 @@ namespace System.Xml
 
         private unsafe void UnsafeReadArray(byte* dst, int length)
         {
-            if (_stream != null)
+            if (_stream is not null)
             {
                 const int chunk = 256;
                 while (length >= chunk)
@@ -560,7 +560,7 @@ namespace System.Xml
         {
             if (count > 1024)
                 return new char[count];
-            if (_chars == null || _chars.Length < count)
+            if (_chars is null || _chars.Length < count)
                 _chars = new char[count];
             return _chars;
         }
@@ -1080,7 +1080,7 @@ namespace System.Xml
 
         public Guid GetGuid(int offset)
         {
-            if (_guid == null)
+            if (_guid is null)
                 _guid = new byte[16];
             System.Buffer.BlockCopy(_buffer, offset, _guid, 0, _guid.Length);
             return new Guid(_guid);
@@ -1148,7 +1148,7 @@ namespace System.Xml
             int key = ReadMultiByteUInt31();
             if ((key & 1) != 0)
             {
-                if (_session == null)
+                if (_session is null)
                     XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
                 int sessionKey = (key >> 1);
                 XmlDictionaryString? xmlString;
@@ -1161,7 +1161,7 @@ namespace System.Xml
             }
             else
             {
-                if (_dictionary == null)
+                if (_dictionary is null)
                     XmlExceptionHelper.ThrowInvalidBinaryFormat(_reader);
                 int staticKey = (key >> 1);
                 XmlDictionaryString? xmlString;
@@ -1290,7 +1290,7 @@ namespace System.Xml
 
         private void ReadList(ValueHandle value)
         {
-            if (_listValue == null)
+            if (_listValue is null)
             {
                 _listValue = new ValueHandle(this);
             }
@@ -1322,7 +1322,7 @@ namespace System.Xml
 
         public int[] GetRows()
         {
-            if (_buffer == null)
+            if (_buffer is null)
             {
                 return new int[1] { 0 };
             }

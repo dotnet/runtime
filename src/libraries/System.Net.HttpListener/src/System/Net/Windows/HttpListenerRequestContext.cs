@@ -13,7 +13,7 @@ namespace System.Net
 
         internal HttpListenerRequestContext(HttpListenerRequest request)
         {
-            Debug.Assert(request != null, "HttpListenerRequestContext..ctor(): Not expecting a null request!");
+            Debug.Assert(request is not null, "HttpListenerRequestContext..ctor(): Not expecting a null request!");
             _request = request;
         }
 

@@ -24,7 +24,7 @@ namespace System.Configuration
         /// </summary>
         public SettingsProviderAttribute(Type providerType)
         {
-            if (providerType != null)
+            if (providerType is not null)
             {
                 _providerTypeName = providerType.AssemblyQualifiedName;
             }

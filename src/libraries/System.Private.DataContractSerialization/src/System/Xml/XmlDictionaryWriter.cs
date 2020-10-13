@@ -70,12 +70,12 @@ namespace System.Xml
 
         public static XmlDictionaryWriter CreateDictionaryWriter(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(writer));
 
             XmlDictionaryWriter? dictionaryWriter = writer as XmlDictionaryWriter;
 
-            if (dictionaryWriter == null)
+            if (dictionaryWriter is null)
             {
                 dictionaryWriter = new XmlWrappedWriter(writer);
             }
@@ -116,11 +116,11 @@ namespace System.Xml
 
         public virtual void WriteXmlnsAttribute(string? prefix, string namespaceUri)
         {
-            if (namespaceUri == null)
+            if (namespaceUri is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
-            if (prefix == null)
+            if (prefix is null)
             {
-                if (LookupPrefix(namespaceUri) != null)
+                if (LookupPrefix(namespaceUri) is not null)
                     return;
 #pragma warning suppress 56506 // Microsoft, namespaceUri is already checked
                 prefix = namespaceUri.Length == 0 ? string.Empty : string.Concat("d", namespaceUri.Length.ToString(System.Globalization.NumberFormatInfo.InvariantInfo));
@@ -169,9 +169,9 @@ namespace System.Xml
 
         public virtual void WriteQualifiedName(XmlDictionaryString localName, XmlDictionaryString? namespaceUri)
         {
-            if (localName == null)
+            if (localName is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(localName)));
-            if (namespaceUri == null)
+            if (namespaceUri is null)
                 namespaceUri = XmlDictionaryString.Empty;
 #pragma warning suppress 56506 // Microsoft, XmlDictionaryString.Empty is never null
             WriteQualifiedName(localName.Value, namespaceUri.Value);
@@ -185,7 +185,7 @@ namespace System.Xml
 
         public virtual void WriteValue(UniqueId value)
         {
-            if (value == null)
+            if (value is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
 
             WriteString(value.ToString());
@@ -203,11 +203,11 @@ namespace System.Xml
 
         public virtual void WriteValue(IStreamProvider value)
         {
-            if (value == null)
+            if (value is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
 
             Stream stream = value.GetStream();
-            if (stream == null)
+            if (stream is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(SR.XmlInvalidStream));
             int blockSize = 256;
             int bytesRead = 0;
@@ -389,7 +389,7 @@ namespace System.Xml
         public override void WriteNode(XmlReader reader, bool defattr)
         {
             XmlDictionaryReader? dictionaryReader = reader as XmlDictionaryReader;
-            if (dictionaryReader != null)
+            if (dictionaryReader is not null)
                 WriteNode(dictionaryReader, defattr);
             else
                 base.WriteNode(reader, defattr);
@@ -397,7 +397,7 @@ namespace System.Xml
 
         public virtual void WriteNode(XmlDictionaryReader reader, bool defattr)
         {
-            if (reader == null)
+            if (reader is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(reader)));
             int d = (reader.NodeType == XmlNodeType.None ? -1 : reader.Depth);
             do
@@ -450,7 +450,7 @@ namespace System.Xml
 
         private void CheckArray(Array array, int offset, int count)
         {
-            if (array == null)
+            if (array is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(array)));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
@@ -853,11 +853,11 @@ namespace System.Xml
 
             public override void WriteXmlnsAttribute(string? prefix, string namespaceUri)
             {
-                if (namespaceUri == null)
+                if (namespaceUri is null)
                     throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(namespaceUri));
-                if (prefix == null)
+                if (prefix is null)
                 {
-                    if (LookupPrefix(namespaceUri) != null)
+                    if (LookupPrefix(namespaceUri) is not null)
                         return;
 
                     if (namespaceUri.Length == 0)

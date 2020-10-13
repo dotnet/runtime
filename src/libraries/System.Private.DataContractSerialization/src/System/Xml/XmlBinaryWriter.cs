@@ -350,14 +350,14 @@ namespace System.Xml
                 return true;
             }
             XmlDictionaryString? t;
-            if (_dictionary != null && _dictionary.TryLookup(s, out t))
+            if (_dictionary is not null && _dictionary.TryLookup(s, out t))
             {
                 DiagnosticUtility.DebugAssert(t.Dictionary == _dictionary, "");
                 key = t.Key * 2;
                 return true;
             }
 
-            if (_session == null)
+            if (_session is null)
                 return false;
             int sessionKey;
             if (!_session.TryLookup(s, out sessionKey))
@@ -981,7 +981,7 @@ namespace System.Xml
 
             public void WriteText(string s)
             {
-                if (_captureStream != null)
+                if (_captureStream is not null)
                 {
                     ArraySegment<byte> arraySegment;
                     bool result = _captureStream.TryGetBuffer(out arraySegment);
@@ -990,13 +990,13 @@ namespace System.Xml
                     _captureStream = null;
                 }
 
-                if (_captureXText != null)
+                if (_captureXText is not null)
                 {
                     _captureText = _captureXText.Value;
                     _captureXText = null;
                 }
 
-                if (_captureText == null || _captureText.Length == 0)
+                if (_captureText is null || _captureText.Length == 0)
                 {
                     _captureText = s;
                 }
@@ -1008,7 +1008,7 @@ namespace System.Xml
 
             public void WriteText(XmlDictionaryString s)
             {
-                if (_captureText != null || _captureStream != null)
+                if (_captureText is not null || _captureStream is not null)
                 {
                     WriteText(s.Value);
                 }
@@ -1020,7 +1020,7 @@ namespace System.Xml
 
             public void WriteBase64Text(byte[]? trailBytes, int trailByteCount, byte[] buffer, int offset, int count)
             {
-                if (_captureText != null || _captureXText != null)
+                if (_captureText is not null || _captureXText is not null)
                 {
                     if (trailByteCount > 0)
                     {
@@ -1030,7 +1030,7 @@ namespace System.Xml
                 }
                 else
                 {
-                    if (_captureStream == null)
+                    if (_captureStream is null)
                         _captureStream = new MemoryStream();
 
                     if (trailByteCount > 0)
@@ -1042,17 +1042,17 @@ namespace System.Xml
 
             public void WriteTo(XmlBinaryNodeWriter writer)
             {
-                if (_captureText != null)
+                if (_captureText is not null)
                 {
                     writer.WriteText(_captureText);
                     _captureText = null;
                 }
-                else if (_captureXText != null)
+                else if (_captureXText is not null)
                 {
                     writer.WriteText(_captureXText);
                     _captureXText = null;
                 }
-                else if (_captureStream != null)
+                else if (_captureStream is not null)
                 {
                     ArraySegment<byte> arraySegment;
                     bool result = _captureStream.TryGetBuffer(out arraySegment);
@@ -1077,9 +1077,9 @@ namespace System.Xml
 
         public void SetOutput(Stream stream, IXmlDictionary? dictionary, XmlBinaryWriterSession? session, bool ownsStream)
         {
-            if (stream == null)
+            if (stream is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(stream)));
-            if (_writer == null)
+            if (_writer is null)
                 _writer = new XmlBinaryNodeWriter();
             _writer.SetOutput(stream, dictionary, session, ownsStream);
             SetOutput(_writer);
@@ -1104,7 +1104,7 @@ namespace System.Xml
                 {
                     if (reader.CanReadValueChunk)
                     {
-                        if (_chars == null)
+                        if (_chars is null)
                         {
                             _chars = new char[256];
                         }
@@ -1129,7 +1129,7 @@ namespace System.Xml
                 if (reader.CanReadBinaryContent)
                 {
                     // Its best to read in buffers that are a multiple of 3 so we don't break base64 boundaries when converting text
-                    if (_bytes == null)
+                    if (_bytes is null)
                     {
                         _bytes = new byte[384];
                     }
@@ -1211,7 +1211,7 @@ namespace System.Xml
 
         private void CheckArray(Array array, int offset, int count)
         {
-            if (array == null)
+            if (array is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(array)));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));

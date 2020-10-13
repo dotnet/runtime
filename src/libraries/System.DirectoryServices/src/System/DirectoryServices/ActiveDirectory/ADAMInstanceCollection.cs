@@ -11,7 +11,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal AdamInstanceCollection(ArrayList values)
         {
-            if (values != null)
+            if (values is not null)
             {
                 InnerList.AddRange(values);
             }
@@ -21,7 +21,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(AdamInstance adamInstance)
         {
-            if (adamInstance == null)
+            if (adamInstance is null)
             {
                 throw new ArgumentNullException(nameof(adamInstance));
             }
@@ -39,7 +39,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(AdamInstance adamInstance)
         {
-            if (adamInstance == null)
+            if (adamInstance is null)
             {
                 throw new ArgumentNullException(nameof(adamInstance));
             }

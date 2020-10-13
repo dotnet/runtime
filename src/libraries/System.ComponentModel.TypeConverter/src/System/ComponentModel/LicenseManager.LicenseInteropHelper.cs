@@ -32,7 +32,7 @@ namespace System.ComponentModel
             public static CLRLicenseContext CreateRuntimeContext(Type type, string key)
             {
                 var cxt = new CLRLicenseContext(type, LicenseUsageMode.Runtime);
-                if (key != null)
+                if (key is not null)
                 {
                     cxt.SetSavedLicenseKey(type, key);
                 }
@@ -90,7 +90,7 @@ namespace System.ComponentModel
                 out License license,
                 out string licenseKey)
             {
-                if (context == null)
+                if (context is null)
                 {
                     context = LicenseManager.CurrentContext;
                 }

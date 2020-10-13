@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
         public RSAPKCS1SignatureDeformatter() { }
         public RSAPKCS1SignatureDeformatter(AsymmetricAlgorithm key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             _rsaKey = (RSA)key;
@@ -23,7 +23,7 @@ namespace System.Security.Cryptography
 
         public override void SetKey(AsymmetricAlgorithm key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             _rsaKey = (RSA)key;
@@ -32,7 +32,7 @@ namespace System.Security.Cryptography
         public override void SetHashAlgorithm(string strName)
         {
             // Verify the name
-            if (CryptoConfig.MapNameToOID(strName) != null)
+            if (CryptoConfig.MapNameToOID(strName) is not null)
             {
                 // Uppercase known names as required for BCrypt
                 _algName = HashAlgorithmNames.ToUpper(strName);
@@ -46,13 +46,13 @@ namespace System.Security.Cryptography
 
         public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
         {
-            if (rgbHash == null)
+            if (rgbHash is null)
                 throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
+            if (rgbSignature is null)
                 throw new ArgumentNullException(nameof(rgbSignature));
-            if (_algName == null)
+            if (_algName is null)
                 throw new CryptographicUnexpectedOperationException(SR.Cryptography_MissingOID);
-            if (_rsaKey == null)
+            if (_rsaKey is null)
                 throw new CryptographicUnexpectedOperationException(SR.Cryptography_MissingKey);
 
             return _rsaKey.VerifyHash(rgbHash, rgbSignature, new HashAlgorithmName(_algName), RSASignaturePadding.Pkcs1);

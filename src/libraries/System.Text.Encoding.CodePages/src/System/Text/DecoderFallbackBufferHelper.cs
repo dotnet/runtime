@@ -22,7 +22,7 @@ namespace System.Text
 
         internal unsafe void InternalReset()
         {
-            Debug.Assert(_fallbackBuffer != null);
+            Debug.Assert(_fallbackBuffer is not null);
             byteStart = null;
             _fallbackBuffer!.Reset();
         }
@@ -43,8 +43,8 @@ namespace System.Text
         // Don't touch ref chars unless we succeed
         internal bool InternalFallback(byte[] bytes, byte* pBytes, ref char* chars)
         {
-            Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
-            Debug.Assert(_fallbackBuffer != null);
+            Debug.Assert(byteStart is not null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
+            Debug.Assert(_fallbackBuffer is not null);
 
             // See if there's a fallback character and we have an output buffer then copy our string.
             if (_fallbackBuffer!.Fallback(bytes, (int)(pBytes - byteStart - bytes.Length)))
@@ -99,8 +99,8 @@ namespace System.Text
         // array, and we might need the index, hence the byte*
         internal unsafe int InternalFallback(byte[] bytes, byte* pBytes)
         {
-            Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
-            Debug.Assert(_fallbackBuffer != null);
+            Debug.Assert(byteStart is not null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
+            Debug.Assert(_fallbackBuffer is not null);
 
             // See if there's a fallback character and we have an output buffer then copy our string.
             if (_fallbackBuffer!.Fallback(bytes, (int)(pBytes - byteStart - bytes.Length)))

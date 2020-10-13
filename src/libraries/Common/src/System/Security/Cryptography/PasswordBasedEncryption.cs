@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes)
         {
             // Leave the ArgumentNullException in the public entrypoints.
-            Debug.Assert(pbeParameters != null);
+            Debug.Assert(pbeParameters is not null);
 
             // Constructor promise.
             Debug.Assert(pbeParameters.IterationCount > 0);
@@ -137,8 +137,8 @@ namespace System.Security.Cryptography
                             algorithmIdentifier.Algorithm));
             }
 
-            Debug.Assert(digestAlgorithmName.Name != null);
-            Debug.Assert(cipher != null);
+            Debug.Assert(digestAlgorithmName.Name is not null);
+            Debug.Assert(cipher is not null);
 
             using (cipher)
             {
@@ -187,7 +187,7 @@ namespace System.Security.Cryptography
 
                     fixed (byte* maybeRentedPtr = &MemoryMarshal.GetReference(buf))
                     {
-                        if (encoding != null)
+                        if (encoding is not null)
                         {
                             int written = encoding.GetBytes(password, buf);
                             Debug.Assert(written == buf.Length);
@@ -209,7 +209,7 @@ namespace System.Security.Cryptography
                         {
                             CryptographicOperations.ZeroMemory(buf);
 
-                            if (rented != null)
+                            if (rented is not null)
                             {
                                 CryptoPool.Return(rented, clearSize: 0);
                             }
@@ -227,7 +227,7 @@ namespace System.Security.Cryptography
             out string encryptionAlgorithmOid,
             out bool isPkcs12)
         {
-            Debug.Assert(pbeParameters != null);
+            Debug.Assert(pbeParameters is not null);
 
             isPkcs12 = false;
 
@@ -468,7 +468,7 @@ namespace System.Security.Cryptography
 
             fixed (byte* maybeRentedPtr = &MemoryMarshal.GetReference(buf))
             {
-                if (encoding != null)
+                if (encoding is not null)
                 {
                     int written = encoding.GetBytes(password, buf);
                     Debug.Assert(written == buf.Length);
@@ -486,7 +486,7 @@ namespace System.Security.Cryptography
                 }
                 finally
                 {
-                    if (rented != null)
+                    if (rented is not null)
                     {
                         CryptoPool.Return(rented, buf.Length);
                     }
@@ -579,7 +579,7 @@ namespace System.Security.Cryptography
                         throw new CryptographicException();
                 }
 
-                if (requestedKeyLength != null && requestedKeyLength != correctKeySize)
+                if (requestedKeyLength is not null && requestedKeyLength != correctKeySize)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
@@ -599,7 +599,7 @@ namespace System.Security.Cryptography
                 // https://tools.ietf.org/html/rfc8018#appendix-B.2.2
 
                 // ... has a 24-octet encryption key ...
-                if (requestedKeyLength != null && requestedKeyLength != 24)
+                if (requestedKeyLength is not null && requestedKeyLength != 24)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
@@ -614,14 +614,14 @@ namespace System.Security.Cryptography
             {
                 // https://tools.ietf.org/html/rfc8018#appendix-B.2.3
 
-                if (encryptionScheme.Parameters == null)
+                if (encryptionScheme.Parameters is null)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
 
                 // RC2 has a variable key size. RFC 8018 does not define a default,
                 // so of PBKDF2 didn't provide it, fail.
-                if (requestedKeyLength == null)
+                if (requestedKeyLength is null)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
@@ -650,7 +650,7 @@ namespace System.Security.Cryptography
                 // https://tools.ietf.org/html/rfc8018#appendix-B.2.1
 
                 // ... has an eight-octet encryption key ...
-                if (requestedKeyLength != null && requestedKeyLength != 8)
+                if (requestedKeyLength is not null && requestedKeyLength != 8)
                 {
                     throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
                 }
@@ -669,7 +669,7 @@ namespace System.Security.Cryptography
             int length,
             ref Span<byte> iv)
         {
-            if (encryptionSchemeParameters == null)
+            if (encryptionSchemeParameters is null)
             {
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
             }
@@ -713,7 +713,7 @@ namespace System.Security.Cryptography
 
             // No OtherSource is defined in RFC 2898 or RFC 8018, so whatever
             // algorithm was requested isn't one we know.
-            if (pbkdf2Params.Salt.OtherSource != null)
+            if (pbkdf2Params.Salt.OtherSource is not null)
             {
                 throw new CryptographicException(
                     SR.Format(
@@ -721,7 +721,7 @@ namespace System.Security.Cryptography
                         pbkdf2Params.Salt.OtherSource.Value.Algorithm));
             }
 
-            if (pbkdf2Params.Salt.Specified == null)
+            if (pbkdf2Params.Salt.Specified is null)
             {
                 Debug.Fail($"No Specified Salt value is present, indicating a new choice was unhandled");
                 throw new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);

@@ -125,10 +125,10 @@ internal static partial class Interop
         internal static RSAParameters ExportRsaParameters(SafeRsaHandle key, bool includePrivateParameters)
         {
             Debug.Assert(
-                key != null && !key.IsInvalid,
+                key is not null && !key.IsInvalid,
                 "Callers should check the key is invalid and throw an exception with a message");
 
-            if (key == null || key.IsInvalid)
+            if (key is null || key.IsInvalid)
             {
                 throw new CryptographicException();
             }

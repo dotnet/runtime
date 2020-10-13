@@ -48,7 +48,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Since this class is only used internally, none of our code should be even calling this
                 // if MoveNext returned false, or before calling MoveNext.
-                Debug.Assert(_endReached == false && _current != null);
+                Debug.Assert(_endReached == false && _current is not null);
 
                 return ADUtils.SearchResultAsPrincipal(_current, _storeCtx, _discriminant);
             }
@@ -61,7 +61,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADEntriesSet", "MoveNext");
 
-            Debug.Assert(_enumerator != null);
+            Debug.Assert(_enumerator is not null);
 
             bool f = _enumerator.MoveNext();
 
@@ -88,7 +88,7 @@ namespace System.DirectoryServices.AccountManagement
             _endReached = false;
             _current = null;
 
-            if (_enumerator != null)
+            if (_enumerator is not null)
                 _enumerator.Reset();
         }
 

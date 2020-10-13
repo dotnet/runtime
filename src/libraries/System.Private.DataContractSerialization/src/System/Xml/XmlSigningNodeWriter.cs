@@ -23,7 +23,7 @@ namespace System.Xml
         public void SetOutput(XmlNodeWriter writer, Stream stream, bool includeComments, string[]? inclusivePrefixes)
         {
             _writer = writer;
-            if (_signingWriter == null)
+            if (_signingWriter is null)
                 _signingWriter = new XmlCanonicalWriter();
             _signingWriter.SetOutput(stream, includeComments, inclusivePrefixes);
             _chars = new byte[XmlConverter.MaxPrimitiveChars];
@@ -82,7 +82,7 @@ namespace System.Xml
 
         public override void WriteStartElement(string? prefix, string localName)
         {
-            Debug.Assert(prefix != null);
+            Debug.Assert(prefix is not null);
             _writer.WriteStartElement(prefix, localName);
             _signingWriter.WriteStartElement(prefix, localName);
         }
@@ -96,7 +96,7 @@ namespace System.Xml
 
         public override void WriteStartElement(string? prefix, XmlDictionaryString localName)
         {
-            Debug.Assert(prefix != null);
+            Debug.Assert(prefix is not null);
             _writer.WriteStartElement(prefix, localName);
             _signingWriter.WriteStartElement(prefix, localName.Value);
         }
@@ -109,14 +109,14 @@ namespace System.Xml
 
         public override void WriteEndElement(string? prefix, string localName)
         {
-            Debug.Assert(prefix != null);
+            Debug.Assert(prefix is not null);
             _writer.WriteEndElement(prefix, localName);
             _signingWriter.WriteEndElement(prefix, localName);
         }
 
         public override void WriteXmlnsAttribute(string? prefix, string ns)
         {
-            Debug.Assert(prefix != null);
+            Debug.Assert(prefix is not null);
             _writer.WriteXmlnsAttribute(prefix, ns);
             _signingWriter.WriteXmlnsAttribute(prefix, ns);
         }
@@ -130,7 +130,7 @@ namespace System.Xml
 
         public override void WriteXmlnsAttribute(string? prefix, XmlDictionaryString ns)
         {
-            Debug.Assert(prefix != null);
+            Debug.Assert(prefix is not null);
             _writer.WriteXmlnsAttribute(prefix, ns);
             _signingWriter.WriteXmlnsAttribute(prefix, ns.Value);
         }
@@ -353,7 +353,7 @@ namespace System.Xml
 
         private void WriteBase64Text(byte[] buffer, int offset, int count)
         {
-            if (_base64Chars == null)
+            if (_base64Chars is null)
                 _base64Chars = new byte[512];
             Base64Encoding encoding = XmlConverter.Base64Encoding;
             while (count >= 3)

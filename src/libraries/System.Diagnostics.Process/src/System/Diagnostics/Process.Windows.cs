@@ -23,7 +23,7 @@ namespace System.Diagnostics
         /// </summary>
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
-            if (processName == null)
+            if (processName is null)
             {
                 processName = string.Empty;
             }
@@ -179,10 +179,10 @@ namespace System.Diagnostics
             finally
             {
                 // If we have a hard timeout, we cannot wait for the streams
-                if (_output != null && milliseconds == Timeout.Infinite)
+                if (_output is not null && milliseconds == Timeout.Infinite)
                     _output.WaitUntilEOF();
 
-                if (_error != null && milliseconds == Timeout.Infinite)
+                if (_error is not null && milliseconds == Timeout.Infinite)
                     _error.WaitUntilEOF();
 
                 handle?.Dispose();
@@ -419,7 +419,7 @@ namespace System.Diagnostics
 
                 if ((long)min > (long)max)
                 {
-                    if (newMin != null)
+                    if (newMin is not null)
                     {
                         throw new ArgumentException(SR.BadMinWorkset);
                     }
@@ -527,7 +527,7 @@ namespace System.Diagnostics
 
                     // set up the environment block parameter
                     string? environmentBlock = null;
-                    if (startInfo._environmentVariables != null)
+                    if (startInfo._environmentVariables is not null)
                     {
                         creationFlags |= Interop.Advapi32.StartupInfoOptions.CREATE_UNICODE_ENVIRONMENT;
                         environmentBlock = GetEnvironmentVariablesBlock(startInfo._environmentVariables!);
@@ -541,7 +541,7 @@ namespace System.Diagnostics
 
                     if (startInfo.UserName.Length != 0)
                     {
-                        if (startInfo.Password != null && startInfo.PasswordInClearText != null)
+                        if (startInfo.Password is not null && startInfo.PasswordInClearText is not null)
                         {
                             throw new ArgumentException(SR.CantSetDuplicatePassword);
                         }
@@ -555,7 +555,7 @@ namespace System.Diagnostics
                         fixed (char* passwordInClearTextPtr = startInfo.PasswordInClearText ?? string.Empty)
                         fixed (char* environmentBlockPtr = environmentBlock)
                         {
-                            IntPtr passwordPtr = (startInfo.Password != null) ?
+                            IntPtr passwordPtr = (startInfo.Password is not null) ?
                                 Marshal.SecureStringToGlobalAllocUnicode(startInfo.Password) : IntPtr.Zero;
 
                             try
@@ -747,7 +747,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (hToken != null)
+                if (hToken is not null)
                 {
                     hToken.Dispose();
                 }
@@ -866,7 +866,7 @@ namespace System.Diagnostics
             }
             finally
             {
-                if (hTmp != null && !hTmp.IsInvalid)
+                if (hTmp is not null && !hTmp.IsInvalid)
                 {
                     hTmp.Dispose();
                 }

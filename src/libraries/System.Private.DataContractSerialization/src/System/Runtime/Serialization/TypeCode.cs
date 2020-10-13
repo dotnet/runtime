@@ -7,7 +7,7 @@ namespace System.Runtime.Serialization
     {
         public static TypeCode GetTypeCode(this Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 return TypeCode.Empty;
             }

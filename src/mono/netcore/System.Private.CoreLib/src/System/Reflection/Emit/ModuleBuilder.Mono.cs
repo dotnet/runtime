@@ -111,9 +111,9 @@ namespace System.Reflection.Emit
             get
             {
                 string fullyQualifiedName = fqname;
-                if (fullyQualifiedName == null)
+                if (fullyQualifiedName is null)
                     return null!; // FIXME: this should not return null
-                if (assemblyb.AssemblyDir != null)
+                if (assemblyb.AssemblyDir is not null)
                 {
                     fullyQualifiedName = Path.Combine(assemblyb.AssemblyDir, fullyQualifiedName);
                     fullyQualifiedName = Path.GetFullPath(fullyQualifiedName);
@@ -130,15 +130,15 @@ namespace System.Reflection.Emit
 
         public void CreateGlobalFunctions()
         {
-            if (global_type_created != null)
+            if (global_type_created is not null)
                 throw new InvalidOperationException("global methods already created");
-            if (global_type != null)
+            if (global_type is not null)
                 global_type_created = global_type.CreateType()!;
         }
 
         public FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
 
             FieldAttributes maskedAttributes = attributes & ~FieldAttributes.ReservedMask;
@@ -157,11 +157,11 @@ namespace System.Reflection.Emit
             Justification = "Reflection.Emit is not subject to trimming")]
         private FieldBuilder DefineDataImpl(string name, int size, FieldAttributes attributes)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException("name cannot be empty", nameof(name));
-            if (global_type_created != null)
+            if (global_type_created is not null)
                 throw new InvalidOperationException("global fields already created");
             if ((size <= 0) || (size >= 0x3f0000))
                 throw new ArgumentException("Data size must be > 0 and < 0x3f0000", null as string);
@@ -170,7 +170,7 @@ namespace System.Reflection.Emit
 
             string typeName = "$ArrayType$" + size;
             Type? datablobtype = GetType(typeName, false, false);
-            if (datablobtype == null)
+            if (datablobtype is null)
             {
                 TypeBuilder tb = DefineType(typeName,
                     TypeAttributes.Public | TypeAttributes.ExplicitLayout | TypeAttributes.Sealed,
@@ -180,7 +180,7 @@ namespace System.Reflection.Emit
             }
             FieldBuilder fb = global_type!.DefineField(name, datablobtype, attributes | FieldAttributes.Static);
 
-            if (global_fields != null)
+            if (global_fields is not null)
             {
                 FieldBuilder[] new_fields = new FieldBuilder[global_fields.Length + 1];
                 Array.Copy(global_fields, new_fields, global_fields.Length);
@@ -196,7 +196,7 @@ namespace System.Reflection.Emit
 
         private void addGlobalMethod(MethodBuilder mb)
         {
-            if (global_methods != null)
+            if (global_methods is not null)
             {
                 MethodBuilder[] new_methods = new MethodBuilder[global_methods.Length + 1];
                 Array.Copy(global_methods, new_methods, global_methods.Length);
@@ -221,11 +221,11 @@ namespace System.Reflection.Emit
 
         public MethodBuilder DefineGlobalMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? requiredReturnTypeCustomModifiers, Type[]? optionalReturnTypeCustomModifiers, Type[]? parameterTypes, Type[][]? requiredParameterTypeCustomModifiers, Type[][]? optionalParameterTypeCustomModifiers)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if ((attributes & MethodAttributes.Static) == 0)
                 throw new ArgumentException("global methods must be static");
-            if (global_type_created != null)
+            if (global_type_created is not null)
                 throw new InvalidOperationException("global methods already created");
             CreateGlobalType();
             MethodBuilder mb = global_type!.DefineMethod(name, attributes, callingConvention, returnType, requiredReturnTypeCustomModifiers, optionalReturnTypeCustomModifiers, parameterTypes, requiredParameterTypeCustomModifiers, optionalParameterTypeCustomModifiers);
@@ -241,11 +241,11 @@ namespace System.Reflection.Emit
 
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if ((attributes & MethodAttributes.Static) == 0)
                 throw new ArgumentException("global methods must be static");
-            if (global_type_created != null)
+            if (global_type_created is not null)
                 throw new InvalidOperationException("global methods already created");
             CreateGlobalType();
             MethodBuilder mb = global_type!.DefinePInvokeMethod(name, dllName, entryName, attributes, callingConvention, returnType, parameterTypes, nativeCallConv, nativeCharSet);
@@ -273,7 +273,7 @@ namespace System.Reflection.Emit
 
         private void AddType(TypeBuilder tb)
         {
-            if (types != null)
+            if (types is not null)
             {
                 if (types.Length == num_types)
                 {
@@ -294,7 +294,7 @@ namespace System.Reflection.Emit
             Justification = "Reflection.Emit is not subject to trimming")]
         private TypeBuilder DefineType(string name, TypeAttributes attr, Type? parent, Type[]? interfaces, PackingSize packingSize, int typesize)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException("fullname");
             ITypeIdentifier ident = TypeIdentifiers.FromInternal(name);
             if (name_cache.ContainsKey(ident))
@@ -402,10 +402,10 @@ namespace System.Reflection.Emit
 
             foreach (ITypeName pname in nested)
             {
-                if (result.subtypes == null)
+                if (result.subtypes is null)
                     return null;
                 result = search_nested_in_array(result.subtypes, result.subtypes.Length, pname);
-                if (result == null)
+                if (result is null)
                     return null;
             }
             return result;
@@ -415,14 +415,14 @@ namespace System.Reflection.Emit
         [ComVisible(true)]
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
-            if (className == null)
+            if (className is null)
                 throw new ArgumentNullException(nameof(className));
             if (className.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(className));
 
             TypeBuilder? result = null;
 
-            if (types == null && throwOnError)
+            if (types is null && throwOnError)
                 throw new TypeLoadException(className);
 
             TypeSpec ts = TypeSpec.Parse(className);
@@ -434,16 +434,16 @@ namespace System.Reflection.Emit
             }
             else
             {
-                if (types != null)
+                if (types is not null)
                     result = search_in_array(types, num_types, ts.Name!);
-                if (!ts.IsNested && result != null)
+                if (!ts.IsNested && result is not null)
                 {
                     result = GetMaybeNested(result, ts.Nested);
                 }
             }
-            if ((result == null) && throwOnError)
+            if ((result is null) && throwOnError)
                 throw new TypeLoadException(className);
-            if (result != null && (ts.HasModifiers || ts.IsByRef))
+            if (result is not null && (ts.HasModifiers || ts.IsByRef))
             {
                 Type mt = result;
                 if (result is TypeBuilder)
@@ -470,10 +470,10 @@ namespace System.Reflection.Emit
                 if (ts.IsByRef)
                     mt = mt.MakeByRefType();
                 result = mt as TypeBuilder;
-                if (result == null)
+                if (result is null)
                     return mt;
             }
-            if (result != null && result.is_created)
+            if (result is not null && result.is_created)
                 return result.CreateType();
             else
                 return result;
@@ -481,7 +481,7 @@ namespace System.Reflection.Emit
 
         internal int get_next_table_index(object obj, int table, int count)
         {
-            if (table_indexes == null)
+            if (table_indexes is null)
             {
                 table_indexes = new int[64];
                 for (int i = 0; i < 64; ++i)
@@ -497,9 +497,9 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
                 throw new ArgumentNullException(nameof(customBuilder));
-            if (cattrs != null)
+            if (cattrs is not null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
                 cattrs.CopyTo(new_array, 0);
@@ -521,7 +521,7 @@ namespace System.Reflection.Emit
         /*
                 internal ISymbolDocumentWriter? DefineDocument (string url, Guid language, Guid languageVendor, Guid documentType)
                 {
-                    if (symbolWriter != null)
+                    if (symbolWriter is not null)
                         return symbolWriter.DefineDocument (url, language, languageVendor, documentType);
                     else
                         return null;
@@ -530,7 +530,7 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type[] GetTypes()
         {
-            if (types == null)
+            if (types is null)
                 return Type.EmptyTypes;
 
             int n = num_types;
@@ -547,7 +547,7 @@ namespace System.Reflection.Emit
 
         internal int GetMethodToken(MethodInfo method)
         {
-            if (method == null)
+            if (method is null)
                 throw new ArgumentNullException(nameof(method));
 
             return method.MetadataToken;
@@ -561,7 +561,7 @@ namespace System.Reflection.Emit
         [ComVisible(true)]
         internal int GetConstructorToken(ConstructorInfo con)
         {
-            if (con == null)
+            if (con is null)
                 throw new ArgumentNullException(nameof(con));
 
             return con.MetadataToken;
@@ -569,7 +569,7 @@ namespace System.Reflection.Emit
 
         internal int GetFieldToken(FieldInfo field)
         {
-            if (field == null)
+            if (field is null)
                 throw new ArgumentNullException(nameof(field));
 
             return field.MetadataToken;
@@ -583,21 +583,21 @@ namespace System.Reflection.Emit
 
         internal int GetSignatureToken(SignatureHelper sigHelper)
         {
-            if (sigHelper == null)
+            if (sigHelper is null)
                 throw new ArgumentNullException(nameof(sigHelper));
             return GetToken(sigHelper);
         }
 
         internal int GetStringConstant(string str)
         {
-            if (str == null)
+            if (str is null)
                 throw new ArgumentNullException(nameof(str));
             return GetToken(str);
         }
 
         internal int GetTypeToken(Type type)
         {
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
             if (type.IsByRef)
                 throw new ArgumentException("type can't be a byref type", nameof(type));
@@ -653,7 +653,7 @@ namespace System.Reflection.Emit
         {
             int token;
             Dictionary<MemberInfo, int>? dict = create_open_instance ? inst_tokens_open : inst_tokens;
-            if (dict == null)
+            if (dict is null)
             {
                 dict = new Dictionary<MemberInfo, int>(ReferenceEqualityComparer.Instance);
                 if (create_open_instance)
@@ -740,7 +740,7 @@ namespace System.Reflection.Emit
             if (method is ConstructorBuilder || method is MethodBuilder)
                 return GetPseudoToken(method, false);
 
-            if (opt_param_types == null)
+            if (opt_param_types is null)
                 return getToken(this, method, true);
 
             var optParamTypes = new List<Type>(opt_param_types);
@@ -774,7 +774,7 @@ namespace System.Reflection.Emit
 
         internal ITokenGenerator GetTokenGenerator()
         {
-            if (token_gen == null)
+            if (token_gen is null)
                 token_gen = new ModuleBuilderTokenGenerator(this);
             return token_gen;
         }
@@ -819,7 +819,7 @@ namespace System.Reflection.Emit
 
         internal void CreateGlobalType()
         {
-            if (global_type == null)
+            if (global_type is null)
                 global_type = new TypeBuilder(this, 0, 1);
         }
 
@@ -858,9 +858,9 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("Methods might be removed")]
         protected override MethodInfo? GetMethodImpl(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (global_type_created == null)
+            if (global_type_created is null)
                 return null;
-            if (types == null)
+            if (types is null)
                 return global_type_created.GetMethod(name);
             return global_type_created.GetMethod(name, bindingAttr, binder, callConvention, types, modifiers);
         }
@@ -881,11 +881,11 @@ namespace System.Reflection.Emit
         {
             ResolveTokenError error;
             MemberInfo? m = RuntimeModule.ResolveMemberToken(_impl, metadataToken, RuntimeModule.ptrs_from_types(genericTypeArguments), RuntimeModule.ptrs_from_types(genericMethodArguments), out error);
-            if (m != null)
+            if (m is not null)
                 return m;
 
             m = GetRegisteredToken(metadataToken) as MemberInfo;
-            if (m == null)
+            if (m is null)
                 throw RuntimeModule.resolve_token_exception(Name, metadataToken, error, "MemberInfo");
             else
                 return m;
@@ -937,7 +937,7 @@ namespace System.Reflection.Emit
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (cattrs == null || cattrs.Length == 0)
+            if (cattrs is null || cattrs.Length == 0)
                 return Array.Empty<object>();
 
             if (attributeType is TypeBuilder)
@@ -951,7 +951,7 @@ namespace System.Reflection.Emit
                 if (t is TypeBuilder)
                     throw new InvalidOperationException("Can't construct custom attribute for TypeBuilder type");
 
-                if (attributeType == null || attributeType.IsAssignableFrom(t))
+                if (attributeType is null || attributeType.IsAssignableFrom(t))
                     results.Add(cattrs[i].Invoke());
             }
 
@@ -966,7 +966,7 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
-            if (global_type_created == null)
+            if (global_type_created is null)
                 throw new InvalidOperationException("Module-level fields cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
             return global_type_created.GetField(name, bindingAttr);
         }
@@ -974,7 +974,7 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
-            if (global_type_created == null)
+            if (global_type_created is null)
                 throw new InvalidOperationException("Module-level fields cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
             return global_type_created.GetFields(bindingFlags);
         }
@@ -982,7 +982,7 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("Methods might be removed")]
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
-            if (global_type_created == null)
+            if (global_type_created is null)
                 throw new InvalidOperationException("Module-level methods cannot be retrieved until after the CreateGlobalFunctions method has been called for the module.");
             return global_type_created.GetMethods(bindingFlags);
         }

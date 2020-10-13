@@ -15,7 +15,7 @@ namespace System.Text
         public virtual Encoding? GetEncoding(string name, EncoderFallback encoderFallback, DecoderFallback decoderFallback)
         {
             Encoding? enc = GetEncoding(name);
-            if (enc != null)
+            if (enc is not null)
             {
                 enc = (Encoding)enc.Clone();
                 enc.EncoderFallback = encoderFallback;
@@ -28,7 +28,7 @@ namespace System.Text
         public virtual Encoding? GetEncoding(int codepage, EncoderFallback encoderFallback, DecoderFallback decoderFallback)
         {
             Encoding? enc = GetEncoding(codepage);
-            if (enc != null)
+            if (enc is not null)
             {
                 enc = (Encoding)enc.Clone();
                 enc.EncoderFallback = encoderFallback;
@@ -42,12 +42,12 @@ namespace System.Text
 
         internal static void AddProvider(EncodingProvider provider)
         {
-            if (provider == null)
+            if (provider is null)
                 throw new ArgumentNullException(nameof(provider));
 
             lock (s_InternalSyncObject)
             {
-                if (s_providers == null)
+                if (s_providers is null)
                 {
                     s_providers = new EncodingProvider[1] { provider };
                     return;
@@ -68,13 +68,13 @@ namespace System.Text
         internal static Encoding? GetEncodingFromProvider(int codepage)
         {
             EncodingProvider[]? providers = s_providers;
-            if (providers == null)
+            if (providers is null)
                 return null;
 
             foreach (EncodingProvider provider in providers)
             {
                 Encoding? enc = provider.GetEncoding(codepage);
-                if (enc != null)
+                if (enc is not null)
                     return enc;
             }
 
@@ -84,7 +84,7 @@ namespace System.Text
         internal static Dictionary<int, EncodingInfo>? GetEncodingListFromProviders()
         {
             EncodingProvider[]? providers = s_providers;
-            if (providers == null)
+            if (providers is null)
                 return null;
 
             Dictionary<int, EncodingInfo> result = new Dictionary<int, EncodingInfo>();
@@ -92,7 +92,7 @@ namespace System.Text
             foreach (EncodingProvider provider in providers)
             {
                 IEnumerable<EncodingInfo>? encodingInfoList = provider.GetEncodings();
-                if (encodingInfoList != null)
+                if (encodingInfoList is not null)
                 {
                     foreach (EncodingInfo ei in encodingInfoList)
                     {
@@ -106,14 +106,14 @@ namespace System.Text
 
         internal static Encoding? GetEncodingFromProvider(string encodingName)
         {
-            if (s_providers == null)
+            if (s_providers is null)
                 return null;
 
             EncodingProvider[] providers = s_providers;
             foreach (EncodingProvider provider in providers)
             {
                 Encoding? enc = provider.GetEncoding(encodingName);
-                if (enc != null)
+                if (enc is not null)
                     return enc;
             }
 
@@ -122,14 +122,14 @@ namespace System.Text
 
         internal static Encoding? GetEncodingFromProvider(int codepage, EncoderFallback enc, DecoderFallback dec)
         {
-            if (s_providers == null)
+            if (s_providers is null)
                 return null;
 
             EncodingProvider[] providers = s_providers;
             foreach (EncodingProvider provider in providers)
             {
                 Encoding? encoding = provider.GetEncoding(codepage, enc, dec);
-                if (encoding != null)
+                if (encoding is not null)
                     return encoding;
             }
 
@@ -138,14 +138,14 @@ namespace System.Text
 
         internal static Encoding? GetEncodingFromProvider(string encodingName, EncoderFallback enc, DecoderFallback dec)
         {
-            if (s_providers == null)
+            if (s_providers is null)
                 return null;
 
             EncodingProvider[] providers = s_providers;
             foreach (EncodingProvider provider in providers)
             {
                 Encoding? encoding = provider.GetEncoding(encodingName, enc, dec);
-                if (encoding != null)
+                if (encoding is not null)
                     return encoding;
             }
 

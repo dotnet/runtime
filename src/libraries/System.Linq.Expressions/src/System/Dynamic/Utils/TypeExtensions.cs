@@ -17,7 +17,7 @@ namespace System.Dynamic.Utils
         /// </summary>
         public static MethodInfo? GetAnyStaticMethodValidated(this Type type, string name, Type[] types)
         {
-            Debug.Assert(types != null);
+            Debug.Assert(types is not null);
             MethodInfo? method = type.GetMethod(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly, null, types, null);
             return method.MatchesArgumentTypes(types) ? method : null;
         }
@@ -33,9 +33,9 @@ namespace System.Dynamic.Utils
         /// </summary>
         private static bool MatchesArgumentTypes(this MethodInfo? mi, Type[] argTypes)
         {
-            Debug.Assert(argTypes != null);
+            Debug.Assert(argTypes is not null);
 
-            if (mi == null)
+            if (mi is null)
             {
                 return false;
             }

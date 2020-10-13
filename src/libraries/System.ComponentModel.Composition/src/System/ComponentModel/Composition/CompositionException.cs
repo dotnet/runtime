@@ -92,7 +92,7 @@ namespace System.ComponentModel.Composition
                     : base(message, innerException)
         {
             Requires.NullOrNotNullElements(errors, nameof(errors));
-            _errors = new ReadOnlyCollection<CompositionError>(errors == null ? Array.Empty<CompositionError>() : errors.ToArray<CompositionError>());
+            _errors = new ReadOnlyCollection<CompositionError>(errors is null ? Array.Empty<CompositionError>() : errors.ToArray<CompositionError>());
         }
 
         /// <summary>
@@ -140,7 +140,7 @@ namespace System.ComponentModel.Composition
                 // In here return a collection of all of the exceptions in the Errors collection
                 foreach (var error in Errors)
                 {
-                    if (error.Exception != null)
+                    if (error.Exception is not null)
                     {
                         if (error.Exception is CompositionException ce)
                         {
@@ -237,7 +237,7 @@ namespace System.ComponentModel.Composition
         {
             writer.AppendLine(error.Description);
 
-            if (error.Element != null)
+            if (error.Element is not null)
             {
                 WriteElementGraph(writer, error.Element);
             }
@@ -282,7 +282,7 @@ namespace System.ComponentModel.Composition
                 VisitError(error, context);
             }
 
-            if (exception.InnerException != null)
+            if (exception.InnerException is not null)
             {
                 VisitException(exception.InnerException, context);
             }
@@ -292,7 +292,7 @@ namespace System.ComponentModel.Composition
         {
             context.Path.Push(error);
 
-            if (error.Exception == null)
+            if (error.Exception is null)
             {   // This error is a root cause, so write
                 // out the stack from this point
 

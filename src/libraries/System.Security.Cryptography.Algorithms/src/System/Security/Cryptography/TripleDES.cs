@@ -45,7 +45,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 if (!(value.Length * 8).IsLegalSize(s_legalKeySizes))
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
 
         public static bool IsWeakKey(byte[] rgbKey)
         {
-            if (rgbKey == null)
+            if (rgbKey is null)
                 throw new CryptographicException(SR.Cryptography_InvalidKeySize);  // .NET Framework compat: Strange exception for a null value, but this is what we threw in classic CLR.
 
             if (!(rgbKey.Length * 8).IsLegalSize(s_legalKeySizes))

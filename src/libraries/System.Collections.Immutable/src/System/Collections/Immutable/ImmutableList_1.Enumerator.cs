@@ -108,7 +108,7 @@ namespace System.Collections.Immutable
                 _count = count == -1 ? root.Count : count;
                 _remainingCount = _count;
                 _reversed = reversed;
-                _enumeratingBuilderVersion = builder != null ? builder.Version : -1;
+                _enumeratingBuilderVersion = builder is not null ? builder.Version : -1;
                 _poolUserId = SecureObjectPool.NewId();
                 _stack = null;
                 if (_count > 0)
@@ -133,7 +133,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     this.ThrowIfDisposed();
-                    if (_current != null)
+                    if (_current is not null)
                     {
                         return _current.Value;
                     }
@@ -154,7 +154,7 @@ namespace System.Collections.Immutable
             {
                 _root = null!;
                 _current = null;
-                if (_stack != null && _stack.TryUse(ref this, out Stack<RefAsValueType<Node>>? stack))
+                if (_stack is not null && _stack.TryUse(ref this, out Stack<RefAsValueType<Node>>? stack))
                 {
                     stack.ClearFastWhenEmpty();
                     s_EnumeratingStacks.TryAdd(this, _stack!);
@@ -172,7 +172,7 @@ namespace System.Collections.Immutable
                 this.ThrowIfDisposed();
                 this.ThrowIfChanged();
 
-                if (_stack != null)
+                if (_stack is not null)
                 {
                     var stack = _stack.Use(ref this);
                     if (_remainingCount > 0 && stack.Count > 0)
@@ -196,9 +196,9 @@ namespace System.Collections.Immutable
             {
                 this.ThrowIfDisposed();
 
-                _enumeratingBuilderVersion = _builder != null ? _builder.Version : -1;
+                _enumeratingBuilderVersion = _builder is not null ? _builder.Version : -1;
                 _remainingCount = _count;
-                if (_stack != null)
+                if (_stack is not null)
                 {
                     this.ResetStack();
                 }
@@ -207,7 +207,7 @@ namespace System.Collections.Immutable
             /// <summary>Resets the stack used for enumeration.</summary>
             private void ResetStack()
             {
-                Debug.Assert(_stack != null);
+                Debug.Assert(_stack is not null);
                 var stack = _stack.Use(ref this);
                 stack.ClearFastWhenEmpty();
 
@@ -254,7 +254,7 @@ namespace System.Collections.Immutable
                 // For enumerators of empty collections, there isn't any natural
                 // way to know when a copy of the struct has been disposed of.
 
-                if (_root == null || (_stack != null && !_stack.IsOwned(ref this)))
+                if (_root is null || (_stack is not null && !_stack.IsOwned(ref this)))
                 {
                     Requires.FailObjectDisposed(this);
                 }
@@ -266,7 +266,7 @@ namespace System.Collections.Immutable
             /// <exception cref="System.InvalidOperationException">Thrown if the collection has changed.</exception>
             private void ThrowIfChanged()
             {
-                if (_builder != null && _builder.Version != _enumeratingBuilderVersion)
+                if (_builder is not null && _builder.Version != _enumeratingBuilderVersion)
                 {
                     throw new InvalidOperationException(SR.CollectionModifiedDuringEnumeration);
                 }
@@ -281,7 +281,7 @@ namespace System.Collections.Immutable
                 Requires.NotNull(node, nameof(node));
                 if (!node.IsEmpty)
                 {
-                    Debug.Assert(_stack != null);
+                    Debug.Assert(_stack is not null);
                     var stack = _stack.Use(ref this);
                     while (!node.IsEmpty)
                     {

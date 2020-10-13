@@ -14,7 +14,7 @@ namespace System.Composition.Diagnostics
     {
         internal static void PartDefinitionResurrected(ComposablePartDefinition definition)
         {
-            if (definition == null)
+            if (definition is null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
@@ -29,12 +29,12 @@ namespace System.Composition.Diagnostics
 
         internal static void PartDefinitionRejected(ComposablePartDefinition definition, ChangeRejectedException exception)
         {
-            if (definition == null)
+            if (definition is null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
 
-            if (exception == null)
+            if (exception is null)
             {
                 throw new ArgumentNullException(nameof(exception));
             }
@@ -51,17 +51,17 @@ namespace System.Composition.Diagnostics
 
         internal static void AssemblyLoadFailed(DirectoryCatalog catalog, string fileName, Exception exception)
         {
-            if (catalog == null)
+            if (catalog is null)
             {
                 throw new ArgumentNullException(nameof(catalog));
             }
 
-            if (exception == null)
+            if (exception is null)
             {
                 throw new ArgumentNullException(nameof(exception));
             }
 
-            if (fileName == null)
+            if (fileName is null)
             {
                 throw new ArgumentNullException(nameof(fileName));
             }
@@ -83,7 +83,7 @@ namespace System.Composition.Diagnostics
 
         internal static void DefinitionMarkedWithPartNotDiscoverableAttribute(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -98,12 +98,12 @@ namespace System.Composition.Diagnostics
 
         internal static void DefinitionMismatchedExportArity(Type type, MemberInfo member)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
 
-            if (member == null)
+            if (member is null)
             {
                 throw new ArgumentNullException(nameof(member));
             }
@@ -118,7 +118,7 @@ namespace System.Composition.Diagnostics
 
         internal static void DefinitionContainsNoExports(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -133,7 +133,7 @@ namespace System.Composition.Diagnostics
 
         internal static void MemberMarkedWithMultipleImportAndImportMany(ReflectionItem item)
         {
-            if (item == null)
+            if (item is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }

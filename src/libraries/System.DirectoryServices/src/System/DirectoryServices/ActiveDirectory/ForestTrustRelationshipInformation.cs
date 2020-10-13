@@ -32,7 +32,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (unmanagedTrust.NetbiosDomainName != (IntPtr)0)
                 tmpNetBIOSName = Marshal.PtrToStringUni(unmanagedTrust.NetbiosDomainName);
 
-            this.target = (tmpDNSName == null ? tmpNetBIOSName : tmpDNSName);
+            this.target = (tmpDNSName is null ? tmpNetBIOSName : tmpDNSName);
             // direction
             if ((unmanagedTrust.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_OUTBOUND) != 0 &&
                 (unmanagedTrust.Flags & (int)DS_DOMAINTRUST_FLAG.DS_DOMAIN_DIRECT_INBOUND) != 0)
@@ -200,12 +200,12 @@ namespace System.DirectoryServices.ActiveDirectory
                         sidList.Add(pSid);
                         record.DomainInfo.DNSNameBuffer = Marshal.StringToHGlobalUni(tmp.DnsName);
                         ptrList.Add(record.DomainInfo.DNSNameBuffer);
-                        record.DomainInfo.DNSNameLength = (short)(tmp.DnsName == null ? 0 : tmp.DnsName.Length * 2);             // sizeof(WCHAR)
-                        record.DomainInfo.DNSNameMaximumLength = (short)(tmp.DnsName == null ? 0 : tmp.DnsName.Length * 2);
+                        record.DomainInfo.DNSNameLength = (short)(tmp.DnsName is null ? 0 : tmp.DnsName.Length * 2);             // sizeof(WCHAR)
+                        record.DomainInfo.DNSNameMaximumLength = (short)(tmp.DnsName is null ? 0 : tmp.DnsName.Length * 2);
                         record.DomainInfo.NetBIOSNameBuffer = Marshal.StringToHGlobalUni(tmp.NetBiosName);
                         ptrList.Add(record.DomainInfo.NetBIOSNameBuffer);
-                        record.DomainInfo.NetBIOSNameLength = (short)(tmp.NetBiosName == null ? 0 : tmp.NetBiosName.Length * 2);
-                        record.DomainInfo.NetBIOSNameMaximumLength = (short)(tmp.NetBiosName == null ? 0 : tmp.NetBiosName.Length * 2);
+                        record.DomainInfo.NetBIOSNameLength = (short)(tmp.NetBiosName is null ? 0 : tmp.NetBiosName.Length * 2);
+                        record.DomainInfo.NetBIOSNameMaximumLength = (short)(tmp.NetBiosName is null ? 0 : tmp.NetBiosName.Length * 2);
                         tmpPtr = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(LSA_FOREST_TRUST_RECORD)));
                         ptrList.Add(tmpPtr);
                         Marshal.StructureToPtr(record, tmpPtr, false);

@@ -55,10 +55,10 @@ namespace System.Configuration
 
         internal string ConfigurationFilePath => UpdateConfigHost.GetNewStreamname(ConfigStreamInfo.StreamName) ?? string.Empty;
 
-        private bool HasRemovedSectionsOrGroups => ((_removedSections != null) && (_removedSections.Count > 0))
-            || ((_removedSectionGroups != null) && (_removedSectionGroups.Count > 0));
+        private bool HasRemovedSectionsOrGroups => ((_removedSections is not null) && (_removedSections.Count > 0))
+            || ((_removedSectionGroups is not null) && (_removedSectionGroups.Count > 0));
 
-        private bool HasRemovedSections => (_removedSections != null) && (_removedSections.Count > 0);
+        private bool HasRemovedSections => (_removedSections is not null) && (_removedSections.Count > 0);
 
         internal bool NamespacePresent
         {
@@ -100,7 +100,7 @@ namespace System.Configuration
             base.Init(configRoot, (BaseConfigurationRecord)parent, configPath, locationSubPath);
 
             if (IsLocationConfig &&
-                ((MgmtParent._locationTags == null) || !MgmtParent._locationTags.Contains(_locationSubPath)))
+                ((MgmtParent._locationTags is null) || !MgmtParent._locationTags.Contains(_locationSubPath)))
             {
                 // By instantiating a "new" LocationSubPath class, we have implicitly
                 // asked for one to be created
@@ -154,7 +154,7 @@ namespace System.Configuration
             // Initialize the ConfigurationSection with XML or just its parent.
             ConfigurationSection parentConfigSection = (ConfigurationSection)parentConfig;
             configSection.Reset(parentConfigSection);
-            if (reader != null) configSection.DeserializeSection(reader);
+            if (reader is not null) configSection.DeserializeSection(reader);
 
             // Clear the modified bit.
             configSection.ResetModified();
@@ -177,7 +177,7 @@ namespace System.Configuration
         private ConstructorInfo EnsureSectionGroupFactory(FactoryRecord factoryRecord)
         {
             ConstructorInfo factory = (ConstructorInfo)factoryRecord.Factory;
-            if (factory == null)
+            if (factory is null)
             {
                 factory = CreateSectionGroupFactory(factoryRecord);
                 factoryRecord.Factory = factory;
@@ -194,7 +194,7 @@ namespace System.Configuration
         protected override object UseParentResult(string configKey, object parentResult, SectionRecord sectionRecord)
         {
             FactoryRecord factoryRecord = FindFactoryRecord(configKey, false);
-            if (factoryRecord == null)
+            if (factoryRecord is null)
             {
                 throw new ConfigurationErrorsException(SR.Format(SR.Config_unrecognized_configuration_section,
                     configKey));
@@ -215,7 +215,7 @@ namespace System.Configuration
         private ConfigurationSection GetConfigSection(string configKey)
         {
             SectionRecord sectionRecord = GetSectionRecord(configKey, false);
-            if ((sectionRecord != null) && sectionRecord.HasResult) return (ConfigurationSection)sectionRecord.Result;
+            if ((sectionRecord is not null) && sectionRecord.HasResult) return (ConfigurationSection)sectionRecord.Result;
             return null;
         }
 
@@ -223,7 +223,7 @@ namespace System.Configuration
         internal ConfigurationSectionGroup LookupSectionGroup(string configKey)
         {
             ConfigurationSectionGroup configSectionGroup = null;
-            if (_sectionGroups != null) configSectionGroup = (ConfigurationSectionGroup)_sectionGroups[configKey];
+            if (_sectionGroups is not null) configSectionGroup = (ConfigurationSectionGroup)_sectionGroups[configKey];
 
             return configSectionGroup;
         }
@@ -235,15 +235,15 @@ namespace System.Configuration
         internal ConfigurationSectionGroup GetSectionGroup(string configKey)
         {
             ConfigurationSectionGroup configSectionGroup = LookupSectionGroup(configKey);
-            if (configSectionGroup != null) return configSectionGroup;
+            if (configSectionGroup is not null) return configSectionGroup;
 
             BaseConfigurationRecord configRecord;
             FactoryRecord factoryRecord = FindFactoryRecord(configKey, false, out configRecord);
-            if (factoryRecord == null) return null;
+            if (factoryRecord is null) return null;
 
             if (!factoryRecord.IsGroup) throw ExceptionUtil.ParameterInvalid("sectionGroupName");
 
-            if (factoryRecord.FactoryTypeName == null)
+            if (factoryRecord.FactoryTypeName is null)
             {
                 // If no type is defined for the section group, return a base ConfigurationSectionGroup.
                 // For example:
@@ -288,7 +288,7 @@ namespace System.Configuration
             ArrayList locations = new ArrayList();
 
             // Now add the other empty location sections we recorded
-            if (_locationTags != null)
+            if (_locationTags is not null)
             {
                 foreach (string subPath in _locationTags.Values)
                     locations.Add(new ConfigurationLocation(config, subPath));
@@ -300,7 +300,7 @@ namespace System.Configuration
         // Record all location tags in the config file, even if they are empty.
         protected override void AddLocation(string locationSubPath)
         {
-            if (_locationTags == null) _locationTags = new Hashtable(StringComparer.OrdinalIgnoreCase);
+            if (_locationTags is null) _locationTags = new Hashtable(StringComparer.OrdinalIgnoreCase);
 
             _locationTags[locationSubPath] = locationSubPath;
         }
@@ -313,7 +313,7 @@ namespace System.Configuration
             MgmtConfigurationRecord configRecord = this;
             do
             {
-                if (configRecord._factoryRecords != null)
+                if (configRecord._factoryRecords is not null)
                 {
                     foreach (FactoryRecord factoryRecord in configRecord._factoryRecords.Values)
                         if (factoryRecord.IsGroup == isGroup)
@@ -348,7 +348,7 @@ namespace System.Configuration
                 {
                     Debug.Assert(IsLocationConfig, "Indirect location inputs exist only in location config record");
                     SectionInput input = sectionRecord.LastIndirectLocationInput;
-                    Debug.Assert(input != null);
+                    Debug.Assert(input is not null);
                     Debug.Assert(input.HasResult, "input.HasResult");
                     result = (ConfigurationSection)input.Result;
                 }
@@ -370,7 +370,7 @@ namespace System.Configuration
                         while (!current.IsRootConfig)
                         {
                             sectionRecord = current.GetSectionRecord(configKey, false);
-                            if ((sectionRecord != null) && sectionRecord.HasResult)
+                            if ((sectionRecord is not null) && sectionRecord.HasResult)
                             {
                                 result = (ConfigurationSection)sectionRecord.Result;
                                 break;
@@ -430,7 +430,7 @@ namespace System.Configuration
         {
             // Get the section record created during Init
             SectionRecord sectionRecord = GetSectionRecord(configKey, false);
-            if ((sectionRecord == null) || !sectionRecord.HasFileInput) return null;
+            if ((sectionRecord is null) || !sectionRecord.HasFileInput) return null;
 
             // The section exists, so find and return its RawXml.
             string[] keys = configKey.Split(s_configPathSeparatorParams);
@@ -507,7 +507,7 @@ namespace System.Configuration
                 current = MgmtParent;
 
                 // Check whether a file section is using the configsource directive.
-                if (current._sectionRecords != null)
+                if (current._sectionRecords is not null)
                 {
                     foreach (SectionRecord sectionRecord in current._sectionRecords.Values)
                         if (sectionRecord.HasFileInput &&
@@ -518,7 +518,7 @@ namespace System.Configuration
             }
 
             // Check whether a location is using the configsource directive.
-            if (current._locationSections == null) return false;
+            if (current._locationSections is null) return false;
 
             foreach (LocationSectionRecord locationSectionRecord in current._locationSections)
                 if (StringUtil.EqualsIgnoreCase(locationSectionRecord.SectionXmlInfo.ConfigSourceStreamName,
@@ -547,21 +547,21 @@ namespace System.Configuration
                 throw new ConfigurationErrorsException(SR.Config_source_requires_file);
 
             string newConfigSourceStreamName = null;
-            if (newConfigSource != null)
+            if (newConfigSource is not null)
             {
                 newConfigSourceStreamName = Host.GetStreamNameForConfigSource(ConfigStreamInfo.StreamName,
                     newConfigSource);
             }
 
             // Add the stream to the updates
-            if (newConfigSourceStreamName != null)
+            if (newConfigSourceStreamName is not null)
             {
                 // Ensure that no parent is using the same config source stream
                 ValidateUniqueChildConfigSource(sectionInformation.ConfigKey, newConfigSourceStreamName, newConfigSource,
                     null);
 
                 StreamInfo streamInfo = (StreamInfo)_streamInfoUpdates[newConfigSourceStreamName];
-                if (streamInfo != null)
+                if (streamInfo is not null)
                 {
                     // Detect if another section in this file is using the same configSource
                     // with has a different section name.
@@ -580,7 +580,7 @@ namespace System.Configuration
             }
 
             // remove old streamname if no longer referenced
-            if ((oldConfigSourceStreamName != null) && !IsStreamUsed(oldConfigSourceStreamName))
+            if ((oldConfigSourceStreamName is not null) && !IsStreamUsed(oldConfigSourceStreamName))
                 _streamInfoUpdates.Remove(oldConfigSourceStreamName);
 
             // update the configSourceStreamName
@@ -660,7 +660,7 @@ namespace System.Configuration
 
             VerifySectionName(name, null, false);
 
-            if (configSection == null) throw new ArgumentNullException(nameof(configSection));
+            if (configSection is null) throw new ArgumentNullException(nameof(configSection));
 
             // Ensure the section is not already part of the configuration hierarchy.
             if (configSection.SectionInformation.Attached)
@@ -670,7 +670,7 @@ namespace System.Configuration
 
             // Ensure the section is not already declared.
             FactoryRecord factoryRecord = FindFactoryRecord(configKey, true);
-            if (factoryRecord != null)
+            if (factoryRecord is not null)
                 throw new ArgumentException(SR.Config_add_configurationsection_already_exists);
 
             // Add the configSource if needed.
@@ -751,7 +751,7 @@ namespace System.Configuration
             if (RemovedSections.Contains(configKey)) return;
 
             // If it's not a registered section, there's nothing to do.
-            if (FindFactoryRecord(configKey, true) == null) return;
+            if (FindFactoryRecord(configKey, true) is null) return;
 
             // Detach from this record
             ConfigurationSection configSection = GetConfigSection(configKey);
@@ -759,24 +759,24 @@ namespace System.Configuration
 
             // Remove from list of all sections if this is the root declaration.
             bool isRootDeclaration = IsRootDeclaration(configKey, false);
-            if ((_sectionFactories != null) && isRootDeclaration) _sectionFactories.Remove(configKey);
+            if ((_sectionFactories is not null) && isRootDeclaration) _sectionFactories.Remove(configKey);
 
             // Remove from collection of factory records.
-            if (!IsLocationConfig && (_factoryRecords != null) && _factoryRecords.Contains(configKey))
+            if (!IsLocationConfig && (_factoryRecords is not null) && _factoryRecords.Contains(configKey))
             {
                 sectionIsUsed = true;
                 _factoryRecords.Remove(configKey);
             }
 
             // Remove from collection of section records.
-            if ((_sectionRecords != null) && _sectionRecords.Contains(configKey))
+            if ((_sectionRecords is not null) && _sectionRecords.Contains(configKey))
             {
                 sectionIsUsed = true;
                 _sectionRecords.Remove(configKey);
             }
 
             // Remove all location section records for this section in this file.
-            if (_locationSections != null)
+            if (_locationSections is not null)
             {
                 int i = 0;
                 while (i < _locationSections.Count)
@@ -822,7 +822,7 @@ namespace System.Configuration
             VerifySectionName(name, null, false);
 
             // Validate configSectionGroup argument.
-            if (configSectionGroup == null) throw ExceptionUtil.ParameterInvalid(nameof(name));
+            if (configSectionGroup is null) throw ExceptionUtil.ParameterInvalid(nameof(name));
 
             // A section group can only belong to one section group collection.
             if (configSectionGroup.Attached)
@@ -831,7 +831,7 @@ namespace System.Configuration
 
             // Do not add if the section group already exists, even if it is of a different type.
             FactoryRecord factoryRecord = FindFactoryRecord(configKey, true);
-            if (factoryRecord != null)
+            if (factoryRecord is not null)
                 throw new ArgumentException(SR.Config_add_configurationsectiongroup_already_exists);
 
             // Add to list of all section groups.
@@ -907,7 +907,7 @@ namespace System.Configuration
             string configKey = CombineConfigKey(group, name);
 
             // If it's not a registered section, there's nothing to do.
-            if (FindFactoryRecord(configKey, true) == null) return;
+            if (FindFactoryRecord(configKey, true) is null) return;
 
             // Remove all descendent sections.
             ArrayList sections = GetDescendentSectionFactories(configKey);
@@ -931,7 +931,7 @@ namespace System.Configuration
 
                 // Remove from list of all section group factories if this is the root declaration.
                 bool isRootDeclaration = IsRootDeclaration(descendent.ConfigKey, false);
-                if ((_sectionGroupFactories != null) && isRootDeclaration)
+                if ((_sectionGroupFactories is not null) && isRootDeclaration)
                     _sectionGroupFactories.Remove(descendent.ConfigKey);
 
                 // Remove from list of factory records.
@@ -957,11 +957,11 @@ namespace System.Configuration
             ConfigDefinitionUpdates definitionUpdates;
             ArrayList configSourceUpdates;
             bool checkedConfigForUpdates = false;
-            bool requireUpdates = filename != null;
+            bool requireUpdates = filename is not null;
             GetConfigDefinitionUpdates(requireUpdates, saveMode, forceUpdateAll, out definitionUpdates,
                 out configSourceUpdates);
 
-            if (filename != null)
+            if (filename is not null)
             {
                 Debug.Assert(filename.Length > 0, "The caller should make sure that filename is not empty");
 
@@ -1007,7 +1007,7 @@ namespace System.Configuration
                 requireUpdates = RecordItselfRequiresUpdates;
             }
 
-            if ((declarationUpdates != null) || (definitionUpdates != null) || requireUpdates)
+            if ((declarationUpdates is not null) || (definitionUpdates is not null) || requireUpdates)
             {
                 // Copy the input stream before opening the output stream.
                 byte[] readBuffer = null;
@@ -1016,7 +1016,7 @@ namespace System.Configuration
                 {
                     using (Stream streamRead = Host.OpenStreamForRead(ConfigStreamInfo.StreamName))
                     {
-                        if (streamRead == null)
+                        if (streamRead is null)
                         {
                             throw new ConfigurationErrorsException(SR.Config_file_has_changed,
                                 ConfigStreamInfo.StreamName, 0);
@@ -1046,7 +1046,7 @@ namespace System.Configuration
                 }
 
                 string changedStreamName = FindChangedConfigurationStream();
-                if (changedStreamName != null)
+                if (changedStreamName is not null)
                     throw new ConfigurationErrorsException(SR.Config_file_has_changed, changedStreamName, 0);
 
                 checkedConfigForUpdates = true;
@@ -1065,7 +1065,7 @@ namespace System.Configuration
                             // Use the default StreamWriter constructor if encoding is null,
                             // otherwise specify the encoding.
                             using (
-                                StreamWriter streamWriter = encoding == null
+                                StreamWriter streamWriter = encoding is null
                                     ? new StreamWriter(streamWrite)
                                     : new StreamWriter(streamWrite, encoding))
                             {
@@ -1106,13 +1106,13 @@ namespace System.Configuration
                 ConfigStreamInfo.StreamVersion = MonitorStream(null, null, ConfigStreamInfo.StreamName);
             }
 
-            if (configSourceUpdates != null)
+            if (configSourceUpdates is not null)
             {
                 // If we haven't checked before, check now
                 if (!checkedConfigForUpdates)
                 {
                     string changedStreamName = FindChangedConfigurationStream();
-                    if (changedStreamName != null)
+                    if (changedStreamName is not null)
                     {
                         throw new ConfigurationErrorsException(SR.Config_file_has_changed,
                             changedStreamName, 0);
@@ -1268,7 +1268,7 @@ namespace System.Configuration
         private string GetUpdatedSectionGroupDeclarationXml(FactoryRecord factoryRecord,
             ConfigurationSectionGroup configSectionGroup)
         {
-            if ((TargetFramework != null) &&
+            if ((TargetFramework is not null) &&
                 !configSectionGroup.ShouldSerializeSectionGroupInTargetVersion(TargetFramework))
                 return null;
 
@@ -1298,7 +1298,7 @@ namespace System.Configuration
             bool hasChanged = HasRemovedSectionsOrGroups;
             SectionUpdates sectionUpdates = new SectionUpdates(string.Empty);
 
-            if (_factoryRecords != null)
+            if (_factoryRecords is not null)
             {
                 foreach (FactoryRecord factoryRecord in _factoryRecords.Values)
                     if (!factoryRecord.IsGroup)
@@ -1312,7 +1312,7 @@ namespace System.Configuration
                         // and has a result.  In another word, only sections that have been accessed.
                         ConfigurationSection configSection = GetConfigSection(factoryRecord.ConfigKey);
 
-                        if (configSection != null)
+                        if (configSection is not null)
                         {
                             // We should skip this section declaration only if all below hold true:
                             // 1. The section should not be declared at this level.  Reasons:
@@ -1323,13 +1323,13 @@ namespace System.Configuration
                             // 4. It's not valid in the current Target Framework version
                             if (!configSection.SectionInformation.IsDeclared
                                 && !MgmtParent.IsRootConfig
-                                && (MgmtParent.FindFactoryRecord(factoryRecord.ConfigKey, false) != null))
+                                && (MgmtParent.FindFactoryRecord(factoryRecord.ConfigKey, false) is not null))
                             {
                                 if (factoryRecord.HasFile) hasChanged = true;
 
                                 continue;
                             }
-                            if ((TargetFramework != null) &&
+                            if ((TargetFramework is not null) &&
                                 !configSection.ShouldSerializeSectionInTargetVersion(TargetFramework))
                                 continue;
 
@@ -1359,14 +1359,14 @@ namespace System.Configuration
                         }
                         else
                         {
-                            if ((configSectionGroup != null) && configSectionGroup.IsDeclarationRequired)
+                            if ((configSectionGroup is not null) && configSectionGroup.IsDeclarationRequired)
                             {
                                 // The section group is declared in this config file
                                 addGroupUpdate = true;
                             }
                             else
                             {
-                                if ((factoryRecord.FactoryTypeName != null) || (configSectionGroup != null))
+                                if ((factoryRecord.FactoryTypeName is not null) || (configSectionGroup is not null))
                                 {
                                     FactoryRecord parentFactoryRecord = null;
                                     if (!MgmtParent.IsRootConfig)
@@ -1377,7 +1377,7 @@ namespace System.Configuration
 
                                     // Add it if declaration is required.  Please note this check is identical to the check
                                     // for _declarationRequired in ConfigurationSectionGroup.AttachToConfigurationRecord.
-                                    addGroupUpdate = parentFactoryRecord?.FactoryTypeName == null;
+                                    addGroupUpdate = parentFactoryRecord?.FactoryTypeName is null;
                                 }
                             }
                         }
@@ -1388,7 +1388,7 @@ namespace System.Configuration
 
                             if (!factoryRecord.HasFile
                                 ||
-                                ((configSectionGroup != null) &&
+                                ((configSectionGroup is not null) &&
                                 (configSectionGroup.Type != factoryRecord.FactoryTypeName)))
                             {
                                 updatedXml = GetUpdatedSectionGroupDeclarationXml(factoryRecord, configSectionGroup);
@@ -1406,11 +1406,11 @@ namespace System.Configuration
                     }
             }
 
-            if (_sectionRecords != null)
+            if (_sectionRecords is not null)
             {
                 foreach (SectionRecord sectionRecord in _sectionRecords.Values)
                 {
-                    if ((GetFactoryRecord(sectionRecord.ConfigKey, false) != null) || !sectionRecord.HasResult)
+                    if ((GetFactoryRecord(sectionRecord.ConfigKey, false) is not null) || !sectionRecord.HasResult)
                     {
                         // Skip because this factory is defined locally ( in
                         // which case we handled above), or it was not used
@@ -1439,16 +1439,16 @@ namespace System.Configuration
                 }
             }
 
-            if (_sectionGroups != null)
+            if (_sectionGroups is not null)
             {
                 foreach (ConfigurationSectionGroup configSectionGroup in _sectionGroups.Values)
                 {
-                    if (GetFactoryRecord(configSectionGroup.SectionGroupName, false) != null) continue;
+                    if (GetFactoryRecord(configSectionGroup.SectionGroupName, false) is not null) continue;
 
                     FactoryRecord factoryRecord = MgmtParent.FindFactoryRecord(configSectionGroup.SectionGroupName,
                         false);
                     if (configSectionGroup.IsDeclared ||
-                        ((factoryRecord != null) && (configSectionGroup.Type != factoryRecord.FactoryTypeName)))
+                        ((factoryRecord is not null) && (configSectionGroup.Type != factoryRecord.FactoryTypeName)))
                     {
                         string updatedXml = GetUpdatedSectionGroupDeclarationXml(factoryRecord, configSectionGroup);
                         if (!string.IsNullOrEmpty(updatedXml))
@@ -1530,7 +1530,7 @@ namespace System.Configuration
             bool hasChanged = HasRemovedSections;
 
             // Loop through all the section records.
-            if (_sectionRecords != null)
+            if (_sectionRecords is not null)
             {
                 InitProtectedConfigurationSection();
                 // Make sure we have the initialized the protected config section, otherwise the foreach loop may blow up
@@ -1563,7 +1563,7 @@ namespace System.Configuration
                     {
                         ConfigurationSection configSection = (ConfigurationSection)sectionRecord.Result;
 
-                        if ((TargetFramework != null) &&
+                        if ((TargetFramework is not null) &&
                             !configSection.ShouldSerializeSectionInTargetVersion(TargetFramework))
                             continue;
 
@@ -1588,7 +1588,7 @@ namespace System.Configuration
 
                             bool sectionAttributesModified = AreSectionAttributesModified(sectionRecord, configSection);
                             bool sectionContentModified = isModified ||
-                                (configSection.SectionInformation.RawXml != null);
+                                (configSection.SectionInformation.RawXml is not null);
 
                             // Get the updated XML if the section has been modified.
                             if (sectionContentModified || sectionAttributesModified)
@@ -1607,7 +1607,7 @@ namespace System.Configuration
                                 }
 
                                 if (isModified ||
-                                    (configSection.SectionInformation.RawXml == null) ||
+                                    (configSection.SectionInformation.RawXml is null) ||
                                     (saveMode == ConfigurationSaveMode.Full))
                                 {
                                     // Note: we won't use RawXml if saveMode == Full because Full means we want to
@@ -1627,7 +1627,7 @@ namespace System.Configuration
                                     // * The section is encrypted.
                                     if (!string.IsNullOrEmpty(configSection.SectionInformation.ConfigSource) ||
                                         !configSection.SectionInformation.LocationAttributesAreDefault ||
-                                        (configSection.SectionInformation.ProtectionProvider != null))
+                                        (configSection.SectionInformation.ProtectionProvider is not null))
                                         updatedXml = WriteEmptyElement(configSection.SectionInformation.Name);
                                 }
 
@@ -1655,7 +1655,7 @@ namespace System.Configuration
                                         hasChanged = true;
 
                                     // Encrypt if required.
-                                    if (configSection.SectionInformation.ProtectionProvider != null)
+                                    if (configSection.SectionInformation.ProtectionProvider is not null)
                                     {
                                         ProtectedConfigurationSection protectedConfig =
                                             GetSection(ReservedSectionProtectedConfiguration) as
@@ -1712,7 +1712,7 @@ namespace System.Configuration
 
                     if (addToConfigSourceUpdates)
                     {
-                        if (configSourceUpdates == null) configSourceUpdates = new ArrayList();
+                        if (configSourceUpdates is null) configSourceUpdates = new ArrayList();
                         configSourceUpdates.Add(definitionUpdate);
                     }
                 }
@@ -1753,7 +1753,7 @@ namespace System.Configuration
         // to reflect changes that were made in the config file.
         private void UpdateRecords()
         {
-            if (_factoryRecords != null)
+            if (_factoryRecords is not null)
             {
                 foreach (FactoryRecord factoryRecord in _factoryRecords.Values)
                 {
@@ -1764,9 +1764,9 @@ namespace System.Configuration
                     factoryRecord.LineNumber = 0;
 
                     ConfigurationSection configSection = GetConfigSection(factoryRecord.ConfigKey);
-                    if (configSection == null) continue;
+                    if (configSection is null) continue;
 
-                    if (configSection.SectionInformation.Type != null)
+                    if (configSection.SectionInformation.Type is not null)
                         factoryRecord.FactoryTypeName = configSection.SectionInformation.Type;
 
                     factoryRecord.AllowLocation = configSection.SectionInformation.AllowLocation;
@@ -1778,7 +1778,7 @@ namespace System.Configuration
                 }
             }
 
-            if (_sectionRecords != null)
+            if (_sectionRecords is not null)
             {
                 string definitionConfigPath = IsLocationConfig ? _parent.ConfigPath : ConfigPath;
                 foreach (SectionRecord sectionRecord in _sectionRecords.Values)
@@ -1850,7 +1850,7 @@ namespace System.Configuration
                         if (addUpdate)
                         {
                             SectionInput fileInput = sectionRecord.FileInput;
-                            if (fileInput == null)
+                            if (fileInput is null)
                             {
                                 SectionXmlInfo sectionXmlInfo = new SectionXmlInfo(
                                     sectionRecord.ConfigKey, definitionConfigPath, _configPath, _locationSubPath,
@@ -1919,7 +1919,7 @@ namespace System.Configuration
             _flags[SuggestLocationRemoval] = false;
 
             // Handle removed location sections
-            if (!IsLocationConfig && (_locationSections != null) && (_removedSections != null) &&
+            if (!IsLocationConfig && (_locationSections is not null) && (_removedSections is not null) &&
                 (_removedSections.Count > 0))
             {
                 int i = 0;
@@ -1958,7 +1958,7 @@ namespace System.Configuration
 
             const int LineIndent = DefaultIndent + 1;
 
-            if (declarationUpdates != null)
+            if (declarationUpdates is not null)
                 WriteNewConfigDeclarations(declarationUpdates, utilWriter, LineIndent, DefaultIndent, false);
 
             WriteNewConfigDefinitions(definitionUpdates, utilWriter, LineIndent, DefaultIndent);
@@ -1990,7 +1990,7 @@ namespace System.Configuration
             XmlUtilWriter utilWriter, int linePosition, int indent, bool skipFirstIndent)
         {
             string[] unretrievedSectionNames = declarationUpdates.GetUnretrievedSectionNames();
-            if (unretrievedSectionNames != null)
+            if (unretrievedSectionNames is not null)
             {
                 foreach (string configKey in unretrievedSectionNames)
                 {
@@ -2008,14 +2008,14 @@ namespace System.Configuration
             }
 
             string[] unretrievedGroupNames = declarationUpdates.GetUnretrievedGroupNames();
-            if (unretrievedGroupNames == null) return;
+            if (unretrievedGroupNames is null) return;
 
             foreach (string group in unretrievedGroupNames)
             {
-                if (TargetFramework != null)
+                if (TargetFramework is not null)
                 {
                     ConfigurationSectionGroup g = GetSectionGroup(group);
-                    if ((g != null) && !g.ShouldSerializeSectionGroupInTargetVersion(TargetFramework))
+                    if ((g is not null) && !g.ShouldSerializeSectionGroupInTargetVersion(TargetFramework))
                     {
                         declarationUpdates.MarkGroupAsRetrieved(group);
                         continue;
@@ -2026,7 +2026,7 @@ namespace System.Configuration
 
                 SectionUpdates declarationUpdatesChild = declarationUpdates.GetSectionUpdatesForGroup(group);
                 DeclarationUpdate groupUpdate = declarationUpdatesChild.GetSectionGroupUpdate();
-                if (groupUpdate == null) utilWriter.Write("<sectionGroup name=\"" + group + "\">");
+                if (groupUpdate is null) utilWriter.Write("<sectionGroup name=\"" + group + "\">");
                 else utilWriter.Write(groupUpdate.UpdatedXml);
                 utilWriter.AppendNewLine();
 
@@ -2040,7 +2040,7 @@ namespace System.Configuration
         private void WriteNewConfigDefinitions(ConfigDefinitionUpdates configDefinitionUpdates, XmlUtilWriter utilWriter,
             int linePosition, int indent)
         {
-            if (configDefinitionUpdates == null)
+            if (configDefinitionUpdates is null)
                 return;
 
             foreach (LocationUpdates locationUpdates in configDefinitionUpdates.LocationUpdatesList)
@@ -2050,7 +2050,7 @@ namespace System.Configuration
                     continue;
 
                 configDefinitionUpdates.FlagLocationWritten();
-                bool writeLocationTag = (_locationSubPath != null) || !locationUpdates.IsDefault;
+                bool writeLocationTag = (_locationSubPath is not null) || !locationUpdates.IsDefault;
                 int recurseLinePosition = linePosition;
 
                 utilWriter.AppendSpacesToLinePosition(linePosition);
@@ -2058,7 +2058,7 @@ namespace System.Configuration
                 if (writeLocationTag)
                 {
                     // write the <location> start tag
-                    if (_locationSubPath == null)
+                    if (_locationSubPath is null)
                     {
                         utilWriter.Write(string.Format(CultureInfo.InvariantCulture, FormatLocationNoPath,
                             locationUpdates.OverrideMode.LocationTagXmlString,
@@ -2112,7 +2112,7 @@ namespace System.Configuration
             bool wroteASection = false;
 
             string[] movedSectionNames = sectionUpdates.GetMovedSectionNames();
-            if (movedSectionNames != null)
+            if (movedSectionNames is not null)
             {
                 wroteASection = true;
                 foreach (string configKey in movedSectionNames)
@@ -2125,14 +2125,14 @@ namespace System.Configuration
             }
 
             string[] newGroupNames = sectionUpdates.GetNewGroupNames();
-            if (newGroupNames != null)
+            if (newGroupNames is not null)
             {
                 foreach (string group in newGroupNames)
                 {
-                    if (TargetFramework != null)
+                    if (TargetFramework is not null)
                     {
                         ConfigurationSectionGroup g = GetSectionGroup(group);
-                        if ((g != null) && !g.ShouldSerializeSectionGroupInTargetVersion(TargetFramework))
+                        if ((g is not null) && !g.ShouldSerializeSectionGroupInTargetVersion(TargetFramework))
                         {
                             sectionUpdates.MarkGroupAsRetrieved(group);
                             continue;
@@ -2242,7 +2242,7 @@ namespace System.Configuration
                             : null;
                     }
 
-                    bool needsChildren = (declarationUpdates != null) || (definitionUpdates != null);
+                    bool needsChildren = (declarationUpdates is not null) || (definitionUpdates is not null);
                     string configurationEndElement = xmlUtil.UpdateStartElement(utilWriter, configurationStartElement,
                         needsChildren, configurationElementLinePosition, indent);
 
@@ -2263,7 +2263,7 @@ namespace System.Configuration
                             bool isEmptyConfigSectionsElement = reader.IsEmptyElement;
 
                             // if no updates, copy the entire <configSections> element
-                            if (declarationUpdates == null) xmlUtil.CopyOuterXmlToNextElement(utilWriter, true);
+                            if (declarationUpdates is null) xmlUtil.CopyOuterXmlToNextElement(utilWriter, true);
                             else
                             {
                                 // copy <configSections>, and open it if it is an empty element
@@ -2291,7 +2291,7 @@ namespace System.Configuration
                                 {
                                     // determine the line position of the end element
                                     int endElementLinePosition = 0;
-                                    if (configSectionsEndElement == null)
+                                    if (configSectionsEndElement is null)
                                         endElementLinePosition = xmlUtil.TrueLinePosition;
 
                                     // indent a new line
@@ -2301,12 +2301,12 @@ namespace System.Configuration
                                         configSectionsElementLinePosition + indent, indent, false);
 
                                     // restore spaces to end element
-                                    if (configSectionsEndElement == null)
+                                    if (configSectionsEndElement is null)
                                         utilWriter.AppendSpacesToLinePosition(endElementLinePosition);
                                 }
 
                                 // Copy the </configSections> element
-                                if (configSectionsEndElement == null) xmlUtil.CopyXmlNode(utilWriter);
+                                if (configSectionsEndElement is null) xmlUtil.CopyXmlNode(utilWriter);
                                 else
                                 {
                                     // note that configSectionsEndElement already contains the proper indenting
@@ -2320,7 +2320,7 @@ namespace System.Configuration
                     }
 
                     // Write new declarations
-                    if (!foundConfigSectionsElement && (declarationUpdates != null))
+                    if (!foundConfigSectionsElement && (declarationUpdates is not null))
                     {
                         bool skipFirstIndent = (reader.Depth > 0) && (reader.NodeType == XmlNodeType.Element);
                         int newConfigSectionsLinePosition;
@@ -2331,7 +2331,7 @@ namespace System.Configuration
                             skipFirstIndent);
                     }
 
-                    if (definitionUpdates != null)
+                    if (definitionUpdates is not null)
                     {
                         // Copy sections recursively. In the file we copy we start out at
                         //     location path="." allowOverride="true" inheritInChildApps="true"
@@ -2343,7 +2343,7 @@ namespace System.Configuration
                             locationPathApplies = true;
                             locationUpdates = definitionUpdates.FindLocationUpdates(
                                 OverrideModeSetting.s_locationDefault, true);
-                            if (locationUpdates != null) sectionUpdates = locationUpdates.SectionUpdates;
+                            if (locationUpdates is not null) sectionUpdates = locationUpdates.SectionUpdates;
                         }
 
                         CopyConfigDefinitionsRecursive(definitionUpdates, xmlUtil, utilWriter, locationPathApplies,
@@ -2356,9 +2356,9 @@ namespace System.Configuration
 
 #if DEBUG
                         Debug.Assert(
-                            (configurationEndElement != null) ||
+                            (configurationEndElement is not null) ||
                             ((reader.NodeType == XmlNodeType.EndElement) && (reader.Name == ConfigurationTag)),
-                            "configurationEndElement != null || (reader.NodeType == XmlNodeType.EndElement && reader.Name == KEYWORD_CONFIGURATION)");
+                            "configurationEndElement is not null || (reader.NodeType == XmlNodeType.EndElement && reader.Name == KEYWORD_CONFIGURATION)");
                         foreach (LocationUpdates l in definitionUpdates.LocationUpdatesList)
                             Debug.Assert(!l.SectionUpdates.HasUnretrievedSections(),
                                 "!l.SectionUpdates.HasUnretrievedSections()");
@@ -2366,7 +2366,7 @@ namespace System.Configuration
                     }
 
 
-                    if (configurationEndElement != null)
+                    if (configurationEndElement is not null)
                     {
                         // If we have to add closing config tag, then do it now
                         // before copying extra whitespace/comments
@@ -2413,7 +2413,7 @@ namespace System.Configuration
             // Write any new section declarations that apply to this group
             string[] movedSectionNames = declarationUpdates?.GetMovedSectionNames();
 
-            if (movedSectionNames != null)
+            if (movedSectionNames is not null)
             {
                 if (!utilWriter.IsLastLineBlank) utilWriter.AppendNewLine();
 
@@ -2462,7 +2462,7 @@ namespace System.Configuration
                     {
                         // it's a group - get the updates for children
                         declarationUpdatesChild = declarationUpdates.GetSectionUpdatesForGroup(name);
-                        if (declarationUpdatesChild != null)
+                        if (declarationUpdatesChild is not null)
                         {
                             // get the group update
                             groupUpdate = declarationUpdatesChild.GetSectionGroupUpdate();
@@ -2483,7 +2483,7 @@ namespace System.Configuration
                         sectionUpdate = declarationUpdates.GetDeclarationUpdate(configKey);
                     }
 
-                    bool writeGroupUpdate = groupUpdate?.UpdatedXml != null;
+                    bool writeGroupUpdate = groupUpdate?.UpdatedXml is not null;
                     if (recurse)
                     {
                         // create a checkpoint that we can revert to if no children are written
@@ -2501,7 +2501,7 @@ namespace System.Configuration
                         }
                         else closingElement = xmlUtil.UpdateStartElement(utilWriter, null, true, linePosition, indent);
 
-                        if (closingElement == null)
+                        if (closingElement is null)
                         {
                             // Only if there is a closing element should
                             // we move to it
@@ -2512,7 +2512,7 @@ namespace System.Configuration
                         bool recurseWroteASection = CopyConfigDeclarationsRecursive(
                             recurseDeclarationUpdates, xmlUtil, utilWriter, recurseGroup, linePosition, indent);
 
-                        if (closingElement != null)
+                        if (closingElement is not null)
                         {
                             utilWriter.AppendSpacesToLinePosition(linePosition);
                             utilWriter.Write(closingElement);
@@ -2541,7 +2541,7 @@ namespace System.Configuration
                     {
                         bool skip;
                         bool skipChildElements = false;
-                        if (sectionUpdate == null)
+                        if (sectionUpdate is null)
                         {
                             skip = true;
                             if (writeGroupUpdate)
@@ -2557,11 +2557,11 @@ namespace System.Configuration
                             }
                             else
                             {
-                                if (groupUpdate != null)
+                                if (groupUpdate is not null)
                                 {
                                     // If groupUpdate exists, that means we've decided in GetConfigDeclarationUpdates
                                     // that the section group should stay in the file.
-                                    Debug.Assert(groupUpdate.UpdatedXml == null, "groupUpdate.UpdatedXml == null");
+                                    Debug.Assert(groupUpdate.UpdatedXml is null, "groupUpdate.UpdatedXml is null");
                                     Debug.Assert(!declarationUpdatesChild.HasUnretrievedSections(),
                                         "If the group has any unretrieved section, we should have chosen the recursive code path above.");
 
@@ -2577,7 +2577,7 @@ namespace System.Configuration
                         else
                         {
                             wroteASection = true;
-                            if (sectionUpdate.UpdatedXml == null) skip = false;
+                            if (sectionUpdate.UpdatedXml is null) skip = false;
                             else
                             {
                                 skip = true;
@@ -2643,14 +2643,14 @@ namespace System.Configuration
             }
 
             // Write any new sections that apply to this group
-            if ((sectionUpdates != null) && addNewSections)
+            if ((sectionUpdates is not null) && addNewSections)
             {
                 // Remove newness, so we won't write again
                 sectionUpdates.IsNew = false;
 
                 Debug.Assert(locationPathApplies, nameof(locationPathApplies));
                 string[] movedSectionNames = sectionUpdates.GetMovedSectionNames();
-                if (movedSectionNames != null)
+                if (movedSectionNames is not null)
                 {
                     if (!utilWriter.IsLastLineBlank) utilWriter.AppendNewLine();
 
@@ -2708,7 +2708,7 @@ namespace System.Configuration
                         {
                             // For location config we will compare config paths instead of location strings
                             // so that we dont end up comparing "1" with "Default Web Site" and ending up with the wrong result
-                            if (locationSubPathAttribute == null) elementLocationPathApplies = false;
+                            if (locationSubPathAttribute is null) elementLocationPathApplies = false;
                             else
                             {
                                 elementLocationPathApplies = StringUtil.EqualsIgnoreCase(ConfigPath,
@@ -2717,37 +2717,37 @@ namespace System.Configuration
                         }
                         else
                         {
-                            Debug.Assert(LocationSubPath == null);
+                            Debug.Assert(LocationSubPath is null);
 
                             // This is the same as doing StringUtil.EqualsIgnoreCase(_locationSubPath, locationSubPathAttribute)
                             // but remember the first one is null. Also remember locationSubPathAttribute is already normalized
-                            elementLocationPathApplies = locationSubPathAttribute == null;
+                            elementLocationPathApplies = locationSubPathAttribute is null;
                         }
 
                         if (elementLocationPathApplies)
                         {
                             // Retrieve overrideMode and InheritInChildApps
                             string allowOverrideAttribute = reader.GetAttribute(LocationAllowOverrideAttribute);
-                            if (allowOverrideAttribute != null)
+                            if (allowOverrideAttribute is not null)
                             {
                                 overrideMode =
                                     OverrideModeSetting.CreateFromXmlReadValue(bool.Parse(allowOverrideAttribute));
                             }
 
                             string overrideModeAttribute = reader.GetAttribute(LocationOverrideModeAttribute);
-                            if (overrideModeAttribute != null)
+                            if (overrideModeAttribute is not null)
                             {
                                 overrideMode =
                                     OverrideModeSetting.CreateFromXmlReadValue(
                                         OverrideModeSetting.ParseOverrideModeXmlValue(overrideModeAttribute, null));
 
-                                Debug.Assert(allowOverrideAttribute == null,
+                                Debug.Assert(allowOverrideAttribute is null,
                                     "allowOverride and overrideMode both detected in a <location> tag");
                             }
 
                             string inheritInChildAppsAttribute =
                                 reader.GetAttribute(LocationInheritInChildApplicationsAttribute);
-                            if (inheritInChildAppsAttribute != null)
+                            if (inheritInChildAppsAttribute is not null)
                                 inheritInChildApps = bool.Parse(inheritInChildAppsAttribute);
 
                             // Flag that we already have one of these locations
@@ -2758,7 +2758,7 @@ namespace System.Configuration
                         {
                             if (elementLocationPathApplies &&
                                 (configDefinitionUpdates.FindLocationUpdates(overrideMode,
-                                    inheritInChildApps) != null))
+                                    inheritInChildApps) is not null))
                             {
                                 // If we are going to make updates here, then
                                 // delete the one that is here (so we can update later)
@@ -2775,18 +2775,18 @@ namespace System.Configuration
                             // recurse if this location applies to us
                             if (elementLocationPathApplies)
                             {
-                                if (configDefinitionUpdates != null)
+                                if (configDefinitionUpdates is not null)
                                 {
                                     recurseLocationUpdates = configDefinitionUpdates.FindLocationUpdates(overrideMode,
                                         inheritInChildApps);
-                                    if (recurseLocationUpdates != null)
+                                    if (recurseLocationUpdates is not null)
                                     {
                                         recurse = true;
                                         recurseSectionUpdates = recurseLocationUpdates.SectionUpdates;
 
                                         // If this is <location path=".">, we don't want to add moved sections
                                         // to it.
-                                        if ((_locationSubPath == null) && recurseLocationUpdates.IsDefault)
+                                        if ((_locationSubPath is null) && recurseLocationUpdates.IsDefault)
                                             recurseAddNewSections = false;
                                     }
                                 }
@@ -2808,7 +2808,7 @@ namespace System.Configuration
                     {
                         string configKey = CombineConfigKey(group, elementName);
                         FactoryRecord factoryRecord = FindFactoryRecord(configKey, false);
-                        if (factoryRecord == null)
+                        if (factoryRecord is null)
                         {
                             // The factory was deleted, so regardless of whether this is a
                             // section or sectionGroup, it can be skipped.
@@ -2825,11 +2825,11 @@ namespace System.Configuration
                                 else
                                 {
                                     // if the location path applies, recurse if there are updates
-                                    if (sectionUpdates != null)
+                                    if (sectionUpdates is not null)
                                     {
                                         SectionUpdates sectionUpdatesChild =
                                             sectionUpdates.GetSectionUpdatesForGroup(elementName);
-                                        if (sectionUpdatesChild != null)
+                                        if (sectionUpdatesChild is not null)
                                         {
                                             recurse = true;
                                             recurseGroup = configKey;
@@ -2840,7 +2840,7 @@ namespace System.Configuration
                                     {
                                         if (!elementLocationPathApplies && !IsLocationConfig)
                                         {
-                                            if ((_removedSectionGroups != null) &&
+                                            if ((_removedSectionGroups is not null) &&
                                                 _removedSectionGroups.Contains(configKey))
                                                 removedSectionOrGroup = true;
                                             else
@@ -2858,12 +2858,12 @@ namespace System.Configuration
                             else
                             {
                                 // it is a section - get the update
-                                if (sectionUpdates != null) update = sectionUpdates.GetDefinitionUpdate(configKey);
+                                if (sectionUpdates is not null) update = sectionUpdates.GetDefinitionUpdate(configKey);
                                 else
                                 {
                                     if (!elementLocationPathApplies && !IsLocationConfig)
                                     {
-                                        if ((_removedSections != null) && _removedSections.Contains(configKey))
+                                        if ((_removedSections is not null) && _removedSections.Contains(configKey))
                                             removedSectionOrGroup = true;
                                     }
                                 }
@@ -2902,7 +2902,7 @@ namespace System.Configuration
                     else
                     {
                         bool skip;
-                        if (update == null)
+                        if (update is null)
                         {
                             // remove the section from the file if we're in the correct location,
                             // or if the section or group should be removed from all locations
@@ -2913,7 +2913,7 @@ namespace System.Configuration
                             // replace the section if the xml for it has been updated
                             // if it is a configSource, don't write it unless the configSource parameters have changed
                             skip = false;
-                            if (update.UpdatedXml != null)
+                            if (update.UpdatedXml is not null)
                             {
                                 ConfigurationSection configSection = (ConfigurationSection)update.SectionRecord.Result;
                                 if (string.IsNullOrEmpty(configSection.SectionInformation.ConfigSource) ||
@@ -2943,7 +2943,7 @@ namespace System.Configuration
             }
 
             // Write new section groups
-            if ((sectionUpdates != null) && addNewSections && sectionUpdates.HasNewSectionGroups())
+            if ((sectionUpdates is not null) && addNewSections && sectionUpdates.HasNewSectionGroups())
             {
                 // Add whitespace to align us with the other elements in this group
                 linePosition = parentLinePosition + indent;
@@ -3002,7 +3002,7 @@ namespace System.Configuration
             byte[] readBuffer = null;
             using (Stream streamRead = Host.OpenStreamForRead(configSourceStreamName))
             {
-                if (streamRead != null)
+                if (streamRead is not null)
                 {
                     readBuffer = new byte[streamRead.Length];
                     int count = streamRead.Read(readBuffer, 0, (int)streamRead.Length);
@@ -3011,7 +3011,7 @@ namespace System.Configuration
             }
 
             // Write the changes to the output stream.
-            bool hasFile = readBuffer != null;
+            bool hasFile = readBuffer is not null;
             object writeContext = null;
             bool streamOpened = false;
 
@@ -3032,7 +3032,7 @@ namespace System.Configuration
                             ref writeContext))
                     {
                         streamOpened = true;
-                        if (update.UpdatedXml == null)
+                        if (update.UpdatedXml is null)
                         {
                             Debug.Assert(hasFile, "hasFile");
                             if (hasFile) streamWrite.Write(readBuffer, 0, readBuffer.Length);

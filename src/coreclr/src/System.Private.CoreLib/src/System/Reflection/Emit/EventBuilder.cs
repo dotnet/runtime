@@ -48,7 +48,7 @@ namespace System.Reflection.Emit
 
         private void SetMethodSemantics(MethodBuilder mdBuilder, MethodSemanticsAttributes semantics)
         {
-            if (mdBuilder == null)
+            if (mdBuilder is null)
             {
                 throw new ArgumentNullException(nameof(mdBuilder));
             }
@@ -86,9 +86,9 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
+            if (con is null)
                 throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
+            if (binaryAttribute is null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
             m_type.ThrowIfCreated();
 
@@ -103,7 +103,7 @@ namespace System.Reflection.Emit
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
             {
                 throw new ArgumentNullException(nameof(customBuilder));
             }

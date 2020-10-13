@@ -44,7 +44,7 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchemaCollection(XmlNameTable nametable)
         {
-            if (nametable == null)
+            if (nametable is null)
             {
                 throw new ArgumentNullException(nameof(nametable));
             }
@@ -98,7 +98,7 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchema? Add(string? ns, string uri)
         {
-            if (uri == null || uri.Length == 0)
+            if (uri is null || uri.Length == 0)
                 throw new ArgumentNullException(nameof(uri));
             XmlTextReader reader = new XmlTextReader(uri, _nameTable);
             reader.XmlResolver = _xmlResolver;
@@ -128,7 +128,7 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchema? Add(string? ns, XmlReader reader, XmlResolver? resolver)
         {
-            if (reader == null)
+            if (reader is null)
                 throw new ArgumentNullException(nameof(reader));
             XmlNameTable readerNameTable = reader.NameTable;
             SchemaInfo schemaInfo = new SchemaInfo();
@@ -164,7 +164,7 @@ namespace System.Xml.Schema
 
         public XmlSchema? Add(XmlSchema schema, XmlResolver? resolver)
         {
-            if (schema == null)
+            if (schema is null)
                 throw new ArgumentNullException(nameof(schema));
 
             SchemaInfo schemaInfo = new SchemaInfo();
@@ -178,7 +178,7 @@ namespace System.Xml.Schema
         /// </summary>
         public void Add(XmlSchemaCollection schema)
         {
-            if (schema == null)
+            if (schema is null)
                 throw new ArgumentNullException(nameof(schema));
             if (this == schema)
                 return;
@@ -198,24 +198,24 @@ namespace System.Xml.Schema
         {
             get
             {
-                XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[(ns != null) ? ns : string.Empty];
-                return (node != null) ? node.Schema : null;
+                XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[(ns is not null) ? ns : string.Empty];
+                return (node is not null) ? node.Schema : null;
             }
         }
 
         public bool Contains(XmlSchema schema)
         {
-            if (schema == null)
+            if (schema is null)
             {
                 throw new ArgumentNullException(nameof(schema));
             }
 
-            return this[schema.TargetNamespace] != null;
+            return this[schema.TargetNamespace] is not null;
         }
 
         public bool Contains(string? ns)
         {
-            return _collection[(ns != null) ? ns : string.Empty] != null;
+            return _collection[(ns is not null) ? ns : string.Empty] is not null;
         }
 
         /// <summary>
@@ -233,7 +233,7 @@ namespace System.Xml.Schema
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
@@ -249,14 +249,14 @@ namespace System.Xml.Schema
 
         public void CopyTo(XmlSchema[] array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
             {
                 XmlSchema? schema = e.Current;
-                if (schema != null)
+                if (schema is not null)
                 {
                     if (index == array.Length)
                     {
@@ -285,8 +285,8 @@ namespace System.Xml.Schema
 
         internal SchemaInfo? GetSchemaInfo(string? ns)
         {
-            XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[(ns != null) ? ns : string.Empty];
-            return (node != null) ? node.SchemaInfo : null;
+            XmlSchemaCollectionNode? node = (XmlSchemaCollectionNode?)_collection[(ns is not null) ? ns : string.Empty];
+            return (node is not null) ? node.SchemaInfo : null;
         }
 
         internal SchemaNames GetSchemaNames(XmlNameTable nt)
@@ -297,7 +297,7 @@ namespace System.Xml.Schema
             }
             else
             {
-                if (_schemaNames == null)
+                if (_schemaNames is null)
                 {
                     _schemaNames = new SchemaNames(_nameTable);
                 }
@@ -313,7 +313,7 @@ namespace System.Xml.Schema
         private XmlSchema? Add(string? ns, SchemaInfo schemaInfo, XmlSchema? schema, bool compile, XmlResolver? resolver)
         {
             int errorCount = 0;
-            if (schema != null)
+            if (schema is not null)
             {
                 if (schema.ErrorCount == 0 && compile)
                 {
@@ -322,15 +322,15 @@ namespace System.Xml.Schema
                         errorCount = 1;
                     }
 
-                    ns = schema.TargetNamespace == null ? string.Empty : schema.TargetNamespace;
+                    ns = schema.TargetNamespace is null ? string.Empty : schema.TargetNamespace;
                 }
                 errorCount += schema.ErrorCount;
             }
             else
             {
                 errorCount += schemaInfo.ErrorCount;
-                //ns = ns == null? string.Empty : NameTable.Add(ns);
-                ns = NameTable.Add(ns!); //Added without checking for ns == null, since XDR cannot have null namespace
+                //ns = ns is null? string.Empty : NameTable.Add(ns);
+                ns = NameTable.Add(ns!); //Added without checking for ns is null, since XDR cannot have null namespace
             }
             if (errorCount == 0)
             {
@@ -347,7 +347,7 @@ namespace System.Xml.Schema
 
         private void AddNonThreadSafe(string ns, XmlSchemaCollectionNode? node)
         {
-            if (_collection[ns] != null)
+            if (_collection[ns] is not null)
                 _collection.Remove(ns);
             _collection.Add(ns, node);
         }
@@ -369,7 +369,7 @@ namespace System.Xml.Schema
 
         private void SendValidationEvent(XmlSchemaException e)
         {
-            if (_validationEventHandler != null)
+            if (_validationEventHandler is not null)
             {
                 _validationEventHandler(this, new ValidationEventArgs(e));
             }
@@ -451,7 +451,7 @@ namespace System.Xml.Schema
             get
             {
                 XmlSchemaCollectionNode? n = (XmlSchemaCollectionNode?)_enumerator.Value;
-                if (n != null)
+                if (n is not null)
                     return n.Schema;
                 else
                     return null;

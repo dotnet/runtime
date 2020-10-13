@@ -47,7 +47,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (s_defaultOidHT != null)
+                if (s_defaultOidHT is not null)
                 {
                     return s_defaultOidHT;
                 }
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (s_defaultNameHT != null)
+                if (s_defaultNameHT is not null)
                 {
                     return s_defaultNameHT;
                 }
@@ -299,11 +299,11 @@ namespace System.Security.Cryptography
 
         public static void AddAlgorithm(Type algorithm, params string[] names)
         {
-            if (algorithm == null)
+            if (algorithm is null)
                 throw new ArgumentNullException(nameof(algorithm));
             if (!algorithm.IsVisible)
                 throw new ArgumentException(SR.Cryptography_AlgorithmTypesMustBeVisible, nameof(algorithm));
-            if (names == null)
+            if (names is null)
                 throw new ArgumentNullException(nameof(names));
 
             string[] algorithmNames = new string[names.Length];
@@ -329,7 +329,7 @@ namespace System.Security.Cryptography
         [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name, params object?[]? args)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             // Check to see if we have an application defined mapping
@@ -338,21 +338,21 @@ namespace System.Security.Cryptography
             // We allow the default table to Types and Strings
             // Types get used for types in .Algorithms assembly.
             // strings get used for delay-loaded stuff in other assemblies such as .Csp.
-            if (retvalType == null && DefaultNameHT.TryGetValue(name, out object? retvalObj))
+            if (retvalType is null && DefaultNameHT.TryGetValue(name, out object? retvalObj))
             {
                 retvalType = retvalObj as Type;
 
-                if (retvalType == null)
+                if (retvalType is null)
                 {
                     if (retvalObj is string retvalString)
                     {
                         retvalType = Type.GetType(retvalString, false, false);
-                        if (retvalType != null && !retvalType.IsVisible)
+                        if (retvalType is not null && !retvalType.IsVisible)
                         {
                             retvalType = null;
                         }
 
-                        if (retvalType != null)
+                        if (retvalType is not null)
                         {
                             // Add entry to the appNameHT, which makes subsequent calls much faster.
                             appNameHT[name] = retvalType;
@@ -367,37 +367,37 @@ namespace System.Security.Cryptography
 
             // Special case asking for "ECDsa" since the default map from .NET Framework uses
             // a Windows-only type.
-            if (retvalType == null &&
-                (args == null || args.Length == 1) &&
+            if (retvalType is null &&
+                (args is null || args.Length == 1) &&
                 name == ECDsaIdentifier)
             {
                 return ECDsa.Create();
             }
 
             // Maybe they gave us a classname.
-            if (retvalType == null)
+            if (retvalType is null)
             {
                 retvalType = Type.GetType(name, false, false);
-                if (retvalType != null && !retvalType.IsVisible)
+                if (retvalType is not null && !retvalType.IsVisible)
                 {
                     retvalType = null;
                 }
             }
 
             // Still null? Then we didn't find it.
-            if (retvalType == null)
+            if (retvalType is null)
             {
                 return null;
             }
 
             // Locate all constructors.
             MethodBase[] cons = retvalType.GetConstructors(ConstructorDefault);
-            if (cons == null)
+            if (cons is null)
             {
                 return null;
             }
 
-            if (args == null)
+            if (args is null)
             {
                 args = Array.Empty<object>();
             }
@@ -430,7 +430,7 @@ namespace System.Security.Cryptography
                 out object? state) as ConstructorInfo;
 
             // Check for ctor we don't like (non-existent, delegate or decorated with declarative linktime demand).
-            if (rci == null || typeof(Delegate).IsAssignableFrom(rci.DeclaringType))
+            if (rci is null || typeof(Delegate).IsAssignableFrom(rci.DeclaringType))
             {
                 return null;
             }
@@ -439,7 +439,7 @@ namespace System.Security.Cryptography
             object retval = rci.Invoke(ConstructorDefault, Type.DefaultBinder, args, null);
 
             // Reset any parameter re-ordering performed by the binder.
-            if (state != null)
+            if (state is not null)
             {
                 Type.DefaultBinder.ReorderArgumentArray(ref args, state);
             }
@@ -455,9 +455,9 @@ namespace System.Security.Cryptography
 
         public static void AddOID(string oid, params string[] names)
         {
-            if (oid == null)
+            if (oid is null)
                 throw new ArgumentNullException(nameof(oid));
-            if (names == null)
+            if (names is null)
                 throw new ArgumentNullException(nameof(names));
 
             string[] oidNames = new string[names.Length];
@@ -482,7 +482,7 @@ namespace System.Security.Cryptography
 
         public static string? MapNameToOID(string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             appOidHT.TryGetValue(name, out string? oidName);
@@ -502,7 +502,7 @@ namespace System.Security.Cryptography
 
         public static byte[] EncodeOID(string str)
         {
-            if (str == null)
+            if (str is null)
                 throw new ArgumentNullException(nameof(str));
 
             string[] oidString = str.Split('.'); // valid ASN.1 separator
@@ -555,7 +555,7 @@ namespace System.Security.Cryptography
             // If destination is null, just return updated index.
             if (unchecked((int)value) < 0x80)
             {
-                if (destination != null)
+                if (destination is not null)
                 {
                     destination[index++] = unchecked((byte)value);
                 }
@@ -566,7 +566,7 @@ namespace System.Security.Cryptography
             }
             else if (value < 0x4000)
             {
-                if (destination != null)
+                if (destination is not null)
                 {
                     destination[index++] = (byte)((value >> 7) | 0x80);
                     destination[index++] = (byte)(value & 0x7f);
@@ -578,7 +578,7 @@ namespace System.Security.Cryptography
             }
             else if (value < 0x200000)
             {
-                if (destination != null)
+                if (destination is not null)
                 {
                     unchecked
                     {
@@ -594,7 +594,7 @@ namespace System.Security.Cryptography
             }
             else if (value < 0x10000000)
             {
-                if (destination != null)
+                if (destination is not null)
                 {
                     unchecked
                     {
@@ -611,7 +611,7 @@ namespace System.Security.Cryptography
             }
             else
             {
-                if (destination != null)
+                if (destination is not null)
                 {
                     unchecked
                     {

@@ -41,7 +41,7 @@ namespace Internal.Cryptography
 
         public override void AppendHashData(ReadOnlySpan<byte> data)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 buffer = new MemoryStream(1000);
             }
@@ -62,7 +62,7 @@ namespace Internal.Cryptography
             Debug.Assert(destination.Length >= hashSizeInBytes);
 
             impl.Initialize();
-            if (buffer != null)
+            if (buffer is not null)
             {
                 impl.HashCore(buffer.GetBuffer(), 0, (int)buffer.Length);
             }

@@ -30,7 +30,7 @@ namespace System.Security.Cryptography.Asn1
             PrivateKeyAlgorithm.Encode(writer);
             writer.WriteOctetString(PrivateKey.Span);
 
-            if (Attributes != null)
+            if (Attributes is not null)
             {
 
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 0));

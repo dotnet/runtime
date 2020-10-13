@@ -128,7 +128,7 @@ namespace System.Security.Cryptography
                 byte[]? secretPrepend,
                 byte[]? secretAppend)
             {
-                if (otherPartyPublicKey == null)
+                if (otherPartyPublicKey is null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
                 if (string.IsNullOrEmpty(hashAlgorithm.Name))
                     throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
@@ -150,7 +150,7 @@ namespace System.Security.Cryptography
                 byte[]? secretPrepend,
                 byte[]? secretAppend)
             {
-                if (otherPartyPublicKey == null)
+                if (otherPartyPublicKey is null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
                 if (string.IsNullOrEmpty(hashAlgorithm.Name))
                     throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
@@ -169,11 +169,11 @@ namespace System.Security.Cryptography
             public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel,
                 byte[] prfSeed)
             {
-                if (otherPartyPublicKey == null)
+                if (otherPartyPublicKey is null)
                     throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (prfLabel == null)
+                if (prfLabel is null)
                     throw new ArgumentNullException(nameof(prfLabel));
-                if (prfSeed == null)
+                if (prfSeed is null)
                     throw new ArgumentNullException(nameof(prfSeed));
 
                 ThrowIfDisposed();
@@ -206,7 +206,7 @@ namespace System.Security.Cryptography
 
                     SafeSecKeyRefHandle? thisPrivate = GetKeys().PrivateKey;
 
-                    if (thisPrivate == null)
+                    if (thisPrivate is null)
                     {
                         throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
@@ -224,15 +224,15 @@ namespace System.Security.Cryptography
                     // Either we wrote to the span or we returned an array, but not both, and not neither.
                     // ("neither" would have thrown)
                     Debug.Assert(
-                        (bytesWritten == 0) != (secret == null),
-                        $"bytesWritten={bytesWritten}, (secret==null)={secret == null}");
+                        (bytesWritten == 0) != (secret is null),
+                        $"bytesWritten={bytesWritten}, (secret==null)={secret is null}");
 
-                    if (hasher == null)
+                    if (hasher is null)
                     {
                         return secret ?? secretSpan.Slice(0, bytesWritten).ToArray();
                     }
 
-                    if (secret == null)
+                    if (secret is null)
                     {
                         hasher.AppendData(secretSpan.Slice(0, bytesWritten));
                     }
@@ -262,7 +262,7 @@ namespace System.Security.Cryptography
 
                 public ECDiffieHellmanSecurityTransformsPublicKey(ECParameters ecParameters)
                 {
-                    Debug.Assert(ecParameters.D == null);
+                    Debug.Assert(ecParameters.D is null);
                     _ecc = new EccSecurityTransforms(nameof(ECDiffieHellmanPublicKey));
                     _ecc.ImportParameters(ecParameters);
                 }

@@ -41,7 +41,7 @@ namespace System.Configuration
 
         private static ConfigurationPropertyCollection EnsureStaticPropertyBag()
         {
-            if (s_properties != null) return s_properties;
+            if (s_properties is not null) return s_properties;
 
             ConfigurationProperty propAppSettings = new ConfigurationProperty(
                 name: null,

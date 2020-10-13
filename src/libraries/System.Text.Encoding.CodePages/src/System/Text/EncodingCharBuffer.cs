@@ -32,7 +32,7 @@ namespace System.Text
             _bytes = byteStart;
             _byteEnd = byteStart + byteCount;
 
-            if (_decoder == null)
+            if (_decoder is null)
                 _fallbackBuffer = enc.DecoderFallback.CreateFallbackBuffer();
             else
                 _fallbackBuffer = _decoder.FallbackBuffer;
@@ -47,7 +47,7 @@ namespace System.Text
 
         internal unsafe bool AddChar(char ch, int numBytes)
         {
-            if (_chars != null)
+            if (_chars is not null)
             {
                 if (_chars >= _charEnd)
                 {
@@ -149,7 +149,7 @@ namespace System.Text
         internal unsafe bool Fallback(byte[] byteBuffer)
         {
             // Do the fallback and add the data.
-            if (_chars != null)
+            if (_chars is not null)
             {
                 char* pTemp = _chars;
                 if (_fallbackBufferHelper.InternalFallback(byteBuffer, _bytes, ref _chars) == false)

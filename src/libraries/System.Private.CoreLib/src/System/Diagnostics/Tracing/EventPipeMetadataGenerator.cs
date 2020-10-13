@@ -53,7 +53,7 @@ namespace System.Diagnostics.Tracing
             for (int i = 0; i < typeInfos.Length; i++)
             {
                 string paramName = string.Empty;
-                if (paramNames != null)
+                if (paramNames is not null)
                 {
                     paramName = paramNames[i];
                 }
@@ -271,7 +271,7 @@ namespace System.Diagnostics.Tracing
 
                 // Get the set of properties to be serialized.
                 PropertyAnalysis[]? properties = invokeTypeInfo.properties;
-                if (properties != null)
+                if (properties is not null)
                 {
                     // Write the count of serializable properties.
                     EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (uint)properties.Length);
@@ -309,8 +309,8 @@ namespace System.Diagnostics.Tracing
 
         private static unsafe bool GenerateMetadataForProperty(PropertyAnalysis property, byte* pMetadataBlob, ref uint offset, uint blobSize)
         {
-            Debug.Assert(property != null);
-            Debug.Assert(pMetadataBlob != null);
+            Debug.Assert(property is not null);
+            Debug.Assert(pMetadataBlob is not null);
 
             // Check if this property is a nested struct.
             if (property.typeInfo is InvokeTypeInfo invokeTypeInfo)
@@ -324,7 +324,7 @@ namespace System.Diagnostics.Tracing
 
                 // Get the set of properties to be serialized.
                 PropertyAnalysis[]? properties = invokeTypeInfo.properties;
-                if (properties != null)
+                if (properties is not null)
                 {
                     // Write the count of serializable properties.
                     EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (uint)properties.Length);
@@ -376,14 +376,14 @@ namespace System.Diagnostics.Tracing
 
         internal unsafe bool GenerateMetadataV2(byte* pMetadataBlob, ref uint offset, uint blobSize)
         {
-            if (TypeInfo == null)
+            if (TypeInfo is null)
                 return false;
             return GenerateMetadataForNamedTypeV2(ParameterName, TypeInfo, pMetadataBlob, ref offset, blobSize);
         }
 
         private static unsafe bool GenerateMetadataForNamedTypeV2(string name, TraceLoggingTypeInfo typeInfo, byte* pMetadataBlob, ref uint offset, uint blobSize)
         {
-            Debug.Assert(pMetadataBlob != null);
+            Debug.Assert(pMetadataBlob is not null);
 
             if (!GetMetadataLengthForNamedTypeV2(name, typeInfo, out uint length))
             {
@@ -403,8 +403,8 @@ namespace System.Diagnostics.Tracing
 
         private static unsafe bool GenerateMetadataForTypeV2(TraceLoggingTypeInfo? typeInfo, byte* pMetadataBlob, ref uint offset, uint blobSize)
         {
-            Debug.Assert(typeInfo != null);
-            Debug.Assert(pMetadataBlob != null);
+            Debug.Assert(typeInfo is not null);
+            Debug.Assert(pMetadataBlob is not null);
 
             // Check if this type is a nested struct.
             if (typeInfo is InvokeTypeInfo invokeTypeInfo)
@@ -417,7 +417,7 @@ namespace System.Diagnostics.Tracing
 
                 // Get the set of properties to be serialized.
                 PropertyAnalysis[]? properties = invokeTypeInfo.properties;
-                if (properties != null)
+                if (properties is not null)
                 {
                     // Write the count of serializable properties.
                     EventPipeMetadataGenerator.WriteToBuffer(pMetadataBlob, blobSize, ref offset, (uint)properties.Length);
@@ -587,7 +587,7 @@ namespace System.Diagnostics.Tracing
 
                 // Get the set of properties to be serialized.
                 PropertyAnalysis[]? properties = typeInfo.properties;
-                if (properties != null)
+                if (properties is not null)
                 {
                     foreach (PropertyAnalysis prop in properties)
                     {
@@ -610,7 +610,7 @@ namespace System.Diagnostics.Tracing
 
         private static uint GetMetadataLengthForProperty(PropertyAnalysis property)
         {
-            Debug.Assert(property != null);
+            Debug.Assert(property is not null);
 
             uint ret = 0;
 
@@ -627,7 +627,7 @@ namespace System.Diagnostics.Tracing
 
                 // Get the set of properties to be serialized.
                 PropertyAnalysis[]? properties = invokeTypeInfo.properties;
-                if (properties != null)
+                if (properties is not null)
                 {
                     foreach (PropertyAnalysis prop in properties)
                     {
@@ -676,7 +676,7 @@ namespace System.Diagnostics.Tracing
         private static bool GetMetadataLengthForTypeV2(TraceLoggingTypeInfo? typeInfo, out uint size)
         {
             size = 0;
-            if (typeInfo == null)
+            if (typeInfo is null)
             {
                 return false;
             }
@@ -692,7 +692,7 @@ namespace System.Diagnostics.Tracing
 
                 // Get the set of properties to be serialized.
                 PropertyAnalysis[]? properties = invokeTypeInfo.properties;
-                if (properties != null)
+                if (properties is not null)
                 {
                     foreach (PropertyAnalysis prop in properties)
                     {

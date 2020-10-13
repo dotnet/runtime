@@ -90,7 +90,7 @@ namespace Internal.Cryptography
         {
             if (disposing)
             {
-                if (_cngKey != null)
+                if (_cngKey is not null)
                 {
                     _cngKey.Dispose();
                     _cngKey = null!;
@@ -102,7 +102,7 @@ namespace Internal.Cryptography
 
         private void Reset()
         {
-            if (IV != null)
+            if (IV is not null)
             {
                 CngProperty prop = new CngProperty(Interop.NCrypt.NCRYPT_INITIALIZATION_VECTOR, IV, CngPropertyOptions.None);
                 _cngKey!.SetProperty(prop);

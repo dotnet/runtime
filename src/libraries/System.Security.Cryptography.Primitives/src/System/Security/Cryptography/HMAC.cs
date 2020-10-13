@@ -28,7 +28,7 @@ namespace System.Security.Cryptography
             get => _hashName;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(HashName));
                 }
@@ -40,7 +40,7 @@ namespace System.Security.Cryptography
                 // We still have to allow setting it the first time as the contract provides no other way to do so.
                 // Since the set is public, ensure that hmac.HashName = hmac.HashName works without throwing.
 
-                if (_hashName != null && value != _hashName)
+                if (_hashName is not null && value != _hashName)
                 {
                     throw new PlatformNotSupportedException(SR.HashNameMultipleSetNotSupported);
                 }

@@ -29,7 +29,7 @@ namespace System.Diagnostics.Tracing
         /// <param name="metricProvider">The delegate to invoke to get the current metric value.</param>
         public PollingCounter(string name, EventSource eventSource, Func<double> metricProvider) : base(name, eventSource)
         {
-            if (metricProvider == null)
+            if (metricProvider is null)
                 throw new ArgumentNullException(nameof(metricProvider));
 
             _metricProvider = metricProvider;

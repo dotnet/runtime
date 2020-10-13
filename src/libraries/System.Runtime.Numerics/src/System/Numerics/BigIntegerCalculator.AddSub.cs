@@ -10,7 +10,7 @@ namespace System.Numerics
     {
         public static uint[] Add(uint[] left, uint right)
         {
-            Debug.Assert(left != null);
+            Debug.Assert(left is not null);
             Debug.Assert(left.Length >= 1);
 
             // Executes the addition for one big and one 32-bit integer.
@@ -36,8 +36,8 @@ namespace System.Numerics
 
         public static unsafe uint[] Add(uint[] left, uint[] right)
         {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
+            Debug.Assert(left is not null);
+            Debug.Assert(right is not null);
             Debug.Assert(left.Length >= right.Length);
 
             // Switching to unsafe pointers helps sparing
@@ -119,7 +119,7 @@ namespace System.Numerics
 
         public static uint[] Subtract(uint[] left, uint right)
         {
-            Debug.Assert(left != null);
+            Debug.Assert(left is not null);
             Debug.Assert(left.Length >= 1);
             Debug.Assert(left[0] >= right || left.Length >= 2);
 
@@ -145,8 +145,8 @@ namespace System.Numerics
 
         public static unsafe uint[] Subtract(uint[] left, uint[] right)
         {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
+            Debug.Assert(left is not null);
+            Debug.Assert(right is not null);
             Debug.Assert(left.Length >= right.Length);
             Debug.Assert(Compare(left, right) >= 0);
 
@@ -232,8 +232,8 @@ namespace System.Numerics
 
         public static int Compare(uint[] left, uint[] right)
         {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
+            Debug.Assert(left is not null);
+            Debug.Assert(right is not null);
 
             if (left.Length < right.Length)
                 return -1;

@@ -14,8 +14,8 @@ namespace System.DirectoryServices.AccountManagement
 
         public SAMStoreKey(string machineName, byte[] sid)
         {
-            Debug.Assert(machineName != null && machineName.Length > 0);
-            Debug.Assert(sid != null && sid.Length > 0);
+            Debug.Assert(machineName is not null && machineName.Length > 0);
+            Debug.Assert(sid is not null && sid.Length > 0);
 
             _machineName = machineName;
 

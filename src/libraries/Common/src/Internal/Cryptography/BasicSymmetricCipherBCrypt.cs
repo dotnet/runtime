@@ -19,11 +19,11 @@ namespace Internal.Cryptography
         public BasicSymmetricCipherBCrypt(SafeAlgorithmHandle algorithm, CipherMode cipherMode, int blockSizeInBytes, int paddingSizeInBytes, byte[] key, bool ownsParentHandle, byte[]? iv, bool encrypting)
             : base(cipherMode.GetCipherIv(iv), blockSizeInBytes, paddingSizeInBytes)
         {
-            Debug.Assert(algorithm != null);
+            Debug.Assert(algorithm is not null);
 
             _encrypting = encrypting;
 
-            if (IV != null)
+            if (IV is not null)
             {
                 _currentIv = new byte[IV.Length];
             }
@@ -44,14 +44,14 @@ namespace Internal.Cryptography
             {
                 SafeKeyHandle hKey = _hKey;
                 _hKey = null!;
-                if (hKey != null)
+                if (hKey is not null)
                 {
                     hKey.Dispose();
                 }
 
                 byte[]? currentIv = _currentIv;
                 _currentIv = null;
-                if (currentIv != null)
+                if (currentIv is not null)
                 {
                     Array.Clear(currentIv, 0, currentIv.Length);
                 }
@@ -105,7 +105,7 @@ namespace Internal.Cryptography
 
         private void Reset()
         {
-            if (IV != null)
+            if (IV is not null)
             {
                 Buffer.BlockCopy(IV, 0, _currentIv!, 0, IV.Length);
             }

@@ -33,7 +33,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Methods might be removed")]
         public MethodInfo? GetMethod(string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any, null, null);
@@ -44,13 +44,13 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Methods might be removed")]
         public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
-            if (types == null)
+            if (types is null)
                 throw new ArgumentNullException(nameof(types));
             for (int i = 0; i < types.Length; i++)
             {
-                if (types[i] == null)
+                if (types[i] is null)
                     throw new ArgumentNullException(nameof(types));
             }
             return GetMethodImpl(name, bindingAttr, binder, callConvention, types, modifiers);
@@ -91,7 +91,7 @@ namespace System.Reflection
             int cnt = 0;
             for (int i = 0; i < c.Length; i++)
             {
-                if (filter != null && !filter(c[i], filterCriteria))
+                if (filter is not null && !filter(c[i], filterCriteria))
                     c[i] = null!;
                 else
                     cnt++;
@@ -103,7 +103,7 @@ namespace System.Reflection
             cnt = 0;
             for (int i = 0; i < c.Length; i++)
             {
-                if (c[i] != null)
+                if (c[i] is not null)
                     ret[cnt++] = c[i];
             }
             return ret;
@@ -144,7 +144,7 @@ namespace System.Reflection
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(Module? left, Module? right)
         {
-            // Test "right" first to allow branch elimination when inlined for null checks (== null)
+            // Test "right" first to allow branch elimination when inlined for null checks (is null)
             // so it can become a simple test
             if (right is null)
             {

@@ -22,7 +22,7 @@ namespace System.Net.Http
                 BytesWritten += buffer.Length;
 
                 HttpConnection connection = GetConnectionOrThrow();
-                Debug.Assert(connection._currentRequest != null);
+                Debug.Assert(connection._currentRequest is not null);
 
                 if (buffer.Length == 0)
                 {
@@ -44,7 +44,7 @@ namespace System.Net.Http
                 BytesWritten += buffer.Length;
 
                 HttpConnection connection = GetConnectionOrThrow();
-                Debug.Assert(connection._currentRequest != null);
+                Debug.Assert(connection._currentRequest is not null);
 
                 // The token is ignored because it's coming from SendAsync and the only operations
                 // here are those that are already covered by the token having been registered with

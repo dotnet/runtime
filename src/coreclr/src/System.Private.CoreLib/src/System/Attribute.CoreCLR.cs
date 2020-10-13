@@ -14,8 +14,8 @@ namespace System
         #region PropertyInfo
         private static Attribute[] InternalGetCustomAttributes(PropertyInfo element, Type type, bool inherit)
         {
-            Debug.Assert(element != null);
-            Debug.Assert(type != null);
+            Debug.Assert(element is not null);
+            Debug.Assert(type is not null);
             Debug.Assert(type.IsSubclassOf(typeof(Attribute)) || type == typeof(Attribute));
 
             // walk up the hierarchy chain
@@ -36,7 +36,7 @@ namespace System
 
 
             PropertyInfo? baseProp = GetParentDefinition(element, indexParamTypes);
-            while (baseProp != null)
+            while (baseProp is not null)
             {
                 attributes = GetCustomAttributes(baseProp, type, false);
                 AddAttributesToList(attributeList, attributes, types);
@@ -65,7 +65,7 @@ namespace System
 
                 PropertyInfo? baseProp = GetParentDefinition(element, indexParamTypes);
 
-                while (baseProp != null)
+                while (baseProp is not null)
                 {
                     if (baseProp.IsDefined(attributeType, false))
                         return true;
@@ -79,7 +79,7 @@ namespace System
 
         private static PropertyInfo? GetParentDefinition(PropertyInfo property, Type[] propertyParameters)
         {
-            Debug.Assert(property != null);
+            Debug.Assert(property is not null);
 
             // for the current property get the base class of the getter and the setter, they might be different
             // note that this only works for RuntimeMethodInfo
@@ -87,11 +87,11 @@ namespace System
 
             RuntimeMethodInfo? rtPropAccessor = propAccessor as RuntimeMethodInfo;
 
-            if (rtPropAccessor != null)
+            if (rtPropAccessor is not null)
             {
                 rtPropAccessor = rtPropAccessor.GetParentDefinition();
 
-                if (rtPropAccessor != null)
+                if (rtPropAccessor is not null)
                 {
                     // There is a public overload of Type.GetProperty that takes both a BingingFlags enum and a return type.
                     // However, we cannot use that because it doesn't accept null for "types".
@@ -113,8 +113,8 @@ namespace System
         #region EventInfo
         private static Attribute[] InternalGetCustomAttributes(EventInfo element, Type type, bool inherit)
         {
-            Debug.Assert(element != null);
-            Debug.Assert(type != null);
+            Debug.Assert(element is not null);
+            Debug.Assert(type is not null);
             Debug.Assert(type.IsSubclassOf(typeof(Attribute)) || type == typeof(Attribute));
 
             // walk up the hierarchy chain
@@ -128,7 +128,7 @@ namespace System
                 CopyToArrayList(attributeList, attributes, types);
 
                 EventInfo? baseEvent = GetParentDefinition(element);
-                while (baseEvent != null)
+                while (baseEvent is not null)
                 {
                     attributes = GetCustomAttributes(baseEvent, type, false);
                     AddAttributesToList(attributeList, attributes, types);
@@ -144,17 +144,17 @@ namespace System
 
         private static EventInfo? GetParentDefinition(EventInfo ev)
         {
-            Debug.Assert(ev != null);
+            Debug.Assert(ev is not null);
 
             // note that this only works for RuntimeMethodInfo
             MethodInfo? add = ev.GetAddMethod(true);
 
             RuntimeMethodInfo? rtAdd = add as RuntimeMethodInfo;
 
-            if (rtAdd != null)
+            if (rtAdd is not null)
             {
                 rtAdd = rtAdd.GetParentDefinition();
-                if (rtAdd != null)
+                if (rtAdd is not null)
                     return rtAdd.DeclaringType!.GetEvent(ev.Name!);
             }
             return null;
@@ -162,7 +162,7 @@ namespace System
 
         private static bool InternalIsDefined(EventInfo element, Type attributeType, bool inherit)
         {
-            Debug.Assert(element != null);
+            Debug.Assert(element is not null);
 
             // walk up the hierarchy chain
             if (element.IsDefined(attributeType, inherit))
@@ -177,7 +177,7 @@ namespace System
 
                 EventInfo? baseEvent = GetParentDefinition(element);
 
-                while (baseEvent != null)
+                while (baseEvent is not null)
                 {
                     if (baseEvent.IsDefined(attributeType, false))
                         return true;
@@ -193,16 +193,16 @@ namespace System
         #region ParameterInfo
         private static ParameterInfo? GetParentDefinition(ParameterInfo param)
         {
-            Debug.Assert(param != null);
+            Debug.Assert(param is not null);
 
             // note that this only works for RuntimeMethodInfo
             RuntimeMethodInfo? rtMethod = param.Member as RuntimeMethodInfo;
 
-            if (rtMethod != null)
+            if (rtMethod is not null)
             {
                 rtMethod = rtMethod.GetParentDefinition();
 
-                if (rtMethod != null)
+                if (rtMethod is not null)
                 {
                     // Find the ParameterInfo on this method
                     int position = param.Position;
@@ -222,7 +222,7 @@ namespace System
 
         private static Attribute[] InternalParamGetCustomAttributes(ParameterInfo param, Type? type, bool inherit)
         {
-            Debug.Assert(param != null);
+            Debug.Assert(param is not null);
 
             // For ParameterInfo's we need to make sure that we chain through all the MethodInfo's in the inheritance chain that
             // have this ParameterInfo defined. .We pick up all the CustomAttributes for the starting ParameterInfo. We need to pick up only attributes
@@ -261,7 +261,7 @@ namespace System
 
             ParameterInfo? baseParam = GetParentDefinition(param);
 
-            while (baseParam != null)
+            while (baseParam is not null)
             {
                 objAttr = baseParam.GetCustomAttributes(type, false);
 
@@ -287,7 +287,7 @@ namespace System
                 count = 0;
                 for (int i = 0; i < objAttr.Length; i++)
                 {
-                    if (objAttr[i] != null)
+                    if (objAttr[i] is not null)
                     {
                         attributes[count] = (Attribute)objAttr[i]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                         count++;
@@ -311,8 +311,8 @@ namespace System
 
         private static bool InternalParamIsDefined(ParameterInfo param, Type type, bool inherit)
         {
-            Debug.Assert(param != null);
-            Debug.Assert(type != null);
+            Debug.Assert(param is not null);
+            Debug.Assert(type is not null);
 
             // For ParameterInfo's we need to make sure that we chain through all the MethodInfo's in the inheritance chain.
             // We pick up all the CustomAttributes for the starting ParameterInfo. We need to pick up only attributes
@@ -328,7 +328,7 @@ namespace System
 
             ParameterInfo? baseParam = GetParentDefinition(param);
 
-            while (baseParam != null)
+            while (baseParam is not null)
             {
                 object[] objAttr = baseParam.GetCustomAttributes(type, false);
 
@@ -387,7 +387,7 @@ namespace System
                 Type attrType = attributes[i].GetType();
                 types.TryGetValue(attrType, out AttributeUsageAttribute? usage);
 
-                if (usage == null)
+                if (usage is null)
                 {
                     // the type has never been seen before if it's inheritable add it to the list
                     usage = InternalGetAttributeUsage(attrType);
@@ -437,10 +437,10 @@ namespace System
 
         public static Attribute[] GetCustomAttributes(MemberInfo element, Type type, bool inherit)
         {
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
             if (!type.IsSubclassOf(typeof(Attribute)) && type != typeof(Attribute))
@@ -461,7 +461,7 @@ namespace System
 
         public static Attribute[] GetCustomAttributes(MemberInfo element, bool inherit)
         {
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
             return element.MemberType switch
@@ -480,10 +480,10 @@ namespace System
         public static bool IsDefined(MemberInfo element, Type attributeType, bool inherit)
         {
             // Returns true if a custom attribute subclass of attributeType class/interface with inheritance walk
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
@@ -506,7 +506,7 @@ namespace System
         {
             Attribute[] attrib = GetCustomAttributes(element, attributeType, inherit);
 
-            if (attrib == null || attrib.Length == 0)
+            if (attrib is null || attrib.Length == 0)
                 return null;
 
             if (attrib.Length == 1)
@@ -530,16 +530,16 @@ namespace System
 
         public static Attribute[] GetCustomAttributes(ParameterInfo element, Type attributeType, bool inherit)
         {
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass);
 
-            if (element.Member == null)
+            if (element.Member is null)
                 throw new ArgumentException(SR.Argument_InvalidParameterInfo, nameof(element));
 
 
@@ -552,10 +552,10 @@ namespace System
 
         public static Attribute[] GetCustomAttributes(ParameterInfo element, bool inherit)
         {
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
-            if (element.Member == null)
+            if (element.Member is null)
                 throw new ArgumentException(SR.Argument_InvalidParameterInfo, nameof(element));
 
 
@@ -574,10 +574,10 @@ namespace System
         public static bool IsDefined(ParameterInfo element, Type attributeType, bool inherit)
         {
             // Returns true is a custom attribute subclass of attributeType class/interface with inheritance walk
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
@@ -613,7 +613,7 @@ namespace System
             // throws an AmbiguousMatchException if there are more than one defined.
             Attribute[] attrib = GetCustomAttributes(element, attributeType, inherit);
 
-            if (attrib == null || attrib.Length == 0)
+            if (attrib is null || attrib.Length == 0)
                 return null;
 
             if (attrib.Length == 0)
@@ -640,7 +640,7 @@ namespace System
 
         public static Attribute[] GetCustomAttributes(Module element, bool inherit)
         {
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
             return (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit);
@@ -648,10 +648,10 @@ namespace System
 
         public static Attribute[] GetCustomAttributes(Module element, Type attributeType, bool inherit)
         {
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
@@ -668,10 +668,10 @@ namespace System
         public static bool IsDefined(Module element, Type attributeType, bool inherit)
         {
             // Returns true is a custom attribute subclass of attributeType class/interface with no inheritance walk
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
@@ -691,7 +691,7 @@ namespace System
             // throws an AmbiguousMatchException if there are more than one defined.
             Attribute[] attrib = GetCustomAttributes(element, attributeType, inherit);
 
-            if (attrib == null || attrib.Length == 0)
+            if (attrib is null || attrib.Length == 0)
                 return null;
 
             if (attrib.Length == 1)
@@ -710,10 +710,10 @@ namespace System
 
         public static Attribute[] GetCustomAttributes(Assembly element, Type attributeType, bool inherit)
         {
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
@@ -729,7 +729,7 @@ namespace System
 
         public static Attribute[] GetCustomAttributes(Assembly element, bool inherit)
         {
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
             return (Attribute[])element.GetCustomAttributes(typeof(Attribute), inherit);
@@ -743,10 +743,10 @@ namespace System
         public static bool IsDefined(Assembly element, Type attributeType, bool inherit)
         {
             // Returns true is a custom attribute subclass of attributeType class/interface with no inheritance walk
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && attributeType != typeof(Attribute))
@@ -766,7 +766,7 @@ namespace System
             // throws an AmbiguousMatchException if there are more than one defined.
             Attribute[] attrib = GetCustomAttributes(element, attributeType, inherit);
 
-            if (attrib == null || attrib.Length == 0)
+            if (attrib is null || attrib.Length == 0)
                 return null;
 
             if (attrib.Length == 1)

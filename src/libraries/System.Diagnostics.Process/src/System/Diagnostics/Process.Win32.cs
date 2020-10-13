@@ -28,22 +28,22 @@ namespace System.Diagnostics
 
         private unsafe bool StartWithShellExecuteEx(ProcessStartInfo startInfo)
         {
-            if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password != null)
+            if (!string.IsNullOrEmpty(startInfo.UserName) || startInfo.Password is not null)
                 throw new InvalidOperationException(SR.CantStartAsUser);
 
             if (startInfo.RedirectStandardInput || startInfo.RedirectStandardOutput || startInfo.RedirectStandardError)
                 throw new InvalidOperationException(SR.CantRedirectStreams);
 
-            if (startInfo.StandardInputEncoding != null)
+            if (startInfo.StandardInputEncoding is not null)
                 throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
 
-            if (startInfo.StandardErrorEncoding != null)
+            if (startInfo.StandardErrorEncoding is not null)
                 throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
 
-            if (startInfo.StandardOutputEncoding != null)
+            if (startInfo.StandardOutputEncoding is not null)
                 throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
 
-            if (startInfo._environmentVariables != null)
+            if (startInfo._environmentVariables is not null)
                 throw new InvalidOperationException(SR.CantUseEnvVars);
 
             string arguments = startInfo.BuildArguments();
@@ -263,7 +263,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_mainWindowTitle == null)
+                if (_mainWindowTitle is null)
                 {
                     _mainWindowTitle = GetMainWindowTitle();
                 }
@@ -391,7 +391,7 @@ namespace System.Diagnostics
                 foreach ((Process Process, SafeProcessHandle Handle) child in children)
                 {
                     List<Exception>? exceptionsFromChild = child.Process.KillTree(child.Handle);
-                    if (exceptionsFromChild != null)
+                    if (exceptionsFromChild is not null)
                     {
                         (exceptions ??= new List<Exception>()).AddRange(exceptionsFromChild);
                     }

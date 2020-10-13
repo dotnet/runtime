@@ -158,15 +158,15 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNullItems(@catch, nameof(handlers));
             ValidateTryAndCatchHaveSameType(type, body, @catch);
 
-            if (fault != null)
+            if (fault is not null)
             {
-                if (@finally != null || @catch.Count > 0)
+                if (@finally is not null || @catch.Count > 0)
                 {
                     throw Error.FaultCannotHaveCatchOrFinally(nameof(fault));
                 }
                 ExpressionUtils.RequiresCanRead(fault, nameof(fault));
             }
-            else if (@finally != null)
+            else if (@finally is not null)
             {
                 ExpressionUtils.RequiresCanRead(@finally, nameof(@finally));
             }
@@ -181,9 +181,9 @@ namespace System.Linq.Expressions
         //Validate that the body of the try expression must have the same type as the body of every try block.
         private static void ValidateTryAndCatchHaveSameType(Type? type, Expression tryBody, ReadOnlyCollection<CatchBlock> handlers)
         {
-            Debug.Assert(tryBody != null);
+            Debug.Assert(tryBody is not null);
             // Type unification ... all parts must be reference assignable to "type"
-            if (type != null)
+            if (type is not null)
             {
                 if (type != typeof(void))
                 {
@@ -205,7 +205,7 @@ namespace System.Linq.Expressions
                 //The body of every try block must be null or have void type.
                 foreach (CatchBlock cb in handlers)
                 {
-                    Debug.Assert(cb.Body != null);
+                    Debug.Assert(cb.Body is not null);
                     if (cb.Body.Type != typeof(void))
                     {
                         throw Error.BodyOfCatchMustHaveSameTypeAsBodyOfTry();
@@ -218,7 +218,7 @@ namespace System.Linq.Expressions
                 type = tryBody.Type;
                 foreach (CatchBlock cb in handlers)
                 {
-                    Debug.Assert(cb.Body != null);
+                    Debug.Assert(cb.Body is not null);
                     if (!TypeUtils.AreEquivalent(cb.Body.Type, type))
                     {
                         throw Error.BodyOfCatchMustHaveSameTypeAsBodyOfTry();

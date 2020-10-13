@@ -44,7 +44,7 @@ namespace System.IO.Ports
         {
             add
             {
-                bool wasNull = _dataReceived == null;
+                bool wasNull = _dataReceived is null;
                 _dataReceived += value;
 
                 if (wasNull)
@@ -64,7 +64,7 @@ namespace System.IO.Ports
         {
             add
             {
-                bool wasNull = _pinChanged == null;
+                bool wasNull = _pinChanged is null;
                 _pinChanged += value;
 
                 if (wasNull)
@@ -91,7 +91,7 @@ namespace System.IO.Ports
             {
                 if (value < 0 && value != SerialPort.InfiniteTimeout)
                     throw new ArgumentOutOfRangeException(nameof(ReadTimeout), SR.ArgumentOutOfRange_Timeout);
-                if (_handle == null) {
+                if (_handle is null) {
                     InternalResources.FileNotOpen();
                 }
                 _readTimeout = value;
@@ -105,7 +105,7 @@ namespace System.IO.Ports
             {
                 if (value < 0 && value != SerialPort.InfiniteTimeout)
                     throw new ArgumentOutOfRangeException(nameof(ReadTimeout), SR.ArgumentOutOfRange_Timeout);
-                if (_handle == null) {
+                if (_handle is null) {
                     InternalResources.FileNotOpen();
                 }
                 _writeTimeout = value;
@@ -353,26 +353,26 @@ namespace System.IO.Ports
 
         internal void DiscardInBuffer()
         {
-            if (_handle == null) InternalResources.FileNotOpen();
+            if (_handle is null) InternalResources.FileNotOpen();
             // This may or may not work depending on hardware.
             Interop.Termios.TermiosDiscard(_handle, Interop.Termios.Queue.ReceiveQueue);
         }
 
         internal void DiscardOutBuffer()
         {
-            if (_handle == null) InternalResources.FileNotOpen();
+            if (_handle is null) InternalResources.FileNotOpen();
             // This may or may not work depending on hardware.
             Interop.Termios.TermiosDiscard(_handle, Interop.Termios.Queue.SendQueue);
         }
 
         internal void SetBufferSizes(int readBufferSize, int writeBufferSize)
         {
-            if (_handle == null) InternalResources.FileNotOpen();
+            if (_handle is null) InternalResources.FileNotOpen();
 
             // Ignore for now.
         }
 
-        internal bool IsOpen => _handle != null;
+        internal bool IsOpen => _handle is not null;
 
 
         // Flush dumps the contents of the serial driver's internal read and write buffers.
@@ -381,7 +381,7 @@ namespace System.IO.Ports
         // Note: Serial driver's write buffer is *already* attempting to write it, so we can only wait until it finishes.
         public override void Flush()
         {
-            if (_handle == null) InternalResources.FileNotOpen();
+            if (_handle is null) InternalResources.FileNotOpen();
 
             SpinWait sw = default;
             while (!_writeQueue.IsEmpty)
@@ -535,7 +535,7 @@ namespace System.IO.Ports
         internal SerialStream(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
             bool dtrEnable, bool rtsEnable, bool discardNull, byte parityReplace)
         {
-            if (portName == null)
+            if (portName is null)
             {
                 throw new ArgumentNullException(nameof(portName));
             }
@@ -596,9 +596,9 @@ namespace System.IO.Ports
         {
             lock (_ioLoopLock)
             {
-                if (_ioLoop == null)
+                if (_ioLoop is null)
                 {
-                    Debug.Assert(_handle != null);
+                    Debug.Assert(_handle is not null);
                     _ioLoop = Task.Factory.StartNew(
                         IOLoop,
                         CancellationToken.None,
@@ -638,7 +638,7 @@ namespace System.IO.Ports
 
                 FinishPendingIORequests();
 
-                if (_handle != null)
+                if (_handle is not null)
                 {
                     _handle.Dispose();
                     _handle = null;
@@ -652,7 +652,7 @@ namespace System.IO.Ports
         // but are currently split to avoid allocation related to context
         private void RaiseDataReceivedChars()
         {
-            if (_dataReceived != null)
+            if (_dataReceived is not null)
             {
                 ThreadPool.QueueUserWorkItem(s => {
                         var thisRef = (SerialStream)s;
@@ -663,7 +663,7 @@ namespace System.IO.Ports
 
         private void RaisePinChanged(SerialPinChange pinChanged)
         {
-            if (_pinChanged != null)
+            if (_pinChanged is not null)
             {
                 ThreadPool.QueueUserWorkItem(s => {
                         var thisRef = (SerialStream)s;
@@ -674,12 +674,12 @@ namespace System.IO.Ports
 
         private void RaiseDataReceivedEof()
         {
-            if (_dataReceived != null)
+            if (_dataReceived is not null)
             {
                 ThreadPool.QueueUserWorkItem(s => {
                         var thisRef = (SerialStream)s;
                         SerialDataReceivedEventHandler dataReceived = thisRef._dataReceived;
-                        if (dataReceived != null)
+                        if (dataReceived is not null)
                         {
                             dataReceived(thisRef, new SerialDataReceivedEventArgs(SerialData.Eof));
                         }
@@ -794,9 +794,9 @@ namespace System.IO.Ports
             bool lastIsIdle = false;
             int ticksWhenIdleStarted = 0;
 
-            Signals lastSignals = _pinChanged != null ? Interop.Termios.TermiosGetAllSignals(_handle) : Signals.Error;
+            Signals lastSignals = _pinChanged is not null ? Interop.Termios.TermiosGetAllSignals(_handle) : Signals.Error;
 
-            bool IsNoEventRegistered() => _dataReceived == null && _pinChanged == null;
+            bool IsNoEventRegistered() => _dataReceived is null && _pinChanged is null;
 
             while (IsOpen && !eofReceived && !_ioLoopFinished)
             {
@@ -883,7 +883,7 @@ namespace System.IO.Ports
                     RaiseDataReceivedChars();
                 }
 
-                if (_pinChanged != null)
+                if (_pinChanged is not null)
                 {
                     // Checking for changes could technically speaking be done by waiting with ioctl+TIOCMIWAIT
                     // This would require spinning new thread and also would potentially trigger events when

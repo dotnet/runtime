@@ -58,8 +58,8 @@ namespace System.Xml.Xsl.XsltOld
         {
             get
             {
-                Debug.Assert(this.Debugger != null);
-                if (_globalVarsCache == null)
+                Debug.Assert(this.Debugger is not null);
+                if (_globalVarsCache is null)
                 {
                     _globalVarsCache = (VariableAction[])_globalVars.ToArray(typeof(VariableAction));
                 }
@@ -70,8 +70,8 @@ namespace System.Xml.Xsl.XsltOld
         {
             get
             {
-                Debug.Assert(this.Debugger != null);
-                if (_localVarsCache == null)
+                Debug.Assert(this.Debugger is not null);
+                if (_localVarsCache is null)
                 {
                     _localVarsCache = (VariableAction[])_localVars.ToArray(typeof(VariableAction));
                 }
@@ -81,7 +81,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void DefineVariable(VariableAction variable)
         {
-            Debug.Assert(this.Debugger != null);
+            Debug.Assert(this.Debugger is not null);
             if (variable.IsGlobal)
             {
                 for (int i = 0; i < _globalVars.Count; i++)
@@ -589,9 +589,9 @@ namespace System.Xml.Xsl.XsltOld
                 _dbgData = new DbgData(compiler);
                 base.Compile(compiler);
 
-                Debug.Assert(compiler.Debugger != null);
+                Debug.Assert(compiler.Debugger is not null);
                 string builtIn = compiler.Debugger.GetBuiltInTemplatesUri();
-                if (builtIn != null && builtIn.Length != 0)
+                if (builtIn is not null && builtIn.Length != 0)
                 {
                     compiler.AllowBuiltInMode = true;
                     builtInSheet = compiler.RootAction.CompileImport(compiler, compiler.ResolveUri(builtIn), int.MaxValue);

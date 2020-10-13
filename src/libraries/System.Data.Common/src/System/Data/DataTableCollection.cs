@@ -35,7 +35,7 @@ namespace System.Data
         /// </summary>
         internal DataTableCollection(DataSet dataSet)
         {
-            DataCommonEventSource.Log.Trace("<ds.DataTableCollection.DataTableCollection|INFO> {0}, dataSet={1}", ObjectID, (dataSet != null) ? dataSet.ObjectID : 0);
+            DataCommonEventSource.Log.Trace("<ds.DataTableCollection.DataTableCollection|INFO> {0}, dataSet={1}", ObjectID, (dataSet is not null) ? dataSet.ObjectID : 0);
             _dataSet = dataSet!;
         }
 
@@ -89,7 +89,7 @@ namespace System.Data
         {
             get
             {
-                if (tableNamespace == null)
+                if (tableNamespace is null)
                 {
                     throw ExceptionBuilder.ArgumentNull(nameof(tableNamespace));
                 }
@@ -146,7 +146,7 @@ namespace System.Data
         /// </summary>
         public void Add(DataTable table)
         {
-            long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTableCollection.Add|API> {0}, table={1}", ObjectID, (table != null) ? table.ObjectID : 0);
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTableCollection.Add|API> {0}, table={1}", ObjectID, (table is not null) ? table.ObjectID : 0);
             try
             {
                 OnCollectionChanging(new CollectionChangeEventArgs(CollectionChangeAction.Add, table));
@@ -177,11 +177,11 @@ namespace System.Data
                     return;
                 }
 
-                if (tables != null)
+                if (tables is not null)
                 {
                     foreach (DataTable? table in tables)
                     {
-                        if (table != null)
+                        if (table is not null)
                         {
                             Add(table);
                         }
@@ -276,7 +276,7 @@ namespace System.Data
         /// </summary>
         private void BaseAdd([NotNull] DataTable table)
         {
-            if (table == null)
+            if (table is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(table));
             }
@@ -284,7 +284,7 @@ namespace System.Data
             {
                 throw ExceptionBuilder.TableAlreadyInTheDataSet();
             }
-            if (table.DataSet != null)
+            if (table.DataSet is not null)
             {
                 throw ExceptionBuilder.TableAlreadyInOtherDataSet();
             }
@@ -379,10 +379,10 @@ namespace System.Data
 
         internal bool CanRemove([NotNullWhen(true)] DataTable? table, bool fThrowException)
         {
-            long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTableCollection.CanRemove|INFO> {0}, table={1}, fThrowException={2}", ObjectID, (table != null) ? table.ObjectID : 0, fThrowException);
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTableCollection.CanRemove|INFO> {0}, table={1}, fThrowException={2}", ObjectID, (table is not null) ? table.ObjectID : 0, fThrowException);
             try
             {
-                if (table == null)
+                if (table is null)
                 {
                     if (!fThrowException)
                     {
@@ -468,7 +468,7 @@ namespace System.Data
 
                 OnCollectionChanging(s_refreshEventArgs);
 
-                if (_dataSet._fInitInProgress && _delayedAddRangeTables != null)
+                if (_dataSet._fInitInProgress && _delayedAddRangeTables is not null)
                 {
                     _delayedAddRangeTables = null;
                 }
@@ -491,12 +491,12 @@ namespace System.Data
 
         public bool Contains(string name, string tableNamespace)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(name));
             }
 
-            if (tableNamespace == null)
+            if (tableNamespace is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(tableNamespace));
             }
@@ -548,7 +548,7 @@ namespace System.Data
 
         public void CopyTo(DataTable[] array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(array));
             }
@@ -600,11 +600,11 @@ namespace System.Data
             // this should be public! why it is missing?
             if (chekforNull)
             {
-                if (tableName == null)
+                if (tableName is null)
                 {
                     throw ExceptionBuilder.ArgumentNull(nameof(tableName));
                 }
-                if (tableNamespace == null)
+                if (tableNamespace is null)
                 {
                     throw ExceptionBuilder.ArgumentNull(nameof(tableNamespace));
                 }
@@ -685,11 +685,11 @@ namespace System.Data
 
         internal void FinishInitCollection()
         {
-            if (_delayedAddRangeTables != null)
+            if (_delayedAddRangeTables is not null)
             {
                 foreach (DataTable? table in _delayedAddRangeTables)
                 {
-                    if (table != null)
+                    if (table is not null)
                     {
                         Add(table);
                     }
@@ -710,7 +710,7 @@ namespace System.Data
         /// </summary>
         private void OnCollectionChanged(CollectionChangeEventArgs ccevent)
         {
-            if (_onCollectionChangedDelegate != null)
+            if (_onCollectionChangedDelegate is not null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataTableCollection.OnCollectionChanged|INFO> {0}", ObjectID);
                 _onCollectionChangedDelegate(this, ccevent);
@@ -719,7 +719,7 @@ namespace System.Data
 
         private void OnCollectionChanging(CollectionChangeEventArgs ccevent)
         {
-            if (_onCollectionChangingDelegate != null)
+            if (_onCollectionChangingDelegate is not null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataTableCollection.OnCollectionChanging|INFO> {0}", ObjectID);
                 _onCollectionChangingDelegate(this, ccevent);
@@ -734,7 +734,7 @@ namespace System.Data
         internal void RegisterName(string name, string tbNamespace)
         {
             DataCommonEventSource.Log.Trace("<ds.DataTableCollection.RegisterName|INFO> {0}, name='{1}', tbNamespace='{2}'", ObjectID, name, tbNamespace);
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
 
             CultureInfo locale = _dataSet.Locale;
             int tableCount = _list.Count;
@@ -757,7 +757,7 @@ namespace System.Data
         /// </summary>
         public void Remove(DataTable table)
         {
-            long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTableCollection.Remove|API> {0}, table={1}", ObjectID, (table != null) ? table.ObjectID : 0);
+            long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataTableCollection.Remove|API> {0}, table={1}", ObjectID, (table is not null) ? table.ObjectID : 0);
             try
             {
                 OnCollectionChanging(new CollectionChangeEventArgs(CollectionChangeAction.Remove, table));
@@ -779,7 +779,7 @@ namespace System.Data
             try
             {
                 DataTable dt = this[index];
-                if (dt == null)
+                if (dt is null)
                 {
                     throw ExceptionBuilder.TableOutOfRange(index);
                 }
@@ -800,7 +800,7 @@ namespace System.Data
             try
             {
                 DataTable? dt = this[name];
-                if (dt == null)
+                if (dt is null)
                 {
                     throw ExceptionBuilder.TableNotInTheDataSet(name);
                 }
@@ -814,16 +814,16 @@ namespace System.Data
 
         public void Remove(string name, string tableNamespace)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(name));
             }
-            if (tableNamespace == null)
+            if (tableNamespace is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(tableNamespace));
             }
             DataTable? dt = this[name, tableNamespace];
-            if (dt == null)
+            if (dt is null)
             {
                 throw ExceptionBuilder.TableNotInTheDataSet(name);
             }

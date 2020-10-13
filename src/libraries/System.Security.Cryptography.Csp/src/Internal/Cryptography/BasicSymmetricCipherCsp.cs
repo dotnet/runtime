@@ -31,7 +31,7 @@ namespace Internal.Cryptography
             }
 
             byte[]? currentIv = cipherMode.GetCipherIv(iv);
-            if (currentIv != null)
+            if (currentIv is not null)
             {
                 SetKeyParameter(_hKey, CryptGetKeyParamQueryType.KP_IV, currentIv);
             }
@@ -48,14 +48,14 @@ namespace Internal.Cryptography
             {
                 SafeKeyHandle hKey = _hKey;
                 _hKey = null!;
-                if (hKey != null)
+                if (hKey is not null)
                 {
                     hKey.Dispose();
                 }
 
                 SafeProvHandle hProvider = _hProvider;
                 _hProvider = null!;
-                if (hProvider != null)
+                if (hProvider is not null)
                 {
                     hProvider.Dispose();
                 }

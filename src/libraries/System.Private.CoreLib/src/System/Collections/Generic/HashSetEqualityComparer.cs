@@ -15,7 +15,7 @@ namespace System.Collections.Generic
             }
 
             // They're not both null, so if either is null, they're not equal.
-            if (x == null || y == null)
+            if (x is null || y is null)
             {
                 return false;
             }
@@ -55,11 +55,11 @@ namespace System.Collections.Generic
         {
             int hashCode = 0; // default to 0 for null/empty set
 
-            if (obj != null)
+            if (obj is not null)
             {
                 foreach (T t in obj)
                 {
-                    if (t != null)
+                    if (t is not null)
                     {
                         hashCode ^= t.GetHashCode(); // same hashcode as as default comparer
                     }

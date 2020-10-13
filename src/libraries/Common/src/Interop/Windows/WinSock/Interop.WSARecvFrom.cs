@@ -52,7 +52,7 @@ internal static partial class Interop
             NativeOverlapped* overlapped,
             IntPtr completionRoutine)
         {
-            Debug.Assert(buffers != null && buffers.Length > 0);
+            Debug.Assert(buffers is not null && buffers.Length > 0);
             fixed (WSABuffer* buffersPtr = &buffers[0])
             {
                 return WSARecvFrom(socketHandle, buffersPtr, bufferCount, out bytesTransferred, ref socketFlags, socketAddressPointer, socketAddressSizePointer, overlapped, completionRoutine);

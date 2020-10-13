@@ -54,14 +54,14 @@ namespace System.Security.Claims
         /// </summary>
         private static ClaimsIdentity? SelectPrimaryIdentity(IEnumerable<ClaimsIdentity> identities)
         {
-            if (identities == null)
+            if (identities is null)
             {
                 throw new ArgumentNullException(nameof(identities));
             }
 
             foreach (ClaimsIdentity identity in identities)
             {
-                if (identity != null)
+                if (identity is not null)
                 {
                     return identity;
                 }
@@ -108,7 +108,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'identities' is null.</exception>
         public ClaimsPrincipal(IEnumerable<ClaimsIdentity> identities)
         {
-            if (identities == null)
+            if (identities is null)
             {
                 throw new ArgumentNullException(nameof(identities));
             }
@@ -123,7 +123,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'identity' is null.</exception>
         public ClaimsPrincipal(IIdentity identity)
         {
-            if (identity == null)
+            if (identity is null)
             {
                 throw new ArgumentNullException(nameof(identity));
             }
@@ -176,7 +176,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'reader' is null.</exception>
         public ClaimsPrincipal(BinaryReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -215,7 +215,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'identity' is null.</exception>
         public virtual void AddIdentity(ClaimsIdentity identity)
         {
-            if (identity == null)
+            if (identity is null)
             {
                 throw new ArgumentNullException(nameof(identity));
             }
@@ -230,7 +230,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'identities' is null.</exception>
         public virtual void AddIdentities(IEnumerable<ClaimsIdentity> identities)
         {
-            if (identities == null)
+            if (identities is null)
             {
                 throw new ArgumentNullException(nameof(identities));
             }
@@ -282,7 +282,7 @@ namespace System.Security.Claims
         /// <returns>a new <see cref="ClaimsIdentity"/>.</returns>
         protected virtual ClaimsIdentity CreateClaimsIdentity(BinaryReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -311,14 +311,14 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
         public virtual IEnumerable<Claim> FindAll(Predicate<Claim> match)
         {
-            if (match == null)
+            if (match is null)
             {
                 throw new ArgumentNullException(nameof(match));
             }
 
             foreach (ClaimsIdentity identity in Identities)
             {
-                if (identity != null)
+                if (identity is not null)
                 {
                     foreach (Claim claim in identity.FindAll(match))
                     {
@@ -337,14 +337,14 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         public virtual IEnumerable<Claim> FindAll(string type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
 
             foreach (ClaimsIdentity identity in Identities)
             {
-                if (identity != null)
+                if (identity is not null)
                 {
                     foreach (Claim claim in identity.FindAll(type))
                     {
@@ -363,7 +363,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
         public virtual Claim? FindFirst(Predicate<Claim> match)
         {
-            if (match == null)
+            if (match is null)
             {
                 throw new ArgumentNullException(nameof(match));
             }
@@ -372,10 +372,10 @@ namespace System.Security.Claims
 
             foreach (ClaimsIdentity identity in Identities)
             {
-                if (identity != null)
+                if (identity is not null)
                 {
                     claim = identity.FindFirst(match);
-                    if (claim != null)
+                    if (claim is not null)
                     {
                         return claim;
                     }
@@ -394,7 +394,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         public virtual Claim? FindFirst(string type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -403,10 +403,10 @@ namespace System.Security.Claims
 
             for (int i = 0; i < _identities.Count; i++)
             {
-                if (_identities[i] != null)
+                if (_identities[i] is not null)
                 {
                     claim = _identities[i].FindFirst(type);
-                    if (claim != null)
+                    if (claim is not null)
                     {
                         return claim;
                     }
@@ -425,14 +425,14 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
         public virtual bool HasClaim(Predicate<Claim> match)
         {
-            if (match == null)
+            if (match is null)
             {
                 throw new ArgumentNullException(nameof(match));
             }
 
             for (int i = 0; i < _identities.Count; i++)
             {
-                if (_identities[i] != null)
+                if (_identities[i] is not null)
                 {
                     if (_identities[i].HasClaim(match))
                     {
@@ -455,19 +455,19 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'value' is null.</exception>
         public virtual bool HasClaim(string type, string value)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
 
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
 
             for (int i = 0; i < _identities.Count; i++)
             {
-                if (_identities[i] != null)
+                if (_identities[i] is not null)
                 {
                     if (_identities[i].HasClaim(type, value))
                     {
@@ -497,7 +497,7 @@ namespace System.Security.Claims
         {
             get
             {
-                if (s_identitySelector != null)
+                if (s_identitySelector is not null)
                 {
                     return s_identitySelector(_identities);
                 }
@@ -519,7 +519,7 @@ namespace System.Security.Claims
         {
             for (int i = 0; i < _identities.Count; i++)
             {
-                if (_identities[i] != null)
+                if (_identities[i] is not null)
                 {
                     if (_identities[i].HasClaim(_identities[i].RoleClaimType, role))
                     {
@@ -548,7 +548,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'writer' is null.</exception>
         protected virtual void WriteTo(BinaryWriter writer, byte[]? userData)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -561,7 +561,7 @@ namespace System.Security.Claims
                 numberOfPropertiesWritten++;
             }
 
-            if (userData != null && userData.Length > 0)
+            if (userData is not null && userData.Length > 0)
             {
                 numberOfPropertiesWritten++;
                 mask |= SerializationMask.UserData;

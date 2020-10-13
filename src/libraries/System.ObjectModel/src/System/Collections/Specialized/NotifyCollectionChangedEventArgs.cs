@@ -49,7 +49,7 @@ namespace System.Collections.Specialized
 
             if (action == NotifyCollectionChangedAction.Reset)
             {
-                if (changedItem != null)
+                if (changedItem is not null)
                 {
                     throw new ArgumentException(SR.ResetActionRequiresNullItem, nameof(action));
                 }
@@ -78,7 +78,7 @@ namespace System.Collections.Specialized
 
             if (action == NotifyCollectionChangedAction.Reset)
             {
-                if (changedItem != null)
+                if (changedItem is not null)
                 {
                     throw new ArgumentException(SR.ResetActionRequiresNullItem, nameof(action));
                 }
@@ -110,7 +110,7 @@ namespace System.Collections.Specialized
 
             if (action == NotifyCollectionChangedAction.Reset)
             {
-                if (changedItems != null)
+                if (changedItems is not null)
                 {
                     throw new ArgumentException(SR.ResetActionRequiresNullItem, nameof(action));
                 }
@@ -119,7 +119,7 @@ namespace System.Collections.Specialized
             }
             else
             {
-                if (changedItems == null)
+                if (changedItems is null)
                 {
                     throw new ArgumentNullException(nameof(changedItems));
                 }
@@ -144,7 +144,7 @@ namespace System.Collections.Specialized
 
             if (action == NotifyCollectionChangedAction.Reset)
             {
-                if (changedItems != null)
+                if (changedItems is not null)
                 {
                     throw new ArgumentException(SR.ResetActionRequiresNullItem, nameof(action));
                 }
@@ -157,7 +157,7 @@ namespace System.Collections.Specialized
             }
             else
             {
-                if (changedItems == null)
+                if (changedItems is null)
                 {
                     throw new ArgumentNullException(nameof(changedItems));
                 }
@@ -215,11 +215,11 @@ namespace System.Collections.Specialized
             {
                 throw new ArgumentException(SR.Format(SR.WrongActionForCtor, NotifyCollectionChangedAction.Replace), nameof(action));
             }
-            if (newItems == null)
+            if (newItems is null)
             {
                 throw new ArgumentNullException(nameof(newItems));
             }
-            if (oldItems == null)
+            if (oldItems is null)
             {
                 throw new ArgumentNullException(nameof(oldItems));
             }
@@ -240,11 +240,11 @@ namespace System.Collections.Specialized
             {
                 throw new ArgumentException(SR.Format(SR.WrongActionForCtor, NotifyCollectionChangedAction.Replace), nameof(action));
             }
-            if (newItems == null)
+            if (newItems is null)
             {
                 throw new ArgumentNullException(nameof(newItems));
             }
-            if (oldItems == null)
+            if (oldItems is null)
             {
                 throw new ArgumentNullException(nameof(oldItems));
             }
@@ -301,8 +301,8 @@ namespace System.Collections.Specialized
         internal NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction action, IList? newItems, IList? oldItems, int newIndex, int oldIndex)
         {
             _action = action;
-            _newItems = (newItems == null) ? null : new ReadOnlyList(newItems);
-            _oldItems = (oldItems == null) ? null : new ReadOnlyList(oldItems);
+            _newItems = (newItems is null) ? null : new ReadOnlyList(newItems);
+            _oldItems = (oldItems is null) ? null : new ReadOnlyList(oldItems);
             _newStartingIndex = newIndex;
             _oldStartingIndex = oldIndex;
         }
@@ -323,14 +323,14 @@ namespace System.Collections.Specialized
         private void InitializeAdd(NotifyCollectionChangedAction action, IList? newItems, int newStartingIndex)
         {
             _action = action;
-            _newItems = (newItems == null) ? null : new ReadOnlyList(newItems);
+            _newItems = (newItems is null) ? null : new ReadOnlyList(newItems);
             _newStartingIndex = newStartingIndex;
         }
 
         private void InitializeRemove(NotifyCollectionChangedAction action, IList? oldItems, int oldStartingIndex)
         {
             _action = action;
-            _oldItems = (oldItems == null) ? null : new ReadOnlyList(oldItems);
+            _oldItems = (oldItems is null) ? null : new ReadOnlyList(oldItems);
             _oldStartingIndex = oldStartingIndex;
         }
 
@@ -377,7 +377,7 @@ namespace System.Collections.Specialized
 
         internal ReadOnlyList(IList list)
         {
-            Debug.Assert(list != null);
+            Debug.Assert(list is not null);
             _list = list;
         }
 

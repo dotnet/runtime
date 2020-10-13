@@ -16,7 +16,7 @@ namespace System.Net
         public static void ValidateSegment(ArraySegment<byte> segment)
         {
             // ArraySegment<byte> is not nullable.
-            if (segment.Array == null)
+            if (segment.Array is null)
             {
                 throw new ArgumentNullException(nameof(segment));
             }

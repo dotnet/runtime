@@ -141,7 +141,7 @@ namespace System.Net
         public unsafe int QueryContextAttributes(SafeDeleteContext context, Interop.SspiCli.ContextAttribute attribute, Span<byte> buffer, Type? handleType, out SafeHandle? refHandle)
         {
             refHandle = null;
-            if (handleType != null)
+            if (handleType is not null)
             {
                 if (handleType == typeof(SafeFreeContextBuffer))
                 {

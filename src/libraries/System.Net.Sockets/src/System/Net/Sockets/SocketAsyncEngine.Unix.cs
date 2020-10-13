@@ -276,7 +276,7 @@ namespace System.Net.Sockets
 
         private void FreeNativeResources()
         {
-            if (_buffer != null)
+            if (_buffer is not null)
             {
                 Interop.Sys.FreeSocketEventBuffer(_buffer);
             }

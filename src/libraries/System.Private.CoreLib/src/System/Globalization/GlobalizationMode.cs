@@ -19,7 +19,7 @@ namespace System.Globalization
             if (!AppContext.TryGetSwitch(switchName, out bool ret))
             {
                 string? switchValue = Environment.GetEnvironmentVariable(envVariable);
-                if (switchValue != null)
+                if (switchValue is not null)
                 {
                     ret = bool.IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1");
                 }

@@ -71,7 +71,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         private static volatile InternalPrimitiveTypeE[]? s_codeA;
 
         internal static InternalPrimitiveTypeE ToCode(Type? type) =>
-                type == null ? ToPrimitiveTypeEnum(TypeCode.Empty) :
+                type is null ? ToPrimitiveTypeEnum(TypeCode.Empty) :
                 type.IsPrimitive ? ToPrimitiveTypeEnum(Type.GetTypeCode(type)) :
                 ReferenceEquals(type, s_typeofDateTime) ? InternalPrimitiveTypeE.DateTime :
                 ReferenceEquals(type, s_typeofTimeSpan) ? InternalPrimitiveTypeE.TimeSpan :
@@ -120,7 +120,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal static Type? ToArrayType(InternalPrimitiveTypeE code)
         {
-            if (s_arrayTypeA == null)
+            if (s_arrayTypeA is null)
             {
                 InitArrayTypeA();
             }
@@ -173,7 +173,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal static Type? ToType(InternalPrimitiveTypeE code)
         {
-            if (s_typeA == null)
+            if (s_typeA is null)
             {
                 InitTypeA();
             }
@@ -248,7 +248,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         internal static string? ToComType(InternalPrimitiveTypeE code)
         {
-            if (s_valueA == null)
+            if (s_valueA is null)
             {
                 InitValueA();
             }
@@ -280,7 +280,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Returns a System.TypeCode from a InternalPrimitiveTypeE
         internal static TypeCode ToTypeCode(InternalPrimitiveTypeE code)
         {
-            if (s_typeCodeA == null)
+            if (s_typeCodeA is null)
             {
                 InitTypeCodeA();
             }
@@ -315,7 +315,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         // Returns a InternalPrimitiveTypeE from a System.TypeCode
         internal static InternalPrimitiveTypeE ToPrimitiveTypeEnum(TypeCode typeCode)
         {
-            if (s_codeA == null)
+            if (s_codeA is null)
             {
                 InitCodeA();
             }

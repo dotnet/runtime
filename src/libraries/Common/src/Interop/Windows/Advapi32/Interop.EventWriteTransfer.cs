@@ -27,7 +27,7 @@ internal static partial class Interop
             EventProvider.EventData* userData)
         {
             int HResult = EventWriteTransfer_PInvoke(registrationHandle, in eventDescriptor, activityId, relatedActivityId, userDataCount, userData);
-            if (HResult == Errors.ERROR_INVALID_PARAMETER && relatedActivityId == null)
+            if (HResult == Errors.ERROR_INVALID_PARAMETER && relatedActivityId is null)
             {
                 Guid emptyGuid = Guid.Empty;
                 HResult = EventWriteTransfer_PInvoke(registrationHandle, in eventDescriptor, activityId, &emptyGuid, userDataCount, userData);

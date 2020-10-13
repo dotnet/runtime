@@ -17,7 +17,7 @@ namespace System.Net.Security
             var clone = new SslClientAuthenticationOptions()
             {
                 AllowRenegotiation = options.AllowRenegotiation,
-                ApplicationProtocols = options.ApplicationProtocols != null ? new List<SslApplicationProtocol>(options.ApplicationProtocols) : null,
+                ApplicationProtocols = options.ApplicationProtocols is not null ? new List<SslApplicationProtocol>(options.ApplicationProtocols) : null,
                 CertificateRevocationCheckMode = options.CertificateRevocationCheckMode,
                 CipherSuitesPolicy = options.CipherSuitesPolicy,
                 ClientCertificates = options.ClientCertificates,
@@ -38,7 +38,7 @@ namespace System.Net.Security
                 if (origValue is IEnumerable origEnumerable)
                 {
                     IEnumerable? cloneEnumerable = cloneValue as IEnumerable;
-                    Debug.Assert(cloneEnumerable != null, $"{pi.Name}. Expected enumerable cloned value.");
+                    Debug.Assert(cloneEnumerable is not null, $"{pi.Name}. Expected enumerable cloned value.");
 
                     IEnumerator e1 = origEnumerable.GetEnumerator();
                     try

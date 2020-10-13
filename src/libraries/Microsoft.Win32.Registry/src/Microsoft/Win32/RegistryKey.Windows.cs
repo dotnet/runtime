@@ -75,7 +75,7 @@ namespace Microsoft.Win32
 
         private void FlushCore()
         {
-            if (_hkey != null && IsDirty())
+            if (_hkey is not null && IsDirty())
             {
                 Interop.Advapi32.RegFlushKey(_hkey);
             }
@@ -513,7 +513,7 @@ namespace Microsoft.Win32
             }
             finally
             {
-                if (name != null)
+                if (name is not null)
                     ArrayPool<char>.Shared.Return(name);
             }
 
@@ -750,7 +750,7 @@ namespace Microsoft.Win32
                             }
                             cur = nextNull + 1;
 
-                            if (toAdd != null)
+                            if (toAdd is not null)
                             {
                                 if (strings.Length == stringsCount)
                                 {
@@ -822,7 +822,7 @@ namespace Microsoft.Win32
                             int sizeInChars = 1; // no matter what, we have the final null terminator.
                             for (int i = 0; i < dataStrings.Length; i++)
                             {
-                                if (dataStrings[i] == null)
+                                if (dataStrings[i] is null)
                                 {
                                     throw new ArgumentException(SR.Arg_RegSetStrArrNull);
                                 }
@@ -918,7 +918,7 @@ namespace Microsoft.Win32
             switch (errorCode)
             {
                 case Interop.Errors.ERROR_ACCESS_DENIED:
-                    throw str != null ?
+                    throw str is not null ?
                         new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str)) :
                         new UnauthorizedAccessException();
 
@@ -951,7 +951,7 @@ namespace Microsoft.Win32
         private static void Win32ErrorStatic(int errorCode, string? str) =>
             throw errorCode switch
             {
-                Interop.Errors.ERROR_ACCESS_DENIED => str != null ?
+                Interop.Errors.ERROR_ACCESS_DENIED => str is not null ?
                        new UnauthorizedAccessException(SR.Format(SR.UnauthorizedAccess_RegistryKeyGeneric_Key, str)) :
                        new UnauthorizedAccessException(),
 

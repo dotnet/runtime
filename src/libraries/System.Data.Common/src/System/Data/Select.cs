@@ -38,7 +38,7 @@ namespace System.Data
         {
             _table = table;
             _indexFields = table.ParseSortString(sort);
-            if (filterExpression != null && filterExpression.Length > 0)
+            if (filterExpression is not null && filterExpression.Length > 0)
             {
                 _rowFilter = new DataExpression(_table, filterExpression);
                 _expression = _rowFilter.ExpressionNode;
@@ -54,7 +54,7 @@ namespace System.Data
         // Gathers all linear expressions in to this.linearExpression and all binary expressions in to their respective candidate columns expressions
         private void AnalyzeExpression(BinaryNode expr)
         {
-            Debug.Assert(_candidateColumns != null);
+            Debug.Assert(_candidateColumns is not null);
 
             if (_linearExpression == _expression)
                 return;
@@ -78,7 +78,7 @@ namespace System.Data
                 else
                 {
                     UnaryNode? unaryNode = expr._left as UnaryNode;
-                    if (unaryNode != null)
+                    if (unaryNode is not null)
                     {
                         while (unaryNode._op == Operators.Noop && unaryNode._right is UnaryNode && ((UnaryNode)unaryNode._right)._op == Operators.Noop)
                         {
@@ -106,7 +106,7 @@ namespace System.Data
                 else
                 {
                     UnaryNode? unaryNode = expr._right as UnaryNode;
-                    if (unaryNode != null)
+                    if (unaryNode is not null)
                     {
                         while (unaryNode._op == Operators.Noop && unaryNode._right is UnaryNode && ((UnaryNode)unaryNode._right)._op == Operators.Noop)
                         {
@@ -129,7 +129,7 @@ namespace System.Data
                     return;
 
                 ExpressionNode e = isLeft ? expr._right : expr._left;
-                _linearExpression = (_linearExpression == null ? e : new BinaryNode(_table, Operators.And, e, _linearExpression));
+                _linearExpression = (_linearExpression is null ? e : new BinaryNode(_table, Operators.And, e, _linearExpression));
                 return;
             }
             else
@@ -138,7 +138,7 @@ namespace System.Data
                 if (expr._left is NameNode && expr._right is ConstNode)
                 {
                     ColumnInfo canColumn = _candidateColumns[((NameNode)(expr._left))._column!.Ordinal];
-                    canColumn.expr = (canColumn.expr == null ? expr : new BinaryNode(_table, Operators.And, expr, canColumn.expr));
+                    canColumn.expr = (canColumn.expr is null ? expr : new BinaryNode(_table, Operators.And, expr, canColumn.expr));
                     if (expr._op == Operators.EqualTo)
                     {
                         canColumn.equalsOperator = true;
@@ -161,7 +161,7 @@ namespace System.Data
                         default: break;
                     }
                     ColumnInfo canColumn = _candidateColumns[((NameNode)(expr._left))._column!.Ordinal];
-                    canColumn.expr = (canColumn.expr == null ? expr : new BinaryNode(_table, Operators.And, expr, canColumn.expr));
+                    canColumn.expr = (canColumn.expr is null ? expr : new BinaryNode(_table, Operators.And, expr, canColumn.expr));
                     if (expr._op == Operators.EqualTo)
                     {
                         canColumn.equalsOperator = true;
@@ -171,13 +171,13 @@ namespace System.Data
                 }
             }
 
-            _linearExpression = (_linearExpression == null ? expr : new BinaryNode(_table, Operators.And, expr, _linearExpression));
+            _linearExpression = (_linearExpression is null ? expr : new BinaryNode(_table, Operators.And, expr, _linearExpression));
             return;
         }
 
         private bool CompareSortIndexDesc(IndexField[] fields)
         {
-            Debug.Assert(_candidateColumns != null);
+            Debug.Assert(_candidateColumns is not null);
 
             if (fields.Length < _indexFields.Length)
                 return false;
@@ -191,7 +191,7 @@ namespace System.Data
                 else
                 {
                     ColumnInfo canColumn = _candidateColumns[fields[i].Column.Ordinal];
-                    if (!(canColumn != null && canColumn.equalsOperator))
+                    if (!(canColumn is not null && canColumn.equalsOperator))
                         return false;
                 }
             }
@@ -231,14 +231,14 @@ namespace System.Data
         // Returns no. of columns that are matched
         private int CompareClosestCandidateIndexDesc(IndexField[] fields)
         {
-            Debug.Assert(_candidateColumns != null);
+            Debug.Assert(_candidateColumns is not null);
 
             int count = (fields.Length < _nCandidates ? fields.Length : _nCandidates);
             int i = 0;
             for (; i < count; i++)
             {
                 ColumnInfo canColumn = _candidateColumns[fields[i].Column.Ordinal];
-                if (canColumn == null || canColumn.expr == null)
+                if (canColumn is null || canColumn.expr is null)
                 {
                     break;
                 }
@@ -286,7 +286,7 @@ namespace System.Data
                 _table._indexesLock.ExitUpgradeableReadLock();
             }
 
-            return (_index != null ? sortPriority : false);
+            return (_index is not null ? sortPriority : false);
         }
 
         // Initialize candidate columns to new columnInfo and leave all non candidate columns to null
@@ -294,7 +294,7 @@ namespace System.Data
         {
             _nCandidates = 0;
             _candidateColumns = new ColumnInfo[_table.Columns.Count];
-            if (_rowFilter == null)
+            if (_rowFilter is null)
                 return;
             DataColumn[] depColumns = _rowFilter.GetDependency();
             for (int i = 0; i < depColumns.Length; i++)
@@ -310,9 +310,9 @@ namespace System.Data
         // Based on the required sorting and candidate columns settings, create a new index; Should be called only when there is no existing index to be reused
         private void CreateIndex()
         {
-            Debug.Assert(_candidateColumns != null);
+            Debug.Assert(_candidateColumns is not null);
 
-            if (_index == null)
+            if (_index is null)
             {
                 if (_nCandidates == 0)
                 {
@@ -327,7 +327,7 @@ namespace System.Data
                     bool equalsOperator = true;
                     for (i = 0; i < lenCanColumns; i++)
                     {
-                        if (_candidateColumns[i] != null)
+                        if (_candidateColumns[i] is not null)
                         {
                             if (!_candidateColumns[i].equalsOperator)
                             {
@@ -341,7 +341,7 @@ namespace System.Data
                     for (i = 0; i < lenIndexDesc; i++)
                     {
                         ColumnInfo candidateColumn = _candidateColumns[_indexFields[i].Column.Ordinal];
-                        if (candidateColumn != null)
+                        if (candidateColumn is not null)
                         {
                             candidateColumn.flag = true;
                             j++;
@@ -355,7 +355,7 @@ namespace System.Data
                         j = 0;
                         for (i = 0; i < lenCanColumns; i++)
                         {
-                            if (_candidateColumns[i] != null)
+                            if (_candidateColumns[i] is not null)
                             {
                                 ndxFields[j++] = new IndexField(_table.Columns[i], isDescending: false);
                                 _candidateColumns[i].flag = false; // this means it is processed
@@ -364,10 +364,10 @@ namespace System.Data
                         for (i = 0; i < lenIndexDesc; i++)
                         {
                             ColumnInfo canColumn = _candidateColumns[_indexFields[i].Column.Ordinal];
-                            if (canColumn == null || canColumn.flag)
+                            if (canColumn is null || canColumn.flag)
                             { // if sort column is not a filter col , or not processed
                                 ndxFields[j++] = _indexFields[i];
-                                if (canColumn != null)
+                                if (canColumn is not null)
                                 {
                                     canColumn.flag = false;
                                 }
@@ -376,7 +376,7 @@ namespace System.Data
 
                         for (i = 0; i < _candidateColumns.Length; i++)
                         {
-                            if (_candidateColumns[i] != null)
+                            if (_candidateColumns[i] is not null)
                             {
                                 _candidateColumns[i].flag = false; // same as before, it is false when it returns
                             }
@@ -401,13 +401,13 @@ namespace System.Data
                         {
                             ndxFields[i] = _indexFields[i];
                             ColumnInfo canColumn = _candidateColumns[_indexFields[i].Column.Ordinal];
-                            if (canColumn != null)
+                            if (canColumn is not null)
                                 canColumn.flag = true;
                         }
                         j = i;
                         for (i = 0; i < lenCanColumns; i++)
                         {
-                            if (_candidateColumns[i] != null)
+                            if (_candidateColumns[i] is not null)
                             {
                                 if (!_candidateColumns[i].flag)
                                 {
@@ -429,7 +429,7 @@ namespace System.Data
                             while (_matchedCandidates < j)
                             {
                                 ColumnInfo canColumn = _candidateColumns[fields[_matchedCandidates].Column.Ordinal];
-                                if (canColumn == null || canColumn.expr == null)
+                                if (canColumn is null || canColumn.expr is null)
                                     break;
                                 _matchedCandidates++;
                                 if (!canColumn.equalsOperator)
@@ -438,7 +438,7 @@ namespace System.Data
                         }
                         for (i = 0; i < _candidateColumns.Length; i++)
                         {
-                            if (_candidateColumns[i] != null)
+                            if (_candidateColumns[i] is not null)
                             {
                                 _candidateColumns[i].flag = false; // same as before, it is false when it returns
                             }
@@ -469,7 +469,7 @@ namespace System.Data
         // Based on the current index and candidate columns settings, build the linear expression; Should be called only when there is atleast something for Binary Searching
         private void BuildLinearExpression()
         {
-            Debug.Assert(_candidateColumns != null);
+            Debug.Assert(_candidateColumns is not null);
 
             int i;
             IndexField[] fields = _index!._indexFields;
@@ -478,7 +478,7 @@ namespace System.Data
             for (i = 0; i < _matchedCandidates; i++)
             {
                 ColumnInfo canColumn = _candidateColumns[fields[i].Column.Ordinal];
-                Debug.Assert(canColumn != null && canColumn.expr != null, "BuildLinearExpression : Must be a matched candidate");
+                Debug.Assert(canColumn is not null && canColumn.expr is not null, "BuildLinearExpression : Must be a matched candidate");
                 canColumn.flag = true;
             }
             //this is invalid assert, assumption was that all equals operator exists at the beginning of candidateColumns
@@ -487,13 +487,13 @@ namespace System.Data
             int lenCanColumns = _candidateColumns.Length;
             for (i = 0; i < lenCanColumns; i++)
             {
-                if (_candidateColumns[i] != null)
+                if (_candidateColumns[i] is not null)
                 {
                     if (!_candidateColumns[i].flag)
                     {
                         if (_candidateColumns[i].expr is BinaryNode expr)
                         {
-                            _linearExpression = (_linearExpression == null ? _candidateColumns[i].expr : new BinaryNode(_table, Operators.And, expr, _linearExpression));
+                            _linearExpression = (_linearExpression is null ? _candidateColumns[i].expr : new BinaryNode(_table, Operators.And, expr, _linearExpression));
                         }
                     }
                     else
@@ -509,7 +509,7 @@ namespace System.Data
             bool needSorting = true;
 
             InitCandidateColumns();
-            Debug.Assert(_candidateColumns != null);
+            Debug.Assert(_candidateColumns is not null);
 
             if (_expression is BinaryNode)
             {
@@ -522,7 +522,7 @@ namespace System.Data
                 {
                     for (int i = 0; i < _candidateColumns.Length; i++)
                     {
-                        if (_candidateColumns[i] != null)
+                        if (_candidateColumns[i] is not null)
                         {
                             _candidateColumns[i].equalsOperator = false;
                             _candidateColumns[i].expr = null;
@@ -539,12 +539,12 @@ namespace System.Data
                 _linearExpression = _expression;
             }
 
-            if (_index == null && (_indexFields.Length > 0 || _linearExpression == _expression))
+            if (_index is null && (_indexFields.Length > 0 || _linearExpression == _expression))
             {
                 needSorting = !FindSortIndex();
             }
 
-            if (_index == null)
+            if (_index is null)
             {
                 CreateIndex();
                 needSorting = false;
@@ -600,7 +600,7 @@ namespace System.Data
         {
             DataRow? row = _table._recordManager[record];
 
-            if (row == null)
+            if (row is null)
                 return true;
 
             DataRowVersion version = DataRowVersion.Default;
@@ -708,11 +708,11 @@ namespace System.Data
 
         private int Evaluate(int record)
         {
-            Debug.Assert(_index != null && _candidateColumns != null);
+            Debug.Assert(_index is not null && _candidateColumns is not null);
 
             DataRow? row = _table._recordManager[record];
 
-            if (row == null)
+            if (row is null)
                 return 0;
 
             DataRowVersion version = DataRowVersion.Default;
@@ -733,8 +733,8 @@ namespace System.Data
             for (int i = 0; i < _matchedCandidates; i++)
             {
                 var candidateColumn = _candidateColumns[fields[i].Column.Ordinal];
-                Debug.Assert(candidateColumn != null, "How come this is not a candidate column");
-                Debug.Assert(candidateColumn.expr != null, "How come there is no associated expression");
+                Debug.Assert(candidateColumn is not null, "How come this is not a candidate column");
+                Debug.Assert(candidateColumn.expr is not null, "How come there is no associated expression");
                 int c = Eval(candidateColumn.expr, row, version);
                 if (c != 0)
                     return fields[i].IsDescending ? -c : c;
@@ -744,7 +744,7 @@ namespace System.Data
 
         private int FindFirstMatchingRecord()
         {
-            Debug.Assert(_index != null);
+            Debug.Assert(_index is not null);
 
             int rec = -1;
             int lo = 0;
@@ -763,7 +763,7 @@ namespace System.Data
 
         private int FindLastMatchingRecord(int lo)
         {
-            Debug.Assert(_index != null);
+            Debug.Assert(_index is not null);
 
             int rec = -1;
             int hi = _index.RecordCount - 1;
@@ -781,7 +781,7 @@ namespace System.Data
 
         private Range GetBinaryFilteredRecords()
         {
-            Debug.Assert(_index != null);
+            Debug.Assert(_index is not null);
 
             if (_matchedCandidates == 0)
             {
@@ -800,9 +800,9 @@ namespace System.Data
 
         private int[] GetLinearFilteredRecords(Range range)
         {
-            Debug.Assert(_index != null);
+            Debug.Assert(_index is not null);
 
-            if (_linearExpression == null)
+            if (_linearExpression is null)
             {
                 int[] resultRecords = new int[range.Count];
                 RBTree<int>.RBTreeEnumerator iterator = _index.GetEnumerator(range.Min);
@@ -829,10 +829,10 @@ namespace System.Data
 
         private DataRow[] GetLinearFilteredRows(Range range)
         {
-            Debug.Assert(_index != null);
+            Debug.Assert(_index is not null);
 
             DataRow[] resultRows;
-            if (_linearExpression == null)
+            if (_linearExpression is null)
             {
                 return _index.GetRows(range);
             }
@@ -872,7 +872,7 @@ namespace System.Data
             int diff = (id1 < id2) ? -1 : ((id2 < id1) ? 1 : 0);
 
             // if they're two records in the same row, we need to be able to distinguish them.
-            if (diff == 0 && record1 != record2 && row1 != null && row2 != null)
+            if (diff == 0 && record1 != record2 && row1 is not null && row2 is not null)
             {
                 id1 = (int)row1.GetRecordState(record1);
                 id2 = (int)row2.GetRecordState(record2);

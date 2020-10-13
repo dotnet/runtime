@@ -22,14 +22,14 @@ namespace System
 
         private static T? Unbox(object o)
         {
-            if (o == null)
+            if (o is null)
                 return null;
             return (T)o;
         }
 
         private static T? UnboxExact(object o)
         {
-            if (o == null)
+            if (o is null)
                 return null;
             if (o.GetType() != typeof(T))
                 throw new InvalidCastException();

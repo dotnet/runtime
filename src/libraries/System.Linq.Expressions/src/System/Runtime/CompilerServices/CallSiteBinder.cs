@@ -45,7 +45,7 @@ namespace System.Runtime.CompilerServices
             {
                 get
                 {
-                    if (s_instance == null)
+                    if (s_instance is null)
                     {
                         s_instance = new LambdaSignature<T>();
                     }
@@ -116,7 +116,7 @@ namespace System.Runtime.CompilerServices
             // Try to find a precompiled delegate, and return it if found.
             //
             T? result = BindDelegate(site, args);
-            if (result != null)
+            if (result is not null)
             {
                 return result;
             }
@@ -130,7 +130,7 @@ namespace System.Runtime.CompilerServices
             //
             // Check the produced rule
             //
-            if (binding == null)
+            if (binding is null)
             {
                 throw System.Linq.Expressions.Error.NoOrInvalidRuleProduced();
             }
@@ -210,7 +210,7 @@ namespace System.Runtime.CompilerServices
         internal RuleCache<T> GetRuleCache<T>() where T : class
         {
             // make sure we have cache.
-            if (Cache == null)
+            if (Cache is null)
             {
                 Interlocked.CompareExchange(ref Cache, new Dictionary<Type, object>(), null);
             }
@@ -226,7 +226,7 @@ namespace System.Runtime.CompilerServices
             }
 
             RuleCache<T>? result = ruleCache as RuleCache<T>;
-            Debug.Assert(result != null);
+            Debug.Assert(result is not null);
             return result;
         }
     }

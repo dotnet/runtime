@@ -240,7 +240,7 @@ namespace System.Management
 
                 try
                 {
-                    if (Progress != null)
+                    if (Progress is not null)
                         result = ((Progress.GetInvocationList()).Length > 0);
                 }
                 catch

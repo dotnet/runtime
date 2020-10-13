@@ -38,7 +38,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
 
             try
             {
-                if (celt > 0 && rgVar == null)
+                if (celt > 0 && rgVar is null)
                 {
                     return HResults.E_INVALIDARG;
                 }

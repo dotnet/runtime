@@ -57,6 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return Ats;
         }
 
+        // This operator has special null handling and cannot be replaced with is null check
         public static bool operator ==(SymWithType swt1, SymWithType swt2)
         {
             if (ReferenceEquals(swt1, swt2))

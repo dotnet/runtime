@@ -93,7 +93,7 @@ internal static partial class Interop
 
         internal static void CheckValidOpenSslHandle(SafeHandle handle)
         {
-            if (handle == null || handle.IsInvalid)
+            if (handle is null || handle.IsInvalid)
             {
                 throw CreateOpenSslCryptographicException();
             }

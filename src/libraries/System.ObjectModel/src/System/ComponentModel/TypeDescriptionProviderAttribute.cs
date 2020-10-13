@@ -13,7 +13,7 @@ namespace System.ComponentModel
         /// </summary>
         public TypeDescriptionProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] string typeName)
         {
-            if (typeName == null)
+            if (typeName is null)
             {
                 throw new ArgumentNullException(nameof(typeName));
             }
@@ -26,7 +26,7 @@ namespace System.ComponentModel
         /// </summary>
         public TypeDescriptionProviderAttribute([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }

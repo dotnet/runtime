@@ -14,7 +14,7 @@ namespace System.Net.Http.Json
     {
         public static Task<object?> GetFromJsonAsync(this HttpClient client, string? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -25,7 +25,7 @@ namespace System.Net.Http.Json
 
         public static Task<object?> GetFromJsonAsync(this HttpClient client, Uri? requestUri, Type type, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -36,7 +36,7 @@ namespace System.Net.Http.Json
 
         public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, string? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }
@@ -47,7 +47,7 @@ namespace System.Net.Http.Json
 
         public static Task<TValue?> GetFromJsonAsync<TValue>(this HttpClient client, Uri? requestUri, JsonSerializerOptions? options, CancellationToken cancellationToken = default)
         {
-            if (client == null)
+            if (client is null)
             {
                 throw new ArgumentNullException(nameof(client));
             }

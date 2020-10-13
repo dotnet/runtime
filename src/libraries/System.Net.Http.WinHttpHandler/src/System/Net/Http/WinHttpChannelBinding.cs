@@ -57,7 +57,7 @@ namespace System.Net.Http
 
         public override string ToString()
         {
-            if (_cachedToString == null && !IsInvalid)
+            if (_cachedToString is null && !IsInvalid)
             {
                 var bytes = new byte[_size];
                 Marshal.Copy(this.handle, bytes, 0, _size);

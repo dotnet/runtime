@@ -20,7 +20,7 @@ namespace System.Collections.Generic
         /// <returns><c>true</c> if the enumerable could be counted cheaply; otherwise, <c>false</c>.</returns>
         internal static bool TryGetCount<T>(IEnumerable<T> source, out int count)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             if (source is ICollection<T> collection)
             {
@@ -47,7 +47,7 @@ namespace System.Collections.Generic
         /// <param name="count">The number of items in the enumerable.</param>
         internal static void Copy<T>(IEnumerable<T> source, T[] array, int arrayIndex, int count)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
             Debug.Assert(arrayIndex >= 0);
             Debug.Assert(count >= 0);
             Debug.Assert(array.Length - arrayIndex >= count);
@@ -72,7 +72,7 @@ namespace System.Collections.Generic
         /// <param name="count">The number of items in the enumerable.</param>
         internal static void IterativeCopy<T>(IEnumerable<T> source, T[] array, int arrayIndex, int count)
         {
-            Debug.Assert(source != null && !(source is ICollection<T>));
+            Debug.Assert(source is not null && !(source is ICollection<T>));
             Debug.Assert(arrayIndex >= 0);
             Debug.Assert(count >= 0);
             Debug.Assert(array.Length - arrayIndex >= count);
@@ -91,7 +91,7 @@ namespace System.Collections.Generic
         /// <returns>The resulting array.</returns>
         internal static T[] ToArray<T>(IEnumerable<T> source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             if (source is ICollection<T> collection)
             {

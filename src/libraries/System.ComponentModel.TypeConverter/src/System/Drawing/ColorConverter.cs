@@ -47,7 +47,7 @@ namespace System.Drawing
 
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
@@ -72,7 +72,7 @@ namespace System.Drawing
                         return "'" + c.Name + "'";
                     }
 
-                    if (culture == null)
+                    if (culture is null)
                     {
                         culture = CultureInfo.CurrentCulture;
                     }
@@ -128,8 +128,8 @@ namespace System.Drawing
                         args = new object[] { c.R, c.G, c.B };
                     }
 
-                    Debug.Assert(member != null, "Could not convert color to member. Did someone change method name / signature and not update ColorConverter?");
-                    if (member != null)
+                    Debug.Assert(member is not null, "Could not convert color to member. Did someone change method name / signature and not update ColorConverter?");
+                    if (member is not null)
                     {
                         return new InstanceDescriptor(member, args);
                     }

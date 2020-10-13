@@ -107,7 +107,7 @@ namespace System.Collections.ObjectModel
 
         private static bool IsCompatibleKey(object key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -168,7 +168,7 @@ namespace System.Collections.ObjectModel
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -205,7 +205,7 @@ namespace System.Collections.ObjectModel
                 else
                 {
                     object[]? objects = array as object[];
-                    if (objects == null)
+                    if (objects is null)
                     {
                         throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                     }
@@ -371,7 +371,7 @@ namespace System.Collections.ObjectModel
         // Abstracted away to avoid redundant implementations.
         internal static void CopyToNonGenericICollectionHelper<T>(ICollection<T> collection, Array array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -408,7 +408,7 @@ namespace System.Collections.ObjectModel
                 // We can't cast array of value type to object[], so we don't support
                 // widening of primitive types here.
                 object?[]? objects = array as object?[];
-                if (objects == null)
+                if (objects is null)
                 {
                     throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }

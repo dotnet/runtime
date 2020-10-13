@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
                 throw new ArgumentNullException(nameof(rootDir));
             }
 
-            if (files == null)
+            if (files is null)
             {
                 files = new List<string>();
             }

@@ -41,7 +41,7 @@ namespace System.Xml.Xsl.Runtime
 
         public DecimalFormatter(string formatPicture, DecimalFormat decimalFormat)
         {
-            Debug.Assert(formatPicture != null && decimalFormat != null);
+            Debug.Assert(formatPicture is not null && decimalFormat is not null);
             if (formatPicture.Length == 0)
             {
                 throw XsltException.Create(SR.Xslt_InvalidFormat);
@@ -236,7 +236,7 @@ namespace System.Xml.Xsl.Runtime
             NumberFormatInfo formatInfo;
             string subPicture;
 
-            if (value < 0 && _negFormatInfo != null)
+            if (value < 0 && _negFormatInfo is not null)
             {
                 formatInfo = _negFormatInfo;
                 subPicture = _negFormat;

@@ -40,11 +40,11 @@ namespace System.Security.Cryptography
         // array-based APIs invoke this common helper with the "encrypt" parameter determining whether encryption or decryption is done.
         private unsafe byte[] EncryptOrDecrypt(byte[] data, RSAEncryptionPadding padding, bool encrypt)
         {
-            if (data == null)
+            if (data is null)
             {
                 throw new ArgumentNullException(nameof(data));
             }
-            if (padding == null)
+            if (padding is null)
             {
                 throw new ArgumentNullException(nameof(padding));
             }
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography
         // span-based APIs invoke this common helper with the "encrypt" parameter determining whether encryption or decryption is done.
         private unsafe bool TryEncryptOrDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, bool encrypt, out int bytesWritten)
         {
-            if (padding == null)
+            if (padding is null)
             {
                 throw new ArgumentNullException(nameof(padding));
             }

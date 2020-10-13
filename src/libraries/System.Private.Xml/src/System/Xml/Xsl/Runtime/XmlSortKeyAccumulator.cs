@@ -29,7 +29,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void Create()
         {
-            if (_keys == null)
+            if (_keys is null)
                 _keys = new XmlSortKey[DefaultSortKeyCount];
 
             _pos = 0;
@@ -97,7 +97,7 @@ namespace System.Xml.Xsl.Runtime
             // Ensure that sort will be stable by setting index of key
             key.Priority = _pos;
 
-            if (_keys[_pos] == null)
+            if (_keys[_pos] is null)
                 _keys[_pos] = key;
             else
                 _keys[_pos].AddSortKey(key);

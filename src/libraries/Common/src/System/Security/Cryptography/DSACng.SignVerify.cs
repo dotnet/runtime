@@ -23,7 +23,7 @@ namespace System.Security.Cryptography
 
             public override byte[] CreateSignature(byte[] rgbHash)
             {
-                if (rgbHash == null)
+                if (rgbHash is null)
                 {
                     throw new ArgumentNullException(nameof(rgbHash));
                 }
@@ -87,11 +87,11 @@ namespace System.Security.Cryptography
 
             public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
             {
-                if (rgbHash == null)
+                if (rgbHash is null)
                 {
                     throw new ArgumentNullException(nameof(rgbHash));
                 }
-                if (rgbSignature == null)
+                if (rgbSignature is null)
                 {
                     throw new ArgumentNullException(nameof(rgbSignature));
                 }

@@ -30,10 +30,10 @@ namespace System.Security.Cryptography
 
         public static CngKey Create(CngAlgorithm algorithm, string? keyName, CngKeyCreationParameters? creationParameters)
         {
-            if (algorithm == null)
+            if (algorithm is null)
                 throw new ArgumentNullException(nameof(algorithm));
 
-            if (creationParameters == null)
+            if (creationParameters is null)
                 creationParameters = new CngKeyCreationParameters();
 
             SafeNCryptProviderHandle providerHandle = creationParameters.Provider!.OpenStorageProvider();
@@ -57,7 +57,7 @@ namespace System.Security.Cryptography
             CngKey key = new CngKey(providerHandle, keyHandle);
 
             // No name translates to an ephemeral key
-            if (keyName == null)
+            if (keyName is null)
             {
                 key.IsEphemeral = true;
             }
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography
                 }
 
                 CngUIPolicy? uiPolicy = creationParameters.UIPolicy;
-                if (uiPolicy != null)
+                if (uiPolicy is not null)
                 {
                     InitializeKeyUiPolicyProperties(keyHandle, uiPolicy);
                 }
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
                 foreach (CngProperty property in creationParameters.Parameters)
                 {
                     byte[]? value = property.GetValueWithoutCopying();
-                    int valueLength = (value == null) ? 0 : value.Length;
+                    int valueLength = (value is null) ? 0 : value.Length;
                     fixed (byte* pValue = value.MapZeroLengthArrayToNonNullPointer())
                     {
                         ErrorCode errorCode = Interop.NCrypt.NCryptSetProperty(keyHandle, property.Name, pValue, valueLength, property.Options);
@@ -141,7 +141,7 @@ namespace System.Security.Cryptography
                 }
 
                 string? useContext = uiPolicy.UseContext;
-                if (useContext != null)
+                if (useContext is not null)
                 {
                     int useContextByteLength = checked((useContext.Length + 1) * sizeof(char));
                     fixed (char* pinnedUseContext = useContext)

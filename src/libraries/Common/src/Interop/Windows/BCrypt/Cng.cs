@@ -154,8 +154,8 @@ namespace Internal.NativeCrypto
 
         public void SetParentHandle(SafeAlgorithmHandle parentHandle)
         {
-            Debug.Assert(_parentHandle == null);
-            Debug.Assert(parentHandle != null);
+            Debug.Assert(_parentHandle is null);
+            Debug.Assert(parentHandle is not null);
             Debug.Assert(!parentHandle.IsInvalid);
 
             bool ignore = false;
@@ -166,7 +166,7 @@ namespace Internal.NativeCrypto
 
         protected sealed override bool ReleaseHandle()
         {
-            if (_parentHandle != null)
+            if (_parentHandle is not null)
             {
                 _parentHandle.DangerousRelease();
                 _parentHandle = null;

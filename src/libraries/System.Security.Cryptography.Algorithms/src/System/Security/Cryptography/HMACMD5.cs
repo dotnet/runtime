@@ -76,7 +76,7 @@ namespace System.Security.Cryptography
             if (disposing)
             {
                 HMACCommon hMacCommon = _hMacCommon;
-                if (hMacCommon != null)
+                if (hMacCommon is not null)
                 {
                     _hMacCommon = null!;
                     hMacCommon.Dispose(disposing);

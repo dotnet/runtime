@@ -19,7 +19,7 @@ namespace System.IO.Pipes
 
         public static void SetAccessControl(this PipeStream stream, PipeSecurity pipeSecurity)
         {
-            if (pipeSecurity == null)
+            if (pipeSecurity is null)
             {
                 throw new ArgumentNullException(nameof(pipeSecurity));
             }

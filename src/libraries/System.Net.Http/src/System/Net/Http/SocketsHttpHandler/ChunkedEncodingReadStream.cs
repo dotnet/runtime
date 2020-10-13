@@ -31,13 +31,13 @@ namespace System.Net.Http
 
             public ChunkedEncodingReadStream(HttpConnection connection, HttpResponseMessage response) : base(connection)
             {
-                Debug.Assert(response != null, "The HttpResponseMessage cannot be null.");
+                Debug.Assert(response is not null, "The HttpResponseMessage cannot be null.");
                 _response = response;
             }
 
             public override int Read(Span<byte> buffer)
             {
-                if (_connection == null || buffer.Length == 0)
+                if (_connection is null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data.
                     return 0;
@@ -53,7 +53,7 @@ namespace System.Net.Http
                 // Nothing available to consume.  Fall back to I/O.
                 while (true)
                 {
-                    if (_connection == null)
+                    if (_connection is null)
                     {
                         // Fully consumed the response in ReadChunksFromConnectionBuffer.
                         return 0;
@@ -102,7 +102,7 @@ namespace System.Net.Http
                     return ValueTask.FromCanceled<int>(cancellationToken);
                 }
 
-                if (_connection == null || buffer.Length == 0)
+                if (_connection is null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data.
                     return new ValueTask<int>(0);
@@ -117,7 +117,7 @@ namespace System.Net.Http
 
                 // We may have just consumed the remainder of the response (with no actual data
                 // available), so check again.
-                if (_connection == null)
+                if (_connection is null)
                 {
                     Debug.Assert(_state == ParsingState.Done);
                     return new ValueTask<int>(0);
@@ -131,7 +131,7 @@ namespace System.Net.Http
             {
                 // Should only be called if ReadChunksFromConnectionBuffer returned 0.
 
-                Debug.Assert(_connection != null);
+                Debug.Assert(_connection is not null);
                 Debug.Assert(buffer.Length > 0);
 
                 CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
@@ -139,7 +139,7 @@ namespace System.Net.Http
                 {
                     while (true)
                     {
-                        if (_connection == null)
+                        if (_connection is null)
                         {
                             // Fully consumed the response in ReadChunksFromConnectionBuffer.
                             return 0;
@@ -195,7 +195,7 @@ namespace System.Net.Http
 
                 return
                     cancellationToken.IsCancellationRequested ? Task.FromCanceled(cancellationToken) :
-                    _connection == null ? Task.CompletedTask :
+                    _connection is null ? Task.CompletedTask :
                     CopyToAsyncCore(destination, cancellationToken);
             }
 
@@ -216,7 +216,7 @@ namespace System.Net.Http
                             await destination.WriteAsync(bytesRead, cancellationToken).ConfigureAwait(false);
                         }
 
-                        if (_connection == null)
+                        if (_connection is null)
                         {
                             // Fully consumed the response.
                             return;
@@ -256,7 +256,7 @@ namespace System.Net.Http
 
             private ReadOnlyMemory<byte> ReadChunkFromConnectionBuffer(int maxBytesToRead, CancellationTokenRegistration cancellationRegistration)
             {
-                Debug.Assert(maxBytesToRead > 0 && _connection != null);
+                Debug.Assert(maxBytesToRead > 0 && _connection is not null);
 
                 try
                 {
@@ -425,11 +425,11 @@ namespace System.Net.Http
                 Done
             }
 
-            public override bool NeedsDrain => (_connection != null);
+            public override bool NeedsDrain => (_connection is not null);
 
             public override async ValueTask<bool> DrainAsync(int maxDrainBytes)
             {
-                Debug.Assert(_connection != null);
+                Debug.Assert(_connection is not null);
 
                 CancellationTokenSource? cts = null;
                 CancellationTokenRegistration ctr = default;
@@ -450,7 +450,7 @@ namespace System.Net.Http
 
                         // When ReadChunkFromConnectionBuffer reads the final chunk, it will clear out _connection
                         // and return the connection to the pool.
-                        if (_connection == null)
+                        if (_connection is null)
                         {
                             return true;
                         }
@@ -460,7 +460,7 @@ namespace System.Net.Http
                             return false;
                         }
 
-                        if (cts == null) // only create the drain timer if we have to go async
+                        if (cts is null) // only create the drain timer if we have to go async
                         {
                             TimeSpan drainTime = _connection._pool.Settings._maxResponseDrainTime;
                             if (drainTime != Timeout.InfiniteTimeSpan)

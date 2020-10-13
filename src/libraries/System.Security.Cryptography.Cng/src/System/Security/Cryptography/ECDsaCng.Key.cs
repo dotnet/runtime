@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
 
             private set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 if (!IsEccAlgorithmGroup(value.AlgorithmGroup))

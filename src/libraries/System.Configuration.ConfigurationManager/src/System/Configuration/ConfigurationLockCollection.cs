@@ -42,7 +42,7 @@ namespace System.Configuration
                 (LockType == ConfigurationLockCollectionType.LockedElementsExceptionList);
             _ignoreName = ignoreName;
 
-            if (parentCollection == null) return;
+            if (parentCollection is null) return;
 
             foreach (string key in parentCollection) // seed the new collection
             {
@@ -132,10 +132,10 @@ namespace System.Configuration
 
             string attribToLockTrim = name.Trim();
             ConfigurationProperty propToLock = _thisElement.Properties[attribToLockTrim];
-            if ((propToLock == null) && (attribToLockTrim != LockAll))
+            if ((propToLock is null) && (attribToLockTrim != LockAll))
             {
                 ConfigurationElementCollection collection = _thisElement as ConfigurationElementCollection;
-                if ((collection == null) && (_thisElement.Properties.DefaultCollectionProperty != null))
+                if ((collection is null) && (_thisElement.Properties.DefaultCollectionProperty is not null))
                 {
                     // this is not a collection but it may contain a default collection
                     collection =
@@ -143,7 +143,7 @@ namespace System.Configuration
                             ConfigurationElementCollection;
                 }
 
-                if ((collection == null) ||
+                if ((collection is null) ||
                     (LockType == ConfigurationLockCollectionType.LockedAttributes) ||
                     // If the collection type is not element then the lock is bogus
                     (LockType == ConfigurationLockCollectionType.LockedExceptionList))
@@ -157,7 +157,7 @@ namespace System.Configuration
             else
             {
                 // the lock is in the property bag but is it the correct type?
-                if ((propToLock != null) && propToLock.IsRequired)
+                if ((propToLock is not null) && propToLock.IsRequired)
                 {
                     throw new ConfigurationErrorsException(SR.Format(SR.Config_base_required_attribute_lock_attempt,
                         propToLock.Name));
@@ -209,7 +209,7 @@ namespace System.Configuration
 
         internal bool DefinedInParent(string name)
         {
-            if (name == null)
+            if (name is null)
                 return false;
 
             if (!ExceptionList)

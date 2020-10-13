@@ -339,7 +339,7 @@ namespace Microsoft.Extensions.Logging.EventSource
                 return new[] { new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, defaultLevel, null) };
             }
 
-            if (filterSpec == null)
+            if (filterSpec is null)
             {
                 // All event source loggers are disabled by default
                 return new[] { new LoggerFilterRule(typeof(EventSourceLoggerProvider).FullName, null, LogLevel.None, null) };

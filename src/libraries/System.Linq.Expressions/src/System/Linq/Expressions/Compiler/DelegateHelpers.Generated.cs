@@ -27,7 +27,7 @@ namespace System.Linq.Expressions.Compiler
                 }
 
                 // see if we have the delegate already
-                if (curTypeInfo.DelegateType == null)
+                if (curTypeInfo.DelegateType is null)
                 {
                     // clone because MakeCustomDelegate can hold onto the array.
                     curTypeInfo.DelegateType = MakeNewDelegate((Type[])types.Clone());
@@ -67,7 +67,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Type lookingUp = initialArg;
             TypeInfo nextTypeInfo;
-            if (curTypeInfo.TypeChain == null)
+            if (curTypeInfo.TypeChain is null)
             {
                 curTypeInfo.TypeChain = new Dictionary<Type, TypeInfo>();
             }
@@ -136,7 +136,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static Type MakeNewDelegate(Type[] types)
         {
-            Debug.Assert(types != null && types.Length > 0);
+            Debug.Assert(types is not null && types.Length > 0);
 
             // Can only used predefined delegates if we have no byref types and
             // the arity is small enough to fit in Func<...> or Action<...>
@@ -180,7 +180,7 @@ namespace System.Linq.Expressions.Compiler
                 result = GetFuncType(types);
             }
 
-            Debug.Assert(result != null);
+            Debug.Assert(result is not null);
             return result;
         }
 

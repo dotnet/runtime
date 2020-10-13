@@ -19,8 +19,8 @@ namespace System.Xml.Xsl
         private readonly int _lineNumber;
         private readonly int _linePosition;
 
-        // message != null for V1 & V2 exceptions deserialized in Whidbey
-        // message == null for created V2 exceptions; the exception message is stored in Exception._message
+        // message is not null for V1 & V2 exceptions deserialized in Whidbey
+        // message is null for created V2 exceptions; the exception message is stored in Exception._message
         private readonly string? _message;
 
         protected XsltException(SerializationInfo info, StreamingContext context) : base(info, context)
@@ -41,7 +41,7 @@ namespace System.Xml.Xsl
                 }
             }
 
-            if (version == null)
+            if (version is null)
             {
                 // deserializing V1 exception
                 _message = CreateMessage(_res, _args, _sourceUri, _lineNumber, _linePosition);
@@ -137,7 +137,7 @@ namespace System.Xml.Xsl
         private static string? FormatMessage(string? key, params string?[]? args)
         {
             string? message = key;
-            if (message != null && args != null)
+            if (message is not null && args is not null)
             {
                 message = string.Format(CultureInfo.InvariantCulture, message, args);
             }

@@ -75,7 +75,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                 }
 
-                if (srchResult == null)
+                if (srchResult is null)
                 {
                     // no such connection object
                     Exception e = new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ReplicationConnection), name);
@@ -118,7 +118,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             ValidateArgument(context, name);
 
-            if (sourceServer == null)
+            if (sourceServer is null)
                 throw new ArgumentNullException(nameof(sourceServer));
 
             if (transport < ActiveDirectoryTransportType.Rpc || transport > ActiveDirectoryTransportType.Smtp)
@@ -156,7 +156,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 cachedDirectoryEntry.Properties["fromServer"].Add(serverName);
 
                 // schedule property
-                if (schedule != null)
+                if (schedule is not null)
                     cachedDirectoryEntry.Properties[nameof(schedule)].Value = schedule.GetUnmanagedSchedule();
 
                 // transporttype property
@@ -210,7 +210,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (!_disposed)
             {
-                if (disposing && cachedDirectoryEntry != null)
+                if (disposing && cachedDirectoryEntry is not null)
                     cachedDirectoryEntry.Dispose();
 
                 _disposed = true;
@@ -241,7 +241,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ObjectDisposedException(GetType().Name);
 
                 // get the source server
-                if (_sourceServerName == null)
+                if (_sourceServerName is null)
                 {
                     string sourceServerDN = (string)PropertyManager.GetPropertyValue(context, cachedDirectoryEntry, PropertyManager.FromServer);
                     DirectoryEntry de = DirectoryEntryManager.GetDirectoryEntry(context, sourceServerDN);
@@ -270,7 +270,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (_disposed)
                     throw new ObjectDisposedException(GetType().Name);
 
-                if (_destinationServerName == null)
+                if (_destinationServerName is null)
                 {
                     DirectoryEntry NTDSObject = null;
                     DirectoryEntry serverObject = null;
@@ -787,7 +787,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (scheduleExists)
                 {
                     byte[] tmpSchedule = (byte[])cachedDirectoryEntry.Properties["schedule"][0];
-                    Debug.Assert(tmpSchedule != null && tmpSchedule.Length == 188);
+                    Debug.Assert(tmpSchedule is not null && tmpSchedule.Length == 188);
                     schedule = new ActiveDirectorySchedule();
                     schedule.SetUnmanagedSchedule(tmpSchedule);
                 }
@@ -801,7 +801,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 try
                 {
-                    if (value == null)
+                    if (value is null)
                     {
                         if (cachedDirectoryEntry.Properties.Contains("schedule"))
                             cachedDirectoryEntry.Properties["schedule"].Clear();
@@ -907,14 +907,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private static void ValidateArgument(DirectoryContext context, string name)
         {
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
             // the target of the scope must be server
-            if (context.Name == null || !context.isServer())
+            if (context.Name is null || !context.isServer())
                 throw new ArgumentException(SR.DirectoryContextNeedHost);
 
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
@@ -980,10 +980,10 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (targetDE != null)
+                if (targetDE is not null)
                     targetDE.Close();
 
-                if (sourceDE != null)
+                if (sourceDE is not null)
                     sourceDE.Close();
             }
         }

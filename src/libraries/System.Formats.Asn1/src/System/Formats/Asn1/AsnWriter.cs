@@ -54,7 +54,7 @@ namespace System.Formats.Asn1
         {
             if (_offset > 0)
             {
-                Debug.Assert(_buffer != null);
+                Debug.Assert(_buffer is not null);
                 Array.Clear(_buffer, 0, _offset);
                 _offset = 0;
 
@@ -224,7 +224,7 @@ namespace System.Formats.Asn1
         /// </exception>
         public bool EncodedValueEquals(AsnWriter other)
         {
-            if (other == null)
+            if (other is null)
                 throw new ArgumentNullException(nameof(other));
 
             return EncodeAsSpan().SequenceEqual(other.EncodeAsSpan());
@@ -237,7 +237,7 @@ namespace System.Formats.Asn1
                 throw new OverflowException();
             }
 
-            if (_buffer == null || _buffer.Length - _offset < pendingCount)
+            if (_buffer is null || _buffer.Length - _offset < pendingCount)
             {
 #if CHECK_ACCURATE_ENSURE
                 // A debug paradigm to make sure that throughout the execution nothing ever writes
@@ -245,7 +245,7 @@ namespace System.Formats.Asn1
                 // and copies, so it's a #define opt-in.
                 byte[] newBytes = new byte[_offset + pendingCount];
 
-                if (_buffer != null)
+                if (_buffer is not null)
                 {
                     Span<byte> bufferSpan = _buffer.AsSpan(0, _offset);
                     bufferSpan.CopyTo(newBytes);
@@ -260,7 +260,7 @@ namespace System.Formats.Asn1
                 byte[]? oldBytes = _buffer;
                 Array.Resize(ref _buffer, BlockSize * blocks);
 
-                if (oldBytes != null)
+                if (oldBytes is not null)
                 {
                     oldBytes.AsSpan(0, _offset).Clear();
                 }
@@ -382,7 +382,7 @@ namespace System.Formats.Asn1
         /// </exception>
         public void CopyTo(AsnWriter destination)
         {
-            if (destination == null)
+            if (destination is null)
                 throw new ArgumentNullException(nameof(destination));
 
             try
@@ -444,7 +444,7 @@ namespace System.Formats.Asn1
 
         private Scope PushTag(Asn1Tag tag, UniversalTagNumber tagType)
         {
-            if (_nestingStack == null)
+            if (_nestingStack is null)
             {
                 _nestingStack = new Stack<StackFrame>();
             }
@@ -460,7 +460,7 @@ namespace System.Formats.Asn1
 
         private void PopTag(Asn1Tag tag, UniversalTagNumber tagType, bool sortContents = false)
         {
-            if (_nestingStack == null || _nestingStack.Count == 0)
+            if (_nestingStack is null || _nestingStack.Count == 0)
             {
                 throw new InvalidOperationException(SR.AsnWriter_PopWrongTag);
             }
@@ -566,7 +566,7 @@ namespace System.Formats.Asn1
 
         private static void SortContents(byte[] buffer, int start, int end)
         {
-            Debug.Assert(buffer != null);
+            Debug.Assert(buffer is not null);
             Debug.Assert(end >= start);
 
             int len = end - start;
@@ -634,7 +634,7 @@ namespace System.Formats.Asn1
 
         private static void CheckUniversalTag(Asn1Tag? tag, UniversalTagNumber universalTagNumber)
         {
-            if (tag != null)
+            if (tag is not null)
             {
                 Asn1Tag value = tag.Value;
 
@@ -721,7 +721,7 @@ namespace System.Formats.Asn1
 
             internal Scope(AsnWriter writer)
             {
-                Debug.Assert(writer._nestingStack != null);
+                Debug.Assert(writer._nestingStack is not null);
 
                 _writer = writer;
                 _frame = _writer._nestingStack.Peek();
@@ -730,9 +730,9 @@ namespace System.Formats.Asn1
 
             public void Dispose()
             {
-                Debug.Assert(_writer == null || _writer._nestingStack != null);
+                Debug.Assert(_writer is null || _writer._nestingStack is not null);
 
-                if (_writer == null || _writer._nestingStack!.Count == 0)
+                if (_writer is null || _writer._nestingStack!.Count == 0)
                 {
                     return;
                 }

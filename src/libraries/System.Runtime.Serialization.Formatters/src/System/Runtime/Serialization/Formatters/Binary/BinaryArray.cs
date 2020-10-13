@@ -55,7 +55,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
 
         public void Write(BinaryFormatterWriter output)
         {
-            Debug.Assert(_lengthA != null);
+            Debug.Assert(_lengthA is not null);
             switch (_binaryHeaderEnum)
             {
                 case BinaryHeaderEnum.ArraySinglePrimitive:
@@ -87,7 +87,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                         (_binaryArrayTypeEnum == BinaryArrayTypeEnum.JaggedOffset) ||
                         (_binaryArrayTypeEnum == BinaryArrayTypeEnum.RectangularOffset))
                     {
-                        Debug.Assert(_lowerBoundA != null);
+                        Debug.Assert(_lowerBoundA is not null);
                         for (int i = 0; i < _rank; i++)
                         {
                             output.WriteInt32(_lowerBoundA[i]);

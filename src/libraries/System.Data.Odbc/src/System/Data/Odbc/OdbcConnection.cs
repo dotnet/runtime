@@ -201,7 +201,7 @@ namespace System.Data.Odbc
             {
                 if (IsOpen)
                 {
-                    if (ProviderInfo.DriverName == null)
+                    if (ProviderInfo.DriverName is null)
                     {
                         ProviderInfo.DriverName = GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_NAME)!;
                     }
@@ -215,11 +215,11 @@ namespace System.Data.Odbc
         {
             get
             {
-                if (ProviderInfo.DriverVersion == null)
+                if (ProviderInfo.DriverVersion is null)
                 {
                     ProviderInfo.DriverVersion = GetInfoStringUnhandled(ODBC32.SQL_INFO.DRIVER_ODBC_VER);
                     // protected against null and index out of range. Number cannot be bigger than 99
-                    if (ProviderInfo.DriverVersion != null && ProviderInfo.DriverVersion.Length >= 2)
+                    if (ProviderInfo.DriverVersion is not null && ProviderInfo.DriverVersion.Length >= 2)
                     {
                         try
                         {   // mdac 89269: driver may return malformatted string
@@ -525,7 +525,7 @@ namespace System.Data.Odbc
                     {
                         //Optimize to only create the event objects and obtain error info if
                         //the user is really interested in retriveing the events...
-                        if (_infoMessageEventHandler != null)
+                        if (_infoMessageEventHandler is not null)
                         {
                             OdbcErrorCollection errors = ODBC32.GetDiagErrors(null, hrHandle, retcode);
                             errors.SetSource(this.Driver);
@@ -535,7 +535,7 @@ namespace System.Data.Odbc
                     }
                 default:
                     OdbcException e = OdbcException.CreateException(ODBC32.GetDiagErrors(null, hrHandle, retcode), retcode);
-                    if (e != null)
+                    if (e is not null)
                     {
                         e.Errors.SetSource(this.Driver);
                     }

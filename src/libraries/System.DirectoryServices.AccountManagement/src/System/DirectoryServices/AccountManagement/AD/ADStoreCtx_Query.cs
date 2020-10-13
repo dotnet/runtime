@@ -103,7 +103,7 @@ namespace System.DirectoryServices.AccountManagement
         // Pushes the query represented by the QBE filter into the PrincipalSearcher's underlying native
         // searcher object (creating a fresh native searcher and assigning it to the PrincipalSearcher if one
         // doesn't already exist) and returns the native searcher.
-        // If the PrincipalSearcher does not have a query filter set (PrincipalSearcher.QueryFilter == null),
+        // If the PrincipalSearcher does not have a query filter set (PrincipalSearcher.QueryFilter is null),
         // produces a query that will match all principals in the store.
         //
         // For stores which don't have a native searcher (SAM), the StoreCtx
@@ -114,7 +114,7 @@ namespace System.DirectoryServices.AccountManagement
         internal override object PushFilterToNativeSearcher(PrincipalSearcher ps)
         {
             // This is the first time we're being called on this principal.  Create a fresh searcher.
-            if (ps.UnderlyingSearcher == null)
+            if (ps.UnderlyingSearcher is null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "PushFilterToNativeSearcher: creating fresh DirectorySearcher");
 
@@ -129,7 +129,7 @@ namespace System.DirectoryServices.AccountManagement
 
             StringBuilder ldapFilter = new StringBuilder();
 
-            if (qbeFilter == null)
+            if (qbeFilter is null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "PushFilterToNativeSearcher: no qbeFilter specified");
 
@@ -156,7 +156,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     FilterPropertyTableEntry entry = (FilterPropertyTableEntry)filterTable[filter.GetType()];
 
-                    if (entry == null)
+                    if (entry is null)
                     {
                         // Must be a property we don't support
                         throw new InvalidOperationException(
@@ -221,7 +221,7 @@ namespace System.DirectoryServices.AccountManagement
         // Given a PrincipalSearcher containg a query filter, transforms it into the store schema
         // and performs the query to get a collection of matching native objects (up to a maximum of sizeLimit,
         // or uses the sizelimit already set on the DirectorySearcher if sizeLimit == -1).
-        // If the PrincipalSearcher does not have a query filter (PrincipalSearcher.QueryFilter == null),
+        // If the PrincipalSearcher does not have a query filter (PrincipalSearcher.QueryFilter is null),
         // matches all principals in the store.
         //
         // The collection may not be complete, i.e., paging - the returned ResultSet will automatically
@@ -243,7 +243,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Perform the actual search
                 SearchResultCollection src = ds.FindAll();
-                Debug.Assert(src != null);
+                Debug.Assert(src is not null);
 
                 // Create a ResultSet for the search results
                 ADEntriesSet resultSet = new ADEntriesSet(src, this, ps.QueryFilter.GetType());
@@ -327,7 +327,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             StringBuilder sb = new StringBuilder();
 
-            if (filter.Value != null)
+            if (filter.Value is not null)
             {
                 sb.Append('(');
                 sb.Append(suggestedAdProperty);
@@ -352,7 +352,7 @@ namespace System.DirectoryServices.AccountManagement
             // this is stored as accountDisabled where TRUE = disabled and FALSE = enabled so here we need to revese the value.
             StringBuilder sb = new StringBuilder();
 
-            if (filter.Value != null)
+            if (filter.Value is not null)
             {
                 sb.Append('(');
                 sb.Append(suggestedAdProperty);
@@ -374,12 +374,12 @@ namespace System.DirectoryServices.AccountManagement
         // i.e.  ms-DS-UserPasswordNotRequired in ADAM where non existence equals false.
         protected static string DefaultValueBoolConverter(FilterBase filter, string suggestedAdProperty)
         {
-            Debug.Assert(NonPresentAttrDefaultStateMapping != null);
+            Debug.Assert(NonPresentAttrDefaultStateMapping is not null);
             Debug.Assert(NonPresentAttrDefaultStateMapping.ContainsKey(suggestedAdProperty));
 
             StringBuilder sb = new StringBuilder();
 
-            if (filter.Value != null)
+            if (filter.Value is not null)
             {
                 bool defaultState = NonPresentAttrDefaultStateMapping[suggestedAdProperty];
 
@@ -416,7 +416,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     StringBuilder sb = new StringBuilder();
 
-                    if (filter.Value != null)
+                    if (filter.Value is not null)
                     {
                         sb.Append('(');
                         sb.Append(suggestedAdProperty);
@@ -438,7 +438,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             StringBuilder sb = new StringBuilder();
 
-            if (filter.Value != null)
+            if (filter.Value is not null)
             {
                 sb.Append('(');
                 sb.Append(suggestedAdProperty);
@@ -459,7 +459,7 @@ namespace System.DirectoryServices.AccountManagement
 
         protected static bool IdentityClaimToFilter(string identity, string identityFormat, ref string filter, bool throwOnFail)
         {
-            if (identity == null)
+            if (identity is null)
                 identity = "";
 
             StringBuilder sb = new StringBuilder();
@@ -497,7 +497,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     string ldapHexGuid = ADUtils.HexStringToLdapHexString(stringguid.ToString());
 
-                    if (ldapHexGuid == null)
+                    if (ldapHexGuid is null)
                     {
                         if (throwOnFail)
                             throw new ArgumentException(SR.StoreCtxGuidIdentityClaimBadFormat);
@@ -572,11 +572,11 @@ namespace System.DirectoryServices.AccountManagement
         {
             IdentityClaim ic = (IdentityClaim)filter.Value;
 
-            if (ic.UrnScheme == null)
+            if (ic.UrnScheme is null)
                 throw new ArgumentException(SR.StoreCtxIdentityClaimMustHaveScheme);
 
             string urnValue = ic.UrnValue;
-            if (urnValue == null)
+            if (urnValue is null)
                 urnValue = "";
 
             string filterString = null;
@@ -630,7 +630,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             string ldapHexSid = ADUtils.HexStringToLdapHexString(stringizedBinarySid.ToString());
 
-            if (ldapHexSid == null)
+            if (ldapHexSid is null)
                 return false;
 
             if (useSidHistory)
@@ -756,7 +756,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             StringBuilder sb = new StringBuilder();
 
-            if (filter.Value != null)
+            if (filter.Value is not null)
             {
                 sb.Append('(');
                 sb.Append(suggestedAdProperty);
@@ -806,7 +806,7 @@ namespace System.DirectoryServices.AccountManagement
             Nullable<Guid> guid = (Nullable<Guid>)filter.Value;
             StringBuilder sb = new StringBuilder();
 
-            if (guid == null)
+            if (guid is null)
             {
                 // Spoke with ColinBr.  Both values are used to represent "no expiration date set".
                 // sb.Append("(|(accountExpires=9223372036854775807)(accountExpires=0))");
@@ -818,7 +818,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Transform from hex string ("1AFF") to LDAP hex string ("\1A\FF")
                 string ldapHexGuid = ADUtils.HexStringToLdapHexString(guid.ToString());
 
-                if (ldapHexGuid == null)
+                if (ldapHexGuid is null)
                     throw new InvalidOperationException(SR.StoreCtxGuidIdentityClaimBadFormat);
 
                 sb.Append(ldapHexGuid);
@@ -1123,13 +1123,13 @@ namespace System.DirectoryServices.AccountManagement
 
             StringBuilder query = new StringBuilder();
 
-            if (filter.Value != null)
+            if (filter.Value is not null)
             {
                 ExtensionCache ec = (ExtensionCache)filter.Value;
 
                 foreach (KeyValuePair<string, ExtensionCacheValue> kvp in ec.properties)
                 {
-                    Type type = kvp.Value.Type == null ? kvp.Value.Value.GetType() : kvp.Value.Type;
+                    Type type = kvp.Value.Type is null ? kvp.Value.Value.GetType() : kvp.Value.Type;
 
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheConverter filter type " + type.ToString());
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADStoreCtx", "ExtensionCacheConverter match type " + kvp.Value.MatchType.ToString());

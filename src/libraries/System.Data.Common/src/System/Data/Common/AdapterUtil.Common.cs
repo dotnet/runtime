@@ -27,8 +27,8 @@ namespace System.Data.Common
         // this method accepts BID format as an argument, this attribute allows FXCopBid rule to validate calls to it
         static partial void TraceException(string trace, Exception e)
         {
-            Debug.Assert(e != null, "TraceException: null Exception");
-            if (e != null)
+            Debug.Assert(e is not null, "TraceException: null Exception");
+            if (e is not null)
             {
                 DataCommonEventSource.Log.Trace(trace, e);
             }

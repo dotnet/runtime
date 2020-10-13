@@ -15,7 +15,7 @@ namespace System.Configuration
 
             string result = null;
 
-            if (value != null) result = ((Type)value).AssemblyQualifiedName;
+            if (value is not null) result = ((Type)value).AssemblyQualifiedName;
 
             return result;
         }
@@ -24,7 +24,7 @@ namespace System.Configuration
         {
             Type result = TypeUtil.GetType((string)data, false);
 
-            if (result == null) throw new ArgumentException(SR.Format(SR.Type_cannot_be_resolved, (string)data));
+            if (result is null) throw new ArgumentException(SR.Format(SR.Type_cannot_be_resolved, (string)data));
 
             return result;
         }

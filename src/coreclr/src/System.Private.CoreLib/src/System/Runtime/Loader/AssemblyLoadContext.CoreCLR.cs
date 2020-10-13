@@ -140,7 +140,7 @@ namespace System.Runtime.Loader
         // Returns the load context in which the specified assembly has been loaded
         public static AssemblyLoadContext? GetLoadContext(Assembly assembly)
         {
-            if (assembly == null)
+            if (assembly is null)
             {
                 throw new ArgumentNullException(nameof(assembly));
             }
@@ -150,7 +150,7 @@ namespace System.Runtime.Loader
             RuntimeAssembly? rtAsm = assembly as RuntimeAssembly;
 
             // We only support looking up load context for runtime assemblies.
-            if (rtAsm != null)
+            if (rtAsm is not null)
             {
                 RuntimeAssembly runtimeAssembly = rtAsm;
                 IntPtr ptrAssemblyLoadContext = GetLoadContextForAssembly(new QCallAssembly(ref runtimeAssembly));
@@ -184,7 +184,7 @@ namespace System.Runtime.Loader
         private static RuntimeAssembly? GetRuntimeAssembly(Assembly? asm)
         {
             return
-                asm == null ? null :
+                asm is null ? null :
                 asm is RuntimeAssembly rtAssembly ? rtAssembly :
                 asm is System.Reflection.Emit.AssemblyBuilder ab ? ab.InternalAssembly :
                 null;

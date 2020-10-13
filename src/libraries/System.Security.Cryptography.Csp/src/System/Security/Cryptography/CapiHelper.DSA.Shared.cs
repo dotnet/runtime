@@ -24,34 +24,34 @@ namespace Internal.NativeCrypto
         {
             // Validate the DSA structure first
             // P and Q are required. Q is a 160 bit divisor of P-1.
-            if (dsaParameters.P == null || dsaParameters.P.Length == 0 || dsaParameters.Q == null || dsaParameters.Q.Length != DSS_Q_LEN)
+            if (dsaParameters.P is null || dsaParameters.P.Length == 0 || dsaParameters.Q is null || dsaParameters.Q.Length != DSS_Q_LEN)
                 throw GetBadDataException();
 
             // G is required. G is an element of Z_p
-            if (dsaParameters.G == null || dsaParameters.G.Length != dsaParameters.P.Length)
+            if (dsaParameters.G is null || dsaParameters.G.Length != dsaParameters.P.Length)
                 throw GetBadDataException();
 
             // If J is present, it should be less than the size of P: J = (P-1) / Q
             // This is only a sanity check. Not doing it here is not really an issue as CAPI will fail.
-            if (dsaParameters.J != null && dsaParameters.J.Length >= dsaParameters.P.Length)
+            if (dsaParameters.J is not null && dsaParameters.J.Length >= dsaParameters.P.Length)
                 throw GetBadDataException();
 
             // Y is present for V3 DSA key blobs, Y = g^j mod P
-            if (dsaParameters.Y != null && dsaParameters.Y.Length != dsaParameters.P.Length)
+            if (dsaParameters.Y is not null && dsaParameters.Y.Length != dsaParameters.P.Length)
                 throw GetBadDataException();
 
             // The seed is always a 20 byte array
-            if (dsaParameters.Seed != null && dsaParameters.Seed.Length != 20)
+            if (dsaParameters.Seed is not null && dsaParameters.Seed.Length != 20)
                 throw GetBadDataException();
 
-            bool isPrivate = (dsaParameters.X != null && dsaParameters.X.Length > 0);
+            bool isPrivate = (dsaParameters.X is not null && dsaParameters.X.Length > 0);
 
             // The private key should be the same length as Q
             if (isPrivate && dsaParameters.X!.Length != DSS_Q_LEN)
                 throw GetBadDataException();
 
             uint bitLenP = (uint)dsaParameters.P.Length * 8;
-            uint bitLenJ = dsaParameters.J == null ? 0 : (uint)dsaParameters.J.Length * 8;
+            uint bitLenJ = dsaParameters.J is null ? 0 : (uint)dsaParameters.J.Length * 8;
 
             using (var ms = new MemoryStream())
             using (var bw = new BinaryWriter(ms))
@@ -131,7 +131,7 @@ namespace Internal.NativeCrypto
                     }
                     else
                     {
-                        Debug.Assert(dsaParameters.Y != null);
+                        Debug.Assert(dsaParameters.Y is not null);
                         bw.WriteReversed(dsaParameters.Y);
                     }
 
@@ -161,7 +161,7 @@ namespace Internal.NativeCrypto
 
                     if (bVersion > 2)
                     {
-                        Debug.Assert(cspPublicBlob == null);
+                        Debug.Assert(cspPublicBlob is null);
 
                         // We need to read a key blob (DSSPUBKEY_VER3 or DSSPRIVKEY_VER3) as follows:
                         //  DWORD           magic
@@ -246,7 +246,7 @@ namespace Internal.NativeCrypto
                             // This can only happen if a v2 private blob was obtained directly through
                             // CAPI and saved away for later use, because exporting a private blob with ExportCspBlob
                             // will always export a v3 blob which contains both public and private keys.
-                            if (cspPublicBlob == null)
+                            if (cspPublicBlob is null)
                                 throw new CryptographicUnexpectedOperationException();
 
                             // Since DSSPUBKEY is used for either public or private key, we got X
@@ -295,8 +295,8 @@ namespace Internal.NativeCrypto
             // If Y is present and this is a private key,
             // or Y and J are present and this is a public key, this should be a v3 blob.
             byte version = BLOBHEADER_CURRENT_BVERSION;
-            if (((dsaParameters.Y != null) && isPrivate) ||
-                ((dsaParameters.Y != null) && (dsaParameters.J != null)))
+            if (((dsaParameters.Y is not null) && isPrivate) ||
+                ((dsaParameters.Y is not null) && (dsaParameters.J is not null)))
             {
                 Debug.Assert(dsaParameters.Y.Length > 0);
                 isV3 = true;
@@ -338,7 +338,7 @@ namespace Internal.NativeCrypto
 
         private static void WriteDSSSeed(DSAParameters dsaParameters, BinaryWriter bw)
         {
-            if (dsaParameters.Seed == null || dsaParameters.Seed.Length == 0)
+            if (dsaParameters.Seed is null || dsaParameters.Seed.Length == 0)
             {
                 bw.Write(0xFFFFFFFF); // counter
 

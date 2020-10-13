@@ -53,9 +53,9 @@ namespace System.Collections
         // Fills a Stack with the contents of a particular collection.  The items are
         // pushed onto the stack in the same order they are read by the enumerator.
         //
-        public Stack(ICollection col) : this((col == null ? 32 : col.Count))
+        public Stack(ICollection col) : this((col is null ? 32 : col.Count))
         {
-            if (col == null)
+            if (col is null)
                 throw new ArgumentNullException(nameof(col));
 
             IEnumerator en = col.GetEnumerator();
@@ -101,12 +101,12 @@ namespace System.Collections
 
             while (count-- > 0)
             {
-                if (obj == null)
+                if (obj is null)
                 {
-                    if (_array[count] == null)
+                    if (_array[count] is null)
                         return true;
                 }
-                else if (_array[count] != null && _array[count]!.Equals(obj))
+                else if (_array[count] is not null && _array[count]!.Equals(obj))
                 {
                     return true;
                 }
@@ -117,7 +117,7 @@ namespace System.Collections
         // Copies the stack into an array.
         public virtual void CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -128,7 +128,7 @@ namespace System.Collections
 
             int i = 0;
             object?[]? objArray = array as object[];
-            if (objArray != null)
+            if (objArray is not null)
             {
                 while (i < _size)
                 {
@@ -193,7 +193,7 @@ namespace System.Collections
         //
         public static Stack Synchronized(Stack stack)
         {
-            if (stack == null)
+            if (stack is null)
                 throw new ArgumentNullException(nameof(stack));
 
             return new SyncStack(stack);
@@ -390,7 +390,7 @@ namespace System.Collections
 
             public StackDebugView(Stack stack)
             {
-                if (stack == null)
+                if (stack is null)
                     throw new ArgumentNullException(nameof(stack));
 
                 _stack = stack;

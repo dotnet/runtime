@@ -130,7 +130,7 @@ namespace System.Net.Http
                     _expect100ContinueCompletionSource = new TaskCompletionSource<bool>();
                 }
 
-                if (_expect100ContinueCompletionSource != null || _request.Content == null)
+                if (_expect100ContinueCompletionSource is not null || _request.Content is null)
                 {
                     // Ideally, headers will be sent out in a gathered write inside of SendContentAsync().
                     // If we don't have content, or we are doing Expect 100 Continue, then we can't rely on
@@ -139,7 +139,7 @@ namespace System.Net.Http
                     await _stream.WriteAsync(_sendBuffer.ActiveMemory, requestCancellationSource.Token).ConfigureAwait(false);
                     _sendBuffer.Discard(_sendBuffer.ActiveLength);
 
-                    if (_expect100ContinueCompletionSource != null)
+                    if (_expect100ContinueCompletionSource is not null)
                     {
                         // Flush to ensure we get a response.
                         // TODO: MsQuic may not need any flushing.
@@ -157,7 +157,7 @@ namespace System.Net.Http
 
                 // In parallel, send content and read response.
                 // Depending on Expect 100 Continue usage, one will depend on the other making progress.
-                Task sendContentTask = _request.Content != null ? SendContentAsync(_request.Content, sendContentCancellationToken) : Task.CompletedTask;
+                Task sendContentTask = _request.Content is not null ? SendContentAsync(_request.Content, sendContentCancellationToken) : Task.CompletedTask;
                 Task readResponseTask = ReadResponseAsync(requestCancellationSource.Token);
                 bool sendContentObserved = false;
 
@@ -197,7 +197,7 @@ namespace System.Net.Http
                 // Use an atomic exchange to avoid a race to Cancel()/Dispose().
                 Interlocked.Exchange(ref _goawayCancellationSource, null)?.Dispose();
 
-                Debug.Assert(_response != null && _response.Content != null);
+                Debug.Assert(_response is not null && _response.Content is not null);
                 // Set our content stream.
                 var responseContent = (HttpConnectionResponseContent)_response.Content;
 
@@ -296,7 +296,7 @@ namespace System.Net.Http
         /// </summary>
         private async Task ReadResponseAsync(CancellationToken cancellationToken)
         {
-            Debug.Assert(_response == null);
+            Debug.Assert(_response is null);
             do
             {
                 _headerState = HeaderState.StatusHeader;
@@ -313,7 +313,7 @@ namespace System.Net.Http
                 }
 
                 await ReadHeadersAsync(payloadLength, cancellationToken).ConfigureAwait(false);
-                Debug.Assert(_response != null);
+                Debug.Assert(_response is not null);
             }
             while ((int)_response.StatusCode < 200);
 
@@ -324,7 +324,7 @@ namespace System.Net.Http
         {
             // If we're using Expect 100 Continue, wait to send content
             // until we get a response back or until our timeout elapses.
-            if (_expect100ContinueCompletionSource != null)
+            if (_expect100ContinueCompletionSource is not null)
             {
                 Timer? timer = null;
 
@@ -344,7 +344,7 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    if (timer != null)
+                    if (timer is not null)
                     {
                         await timer.DisposeAsync().ConfigureAwait(false);
                     }
@@ -499,7 +499,7 @@ namespace System.Net.Http
             _sendBuffer.Commit(2);
 
             HttpMethod normalizedMethod = HttpMethod.Normalize(request.Method);
-            if (normalizedMethod.Http3EncodedBytes != null)
+            if (normalizedMethod.Http3EncodedBytes is not null)
             {
                 BufferBytes(normalizedMethod.Http3EncodedBytes);
             }
@@ -510,7 +510,7 @@ namespace System.Net.Http
 
             BufferIndexedHeader(H3StaticTable.SchemeHttps);
 
-            if (request.HasHeaders && request.Headers.Host != null)
+            if (request.HasHeaders && request.Headers.Host is not null)
             {
                 BufferLiteralHeaderWithStaticNameReference(H3StaticTable.Authority, request.Headers.Host);
             }
@@ -519,7 +519,7 @@ namespace System.Net.Http
                 BufferBytes(_connection.Pool._http3EncodedAuthorityHostHeader);
             }
 
-            Debug.Assert(request.RequestUri != null);
+            Debug.Assert(request.RequestUri is not null);
             string pathAndQuery = request.RequestUri.PathAndQuery;
             if (pathAndQuery == "/")
             {
@@ -554,7 +554,7 @@ namespace System.Net.Http
                 }
             }
 
-            if (request.Content == null)
+            if (request.Content is null)
             {
                 if (normalizedMethod.MustHaveRequestBody)
                 {
@@ -581,7 +581,7 @@ namespace System.Net.Http
         // TODO: special-case Content-Type for static table values values?
         private void BufferHeaderCollection(HttpHeaders headers)
         {
-            if (headers.HeaderStore == null)
+            if (headers.HeaderStore is null)
             {
                 return;
             }
@@ -597,7 +597,7 @@ namespace System.Net.Http
                 Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, _request);
 
                 KnownHeader? knownHeader = header.Key.KnownHeader;
-                if (knownHeader != null)
+                if (knownHeader is not null)
                 {
                     // The Host header is not sent for HTTP/3 because we send the ":authority" pseudo-header instead
                     // (see pseudo-header handling below in WriteHeaders).
@@ -625,7 +625,7 @@ namespace System.Net.Http
                         if (headerValues.Length > 1)
                         {
                             HttpHeaderParser? parser = header.Key.Parser;
-                            if (parser != null && parser.SupportsMultipleValues)
+                            if (parser is not null && parser.SupportsMultipleValues)
                             {
                                 separator = parser.Separator;
                             }
@@ -897,7 +897,7 @@ namespace System.Net.Http
                     // Informational responses should not contain headers -- skip them.
                     _headerState = HeaderState.SkipExpect100Headers;
 
-                    if (_response.StatusCode == HttpStatusCode.Continue && _expect100ContinueCompletionSource != null)
+                    if (_response.StatusCode == HttpStatusCode.Continue && _expect100ContinueCompletionSource is not null)
                     {
                         _expect100ContinueCompletionSource.TrySetResult(true);
                     }
@@ -905,7 +905,7 @@ namespace System.Net.Http
                 else
                 {
                     _headerState = HeaderState.ResponseHeaders;
-                    if (_expect100ContinueCompletionSource != null)
+                    if (_expect100ContinueCompletionSource is not null)
                     {
                         // If the final status code is >= 300, skip sending the body.
                         bool shouldSendBody = (statusCode < 300);
@@ -986,7 +986,7 @@ namespace System.Net.Http
         {
             // Response headers should be done reading by the time this is called. _response is nulled out as part of this.
             // Verify that this is being called in correct order.
-            Debug.Assert(_response == null);
+            Debug.Assert(_response is null);
 
             try
             {
@@ -1044,7 +1044,7 @@ namespace System.Net.Http
         {
             // Response headers should be done reading by the time this is called. _response is nulled out as part of this.
             // Verify that this is being called in correct order.
-            Debug.Assert(_response == null);
+            Debug.Assert(_response is null);
 
             try
             {
@@ -1188,7 +1188,7 @@ namespace System.Net.Http
 
             protected override void Dispose(bool disposing)
             {
-                if (_stream != null)
+                if (_stream is not null)
                 {
                     if (disposing)
                     {
@@ -1212,7 +1212,7 @@ namespace System.Net.Http
 
             public override async ValueTask DisposeAsync()
             {
-                if (_stream != null)
+                if (_stream is not null)
                 {
                     await _stream.DisposeAsync().ConfigureAwait(false);
                     _stream = null!;
@@ -1223,23 +1223,23 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                if (_stream == null)
+                if (_stream is null)
                 {
                     throw new ObjectDisposedException(nameof(Http3RequestStream));
                 }
 
-                Debug.Assert(_response != null);
+                Debug.Assert(_response is not null);
                 return _stream.ReadResponseContent(_response, buffer);
             }
 
             public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
             {
-                if (_stream == null)
+                if (_stream is null)
                 {
                     return ValueTask.FromException<int>(new ObjectDisposedException(nameof(Http3RequestStream)));
                 }
 
-                Debug.Assert(_response != null);
+                Debug.Assert(_response is not null);
                 return _stream.ReadResponseContentAsync(_response, buffer, cancellationToken);
             }
 
@@ -1281,7 +1281,7 @@ namespace System.Net.Http
 
             public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
-                if (_stream == null)
+                if (_stream is null)
                 {
                     return ValueTask.FromException(new ObjectDisposedException(nameof(Http3WriteStream)));
                 }

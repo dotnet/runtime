@@ -25,13 +25,13 @@ namespace System.Xml.Xsl.XsltOld
 
         internal string? ResolveAtom(string prefix)
         {
-            Debug.Assert(prefix != null && prefix.Length > 0);
+            Debug.Assert(prefix is not null && prefix.Length > 0);
 
-            for (NamespaceDecl? scope = this.scopes; scope != null; scope = scope.Next)
+            for (NamespaceDecl? scope = this.scopes; scope is not null; scope = scope.Next)
             {
                 if (Ref.Equal(scope.Prefix, prefix))
                 {
-                    Debug.Assert(scope.Uri != null);
+                    Debug.Assert(scope.Uri is not null);
                     return scope.Uri;
                 }
             }
@@ -41,13 +41,13 @@ namespace System.Xml.Xsl.XsltOld
 
         internal string? ResolveNonAtom(string prefix)
         {
-            Debug.Assert(prefix != null && prefix.Length > 0);
+            Debug.Assert(prefix is not null && prefix.Length > 0);
 
-            for (NamespaceDecl? scope = this.scopes; scope != null; scope = scope.Next)
+            for (NamespaceDecl? scope = this.scopes; scope is not null; scope = scope.Next)
             {
                 if (scope.Prefix == prefix)
                 {
-                    Debug.Assert(scope.Uri != null);
+                    Debug.Assert(scope.Uri is not null);
                     return scope.Uri;
                 }
             }

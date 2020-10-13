@@ -64,13 +64,13 @@ namespace System.Xml.Xsl.XPath {
 
         // Methods that deal with XPath context. Xslt.QilGenerator calls these method as well:
         public static QilNode GetCurrentNode(QilTuple context) {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
             Debug.Assert(GetTuple(context).For.Type == QilNodeType.For);
             return GetTuple(context).For;
         }
 
         public static QilNode GetCurrentPosition(QilFactory f, QilTuple context) {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
             if (context.Where.Type != QilNodeType.True) {
                 Debug.Assert(context.For.Type == QilNodeType.For);
                 // convert context (1) --> (2)
@@ -87,7 +87,7 @@ namespace System.Xml.Xsl.XPath {
         }
 
         public static QilTuple GetTuple(QilTuple context) {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
             if (context.For.Type == QilNodeType.Let) {
                 Debug.Assert(context.Where.Type == QilNodeType.True);
                 Debug.Assert(context.Return.Type == QilNodeType.OldTuple);

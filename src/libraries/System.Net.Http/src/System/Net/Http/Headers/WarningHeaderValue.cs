@@ -65,7 +65,7 @@ namespace System.Net.Http.Headers
 
         private WarningHeaderValue(WarningHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _code = source._code;
             _agent = source._agent;
@@ -99,7 +99,7 @@ namespace System.Net.Http.Headers
         {
             WarningHeaderValue? other = obj as WarningHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }

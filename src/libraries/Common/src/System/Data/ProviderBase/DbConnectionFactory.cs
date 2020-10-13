@@ -67,7 +67,7 @@ namespace System.Data.ProviderBase
 
         public void ClearPool(DbConnectionPoolKey key)
         {
-            Debug.Assert(key != null, "key cannot be null");
+            Debug.Assert(key is not null, "key cannot be null");
             ADP.CheckArgumentNull(key.ConnectionString, nameof(key) + "." + nameof(key.ConnectionString));
 
             DbConnectionPoolGroup? poolGroup;
@@ -128,7 +128,7 @@ namespace System.Data.ProviderBase
 
         protected DbConnectionOptions? FindConnectionOptions(DbConnectionPoolKey key)
         {
-            Debug.Assert(key != null, "key cannot be null");
+            Debug.Assert(key is not null, "key cannot be null");
             if (!string.IsNullOrEmpty(key.ConnectionString))
             {
                 DbConnectionPoolGroup? connectionPoolGroup;
@@ -376,7 +376,7 @@ namespace System.Data.ProviderBase
 
         internal DbMetaDataFactory GetMetaDataFactory(DbConnectionPoolGroup connectionPoolGroup, DbConnectionInternal internalConnection)
         {
-            Debug.Assert(connectionPoolGroup != null, "connectionPoolGroup may not be null.");
+            Debug.Assert(connectionPoolGroup is not null, "connectionPoolGroup may not be null.");
 
             // get the matadatafactory from the pool entry. If it does not already have one
             // create one and save it on the pool entry
@@ -384,7 +384,7 @@ namespace System.Data.ProviderBase
 
             // consider serializing this so we don't construct multiple metadata factories
             // if two threads happen to hit this at the same time.  One will be GC'd
-            if (metaDataFactory == null)
+            if (metaDataFactory is null)
             {
                 bool allowCache = false;
                 metaDataFactory = CreateMetaDataFactory(internalConnection, out allowCache);

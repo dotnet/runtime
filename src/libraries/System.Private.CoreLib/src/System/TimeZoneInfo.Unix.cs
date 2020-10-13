@@ -112,7 +112,7 @@ namespace System
         /// </summary>
         public AdjustmentRule[] GetAdjustmentRules()
         {
-            if (_adjustmentRules == null)
+            if (_adjustmentRules is null)
             {
                 return Array.Empty<AdjustmentRule>();
             }
@@ -206,7 +206,7 @@ namespace System
 
             value = GetTimeZoneFromTzData(rawData, id);
 
-            if (value == null)
+            if (value is null)
             {
                 e = new InvalidTimeZoneException(SR.Format(SR.InvalidTimeZone_InvalidFileData, id, timeZoneFilePath));
                 return TimeZoneInfoResult.InvalidTimeZoneException;
@@ -230,7 +230,7 @@ namespace System
                 using (StreamReader sr = new StreamReader(Path.Combine(timeZoneDirectory, ZoneTabFileName), Encoding.UTF8))
                 {
                     string? zoneTabFileLine;
-                    while ((zoneTabFileLine = sr.ReadLine()) != null)
+                    while ((zoneTabFileLine = sr.ReadLine()) is not null)
                     {
                         if (!string.IsNullOrEmpty(zoneTabFileLine) && zoneTabFileLine[0] != '#')
                         {
@@ -285,7 +285,7 @@ namespace System
             string? tzVariable = GetTzEnvironmentVariable();
 
             // If the env var is null, use the localtime file
-            if (tzVariable == null)
+            if (tzVariable is null)
             {
                 return
                     TryLoadTzFile("/etc/localtime", ref rawData, ref id) ||
@@ -362,7 +362,7 @@ namespace System
             string? id = null;
 
             string? symlinkPath = Interop.Sys.ReadLink(tzFilePath);
-            if (symlinkPath != null)
+            if (symlinkPath is not null)
             {
                 // symlinkPath can be relative path, use Path to get the full absolute path.
                 symlinkPath = Path.GetFullPath(symlinkPath, Path.GetDirectoryName(tzFilePath)!);
@@ -419,7 +419,7 @@ namespace System
                             while (Interop.Sys.ReadDirR(dirHandle, dirBufferPtr, bufferSize, out dirent) == 0)
                             {
                                 string? fullPath = GetDirectoryEntryFullPath(ref dirent, currentPath);
-                                if (fullPath == null)
+                                if (fullPath is null)
                                     continue;
 
                                 // Get from the dir entry whether the entry is a file or directory.
@@ -471,7 +471,7 @@ namespace System
                                 Interop.Sys.CloseDir(dirHandle);
                         }
 
-                        if (toExplore == null || toExplore.Count == 0)
+                        if (toExplore is null || toExplore.Count == 0)
                             break;
 
                         currentPath = toExplore[toExplore.Count - 1];
@@ -481,7 +481,7 @@ namespace System
             }
             finally
             {
-                if (dirBuffer != null)
+                if (dirBuffer is not null)
                     ArrayPool<byte>.Shared.Return(dirBuffer);
             }
         }
@@ -584,7 +584,7 @@ namespace System
             if (TryGetLocalTzFile(out rawData, out id))
             {
                 TimeZoneInfo? result = GetTimeZoneFromTzData(rawData, id);
-                if (result != null)
+                if (result is not null)
                 {
                     return result;
                 }
@@ -596,7 +596,7 @@ namespace System
 
         private static TimeZoneInfo? GetTimeZoneFromTzData(byte[]? rawData, string id)
         {
-            if (rawData != null)
+            if (rawData is not null)
             {
                 try
                 {
@@ -619,7 +619,7 @@ namespace System
         {
             string? tzDirectory = Environment.GetEnvironmentVariable(TimeZoneDirectoryEnvironmentVariable);
 
-            if (tzDirectory == null)
+            if (tzDirectory is null)
             {
                 tzDirectory = DefaultTimeZoneDirectory;
             }
@@ -649,7 +649,7 @@ namespace System
                 return Utc;
             }
 
-            if (id == null)
+            if (id is null)
             {
                 throw new ArgumentNullException(nameof(id));
             }
@@ -843,7 +843,7 @@ namespace System
                 }
 
                 rules = rulesList.ToArray();
-                if (rules != null && rules.Length == 0)
+                if (rules is not null && rules.Length == 0)
                 {
                     rules = null;
                 }
@@ -954,7 +954,7 @@ namespace System
                     TZif_CreateAdjustmentRuleForPosixFormat(futureTransitionsPosixFormat, startTransitionDate, timeZoneBaseUtcOffset) :
                     null;
 
-                if (r == null)
+                if (r is null)
                 {
                     // just use the last transition as the rule which will be used until the end of time
 
@@ -1073,7 +1073,7 @@ namespace System
                         TransitionTime? dstStart = TZif_CreateTransitionTimeFromPosixRule(start, startTime);
                         TransitionTime? dstEnd = TZif_CreateTransitionTimeFromPosixRule(end, endTime);
 
-                        if (dstStart == null || dstEnd == null)
+                        if (dstStart is null || dstEnd is null)
                         {
                             return null;
                         }
@@ -1638,7 +1638,7 @@ namespace System
 
             public TZifType(byte[] data, int index)
             {
-                if (data == null || data.Length < index + Length)
+                if (data is null || data.Length < index + Length)
                 {
                     throw new ArgumentException(SR.Argument_TimeZoneInfoInvalidTZif, nameof(data));
                 }
@@ -1664,7 +1664,7 @@ namespace System
 
             public TZifHead(byte[] data, int index)
             {
-                if (data == null || data.Length < Length)
+                if (data is null || data.Length < Length)
                 {
                     throw new ArgumentException("bad data", nameof(data));
                 }

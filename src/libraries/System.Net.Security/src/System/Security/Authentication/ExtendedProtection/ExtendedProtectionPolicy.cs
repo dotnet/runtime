@@ -28,7 +28,7 @@ namespace System.Security.Authentication.ExtendedProtection
                 throw new ArgumentException(SR.security_ExtendedProtectionPolicy_UseDifferentConstructorForNever, nameof(policyEnforcement));
             }
 
-            if (customServiceNames != null && customServiceNames.Count == 0)
+            if (customServiceNames is not null && customServiceNames.Count == 0)
             {
                 throw new ArgumentException(SR.security_ExtendedProtectionPolicy_NoEmptyServiceNameCollection, nameof(customServiceNames));
             }
@@ -42,7 +42,7 @@ namespace System.Security.Authentication.ExtendedProtection
                                         ProtectionScenario protectionScenario,
                                         ICollection? customServiceNames)
             : this(policyEnforcement, protectionScenario,
-                   customServiceNames == null ? (ServiceNameCollection?)null : new ServiceNameCollection(customServiceNames))
+                   customServiceNames is null ? (ServiceNameCollection?)null : new ServiceNameCollection(customServiceNames))
         {
         }
 
@@ -54,7 +54,7 @@ namespace System.Security.Authentication.ExtendedProtection
                 throw new ArgumentException(SR.security_ExtendedProtectionPolicy_UseDifferentConstructorForNever, nameof(policyEnforcement));
             }
 
-            if (customChannelBinding == null)
+            if (customChannelBinding is null)
             {
                 throw new ArgumentNullException(nameof(customChannelBinding));
             }
@@ -110,7 +110,7 @@ namespace System.Security.Authentication.ExtendedProtection
             sb.Append(_policyEnforcement.ToString());
 
             sb.Append("; CustomChannelBinding=");
-            if (_customChannelBinding == null)
+            if (_customChannelBinding is null)
             {
                 sb.Append("<null>");
             }
@@ -120,7 +120,7 @@ namespace System.Security.Authentication.ExtendedProtection
             }
 
             sb.Append("; ServiceNames=");
-            if (_customServiceNames == null)
+            if (_customServiceNames is null)
             {
                 sb.Append("<null>");
             }

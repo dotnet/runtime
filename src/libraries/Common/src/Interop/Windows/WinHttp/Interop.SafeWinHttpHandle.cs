@@ -22,7 +22,7 @@ internal partial class Interop
 
             public static void DisposeAndClearHandle(ref SafeWinHttpHandle? safeHandle)
             {
-                if (safeHandle != null)
+                if (safeHandle is not null)
                 {
                     safeHandle.Dispose();
                     safeHandle = null;
@@ -31,8 +31,8 @@ internal partial class Interop
 
             public void SetParentHandle(SafeWinHttpHandle parentHandle)
             {
-                Debug.Assert(_parentHandle == null);
-                Debug.Assert(parentHandle != null);
+                Debug.Assert(_parentHandle is null);
+                Debug.Assert(parentHandle is not null);
                 Debug.Assert(!parentHandle.IsInvalid);
 
                 bool ignore = false;
@@ -46,7 +46,7 @@ internal partial class Interop
             // calls in progress.
             protected override bool ReleaseHandle()
             {
-                if (_parentHandle != null)
+                if (_parentHandle is not null)
                 {
                     _parentHandle.DangerousRelease();
                     _parentHandle = null;

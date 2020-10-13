@@ -20,11 +20,11 @@ namespace Microsoft.Extensions.Primitives
         /// <returns></returns>
         public static IDisposable OnChange(Func<IChangeToken> changeTokenProducer, Action changeTokenConsumer)
         {
-            if (changeTokenProducer == null)
+            if (changeTokenProducer is null)
             {
                 throw new ArgumentNullException(nameof(changeTokenProducer));
             }
-            if (changeTokenConsumer == null)
+            if (changeTokenConsumer is null)
             {
                 throw new ArgumentNullException(nameof(changeTokenConsumer));
             }
@@ -41,11 +41,11 @@ namespace Microsoft.Extensions.Primitives
         /// <returns></returns>
         public static IDisposable OnChange<TState>(Func<IChangeToken> changeTokenProducer, Action<TState> changeTokenConsumer, TState state)
         {
-            if (changeTokenProducer == null)
+            if (changeTokenProducer is null)
             {
                 throw new ArgumentNullException(nameof(changeTokenProducer));
             }
-            if (changeTokenConsumer == null)
+            if (changeTokenConsumer is null)
             {
                 throw new ArgumentNullException(nameof(changeTokenConsumer));
             }

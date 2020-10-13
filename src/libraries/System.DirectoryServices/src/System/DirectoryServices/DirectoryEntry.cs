@@ -73,10 +73,10 @@ namespace System.DirectoryServices
         public DirectoryEntry(string path, string username, string password, AuthenticationTypes authenticationType) : this(path)
         {
             _credentials = new NetworkCredential(username, password);
-            if (username == null)
+            if (username is null)
                 _userNameIsNull = true;
 
-            if (password == null)
+            if (password is null)
                 _passwordIsNull = true;
 
             _authenticationType = authenticationType;
@@ -87,10 +87,10 @@ namespace System.DirectoryServices
             _path = path;
             _useCache = useCache;
             _credentials = new NetworkCredential(username, password);
-            if (username == null)
+            if (username is null)
                 _userNameIsNull = true;
 
-            if (password == null)
+            if (password is null)
                 _passwordIsNull = true;
 
             _authenticationType = authenticationType;
@@ -115,7 +115,7 @@ namespace System.DirectoryServices
         internal DirectoryEntry(object adsObject, bool useCache, string username, string password, AuthenticationTypes authenticationType, bool AdsObjIsExternal)
         {
             _adsObject = adsObject as UnsafeNativeMethods.IAds;
-            if (_adsObject == null)
+            if (_adsObject is null)
                 throw new ArgumentException(SR.DSDoesNotImplementIADs);
 
             // GetInfo is not needed here. ADSI executes an implicit GetInfo when GetEx
@@ -128,10 +128,10 @@ namespace System.DirectoryServices
 
             _authenticationType = authenticationType;
             _credentials = new NetworkCredential(username, password);
-            if (username == null)
+            if (username is null)
                 _userNameIsNull = true;
 
-            if (password == null)
+            if (password is null)
                 _passwordIsNull = true;
 
             if (!useCache)
@@ -170,7 +170,7 @@ namespace System.DirectoryServices
             }
         }
 
-        private bool Bound => _adsObject != null;
+        private bool Bound => _adsObject is not null;
 
         /// <devdoc>
         /// Gets a <see cref='System.DirectoryServices.DirectoryEntries'/>
@@ -226,7 +226,7 @@ namespace System.DirectoryServices
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -310,14 +310,14 @@ namespace System.DirectoryServices
                 if (value == GetPassword())
                     return;
 
-                if (_credentials == null)
+                if (_credentials is null)
                 {
                     _credentials = new NetworkCredential();
                     // have not set it yet
                     _userNameIsNull = true;
                 }
 
-                if (value == null)
+                if (value is null)
                     _passwordIsNull = true;
                 else
                     _passwordIsNull = false;
@@ -337,7 +337,7 @@ namespace System.DirectoryServices
             get => _path;
             set
             {
-                if (value == null)
+                if (value is null)
                     value = "";
 
                 if (System.DirectoryServices.ActiveDirectory.Utils.Compare(_path, value) == 0)
@@ -355,7 +355,7 @@ namespace System.DirectoryServices
         {
             get
             {
-                if (_propertyCollection == null)
+                if (_propertyCollection is null)
                 {
                     _propertyCollection = new PropertyCollection(this);
                 }
@@ -427,7 +427,7 @@ namespace System.DirectoryServices
         {
             get
             {
-                if (_credentials == null || _userNameIsNull)
+                if (_credentials is null || _userNameIsNull)
                     return null;
 
                 return _credentials.UserName;
@@ -437,13 +437,13 @@ namespace System.DirectoryServices
                 if (value == GetUsername())
                     return;
 
-                if (_credentials == null)
+                if (_credentials is null)
                 {
                     _credentials = new NetworkCredential();
                     _passwordIsNull = true;
                 }
 
-                if (value == null)
+                if (value is null)
                     _userNameIsNull = true;
                 else
                     _userNameIsNull = false;
@@ -517,10 +517,10 @@ namespace System.DirectoryServices
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (_adsObject == null)
+            if (_adsObject is null)
             {
                 string pathToUse = Path;
-                if (pathToUse == null || pathToUse.Length == 0)
+                if (pathToUse is null || pathToUse.Length == 0)
                 {
                     // get the default naming context. This should be the default root for the search.
                     DirectoryEntry rootDSE = new DirectoryEntry("LDAP://RootDSE", true, null, null, AuthenticationTypes.Secure);
@@ -605,7 +605,7 @@ namespace System.DirectoryServices
             {
                 // unless we have modified the existing security descriptor (in-place) through ObjectSecurity property
                 // there is nothing to do
-                if ((_objectSecurity == null) || (!_objectSecurity.IsModified()))
+                if ((_objectSecurity is null) || (!_objectSecurity.IsModified()))
                 {
                     return;
                 }
@@ -797,7 +797,7 @@ namespace System.DirectoryServices
             }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException != null)
+                if (e.InnerException is not null)
                 {
                     if (e.InnerException is COMException)
                     {
@@ -835,7 +835,7 @@ namespace System.DirectoryServices
             }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException != null)
+                if (e.InnerException is not null)
                 {
                     if (e.InnerException is COMException)
                     {
@@ -868,7 +868,7 @@ namespace System.DirectoryServices
             }
             catch (TargetInvocationException e)
             {
-                if (e.InnerException != null)
+                if (e.InnerException is not null)
                 {
                     if (e.InnerException is COMException)
                     {
@@ -992,11 +992,11 @@ namespace System.DirectoryServices
             // this is a half-lie, but oh well. Without it, this method is pointless.
             _cacheFilled = true;
             // we need to partially refresh that properties table.
-            if (_propertyCollection != null)
+            if (_propertyCollection is not null)
             {
                 for (int i = 0; i < propertyNames.Length; i++)
                 {
-                    if (propertyNames[i] != null)
+                    if (propertyNames[i] is not null)
                     {
                         string name = propertyNames[i].ToLowerInvariant();
                         _propertyCollection.valueTable.Remove(name);
@@ -1039,7 +1039,7 @@ namespace System.DirectoryServices
 
         private void Unbind()
         {
-            if (_adsObject != null)
+            if (_adsObject is not null)
                 System.Runtime.InteropServices.Marshal.ReleaseComObject(_adsObject);
             _adsObject = null;
             // we need to release that properties table.
@@ -1052,7 +1052,7 @@ namespace System.DirectoryServices
 
         internal string GetUsername()
         {
-            if (_credentials == null || _userNameIsNull)
+            if (_credentials is null || _userNameIsNull)
                 return null;
 
             return _credentials.UserName;
@@ -1060,7 +1060,7 @@ namespace System.DirectoryServices
 
         internal string GetPassword()
         {
-            if (_credentials == null || _passwordIsNull)
+            if (_credentials is null || _passwordIsNull)
                 return null;
 
             return _credentials.Password;
@@ -1155,7 +1155,7 @@ namespace System.DirectoryServices
 
         private void SetObjectSecurityInCache()
         {
-            if ((_objectSecurity != null) && (_objectSecurityModified || _objectSecurity.IsModified()))
+            if ((_objectSecurity is not null) && (_objectSecurityModified || _objectSecurity.IsModified()))
             {
                 UnsafeNativeMethods.IAdsPropertyValue sDValue = (UnsafeNativeMethods.IAdsPropertyValue)new UnsafeNativeMethods.PropertyValue();
 

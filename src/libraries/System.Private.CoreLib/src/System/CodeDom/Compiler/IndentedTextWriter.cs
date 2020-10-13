@@ -21,7 +21,7 @@ namespace System.CodeDom.Compiler
 
         public IndentedTextWriter(TextWriter writer, string tabString) : base(CultureInfo.InvariantCulture)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }

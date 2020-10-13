@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Xml
             SortedList attrListToRender = new SortedList(new AttributeSortOrder());
 
             XmlAttributeCollection attrList = Attributes;
-            if (attrList != null)
+            if (attrList is not null)
             {
                 foreach (XmlAttribute attr in attrList)
                 {
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography.Xml
             byte[] rgbData;
 
             XmlAttributeCollection attrList = Attributes;
-            if (attrList != null)
+            if (attrList is not null)
             {
                 foreach (XmlAttribute attr in attrList)
                 {

@@ -48,7 +48,7 @@ namespace System.Management
             {
                 s_switchesRegKey = Registry.LocalMachine.OpenSubKey(RegKeyLocation);
 
-                if (s_switchesRegKey == null)
+                if (s_switchesRegKey is null)
                 {
                     return false;
                 }
@@ -68,7 +68,7 @@ namespace System.Management
             finally
             {
                 // dispose of the key
-                if (s_switchesRegKey != null)
+                if (s_switchesRegKey is not null)
                 {
                     s_switchesRegKey.Dispose();
                 }
@@ -295,7 +295,7 @@ namespace System.Management
             RegistryKey netFrameworkSubKey = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Microsoft\.NETFramework\");
             string netFrameworkInstallRoot = (string)netFrameworkSubKey?.GetValue("InstallRoot");
 
-            if (netFrameworkInstallRoot == null)
+            if (netFrameworkInstallRoot is null)
             {
                 // In some Windows versions, like Nano Server, the .NET Framework is not installed by default.
                 // It is possible that general failure to access the registry get to this code branch but it is
@@ -381,7 +381,7 @@ namespace System.Management
         {
             IntPtr procAddr = Interop.Kernel32.GetProcAddress(hModule, procName);
             return procAddr != IntPtr.Zero &&
-                (delegate_f = Marshal.GetDelegateForFunctionPointer<TDelegate>(procAddr)) != null;
+                (delegate_f = Marshal.GetDelegateForFunctionPointer<TDelegate>(procAddr)) is not null;
         }
 
         private static void LoadPlatformNotSupportedDelegates(string exceptionMessage)
@@ -494,7 +494,7 @@ namespace System.Management
         //Fires IdentifierChanged event
         private void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
+            if (IdentifierChanged is not null)
                 IdentifierChanged(this, null);
         }
 
@@ -524,7 +524,7 @@ namespace System.Management
             }
             set
             {
-                if (value != null)
+                if (value is not null)
                 {
                     string pathValue = value.Path;
                     if (!ManagementPath.IsValidNamespaceSyntax(pathValue))
@@ -631,13 +631,13 @@ namespace System.Management
 
             // Wire up change handler chain. Use supplied handler, if specified;
             // otherwise, default to that of the scope argument.
-            if (handler != null)
+            if (handler is not null)
                 scopeTmp.IdentifierChanged = handler;
-            else if (scope != null)
+            else if (scope is not null)
                 scopeTmp.IdentifierChanged = new IdentifierChangedEventHandler(scope.HandleIdentifierChange);
 
             // Set scope path.
-            if (scope == null)
+            if (scope is null)
             {
                 // No path specified. Default.
                 scopeTmp.prvpath = ManagementPath._Clone(ManagementPath.DefaultPath, new IdentifierChangedEventHandler(scopeTmp.HandleIdentifierChange));
@@ -648,7 +648,7 @@ namespace System.Management
             }
             else
             {
-                if (scope.prvpath == null)
+                if (scope.prvpath is null)
                 {
                     // No path specified. Default.
                     scopeTmp.prvpath = ManagementPath._Clone(ManagementPath.DefaultPath, new IdentifierChangedEventHandler(scopeTmp.HandleIdentifierChange));
@@ -662,7 +662,7 @@ namespace System.Management
                 }
 
                 scopeTmp.wbemServices = scope.wbemServices;
-                if (scope.options != null)
+                if (scope.options is not null)
                     scopeTmp.options = ConnectionOptions._Clone(scope.options, new IdentifierChangedEventHandler(scopeTmp.HandleIdentifierChange));
             }
 
@@ -809,7 +809,7 @@ namespace System.Management
         {
             get
             {
-                if (options == null)
+                if (options is null)
                     return options = ConnectionOptions._Clone(null, new IdentifierChangedEventHandler(HandleIdentifierChange));
                 else
                     return options;
@@ -850,7 +850,7 @@ namespace System.Management
         {
             get
             {
-                if (prvpath == null)
+                if (prvpath is null)
                     return prvpath = ManagementPath._Clone(null);
                 else
                     return prvpath;
@@ -1521,7 +1521,7 @@ namespace System.Management
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
 
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
@@ -1530,7 +1530,7 @@ namespace System.Management
             {
                 ManagementScope obj = ((ManagementScope)(value));
                 ConstructorInfo ctor = typeof(ManagementScope).GetConstructor(new Type[] { typeof(string) });
-                if (ctor != null)
+                if (ctor is not null)
                 {
                     return new InstanceDescriptor(ctor, new object[] { obj.Path.Path });
                 }

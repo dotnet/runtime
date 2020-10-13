@@ -40,7 +40,7 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public MemberMemberBinding Update(IEnumerable<MemberBinding> bindings)
         {
-            if (bindings != null)
+            if (bindings is not null)
             {
                 if (ExpressionUtils.SameElements(ref bindings!, Bindings))
                 {
@@ -120,7 +120,7 @@ namespace System.Linq.Expressions
         private static void ValidateGettableFieldOrPropertyMember(MemberInfo member, out Type memberType)
         {
             Type? decType = member.DeclaringType;
-            if (decType == null)
+            if (decType is null)
             {
                 throw Error.NotAMemberOfAnyType(member, nameof(member));
             }

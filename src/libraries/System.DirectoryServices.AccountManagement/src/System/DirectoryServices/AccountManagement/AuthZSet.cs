@@ -194,13 +194,13 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Error, "AuthZSet", "Caught exception {0} with message {1}", e.GetType(), e.Message);
 
-                if (_psBuffer != null && !_psBuffer.IsInvalid)
+                if (_psBuffer is not null && !_psBuffer.IsInvalid)
                     _psBuffer.Close();
 
-                if (_psUserSid != null && !_psUserSid.IsInvalid)
+                if (_psUserSid is not null && !_psUserSid.IsInvalid)
                     _psUserSid.Close();
 
-                if (_psMachineSid != null && !_psMachineSid.IsInvalid)
+                if (_psMachineSid is not null && !_psMachineSid.IsInvalid)
                     _psMachineSid.Close();
 
                 // We're on a platform that doesn't have the AuthZ library
@@ -308,13 +308,13 @@ namespace System.DirectoryServices.AccountManagement
                 }
 
                 // The SID comes from another domain.  Use the domain name that the OS resolved the SID to.
-                if (sidIssuerName == null)
+                if (sidIssuerName is null)
                 {
                     sidIssuerName = _groupSidList[_currentGroup].sidIssuerName;
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthZSet", "CurrentAsPrincipal: different domain ({0}) than user ({1})", sidIssuerName, _flatUserAuthority);
                 }
 
-                Debug.Assert(sidIssuerName != null);
+                Debug.Assert(sidIssuerName is not null);
                 Debug.Assert(sidIssuerName.Length > 0);
 
                 // Determine whether it's a local (WinNT) or Active Directory domain (LDAP) group
@@ -365,15 +365,15 @@ namespace System.DirectoryServices.AccountManagement
                                                                     DefaultContextOptions.MachineDefaultContextOption);
 #else
                     PrincipalContext ctx = (PrincipalContext) this.contexts[sidIssuerName];
-                    if (ctx == null)
+                    if (ctx is null)
                     {
                         // Build a PrincipalContext for the machine
                         ctx = new PrincipalContext(
                                         ContextType.Machine,
                                         sidIssuerName,
                                         null,
-                                        (this.credentials != null ? credentials.UserName : null),
-                                        (this.credentials != null ? credentials.Password : null),
+                                        (this.credentials is not null ? credentials.UserName : null),
+                                        (this.credentials is not null ? credentials.Password : null),
                                         DefaultContextOptions.MachineDefaultContextOption);
 
                         this.contexts[sidIssuerName] = ctx;
@@ -396,7 +396,7 @@ namespace System.DirectoryServices.AccountManagement
                                                                 _contextOptions);
 #else
                     PrincipalContext ctx = (PrincipalContext) this.contexts[sidIssuerName];
-                    if (ctx == null)
+                    if (ctx is null)
                     {
                         // Determine the domain DNS name
 
@@ -409,8 +409,8 @@ namespace System.DirectoryServices.AccountManagement
                                         ContextType.Domain,
                                         info.DomainName,
                                         null,
-                                        (this.credentials != null ? credentials.UserName : null),
-                                        (this.credentials != null ? credentials.Password : null),
+                                        (this.credentials is not null ? credentials.UserName : null),
+                                        (this.credentials is not null ? credentials.Password : null),
                                         this.contextOptions);
 
                         this.contexts[sidIssuerName] = ctx;
@@ -431,7 +431,7 @@ namespace System.DirectoryServices.AccountManagement
                     group = (GroupPrincipal)((ADStoreCtx)ctx.QueryCtx).FindPrincipalBySID(typeof(GroupPrincipal), ir, true);
                 }
 
-                if (group == null)
+                if (group is null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "AuthZSet", "CurrentAsPrincipal: Couldn't find group {0}");
                     throw new NoMatchingPrincipalException(SR.AuthZCantFindGroup);

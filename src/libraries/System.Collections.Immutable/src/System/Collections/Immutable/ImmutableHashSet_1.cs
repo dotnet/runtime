@@ -218,7 +218,7 @@ namespace System.Collections.Immutable
         /// </remarks>
         public bool TryGetValue(T equalValue, out T actualValue)
         {
-            int hashCode = equalValue != null ? _equalityComparer.GetHashCode(equalValue) : 0;
+            int hashCode = equalValue is not null ? _equalityComparer.GetHashCode(equalValue) : 0;
             HashBucket bucket;
             if (_root.TryGetValue(hashCode, out bucket))
             {
@@ -418,7 +418,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableHashSet<T> WithComparer(IEqualityComparer<T>? equalityComparer)
         {
-            if (equalityComparer == null)
+            if (equalityComparer is null)
             {
                 equalityComparer = EqualityComparer<T>.Default;
             }
@@ -431,7 +431,7 @@ namespace System.Collections.Immutable
             {
                 var result = new ImmutableHashSet<T>(equalityComparer);
                 result = result.Union(this, avoidWithComparer: true);
-                Debug.Assert(result != null);
+                Debug.Assert(result is not null);
                 return result;
             }
         }
@@ -620,7 +620,7 @@ namespace System.Collections.Immutable
         private static MutationResult Add(T item, MutationInput origin)
         {
             OperationResult result;
-            int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
+            int hashCode = item is not null ? origin.EqualityComparer.GetHashCode(item) : 0;
             HashBucket bucket = origin.Root.GetValueOrDefault(hashCode);
             var newBucket = bucket.Add(item, origin.EqualityComparer, out result);
             if (result == OperationResult.NoChangeRequired)
@@ -639,7 +639,7 @@ namespace System.Collections.Immutable
         private static MutationResult Remove(T item, MutationInput origin)
         {
             var result = OperationResult.NoChangeRequired;
-            int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
+            int hashCode = item is not null ? origin.EqualityComparer.GetHashCode(item) : 0;
             HashBucket bucket;
             var newRoot = origin.Root;
             if (origin.Root.TryGetValue(hashCode, out bucket))
@@ -661,7 +661,7 @@ namespace System.Collections.Immutable
         /// </summary>
         private static bool Contains(T item, MutationInput origin)
         {
-            int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
+            int hashCode = item is not null ? origin.EqualityComparer.GetHashCode(item) : 0;
             HashBucket bucket;
             if (origin.Root.TryGetValue(hashCode, out bucket))
             {
@@ -682,7 +682,7 @@ namespace System.Collections.Immutable
             var newRoot = origin.Root;
             foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
             {
-                int hashCode = item != null ? origin.EqualityComparer.GetHashCode(item) : 0;
+                int hashCode = item is not null ? origin.EqualityComparer.GetHashCode(item) : 0;
                 HashBucket bucket = newRoot.GetValueOrDefault(hashCode);
                 OperationResult result;
                 var newBucket = bucket.Add(item, origin.EqualityComparer, out result);
@@ -793,7 +793,7 @@ namespace System.Collections.Immutable
             var newRoot = root;
             foreach (var item in other.GetEnumerableDisposable<T, Enumerator>())
             {
-                int hashCode = item != null ? equalityComparer.GetHashCode(item) : 0;
+                int hashCode = item is not null ? equalityComparer.GetHashCode(item) : 0;
                 HashBucket bucket;
                 if (newRoot.TryGetValue(hashCode, out bucket))
                 {
@@ -1014,7 +1014,7 @@ namespace System.Collections.Immutable
                 // If the items being added actually come from an ImmutableHashSet<T>,
                 // reuse that instance if possible.
                 var other = items as ImmutableHashSet<T>;
-                if (other != null)
+                if (other is not null)
                 {
                     return other.WithComparer(this.KeyComparer);
                 }

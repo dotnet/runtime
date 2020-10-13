@@ -19,7 +19,7 @@ namespace System.Security.Permissions
         internal IDRole(SecurityElement e)
         {
             string elAuth = e.Attribute("Authenticated");
-            Authenticated = elAuth == null ? false : string.Equals(elAuth, "true", StringComparison.OrdinalIgnoreCase);
+            Authenticated = elAuth is null ? false : string.Equals(elAuth, "true", StringComparison.OrdinalIgnoreCase);
             ID = e.Attribute("ID");
             Role = e.Attribute("Role");
         }
@@ -32,11 +32,11 @@ namespace System.Security.Permissions
             {
                 root.AddAttribute("Authenticated", "true");
             }
-            if (ID != null)
+            if (ID is not null)
             {
                 root.AddAttribute("ID", SecurityElement.Escape(ID));
             }
-            if (Role != null)
+            if (Role is not null)
             {
                 root.AddAttribute("Role", SecurityElement.Escape(Role));
             }
@@ -49,8 +49,8 @@ namespace System.Security.Permissions
             unchecked
             {
                 return ((Authenticated ? 0 : 101) +
-                        (ID == null ? 0 : ID.GetHashCode()) +
-                        (Role == null ? 0 : Role.GetHashCode()));
+                        (ID is null ? 0 : ID.GetHashCode()) +
+                        (Role is null ? 0 : Role.GetHashCode()));
             }
         }
     }

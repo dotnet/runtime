@@ -98,7 +98,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             get
             {
-                Debug.Assert(_atoms != null);
+                Debug.Assert(_atoms is not null);
                 return _atoms;
             }
         }
@@ -121,19 +121,19 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool Advance()
         {
-            Debug.Assert(Document != null);
+            Debug.Assert(Document is not null);
             return Document.Advance();
         }
 
         internal bool Recurse()
         {
-            Debug.Assert(Document != null);
+            Debug.Assert(Document is not null);
             return Document.Recurse();
         }
 
         internal bool ToParent()
         {
-            Debug.Assert(Document != null);
+            Debug.Assert(Document is not null);
             return Document.ToParent();
         }
 
@@ -147,9 +147,9 @@ namespace System.Xml.Xsl.XsltOld
             get { return _rootAction; }
             set
             {
-                Debug.Assert(_rootAction == null);
+                Debug.Assert(_rootAction is null);
                 _rootAction = value;
-                Debug.Assert(_currentTemplate == null);
+                Debug.Assert(_currentTemplate is null);
                 _currentTemplate = _rootAction;
             }
         }
@@ -172,9 +172,9 @@ namespace System.Xml.Xsl.XsltOld
         //
         internal void Compile(NavigatorInput input, XmlResolver xmlResolver)
         {
-            Debug.Assert(input != null);
-            Debug.Assert(xmlResolver != null);
-            Debug.Assert(_input == null && _atoms == null);
+            Debug.Assert(input is not null);
+            Debug.Assert(xmlResolver is not null);
+            Debug.Assert(_input is null && _atoms is null);
             _xmlResolver = xmlResolver;
 
             PushInputDocument(input);
@@ -186,7 +186,7 @@ namespace System.Xml.Xsl.XsltOld
                 this.rootStylesheet = new Stylesheet();
                 PushStylesheet(this.rootStylesheet);
 
-                Debug.Assert(_input != null && _atoms != null);
+                Debug.Assert(_input is not null && _atoms is not null);
 
                 try
                 {
@@ -205,7 +205,7 @@ namespace System.Xml.Xsl.XsltOld
                 _rootAction.PorcessAttributeSets(this.rootStylesheet);
                 this.stylesheet.SortWhiteSpace();
 
-                if (_globalNamespaceAliasTable != null)
+                if (_globalNamespaceAliasTable is not null)
                 {
                     this.stylesheet.ReplaceNamespaceAlias(this);
                     _rootAction.ReplaceNamespaceAlias(this);
@@ -216,10 +216,10 @@ namespace System.Xml.Xsl.XsltOld
                 PopInputDocument();
             }
 
-            Debug.Assert(_rootAction != null);
-            Debug.Assert(this.stylesheet != null);
-            Debug.Assert(_queryStore != null);
-            Debug.Assert(_input == null && _atoms == null);
+            Debug.Assert(_rootAction is not null);
+            Debug.Assert(this.stylesheet is not null);
+            Debug.Assert(_queryStore is not null);
+            Debug.Assert(_input is null && _atoms is null);
         }
 
         //
@@ -241,7 +241,7 @@ namespace System.Xml.Xsl.XsltOld
         internal void InsertExtensionNamespace(string value)
         {
             string[]? nsList = ResolvePrefixes(value);
-            if (nsList != null)
+            if (nsList is not null)
             {
                 _scopeManager.InsertExtensionNamespaces(nsList);
             }
@@ -250,7 +250,7 @@ namespace System.Xml.Xsl.XsltOld
         internal void InsertExcludedNamespace(string value)
         {
             string[]? nsList = ResolvePrefixes(value);
-            if (nsList != null)
+            if (nsList is not null)
             {
                 _scopeManager.InsertExcludedNamespaces(nsList);
             }
@@ -327,18 +327,18 @@ namespace System.Xml.Xsl.XsltOld
             InputScope varScope;
             if (variable.IsGlobal)
             {
-                Debug.Assert(_rootAction != null);
+                Debug.Assert(_rootAction is not null);
                 varScope = _rootScope!;
             }
             else
             {
-                Debug.Assert(_currentTemplate != null);
+                Debug.Assert(_currentTemplate is not null);
                 Debug.Assert(variable.VarType == VariableType.LocalVariable || variable.VarType == VariableType.LocalParameter || variable.VarType == VariableType.WithParameter);
                 varScope = _scopeManager.VariableScope;
             }
 
             VariableAction? oldVar = varScope.ResolveVariable(variable.Name!);
-            if (oldVar != null)
+            if (oldVar is not null)
             {
                 // Other variable with this name is visible in this scope
                 if (oldVar.IsGlobal)
@@ -381,12 +381,12 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddNamespaceAlias(string StylesheetURI, NamespaceInfo AliasInfo)
         {
-            if (_globalNamespaceAliasTable == null)
+            if (_globalNamespaceAliasTable is null)
             {
                 _globalNamespaceAliasTable = new Hashtable();
             }
             NamespaceInfo? duplicate = _globalNamespaceAliasTable[StylesheetURI] as NamespaceInfo;
-            if (duplicate == null || AliasInfo.stylesheetId <= duplicate.stylesheetId)
+            if (duplicate is null || AliasInfo.stylesheetId <= duplicate.stylesheetId)
             {
                 _globalNamespaceAliasTable[StylesheetURI] = AliasInfo;
             }
@@ -394,7 +394,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool IsNamespaceAlias(string StylesheetURI)
         {
-            if (_globalNamespaceAliasTable == null)
+            if (_globalNamespaceAliasTable is null)
             {
                 return false;
             }
@@ -403,7 +403,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal NamespaceInfo? FindNamespaceAlias(string StylesheetURI)
         {
-            if (_globalNamespaceAliasTable != null)
+            if (_globalNamespaceAliasTable is not null)
             {
                 return (NamespaceInfo?)_globalNamespaceAliasTable[StylesheetURI];
             }
@@ -443,7 +443,7 @@ namespace System.Xml.Xsl.XsltOld
         // the value is ignored iff forwards-compatible mode is on.
         private string[]? ResolvePrefixes(string tokens)
         {
-            if (tokens == null || tokens.Length == 0)
+            if (tokens is null || tokens.Length == 0)
             {
                 return null;
             }
@@ -473,7 +473,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool GetYesNo(string value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
             Debug.Assert((object)value == (object)Input!.Value); // this is always true. Why we passing value to this function.
             if (value == "yes")
             {
@@ -517,7 +517,7 @@ namespace System.Xml.Xsl.XsltOld
                 input.ToParent();
             }
 
-            if (value == null)
+            if (value is null)
             {
                 throw XsltException.Create(SR.Xslt_MissingAttribute, attributeAtom);
             }
@@ -577,10 +577,10 @@ namespace System.Xml.Xsl.XsltOld
 
         internal Uri ResolveUri(string relativeUri)
         {
-            Debug.Assert(_xmlResolver != null);
+            Debug.Assert(_xmlResolver is not null);
             string baseUri = this.Input!.BaseURI;
             Uri uri = _xmlResolver.ResolveUri((baseUri.Length != 0) ? _xmlResolver.ResolveUri(null, baseUri) : null, relativeUri);
-            if (uri == null)
+            if (uri is null)
             {
                 throw XsltException.Create(SR.Xslt_CantResolve, relativeUri);
             }
@@ -589,7 +589,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal NavigatorInput ResolveDocument(Uri absoluteUri)
         {
-            Debug.Assert(_xmlResolver != null);
+            Debug.Assert(_xmlResolver is not null);
             object? input = _xmlResolver.GetEntity(absoluteUri, null, null);
             string resolved = absoluteUri.ToString();
 
@@ -614,7 +614,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void PushInputDocument(NavigatorInput newInput)
         {
-            Debug.Assert(newInput != null);
+            Debug.Assert(newInput is not null);
             string inputUri = newInput.Href;
 
             AddDocumentURI(inputUri);
@@ -627,7 +627,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void PopInputDocument()
         {
-            Debug.Assert(_input != null);
+            Debug.Assert(_input is not null);
             Debug.Assert(_input.Atoms == _atoms);
 
             NavigatorInput lastInput = _input;
@@ -635,7 +635,7 @@ namespace System.Xml.Xsl.XsltOld
             _input = lastInput.Next!;
             lastInput.Next = null;
 
-            if (_input != null)
+            if (_input is not null)
             {
                 _atoms = _input.Atoms;
                 _scopeManager = _input.InputScopeManager;
@@ -691,7 +691,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void BeginTemplate(TemplateAction template)
         {
-            Debug.Assert(_currentTemplate != null);
+            Debug.Assert(_currentTemplate is not null);
             _currentTemplate = template;
             _currentMode = template.Mode;
             this.CanHaveApplyImports = template.MatchKey != Compiler.InvalidQueryKey;
@@ -699,7 +699,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void EndTemplate()
         {
-            Debug.Assert(_currentTemplate != null);
+            Debug.Assert(_currentTemplate is not null);
             _currentTemplate = _rootAction;
         }
 
@@ -718,7 +718,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal int AddQuery(string xpathQuery, bool allowVar, bool allowKey, bool isPattern)
         {
-            Debug.Assert(_queryStore != null);
+            Debug.Assert(_queryStore is not null);
 
             CompiledXpathExpr expr;
             try
@@ -931,7 +931,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal ArrayList CompileAvt(string avtText, out bool constant)
         {
-            Debug.Assert(avtText != null);
+            Debug.Assert(avtText is not null);
             ArrayList list = new ArrayList();
 
             constant = true;

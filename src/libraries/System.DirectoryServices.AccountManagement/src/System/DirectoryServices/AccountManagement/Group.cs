@@ -15,7 +15,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         public GroupPrincipal(PrincipalContext context)
         {
-            if (context == null)
+            if (context is null)
                 throw new ArgumentException(SR.NullArguments);
 
             this.ContextRaw = context;
@@ -24,7 +24,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public GroupPrincipal(PrincipalContext context, string samAccountName) : this(context)
         {
-            if (samAccountName == null)
+            if (samAccountName is null)
                 throw new ArgumentException(SR.NullArguments);
 
             if (Context.ContextType != ContextType.ApplicationDirectory)
@@ -144,7 +144,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Check that we actually support this propery in our store
                 //CheckSupportedProperty(PropertyNames.GroupMembers);
 
-                if (_members == null)
+                if (_members is null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "Group", "Members: creating fresh PrincipalCollection");
 
@@ -221,7 +221,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "Group", "Dispose: disposing");
 
-                    if (_members != null)
+                    if (_members is not null)
                         _members.Dispose();
 
                     _disposed = true;
@@ -255,7 +255,7 @@ namespace System.DirectoryServices.AccountManagement
 
         internal override void LoadValueIntoProperty(string propertyName, object value)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "Group", "LoadValueIntoProperty: name=" + propertyName + " value=" + (value != null ? value.ToString() : "null"));
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "Group", "LoadValueIntoProperty: name=" + propertyName + " value=" + (value is not null ? value.ToString() : "null"));
 
             switch (propertyName)
             {
@@ -298,7 +298,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 case PropertyNames.GroupMembers:
                     // If Members was never loaded, it couldn't possibly have changed
-                    if (_members != null)
+                    if (_members is not null)
                         return _members.Changed;
                     else
                     {
@@ -333,7 +333,7 @@ namespace System.DirectoryServices.AccountManagement
             _groupScopeChanged = (_groupScopeChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
             _isSecurityGroupChanged = (_isSecurityGroupChanged == LoadState.Changed) ? LoadState.Loaded : LoadState.NotSet;
 
-            if (_members != null)
+            if (_members is not null)
                 _members.ResetTracking();
 
             base.ResetAllChangeStatus();
@@ -365,13 +365,13 @@ namespace System.DirectoryServices.AccountManagement
             _isSmallGroup = false;
 
             DirectoryEntry de = (DirectoryEntry)this.UnderlyingObject;
-            Debug.Assert(de != null);
-            if (de != null)
+            Debug.Assert(de is not null);
+            if (de is not null)
             {
                 using (DirectorySearcher ds = new DirectorySearcher(de, "(objectClass=*)", new string[] { "member" }, SearchScope.Base))
                 {
                     SearchResult sr = ds.FindOne();
-                    if (sr != null)
+                    if (sr is not null)
                     {
                         bool rangePropertyFound = false;
                         foreach (string propName in sr.Properties.PropertyNames)

@@ -54,7 +54,7 @@ namespace Microsoft.Extensions.Configuration
             var stack = new Stack<IConfiguration>();
             stack.Push(configuration);
             var rootSection = configuration as IConfigurationSection;
-            int prefixLength = (makePathsRelative && rootSection != null) ? rootSection.Path.Length + 1 : 0;
+            int prefixLength = (makePathsRelative && rootSection is not null) ? rootSection.Path.Length + 1 : 0;
             while (stack.Count > 0)
             {
                 IConfiguration config = stack.Pop();
@@ -75,11 +75,11 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         public static bool Exists(this IConfigurationSection section)
         {
-            if (section == null)
+            if (section is null)
             {
                 return false;
             }
-            return section.Value != null || section.GetChildren().Any();
+            return section.Value is not null || section.GetChildren().Any();
         }
 
         /// <summary>
@@ -94,7 +94,7 @@ namespace Microsoft.Extensions.Configuration
         /// <exception cref="System.InvalidOperationException">There is no section with key <paramref name="key"/>.</exception>
         public static IConfigurationSection GetRequiredSection(this IConfiguration configuration, string key)
         {
-            if (configuration == null)
+            if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }

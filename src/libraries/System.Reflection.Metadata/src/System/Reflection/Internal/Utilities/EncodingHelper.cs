@@ -42,7 +42,7 @@ namespace System.Reflection.Internal
     ///
     /// For both (2) and (3), the pooled buffers have a fixed size deemed large enough for the
     /// vast majority of metadata strings. In the rare worst case (byteCount > threshold and
-    /// (lightUpAttemptFailed || prefix != null), we give up and allocate a temporary array,
+    /// (lightUpAttemptFailed || prefix is not null), we give up and allocate a temporary array,
     /// copy to it, decode, and throw it away.
     /// </summary>
     internal static unsafe class EncodingHelper
@@ -59,9 +59,9 @@ namespace System.Reflection.Internal
 
         public static string DecodeUtf8(byte* bytes, int byteCount, byte[] prefix, MetadataStringDecoder utf8Decoder)
         {
-            Debug.Assert(utf8Decoder != null);
+            Debug.Assert(utf8Decoder is not null);
 
-            if (prefix != null)
+            if (prefix is not null)
             {
                 return DecodeUtf8Prefixed(bytes, byteCount, prefix, utf8Decoder);
             }
@@ -76,7 +76,7 @@ namespace System.Reflection.Internal
 
         private static string DecodeUtf8Prefixed(byte* bytes, int byteCount, byte[] prefix, MetadataStringDecoder utf8Decoder)
         {
-            Debug.Assert(utf8Decoder != null);
+            Debug.Assert(utf8Decoder is not null);
 
             int prefixedByteCount = byteCount + prefix.Length;
 
@@ -129,9 +129,9 @@ namespace System.Reflection.Internal
 
         public static string GetString(this Encoding encoding, byte* bytes, int byteCount)
         {
-            Debug.Assert(encoding != null);
+            Debug.Assert(encoding is not null);
 
-            if (s_getStringPlatform == null)
+            if (s_getStringPlatform is null)
             {
                 return GetStringPortable(encoding, bytes, byteCount);
             }
@@ -144,9 +144,9 @@ namespace System.Reflection.Internal
             // This implementation can leak publicly (by design) to MetadataStringDecoder.GetString.
             // Therefore we implement the same validation.
 
-            Debug.Assert(encoding != null); // validated by MetadataStringDecoder constructor.
+            Debug.Assert(encoding is not null); // validated by MetadataStringDecoder constructor.
 
-            if (bytes == null)
+            if (bytes is null)
             {
                 throw new ArgumentNullException(nameof(bytes));
             }
@@ -171,7 +171,7 @@ namespace System.Reflection.Internal
 
             MethodInfo getStringInfo = LightUpHelper.GetMethod(typeof(Encoding), "GetString", typeof(byte*), typeof(int));
 
-            if (getStringInfo != null && getStringInfo.ReturnType == typeof(string))
+            if (getStringInfo is not null && getStringInfo.ReturnType == typeof(string))
             {
                 try
                 {
@@ -248,9 +248,9 @@ namespace System.Reflection.Internal
             // MetadataStringDecoder.GetString. Therefore, we implement the same validation
             // that Encoding.GetString would do if it were available directly.
 
-            Debug.Assert(encoding != null); // validated by MetadataStringDecoder constructor.
+            Debug.Assert(encoding is not null); // validated by MetadataStringDecoder constructor.
 
-            if (bytes == null)
+            if (bytes is null)
             {
                 throw new ArgumentNullException(nameof(bytes));
             }
@@ -266,7 +266,7 @@ namespace System.Reflection.Internal
         // Test hook to force portable implementation and ensure light is functioning.
         internal static bool TestOnly_LightUpEnabled
         {
-            get { return s_getStringPlatform != null; }
+            get { return s_getStringPlatform is not null; }
             set { s_getStringPlatform = value ? LoadGetStringPlatform() : null; }
         }
         #endregion

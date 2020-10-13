@@ -34,7 +34,7 @@ namespace System
         public UnitySerializationHolder(SerializationInfo info, StreamingContext context)
 #pragma warning restore CA2229
         {
-            if (info == null)
+            if (info is null)
             {
                 throw new ArgumentNullException(nameof(info));
             }

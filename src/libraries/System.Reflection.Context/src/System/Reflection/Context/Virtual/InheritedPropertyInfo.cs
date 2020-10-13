@@ -14,7 +14,7 @@ namespace System.Reflection.Context.Virtual
         public InheritedPropertyInfo(PropertyInfo baseProperty, Type reflectedType)
             : base(baseProperty)
         {
-            Debug.Assert(reflectedType != null);
+            Debug.Assert(reflectedType is not null);
             Debug.Assert(reflectedType.IsSubclassOf(baseProperty.DeclaringType));
             Debug.Assert(baseProperty is VirtualPropertyBase);
 
@@ -35,7 +35,7 @@ namespace System.Reflection.Context.Virtual
         public override MethodInfo GetGetMethod(bool nonPublic)
         {
             MethodInfo underlyingGetter = UnderlyingProperty.GetGetMethod(nonPublic);
-            if (underlyingGetter == null)
+            if (underlyingGetter is null)
                 return null;
             else
                 return new InheritedMethodInfo(underlyingGetter, _reflectedType);
@@ -44,7 +44,7 @@ namespace System.Reflection.Context.Virtual
         public override MethodInfo GetSetMethod(bool nonPublic)
         {
             MethodInfo underlyingSetter = UnderlyingProperty.GetSetMethod(nonPublic);
-            if (underlyingSetter == null)
+            if (underlyingSetter is null)
                 return null;
             else
                 return new InheritedMethodInfo(underlyingSetter, _reflectedType);

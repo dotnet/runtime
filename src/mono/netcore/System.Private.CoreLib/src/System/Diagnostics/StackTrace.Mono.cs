@@ -45,7 +45,7 @@ namespace System.Diagnostics
             while (skipFrames >= 0)
             {
                 sf = new StackFrame(skipFrames, needFileInfo);
-                if (sf.GetMethod() == null)
+                if (sf.GetMethod() is null)
                 {
                     break;
                 }
@@ -65,7 +65,7 @@ namespace System.Diagnostics
             int foreignFrames;
             MonoStackFrame[]? foreignExceptions = e.foreignExceptionsFrames;
 
-            if (foreignExceptions != null)
+            if (foreignExceptions is not null)
             {
                 foreignFrames = foreignExceptions.Length;
                 _numOfFrames += foreignFrames;

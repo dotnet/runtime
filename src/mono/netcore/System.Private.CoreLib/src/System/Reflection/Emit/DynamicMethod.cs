@@ -109,26 +109,26 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(owner))]  // Automatically keeps all previous fields too due to StructLayout
         private DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type? owner, Module? m, bool skipVisibility, bool anonHosted, bool typeOwner)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
-            if (returnType == null)
+            if (returnType is null)
                 returnType = typeof(void);
-            if (owner == null && typeOwner)
+            if (owner is null && typeOwner)
                 throw new ArgumentNullException(nameof(owner));
-            if ((m == null) && !anonHosted)
+            if ((m is null) && !anonHosted)
                 throw new ArgumentNullException(nameof(m));
-            if (parameterTypes != null)
+            if (parameterTypes is not null)
             {
                 for (int i = 0; i < parameterTypes.Length; ++i)
-                    if (parameterTypes[i] == null)
+                    if (parameterTypes[i] is null)
                         throw new ArgumentException($"Parameter {i} is null");
             }
-            if (owner != null && (owner.IsArray || owner.IsInterface))
+            if (owner is not null && (owner.IsArray || owner.IsInterface))
             {
                 throw new ArgumentException("Owner can't be an array or an interface.");
             }
 
-            if (m == null)
+            if (m is null)
                 m = AnonHostModuleHolder.AnonHostModule;
 
             this.name = name;
@@ -151,7 +151,7 @@ namespace System.Reflection.Emit
             {
                 if (mhandle.Value == IntPtr.Zero)
                 {
-                    if (ilgen == null || ilgen.ILOffset == 0)
+                    if (ilgen is null || ilgen.ILOffset == 0)
                         throw new InvalidOperationException("Method '" + name + "' does not have a method body.");
 
                     ilgen.label_fixup(this);
@@ -161,7 +161,7 @@ namespace System.Reflection.Emit
                     {
                         // Used to avoid cycles
                         creating = true;
-                        if (refs != null)
+                        if (refs is not null)
                         {
                             for (int i = 0; i < refs.Length; ++i)
                             {
@@ -187,9 +187,9 @@ namespace System.Reflection.Emit
         public sealed
         override Delegate CreateDelegate(Type delegateType)
         {
-            if (delegateType == null)
+            if (delegateType is null)
                 throw new ArgumentNullException(nameof(delegateType));
-            if (deleg != null)
+            if (deleg is not null)
                 return deleg;
 
             CreateDynMethod();
@@ -202,7 +202,7 @@ namespace System.Reflection.Emit
         public sealed
         override Delegate CreateDelegate(Type delegateType, object? target)
         {
-            if (delegateType == null)
+            if (delegateType is null)
                 throw new ArgumentNullException(nameof(delegateType));
 
             CreateDynMethod();
@@ -241,7 +241,7 @@ namespace System.Reflection.Emit
         public override object[] GetCustomAttributes(Type attributeType,
                                   bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
@@ -252,7 +252,7 @@ namespace System.Reflection.Emit
 
         public DynamicILInfo GetDynamicILInfo()
         {
-            if (il_info == null)
+            if (il_info is null)
                 il_info = new DynamicILInfo(this);
             return il_info;
         }
@@ -269,7 +269,7 @@ namespace System.Reflection.Emit
                 ((GetMethodImplementationFlags() & MethodImplAttributes.ManagedMask) !=
                  MethodImplAttributes.Managed))
                 throw new InvalidOperationException("Method body should not exist.");
-            if (ilgen != null)
+            if (ilgen is not null)
                 return ilgen;
             ilgen = new ILGenerator(Module, new DynamicMethodTokenGenerator(this), streamSize);
             return ilgen;
@@ -287,7 +287,7 @@ namespace System.Reflection.Emit
 
         internal override ParameterInfo[] GetParametersInternal()
         {
-            if (parameters == null)
+            if (parameters is null)
                 return Array.Empty<ParameterInfo>();
 
             ParameterInfo[] retval = new ParameterInfo[parameters.Length];
@@ -300,7 +300,7 @@ namespace System.Reflection.Emit
 
         internal override int GetParametersCount()
         {
-            return parameters == null ? 0 : parameters.Length;
+            return parameters is null ? 0 : parameters.Length;
         }
 
         internal override Type GetParameterType(int pos)
@@ -311,7 +311,7 @@ namespace System.Reflection.Emit
         /*
         public override object Invoke (object obj, object[] parameters) {
             CreateDynMethod ();
-            if (method == null)
+            if (method is null)
                 method = new RuntimeMethodInfo (mhandle);
             return method.Invoke (obj, parameters);
         }
@@ -336,7 +336,7 @@ namespace System.Reflection.Emit
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
@@ -429,7 +429,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                if (deleg == null)
+                if (deleg is null)
                 {
                     return new RuntimeParameterInfo((ParameterBuilder?)null, returnType, this, -1);
                 }

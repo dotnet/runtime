@@ -23,7 +23,7 @@ namespace System.Net.Http
             public override int Read(Span<byte> buffer)
             {
                 HttpConnection? connection = _connection;
-                if (connection == null || buffer.Length == 0)
+                if (connection is null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
                     return 0;
@@ -45,7 +45,7 @@ namespace System.Net.Http
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
                 HttpConnection? connection = _connection;
-                if (connection == null || buffer.Length == 0)
+                if (connection is null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
                     return 0;
@@ -97,7 +97,7 @@ namespace System.Net.Http
                 }
 
                 HttpConnection? connection = _connection;
-                if (connection == null)
+                if (connection is null)
                 {
                     // null if response body fully consumed
                     return Task.CompletedTask;
@@ -148,7 +148,7 @@ namespace System.Net.Http
             public override void Write(ReadOnlySpan<byte> buffer)
             {
                 HttpConnection? connection = _connection;
-                if (connection == null)
+                if (connection is null)
                 {
                     throw new IOException(SR.ObjectDisposed_StreamClosed);
                 }
@@ -167,7 +167,7 @@ namespace System.Net.Http
                 }
 
                 HttpConnection? connection = _connection;
-                if (connection == null)
+                if (connection is null)
                 {
                     return ValueTask.FromException(ExceptionDispatchInfo.SetCurrentStackTrace(new IOException(SR.ObjectDisposed_StreamClosed)));
                 }
@@ -193,7 +193,7 @@ namespace System.Net.Http
                 }
 
                 HttpConnection? connection = _connection;
-                if (connection == null)
+                if (connection is null)
                 {
                     return Task.CompletedTask;
                 }

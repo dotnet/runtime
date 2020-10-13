@@ -68,7 +68,7 @@ namespace Internal.Cryptography.Pal.Windows
 
         public void Dispose()
         {
-            if (_blocks != null)
+            if (_blocks is not null)
             {
                 foreach (SafeHeapAllocHandle h in _blocks)
                 {

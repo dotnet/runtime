@@ -75,7 +75,7 @@ namespace System.Xml.Xsl.XPath
 
         public XPathScanner(string xpathExpr, int startFrom)
         {
-            Debug.Assert(xpathExpr != null);
+            Debug.Assert(xpathExpr is not null);
             _xpathExpr = xpathExpr;
             _kind = LexKind.Unknown;
             SetSourceIndex(startFrom);
@@ -115,7 +115,7 @@ namespace System.Xml.Xsl.XPath
             get
             {
                 Debug.Assert(_kind == LexKind.Name);
-                Debug.Assert(_name != null);
+                Debug.Assert(_name is not null);
                 return _name;
             }
         }
@@ -125,7 +125,7 @@ namespace System.Xml.Xsl.XPath
             get
             {
                 Debug.Assert(_kind == LexKind.Name);
-                Debug.Assert(_prefix != null);
+                Debug.Assert(_prefix is not null);
                 return _prefix;
             }
         }
@@ -150,7 +150,7 @@ namespace System.Xml.Xsl.XPath
             get
             {
                 Debug.Assert(_kind == LexKind.String);
-                Debug.Assert(_stringValue != null);
+                Debug.Assert(_stringValue is not null);
                 return _stringValue;
             }
         }
@@ -421,8 +421,8 @@ namespace System.Xml.Xsl.XPath
             }
             else
             {
-                Debug.Assert(_prefix != null);
-                Debug.Assert(_name != null);
+                Debug.Assert(_prefix is not null);
+                Debug.Assert(_name is not null);
                 if (_prefix.Length != 0 || _name.Length > 3)
                     return false;
 

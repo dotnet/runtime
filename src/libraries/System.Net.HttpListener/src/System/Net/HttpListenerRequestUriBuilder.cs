@@ -71,7 +71,7 @@ namespace System.Net
         {
             BuildRequestUriUsingRawPath();
 
-            if (_requestUri == null)
+            if (_requestUri is null)
             {
                 BuildRequestUriUsingCookedPath();
             }
@@ -134,7 +134,7 @@ namespace System.Net
 
         private ParsingResult BuildRequestUriUsingRawPath(Encoding encoding)
         {
-            Debug.Assert(encoding != null, "'encoding' must be assigned.");
+            Debug.Assert(encoding is not null, "'encoding' must be assigned.");
             Debug.Assert(!string.IsNullOrEmpty(_rawPath), "'rawPath' must have at least one character.");
 
             _rawOctets = new List<byte>();
@@ -170,11 +170,11 @@ namespace System.Net
 
         private ParsingResult ParseRawPath(Encoding encoding)
         {
-            Debug.Assert(encoding != null, "'encoding' must be assigned.");
+            Debug.Assert(encoding is not null, "'encoding' must be assigned.");
 
             int index = 0;
             char current = '\0';
-            Debug.Assert(_rawPath != null);
+            Debug.Assert(_rawPath is not null);
             while (index < _rawPath.Length)
             {
                 current = _rawPath[index];
@@ -221,7 +221,7 @@ namespace System.Net
                         return ParsingResult.EncodingError;
                     }
                     // Append the current character to the result.
-                    Debug.Assert(_requestUriString != null);
+                    Debug.Assert(_requestUriString is not null);
                     _requestUriString!.Append(current);
                     index++;
                 }
@@ -280,7 +280,7 @@ namespace System.Net
                 return false;
             }
 
-            Debug.Assert(_rawOctets != null);
+            Debug.Assert(_rawOctets is not null);
             _rawOctets!.Add(encodedValue);
 
             return true;
@@ -358,7 +358,7 @@ namespace System.Net
 
         private static string GetPath(string uriString)
         {
-            Debug.Assert(uriString != null, "uriString must not be null");
+            Debug.Assert(uriString is not null, "uriString must not be null");
             Debug.Assert(uriString.Length > 0, "uriString must not be empty");
 
             int pathStartIndex = 0;
@@ -421,13 +421,13 @@ namespace System.Net
                 queryIndex = uriString.Length;
             }
 
-            // will always return a != null string.
+            // will always return a is not null string.
             return AddSlashToAsteriskOnlyPath(uriString.Substring(pathStartIndex, queryIndex - pathStartIndex));
         }
 
         private static string AddSlashToAsteriskOnlyPath(string path)
         {
-            Debug.Assert(path != null, "'path' must not be null");
+            Debug.Assert(path is not null, "'path' must not be null");
 
             // If a request like "OPTIONS * HTTP/1.1" is sent to the listener, then the request Uri
             // should be "http[s]://server[:port]/*" to be compatible with pre-4.0 behavior.

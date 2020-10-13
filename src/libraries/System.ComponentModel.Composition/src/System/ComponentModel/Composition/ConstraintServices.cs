@@ -33,10 +33,10 @@ namespace System.ComponentModel.Composition
                 constraintBody = Expression.AndAlso(constraintBody, typeIdentityConstraintBody);
             }
 
-            if (requiredMetadata != null)
+            if (requiredMetadata is not null)
             {
                 Expression? metadataConstraintBody = ConstraintServices.CreateMetadataConstraintBody(requiredMetadata, parameter);
-                if (metadataConstraintBody != null)
+                if (metadataConstraintBody is not null)
                 {
                     constraintBody = Expression.AndAlso(constraintBody, metadataConstraintBody);
                 }
@@ -55,7 +55,7 @@ namespace System.ComponentModel.Composition
 
         private static Expression CreateContractConstraintBody(string contractName, ParameterExpression parameter)
         {
-            if (parameter == null)
+            if (parameter is null)
             {
                 throw new ArgumentNullException(nameof(parameter));
             }
@@ -68,12 +68,12 @@ namespace System.ComponentModel.Composition
 
         private static Expression? CreateMetadataConstraintBody(IEnumerable<KeyValuePair<string, Type>> requiredMetadata, ParameterExpression parameter)
         {
-            if (requiredMetadata == null)
+            if (requiredMetadata is null)
             {
                 throw new ArgumentNullException(nameof(requiredMetadata));
             }
 
-            if (parameter == null)
+            if (parameter is null)
             {
                 throw new ArgumentNullException(nameof(parameter));
             }
@@ -84,7 +84,7 @@ namespace System.ComponentModel.Composition
                 // export.Metadata.ContainsKey(<metadataItem>)
                 Expression metadataItemExpression = CreateMetadataContainsKeyExpression(parameter, requiredMetadataItem.Key);
 
-                body = (body != null) ? Expression.AndAlso(body, metadataItemExpression) : metadataItemExpression;
+                body = (body is not null) ? Expression.AndAlso(body, metadataItemExpression) : metadataItemExpression;
                 body = Expression.AndAlso(body, CreateMetadataOfTypeExpression(parameter, requiredMetadataItem.Key, requiredMetadataItem.Value));
             }
 
@@ -98,7 +98,7 @@ namespace System.ComponentModel.Composition
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
 
-            if (parameter == null)
+            if (parameter is null)
             {
                 throw new ArgumentNullException(nameof(parameter));
             }
@@ -116,12 +116,12 @@ namespace System.ComponentModel.Composition
 
         private static Expression CreateTypeIdentityContraint(string requiredTypeIdentity, ParameterExpression parameter)
         {
-            if (requiredTypeIdentity == null)
+            if (requiredTypeIdentity is null)
             {
                 throw new ArgumentNullException(requiredTypeIdentity);
             }
 
-            if (parameter == null)
+            if (parameter is null)
             {
                 throw new ArgumentException(nameof(parameter));
             }
@@ -136,12 +136,12 @@ namespace System.ComponentModel.Composition
 
         private static Expression CreateMetadataContainsKeyExpression(ParameterExpression parameter, string constantKey)
         {
-            if (parameter == null)
+            if (parameter is null)
             {
                 throw new ArgumentException(nameof(parameter));
             }
 
-            if (constantKey == null)
+            if (constantKey is null)
             {
                 throw new ArgumentException(nameof(constantKey));
             }
@@ -155,17 +155,17 @@ namespace System.ComponentModel.Composition
 
         private static Expression CreateMetadataOfTypeExpression(ParameterExpression parameter, string constantKey, Type constantType)
         {
-            if (parameter == null)
+            if (parameter is null)
             {
                 throw new ArgumentException(nameof(parameter));
             }
 
-            if (constantKey == null)
+            if (constantKey is null)
             {
                 throw new ArgumentException(nameof(constantKey));
             }
 
-            if (constantType == null)
+            if (constantType is null)
             {
                 throw new ArgumentException(nameof(constantType));
             }
@@ -183,12 +183,12 @@ namespace System.ComponentModel.Composition
 
         private static Expression CreateMetadataValueEqualsExpression(ParameterExpression parameter, object constantValue, string metadataName)
         {
-            if (parameter == null)
+            if (parameter is null)
             {
                 throw new ArgumentException(nameof(parameter));
             }
 
-            if (constantValue == null)
+            if (constantValue is null)
             {
                 throw new ArgumentException(nameof(constantValue));
             }

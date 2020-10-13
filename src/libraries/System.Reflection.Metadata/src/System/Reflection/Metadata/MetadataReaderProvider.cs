@@ -32,13 +32,13 @@ namespace System.Reflection.Metadata
 
         private MetadataReaderProvider(AbstractMemoryBlock metadataBlock)
         {
-            Debug.Assert(metadataBlock != null);
+            Debug.Assert(metadataBlock is not null);
             _lazyMetadataBlock = metadataBlock;
         }
 
         private MetadataReaderProvider(MemoryBlockProvider blockProvider)
         {
-            Debug.Assert(blockProvider != null);
+            Debug.Assert(blockProvider is not null);
             _blockProviderOpt = blockProvider;
         }
 
@@ -70,7 +70,7 @@ namespace System.Reflection.Metadata
         /// </remarks>
         public static unsafe MetadataReaderProvider FromMetadataImage(byte* start, int size)
         {
-            if (start == null)
+            if (start is null)
             {
                 throw new ArgumentNullException(nameof(start));
             }
@@ -162,7 +162,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="IOException">Error reading from the stream (only when <see cref="MetadataStreamOptions.PrefetchMetadata"/> is specified).</exception>
         public static MetadataReaderProvider FromMetadataStream(Stream stream, MetadataStreamOptions options = MetadataStreamOptions.Default, int size = 0)
         {
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
@@ -273,22 +273,22 @@ namespace System.Reflection.Metadata
 
         private static bool CanReuseReader(MetadataReader? reader, MetadataReaderOptions options, MetadataStringDecoder? utf8DecoderOpt)
         {
-            return reader != null && reader.Options == options && ReferenceEquals(reader.UTF8Decoder, utf8DecoderOpt ?? MetadataStringDecoder.DefaultUTF8);
+            return reader is not null && reader.Options == options && ReferenceEquals(reader.UTF8Decoder, utf8DecoderOpt ?? MetadataStringDecoder.DefaultUTF8);
         }
 
         /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         /// <exception cref="ObjectDisposedException">Provider has been disposed.</exception>
         internal AbstractMemoryBlock GetMetadataBlock()
         {
-            if (_lazyMetadataBlock == null)
+            if (_lazyMetadataBlock is null)
             {
-                if (_blockProviderOpt == null)
+                if (_blockProviderOpt is null)
                 {
                     throw new ObjectDisposedException(nameof(MetadataReaderProvider));
                 }
 
                 var newBlock = _blockProviderOpt.GetMemoryBlock(0, _blockProviderOpt.Size);
-                if (Interlocked.CompareExchange(ref _lazyMetadataBlock, newBlock, null) != null)
+                if (Interlocked.CompareExchange(ref _lazyMetadataBlock, newBlock, null) is not null)
                 {
                     // another thread created the block already, we need to dispose ours:
                     newBlock.Dispose();

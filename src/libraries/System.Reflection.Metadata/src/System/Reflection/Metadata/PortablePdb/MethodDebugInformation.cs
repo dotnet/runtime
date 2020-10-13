@@ -20,7 +20,7 @@ namespace System.Reflection.Metadata
 
         internal MethodDebugInformation(MetadataReader reader, MethodDebugInformationHandle handle)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
 
             _reader = reader;
             _rowId = handle.RowId;

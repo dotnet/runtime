@@ -123,7 +123,7 @@ namespace System.Xml.Xsl.IlGen
             bool isRaw = (xmlAttrs & XmlILMethodAttributes.Raw) != 0;
 
             // Ensure that name is unique
-            while (_methods[name] != null)
+            while (_methods[name] is not null)
             {
                 // Add unique id to end of name in order to make it unique within this module
                 uniqueId++;
@@ -159,7 +159,7 @@ namespace System.Xml.Xsl.IlGen
 
                 for (int i = 0; i < paramNames.Length; i++)
                 {
-                    if (paramNames[i] != null && paramNames[i]!.Length != 0)
+                    if (paramNames[i] is not null && paramNames[i]!.Length != 0)
                         methBldr.DefineParameter(i + (isRaw ? 1 : 2), ParameterAttributes.None, paramNames[i]);
                 }
 
@@ -184,11 +184,11 @@ namespace System.Xml.Xsl.IlGen
         public static ILGenerator DefineMethodBody(MethodBase methInfo)
         {
             DynamicMethod? methDyn = methInfo as DynamicMethod;
-            if (methDyn != null)
+            if (methDyn is not null)
                 return methDyn.GetILGenerator();
 
             MethodBuilder? methBldr = methInfo as MethodBuilder;
-            if (methBldr != null)
+            if (methBldr is not null)
                 return methBldr.GetILGenerator();
 
             return ((ConstructorBuilder)methInfo).GetILGenerator();

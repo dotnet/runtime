@@ -163,7 +163,7 @@ namespace System.Net.Http
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -280,7 +280,7 @@ namespace System.Net.Http
 
                 if (disposing)
                 {
-                    if (_requestHandle != null)
+                    if (_requestHandle is not null)
                     {
                         _requestHandle.Dispose();
                         _requestHandle = null;

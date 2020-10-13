@@ -28,7 +28,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs7
             writer.WriteInteger(Version);
             EncryptedContentInfo.Encode(writer);
 
-            if (UnprotectedAttributes != null)
+            if (UnprotectedAttributes is not null)
             {
 
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 1));

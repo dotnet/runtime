@@ -32,7 +32,7 @@ namespace System.Diagnostics.Tracing
             var info = TraceLoggingTypeInfo.GetInstance(typeof(T), null);
             var newInstance = new TraceLoggingEventTypes(info.Name, info.Tags, new TraceLoggingTypeInfo[] { info });
             Interlocked.CompareExchange(ref instance, newInstance, null);
-            Debug.Assert(instance != null);
+            Debug.Assert(instance is not null);
             return instance;
         }
     }

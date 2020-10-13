@@ -68,7 +68,7 @@ namespace System.ComponentModel
                     }
                     else
                     {
-                        if (culture == null)
+                        if (culture is null)
                         {
                             culture = CultureInfo.CurrentCulture;
                         }
@@ -91,14 +91,14 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if (destinationType == typeof(string) && value != null && TargetType.IsInstanceOfType(value))
+            if (destinationType == typeof(string) && value is not null && TargetType.IsInstanceOfType(value))
             {
-                if (culture == null)
+                if (culture is null)
                 {
                     culture = CultureInfo.CurrentCulture;
                 }
@@ -117,7 +117,7 @@ namespace System.ComponentModel
 
         public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
         {
-            if (destinationType != null && destinationType.IsPrimitive)
+            if (destinationType is not null && destinationType.IsPrimitive)
             {
                 return true;
             }

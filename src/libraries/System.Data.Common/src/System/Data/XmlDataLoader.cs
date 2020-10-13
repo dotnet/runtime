@@ -96,23 +96,23 @@ namespace System.Data
         // after loading, all detached DataRows are attached to their tables
         private void AttachRows(DataRow parentRow, XmlNode parentElement)
         {
-            if (parentElement == null)
+            if (parentElement is null)
                 return;
 
-            for (XmlNode n = parentElement.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode n = parentElement.FirstChild; n is not null; n = n.NextSibling)
             {
                 if (n.NodeType == XmlNodeType.Element)
                 {
                     XmlElement e = (XmlElement)n;
                     DataRow r = GetRowFromElement(e);
-                    if (r != null && r.RowState == DataRowState.Detached)
+                    if (r is not null && r.RowState == DataRowState.Detached)
                     {
-                        if (parentRow != null)
+                        if (parentRow is not null)
                             r.SetNestedParentRow(parentRow, /*setNonNested*/ false);
 
                         r.Table.Rows.Add(r);
                     }
-                    else if (r == null)
+                    else if (r is null)
                     {
                         // n is a 'sugar element'
                         AttachRows(parentRow, n);
@@ -140,14 +140,14 @@ namespace System.Data
             string value = null;
 
             // don't consider whitespace
-            while (n != null && (n.NodeType == XmlNodeType.Whitespace || !IsTextLikeNode(n.NodeType)))
+            while (n is not null && (n.NodeType == XmlNodeType.Whitespace || !IsTextLikeNode(n.NodeType)))
             {
                 n = n.NextSibling;
             }
 
-            if (n != null)
+            if (n is not null)
             {
-                if (IsTextLikeNode(n.NodeType) && (n.NextSibling == null || !IsTextLikeNode(n.NodeType)))
+                if (IsTextLikeNode(n.NodeType) && (n.NextSibling is null || !IsTextLikeNode(n.NodeType)))
                 {
                     // don't use string builder if only one text node exists
                     value = n.Value;
@@ -156,7 +156,7 @@ namespace System.Data
                 else
                 {
                     StringBuilder sb = new StringBuilder();
-                    while (n != null && IsTextLikeNode(n.NodeType))
+                    while (n is not null && IsTextLikeNode(n.NodeType))
                     {
                         sb.Append(n.Value);
                         n = n.NextSibling;
@@ -165,7 +165,7 @@ namespace System.Data
                 }
             }
 
-            if (value == null)
+            if (value is null)
                 value = string.Empty;
 
             return value;
@@ -175,13 +175,13 @@ namespace System.Data
         {
             string value = null;
 
-            if (n != null)
+            if (n is not null)
             {
                 // don't consider whitespace
                 while (n.NodeType == XmlNodeType.Whitespace)
                     n = n.NextSibling;
 
-                if (IsTextLikeNode(n.NodeType) && (n.NextSibling == null || !IsTextLikeNode(n.NodeType)))
+                if (IsTextLikeNode(n.NodeType) && (n.NextSibling is null || !IsTextLikeNode(n.NodeType)))
                 {
                     // don't use string builder if only one text node exists
                     value = n.Value;
@@ -190,7 +190,7 @@ namespace System.Data
                 else
                 {
                     StringBuilder sb = new StringBuilder();
-                    while (n != null && IsTextLikeNode(n.NodeType))
+                    while (n is not null && IsTextLikeNode(n.NodeType))
                     {
                         sb.Append(n.Value);
                         n = n.NextSibling;
@@ -199,7 +199,7 @@ namespace System.Data
                 }
             }
 
-            if (value == null)
+            if (value is null)
                 value = string.Empty;
 
             return value;
@@ -225,13 +225,13 @@ namespace System.Data
 
         internal bool FColumnElement(XmlElement e)
         {
-            if (_nodeToSchemaMap.GetColumnSchema(e, FIgnoreNamespace(e)) == null)
+            if (_nodeToSchemaMap.GetColumnSchema(e, FIgnoreNamespace(e)) is null)
                 return false;
 
             if (CountNonNSAttributes(e) > 0)
                 return false;
 
-            for (XmlNode tabNode = e.FirstChild; tabNode != null; tabNode = tabNode.NextSibling)
+            for (XmlNode tabNode = e.FirstChild; tabNode is not null; tabNode = tabNode.NextSibling)
                 if (tabNode is XmlElement)
                     return false;
 
@@ -294,7 +294,7 @@ namespace System.Data
 
         internal void LoadData(XmlDocument xdoc)
         {
-            if (xdoc.DocumentElement == null)
+            if (xdoc.DocumentElement is null)
                 return;
 
             bool saveEnforce;
@@ -327,10 +327,10 @@ namespace System.Data
                         if (CountNonNSAttributes (rootElement) > 0)
                             dataSet.fTopLevelTable = true;
                         else {
-                            for (tabNode = rootElement.FirstChild; tabNode != null; tabNode = tabNode.NextSibling) {
+                            for (tabNode = rootElement.FirstChild; tabNode is not null; tabNode = tabNode.NextSibling) {
                                 if (tabNode is XmlElement && tabNode.LocalName != Keywords.XSD_SCHEMA) {
                                     object value = tableAtoms[QualifiedName (tabNode.LocalName, tabNode.NamespaceURI)];
-                                    if (value == null || (bool)value == false) {
+                                    if (value is null || (bool)value == false) {
                                         dataSet.fTopLevelTable = true;
                                         break;
                                     }
@@ -339,11 +339,11 @@ namespace System.Data
                         }
             */
             DataRow topRow = null;
-            if (_isTableLevel || (_dataSet != null && _dataSet._fTopLevelTable))
+            if (_isTableLevel || (_dataSet is not null && _dataSet._fTopLevelTable))
             {
                 XmlElement e = xdoc.DocumentElement;
                 DataTable topTable = (DataTable)_nodeToSchemaMap.GetSchemaForNode(e, FIgnoreNamespace(e));
-                if (topTable != null)
+                if (topTable is not null)
                 {
                     topRow = topTable.CreateEmptyRow(); //enzol perf
                     _nodeToRowMap[e] = topRow;
@@ -386,7 +386,7 @@ namespace System.Data
 
             // Look for data to fill the TextOnly column
             DataColumn column = GetTextOnlyColumn(row);
-            if (column != null)
+            if (column is not null)
             {
                 foundColumns[column] = column;
                 string text = GetValueForTextOnlyColums(n);
@@ -397,7 +397,7 @@ namespace System.Data
             }
 
             // Walk the region to find elements that map to columns
-            while (n != null && n != rowElement)
+            while (n is not null && n != rowElement)
             {
                 if (n.NodeType == XmlNodeType.Element)
                 {
@@ -411,16 +411,16 @@ namespace System.Data
                     }
 
                     // if element has its own table mapping, it is a separate region
-                    if (schema == null || schema is DataColumn)
+                    if (schema is null || schema is DataColumn)
                     {
                         // descend to examine child elements
                         n = e.FirstChild;
 
-                        if (schema != null && schema is DataColumn)
+                        if (schema is not null && schema is DataColumn)
                         {
                             DataColumn c = (DataColumn)schema;
 
-                            if (c.Table == row.Table && c.ColumnMapping != MappingType.Attribute && foundColumns[c] == null)
+                            if (c.Table == row.Table && c.ColumnMapping != MappingType.Attribute && foundColumns[c] is null)
                             {
                                 foundColumns[c] = c;
                                 string text = GetValueForTextOnlyColums(n);
@@ -430,20 +430,20 @@ namespace System.Data
                                     SetRowValueFromXmlText(row, c, text);
                             }
                         }
-                        else if ((schema == null) && (n != null))
+                        else if ((schema is null) && (n is not null))
                         {
                             continue;
                         }
 
 
                         // nothing left down here, continue from element
-                        if (n == null)
+                        if (n is null)
                             n = e;
                     }
                 }
 
                 // if no more siblings, ascend back toward original element (rowElement)
-                while (n != rowElement && n.NextSibling == null)
+                while (n != rowElement && n.NextSibling is null)
                 {
                     n = n.ParentNode;
                 }
@@ -458,11 +458,11 @@ namespace System.Data
             foreach (XmlAttribute attr in rowElement.Attributes)
             {
                 object schema = _nodeToSchemaMap.GetColumnSchema(attr, FIgnoreNamespace(attr));
-                if (schema != null && schema is DataColumn)
+                if (schema is not null && schema is DataColumn)
                 {
                     DataColumn c = (DataColumn)schema;
 
-                    if (c.ColumnMapping == MappingType.Attribute && foundColumns[c] == null)
+                    if (c.ColumnMapping == MappingType.Attribute && foundColumns[c] is null)
                     {
                         foundColumns[c] = c;
                         n = attr.FirstChild;
@@ -474,7 +474,7 @@ namespace System.Data
             // Null all columns values that aren't represented in the tree
             foreach (DataColumn c in row.Table.Columns)
             {
-                if (foundColumns[c] == null && XmlToDatasetMap.IsMappedColumn(c))
+                if (foundColumns[c] is null && XmlToDatasetMap.IsMappedColumn(c))
                 {
                     if (!c.AutoIncrement)
                     {
@@ -501,7 +501,7 @@ namespace System.Data
         // load all data from tree structre into datarows
         private void LoadRows(DataRow parentRow, XmlNode parentElement)
         {
-            if (parentElement == null)
+            if (parentElement is null)
                 return;
 
             // Skip schema node as well
@@ -510,20 +510,20 @@ namespace System.Data
                 parentElement.LocalName == Keywords.XDR_SCHEMA && parentElement.NamespaceURI == Keywords.XDRNS)
                 return;
 
-            for (XmlNode n = parentElement.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode n = parentElement.FirstChild; n is not null; n = n.NextSibling)
             {
                 if (n is XmlElement)
                 {
                     XmlElement e = (XmlElement)n;
                     object schema = _nodeToSchemaMap.GetSchemaForNode(e, FIgnoreNamespace(e));
 
-                    if (schema != null && schema is DataTable)
+                    if (schema is not null && schema is DataTable)
                     {
                         DataRow r = GetRowFromElement(e);
-                        if (r == null)
+                        if (r is null)
                         {
                             // skip columns which has the same name as another table
-                            if (parentRow != null && FColumnElement(e))
+                            if (parentRow is not null && FColumnElement(e))
                                 continue;
 
                             r = ((DataTable)schema).CreateEmptyRow();
@@ -594,7 +594,7 @@ namespace System.Data
             // Keep constraints status for datataset/table
             InitNameTable();                                    // Adds DataSet namespaces to reader's nametable
 
-            if (_nodeToSchemaMap == null)
+            if (_nodeToSchemaMap is null)
             {                      // Create XML to dataset map
                 _nodeToSchemaMap = _isTableLevel ? new XmlToDatasetMap(_dataReader.NameTable, _dataTable) :
                                                  new XmlToDatasetMap(_dataReader.NameTable, _dataSet);
@@ -610,13 +610,13 @@ namespace System.Data
                 _dataSet._fInReadXml = true;                      // We're in ReadXml now
             }
 
-            if (_topMostNode != null)
+            if (_topMostNode is not null)
             {                          // Do we have top node?
                 if (!_isDiffgram && !_isTableLevel)
                 {             // Not a diffgram  and not DataSet?
                     DataTable table = _nodeToSchemaMap.GetSchemaForNode(_topMostNode, FIgnoreNamespace(_topMostNode)) as DataTable;
                     // Try to match table in the dataset to this node
-                    if (table != null)
+                    if (table is not null)
                     {                        // Got the table ?
                         LoadTopMostTable(table);                // Load top most node
                     }
@@ -637,7 +637,7 @@ namespace System.Data
                 }
                 DataTable table = _nodeToSchemaMap.GetTableForNode(_dataReader, FIgnoreNamespace(_dataReader));
                 // Try to get table for node
-                if (table == null)
+                if (table is null)
                 {                            // Read till table is found
                     if (!ProcessXsdSchema())                    // Check for schemas...
                         _dataReader.Read();                      // Not found? Read next element.
@@ -689,8 +689,8 @@ namespace System.Data
             //            \------------------------------ We are here on exit
 
 
-            Debug.Assert(table != null, "Table to be loaded is null on LoadTopMostTable() entry");
-            Debug.Assert(_topMostNode != null, "topMostNode is null on LoadTopMostTable() entry");
+            Debug.Assert(table is not null, "Table to be loaded is null on LoadTopMostTable() entry");
+            Debug.Assert(_topMostNode is not null, "topMostNode is null on LoadTopMostTable() entry");
             Debug.Assert(!_isDiffgram, "Diffgram mode is on while we have topMostNode table. This is bad.");
 
             bool topNodeIsTable = _isTableLevel || (_dataSet.DataSetName != table.TableName);
@@ -723,7 +723,7 @@ namespace System.Data
 
                 c = _nodeToSchemaMap.GetColumnSchema(attr, FIgnoreNamespace(attr)) as DataColumn;
                 // Try to match attribute to column
-                if ((c != null) && (c.ColumnMapping == MappingType.Attribute))
+                if ((c is not null) && (c.ColumnMapping == MappingType.Attribute))
                 {
                     // If it's a column with attribute mapping
                     n = attr.FirstChild;
@@ -748,11 +748,11 @@ namespace System.Data
                         // Get dataset element for this XML element
                         c = o as DataColumn;                        // Perhaps, it's a column?
 
-                        if (c != null)
+                        if (c is not null)
                         {                          // Do we have matched column in this table?
                                                    // Let's load column data
 
-                            if (foundColumns[c.Ordinal] == null)
+                            if (foundColumns[c.Ordinal] is null)
                             {
                                 // If this column was not found before
                                 LoadColumn(c, foundColumns);       // Get column value.
@@ -767,7 +767,7 @@ namespace System.Data
                         {
                             DataTable nestedTable = o as DataTable;
                             // Perhaps, it's a nested table ?
-                            if (nestedTable != null)
+                            if (nestedTable is not null)
                             {            // Do we have matched table in DataSet ?
                                 LoadTable(nestedTable, true /* isNested */);
                                 // Yes. Load nested table (recursive)
@@ -803,7 +803,7 @@ namespace System.Data
                         // Get text node value.
                         c = table._xmlText;                          // Get XML Text column from our table
 
-                        if (c != null && foundColumns[c.Ordinal] == null)
+                        if (c is not null && foundColumns[c.Ordinal] is null)
                         {
                             // If XmlText Column is set
                             // and we do not have data already
@@ -872,7 +872,7 @@ namespace System.Data
             //      ...
             //  </DataSet>
 
-            Debug.Assert(table != null, "Table to be loaded is null on LoadTable() entry");
+            Debug.Assert(table is not null, "Table to be loaded is null on LoadTable() entry");
 
             DataRow row = null;                                 // Data row we're going to add to this table
 
@@ -903,7 +903,7 @@ namespace System.Data
                 c = _nodeToSchemaMap.GetColumnSchema(table, _dataReader, FIgnoreNamespace(_dataReader)) as DataColumn;
                 // Try to get column for this attribute
 
-                if ((c != null) && (c.ColumnMapping == MappingType.Attribute))
+                if ((c is not null) && (c.ColumnMapping == MappingType.Attribute))
                 {
                     // Yep, it is a column mapped as attribute
                     // Get value from XML and store it in the object array
@@ -944,7 +944,7 @@ namespace System.Data
                             // We have to decode name before we look it up
                             // We could not use XmlToDataSet map as it contains
                             // no hidden columns
-                            if ((c != null) && (c.ColumnMapping == MappingType.Hidden))
+                            if ((c is not null) && (c.ColumnMapping == MappingType.Hidden))
                             {
                                 // Got column and it is hidden ?
                                 foundColumns[c.Ordinal] = c.ConvertXmlToObject(_dataReader.Value);
@@ -975,10 +975,10 @@ namespace System.Data
                             // Get dataset element for this XML element
                             c = o as DataColumn;                    // Perhaps, it's a column?
 
-                            if (c != null)
+                            if (c is not null)
                             {                      // Do we have matched column in this table?
                                                    // Let's load column data
-                                if (foundColumns[c.Ordinal] == null)
+                                if (foundColumns[c.Ordinal] is null)
                                 {
                                     // If this column was not found before
                                     LoadColumn(c, foundColumns);
@@ -993,7 +993,7 @@ namespace System.Data
                             {
                                 DataTable nestedTable = o as DataTable;
                                 // Perhaps, it's a nested table ?
-                                if (nestedTable != null)
+                                if (nestedTable is not null)
                                 {        // Do we have matched nested table in DataSet ?
                                     LoadTable(nestedTable, true /* isNested */);
                                     // Yes. Load nested table (recursive)
@@ -1013,7 +1013,7 @@ namespace System.Data
                                     DataTable misplacedTable = _nodeToSchemaMap.GetTableForNode(_dataReader, FIgnoreNamespace(_dataReader));
                                     // Try to get table for node
 
-                                    if (misplacedTable != null)
+                                    if (misplacedTable is not null)
                                     {   // Got some matching table?
                                         LoadTable(misplacedTable, false /* isNested */);
                                         // While table's XML element is nested,
@@ -1036,7 +1036,7 @@ namespace System.Data
                             // Get text node value.
                             c = table._xmlText;                      // Get XML Text column from our table
 
-                            if (c != null && foundColumns[c.Ordinal] == null)
+                            if (c is not null && foundColumns[c.Ordinal] is null)
                             {
                                 // If XmlText Column is set
                                 // and we do not have data already
@@ -1076,7 +1076,7 @@ namespace System.Data
                 table.Rows.DiffInsertAt(row, rowOrder);     // insert data to specific location
 
                 // And do some diff processing
-                if (hasChanges == null)
+                if (hasChanges is null)
                 {                   // No changes ?
                     row._oldRecord = row._newRecord;          // Restore old record
                 }
@@ -1170,15 +1170,15 @@ namespace System.Data
                 // We also need to do that if no polymorphism for this type allowed.
 
                 bool useXmlSerializer = !column.ImplementsIXMLSerializable &&
-                    !((column.DataType == typeof(object)) || (typeName != null) || (xsiTypeString != null));
+                    !((column.DataType == typeof(object)) || (typeName is not null) || (xsiTypeString is not null));
 
                 // Check if we have an attribute telling us value is null.
 
-                if ((xsiNilString != null) && XmlConvert.ToBoolean(xsiNilString))
+                if ((xsiNilString is not null) && XmlConvert.ToBoolean(xsiNilString))
                 {
                     if (!useXmlSerializer)
                     {                    // See if need to set typed null.
-                        if (typeName != null && typeName.Length > 0)
+                        if (typeName is not null && typeName.Length > 0)
                         {
                             // Got type name
                             columnValue = SqlUdtStorage.GetStaticNullForUdtType(DataStorage.GetType(typeName));
@@ -1199,7 +1199,7 @@ namespace System.Data
                 {                                          // No NIL attribute. Get value
                     bool skipped = false;
 
-                    if (column.Table.DataSet != null && column.Table.DataSet._udtIsWrapped)
+                    if (column.Table.DataSet is not null && column.Table.DataSet._udtIsWrapped)
                     {
                         _dataReader.Read(); // if UDT is wrapped, skip the wrapper
                         skipped = true;
@@ -1250,7 +1250,7 @@ namespace System.Data
                                     StringBuilder builder = null;
                                     while (_dataReader.Read() && entryDepth < _dataReader.Depth && IsTextLikeNode(_dataReader.NodeType))
                                     {
-                                        if (builder == null)
+                                        if (builder is null)
                                         {
                                             builder = new StringBuilder(text);
                                         }
@@ -1260,7 +1260,7 @@ namespace System.Data
                                                                             // which would do the same thing but slower.
                                     }
 
-                                    if (builder != null)
+                                    if (builder is not null)
                                     {
                                         text = builder.ToString();
                                     }
@@ -1285,11 +1285,11 @@ namespace System.Data
                                     // Get dataset element for this XML element
                                     DataColumn c = o as DataColumn;     // Perhaps, it's a column?
 
-                                    if (c != null)
+                                    if (c is not null)
                                     {                  // Do we have matched column in this table?
                                                        // Let's load column data
 
-                                        if (foundColumns[c.Ordinal] == null)
+                                        if (foundColumns[c.Ordinal] is null)
                                         {
                                             // If this column was not found before
                                             LoadColumn(c, foundColumns);
@@ -1304,7 +1304,7 @@ namespace System.Data
                                     {
                                         DataTable nestedTable = o as DataTable;
                                         // Perhaps, it's a nested table ?
-                                        if (nestedTable != null)
+                                        if (nestedTable is not null)
                                         {
                                             // Do we have matched table in DataSet ?
                                             LoadTable(nestedTable, true /* isNested */);
@@ -1316,7 +1316,7 @@ namespace System.Data
 
                                             DataTable misplacedTable = _nodeToSchemaMap.GetTableForNode(_dataReader, FIgnoreNamespace(_dataReader));
                                             // Try to get table for node
-                                            if (misplacedTable != null)
+                                            if (misplacedTable is not null)
                                             {
                                                 // Got some table to match?
                                                 LoadTable(misplacedTable, false /* isNested */);
@@ -1342,7 +1342,7 @@ namespace System.Data
                     _dataReader.Read();                              // We're done here. To the next element.
                 }
 
-                if (0 == text.Length && xsiNilString != null && XmlConvert.ToBoolean(xsiNilString))
+                if (0 == text.Length && xsiNilString is not null && XmlConvert.ToBoolean(xsiNilString))
                 {
                     foundColumns[column.Ordinal] = DBNull.Value;
                     // If no data and NIL attribute is true set value to null

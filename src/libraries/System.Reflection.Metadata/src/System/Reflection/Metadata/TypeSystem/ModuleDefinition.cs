@@ -11,7 +11,7 @@ namespace System.Reflection.Metadata
 
         internal ModuleDefinition(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
         }
 

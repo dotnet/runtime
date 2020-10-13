@@ -123,7 +123,7 @@ namespace System.Data
         {
             int length;
 
-            if (data == null)
+            if (data is null)
             {
                 length = 0;
                 _text = new char[length + 1];
@@ -137,7 +137,7 @@ namespace System.Data
 
             _text[length] = '\0';
 
-            if (_expression != null)
+            if (_expression is not null)
             {
                 // free all nodes
                 _expression = null;
@@ -347,7 +347,7 @@ namespace System.Data
                             _prevOperand = Empty;
                             ExpressionNode? nodebefore = NodePeek();
 
-                            if (nodebefore == null || nodebefore.GetType() != typeof(NameNode))
+                            if (nodebefore is null || nodebefore.GetType() != typeof(NameNode))
                             {
                                 // this is more like an assert, so we not care about "nice" exception text..
                                 throw ExprException.SyntaxError();
@@ -527,7 +527,7 @@ namespace System.Data
                         //if there is a name on the stack append it.
                         ExpressionNode? before = NodePeek();
 
-                        if (before != null && before.GetType() == typeof(NameNode))
+                        if (before is not null && before.GetType() == typeof(NameNode))
                         {
                             Scan();
 
@@ -717,8 +717,8 @@ namespace System.Data
 
                                     break;
                             }
-                            Debug.Assert(nodeLeft != null, "Invalid left operand");
-                            Debug.Assert(nodeRight != null, "Invalid right operand");
+                            Debug.Assert(nodeLeft is not null, "Invalid left operand");
+                            Debug.Assert(nodeRight is not null, "Invalid right operand");
 
                             if (opInfo._op == Operators.Like)
                             {
@@ -749,8 +749,8 @@ namespace System.Data
                                 break;
                         }
 
-                        Debug.Assert(nodeLeft == null, "Invalid left operand");
-                        Debug.Assert(nodeRight != null, "Invalid right operand");
+                        Debug.Assert(nodeLeft is null, "Invalid left operand");
+                        Debug.Assert(nodeRight is not null, "Invalid right operand");
 
                         expr = new UnaryNode(_table, opInfo._op, nodeRight);
                         break;
@@ -764,7 +764,7 @@ namespace System.Data
                         Debug.Fail("Unhandled operator type");
                         goto end_loop;
                 }
-                Debug.Assert(expr != null, "Failed to create expression");
+                Debug.Assert(expr is not null, "Failed to create expression");
 
                 NodePush(expr);
                 // countinue while loop;
@@ -1113,7 +1113,7 @@ namespace System.Data
                 Debug.Assert(_pos > _start, "Exprecing an identifier.");
 
                 string name = new string(text, _start, _pos - _start);
-                Debug.Assert(name != null, "Make sure the arguments for Compare method are OK");
+                Debug.Assert(name is not null, "Make sure the arguments for Compare method are OK");
 
 
                 CompareInfo comparer = CultureInfo.InvariantCulture.CompareInfo;
@@ -1123,7 +1123,7 @@ namespace System.Data
                 do
                 {
                     int i = (lo + hi) / 2;
-                    Debug.Assert(s_reservedwords[i]._word != null, "Make sure the arguments for Compare method are OK");
+                    Debug.Assert(s_reservedwords[i]._word is not null, "Make sure the arguments for Compare method are OK");
                     int c = comparer.Compare(s_reservedwords[i]._word, name, CompareOptions.IgnoreCase);
 
                     if (c == 0)

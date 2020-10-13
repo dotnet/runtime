@@ -22,10 +22,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_getTypeFromHandle == null)
+                if (s_getTypeFromHandle is null)
                 {
                     s_getTypeFromHandle = typeof(Type).GetMethod("GetTypeFromHandle");
-                    Debug.Assert(s_getTypeFromHandle != null);
+                    Debug.Assert(s_getTypeFromHandle is not null);
                 }
                 return s_getTypeFromHandle;
             }
@@ -36,10 +36,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_objectEquals == null)
+                if (s_objectEquals is null)
                 {
                     s_objectEquals = typeof(object).GetMethod("Equals", BindingFlags.Public | BindingFlags.Static);
-                    Debug.Assert(s_objectEquals != null);
+                    Debug.Assert(s_objectEquals is not null);
                 }
                 return s_objectEquals;
             }
@@ -50,10 +50,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_arraySetValue == null)
+                if (s_arraySetValue is null)
                 {
                     s_arraySetValue = typeof(Array).GetMethod("SetValue", new Type[] { typeof(object), typeof(int) });
-                    Debug.Assert(s_arraySetValue != null);
+                    Debug.Assert(s_arraySetValue is not null);
                 }
                 return s_arraySetValue;
             }
@@ -64,10 +64,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_objectToString == null)
+                if (s_objectToString is null)
                 {
                     s_objectToString = typeof(object).GetMethod("ToString", Array.Empty<Type>());
-                    Debug.Assert(s_objectToString != null);
+                    Debug.Assert(s_objectToString is not null);
                 }
                 return s_objectToString;
             }
@@ -78,10 +78,10 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_stringFormat == null)
+                if (s_stringFormat is null)
                 {
                     s_stringFormat = typeof(string).GetMethod("Format", new Type[] { typeof(string), typeof(object[]) });
-                    Debug.Assert(s_stringFormat != null);
+                    Debug.Assert(s_stringFormat is not null);
                 }
                 return s_stringFormat;
             }
@@ -94,7 +94,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (s_serializationModule == null)
+                if (s_serializationModule is null)
                 {
                     s_serializationModule = typeof(CodeGenerator).Module;   // could to be replaced by different dll that has SkipVerification set to false
                 }
@@ -234,7 +234,7 @@ namespace System.Runtime.Serialization
         internal object For(LocalBuilder? local, object? start, object? end)
         {
             ForState forState = new ForState(local, DefineLabel(), DefineLabel(), end);
-            if (forState.Index != null)
+            if (forState.Index is not null)
             {
                 Load(start);
                 Stloc(forState.Index);
@@ -249,10 +249,10 @@ namespace System.Runtime.Serialization
         {
             object stackTop = _blockStack.Pop();
             ForState? forState = stackTop as ForState;
-            if (forState == null)
+            if (forState is null)
                 ThrowMismatchException(stackTop);
 
-            if (forState.Index != null)
+            if (forState.Index is not null)
             {
                 Ldloc(forState.Index);
                 Ldc(1);
@@ -286,7 +286,7 @@ namespace System.Runtime.Serialization
             foreach (object block in _blockStack)
             {
                 ForState? forState = block as ForState;
-                if (forState != null && (object)forState == userForState)
+                if (forState is not null && (object)forState == userForState)
                 {
                     if (!forState.RequiresEndLabel)
                     {
@@ -320,7 +320,7 @@ namespace System.Runtime.Serialization
         {
             object stackTop = _blockStack.Pop();
             ForState? forState = stackTop as ForState;
-            if (forState == null)
+            if (forState is null)
                 ThrowMismatchException(stackTop);
 
             MarkLabel(forState.TestLabel);
@@ -628,10 +628,10 @@ namespace System.Runtime.Serialization
             else if (memberInfo is PropertyInfo property)
             {
                 memberType = property.PropertyType;
-                if (property != null)
+                if (property is not null)
                 {
                     MethodInfo? getMethod = property.GetMethod;
-                    if (getMethod == null)
+                    if (getMethod is null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NoGetMethodForProperty, property.DeclaringType, property)));
                     Call(getMethod);
                 }
@@ -670,10 +670,10 @@ namespace System.Runtime.Serialization
             else if (memberInfo is PropertyInfo)
             {
                 PropertyInfo? property = memberInfo as PropertyInfo;
-                if (property != null)
+                if (property is not null)
                 {
                     MethodInfo? setMethod = property.SetMethod;
-                    if (setMethod == null)
+                    if (setMethod is null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.NoSetMethodForProperty, property.DeclaringType, property)));
                     Call(setMethod);
                 }
@@ -728,7 +728,7 @@ namespace System.Runtime.Serialization
 
         internal void Load(object? obj)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 if (_codeGenTrace != CodeGenTrace.None)
                     EmitSourceInstruction("Ldnull");
@@ -1255,7 +1255,7 @@ namespace System.Runtime.Serialization
 
         private void LoadThis(object? thisObj, MethodInfo methodInfo)
         {
-            if (thisObj != null && !methodInfo.IsStatic)
+            if (thisObj is not null && !methodInfo.IsStatic)
             {
                 LoadAddress(thisObj);
                 ConvertAddress(GetVariableType(thisObj), methodInfo.DeclaringType!);
@@ -1265,7 +1265,7 @@ namespace System.Runtime.Serialization
         private void LoadParam(object? arg, int oneBasedArgIndex, MethodBase methodInfo)
         {
             Load(arg);
-            if (arg != null)
+            if (arg is not null)
                 ConvertValue(GetVariableType(arg), methodInfo.GetParameters()[oneBasedArgIndex - 1].ParameterType);
         }
 
@@ -1351,7 +1351,7 @@ namespace System.Runtime.Serialization
         {
             object stackTop = _blockStack.Pop();
             IfState? ifState = stackTop as IfState;
-            if (ifState == null)
+            if (ifState is null)
                 ThrowMismatchException(stackTop);
             return ifState;
         }
@@ -1405,7 +1405,7 @@ namespace System.Runtime.Serialization
         {
             object stackTop = _blockStack.Peek();
             SwitchState? switchState = stackTop as SwitchState;
-            if (switchState == null)
+            if (switchState is null)
                 ThrowMismatchException(stackTop);
             Br(switchState.EndOfSwitchLabel);
             if (_codeGenTrace != CodeGenTrace.None)
@@ -1416,7 +1416,7 @@ namespace System.Runtime.Serialization
         {
             object stackTop = _blockStack.Pop();
             SwitchState? switchState = stackTop as SwitchState;
-            if (switchState == null)
+            if (switchState is null)
                 ThrowMismatchException(stackTop);
             if (_codeGenTrace != CodeGenTrace.None)
                 EmitSourceInstruction("} //end switch");
@@ -1472,7 +1472,7 @@ namespace System.Runtime.Serialization
         internal void CallStringFormat(string msg, params object[] values)
         {
             NewArray(typeof(object), values.Length);
-            if (_stringFormatArray == null)
+            if (_stringFormatArray is null)
                 _stringFormatArray = DeclareLocal(typeof(object[]), "stringFormatArray");
             Stloc(_stringFormatArray);
             for (int i = 0; i < values.Length; i++)

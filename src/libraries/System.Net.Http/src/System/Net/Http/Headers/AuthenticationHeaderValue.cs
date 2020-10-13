@@ -44,7 +44,7 @@ namespace System.Net.Http.Headers
 
         private AuthenticationHeaderValue(AuthenticationHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _scheme = source._scheme;
             _parameter = source._parameter;
@@ -67,7 +67,7 @@ namespace System.Net.Http.Headers
         {
             AuthenticationHeaderValue? other = obj as AuthenticationHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -145,7 +145,7 @@ namespace System.Net.Http.Headers
                 case 4: targetScheme = "NTLM"; break;
                 case 9: targetScheme = "Negotiate"; break;
             }
-            result._scheme = targetScheme != null && string.CompareOrdinal(input, startIndex, targetScheme, 0, schemeLength) == 0 ?
+            result._scheme = targetScheme is not null && string.CompareOrdinal(input, startIndex, targetScheme, 0, schemeLength) == 0 ?
                 targetScheme :
                 input.Substring(startIndex, schemeLength);
 

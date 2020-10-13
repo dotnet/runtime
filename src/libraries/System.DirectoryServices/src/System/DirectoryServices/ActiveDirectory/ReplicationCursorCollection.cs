@@ -19,7 +19,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ReplicationCursor cursor)
         {
-            if (cursor == null)
+            if (cursor is null)
                 throw new ArgumentNullException(nameof(cursor));
 
             return InnerList.Contains(cursor);
@@ -27,7 +27,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ReplicationCursor cursor)
         {
-            if (cursor == null)
+            if (cursor is null)
                 throw new ArgumentNullException(nameof(cursor));
 
             return InnerList.IndexOf(cursor);

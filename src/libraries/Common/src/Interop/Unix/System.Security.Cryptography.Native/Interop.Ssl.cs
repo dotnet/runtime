@@ -161,7 +161,7 @@ internal static partial class Interop
 
         internal static bool AddExtraChainCertificates(SafeSslHandle sslContext, X509Chain chain)
         {
-            Debug.Assert(chain != null, "X509Chain should not be null");
+            Debug.Assert(chain is not null, "X509Chain should not be null");
             Debug.Assert(chain.ChainElements.Count > 0, "chain.Build should have already been called");
 
             // If the last certificate is a root certificate, don't send it. PartialChain means the last cert wasn't a root.

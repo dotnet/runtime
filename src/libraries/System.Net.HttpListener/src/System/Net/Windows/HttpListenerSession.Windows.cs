@@ -16,11 +16,11 @@ namespace System.Net
         {
             get
             {
-                if (_requestQueueBoundHandle == null)
+                if (_requestQueueBoundHandle is null)
                 {
                     lock (this)
                     {
-                        if (_requestQueueBoundHandle == null)
+                        if (_requestQueueBoundHandle is null)
                         {
                             _requestQueueBoundHandle = ThreadPoolBoundHandle.BindHandle(RequestQueueHandle);
                             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"ThreadPoolBoundHandle.BindHandle({RequestQueueHandle}) -> {_requestQueueBoundHandle}");

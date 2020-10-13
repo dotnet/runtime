@@ -57,7 +57,7 @@ namespace Internal.Cryptography
             if (key.Length > _blockSize && _blockSize > 0)
             {
                 // Perform RFC 2104, section 2 key adjustment.
-                if (_lazyHashProvider == null)
+                if (_lazyHashProvider is null)
                 {
                     _lazyHashProvider = HashProviderDispenser.CreateHashProvider(_hashAlgorithmId);
                 }
@@ -99,7 +99,7 @@ namespace Internal.Cryptography
 
         public void Dispose(bool disposing)
         {
-            if (disposing && _hMacProvider != null)
+            if (disposing && _hMacProvider is not null)
             {
                 _hMacProvider.Dispose(true);
                 _hMacProvider = null!;

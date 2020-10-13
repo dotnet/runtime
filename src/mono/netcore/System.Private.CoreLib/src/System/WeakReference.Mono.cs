@@ -10,7 +10,7 @@ namespace System
         private bool trackResurrection;
         private GCHandle handle;
 
-        public virtual bool IsAlive => Target != null;
+        public virtual bool IsAlive => Target is not null;
 
         public virtual object? Target
         {

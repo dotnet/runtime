@@ -133,7 +133,7 @@ namespace System.Security.Principal
                 sourceContext.SourceName = new byte[TOKEN_SOURCE.TOKEN_SOURCE_LENGTH];
                 Buffer.BlockCopy(sourceName, 0, sourceContext.SourceName, 0, sourceName.Length);
 
-                if (sUserPrincipalName == null)
+                if (sUserPrincipalName is null)
                     throw new ArgumentNullException(nameof(sUserPrincipalName));
 
                 byte[] upnBytes = Encoding.Unicode.GetBytes(sUserPrincipalName);
@@ -196,7 +196,7 @@ namespace System.Security.Principal
                             if (subStatus < 0) // non-negative numbers indicate success
                                 throw GetExceptionFromNtStatus(subStatus);
 
-                            if (profileBuffer != null)
+                            if (profileBuffer is not null)
                                 profileBuffer.Dispose();
 
                             _safeTokenHandle = accessTokenHandle;
@@ -357,7 +357,7 @@ namespace System.Security.Principal
                 if (_safeTokenHandle.IsInvalid)
                     return string.Empty;
 
-                if (_authType == null)
+                if (_authType is null)
                 {
                     Interop.LUID authId = GetLogonAuthId(_safeTokenHandle);
                     if (authId.LowPart == Interop.LuidOptions.ANONYMOUS_LOGON_LUID)
@@ -567,7 +567,7 @@ namespace System.Security.Principal
             if (_safeTokenHandle.IsInvalid)
                 return string.Empty;
 
-            if (_name == null)
+            if (_name is null)
             {
                 // revert thread impersonation for the duration of the call to get the name.
                 RunImpersonated(SafeAccessTokenHandle.InvalidHandle, delegate
@@ -588,7 +588,7 @@ namespace System.Security.Principal
                 if (_safeTokenHandle.IsInvalid)
                     return null;
 
-                if (_owner == null)
+                if (_owner is null)
                 {
                     using (SafeLocalAllocHandle tokenOwner = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenOwner, nullOnInvalidParam: false)!)
                     {
@@ -608,7 +608,7 @@ namespace System.Security.Principal
                 if (_safeTokenHandle.IsInvalid)
                     return null;
 
-                if (_user == null)
+                if (_user is null)
                 {
                     using (SafeLocalAllocHandle tokenUser = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenUser, nullOnInvalidParam: false)!)
                     {
@@ -628,7 +628,7 @@ namespace System.Security.Principal
                 if (_safeTokenHandle.IsInvalid)
                     return null;
 
-                if (_groups == null)
+                if (_groups is null)
                 {
                     IdentityReferenceCollection groups = new IdentityReferenceCollection();
                     using (SafeLocalAllocHandle pGroups = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenGroups, nullOnInvalidParam: false)!)
@@ -679,7 +679,7 @@ namespace System.Security.Principal
 
         public static void RunImpersonated(SafeAccessTokenHandle safeAccessTokenHandle, Action action)
         {
-            if (action == null)
+            if (action is null)
                 throw new ArgumentNullException(nameof(action));
 
             RunImpersonatedInternal(safeAccessTokenHandle, action);
@@ -688,7 +688,7 @@ namespace System.Security.Principal
 
         public static T RunImpersonated<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<T> func)
         {
-            if (func == null)
+            if (func is null)
                 throw new ArgumentNullException(nameof(func));
 
             T result = default!;
@@ -719,7 +719,7 @@ namespace System.Security.Principal
         {
             if (disposing)
             {
-                if (_safeTokenHandle != null && !_safeTokenHandle.IsClosed)
+                if (_safeTokenHandle is not null && !_safeTokenHandle.IsClosed)
                     _safeTokenHandle.Dispose();
             }
             _name = null;
@@ -743,7 +743,7 @@ namespace System.Security.Principal
             token = DuplicateAccessToken(token);
 
             SafeAccessTokenHandle previousToken = GetCurrentToken(TokenAccessLevels.MaximumAllowed, false, out bool isImpersonating, out int hr);
-            if (previousToken == null || previousToken.IsInvalid)
+            if (previousToken is null || previousToken.IsInvalid)
                 throw new SecurityException(new Win32Exception(hr).Message);
 
             s_currentImpersonatedToken.Value = isImpersonating ? previousToken : null;
@@ -779,7 +779,7 @@ namespace System.Security.Principal
             if (!Interop.Advapi32.RevertToSelf())
                 Environment.FailFast(new Win32Exception().Message);
 
-            if (args.CurrentValue != null && !args.CurrentValue.IsInvalid)
+            if (args.CurrentValue is not null && !args.CurrentValue.IsInvalid)
             {
                 if (!Interop.Advapi32.ImpersonateLoggedOnUser(args.CurrentValue))
                     Environment.FailFast(new Win32Exception().Message);
@@ -789,7 +789,7 @@ namespace System.Security.Principal
         internal static WindowsIdentity? GetCurrentInternal(TokenAccessLevels desiredAccess, bool threadOnly)
         {
             SafeAccessTokenHandle safeTokenHandle = GetCurrentToken(desiredAccess, threadOnly, out bool isImpersonating, out int hr);
-            if (safeTokenHandle == null || safeTokenHandle.IsInvalid)
+            if (safeTokenHandle is null || safeTokenHandle.IsInvalid)
             {
                 // either we wanted only ThreadToken - return null
                 if (threadOnly && !isImpersonating)
@@ -922,7 +922,7 @@ namespace System.Security.Principal
 
         private static string? GetAuthType(WindowsIdentity identity)
         {
-            if (identity == null)
+            if (identity is null)
             {
                 throw new ArgumentNullException(nameof(identity));
             }
@@ -1159,7 +1159,7 @@ namespace System.Security.Principal
 
                 safeAllocHandle = GetTokenInformation(_safeTokenHandle, tokenInformationClass, nullOnInvalidParam: true);
 
-                if (safeAllocHandle == null)
+                if (safeAllocHandle is null)
                 {
                     s_ignoreWindows8Properties = true;
                     return;

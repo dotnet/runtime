@@ -30,7 +30,7 @@ namespace System.Net.Http
         protected internal sealed override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
+            if (request is null)
             {
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
@@ -45,7 +45,7 @@ namespace System.Net.Http
         protected internal sealed override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
+            if (request is null)
             {
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
@@ -81,7 +81,7 @@ namespace System.Net.Http
                         return;
                     }
 
-                    if (task.Result == null)
+                    if (task.Result is null)
                     {
                         sendState.TrySetException(ExceptionDispatchInfo.SetCurrentStackTrace(new InvalidOperationException(SR.net_http_handler_noresponse)));
                         return;
@@ -146,7 +146,7 @@ namespace System.Net.Http
 
             public SendState(MessageProcessingHandler handler, CancellationToken token)
             {
-                Debug.Assert(handler != null);
+                Debug.Assert(handler is not null);
 
                 _handler = handler;
                 _token = token;

@@ -129,7 +129,7 @@ namespace System.Text
         {
             // Validate Parameters
 
-            if (chars == null)
+            if (chars is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.chars);
             }
@@ -159,7 +159,7 @@ namespace System.Text
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
             Debug.Assert(charCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pChars != null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pChars is not null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
 
@@ -305,7 +305,7 @@ namespace System.Text
         {
             // Validate Parameters
 
-            if (chars == null || bytes == null)
+            if (chars is null || bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(
                     argument: (chars is null) ? ExceptionArgument.chars : ExceptionArgument.bytes,
@@ -340,9 +340,9 @@ namespace System.Text
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
             Debug.Assert(charCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pChars != null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pChars is not null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
             Debug.Assert(byteCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pBytes != null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pBytes is not null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
 
@@ -466,7 +466,7 @@ namespace System.Text
         {
             // Validate Parameters
 
-            if (bytes == null)
+            if (bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.bytes, ExceptionResource.ArgumentNull_Array);
             }
@@ -496,7 +496,7 @@ namespace System.Text
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
             Debug.Assert(byteCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pBytes != null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pBytes is not null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
 
@@ -624,9 +624,9 @@ namespace System.Text
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
             Debug.Assert(byteCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pBytes != null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pBytes is not null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
             Debug.Assert(charCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pChars != null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pChars is not null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
 

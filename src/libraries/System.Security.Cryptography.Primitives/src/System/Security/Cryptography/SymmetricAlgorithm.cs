@@ -62,14 +62,14 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (IVValue == null)
+                if (IVValue is null)
                     GenerateIV();
                 return IVValue.CloneByteArray()!;
             }
 
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
                 if (value.Length != this.BlockSize / 8)
                     throw new CryptographicException(SR.Cryptography_InvalidIVSize);
@@ -82,14 +82,14 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (KeyValue == null)
+                if (KeyValue is null)
                     GenerateKey();
                 return KeyValue.CloneByteArray()!;
             }
 
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 long bitLength = value.Length * 8L;
@@ -197,12 +197,12 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                if (KeyValue != null)
+                if (KeyValue is not null)
                 {
                     Array.Clear(KeyValue, 0, KeyValue.Length);
                     KeyValue = null;
                 }
-                if (IVValue != null)
+                if (IVValue is not null)
                 {
                     Array.Clear(IVValue, 0, IVValue.Length);
                     IVValue = null;
@@ -217,7 +217,7 @@ namespace System.Security.Cryptography
         public bool ValidKeySize(int bitLength)
         {
             KeySizes[] validSizes = this.LegalKeySizes;
-            if (validSizes == null)
+            if (validSizes is null)
                 return false;
             return bitLength.IsLegalSize(validSizes);
         }

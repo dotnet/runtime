@@ -66,14 +66,14 @@ namespace System.Linq.Expressions
                 // Ensure arguments is safe to enumerate twice.
                 // (If this means a second call to ToReadOnly it will return quickly).
                 ICollection<Expression>? args;
-                if (arguments == null)
+                if (arguments is null)
                 {
                     args = null;
                 }
                 else
                 {
                     args = arguments as ICollection<Expression>;
-                    if (args == null)
+                    if (args is null)
                     {
                         arguments = args = arguments.ToReadOnly();
                     }
@@ -156,7 +156,7 @@ namespace System.Linq.Expressions
         public InstanceMethodCallExpression(MethodInfo method, Expression instance)
             : base(method)
         {
-            Debug.Assert(instance != null);
+            Debug.Assert(instance is not null);
 
             _instance = instance;
         }
@@ -188,8 +188,8 @@ namespace System.Linq.Expressions
 
         internal override MethodCallExpression Rewrite(Expression? instance, IReadOnlyList<Expression>? args)
         {
-            Debug.Assert(instance == null);
-            Debug.Assert(args == null || args.Count == _arguments.Count);
+            Debug.Assert(instance is null);
+            Debug.Assert(args is null || args.Count == _arguments.Count);
 
             return Expression.Call(Method, args ?? _arguments);
         }
@@ -219,8 +219,8 @@ namespace System.Linq.Expressions
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression>? args)
         {
-            Debug.Assert(instance != null);
-            Debug.Assert(args == null || args.Count == _arguments.Count);
+            Debug.Assert(instance is not null);
+            Debug.Assert(args is null || args.Count == _arguments.Count);
 
             return Expression.Call(instance, Method, args ?? _arguments);
         }
@@ -246,12 +246,12 @@ namespace System.Linq.Expressions
         }
 
         internal override bool SameArguments(ICollection<Expression>? arguments) =>
-            arguments == null || arguments.Count == 0;
+            arguments is null || arguments.Count == 0;
 
         internal override MethodCallExpression Rewrite(Expression? instance, IReadOnlyList<Expression>? args)
         {
-            Debug.Assert(instance == null);
-            Debug.Assert(args == null || args.Count == 0);
+            Debug.Assert(instance is null);
+            Debug.Assert(args is null || args.Count == 0);
 
             return Expression.Call(Method);
         }
@@ -283,7 +283,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 1)
+            if (arguments is not null && arguments.Count == 1)
             {
                 using (IEnumerator<Expression> en = arguments.GetEnumerator())
                 {
@@ -297,10 +297,10 @@ namespace System.Linq.Expressions
 
         internal override MethodCallExpression Rewrite(Expression? instance, IReadOnlyList<Expression>? args)
         {
-            Debug.Assert(instance == null);
-            Debug.Assert(args == null || args.Count == 1);
+            Debug.Assert(instance is null);
+            Debug.Assert(args is null || args.Count == 1);
 
-            if (args != null)
+            if (args is not null)
             {
                 return Expression.Call(Method, args[0]);
             }
@@ -335,7 +335,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 2)
+            if (arguments is not null && arguments.Count == 2)
             {
                 if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
@@ -363,10 +363,10 @@ namespace System.Linq.Expressions
 
         internal override MethodCallExpression Rewrite(Expression? instance, IReadOnlyList<Expression>? args)
         {
-            Debug.Assert(instance == null);
-            Debug.Assert(args == null || args.Count == 2);
+            Debug.Assert(instance is null);
+            Debug.Assert(args is null || args.Count == 2);
 
-            if (args != null)
+            if (args is not null)
             {
                 return Expression.Call(Method, args[0], args[1]);
             }
@@ -402,7 +402,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 3)
+            if (arguments is not null && arguments.Count == 3)
             {
                 if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
@@ -434,10 +434,10 @@ namespace System.Linq.Expressions
 
         internal override MethodCallExpression Rewrite(Expression? instance, IReadOnlyList<Expression>? args)
         {
-            Debug.Assert(instance == null);
-            Debug.Assert(args == null || args.Count == 3);
+            Debug.Assert(instance is null);
+            Debug.Assert(args is null || args.Count == 3);
 
-            if (args != null)
+            if (args is not null)
             {
                 return Expression.Call(Method, args[0], args[1], args[2]);
             }
@@ -475,7 +475,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 4)
+            if (arguments is not null && arguments.Count == 4)
             {
                 if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
@@ -511,10 +511,10 @@ namespace System.Linq.Expressions
 
         internal override MethodCallExpression Rewrite(Expression? instance, IReadOnlyList<Expression>? args)
         {
-            Debug.Assert(instance == null);
-            Debug.Assert(args == null || args.Count == 4);
+            Debug.Assert(instance is null);
+            Debug.Assert(args is null || args.Count == 4);
 
-            if (args != null)
+            if (args is not null)
             {
                 return Expression.Call(Method, args[0], args[1], args[2], args[3]);
             }
@@ -554,7 +554,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 5)
+            if (arguments is not null && arguments.Count == 5)
             {
                 if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
@@ -594,10 +594,10 @@ namespace System.Linq.Expressions
 
         internal override MethodCallExpression Rewrite(Expression? instance, IReadOnlyList<Expression>? args)
         {
-            Debug.Assert(instance == null);
-            Debug.Assert(args == null || args.Count == 5);
+            Debug.Assert(instance is null);
+            Debug.Assert(args is null || args.Count == 5);
 
-            if (args != null)
+            if (args is not null)
             {
                 return Expression.Call(Method, args[0], args[1], args[2], args[3], args[4]);
             }
@@ -626,12 +626,12 @@ namespace System.Linq.Expressions
         }
 
         internal override bool SameArguments(ICollection<Expression>? arguments) =>
-            arguments == null || arguments.Count == 0;
+            arguments is null || arguments.Count == 0;
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression>? args)
         {
-            Debug.Assert(instance != null);
-            Debug.Assert(args == null || args.Count == 0);
+            Debug.Assert(instance is not null);
+            Debug.Assert(args is null || args.Count == 0);
 
             return Expression.Call(instance, Method);
         }
@@ -660,7 +660,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 1)
+            if (arguments is not null && arguments.Count == 1)
             {
                 using (IEnumerator<Expression> en = arguments.GetEnumerator())
                 {
@@ -679,10 +679,10 @@ namespace System.Linq.Expressions
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression>? args)
         {
-            Debug.Assert(instance != null);
-            Debug.Assert(args == null || args.Count == 1);
+            Debug.Assert(instance is not null);
+            Debug.Assert(args is null || args.Count == 1);
 
-            if (args != null)
+            if (args is not null)
             {
                 return Expression.Call(instance, Method, args[0]);
             }
@@ -716,7 +716,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 2)
+            if (arguments is not null && arguments.Count == 2)
             {
                 if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
@@ -744,10 +744,10 @@ namespace System.Linq.Expressions
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression>? args)
         {
-            Debug.Assert(instance != null);
-            Debug.Assert(args == null || args.Count == 2);
+            Debug.Assert(instance is not null);
+            Debug.Assert(args is null || args.Count == 2);
 
-            if (args != null)
+            if (args is not null)
             {
                 return Expression.Call(instance, Method, args[0], args[1]);
             }
@@ -783,7 +783,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 3)
+            if (arguments is not null && arguments.Count == 3)
             {
                 if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
@@ -815,10 +815,10 @@ namespace System.Linq.Expressions
 
         internal override MethodCallExpression Rewrite(Expression instance, IReadOnlyList<Expression>? args)
         {
-            Debug.Assert(instance != null);
-            Debug.Assert(args == null || args.Count == 3);
+            Debug.Assert(instance is not null);
+            Debug.Assert(args is null || args.Count == 3);
 
-            if (args != null)
+            if (args is not null)
             {
                 return Expression.Call(instance, Method, args[0], args[1], args[2]);
             }
@@ -1017,7 +1017,7 @@ namespace System.Linq.Expressions
 
             ValidateArgumentCount(method, ExpressionType.Call, 0, pis);
 
-            if (instance != null)
+            if (instance is not null)
             {
                 return new InstanceMethodCallExpression0(method, instance);
             }
@@ -1057,7 +1057,7 @@ namespace System.Linq.Expressions
 
             arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
 
-            if (instance != null)
+            if (instance is not null)
             {
                 return new InstanceMethodCallExpression1(method, instance, arg0);
             }
@@ -1086,7 +1086,7 @@ namespace System.Linq.Expressions
             arg0 = ValidateOneArgument(method, ExpressionType.Call, arg0, pis[0], nameof(method), nameof(arg0));
             arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
 
-            if (instance != null)
+            if (instance is not null)
             {
                 return new InstanceMethodCallExpression2(method, instance, arg0, arg1);
             }
@@ -1118,7 +1118,7 @@ namespace System.Linq.Expressions
             arg1 = ValidateOneArgument(method, ExpressionType.Call, arg1, pis[1], nameof(method), nameof(arg1));
             arg2 = ValidateOneArgument(method, ExpressionType.Call, arg2, pis[2], nameof(method), nameof(arg2));
 
-            if (instance != null)
+            if (instance is not null)
             {
                 return new InstanceMethodCallExpression3(method, instance, arg0, arg1, arg2);
             }
@@ -1141,7 +1141,7 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(instance, nameof(instance));
             ContractUtils.RequiresNotNull(methodName, nameof(methodName));
-            if (arguments == null)
+            if (arguments is null)
             {
                 arguments = Array.Empty<Expression>();
             }
@@ -1167,7 +1167,7 @@ namespace System.Linq.Expressions
             ContractUtils.RequiresNotNull(type, nameof(type));
             ContractUtils.RequiresNotNull(methodName, nameof(methodName));
 
-            if (arguments == null) arguments = Array.Empty<Expression>();
+            if (arguments is null) arguments = Array.Empty<Expression>();
             BindingFlags flags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.FlattenHierarchy;
             return Expression.Call(null, FindMethod(type, methodName, typeArguments, arguments, flags)!, arguments);
         }
@@ -1199,7 +1199,7 @@ namespace System.Linq.Expressions
                     return Call(instance, method, argumentList[0], argumentList[1], argumentList[2]);
             }
 
-            if (instance == null)
+            if (instance is null)
             {
                 switch (argCount)
                 {
@@ -1221,7 +1221,7 @@ namespace System.Linq.Expressions
             ValidateStaticOrInstanceMethod(instance, method);
             ValidateArgumentTypes(method, ExpressionType.Call, ref argList, nameof(method));
 
-            if (instance == null)
+            if (instance is null)
             {
                 return new MethodCallExpressionN(method, argList);
             }
@@ -1243,11 +1243,11 @@ namespace System.Linq.Expressions
         {
             if (method.IsStatic)
             {
-                if (instance != null) throw Error.OnlyStaticMethodsHaveNullInstance();
+                if (instance is not null) throw Error.OnlyStaticMethodsHaveNullInstance();
             }
             else
             {
-                if (instance == null) throw Error.OnlyStaticMethodsHaveNullInstance();
+                if (instance is null) throw Error.OnlyStaticMethodsHaveNullInstance();
                 ExpressionUtils.RequiresCanRead(instance, nameof(instance));
                 ValidateCallInstanceType(instance.Type, method);
             }
@@ -1297,10 +1297,10 @@ namespace System.Linq.Expressions
                 if (mi.Name.Equals(methodName, StringComparison.OrdinalIgnoreCase))
                 {
                     MethodInfo? moo = ApplyTypeArgs(mi, typeArgs);
-                    if (moo != null && IsCompatible(moo, args))
+                    if (moo is not null && IsCompatible(moo, args))
                     {
                         // favor public over non-public methods
-                        if (method == null || (!method.IsPublic && moo.IsPublic))
+                        if (method is null || (!method.IsPublic && moo.IsPublic))
                         {
                             method = moo;
                             count = 1;
@@ -1316,7 +1316,7 @@ namespace System.Linq.Expressions
 
             if (count == 0)
             {
-                if (typeArgs != null && typeArgs.Length > 0)
+                if (typeArgs is not null && typeArgs.Length > 0)
                 {
                     throw Error.GenericMethodWithArgsDoesNotExistOnType(methodName, type);
                 }
@@ -1358,7 +1358,7 @@ namespace System.Linq.Expressions
 
         private static MethodInfo? ApplyTypeArgs(MethodInfo m, Type[]? typeArgs)
         {
-            if (typeArgs == null || typeArgs.Length == 0)
+            if (typeArgs is null || typeArgs.Length == 0)
             {
                 if (!m.IsGenericMethodDefinition)
                     return m;

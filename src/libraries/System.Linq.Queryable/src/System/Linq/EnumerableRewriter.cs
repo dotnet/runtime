@@ -65,7 +65,7 @@ namespace System.Linq
                     Expression arg = argList[i];
                     ParameterInfo pi = pis[i];
                     arg = FixupQuotedExpression(pi.ParameterType, arg);
-                    if (newArgs == null && arg != argList[i])
+                    if (newArgs is null && arg != argList[i])
                     {
                         newArgs = new List<Expression>(argList.Count);
                         for (int j = 0; j < i; j++)
@@ -76,7 +76,7 @@ namespace System.Linq
 
                     newArgs?.Add(arg);
                 }
-                if (newArgs != null)
+                if (newArgs is not null)
                     argList = newArgs.AsReadOnly();
             }
             return argList;
@@ -137,7 +137,7 @@ namespace System.Linq
         private Type GetEquivalentType(Type type)
         {
             Type? equiv;
-            if (_equivalentTypeCache == null)
+            if (_equivalentTypeCache is null)
             {
                 // Pre-loading with the non-generic IQueryable and IEnumerable not only covers this case
                 // without any reflection-based introspection, but also means the slightly different
@@ -163,7 +163,7 @@ namespace System.Linq
                     else if (genericType == typeof(IQueryable<>))
                         equiv = typeof(IEnumerable<>).MakeGenericType(pubType.GenericTypeArguments[0]);
                 }
-                if (equiv == null)
+                if (equiv is null)
                 {
                     var interfacesWithInfo = pubType.GetInterfaces().Select(IntrospectionExtensions.GetTypeInfo).ToArray();
                     var singleTypeGenInterfacesWithGetType = interfacesWithInfo
@@ -175,7 +175,7 @@ namespace System.Linq
                         .Select(i => i.Info.GenericTypeArguments[0])
                         .Distinct()
                         .SingleOrDefault();
-                    if (typeArg != null)
+                    if (typeArg is not null)
                         equiv = typeof(IOrderedEnumerable<>).MakeGenericType(typeArg);
                     else
                     {
@@ -196,7 +196,7 @@ namespace System.Linq
         {
             if (c.Value is EnumerableQuery sq)
             {
-                if (sq.Enumerable != null)
+                if (sq.Enumerable is not null)
                 {
                     Type t = GetPublicType(sq.Enumerable.GetType());
                     return Expression.Constant(sq.Enumerable, t);
@@ -213,13 +213,13 @@ namespace System.Linq
         private static ILookup<string, MethodInfo>? s_seqMethods;
         private static MethodInfo FindEnumerableMethod(string name, ReadOnlyCollection<Expression> args, params Type[]? typeArgs)
         {
-            if (s_seqMethods == null)
+            if (s_seqMethods is null)
             {
                 s_seqMethods = typeof(Enumerable).GetStaticMethods().ToLookup(m => m.Name);
             }
             MethodInfo? mi = s_seqMethods[name].FirstOrDefault(m => ArgsMatch(m, args, typeArgs));
-            Debug.Assert(mi != null, "All static methods with arguments on Queryable have equivalents on Enumerable.");
-            if (typeArgs != null)
+            Debug.Assert(mi is not null, "All static methods with arguments on Queryable have equivalents on Enumerable.");
+            if (typeArgs is not null)
                 return mi.MakeGenericMethod(typeArgs);
             return mi;
         }
@@ -234,7 +234,7 @@ namespace System.Linq
                 {
                     MethodInfo mi = en.Current;
                     if (ArgsMatch(mi, args, typeArgs))
-                        return (typeArgs != null) ? mi.MakeGenericMethod(typeArgs) : mi;
+                        return (typeArgs is not null) ? mi.MakeGenericMethod(typeArgs) : mi;
                 } while (en.MoveNext());
             }
             throw Error.NoMethodOnTypeMatchingArguments(name, type);
@@ -245,7 +245,7 @@ namespace System.Linq
             ParameterInfo[] mParams = m.GetParameters();
             if (mParams.Length != args.Count)
                 return false;
-            if (!m.IsGenericMethod && typeArgs != null && typeArgs.Length > 0)
+            if (!m.IsGenericMethod && typeArgs is not null && typeArgs.Length > 0)
             {
                 return false;
             }
@@ -255,7 +255,7 @@ namespace System.Linq
             }
             if (m.IsGenericMethodDefinition)
             {
-                if (typeArgs == null || typeArgs.Length == 0)
+                if (typeArgs is null || typeArgs.Length == 0)
                     return false;
                 if (m.GetGenericArguments().Length != typeArgs.Length)
                     return false;
@@ -265,7 +265,7 @@ namespace System.Linq
             for (int i = 0, n = args.Count; i < n; i++)
             {
                 Type parameterType = mParams[i].ParameterType;
-                if (parameterType == null)
+                if (parameterType is null)
                     return false;
                 if (parameterType.IsByRef)
                     parameterType = parameterType.GetElementType()!;
@@ -291,7 +291,7 @@ namespace System.Linq
             bool isArray = type.IsArray;
             Type tmp = isArray ? type.GetElementType()! : type;
             Type? eType = TypeHelper.FindGenericType(typeof(Expression<>), tmp);
-            if (eType != null)
+            if (eType is not null)
                 tmp = eType.GetGenericArguments()[0];
             if (isArray)
             {
@@ -343,7 +343,7 @@ namespace System.Linq
         protected override LabelTarget VisitLabelTarget(LabelTarget? node)
         {
             LabelTarget? newTarget;
-            if (_targetCache == null)
+            if (_targetCache is null)
                 _targetCache = new Dictionary<LabelTarget, LabelTarget>();
             else if (_targetCache.TryGetValue(node!, out newTarget))
                 return newTarget;

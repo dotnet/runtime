@@ -65,27 +65,27 @@ namespace Microsoft.Extensions.Http
             IOptionsMonitor<HttpClientFactoryOptions> optionsMonitor,
             IEnumerable<IHttpMessageHandlerBuilderFilter> filters)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            if (scopeFactory == null)
+            if (scopeFactory is null)
             {
                 throw new ArgumentNullException(nameof(scopeFactory));
             }
 
-            if (loggerFactory == null)
+            if (loggerFactory is null)
             {
                 throw new ArgumentNullException(nameof(loggerFactory));
             }
 
-            if (optionsMonitor == null)
+            if (optionsMonitor is null)
             {
                 throw new ArgumentNullException(nameof(optionsMonitor));
             }
 
-            if (filters == null)
+            if (filters is null)
             {
                 throw new ArgumentNullException(nameof(filters));
             }
@@ -116,7 +116,7 @@ namespace Microsoft.Extensions.Http
 
         public HttpClient CreateClient(string name)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -135,7 +135,7 @@ namespace Microsoft.Extensions.Http
 
         public HttpMessageHandler CreateHandler(string name)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -239,7 +239,7 @@ namespace Microsoft.Extensions.Http
         {
             lock (_cleanupTimerLock)
             {
-                if (_cleanupTimer == null)
+                if (_cleanupTimer is null)
                 {
                     _cleanupTimer = NonCapturingTimer.Create(_cleanupCallback, this, DefaultCleanupInterval, Timeout.InfiniteTimeSpan);
                 }
@@ -293,7 +293,7 @@ namespace Microsoft.Extensions.Http
                 {
                     // Since we're the only one removing from _expired, TryDequeue must always succeed.
                     _expiredHandlers.TryDequeue(out ExpiredHandlerTrackingEntry entry);
-                    Debug.Assert(entry != null, "Entry was null, we should always get an entry back from TryDequeue");
+                    Debug.Assert(entry is not null, "Entry was null, we should always get an entry back from TryDequeue");
 
                     if (entry.CanDispose)
                     {

@@ -119,12 +119,12 @@ namespace System.Net
             TimerQueue? queue;
             object key = durationMilliseconds; // Box once.
             WeakReference? weakQueue = (WeakReference?)s_queuesCache[key];
-            if (weakQueue == null || (queue = (TimerQueue?)weakQueue.Target) == null)
+            if (weakQueue is null || (queue = (TimerQueue?)weakQueue.Target) is null)
             {
                 lock (s_newQueues)
                 {
                     weakQueue = (WeakReference?)s_queuesCache[key];
-                    if (weakQueue == null || (queue = (TimerQueue?)weakQueue.Target) == null)
+                    if (weakQueue is null || (queue = (TimerQueue?)weakQueue.Target) is null)
                     {
                         queue = new TimerQueue(durationMilliseconds);
                         weakQueue = new WeakReference(queue);
@@ -140,7 +140,7 @@ namespace System.Net
                             while (e.MoveNext())
                             {
                                 DictionaryEntry pair = e.Entry;
-                                if (((WeakReference)pair.Value!).Target == null)
+                                if (((WeakReference)pair.Value!).Target is null)
                                 {
                                     garbage.Add(pair.Key);
                                 }
@@ -306,7 +306,7 @@ namespace System.Net
 
             internal TimerNode(Callback callback, object? context, int durationMilliseconds, object queueLock) : base(durationMilliseconds)
             {
-                if (callback != null)
+                if (callback is not null)
                 {
                     _callback = callback;
                     _context = context;
@@ -410,7 +410,7 @@ namespace System.Net
 
                         Next = null;
                         Prev = null;
-                        needCallback = _callback != null;
+                        needCallback = _callback is not null;
                     }
                 }
 
@@ -510,7 +510,7 @@ namespace System.Net
                             {
                                 lock (s_newQueues)
                                 {
-                                    for (LinkedListNode<WeakReference>? node = s_newQueues.First; node != null; node = s_newQueues.First)
+                                    for (LinkedListNode<WeakReference>? node = s_newQueues.First; node is not null; node = s_newQueues.First)
                                     {
                                         s_newQueues.Remove(node);
                                         s_queues.AddLast(node);
@@ -521,10 +521,10 @@ namespace System.Net
                             int now = Environment.TickCount;
                             int nextTick = 0;
                             bool haveNextTick = false;
-                            for (LinkedListNode<WeakReference>? node = s_queues.First; node != null; /* node = node.Next must be done in the body */)
+                            for (LinkedListNode<WeakReference>? node = s_queues.First; node is not null; /* node = node.Next must be done in the body */)
                             {
                                 TimerQueue? queue = (TimerQueue?)node.Value.Target;
-                                if (queue == null)
+                                if (queue is null)
                                 {
                                     LinkedListNode<WeakReference>? next = node.Next;
                                     s_queues.Remove(node);

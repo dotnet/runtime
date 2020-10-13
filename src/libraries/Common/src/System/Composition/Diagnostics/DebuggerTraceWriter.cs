@@ -60,7 +60,7 @@ namespace System.Composition.Diagnostics
             messageBuilder.AppendFormat(CultureInfo.InvariantCulture, "{0} {1}: {2} : ",
                 s_sourceName, eventType.ToString(), (int)traceId);
 
-            if (arguments == null)
+            if (arguments is null)
             {
                 messageBuilder.Append(format);
             }

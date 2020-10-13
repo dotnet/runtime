@@ -125,19 +125,19 @@ namespace System.Runtime.InteropServices
             lock (rcw)
             {
                 ComEventsInfo? eventsInfo = ComEventsInfo.Find(rcw);
-                if (eventsInfo == null)
+                if (eventsInfo is null)
                 {
                     return null;
                 }
 
                 ComEventsSink? sink = eventsInfo.FindSink(ref iid);
-                if (sink == null)
+                if (sink is null)
                 {
                     return null;
                 }
 
                 ComEventsMethod? method = sink.FindMethod(dispid);
-                if (method == null)
+                if (method is null)
                 {
                     return null;
                 }
@@ -150,13 +150,13 @@ namespace System.Runtime.InteropServices
                     method = sink.RemoveMethod(method);
                 }
 
-                if (method == null)
+                if (method is null)
                 {
                     // removed last dispid handler for this sink - need to remove the sink
                     sink = eventsInfo.RemoveSink(sink);
                 }
 
-                if (sink == null)
+                if (sink is null)
                 {
                     // removed last sink for this rcw - need to remove all traces of event info
                     Marshal.SetComObjectData(rcw, typeof(ComEventsInfo), null);

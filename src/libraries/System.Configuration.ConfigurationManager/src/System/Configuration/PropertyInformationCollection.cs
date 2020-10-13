@@ -25,12 +25,12 @@ namespace System.Configuration
                 PropertyInformation result = (PropertyInformation)BaseGet(propertyName);
 
                 // check for default collection name
-                if (result == null)
+                if (result is null)
                 {
                     PropertyInformation defaultColl =
                         (PropertyInformation)BaseGet(ConfigurationProperty.DefaultCollectionPropertyName);
 
-                    if ((defaultColl != null) && (defaultColl.ProvidedName == propertyName)) result = defaultColl;
+                    if ((defaultColl is not null) && (defaultColl.ProvidedName == propertyName)) result = defaultColl;
                 }
                 return result;
             }
@@ -41,7 +41,7 @@ namespace System.Configuration
 
         public void CopyTo(PropertyInformation[] array, int index)
         {
-            if (array == null) throw new ArgumentNullException(nameof(array));
+            if (array is null) throw new ArgumentNullException(nameof(array));
 
             if (array.Length < Count + index) throw new ArgumentOutOfRangeException(nameof(index));
 

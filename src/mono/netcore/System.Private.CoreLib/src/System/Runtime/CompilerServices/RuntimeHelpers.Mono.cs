@@ -7,7 +7,7 @@ namespace System.Runtime.CompilerServices
     {
         public static void InitializeArray(Array array, RuntimeFieldHandle fldHandle)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (fldHandle.Value == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(fldHandle));
@@ -34,7 +34,7 @@ namespace System.Runtime.CompilerServices
             if (o1 == o2)
                 return true;
 
-            if (o1 == null || o2 == null)
+            if (o1 is null || o2 is null)
                 return false;
 
             if (o1 is ValueType)

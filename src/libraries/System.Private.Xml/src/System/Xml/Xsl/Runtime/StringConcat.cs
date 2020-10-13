@@ -52,9 +52,9 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void Concat(string value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
-            if (_delimiter != null && _idxStr != 0)
+            if (_delimiter is not null && _idxStr != 0)
             {
                 // Add delimiter
                 ConcatNoDelimiter(_delimiter);
@@ -90,7 +90,7 @@ namespace System.Xml.Xsl.Runtime
                 case 3: _s4 = s; break;
                 case 4:
                     // Calling Clear() is expensive, allocate a new List instead
-                    int capacity = (_strList == null) ? 8 : _strList.Count;
+                    int capacity = (_strList is null) ? 8 : _strList.Count;
                     List<string?> strList = _strList = new List<string?>(capacity);
                     strList.Add(_s1);
                     strList.Add(_s2);

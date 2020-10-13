@@ -145,7 +145,7 @@ namespace System.Diagnostics
         /// <summary>Additional logic invoked when the Process is closed.</summary>
         private void CloseCore()
         {
-            if (_waitStateHolder != null)
+            if (_waitStateHolder is not null)
             {
                 _waitStateHolder.Dispose();
                 _waitStateHolder = null;
@@ -173,8 +173,8 @@ namespace System.Diagnostics
                 {
                     if (!_watchingForExit)
                     {
-                        Debug.Assert(_waitHandle == null);
-                        Debug.Assert(_registeredWaitHandle == null);
+                        Debug.Assert(_waitHandle is null);
+                        Debug.Assert(_registeredWaitHandle is null);
                         Debug.Assert(Associated, "Process.EnsureWatchingForExit called with no associated process");
                         _watchingForExit = true;
                         try
@@ -205,11 +205,11 @@ namespace System.Diagnostics
 
             if (exited && milliseconds == Timeout.Infinite) // if we have a hard timeout, we cannot wait for the streams
             {
-                if (_output != null)
+                if (_output is not null)
                 {
                     _output.WaitUntilEOF();
                 }
-                if (_error != null)
+                if (_error is not null)
                 {
                     _error.WaitUntilEOF();
                 }
@@ -233,7 +233,7 @@ namespace System.Diagnostics
         {
             int? exitCode;
             _exited = GetWaitState().GetExited(out exitCode, refresh: true);
-            if (_exited && exitCode != null)
+            if (_exited && exitCode is not null)
             {
                 _exitCode = exitCode.Value;
             }
@@ -318,7 +318,7 @@ namespace System.Diagnostics
         partial void ThrowIfExited(bool refresh)
         {
             // Don't allocate a ProcessWaitState.Holder unless we're refreshing.
-            if (_waitStateHolder == null && !refresh)
+            if (_waitStateHolder is null && !refresh)
             {
                 return;
             }
@@ -403,7 +403,7 @@ namespace System.Diagnostics
                 // when exec returns ENOEXEC (file format cannot be executed).
                 bool isExecuting = false;
                 filename = ResolveExecutableForShellExecute(startInfo.FileName, cwd);
-                if (filename != null)
+                if (filename is not null)
                 {
                     argv = ParseArgv(startInfo);
 
@@ -532,7 +532,7 @@ namespace System.Diagnostics
             {
                 s_processStartLock.ExitReadLock();
 
-                if (_waitStateHolder == null && usesTerminal)
+                if (_waitStateHolder is null && usesTerminal)
                 {
                     // We failed to launch a child that could use the terminal.
                     s_processStartLock.EnterWriteLock();
@@ -628,7 +628,7 @@ namespace System.Diagnostics
             {
                 // The WorkingDirectory property specifies the location of the executable.
                 // If WorkingDirectory is an empty string, the current directory is understood to contain the executable.
-                workingDirectory = workingDirectory != null ? Path.GetFullPath(workingDirectory) :
+                workingDirectory = workingDirectory is not null ? Path.GetFullPath(workingDirectory) :
                                                               Directory.GetCurrentDirectory();
                 string filenameInWorkingDirectory = Path.Combine(workingDirectory, filename);
                 // filename is a relative path in the working directory
@@ -643,7 +643,7 @@ namespace System.Diagnostics
                 }
             }
 
-            if (resolvedFilename == null)
+            if (resolvedFilename is null)
             {
                 return null;
             }
@@ -681,7 +681,7 @@ namespace System.Diagnostics
 
             // Then check the executable's directory
             string? path = Environment.ProcessPath;
-            if (path != null)
+            if (path is not null)
             {
                 try
                 {
@@ -714,7 +714,7 @@ namespace System.Diagnostics
         {
             string path;
             string? pathEnvVar = Environment.GetEnvironmentVariable("PATH");
-            if (pathEnvVar != null)
+            if (pathEnvVar is not null)
             {
                 var pathParser = new StringParser(pathEnvVar, ':', skipEmpty: true);
                 while (pathParser.MoveNext())
@@ -885,7 +885,7 @@ namespace System.Diagnostics
         /// <summary>Gets the wait state for this Process object.</summary>
         private ProcessWaitState GetWaitState()
         {
-            if (_waitStateHolder == null)
+            if (_waitStateHolder is null)
             {
                 EnsureState(State.HaveId);
                 _waitStateHolder = new ProcessWaitState.Holder(_processId);
@@ -909,7 +909,7 @@ namespace System.Diagnostics
             }
 
             uint[]? groups = Interop.Sys.GetGroupList(startInfo.UserName, groupId!.Value);
-            if (groups == null)
+            if (groups is null)
             {
                 throw new Win32Exception(SR.Format(SR.UserGroupsCannotBeDetermined, startInfo.UserName));
             }
@@ -927,7 +927,7 @@ namespace System.Diagnostics
             byte* stackBuf = stackalloc byte[BufLen];
             if (TryGetPasswd(userName, stackBuf, BufLen, out passwd))
             {
-                if (passwd == null)
+                if (passwd is null)
                 {
                     return (null, null);
                 }
@@ -945,7 +945,7 @@ namespace System.Diagnostics
                 {
                     if (TryGetPasswd(userName, buf, heapBuf.Length, out passwd))
                     {
-                        if (passwd == null)
+                        if (passwd is null)
                         {
                             return (null, null);
                         }

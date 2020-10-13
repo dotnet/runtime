@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Http
             get => _name;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.Http
 
         public override HttpMessageHandler Build()
         {
-            if (PrimaryHandler == null)
+            if (PrimaryHandler is null)
             {
                 string message = SR.Format(SR.HttpMessageHandlerBuilder_PrimaryHandlerIsNull, nameof(PrimaryHandler));
                 throw new InvalidOperationException(message);

@@ -66,8 +66,8 @@ namespace System.Net
                 + " Version:" + Version.ToString(NumberFormatInfo.InvariantInfo)
                 + " RPCID:" + RPCID.ToString(NumberFormatInfo.InvariantInfo)
                 + " MaxToken:" + MaxToken.ToString(NumberFormatInfo.InvariantInfo)
-                + " Name:" + ((Name == null) ? "(null)" : Name)
-                + " Comment:" + ((Comment == null) ? "(null)" : Comment);
+                + " Name:" + ((Name is null) ? "(null)" : Name)
+                + " Comment:" + ((Comment is null) ? "(null)" : Comment);
         }
     }
 }

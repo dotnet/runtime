@@ -15,7 +15,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public NamespaceEvent(NavigatorInput input)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
             Debug.Assert(input.NodeType == XPathNodeType.Namespace);
             _namespaceUri = input.Value;
             _name = input.LocalName;
@@ -26,10 +26,10 @@ namespace System.Xml.Xsl.XsltOld
             if (_namespaceUri.Length != 0)
             { // Do we need to check this for namespace?
                 NamespaceInfo? ResultURIInfo = compiler.FindNamespaceAlias(_namespaceUri);
-                if (ResultURIInfo != null)
+                if (ResultURIInfo is not null)
                 {
                     _namespaceUri = ResultURIInfo.nameSpace!;
-                    if (ResultURIInfo.prefix != null)
+                    if (ResultURIInfo.prefix is not null)
                     {
                         _name = ResultURIInfo.prefix;
                     }

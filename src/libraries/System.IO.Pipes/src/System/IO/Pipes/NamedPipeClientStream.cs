@@ -56,11 +56,11 @@ namespace System.IO.Pipes
             PipeOptions options, TokenImpersonationLevel impersonationLevel, HandleInheritability inheritability)
             : base(direction, 0)
         {
-            if (pipeName == null)
+            if (pipeName is null)
             {
                 throw new ArgumentNullException(nameof(pipeName));
             }
-            if (serverName == null)
+            if (serverName is null)
             {
                 throw new ArgumentNullException(nameof(serverName), SR.ArgumentNull_ServerName);
             }
@@ -100,7 +100,7 @@ namespace System.IO.Pipes
         public NamedPipeClientStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
             : base(direction, 0)
         {
-            if (safePipeHandle == null)
+            if (safePipeHandle is null)
             {
                 throw new ArgumentNullException(nameof(safePipeHandle));
             }

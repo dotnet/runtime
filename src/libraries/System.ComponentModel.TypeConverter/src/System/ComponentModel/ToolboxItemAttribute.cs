@@ -54,7 +54,7 @@ namespace System.ComponentModel
         /// </summary>
         public ToolboxItemAttribute(Type toolboxItemType)
         {
-            if (toolboxItemType == null)
+            if (toolboxItemType is null)
             {
                 throw new ArgumentNullException(nameof(toolboxItemType));
             }
@@ -70,9 +70,9 @@ namespace System.ComponentModel
         {
             get
             {
-                if (_toolboxItemType == null)
+                if (_toolboxItemType is null)
                 {
-                    if (_toolboxItemTypeName != null)
+                    if (_toolboxItemTypeName is not null)
                     {
                         try
                         {
@@ -102,7 +102,7 @@ namespace System.ComponentModel
 
         public override int GetHashCode()
         {
-            if (_toolboxItemTypeName != null)
+            if (_toolboxItemTypeName is not null)
             {
                 return _toolboxItemTypeName.GetHashCode();
             }

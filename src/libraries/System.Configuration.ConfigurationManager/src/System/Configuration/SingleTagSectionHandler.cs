@@ -26,7 +26,7 @@ namespace System.Configuration
 
             // start result off as a shallow clone of the parent
 
-            if (parent == null)
+            if (parent is null)
                 result = new Hashtable();
             else
                 result = new Hashtable((IDictionary)parent);

@@ -46,7 +46,7 @@ namespace System.Configuration
 
         private void VerifyIsAttachedToConfigRecord()
         {
-            if (_configRecord == null)
+            if (_configRecord is null)
                 throw new InvalidOperationException(SR.Config_cannot_edit_configurationsectiongroup_when_not_attached);
         }
 
@@ -70,7 +70,7 @@ namespace System.Configuration
 
         public void CopyTo(ConfigurationSection[] array, int index)
         {
-            if (array == null) throw new ArgumentNullException(nameof(array));
+            if (array is null) throw new ArgumentNullException(nameof(array));
 
             int c = Count;
             if (array.Length < c + index) throw new ArgumentOutOfRangeException(nameof(index));

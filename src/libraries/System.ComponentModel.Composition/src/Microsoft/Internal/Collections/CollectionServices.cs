@@ -58,7 +58,7 @@ namespace Microsoft.Internal.Collections
 
         public static ReadOnlyCollection<T> ToReadOnlyCollection<T>(this IEnumerable<T> source)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -68,12 +68,12 @@ namespace Microsoft.Internal.Collections
 
         public static IEnumerable<T>? ConcatAllowingNull<T>(this IEnumerable<T>? source, IEnumerable<T>? second)
         {
-            if (second == null || !second.Any())
+            if (second is null || !second.Any())
             {
                 return source;
             }
 
-            if (source == null || !source.Any())
+            if (source is null || !source.Any())
             {
                 return second;
             }
@@ -83,12 +83,12 @@ namespace Microsoft.Internal.Collections
 
         public static ICollection<T>? ConcatAllowingNull<T>(this ICollection<T>? source, ICollection<T>? second)
         {
-            if (second == null || (second.Count == 0))
+            if (second is null || (second.Count == 0))
             {
                 return source;
             }
 
-            if (source == null || (source.Count == 0))
+            if (source is null || (source.Count == 0))
             {
                 return second;
             }
@@ -101,13 +101,13 @@ namespace Microsoft.Internal.Collections
 
         public static List<T>? FastAppendToListAllowNulls<T>(this List<T>? source, IEnumerable<T>? second)
         {
-            if (second == null)
+            if (second is null)
             {
                 return source;
             }
 
             // if there's nothing in the source, return the second
-            if ((source == null) || (source.Count == 0))
+            if ((source is null) || (source.Count == 0))
             {
                 return second.AsList();
             }
@@ -134,7 +134,7 @@ namespace Microsoft.Internal.Collections
 
         private static List<T> FastAppendToListAllowNulls<T>(this List<T>? source, T value)
         {
-            if (source == null)
+            if (source is null)
             {
                 source = new List<T>();
             }
@@ -148,9 +148,9 @@ namespace Microsoft.Internal.Collections
                         IEnumerable<T>? second)
             where T : class
         {
-            if (second == null)
+            if (second is null)
             {
-                Debug.Assert(value != null);
+                Debug.Assert(value is not null);
                 source = source.FastAppendToListAllowNulls(value);
             }
             else
@@ -170,7 +170,7 @@ namespace Microsoft.Internal.Collections
 
         public static EnumerableCardinality GetCardinality<T>(this IEnumerable<T> source)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -204,7 +204,7 @@ namespace Microsoft.Internal.Collections
 
         public static Stack<T> Copy<T>(this Stack<T> stack)
         {
-            if (stack == null)
+            if (stack is null)
             {
                 throw new ArgumentNullException(nameof(stack));
             }

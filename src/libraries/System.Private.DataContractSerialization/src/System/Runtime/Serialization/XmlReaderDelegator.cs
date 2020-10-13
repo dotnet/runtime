@@ -61,7 +61,7 @@ namespace System.Runtime.Serialization
 
         internal bool IsNamespaceURI(string ns)
         {
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
                 return ns == reader.NamespaceURI;
             else
                 return dictionaryReader.IsNamespaceUri(ns);
@@ -69,7 +69,7 @@ namespace System.Runtime.Serialization
 
         internal bool IsLocalName(string localName)
         {
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
                 return localName == reader.LocalName;
             else
                 return dictionaryReader.IsLocalName(localName);
@@ -77,7 +77,7 @@ namespace System.Runtime.Serialization
 
         internal bool IsNamespaceUri(XmlDictionaryString ns)
         {
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
                 return ns.Value == reader.NamespaceURI;
             else
                 return dictionaryReader.IsNamespaceUri(ns);
@@ -85,7 +85,7 @@ namespace System.Runtime.Serialization
 
         internal bool IsLocalName(XmlDictionaryString localName)
         {
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
                 return localName.Value == reader.LocalName;
             else
                 return dictionaryReader.IsLocalName(localName);
@@ -93,7 +93,7 @@ namespace System.Runtime.Serialization
 
         internal int IndexOfLocalName(XmlDictionaryString[] localNames, XmlDictionaryString ns)
         {
-            if (dictionaryReader != null)
+            if (dictionaryReader is not null)
                 return dictionaryReader.IndexOfLocalName(localNames, ns);
 
             if (reader.NamespaceURI == ns.Value)
@@ -123,7 +123,7 @@ namespace System.Runtime.Serialization
 
         internal bool IsStartElement(XmlDictionaryString localname, XmlDictionaryString ns)
         {
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
                 return !isEndOfEmptyElement && reader.IsStartElement(localname.Value, ns.Value);
             else
                 return !isEndOfEmptyElement && dictionaryReader.IsStartElement(localname, ns);
@@ -442,7 +442,7 @@ namespace System.Runtime.Serialization
             if (isEndOfEmptyElement)
                 ThrowNotAtElement();
 
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
             {
                 return ReadContentAsBase64(reader.ReadElementContentAsString());
             }
@@ -457,7 +457,7 @@ namespace System.Runtime.Serialization
             if (isEndOfEmptyElement)
                 return Array.Empty<byte>();
 
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
             {
                 return ReadContentAsBase64(reader.ReadContentAsString());
             }
@@ -470,7 +470,7 @@ namespace System.Runtime.Serialization
         [return: NotNullIfNotNull("str")]
         internal byte[]? ReadContentAsBase64(string? str)
         {
-            if (str == null)
+            if (str is null)
                 return null;
             str = str.Trim();
             if (str.Length == 0)
@@ -621,7 +621,7 @@ namespace System.Runtime.Serialization
 
             string str = reader.ReadElementContentAsString();
 
-            if (str == null || str.Length == 0)
+            if (str is null || str.Length == 0)
                 ThrowConversionException(string.Empty, "UInt64");
 
             return XmlConverter.ToUInt64(str);
@@ -631,7 +631,7 @@ namespace System.Runtime.Serialization
         {
             string str = reader.ReadContentAsString();
 
-            if (str == null || str.Length == 0)
+            if (str is null || str.Length == 0)
                 ThrowConversionException(string.Empty, "UInt64");
 
             return XmlConverter.ToUInt64(str);
@@ -770,7 +770,7 @@ namespace System.Runtime.Serialization
         {
             string name, prefix;
             string? ns;
-            if (str == null || str.Length == 0)
+            if (str is null || str.Length == 0)
                 name = ns = string.Empty;
             else
                 XmlObjectSerializerReadContext.ParseQualifiedName(str, this, out name, out ns, out prefix);
@@ -797,7 +797,7 @@ namespace System.Runtime.Serialization
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, [NotNullWhen(true)] out bool[]? array)
         {
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
             {
                 array = null;
                 return false;
@@ -827,7 +827,7 @@ namespace System.Runtime.Serialization
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, [NotNullWhen(true)] out DateTime[]? array)
         {
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
             {
                 array = null;
                 return false;
@@ -857,7 +857,7 @@ namespace System.Runtime.Serialization
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, [NotNullWhen(true)] out decimal[]? array)
         {
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
             {
                 array = null;
                 return false;
@@ -887,7 +887,7 @@ namespace System.Runtime.Serialization
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, [NotNullWhen(true)] out int[]? array)
         {
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
             {
                 array = null;
                 return false;
@@ -917,7 +917,7 @@ namespace System.Runtime.Serialization
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, [NotNullWhen(true)] out long[]? array)
         {
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
             {
                 array = null;
                 return false;
@@ -947,7 +947,7 @@ namespace System.Runtime.Serialization
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, [NotNullWhen(true)] out float[]? array)
         {
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
             {
                 array = null;
                 return false;
@@ -977,7 +977,7 @@ namespace System.Runtime.Serialization
             XmlDictionaryString itemName, XmlDictionaryString itemNamespace,
             int arrayLength, [NotNullWhen(true)] out double[]? array)
         {
-            if (dictionaryReader == null)
+            if (dictionaryReader is null)
             {
                 array = null;
                 return false;
@@ -1012,7 +1012,7 @@ namespace System.Runtime.Serialization
         internal bool HasLineInfo()
         {
             IXmlLineInfo? iXmlLineInfo = reader as IXmlLineInfo;
-            return (iXmlLineInfo == null) ? false : iXmlLineInfo.HasLineInfo();
+            return (iXmlLineInfo is null) ? false : iXmlLineInfo.HasLineInfo();
         }
 
         internal int LineNumber
@@ -1020,7 +1020,7 @@ namespace System.Runtime.Serialization
             get
             {
                 IXmlLineInfo? iXmlLineInfo = reader as IXmlLineInfo;
-                return (iXmlLineInfo == null) ? 0 : iXmlLineInfo.LineNumber;
+                return (iXmlLineInfo is null) ? 0 : iXmlLineInfo.LineNumber;
             }
         }
 
@@ -1029,7 +1029,7 @@ namespace System.Runtime.Serialization
             get
             {
                 IXmlLineInfo? iXmlLineInfo = reader as IXmlLineInfo;
-                return (iXmlLineInfo == null) ? 0 : iXmlLineInfo.LinePosition;
+                return (iXmlLineInfo is null) ? 0 : iXmlLineInfo.LinePosition;
             }
         }
 
@@ -1039,10 +1039,10 @@ namespace System.Runtime.Serialization
             get
             {
                 XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader == null)
+                if (xmlTextReader is null)
                 {
                     IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
-                    return (xmlTextParser == null) ? false : xmlTextParser.Normalized;
+                    return (xmlTextParser is null) ? false : xmlTextParser.Normalized;
                 }
                 else
                     return xmlTextReader.Normalization;
@@ -1050,10 +1050,10 @@ namespace System.Runtime.Serialization
             set
             {
                 XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader == null)
+                if (xmlTextReader is null)
                 {
                     IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
-                    if (xmlTextParser != null)
+                    if (xmlTextParser is not null)
                         xmlTextParser.Normalized = value;
                 }
                 else
@@ -1066,10 +1066,10 @@ namespace System.Runtime.Serialization
             get
             {
                 XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader == null)
+                if (xmlTextReader is null)
                 {
                     IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
-                    return (xmlTextParser == null) ? WhitespaceHandling.None : xmlTextParser.WhitespaceHandling;
+                    return (xmlTextParser is null) ? WhitespaceHandling.None : xmlTextParser.WhitespaceHandling;
                 }
                 else
                     return xmlTextReader.WhitespaceHandling;
@@ -1077,10 +1077,10 @@ namespace System.Runtime.Serialization
             set
             {
                 XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader == null)
+                if (xmlTextReader is null)
                 {
                     IXmlTextParser? xmlTextParser = reader as IXmlTextParser;
-                    if (xmlTextParser != null)
+                    if (xmlTextParser is not null)
                         xmlTextParser.WhitespaceHandling = value;
                 }
                 else

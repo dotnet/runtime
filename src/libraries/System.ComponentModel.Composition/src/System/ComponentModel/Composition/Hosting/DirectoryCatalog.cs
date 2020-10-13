@@ -393,7 +393,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Debug.Assert(_fullPath != null);
+                Debug.Assert(_fullPath is not null);
 
                 return _fullPath;
             }
@@ -408,7 +408,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 using (new ReadLock(_thisLock))
                 {
-                    Debug.Assert(_loadedFiles != null);
+                    Debug.Assert(_loadedFiles is not null);
                     return _loadedFiles;
                 }
             }
@@ -421,7 +421,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                Debug.Assert(_path != null);
+                Debug.Assert(_path is not null);
 
                 return _path;
             }
@@ -479,7 +479,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                         finally
                         {
-                            if (catalogs != null)
+                            if (catalogs is not null)
                             {
                                 catalogs.Dispose();
                             }
@@ -540,7 +540,7 @@ namespace System.ComponentModel.Composition.Hosting
         protected virtual void OnChanged(ComposablePartCatalogChangeEventArgs e)
         {
             EventHandler<ComposablePartCatalogChangeEventArgs>? changedEvent = Changed;
-            if (changedEvent != null)
+            if (changedEvent is not null)
             {
                 changedEvent(this, e);
             }
@@ -555,7 +555,7 @@ namespace System.ComponentModel.Composition.Hosting
         protected virtual void OnChanging(ComposablePartCatalogChangeEventArgs e)
         {
             EventHandler<ComposablePartCatalogChangeEventArgs>? changingEvent = Changing;
-            if (changingEvent != null)
+            if (changingEvent is not null)
             {
                 changingEvent(this, e);
             }
@@ -577,7 +577,7 @@ namespace System.ComponentModel.Composition.Hosting
         public void Refresh()
         {
             ThrowIfDisposed();
-            if (_loadedFiles == null)
+            if (_loadedFiles is null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
@@ -675,7 +675,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             try
             {
-                return (_reflectionContext != null)
+                return (_reflectionContext is not null)
                     ? new AssemblyCatalog(assemblyFilePath, _reflectionContext, this)
                     : new AssemblyCatalog(assemblyFilePath, this);
             }
@@ -713,7 +713,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 AssemblyCatalog? catalog = CreateAssemblyCatalogGuarded(file);
 
-                if (catalog != null)
+                if (catalog is not null)
                 {
                     catalogsToAdd.Add(new Tuple<string, AssemblyCatalog>(file, catalog));
                 }
@@ -778,7 +778,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 AssemblyCatalog? assemblyCatalog = CreateAssemblyCatalogGuarded(file);
 
-                if (assemblyCatalog != null)
+                if (assemblyCatalog is not null)
                 {
                     _assemblyCatalogs.Add(file, assemblyCatalog);
                     _catalogCollection.Add(assemblyCatalog);

@@ -19,7 +19,7 @@ namespace System.Net
         {
             SslPolicyErrors errors = SslPolicyErrors.None;
 
-            if (remoteCertificate == null)
+            if (remoteCertificate is null)
             {
                 errors |= SslPolicyErrors.RemoteCertificateNotAvailable;
             }
@@ -59,7 +59,7 @@ namespace System.Net
             SafeDeleteContext? securityContext,
             out X509Certificate2Collection? remoteCertificateStore)
         {
-            if (securityContext == null)
+            if (securityContext is null)
             {
                 remoteCertificateStore = null;
                 return null;
@@ -73,14 +73,14 @@ namespace System.Net
             SafeDeleteContext securityContext,
             X509Certificate2Collection? remoteCertificateStore)
         {
-            if (securityContext == null)
+            if (securityContext is null)
             {
                 return null;
             }
 
             SafeSslHandle sslContext = ((SafeDeleteSslContext)securityContext).SslContext;
 
-            if (sslContext == null)
+            if (sslContext is null)
             {
                 return null;
             }
@@ -91,7 +91,7 @@ namespace System.Net
             {
                 long chainSize = Interop.AppleCrypto.X509ChainGetChainSize(chainHandle);
 
-                if (remoteCertificateStore != null)
+                if (remoteCertificateStore is not null)
                 {
                     for (int i = 0; i < chainSize; i++)
                     {
@@ -121,7 +121,7 @@ namespace System.Net
         {
             SafeSslHandle sslContext = ((SafeDeleteSslContext)securityContext).SslContext;
 
-            if (sslContext == null)
+            if (sslContext is null)
             {
                 return Array.Empty<string>();
             }

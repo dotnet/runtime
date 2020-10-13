@@ -152,7 +152,7 @@ namespace System.Net
         [AllowNull]
         public string BaseAddress
         {
-            get { return _baseAddress != null ? _baseAddress.ToString() : string.Empty; }
+            get { return _baseAddress is not null ? _baseAddress.ToString() : string.Empty; }
             set
             {
                 if (string.IsNullOrEmpty(value))
@@ -223,12 +223,12 @@ namespace System.Net
 
             CopyHeadersTo(request);
 
-            if (Credentials != null)
+            if (Credentials is not null)
             {
                 request.Credentials = Credentials;
             }
 
-            if (_method != null)
+            if (_method is not null)
             {
                 request.Method = _method;
             }
@@ -243,7 +243,7 @@ namespace System.Net
                 request.Proxy = _proxy;
             }
 
-            if (CachePolicy != null)
+            if (CachePolicy is not null)
             {
                 request.CachePolicy = CachePolicy;
             }
@@ -343,7 +343,7 @@ namespace System.Net
             }
             finally
             {
-                if (fs != null)
+                if (fs is not null)
                 {
                     fs.Close();
                     if (!succeeded)
@@ -394,7 +394,7 @@ namespace System.Net
         public Stream OpenWrite(Uri address, string? method)
         {
             ThrowIfNull(address, nameof(address));
-            if (method == null)
+            if (method is null)
             {
                 method = MapToDefaultMethod(address);
             }
@@ -435,7 +435,7 @@ namespace System.Net
         {
             ThrowIfNull(address, nameof(address));
             ThrowIfNull(data, nameof(data));
-            if (method == null)
+            if (method is null)
             {
                 method = MapToDefaultMethod(address);
             }
@@ -484,7 +484,7 @@ namespace System.Net
             WebHeaderCollection headers = Headers;
             string? contentType = headers[HttpKnownHeaderNames.ContentType];
 
-            if (contentType == null)
+            if (contentType is null)
             {
                 contentType = DefaultUploadFileContentType;
             }
@@ -556,7 +556,7 @@ namespace System.Net
         {
             ThrowIfNull(address, nameof(address));
             ThrowIfNull(fileName, nameof(fileName));
-            if (method == null)
+            if (method is null)
             {
                 method = MapToDefaultMethod(address);
             }
@@ -593,7 +593,7 @@ namespace System.Net
             WebHeaderCollection headers = Headers;
 
             string? contentType = headers[HttpKnownHeaderNames.ContentType];
-            if (contentType != null && !string.Equals(contentType, UploadValuesContentType, StringComparison.OrdinalIgnoreCase))
+            if (contentType is not null && !string.Equals(contentType, UploadValuesContentType, StringComparison.OrdinalIgnoreCase))
             {
                 throw new WebException(SR.net_webclient_ContentType);
             }
@@ -629,7 +629,7 @@ namespace System.Net
         {
             ThrowIfNull(address, nameof(address));
             ThrowIfNull(data, nameof(data));
-            if (method == null)
+            if (method is null)
             {
                 method = MapToDefaultMethod(address);
             }
@@ -668,7 +668,7 @@ namespace System.Net
         {
             ThrowIfNull(address, nameof(address));
             ThrowIfNull(data, nameof(data));
-            if (method == null)
+            if (method is null)
             {
                 method = MapToDefaultMethod(address);
             }
@@ -715,13 +715,13 @@ namespace System.Net
 
         private void CopyHeadersTo(WebRequest request)
         {
-            if (_headers == null)
+            if (_headers is null)
             {
                 return;
             }
 
             var hwr = request as HttpWebRequest;
-            if (hwr == null)
+            if (hwr is null)
             {
                 return;
             }
@@ -785,7 +785,7 @@ namespace System.Net
             ThrowIfNull(address, nameof(address));
 
             Uri? uri;
-            if (_baseAddress != null)
+            if (_baseAddress is not null)
             {
                 if (!Uri.TryCreate(_baseAddress, address, out uri))
                 {
@@ -806,12 +806,12 @@ namespace System.Net
 
             Uri? uri = address;
 
-            if (!address.IsAbsoluteUri && _baseAddress != null && !Uri.TryCreate(_baseAddress, address, out uri))
+            if (!address.IsAbsoluteUri && _baseAddress is not null && !Uri.TryCreate(_baseAddress, address, out uri))
             {
                 return address;
             }
 
-            if (string.IsNullOrEmpty(uri.Query) && _requestParameters != null)
+            if (string.IsNullOrEmpty(uri.Query) && _requestParameters is not null)
             {
                 var sb = new StringBuilder();
 
@@ -848,7 +848,7 @@ namespace System.Net
 
                 using (Stream readStream = response.GetResponseStream())
                 {
-                    if (readStream != null)
+                    if (readStream is not null)
                     {
                         int bytesRead;
                         while ((bytesRead = readStream.Read(copyBuffer, 0, copyBuffer.Length)) != 0)
@@ -873,8 +873,8 @@ namespace System.Net
             WebRequest request, Stream writeStream,
             AsyncOperation asyncOp, Action<byte[]?, Exception?, AsyncOperation> completionDelegate)
         {
-            Debug.Assert(_progress != null, "ProgressData should have been initialized");
-            Debug.Assert(asyncOp != null);
+            Debug.Assert(_progress is not null, "ProgressData should have been initialized");
+            Debug.Assert(asyncOp is not null);
 
             Exception? exception = null;
             try
@@ -901,7 +901,7 @@ namespace System.Net
                 using (writeStream)
                 using (Stream readStream = response.GetResponseStream())
                 {
-                    if (readStream != null)
+                    if (readStream is not null)
                     {
                         while (true)
                         {
@@ -938,7 +938,7 @@ namespace System.Net
             }
             finally
             {
-                if (exception != null)
+                if (exception is not null)
                 {
                     completionDelegate(null, exception, asyncOp);
                 }
@@ -958,12 +958,12 @@ namespace System.Net
 
                 using (Stream writeStream = request.GetRequestStream())
                 {
-                    if (header != null)
+                    if (header is not null)
                     {
                         writeStream.Write(header, 0, header.Length);
                     }
 
-                    if (readStream != null)
+                    if (readStream is not null)
                     {
                         using (readStream)
                         {
@@ -990,7 +990,7 @@ namespace System.Net
                         }
                     }
 
-                    if (footer != null)
+                    if (footer is not null)
                     {
                         writeStream.Write(footer, 0, footer.Length);
                     }
@@ -1011,8 +1011,8 @@ namespace System.Net
             byte[]? header, byte[]? footer,
             AsyncOperation asyncOp, Action<byte[]?, Exception?, AsyncOperation> completionDelegate)
         {
-            Debug.Assert(asyncOp != null);
-            Debug.Assert(_progress != null, "ProgressData should have been initialized");
+            Debug.Assert(asyncOp is not null);
+            Debug.Assert(_progress is not null, "ProgressData should have been initialized");
             _progress.HasUploadPhase = true;
 
             Exception? exception = null;
@@ -1025,14 +1025,14 @@ namespace System.Net
 
                 using (Stream writeStream = await request.GetRequestStreamAsync().ConfigureAwait(false))
                 {
-                    if (header != null)
+                    if (header is not null)
                     {
                         await writeStream.WriteAsync(new ReadOnlyMemory<byte>(header)).ConfigureAwait(false);
                         _progress.BytesSent += header.Length;
                         PostProgressChanged(asyncOp, _progress);
                     }
 
-                    if (readStream != null)
+                    if (readStream is not null)
                     {
                         using (readStream)
                         {
@@ -1063,7 +1063,7 @@ namespace System.Net
                         }
                     }
 
-                    if (footer != null)
+                    if (footer is not null)
                     {
                         await writeStream.WriteAsync(new ReadOnlyMemory<byte>(footer)).ConfigureAwait(false);
                         _progress.BytesSent += footer.Length;
@@ -1080,7 +1080,7 @@ namespace System.Net
             }
             finally
             {
-                if (exception != null)
+                if (exception is not null)
                 {
                     completionDelegate(null, exception, asyncOp);
                 }
@@ -1089,7 +1089,7 @@ namespace System.Net
 
         private static bool ByteArrayHasPrefix(byte[] prefix, byte[] byteArray)
         {
-            if (prefix == null || byteArray == null || prefix.Length > byteArray.Length)
+            if (prefix is null || byteArray is null || prefix.Length > byteArray.Length)
             {
                 return false;
             }
@@ -1125,7 +1125,7 @@ namespace System.Net
                 contentType = null;
             }
 
-            if (contentType != null)
+            if (contentType is not null)
             {
                 contentType = contentType.ToLowerInvariant();
                 string[] parsedList = contentType.Split(s_parseContentTypeSeparators);
@@ -1155,7 +1155,7 @@ namespace System.Net
 
             // If no content encoding listed in the ContentType HTTP header, or no Content-Type header present, then
             // check for a byte-order-mark (BOM) in the data to figure out encoding.
-            if (enc == null)
+            if (enc is null)
             {
                 // UTF32 must be tested before Unicode because it's BOM is the same but longer.
                 Encoding[] encodings = s_knownEncodings;
@@ -1172,7 +1172,7 @@ namespace System.Net
             }
 
             // Do we have an encoding guess?  If not, use default.
-            if (enc == null)
+            if (enc is null)
             {
                 enc = Encoding;
             }
@@ -1191,7 +1191,7 @@ namespace System.Net
 
         private string MapToDefaultMethod(Uri address)
         {
-            Uri uri = !address.IsAbsoluteUri && _baseAddress != null ?
+            Uri uri = !address.IsAbsoluteUri && _baseAddress is not null ?
                 new Uri(_baseAddress, address) :
                 address;
 
@@ -1203,7 +1203,7 @@ namespace System.Net
         [return: NotNullIfNotNull("str")]
         private static string? UrlEncode(string? str)
         {
-            if (str == null)
+            if (str is null)
                 return null;
             byte[] bytes = Encoding.UTF8.GetBytes(str);
             return Encoding.ASCII.GetString(UrlEncodeBytesToBytesInternal(bytes, 0, bytes.Length, false));
@@ -1337,7 +1337,7 @@ namespace System.Net
         public void OpenWriteAsync(Uri address, string? method, object? userToken)
         {
             ThrowIfNull(address, nameof(address));
-            if (method == null)
+            if (method is null)
             {
                 method = MapToDefaultMethod(address);
             }
@@ -1377,7 +1377,7 @@ namespace System.Net
             string? stringData = null;
             try
             {
-                if (returnBytes != null)
+                if (returnBytes is not null)
                 {
                     stringData = GetStringUsingEncoding(_webRequest!, returnBytes);
                 }
@@ -1477,7 +1477,7 @@ namespace System.Net
         {
             ThrowIfNull(address, nameof(address));
             ThrowIfNull(data, nameof(data));
-            if (method == null)
+            if (method is null)
             {
                 method = MapToDefaultMethod(address);
             }
@@ -1495,7 +1495,7 @@ namespace System.Net
                     (bytesResult, error, uploadAsyncOp) =>
                     {
                         string? stringResult = null;
-                        if (error == null && bytesResult != null)
+                        if (error is null && bytesResult is not null)
                         {
                             try
                             {
@@ -1528,7 +1528,7 @@ namespace System.Net
         {
             ThrowIfNull(address, nameof(address));
             ThrowIfNull(data, nameof(data));
-            if (method == null)
+            if (method is null)
             {
                 method = MapToDefaultMethod(address);
             }
@@ -1541,7 +1541,7 @@ namespace System.Net
                 WebRequest request = _webRequest = GetWebRequest(GetUri(address));
 
                 int chunkSize = 0;
-                if (UploadProgressChanged != null)
+                if (UploadProgressChanged is not null)
                 {
                     // If ProgressCallback is requested, we should send the buffer in chunks
                     chunkSize = (int)Math.Min((long)DefaultCopyBufferLength, data.Length);
@@ -1569,7 +1569,7 @@ namespace System.Net
         {
             ThrowIfNull(address, nameof(address));
             ThrowIfNull(fileName, nameof(fileName));
-            if (method == null)
+            if (method is null)
             {
                 method = MapToDefaultMethod(address);
             }
@@ -1608,7 +1608,7 @@ namespace System.Net
         {
             ThrowIfNull(address, nameof(address));
             ThrowIfNull(data, nameof(data));
-            if (method == null)
+            if (method is null)
             {
                 method = MapToDefaultMethod(address);
             }
@@ -1621,7 +1621,7 @@ namespace System.Net
                 WebRequest request = _webRequest = GetWebRequest(GetUri(address));
 
                 int chunkSize = 0;
-                if (UploadProgressChanged != null)
+                if (UploadProgressChanged is not null)
                 {
                     // If ProgressCallback is requested, we should send the buffer in chunks
                     chunkSize = (int)Math.Min((long)DefaultCopyBufferLength, buffer.Length);
@@ -1911,7 +1911,7 @@ namespace System.Net
                 try { unregisterHandler(this, handler); }
                 finally
                 {
-                    if (e.Error != null) tcs.TrySetException(e.Error);
+                    if (e.Error is not null) tcs.TrySetException(e.Error);
                     else if (e.Cancelled) tcs.TrySetCanceled();
                     else tcs.TrySetResult(getResult(e));
                 }
@@ -1920,12 +1920,12 @@ namespace System.Net
 
         private void PostProgressChanged(AsyncOperation asyncOp, ProgressData progress)
         {
-            if (asyncOp != null && (progress.BytesSent > 0 || progress.BytesReceived > 0))
+            if (asyncOp is not null && (progress.BytesSent > 0 || progress.BytesReceived > 0))
             {
                 int progressPercentage;
                 if (progress.HasUploadPhase)
                 {
-                    if (UploadProgressChanged != null)
+                    if (UploadProgressChanged is not null)
                     {
                         progressPercentage = progress.TotalBytesToReceive < 0 && progress.BytesReceived == 0 ?
                             progress.TotalBytesToSend < 0 ? 0 : progress.TotalBytesToSend == 0 ? 50 : (int)((50 * progress.BytesSent) / progress.TotalBytesToSend) :
@@ -1933,7 +1933,7 @@ namespace System.Net
                         asyncOp.Post(_reportUploadProgressChanged!, new UploadProgressChangedEventArgs(progressPercentage, asyncOp.UserSuppliedState!, progress.BytesSent, progress.TotalBytesToSend, progress.BytesReceived, progress.TotalBytesToReceive));
                     }
                 }
-                else if (DownloadProgressChanged != null)
+                else if (DownloadProgressChanged is not null)
                 {
                     progressPercentage = progress.TotalBytesToReceive < 0 ? 0 : progress.TotalBytesToReceive == 0 ? 100 : (int)((100 * progress.BytesReceived) / progress.TotalBytesToReceive);
                     asyncOp.Post(_reportDownloadProgressChanged!, new DownloadProgressChangedEventArgs(progressPercentage, asyncOp.UserSuppliedState!, progress.BytesReceived, progress.TotalBytesToReceive));
@@ -1943,7 +1943,7 @@ namespace System.Net
 
         private static void ThrowIfNull(object argument, string parameterName)
         {
-            if (argument == null)
+            if (argument is null)
             {
                 throw new ArgumentNullException(parameterName);
             }

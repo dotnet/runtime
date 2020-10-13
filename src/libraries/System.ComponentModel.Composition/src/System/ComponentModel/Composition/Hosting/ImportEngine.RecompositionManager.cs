@@ -141,7 +141,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                 foreach (var partManager in partsToUnindex)
                 {
-                    if (partManager != null)
+                    if (partManager is not null)
                     {
                         RemoveIndexEntries(partManager);
                     }

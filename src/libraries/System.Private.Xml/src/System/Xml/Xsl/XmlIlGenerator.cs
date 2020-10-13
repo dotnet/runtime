@@ -77,7 +77,7 @@ namespace System.Xml.Xsl
 
             bool useLRE = (
                 !_qil.IsDebug &&
-                (typeBldr == null)
+                (typeBldr is null)
 #if DEBUG
                 && !XmlILTrace.IsEnabled // Dump assembly to disk; can't do this when using LRE
 #endif
@@ -108,7 +108,7 @@ namespace System.Xml.Xsl
 #endif
 
             // Create module in which methods will be generated
-            if (typeBldr != null)
+            if (typeBldr is not null)
             {
                 _module = new XmlILModule(typeBldr);
             }
@@ -129,8 +129,8 @@ namespace System.Xml.Xsl
 
             // Create metadata for the root expression
             // public void Root()
-            Debug.Assert(_qil.Root != null);
-            XmlILMethodAttributes methAttrs = (_qil.Root.SourceLine == null) ? XmlILMethodAttributes.NonUser : XmlILMethodAttributes.None;
+            Debug.Assert(_qil.Root is not null);
+            XmlILMethodAttributes methAttrs = (_qil.Root.SourceLine is null) ? XmlILMethodAttributes.NonUser : XmlILMethodAttributes.None;
             MethodInfo methRoot = _module.DefineMethod("Root", typeof(void), Array.Empty<Type>(), Array.Empty<string>(), methAttrs);
 
             // Declare all early bound function objects
@@ -161,7 +161,7 @@ namespace System.Xml.Xsl
             );
 
             // Create static constructor that initializes XmlQueryStaticData instance at runtime
-            if (typeBldr != null)
+            if (typeBldr is not null)
             {
                 CreateTypeInitializer(staticData);
 
@@ -209,7 +209,7 @@ namespace System.Xml.Xsl
                     paramTypes[arg] = XmlILTypeHelper.GetStorageType(ndParam.XmlType!);
 
                     // Get the name of each argument
-                    if (ndParam.DebugName != null)
+                    if (ndParam.DebugName is not null)
                         paramNames[arg] = ndParam.DebugName;
                 }
 
@@ -226,7 +226,7 @@ namespace System.Xml.Xsl
                 }
 
                 // Create the method metadata
-                methAttrs = ndFunc.SourceLine == null ? XmlILMethodAttributes.NonUser : XmlILMethodAttributes.None;
+                methAttrs = ndFunc.SourceLine is null ? XmlILMethodAttributes.NonUser : XmlILMethodAttributes.None;
                 methInfo = _module!.DefineMethod(ndFunc.DebugName!, typReturn, paramTypes, paramNames, methAttrs);
 
                 for (int arg = 0; arg < ndFunc.Arguments.Count; arg++)
@@ -253,7 +253,7 @@ namespace System.Xml.Xsl
             {
                 // public T GlobalValue()
                 typReturn = XmlILTypeHelper.GetStorageType(ndRef.XmlType!);
-                methAttrs = ndRef.SourceLine == null ? XmlILMethodAttributes.NonUser : XmlILMethodAttributes.None;
+                methAttrs = ndRef.SourceLine is null ? XmlILMethodAttributes.NonUser : XmlILMethodAttributes.None;
                 methInfo = _module!.DefineMethod(ndRef.DebugName!.ToString(), typReturn, Array.Empty<Type>(), Array.Empty<string>(), methAttrs);
 
                 // Annotate function with MethodBuilder
@@ -299,7 +299,7 @@ namespace System.Xml.Xsl
 
             _helper!.MethodBegin(meth, null, false);
 
-            // if (navigatorThis != null && navigatorThis.MoveTo(navigatorThat))
+            // if (navigatorThis is not null && navigatorThis.MoveTo(navigatorThat))
             //     return navigatorThis;
             lblClone = _helper.DefineLabel();
             _helper.Emit(OpCodes.Ldarg_0);
@@ -334,7 +334,7 @@ namespace System.Xml.Xsl
                 {
                     // Get MethodInfo that evaluates the global value and discard its return value
                     methInfo = XmlILAnnotation.Write(ndIter).FunctionBinding;
-                    Debug.Assert(methInfo != null, "MethodInfo for global value should have been created previously.");
+                    Debug.Assert(methInfo is not null, "MethodInfo for global value should have been created previously.");
 
                     _helper!.LoadQueryRuntime();
                     _helper.Call(methInfo);
@@ -369,7 +369,7 @@ namespace System.Xml.Xsl
             _helper.Call(XmlILMethods.InitializeArray);
             _helper.Emit(OpCodes.Stsfld, fldData);
 
-            if (ebTypes != null)
+            if (ebTypes is not null)
             {
                 // Type[] types = new Type[s_ebTypes.Length];
                 LocalBuilder locTypes = _helper.DeclareLocal("$$$types", typeof(Type[]));

@@ -24,7 +24,7 @@ namespace System.Globalization
 
         public RegionInfo(string name)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -93,7 +93,7 @@ namespace System.Globalization
             get
             {
                 RegionInfo? temp = s_currentRegionInfo;
-                if (temp == null)
+                if (temp is null)
                 {
                     temp = new RegionInfo(CultureData.GetCurrentRegionData());
 
@@ -112,7 +112,7 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(_name != null, "Expected RegionInfo._name to be populated already");
+                Debug.Assert(_name is not null, "Expected RegionInfo._name to be populated already");
                 return _name;
             }
         }

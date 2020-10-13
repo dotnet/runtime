@@ -243,7 +243,7 @@ namespace System
                 return;
             }
 
-            if (obj == null)
+            if (obj is null)
             {
                 this = Empty;
                 return;
@@ -285,13 +285,13 @@ namespace System
             {
                 vt = VarEnum.VT_ERROR;
                 obj = (object)(((ErrorWrapper)obj).ErrorCode);
-                Debug.Assert(obj != null, "obj != null");
+                Debug.Assert(obj is not null, "obj is not null");
             }
             else if (obj is CurrencyWrapper)
             {
                 vt = VarEnum.VT_CY;
                 obj = (object)(((CurrencyWrapper)obj).WrappedObject);
-                Debug.Assert(obj != null, "obj != null");
+                Debug.Assert(obj is not null, "obj is not null");
             }
             else if (obj is BStrWrapper)
             {
@@ -299,7 +299,7 @@ namespace System
                 obj = (object?)(((BStrWrapper)obj).WrappedObject);
             }
 
-            if (obj != null)
+            if (obj is not null)
             {
                 SetFieldsObject(obj);
             }
@@ -345,7 +345,7 @@ namespace System
         // managed variants as an intermediate type.
         internal static void MarshalHelperConvertObjectToVariant(object o, ref Variant v)
         {
-            if (o == null)
+            if (o is null)
             {
                 v = Empty;
             }
@@ -417,7 +417,7 @@ namespace System
                         break;
 
                     case 8: /*VT_BSTR*/
-                        if (pValue == null)
+                        if (pValue is null)
                         {
                             v = new Variant(null) { _flags = CV_STRING };
                             break;

@@ -31,7 +31,7 @@ namespace System.Text
         // For example, what if someone fails a conversion and wants to reset one of our fallback buffers?
         internal unsafe void InternalReset()
         {
-            Debug.Assert(_fallbackBuffer != null);
+            Debug.Assert(_fallbackBuffer is not null);
             charStart = null;
             bFallingBack = false;
             iRecursionCount = 0;
@@ -53,7 +53,7 @@ namespace System.Text
 
         internal char InternalGetNextChar()
         {
-            Debug.Assert(_fallbackBuffer != null);
+            Debug.Assert(_fallbackBuffer is not null);
             char ch = _fallbackBuffer!.GetNextChar();
             bFallingBack = (ch != 0);
             if (ch == 0) iRecursionCount = 0;
@@ -71,8 +71,8 @@ namespace System.Text
         internal unsafe bool InternalFallback(char ch, ref char* chars)
         {
             // Shouldn't have null charStart or fallback buffer
-            Debug.Assert(charStart != null, "[EncoderFallback.InternalFallbackBuffer]Fallback buffer is not initialized");
-            Debug.Assert(_fallbackBuffer != null);
+            Debug.Assert(charStart is not null, "[EncoderFallback.InternalFallbackBuffer]Fallback buffer is not initialized");
+            Debug.Assert(_fallbackBuffer is not null);
 
             // Get our index, remember chars was preincremented to point at next char, so have to decrement
             int index = (int)(chars - charStart) - 1;
@@ -85,7 +85,7 @@ namespace System.Text
                 {
                     // Nothing left in input buffer
                     // No input, return 0 if mustflush is false
-                    if (encoder != null && !encoder.MustFlush)
+                    if (encoder is not null && !encoder.MustFlush)
                     {
                         // Done, nothing to fallback
                         if (setEncoder)

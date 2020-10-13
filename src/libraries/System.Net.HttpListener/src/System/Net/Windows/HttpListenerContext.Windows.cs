@@ -32,7 +32,7 @@ namespace System.Net
         {
             _mutualAuthentication = mutualAuthentication;
             _user = principal;
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"mutual: {(mutualAuthentication == null ? "<null>" : mutualAuthentication)}, Principal: {principal}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"mutual: {(mutualAuthentication is null ? "<null>" : mutualAuthentication)}, Principal: {principal}");
         }
 
         // This can be used to cache the results of HttpListener.ExtendedProtectionSelectorDelegate.
@@ -88,10 +88,10 @@ namespace System.Net
                 }
                 finally
                 {
-                    IDisposable? user = _user == null ? null : _user.Identity as IDisposable;
+                    IDisposable? user = _user is null ? null : _user.Identity as IDisposable;
 
                     // For unsafe connection ntlm auth we dont dispose this identity as yet since its cached
-                    if ((user != null) &&
+                    if ((user is not null) &&
                         (_user!.Identity!.AuthenticationType != NegotiationInfoClass.NTLM) &&
                         (!_listener!.UnsafeConnectionNtlmAuthentication))
                     {

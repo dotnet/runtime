@@ -111,7 +111,7 @@ namespace System.Net.Http
         private HttpMethod(string method, int? http3StaticTableIndex)
             : this(method)
         {
-            _http3EncodedBytes = http3StaticTableIndex != null ?
+            _http3EncodedBytes = http3StaticTableIndex is not null ?
                 QPackEncoder.EncodeStaticIndexedHeaderFieldToArray(http3StaticTableIndex.GetValueOrDefault()) :
                 QPackEncoder.EncodeLiteralHeaderFieldWithStaticNameReferenceToArray(H3StaticTable.MethodGet, method);
         }
@@ -178,7 +178,7 @@ namespace System.Net.Http
             // _http3EncodedBytes is only set for the singleton instances, so if it's not null,
             // we can avoid the dictionary lookup.  Otherwise, look up the method instance in the
             // dictionary and return the normalized instance if it's found.
-            Debug.Assert(method != null);
+            Debug.Assert(method is not null);
             return
                 method._http3EncodedBytes is null && s_knownMethods.TryGetValue(method, out HttpMethod? normalized) ? normalized :
                 method;

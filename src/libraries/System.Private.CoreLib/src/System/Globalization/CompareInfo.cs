@@ -65,7 +65,7 @@ namespace System.Globalization
         public static CompareInfo GetCompareInfo(int culture, Assembly assembly)
         {
             // Parameter checking.
-            if (assembly == null)
+            if (assembly is null)
             {
                 throw new ArgumentNullException(nameof(assembly));
             }
@@ -84,11 +84,11 @@ namespace System.Globalization
         /// </summary>
         public static CompareInfo GetCompareInfo(string name, Assembly assembly)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
-            if (assembly == null)
+            if (assembly is null)
             {
                 throw new ArgumentNullException(nameof(assembly));
             }
@@ -119,7 +119,7 @@ namespace System.Globalization
         /// </summary>
         public static CompareInfo GetCompareInfo(string name)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -134,7 +134,7 @@ namespace System.Globalization
 
         public static bool IsSortable(string text)
         {
-            if (text == null)
+            if (text is null)
             {
                 throw new ArgumentNullException(nameof(text));
             }
@@ -217,7 +217,7 @@ namespace System.Globalization
         private void OnDeserialized()
         {
             // If we didn't have a name, use the LCID
-            if (m_name == null)
+            if (m_name is null)
             {
                 // From whidbey, didn't have a name
                 m_name = CultureInfo.GetCultureInfo(culture)._name;
@@ -233,7 +233,7 @@ namespace System.Globalization
         {
             // This is merely for serialization compatibility with Whidbey/Orcas, it can go away when we don't want that compat any more.
             culture = CultureInfo.GetCultureInfo(Name).LCID; // This is the lcid of the constructing culture (still have to dereference to get target sort)
-            Debug.Assert(m_name != null, "CompareInfo.OnSerializing - expected m_name to be set already");
+            Debug.Assert(m_name is not null, "CompareInfo.OnSerializing - expected m_name to be set already");
         }
 
         /// <summary>
@@ -250,7 +250,7 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(m_name != null, "CompareInfo.Name Expected _name to be set");
+                Debug.Assert(m_name is not null, "CompareInfo.Name Expected _name to be set");
                 if (m_name == "zh-CHT" || m_name == "zh-CHS")
                 {
                     return m_name;
@@ -278,12 +278,12 @@ namespace System.Globalization
             // Our paradigm is that null sorts less than any other string and
             // that two nulls sort as equal.
 
-            if (string1 == null)
+            if (string1 is null)
             {
-                retVal = (string2 == null) ? 0 : -1;
+                retVal = (string2 is null) ? 0 : -1;
                 goto CheckOptionsAndReturn;
             }
-            if (string2 == null)
+            if (string2 is null)
             {
                 retVal = 1;
                 goto CheckOptionsAndReturn;
@@ -321,8 +321,8 @@ namespace System.Globalization
 
         public int Compare(string? string1, int offset1, string? string2, int offset2, CompareOptions options)
         {
-            return Compare(string1, offset1, string1 == null ? 0 : string1.Length - offset1,
-                           string2, offset2, string2 == null ? 0 : string2.Length - offset2, options);
+            return Compare(string1, offset1, string1 is null ? 0 : string1.Length - offset1,
+                           string2, offset2, string2 is null ? 0 : string2.Length - offset2, options);
         }
 
         public int Compare(string? string1, int offset1, string? string2, int offset2)
@@ -335,7 +335,7 @@ namespace System.Globalization
             ReadOnlySpan<char> span1 = default;
             ReadOnlySpan<char> span2 = default;
 
-            if (string1 == null)
+            if (string1 is null)
             {
                 if (offset1 != 0 || length1 != 0)
                 {
@@ -347,7 +347,7 @@ namespace System.Globalization
                 goto BoundsCheckError;
             }
 
-            if (string2 == null)
+            if (string2 is null)
             {
                 if (offset2 != 0 || length2 != 0)
                 {
@@ -366,12 +366,12 @@ namespace System.Globalization
             // Our paradigm is that null sorts less than any other string and
             // that two nulls sort as equal.
 
-            if (string1 == null)
+            if (string1 is null)
             {
-                retVal = (string2 == null) ? 0 : -1;
+                retVal = (string2 is null) ? 0 : -1;
                 goto CheckOptionsAndReturn;
             }
-            if (string2 == null)
+            if (string2 is null)
             {
                 retVal = 1;
                 goto CheckOptionsAndReturn;
@@ -408,12 +408,12 @@ namespace System.Globalization
                 throw new ArgumentOutOfRangeException((offset1 < 0) ? nameof(offset1) : nameof(offset2), SR.ArgumentOutOfRange_NeedPosNum);
             }
 
-            if (offset1 > (string1 == null ? 0 : string1.Length) - length1)
+            if (offset1 > (string1 is null ? 0 : string1.Length) - length1)
             {
                 throw new ArgumentOutOfRangeException(nameof(string1), SR.ArgumentOutOfRange_OffsetLength);
             }
 
-            Debug.Assert(offset2 > (string2 == null ? 0 : string2.Length) - length2);
+            Debug.Assert(offset2 > (string2 is null ? 0 : string2.Length) - length2);
             throw new ArgumentOutOfRangeException(nameof(string2), SR.ArgumentOutOfRange_OffsetLength);
         }
 
@@ -516,11 +516,11 @@ namespace System.Globalization
         /// </summary>
         public bool IsPrefix(string source, string prefix, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
-            if (prefix == null)
+            if (prefix is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.prefix);
             }
@@ -654,11 +654,11 @@ namespace System.Globalization
         /// </summary>
         public bool IsSuffix(string source, string suffix, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
-            if (suffix == null)
+            if (suffix is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.suffix);
             }
@@ -806,7 +806,7 @@ namespace System.Globalization
 
         public int IndexOf(string source, char value, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -816,11 +816,11 @@ namespace System.Globalization
 
         public int IndexOf(string source, string value, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
-            if (value == null)
+            if (value is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
@@ -840,7 +840,7 @@ namespace System.Globalization
 
         public int IndexOf(string source, char value, int startIndex, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -851,7 +851,7 @@ namespace System.Globalization
 
         public int IndexOf(string source, string value, int startIndex, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -871,7 +871,7 @@ namespace System.Globalization
 
         public unsafe int IndexOf(string source, char value, int startIndex, int count, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -901,11 +901,11 @@ namespace System.Globalization
 
         public unsafe int IndexOf(string source, string value, int startIndex, int count, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
-            if (value == null)
+            if (value is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
@@ -1051,7 +1051,7 @@ namespace System.Globalization
         /// </summary>
         private unsafe int IndexOf(ReadOnlySpan<char> source, ReadOnlySpan<char> value, int* matchLengthPtr, CompareOptions options, bool fromBeginning)
         {
-            Debug.Assert(matchLengthPtr != null);
+            Debug.Assert(matchLengthPtr is not null);
             *matchLengthPtr = 0;
 
             int retVal = 0;
@@ -1139,7 +1139,7 @@ namespace System.Globalization
 
         public int LastIndexOf(string source, char value, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -1149,11 +1149,11 @@ namespace System.Globalization
 
         public int LastIndexOf(string source, string value, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
-            if (value == null)
+            if (value is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
@@ -1193,7 +1193,7 @@ namespace System.Globalization
 
         public int LastIndexOf(string source, char value, int startIndex, int count, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -1249,11 +1249,11 @@ namespace System.Globalization
 
         public int LastIndexOf(string source, string value, int startIndex, int count, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
-            if (value == null)
+            if (value is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
@@ -1535,7 +1535,7 @@ namespace System.Globalization
         /// </summary>
         public int GetHashCode(string source, CompareOptions options)
         {
-            if (source == null)
+            if (source is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.source);
             }
@@ -1595,7 +1595,7 @@ namespace System.Globalization
         {
             get
             {
-                if (m_SortVersion == null)
+                if (m_SortVersion is null)
                 {
                     if (GlobalizationMode.Invariant)
                     {

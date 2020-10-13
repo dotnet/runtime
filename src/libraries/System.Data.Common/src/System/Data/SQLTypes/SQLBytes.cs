@@ -69,7 +69,7 @@ namespace System.Data.SqlTypes
         {
             _rgbBuf = buffer;
             _stream = null;
-            if (_rgbBuf == null)
+            if (_rgbBuf is null)
             {
                 _state = SqlBytesCharsState.Null;
                 _lCurLen = x_lNull;
@@ -96,7 +96,7 @@ namespace System.Data.SqlTypes
             _rgbBuf = null;
             _lCurLen = x_lNull;
             _stream = s;
-            _state = (s == null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Stream;
+            _state = (s is null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Stream;
 
             _rgbWorkBuf = null;
 
@@ -156,7 +156,7 @@ namespace System.Data.SqlTypes
                 return _state switch
                 {
                     SqlBytesCharsState.Stream => -1L,
-                    _ => (_rgbBuf == null) ? -1L : _rgbBuf.Length,
+                    _ => (_rgbBuf is null) ? -1L : _rgbBuf.Length,
                 };
             }
         }
@@ -200,7 +200,7 @@ namespace System.Data.SqlTypes
                 if (offset < 0 || offset >= Length)
                     throw new ArgumentOutOfRangeException(nameof(offset));
 
-                if (_rgbWorkBuf == null)
+                if (_rgbWorkBuf is null)
                     _rgbWorkBuf = new byte[1];
 
                 Read(offset, _rgbWorkBuf, 0, 1);
@@ -208,7 +208,7 @@ namespace System.Data.SqlTypes
             }
             set
             {
-                if (_rgbWorkBuf == null)
+                if (_rgbWorkBuf is null)
                     _rgbWorkBuf = new byte[1];
                 _rgbWorkBuf[0] = value;
                 Write(offset, _rgbWorkBuf, 0, 1);
@@ -239,7 +239,7 @@ namespace System.Data.SqlTypes
             {
                 _lCurLen = x_lNull;
                 _stream = value;
-                _state = (value == null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Stream;
+                _state = (value is null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Stream;
                 AssertValid();
             }
         }
@@ -298,7 +298,7 @@ namespace System.Data.SqlTypes
                 throw new SqlNullValueException();
 
             // Validate the arguments
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
 
             if (offset > Length || offset < 0)
@@ -344,10 +344,10 @@ namespace System.Data.SqlTypes
             else
             {
                 // Validate the arguments
-                if (buffer == null)
+                if (buffer is null)
                     throw new ArgumentNullException(nameof(buffer));
 
-                if (_rgbBuf == null)
+                if (_rgbBuf is null)
                     throw new SqlTypeException(SR.SqlMisc_NoBufferMessage);
 
                 if (offset < 0)
@@ -437,10 +437,10 @@ namespace System.Data.SqlTypes
             else
             {
                 Debug.Assert((_lCurLen >= 0 && _lCurLen <= x_lMaxLen) || FStream());
-                Debug.Assert(FStream() || (_rgbBuf != null && _lCurLen <= _rgbBuf.Length));
+                Debug.Assert(FStream() || (_rgbBuf is not null && _lCurLen <= _rgbBuf.Length));
                 Debug.Assert(!FStream() || (_lCurLen == x_lNull));
             }
-            Debug.Assert(_rgbWorkBuf == null || _rgbWorkBuf.Length == 1);
+            Debug.Assert(_rgbWorkBuf is null || _rgbWorkBuf.Length == 1);
         }
 
         // Copy the data from the Stream to the array buffer.
@@ -454,7 +454,7 @@ namespace System.Data.SqlTypes
             if (lStreamLen >= x_lMaxLen)
                 throw new SqlTypeException(SR.SqlMisc_WriteOffsetLargerThanLenMessage);
 
-            if (_rgbBuf == null || _rgbBuf.Length < lStreamLen)
+            if (_rgbBuf is null || _rgbBuf.Length < lStreamLen)
                 _rgbBuf = new byte[lStreamLen];
 
             if (_stream.Position != 0)
@@ -478,9 +478,9 @@ namespace System.Data.SqlTypes
         private void SetBuffer(byte[]? buffer)
         {
             _rgbBuf = buffer;
-            _lCurLen = (_rgbBuf == null) ? x_lNull : _rgbBuf.Length;
+            _lCurLen = (_rgbBuf is null) ? x_lNull : _rgbBuf.Length;
             _stream = null;
-            _state = (_rgbBuf == null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Buffer;
+            _state = (_rgbBuf is null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Buffer;
 
             AssertValid();
         }
@@ -500,7 +500,7 @@ namespace System.Data.SqlTypes
 
             string? isNull = r.GetAttribute("nil", XmlSchema.InstanceNamespace);
 
-            if (isNull != null && XmlConvert.ToBoolean(isNull))
+            if (isNull is not null && XmlConvert.ToBoolean(isNull))
             {
                 // Read the next value.
                 r.ReadElementString();
@@ -509,7 +509,7 @@ namespace System.Data.SqlTypes
             else
             {
                 string base64 = r.ReadElementString();
-                if (base64 == null)
+                if (base64 is null)
                 {
                     value = Array.Empty<byte>();
                 }
@@ -606,7 +606,7 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                return _sb != null && !_sb.IsNull;
+                return _sb is not null && !_sb.IsNull;
             }
         }
 
@@ -614,7 +614,7 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                return _sb != null;
+                return _sb is not null;
             }
         }
 
@@ -622,7 +622,7 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                return _sb != null && (!_sb.IsNull || _sb._rgbBuf != null);
+                return _sb is not null && (!_sb.IsNull || _sb._rgbBuf is not null);
             }
         }
 
@@ -696,7 +696,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0 || offset > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -713,7 +713,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0 || offset > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -784,7 +784,7 @@ namespace System.Data.SqlTypes
 
         private bool FClosed()
         {
-            return _sb == null;
+            return _sb is null;
         }
 
         private void CheckIfStreamClosed([CallerMemberName] string methodname = "")

@@ -188,7 +188,7 @@ namespace System.Diagnostics
             StringBuilder sb = new StringBuilder(255);
             bool includeFileInfoIfAvailable;
 
-            if (_method != null)
+            if (_method is not null)
             {
                 sb.Append(_method.Name);
 

@@ -119,7 +119,7 @@ namespace System.Reflection.Emit
 
         internal void End(int offset)
         {
-            if (handlers == null)
+            if (handlers is null)
                 return;
             int i = handlers.Length - 1;
             if (i >= 0)
@@ -128,7 +128,7 @@ namespace System.Reflection.Emit
 
         internal int LastClauseType()
         {
-            if (handlers != null)
+            if (handlers is not null)
                 return handlers[handlers.Length - 1].type;
             else
                 return ILExceptionBlock.CATCH;
@@ -136,7 +136,7 @@ namespace System.Reflection.Emit
 
         internal void PatchFilterClause(int start)
         {
-            if (handlers != null && handlers.Length > 0)
+            if (handlers is not null && handlers.Length > 0)
             {
                 handlers[handlers.Length - 1].start = start;
                 handlers[handlers.Length - 1].type = ILExceptionBlock.FILTER;
@@ -145,7 +145,7 @@ namespace System.Reflection.Emit
 
         private void add_block(int offset)
         {
-            if (handlers != null)
+            if (handlers is not null)
             {
                 int i = handlers.Length;
                 ILExceptionBlock[] new_b = new ILExceptionBlock[i + 1];
@@ -350,11 +350,11 @@ namespace System.Reflection.Emit
 
             if (open_blocks.Count <= 0)
                 throw new NotSupportedException("Not in an exception block");
-            if (exceptionType != null && exceptionType.IsUserType)
+            if (exceptionType is not null && exceptionType.IsUserType)
                 throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
             if (ex_handlers![cur_block].LastClauseType() == ILExceptionBlock.FILTER_START)
             {
-                if (exceptionType != null)
+                if (exceptionType is not null)
                     throw new ArgumentException("Do not supply an exception type for filter clause");
                 Emit(OpCodes.Endfilter);
                 ex_handlers[cur_block].PatchFilterClause(code_len);
@@ -374,7 +374,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginExceptFilterBlock()
         {
-            if (open_blocks == null)
+            if (open_blocks is null)
                 open_blocks = new Stack(defaultExceptionStackSize);
 
             if (open_blocks.Count <= 0)
@@ -387,10 +387,10 @@ namespace System.Reflection.Emit
         public virtual Label BeginExceptionBlock()
         {
             //System.Console.WriteLine ("Begin Block");
-            if (open_blocks == null)
+            if (open_blocks is null)
                 open_blocks = new Stack(defaultExceptionStackSize);
 
-            if (ex_handlers != null)
+            if (ex_handlers is not null)
             {
                 cur_block = ex_handlers.Length;
                 ILExceptionInfo[] new_ex = new ILExceptionInfo[cur_block + 1];
@@ -409,7 +409,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginFaultBlock()
         {
-            if (open_blocks == null)
+            if (open_blocks is null)
                 open_blocks = new Stack(defaultExceptionStackSize);
 
             if (open_blocks.Count <= 0)
@@ -428,7 +428,7 @@ namespace System.Reflection.Emit
 
         public virtual void BeginFinallyBlock()
         {
-            if (open_blocks == null)
+            if (open_blocks is null)
                 open_blocks = new Stack(defaultExceptionStackSize);
 
             if (open_blocks.Count <= 0)
@@ -457,14 +457,14 @@ namespace System.Reflection.Emit
 
         public virtual LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
-            if (localType == null)
+            if (localType is null)
                 throw new ArgumentNullException(nameof(localType));
             if (localType.IsUserType)
                 throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
             LocalBuilder res = new LocalBuilder(localType, this);
             res.is_pinned = pinned;
 
-            if (locals != null)
+            if (locals is not null)
             {
                 LocalBuilder[] new_l = new LocalBuilder[locals.Length + 1];
                 Array.Copy(locals, new_l, locals.Length);
@@ -482,7 +482,7 @@ namespace System.Reflection.Emit
 
         public virtual Label DefineLabel()
         {
-            if (labels == null)
+            if (labels is null)
                 labels = new LabelData[defaultLabelsSize];
             else if (num_labels >= labels.Length)
             {
@@ -589,7 +589,7 @@ namespace System.Reflection.Emit
             if (cur_stack > labels![label.m_label].maxStack)
                 labels[label.m_label].maxStack = cur_stack;
 
-            if (fixups == null)
+            if (fixups is null)
                 fixups = new LabelFixup[defaultFixupSize];
             else if (num_fixups >= fixups.Length)
             {
@@ -607,7 +607,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, Label[] labels)
         {
-            if (labels == null)
+            if (labels is null)
                 throw new ArgumentNullException(nameof(labels));
 
             /* opcode needs to be switch. */
@@ -620,7 +620,7 @@ namespace System.Reflection.Emit
                     this.labels[labels[i].m_label].maxStack = cur_stack;
 
             emit_int(count);
-            if (fixups == null)
+            if (fixups is null)
                 fixups = new LabelFixup[defaultFixupSize + count];
             else if (num_fixups + count >= fixups.Length)
             {
@@ -655,7 +655,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, LocalBuilder local)
         {
-            if (local == null)
+            if (local is null)
                 throw new ArgumentNullException(nameof(local));
             if (local.ilgen != this)
                 throw new ArgumentException(SR.Argument_UnmatchedMethodForLocal, nameof(local));
@@ -747,7 +747,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, MethodInfo meth)
         {
-            if (meth == null)
+            if (meth is null)
                 throw new ArgumentNullException(nameof(meth));
 
             // For compatibility with MS
@@ -823,7 +823,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, Type cls)
         {
-            if (cls != null && cls.IsByRef)
+            if (cls is not null && cls.IsByRef)
                 throw new ArgumentException("Cannot get TypeToken for a ByRef type.");
 
             make_room(6);
@@ -835,14 +835,14 @@ namespace System.Reflection.Emit
         // FIXME: vararg methods are not supported
         public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
-            if (methodInfo == null)
+            if (methodInfo is null)
                 throw new ArgumentNullException(nameof(methodInfo));
             short value = opcode.Value;
             if (!(value == OpCodes.Call.Value || value == OpCodes.Callvirt.Value))
                 throw new NotSupportedException("Only Call and CallVirt are allowed");
             if ((methodInfo.CallingConvention & CallingConventions.VarArgs) == 0)
                 optionalParameterTypes = null;
-            if (optionalParameterTypes != null)
+            if (optionalParameterTypes is not null)
             {
                 if ((methodInfo.CallingConvention & CallingConventions.VarArgs) == 0)
                 {
@@ -866,7 +866,7 @@ namespace System.Reflection.Emit
 
         public virtual void EmitCalli(OpCode opcode, CallingConventions callingConvention, Type returnType, Type[]? parameterTypes, Type[]? optionalParameterTypes)
         {
-            if (optionalParameterTypes != null)
+            if (optionalParameterTypes is not null)
                 throw new NotImplementedException();
 
             SignatureHelper helper = SignatureHelper.GetMethodSigHelper(module as ModuleBuilder, callingConvention, 0, returnType, parameterTypes);
@@ -877,7 +877,7 @@ namespace System.Reflection.Emit
 
         public virtual void EmitWriteLine(FieldInfo fld)
         {
-            if (fld == null)
+            if (fld is null)
                 throw new ArgumentNullException(nameof(fld));
 
             // The MS implementation does not check for valuetypes here but it
@@ -896,7 +896,7 @@ namespace System.Reflection.Emit
 
         public virtual void EmitWriteLine(LocalBuilder localBuilder)
         {
-            if (localBuilder == null)
+            if (localBuilder is null)
                 throw new ArgumentNullException(nameof(localBuilder));
             if (localBuilder.LocalType is TypeBuilder)
                 throw new ArgumentException("Output streams do not support TypeBuilders.");
@@ -916,7 +916,7 @@ namespace System.Reflection.Emit
 
         public virtual void EndExceptionBlock()
         {
-            if (open_blocks == null)
+            if (open_blocks is null)
                 open_blocks = new Stack(defaultExceptionStackSize);
 
             if (open_blocks.Count <= 0)
@@ -950,9 +950,9 @@ namespace System.Reflection.Emit
         public virtual void MarkSequencePoint(ISymbolDocumentWriter document, int startLine,
                                int startColumn, int endLine, int endColumn)
         {
-            if (currentSequence == null || currentSequence.Document != document)
+            if (currentSequence is null || currentSequence.Document != document)
             {
-                if (sequencePointLists == null)
+                if (sequencePointLists is null)
                     sequencePointLists = new List<SequencePointList>();
                 currentSequence = new SequencePointList(document);
                 sequencePointLists.Add(currentSequence);
@@ -964,7 +964,7 @@ namespace System.Reflection.Emit
         /*
                 internal void GenerateDebugInfo (ISymbolWriter symbolWriter)
                 {
-                    if (sequencePointLists != null) {
+                    if (sequencePointLists is not null) {
                         SequencePointList first = (SequencePointList) sequencePointLists [0];
                         SequencePointList last = (SequencePointList) sequencePointLists [sequencePointLists.Count - 1];
                         symbolWriter.SetMethodSourceRange (first.Document, first.StartLine, first.StartColumn, last.Document, last.EndLine, last.EndColumn);
@@ -972,9 +972,9 @@ namespace System.Reflection.Emit
                         foreach (SequencePointList list in sequencePointLists)
                             symbolWriter.DefineSequencePoints (list.Document, list.GetOffsets(), list.GetLines(), list.GetColumns(), list.GetEndLines(), list.GetEndColumns());
 
-                        if (locals != null) {
+                        if (locals is not null) {
                             foreach (LocalBuilder local in locals) {
-                                if (local.Name != null && local.Name.Length > 0) {
+                                if (local.Name is not null && local.Name.Length > 0) {
                                     SignatureHelper sighelper = SignatureHelper.GetLocalVarSigHelper (module as ModuleBuilder);
                                     sighelper.AddArgument (local.LocalType);
                                     byte[] signature = sighelper.GetSignature ();
@@ -989,18 +989,18 @@ namespace System.Reflection.Emit
 
         internal bool HasDebugInfo
         {
-            get { return sequencePointLists != null; }
+            get { return sequencePointLists is not null; }
         }
 
         public virtual void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
         {
-            if (excType == null)
+            if (excType is null)
                 throw new ArgumentNullException(nameof(excType));
             if (!((excType == typeof(Exception)) ||
                    excType.IsSubclassOf(typeof(Exception))))
                 throw new ArgumentException("Type should be an exception type", nameof(excType));
             ConstructorInfo? ctor = excType.GetConstructor(Type.EmptyTypes);
-            if (ctor == null)
+            if (ctor is null)
                 throw new ArgumentException("Type should have a default constructor", nameof(excType));
             Emit(OpCodes.Newobj, ctor);
             Emit(OpCodes.Throw);
@@ -1038,7 +1038,7 @@ namespace System.Reflection.Emit
         internal void SetCode(byte[]? code, int max_stack)
         {
             // Make a copy to avoid possible security problems
-            this.code = code != null ? (byte[])code.Clone() : Array.Empty<byte>();
+            this.code = code is not null ? (byte[])code.Clone() : Array.Empty<byte>();
             this.code_len = this.code.Length;
             this.max_stack = max_stack;
             this.cur_stack = 0;
@@ -1142,7 +1142,7 @@ namespace System.Reflection.Emit
             s.EndLine = endLine;
             s.EndCol = endCol;
 
-            if (points == null)
+            if (points is null)
             {
                 points = new SequencePoint[arrayGrow];
             }

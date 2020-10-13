@@ -40,13 +40,13 @@ namespace Internal.Cryptography.Pal.AnyOS
                 // When encryptedContent is null Windows seems to decrypt the CEK first,
                 // then return a 0 byte answer.
 
-                Debug.Assert((cert != null) ^ (privateKey != null));
+                Debug.Assert((cert is not null) ^ (privateKey is not null));
 
                 if (recipientInfo.Pal is ManagedKeyTransPal ktri)
                 {
                     RSA? key = privateKey as RSA;
 
-                    if (privateKey != null && key == null)
+                    if (privateKey is not null && key is null)
                     {
                         exception = new CryptographicException(SR.Cryptography_Cms_Ktri_RSARequired);
                         return null;
@@ -58,7 +58,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     {
                         try
                         {
-                            if (exception != null)
+                            if (exception is not null)
                             {
                                 return null;
                             }
@@ -72,7 +72,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                         }
                         finally
                         {
-                            if (cek != null)
+                            if (cek is not null)
                             {
                                 Array.Clear(cek, 0, cek.Length);
                             }
@@ -96,7 +96,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 AlgorithmIdentifierAsn contentEncryptionAlgorithm,
                 out Exception? exception)
             {
-                if (content == null)
+                if (content is null)
                 {
                     exception = null;
 
@@ -107,7 +107,7 @@ namespace Internal.Cryptography.Pal.AnyOS
 
                 byte[]? decrypted = DecryptContent(content.Value, cek, contentEncryptionAlgorithm, out exception);
 
-                if (exception != null)
+                if (exception is not null)
                 {
                     return null;
                 }

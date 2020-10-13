@@ -44,9 +44,9 @@ namespace System.Net.WebSockets
             HttpResponseStream outputStream,
             HttpListenerContext context)
         {
-            Debug.Assert(inputStream != null, "'inputStream' MUST NOT be NULL.");
-            Debug.Assert(outputStream != null, "'outputStream' MUST NOT be NULL.");
-            Debug.Assert(context != null, "'context' MUST NOT be NULL.");
+            Debug.Assert(inputStream is not null, "'inputStream' MUST NOT be NULL.");
+            Debug.Assert(outputStream is not null, "'outputStream' MUST NOT be NULL.");
+            Debug.Assert(context is not null, "'context' MUST NOT be NULL.");
             Debug.Assert(inputStream.CanRead, "'inputStream' MUST support read operations.");
             Debug.Assert(outputStream.CanWrite, "'outputStream' MUST support write operations.");
 
@@ -154,7 +154,7 @@ namespace System.Net.WebSockets
                     _readEventArgs!.SetBuffer(buffer, offset, count);
                     if (!ReadAsyncFast(_readEventArgs))
                     {
-                        if (_readEventArgs.Exception != null)
+                        if (_readEventArgs.Exception is not null)
                         {
                             throw _readEventArgs.Exception;
                         }
@@ -196,7 +196,7 @@ namespace System.Net.WebSockets
             bool completedAsynchronouslyOrWithError = false;
             try
             {
-                Debug.Assert(eventArgs.Buffer != null, "'BufferList' is not supported for read operations.");
+                Debug.Assert(eventArgs.Buffer is not null, "'BufferList' is not supported for read operations.");
                 if (eventArgs.Count == 0 || _inputStream.Closed)
                 {
                     eventArgs.FinishOperationSuccess(0, true);
@@ -316,7 +316,7 @@ namespace System.Net.WebSockets
         public Task MultipleWriteAsync(IList<ArraySegment<byte>> sendBuffers, CancellationToken cancellationToken)
         {
             Debug.Assert(_inOpaqueMode, "The stream MUST be in opaque mode at this point.");
-            Debug.Assert(sendBuffers != null, "'sendBuffers' MUST NOT be NULL.");
+            Debug.Assert(sendBuffers is not null, "'sendBuffers' MUST NOT be NULL.");
             Debug.Assert(sendBuffers.Count == 1 || sendBuffers.Count == 2,
                 "'sendBuffers.Count' MUST be either '1' or '2'.");
 
@@ -331,7 +331,7 @@ namespace System.Net.WebSockets
 
         private async Task MultipleWriteAsyncCore(IList<ArraySegment<byte>> sendBuffers, CancellationToken cancellationToken)
         {
-            Debug.Assert(sendBuffers != null, "'sendBuffers' MUST NOT be NULL.");
+            Debug.Assert(sendBuffers is not null, "'sendBuffers' MUST NOT be NULL.");
             Debug.Assert(sendBuffers.Count == 2, "'sendBuffers.Count' MUST be '2' at this point.");
 
             CancellationTokenRegistration cancellationTokenRegistration = default;
@@ -447,7 +447,7 @@ namespace System.Net.WebSockets
             try
             {
                 if (_outputStream.Closed ||
-                    (eventArgs.Buffer != null && eventArgs.Count == 0))
+                    (eventArgs.Buffer is not null && eventArgs.Count == 0))
                 {
                     eventArgs.FinishOperationSuccess(eventArgs.Count, true);
                     return false;
@@ -596,19 +596,19 @@ namespace System.Net.WebSockets
         {
             if (disposing && Interlocked.Exchange(ref _cleanedUp, 1) == 0)
             {
-                if (_readTaskCompletionSource != null)
+                if (_readTaskCompletionSource is not null)
                 {
                     _readTaskCompletionSource.TrySetCanceled();
                 }
 
                 _writeTaskCompletionSource?.TrySetCanceled();
 
-                if (_readEventArgs != null)
+                if (_readEventArgs is not null)
                 {
                     _readEventArgs.Dispose();
                 }
 
-                if (_writeEventArgs != null)
+                if (_writeEventArgs is not null)
                 {
                     _writeEventArgs.Dispose();
                 }
@@ -638,9 +638,9 @@ namespace System.Net.WebSockets
 
         private static void OnCancel(object? state)
         {
-            Debug.Assert(state != null, "'state' MUST NOT be NULL.");
+            Debug.Assert(state is not null, "'state' MUST NOT be NULL.");
             WebSocketHttpListenerDuplexStream thisPtr = (state as WebSocketHttpListenerDuplexStream)!;
-            Debug.Assert(thisPtr != null, "'thisPtr' MUST NOT be NULL.");
+            Debug.Assert(thisPtr is not null, "'thisPtr' MUST NOT be NULL.");
 
             try
             {
@@ -655,11 +655,11 @@ namespace System.Net.WebSockets
 
         public void SwitchToOpaqueMode(WebSocketBase webSocket)
         {
-            Debug.Assert(webSocket != null, "'webSocket' MUST NOT be NULL.");
-            Debug.Assert(_outputStream != null, "'m_OutputStream' MUST NOT be NULL.");
-            Debug.Assert(_outputStream.InternalHttpContext != null,
+            Debug.Assert(webSocket is not null, "'webSocket' MUST NOT be NULL.");
+            Debug.Assert(_outputStream is not null, "'m_OutputStream' MUST NOT be NULL.");
+            Debug.Assert(_outputStream.InternalHttpContext is not null,
                 "'m_OutputStream.InternalHttpContext' MUST NOT be NULL.");
-            Debug.Assert(_outputStream.InternalHttpContext.Response != null,
+            Debug.Assert(_outputStream.InternalHttpContext.Response is not null,
                 "'m_OutputStream.InternalHttpContext.Response' MUST NOT be NULL.");
             Debug.Assert(_outputStream.InternalHttpContext.Response.SentHeaders,
                 "Headers MUST have been sent at this point.");
@@ -685,15 +685,15 @@ namespace System.Net.WebSockets
 
         private static void OnWriteCompleted(object? sender, HttpListenerAsyncEventArgs eventArgs)
         {
-            Debug.Assert(eventArgs != null, "'eventArgs' MUST NOT be NULL.");
+            Debug.Assert(eventArgs is not null, "'eventArgs' MUST NOT be NULL.");
             WebSocketHttpListenerDuplexStream thisPtr = eventArgs.CurrentStream;
-            Debug.Assert(thisPtr != null, "'thisPtr' MUST NOT be NULL.");
+            Debug.Assert(thisPtr is not null, "'thisPtr' MUST NOT be NULL.");
 #if DEBUG
             Debug.Assert(Interlocked.Decrement(ref thisPtr._outstandingOperations._writes) >= 0,
                 "'thisPtr.m_OutstandingOperations.m_Writes' MUST NOT be negative.");
 #endif
 
-            if (eventArgs.Exception != null)
+            if (eventArgs.Exception is not null)
             {
                 thisPtr._writeTaskCompletionSource!.TrySetException(eventArgs.Exception);
             }
@@ -705,15 +705,15 @@ namespace System.Net.WebSockets
 
         private static void OnReadCompleted(object? sender, HttpListenerAsyncEventArgs eventArgs)
         {
-            Debug.Assert(eventArgs != null, "'eventArgs' MUST NOT be NULL.");
+            Debug.Assert(eventArgs is not null, "'eventArgs' MUST NOT be NULL.");
             WebSocketHttpListenerDuplexStream thisPtr = eventArgs.CurrentStream;
-            Debug.Assert(thisPtr != null, "'thisPtr' MUST NOT be NULL.");
+            Debug.Assert(thisPtr is not null, "'thisPtr' MUST NOT be NULL.");
 #if DEBUG
             Debug.Assert(Interlocked.Decrement(ref thisPtr._outstandingOperations._reads) >= 0,
                 "'thisPtr.m_OutstandingOperations.m_Reads' MUST NOT be negative.");
 #endif
 
-            if (eventArgs.Exception != null)
+            if (eventArgs.Exception is not null)
             {
                 thisPtr._readTaskCompletionSource!.TrySetException(eventArgs.Exception);
             }
@@ -790,11 +790,11 @@ namespace System.Net.WebSockets
                 set
                 {
                     Debug.Assert(!_shouldCloseOutput, "'m_ShouldCloseOutput' MUST be 'false' at this point.");
-                    Debug.Assert(value == null || _buffer == null,
+                    Debug.Assert(value is null || _buffer is null,
                         "Either 'm_Buffer' or 'm_BufferList' MUST be NULL.");
                     Debug.Assert(_operating == Free,
                         "This property can only be modified if no IO operation is outstanding.");
-                    Debug.Assert(value == null || value.Count == 2,
+                    Debug.Assert(value is null || value.Count == 2,
                         "This list can only be 'NULL' or MUST have exactly '2' items.");
                     _bufferList = value;
                 }
@@ -824,7 +824,7 @@ namespace System.Net.WebSockets
             {
                 get
                 {
-                    if (_dataChunks == null)
+                    if (_dataChunks is null)
                     {
                         return 0;
                     }
@@ -848,7 +848,7 @@ namespace System.Net.WebSockets
             {
                 get
                 {
-                    if (_dataChunks == null)
+                    if (_dataChunks is null)
                     {
                         return IntPtr.Zero;
                     }
@@ -917,7 +917,7 @@ namespace System.Net.WebSockets
                 if (!checkForShutdown || !Environment.HasShutdownStarted)
                 {
                     // Free the overlapped object
-                    if (_ptrNativeOverlapped != null)
+                    if (_ptrNativeOverlapped is not null)
                     {
 #if DEBUG
                         DebugRefCountReleaseNativeOverlapped();
@@ -981,7 +981,7 @@ namespace System.Net.WebSockets
             public void SetBuffer(byte[]? buffer, int offset, int count)
             {
                 Debug.Assert(!_shouldCloseOutput, "'m_ShouldCloseOutput' MUST be 'false' at this point.");
-                Debug.Assert(buffer == null || _bufferList == null, "Either 'm_Buffer' or 'm_BufferList' MUST be NULL.");
+                Debug.Assert(buffer is null || _bufferList is null, "Either 'm_Buffer' or 'm_BufferList' MUST be NULL.");
                 _buffer = buffer;
                 _offset = offset;
                 _count = count;
@@ -989,7 +989,7 @@ namespace System.Net.WebSockets
 
             private unsafe void UpdateDataChunk()
             {
-                if (_dataChunks == null)
+                if (_dataChunks is null)
                 {
                     _dataChunks = new Interop.HttpApi.HTTP_DATA_CHUNK[2];
                     _dataChunksGCHandle = GCHandle.Alloc(_dataChunks, GCHandleType.Pinned);
@@ -999,19 +999,19 @@ namespace System.Net.WebSockets
                     _dataChunks[1].DataChunkType = Interop.HttpApi.HTTP_DATA_CHUNK_TYPE.HttpDataChunkFromMemory;
                 }
 
-                Debug.Assert(_buffer == null || _bufferList == null, "Either 'm_Buffer' or 'm_BufferList' MUST be NULL.");
-                Debug.Assert(_shouldCloseOutput || _buffer != null || _bufferList != null, "Either 'm_Buffer' or 'm_BufferList' MUST NOT be NULL.");
+                Debug.Assert(_buffer is null || _bufferList is null, "Either 'm_Buffer' or 'm_BufferList' MUST be NULL.");
+                Debug.Assert(_shouldCloseOutput || _buffer is not null || _bufferList is not null, "Either 'm_Buffer' or 'm_BufferList' MUST NOT be NULL.");
 
                 // The underlying byte[] m_Buffer or each m_BufferList[].Array are pinned already
-                if (_buffer != null)
+                if (_buffer is not null)
                 {
                     UpdateDataChunk(0, _buffer, _offset, _count);
                     UpdateDataChunk(1, null, 0, 0);
                     _dataChunkCount = 1;
                 }
-                else if (_bufferList != null)
+                else if (_bufferList is not null)
                 {
-                    Debug.Assert(_bufferList != null && _bufferList.Count == 2,
+                    Debug.Assert(_bufferList is not null && _bufferList.Count == 2,
                         "'m_BufferList' MUST NOT be NULL and have exactly '2' items at this point.");
                     UpdateDataChunk(0, _bufferList[0].Array, _bufferList[0].Offset, _bufferList[0].Count);
                     UpdateDataChunk(1, _bufferList[1].Array, _bufferList[1].Offset, _bufferList[1].Count);
@@ -1026,7 +1026,7 @@ namespace System.Net.WebSockets
 
             private unsafe void UpdateDataChunk(int index, byte[]? buffer, int offset, int count)
             {
-                if (buffer == null)
+                if (buffer is null)
                 {
                     _dataChunks![index].pBuffer = null;
                     _dataChunks![index].BufferLength = 0;
@@ -1090,12 +1090,12 @@ namespace System.Net.WebSockets
 
                 if (NetEventSource.Log.IsEnabled())
                 {
-                    if (_buffer != null && NetEventSource.Log.IsEnabled())
+                    if (_buffer is not null && NetEventSource.Log.IsEnabled())
                     {
                         string methodName = _completedOperation == HttpListenerAsyncOperation.Receive ? nameof(ReadAsyncFast) : nameof(WriteAsyncFast);
                         NetEventSource.DumpBuffer(_currentStream, _buffer, _offset, bytesTransferred, methodName);
                     }
-                    else if (_bufferList != null)
+                    else if (_bufferList is not null)
                     {
                         Debug.Assert(_completedOperation == HttpListenerAsyncOperation.Send,
                             "'BufferList' is only supported for send operations.");

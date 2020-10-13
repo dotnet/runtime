@@ -30,12 +30,12 @@ namespace System.Xml
                 child = container.FirstChild;
                 isFirst = false;
             }
-            else if (child != null)
+            else if (child is not null)
             {
                 child = child.NextSibling;
             }
 
-            return child != null;
+            return child is not null;
         }
 
         void IEnumerator.Reset()
@@ -56,7 +56,7 @@ namespace System.Xml
         {
             get
             {
-                if (isFirst || child == null)
+                if (isFirst || child is null)
                     throw new InvalidOperationException(SR.Xml_InvalidOperation);
 
                 return child;

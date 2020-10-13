@@ -13,11 +13,11 @@ namespace System.Text
 
         public void AppendFormat(string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                string paramName = (format == null) ? nameof(format) : nameof(args);
+                string paramName = (format is null) ? nameof(format) : nameof(args);
                 throw new ArgumentNullException(paramName);
             }
 
@@ -32,11 +32,11 @@ namespace System.Text
 
         public void AppendFormat(IFormatProvider? provider, string format, params object?[] args)
         {
-            if (args == null)
+            if (args is null)
             {
                 // To preserve the original exception behavior, throw an exception about format if both
                 // args and format are null. The actual null check for format is in AppendFormatHelper.
-                string paramName = (format == null) ? nameof(format) : nameof(args);
+                string paramName = (format is null) ? nameof(format) : nameof(args);
                 throw new ArgumentNullException(paramName);
             }
 
@@ -52,7 +52,7 @@ namespace System.Text
             else
             {
                 string? s = value.ToString();
-                if (s != null)
+                if (s is not null)
                 {
                     Append(s);
                 }
@@ -79,7 +79,7 @@ namespace System.Text
             const int IndexLimit = 1000000; // Note:            0 <= ArgIndex < IndexLimit
             const int WidthLimit = 1000000; // Note:  -WidthLimit <  ArgAlign < WidthLimit
 
-            if (format == null)
+            if (format is null)
             {
                 throw new ArgumentNullException(nameof(format));
             }
@@ -282,7 +282,7 @@ namespace System.Text
                 string? s = null;
                 string? itemFormat = null;
 
-                if (cf != null)
+                if (cf is not null)
                 {
                     if (itemFormatSpan.Length != 0)
                     {
@@ -291,7 +291,7 @@ namespace System.Text
                     s = cf.Format(itemFormat, arg, provider);
                 }
 
-                if (s == null)
+                if (s is null)
                 {
                     // If arg is ISpanFormattable and the beginning doesn't need padding,
                     // try formatting it into the remaining current chunk.
@@ -321,13 +321,13 @@ namespace System.Text
                         }
                         s = formattableArg.ToString(itemFormat, provider);
                     }
-                    else if (arg != null)
+                    else if (arg is not null)
                     {
                         s = arg.ToString();
                     }
                 }
                 // Append it to the final output of the Format String.
-                if (s == null)
+                if (s is null)
                 {
                     s = string.Empty;
                 }

@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
 
         internal static bool IsPlatformScheme(PbeParameters pbeParameters)
         {
-            Debug.Assert(pbeParameters != null);
+            Debug.Assert(pbeParameters is not null);
 
             return pbeParameters.EncryptionAlgorithm == s_platformParameters.EncryptionAlgorithm &&
                    pbeParameters.HashAlgorithm == s_platformParameters.HashAlgorithm;
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
-            if (pbeParameters == null)
+            if (pbeParameters is null)
             {
                 throw new ArgumentNullException(nameof(pbeParameters));
             }
@@ -127,7 +127,7 @@ namespace System.Security.Cryptography
             {
                 AsnWriter? pkcs8ZeroPublicKey = RewritePkcs8ECPrivateKeyWithZeroPublicKey(pkcs8Source);
 
-                if (pkcs8ZeroPublicKey == null)
+                if (pkcs8ZeroPublicKey is null)
                 {
                     throw;
                 }
@@ -183,7 +183,7 @@ namespace System.Security.Cryptography
                         {
                             AsnWriter? pkcs8ZeroPublicKey = RewritePkcs8ECPrivateKeyWithZeroPublicKey(decryptedSpan);
 
-                            if (pkcs8ZeroPublicKey == null)
+                            if (pkcs8ZeroPublicKey is null)
                             {
                                 throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
                             }
@@ -261,7 +261,7 @@ namespace System.Security.Cryptography
                         {
                             AsnWriter? pkcs8ZeroPublicKey = RewritePkcs8ECPrivateKeyWithZeroPublicKey(decryptedSpan);
 
-                            if (pkcs8ZeroPublicKey == null)
+                            if (pkcs8ZeroPublicKey is null)
                             {
                                 throw new CryptographicException(SR.Cryptography_Pkcs8_EncryptedReadFailed, e);
                             }
@@ -295,7 +295,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
-            Debug.Assert(pbeParameters != null);
+            Debug.Assert(pbeParameters is not null);
 
             // For RSA:
             //  * 512-bit key needs ~400 bytes
@@ -354,7 +354,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters)
         {
-            Debug.Assert(pbeParameters != null);
+            Debug.Assert(pbeParameters is not null);
 
             byte[] rented = CryptoPool.Rent(key.KeySize);
             int rentWritten = 0;
@@ -416,7 +416,7 @@ namespace System.Security.Cryptography
                     {
                         try
                         {
-                            if (!ecParameters.Curve.IsExplicit || ecParameters.Q.X != null || ecParameters.Q.Y != null)
+                            if (!ecParameters.Curve.IsExplicit || ecParameters.Q.X is not null || ecParameters.Q.Y is not null)
                             {
                                 return null;
                             }

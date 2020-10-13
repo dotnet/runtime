@@ -42,19 +42,19 @@ namespace System.Data.Common
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || obj.GetType() != typeof(DbConnectionPoolKey))
+            if (obj is null || obj.GetType() != typeof(DbConnectionPoolKey))
             {
                 return false;
             }
 
             DbConnectionPoolKey? key = obj as DbConnectionPoolKey;
 
-            return (key != null && _connectionString == key._connectionString);
+            return (key is not null && _connectionString == key._connectionString);
         }
 
         public override int GetHashCode()
         {
-            return _connectionString == null ? 0 : _connectionString.GetHashCode();
+            return _connectionString is null ? 0 : _connectionString.GetHashCode();
         }
     }
 }

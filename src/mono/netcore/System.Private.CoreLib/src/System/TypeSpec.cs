@@ -135,12 +135,12 @@ namespace System
 
         internal bool HasModifiers
         {
-            get { return modifier_spec != null; }
+            get { return modifier_spec is not null; }
         }
 
         internal bool IsNested
         {
-            get { return nested != null && nested.Count > 0; }
+            get { return nested is not null && nested.Count > 0; }
         }
 
         internal bool IsByRef
@@ -157,7 +157,7 @@ namespace System
         {
             get
             {
-                if (nested != null)
+                if (nested is not null)
                     return nested;
                 else
                     return Array.Empty<ITypeName>();
@@ -168,7 +168,7 @@ namespace System
         {
             get
             {
-                if (modifier_spec != null)
+                if (modifier_spec is not null)
                     return modifier_spec;
                 else
                     return Array.Empty<IModifierSpec>();
@@ -194,20 +194,20 @@ namespace System
             bool wantAssembly = (flags & DisplayNameFormat.WANT_ASSEMBLY) != 0;
             bool wantModifiers = (flags & DisplayNameFormat.NO_MODIFIERS) == 0;
             var sb = new Text.StringBuilder(name!.DisplayName);
-            if (nested != null)
+            if (nested is not null)
             {
                 foreach (ITypeIdentifier? n in nested)
                     sb.Append('+').Append(n.DisplayName);
             }
 
-            if (generic_params != null)
+            if (generic_params is not null)
             {
                 sb.Append('[');
                 for (int i = 0; i < generic_params.Count; ++i)
                 {
                     if (i > 0)
                         sb.Append(", ");
-                    if (generic_params[i].assembly_name != null)
+                    if (generic_params[i].assembly_name is not null)
                         sb.Append('[').Append(generic_params[i].DisplayFullName).Append(']');
                     else
                         sb.Append(generic_params[i].DisplayFullName);
@@ -218,7 +218,7 @@ namespace System
             if (wantModifiers)
                 GetModifierString(sb);
 
-            if (assembly_name != null && wantAssembly)
+            if (assembly_name is not null && wantAssembly)
                 sb.Append(", ").Append(assembly_name);
 
             return sb.ToString();
@@ -231,7 +231,7 @@ namespace System
 
         private Text.StringBuilder GetModifierString(Text.StringBuilder sb)
         {
-            if (modifier_spec != null)
+            if (modifier_spec is not null)
             {
                 foreach (IModifierSpec? md in modifier_spec)
                     md.Append(sb);
@@ -247,7 +247,7 @@ namespace System
         {
             get
             {
-                if (display_fullname == null)
+                if (display_fullname is null)
                     display_fullname = GetDisplayFullName(DisplayNameFormat.Default);
                 return display_fullname;
             }
@@ -256,7 +256,7 @@ namespace System
         internal static TypeSpec Parse(string typeName)
         {
             int pos = 0;
-            if (typeName == null)
+            if (typeName is null)
                 throw new ArgumentNullException(nameof(typeName));
 
             TypeSpec res = Parse(typeName, ref pos, false, true);
@@ -329,17 +329,17 @@ namespace System
         internal Type? Resolve(Func<AssemblyName, Assembly> assemblyResolver, Func<Assembly, string, bool, Type> typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
             Assembly? asm = null;
-            if (assemblyResolver == null && typeResolver == null)
+            if (assemblyResolver is null && typeResolver is null)
                 return RuntimeType.GetType(DisplayFullName, throwOnError, ignoreCase, false, ref stackMark);
 
-            if (assembly_name != null)
+            if (assembly_name is not null)
             {
-                if (assemblyResolver != null)
+                if (assemblyResolver is not null)
                     asm = assemblyResolver(new AssemblyName(assembly_name));
                 else
                     asm = Assembly.Load(assembly_name);
 
-                if (asm == null)
+                if (asm is null)
                 {
                     if (throwOnError)
                         throw new FileNotFoundException("Could not resolve assembly '" + assembly_name + "'");
@@ -348,23 +348,23 @@ namespace System
             }
 
             Type? type = null;
-            if (typeResolver != null)
+            if (typeResolver is not null)
                 type = typeResolver(asm!, name!.DisplayName, ignoreCase);
             else
                 type = asm!.GetType(name!.DisplayName, false, ignoreCase);
-            if (type == null)
+            if (type is null)
             {
                 if (throwOnError)
                     throw new TypeLoadException("Could not resolve type '" + name + "'");
                 return null;
             }
 
-            if (nested != null)
+            if (nested is not null)
             {
                 foreach (ITypeIdentifier? n in nested)
                 {
                     Type? tmp = type.GetNestedType(n.DisplayName, BindingFlags.Public | BindingFlags.NonPublic);
-                    if (tmp == null)
+                    if (tmp is null)
                     {
                         if (throwOnError)
                             throw new TypeLoadException("Could not resolve type '" + n + "'");
@@ -374,13 +374,13 @@ namespace System
                 }
             }
 
-            if (generic_params != null)
+            if (generic_params is not null)
             {
                 Type[] args = new Type[generic_params.Count];
                 for (int i = 0; i < args.Length; ++i)
                 {
                     Type? tmp = generic_params[i].Resolve(assemblyResolver!, typeResolver!, throwOnError, ignoreCase, ref stackMark);
-                    if (tmp == null)
+                    if (tmp is null)
                     {
                         if (throwOnError)
                             throw new TypeLoadException("Could not resolve type '" + generic_params[i].name + "'");
@@ -391,7 +391,7 @@ namespace System
                 type = type.MakeGenericType(args);
             }
 
-            if (modifier_spec != null)
+            if (modifier_spec is not null)
             {
                 foreach (IModifierSpec? md in modifier_spec)
                     type = md.Resolve(type);
@@ -405,13 +405,13 @@ namespace System
 
         private void AddName(string type_name)
         {
-            if (name == null)
+            if (name is null)
             {
                 name = ParsedTypeIdentifier(type_name);
             }
             else
             {
-                if (nested == null)
+                if (nested is null)
                     nested = new List<ITypeIdentifier>();
                 nested.Add(ParsedTypeIdentifier(type_name));
             }
@@ -419,7 +419,7 @@ namespace System
 
         private void AddModifier(IModifierSpec md)
         {
-            if (modifier_spec == null)
+            if (modifier_spec is null)
                 modifier_spec = new List<IModifierSpec>();
             modifier_spec.Add(md);
         }

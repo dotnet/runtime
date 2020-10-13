@@ -81,7 +81,7 @@ namespace System.ComponentModel
                 }
 
                 const BindingFlags BindingFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.CreateInstance;
-                return itemType.GetConstructor(BindingFlags, null, Array.Empty<Type>(), null) != null;
+                return itemType.GetConstructor(BindingFlags, null, Array.Empty<Type>(), null) is not null;
             }
         }
 
@@ -287,13 +287,13 @@ namespace System.ComponentModel
             object newItem = AddNewCore();
 
             // Record position of new item (to support cancellation later on)
-            addNewPos = (newItem != null) ? IndexOf((T)newItem) : -1;
+            addNewPos = (newItem is not null) ? IndexOf((T)newItem) : -1;
 
             // Return new item to caller
             return newItem;
         }
 
-        private bool AddingNewHandled => _onAddingNew != null && _onAddingNew.GetInvocationList().Length > 0;
+        private bool AddingNewHandled => _onAddingNew is not null && _onAddingNew.GetInvocationList().Length > 0;
 
         /// <summary>
         /// Creates a new item and adds it to the list.
@@ -308,7 +308,7 @@ namespace System.ComponentModel
             object newItem = FireAddingNew();
 
             // If event hander did not supply new item, create one ourselves
-            if (newItem == null)
+            if (newItem is null)
             {
                 newItem = Activator.CreateInstance(typeof(T));
             }
@@ -448,7 +448,7 @@ namespace System.ComponentModel
             // Note: inpc may be null if item is null, so always check.
             if (item is INotifyPropertyChanged inpc)
             {
-                if (_propertyChangedEventHandler == null)
+                if (_propertyChangedEventHandler is null)
                 {
                     _propertyChangedEventHandler = new PropertyChangedEventHandler(Child_PropertyChanged);
                 }
@@ -459,7 +459,7 @@ namespace System.ComponentModel
         private void UnhookPropertyChanged(T item)
         {
             // Note: inpc may be null if item is null, so always check.
-            if (item is INotifyPropertyChanged inpc && _propertyChangedEventHandler != null)
+            if (item is INotifyPropertyChanged inpc && _propertyChangedEventHandler is not null)
             {
                 inpc.PropertyChanged -= _propertyChangedEventHandler;
             }
@@ -469,7 +469,7 @@ namespace System.ComponentModel
         {
             if (RaiseListChangedEvents)
             {
-                if (sender == null || e == null || string.IsNullOrEmpty(e.PropertyName))
+                if (sender is null || e is null || string.IsNullOrEmpty(e.PropertyName))
                 {
                     // Fire reset event (per INotifyPropertyChanged spec)
                     ResetBindings();
@@ -516,7 +516,7 @@ namespace System.ComponentModel
                         {
                             // Get Shape
                             _itemTypeProperties = TypeDescriptor.GetProperties(typeof(T));
-                            Debug.Assert(_itemTypeProperties != null);
+                            Debug.Assert(_itemTypeProperties is not null);
                         }
 
                         PropertyDescriptor pd = _itemTypeProperties.Find(e.PropertyName, true);

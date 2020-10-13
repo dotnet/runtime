@@ -31,7 +31,7 @@ namespace System.Security.Cryptography
 
         public ECDiffieHellmanCng(CngKey key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             if (key.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (_hashAlgorithm == null)
+                if (_hashAlgorithm is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -132,7 +132,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public bool UseSecretAgreementAsHmacKey
         {
-            get { return HmacKey == null; }
+            get { return HmacKey is null; }
         }
 
         protected override void Dispose(bool disposing)

@@ -53,7 +53,7 @@ namespace System.Configuration
                 object section = GetSection("connectionStrings");
 
                 // Verify type, and return the collection
-                if ((section == null) || (section.GetType() != typeof(ConnectionStringsSection)))
+                if ((section is null) || (section.GetType() != typeof(ConnectionStringsSection)))
                 {
                     // If config is null or not the type we expect, the declaration was changed.
                     // Treat it as a configuration error.
@@ -140,7 +140,7 @@ namespace System.Configuration
             if (s_initState < InitState.Usable) EnsureConfigurationSystem();
 
             // If there was an initialization error, throw it.
-            if (s_initError != null) throw s_initError;
+            if (s_initError is not null) throw s_initError;
         }
 
         public static object GetSection(string sectionName)
@@ -203,10 +203,10 @@ namespace System.Configuration
         {
             // exePath must be specified if not running inside ClientConfigurationSystem
             if (!isMachine &&
-                (((fileMap == null) && (exePath == null)) ||
-                ((fileMap != null) && (((ExeConfigurationFileMap)fileMap).ExeConfigFilename == null))))
+                (((fileMap is null) && (exePath is null)) ||
+                ((fileMap is not null) && (((ExeConfigurationFileMap)fileMap).ExeConfigFilename is null))))
             {
-                if ((s_configSystem != null) &&
+                if ((s_configSystem is not null) &&
                     (s_configSystem.GetType() != typeof(ClientConfigurationSystem)))
                     throw new ArgumentException(SR.Config_configmanager_open_noexe);
             }

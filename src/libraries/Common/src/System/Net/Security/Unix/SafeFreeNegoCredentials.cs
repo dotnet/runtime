@@ -41,7 +41,7 @@ namespace System.Net.Security
         public SafeFreeNegoCredentials(bool isNtlmOnly, string username, string password, string domain)
             : base(IntPtr.Zero, true)
         {
-            Debug.Assert(username != null && password != null, "Username and Password can not be null");
+            Debug.Assert(username is not null && password is not null, "Username and Password can not be null");
             const char At = '@';
             const char Backwhack = '\\';
 
@@ -54,7 +54,7 @@ namespace System.Net.Security
             }
 
             // remove any leading and trailing whitespace
-            if (domain != null)
+            if (domain is not null)
             {
                 domain = domain.Trim();
             }

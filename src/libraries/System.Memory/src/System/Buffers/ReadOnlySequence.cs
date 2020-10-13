@@ -80,8 +80,8 @@ namespace System.Buffers
             // Used by SliceImpl to create new ReadOnlySequence
 
             // startSegment and endSegment can be null for default ReadOnlySequence only
-            Debug.Assert((startSegment != null && endSegment != null) ||
-                (startSegment == null && endSegment == null && startIndexAndFlags == 0 && endIndexAndFlags == 0));
+            Debug.Assert((startSegment is not null && endSegment is not null) ||
+                (startSegment is null && endSegment is null && startIndexAndFlags == 0 && endIndexAndFlags == 0));
 
             _startObject = startSegment;
             _endObject = endSegment;
@@ -95,8 +95,8 @@ namespace System.Buffers
         /// </summary>
         public ReadOnlySequence(ReadOnlySequenceSegment<T> startSegment, int startIndex, ReadOnlySequenceSegment<T> endSegment, int endIndex)
         {
-            if (startSegment == null ||
-                endSegment == null ||
+            if (startSegment is null ||
+                endSegment is null ||
                 (startSegment != endSegment && startSegment.RunningIndex > endSegment.RunningIndex) ||
                 (uint)startSegment.Memory.Length < (uint)startIndex ||
                 (uint)endSegment.Memory.Length < (uint)endIndex ||
@@ -114,7 +114,7 @@ namespace System.Buffers
         /// </summary>
         public ReadOnlySequence(T[] array)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
             _startObject = array;
@@ -128,7 +128,7 @@ namespace System.Buffers
         /// </summary>
         public ReadOnlySequence(T[] array, int start, int length)
         {
-            if (array == null ||
+            if (array is null ||
                 (uint)start > (uint)array.Length ||
                 (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentValidationException(array, start);
@@ -204,7 +204,7 @@ namespace System.Buffers
 
             if (startObject != endObject)
             {
-                Debug.Assert(startObject != null);
+                Debug.Assert(startObject is not null);
                 var startSegment = (ReadOnlySequenceSegment<T>)startObject;
 
                 int currentLength = startSegment.Memory.Length - startIndex;
@@ -229,7 +229,7 @@ namespace System.Buffers
 
                     if (beginObject != endObject)
                     {
-                        Debug.Assert(beginObject != null);
+                        Debug.Assert(beginObject is not null);
                         end = GetEndPosition((ReadOnlySequenceSegment<T>)beginObject, beginObject, beginIndex, endObject!, endIndex, length);
                     }
                     else
@@ -278,7 +278,7 @@ namespace System.Buffers
             uint sliceEndIndex = (uint)GetIndex(end);
             object? sliceEndObject = end.GetObject();
 
-            if (sliceEndObject == null)
+            if (sliceEndObject is null)
             {
                 sliceEndObject = _startObject;
                 sliceEndIndex = startIndex;
@@ -355,7 +355,7 @@ namespace System.Buffers
             uint sliceStartIndex = (uint)GetIndex(start);
             object? sliceStartObject = start.GetObject();
 
-            if (sliceStartObject == null)
+            if (sliceStartObject is null)
             {
                 sliceStartIndex = startIndex;
                 sliceStartObject = _startObject;
@@ -465,7 +465,7 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public ReadOnlySequence<T> Slice(SequencePosition start)
         {
-            bool positionIsNotNull = start.GetObject() != null;
+            bool positionIsNotNull = start.GetObject() is not null;
             BoundsCheck(start, positionIsNotNull);
             return SliceImpl(positionIsNotNull ? start : Start);
         }
@@ -534,7 +534,7 @@ namespace System.Buffers
         public long GetOffset(SequencePosition position)
         {
             object? positionSequenceObject = position.GetObject();
-            bool positionIsNull = positionSequenceObject == null;
+            bool positionIsNull = positionSequenceObject is null;
             BoundsCheck(position, !positionIsNull);
 
             object? startObject = _startObject;
@@ -559,14 +559,14 @@ namespace System.Buffers
                 // Verify position validity, this is not covered by BoundsCheck for Multi-Segment Sequence
                 // BoundsCheck for Multi-Segment Sequence check only validity inside current sequence but not for SequencePosition validity.
                 // For single segment position bound check is implicit.
-                Debug.Assert(positionSequenceObject != null);
+                Debug.Assert(positionSequenceObject is not null);
 
                 if (((ReadOnlySequenceSegment<T>)positionSequenceObject).Memory.Length - positionIndex < 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException_PositionOutOfRange();
 
                 // Multi-Segment Sequence
                 ReadOnlySequenceSegment<T>? currentSegment = (ReadOnlySequenceSegment<T>?)startObject;
-                while (currentSegment != null && currentSegment != positionSequenceObject)
+                while (currentSegment is not null && currentSegment != positionSequenceObject)
                 {
                     currentSegment = currentSegment.Next!;
                 }
@@ -639,7 +639,7 @@ namespace System.Buffers
             /// <returns></returns>
             public bool MoveNext()
             {
-                if (_next.GetObject() == null)
+                if (_next.GetObject() is null)
                 {
                     return false;
                 }

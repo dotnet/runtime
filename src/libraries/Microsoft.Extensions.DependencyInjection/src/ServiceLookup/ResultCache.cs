@@ -18,7 +18,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         public ResultCache(ServiceLifetime lifetime, Type type, int slot)
         {
-            Debug.Assert(lifetime == ServiceLifetime.Transient || type != null);
+            Debug.Assert(lifetime == ServiceLifetime.Transient || type is not null);
 
             switch (lifetime)
             {

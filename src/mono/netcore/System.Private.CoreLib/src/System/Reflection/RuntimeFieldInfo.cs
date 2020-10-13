@@ -86,7 +86,7 @@ namespace System.Reflection
             {
                 if (!DeclaringType!.IsInstanceOfType(target))
                 {
-                    if (target == null)
+                    if (target is null)
                     {
                         throw new TargetException(Environment.GetResourceString("RFLCT.Targ_StatFldReqTarg"));
                     }
@@ -158,7 +158,7 @@ namespace System.Reflection
         {
             get
             {
-                if (type == null)
+                if (type is null)
                     type = ResolveType();
                 return type;
             }
@@ -214,7 +214,7 @@ namespace System.Reflection
         {
             if (!IsStatic)
             {
-                if (obj == null)
+                if (obj is null)
                     throw new TargetException("Non-static field requires a target");
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
                     throw new ArgumentException(string.Format(
@@ -240,7 +240,7 @@ namespace System.Reflection
         {
             if (!IsStatic)
             {
-                if (obj == null)
+                if (obj is null)
                     throw new TargetException("Non-static field requires a target");
                 if (!DeclaringType!.IsAssignableFrom(obj.GetType()))
                     throw new ArgumentException(string.Format(
@@ -250,10 +250,10 @@ namespace System.Reflection
             }
             if (IsLiteral)
                 throw new FieldAccessException("Cannot set a constant field");
-            if (binder == null)
+            if (binder is null)
                 binder = Type.DefaultBinder;
             CheckGeneric();
-            if (val != null)
+            if (val is not null)
             {
                 RuntimeType fieldType = (RuntimeType)FieldType;
                 val = fieldType.CheckValue(val, binder, culture, invokeAttr);
@@ -283,7 +283,7 @@ namespace System.Reflection
         private void CheckGeneric()
         {
             Type? declaringType = DeclaringType;
-            if (declaringType != null && declaringType.ContainsGenericParameters)
+            if (declaringType is not null && declaringType.ContainsGenericParameters)
                 throw new InvalidOperationException("Late bound operations cannot be performed on fields with types for which Type.ContainsGenericParameters is true.");
         }
 

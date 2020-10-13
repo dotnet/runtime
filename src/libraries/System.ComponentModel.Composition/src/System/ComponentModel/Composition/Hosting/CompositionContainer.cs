@@ -147,14 +147,14 @@ namespace System.ComponentModel.Composition.Hosting
             _partExportProvider.SourceProvider = this;
 
             // Create the catalog export provider, only if necessary
-            if (catalog != null)
+            if (catalog is not null)
             {
                 _catalogExportProvider = new CatalogExportProvider(catalog, compositionOptions);
                 _catalogExportProvider.SourceProvider = this;
             }
 
             // Set the local export provider
-            if (_catalogExportProvider != null)
+            if (_catalogExportProvider is not null)
             {
                 _localExportProvider = new AggregateExportProvider(_partExportProvider, _catalogExportProvider);
                 _disposableLocalExportProvider = _localExportProvider as IDisposable;
@@ -165,7 +165,7 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             // Set the ancestor export provider, if ancestors are supplied
-            if ((providers != null) && (providers.Length > 0))
+            if ((providers is not null) && (providers.Length > 0))
             {
                 // Aggregate ancestors if and only if more than one passed
                 if (providers.Length > 1)
@@ -175,7 +175,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
                 else
                 {
-                    if (providers[0] == null)
+                    if (providers[0] is null)
                     {
                         throw ExceptionBuilder.CreateContainsNullElement(nameof(providers));
                     }
@@ -184,25 +184,25 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             // finally set the root provider
-            if (_ancestorExportProvider == null)
+            if (_ancestorExportProvider is null)
             {
                 // if no ancestors are passed, the local and the root are the same
                 _rootProvider = _localExportProvider;
             }
             else
             {
-                int exportProviderCount = 1 + ((catalog != null) ? 1 : 0) + ((providers != null) ? providers.Length : 0);
+                int exportProviderCount = 1 + ((catalog is not null) ? 1 : 0) + ((providers is not null) ? providers.Length : 0);
                 ExportProvider[] rootProviders = new ExportProvider[exportProviderCount];
 
                 rootProviders[0] = _partExportProvider;
                 int customProviderStartIndex = 1;
-                if (catalog != null)
+                if (catalog is not null)
                 {
                     rootProviders[1] = _catalogExportProvider!;
                     customProviderStartIndex = 2;
                 }
 
-                if (providers != null)
+                if (providers is not null)
                 {
                     for (int i = 0; i < providers.Length; i++)
                     {
@@ -223,7 +223,7 @@ namespace System.ComponentModel.Composition.Hosting
             _rootProvider.ExportsChanged += OnExportsChangedInternal;
             _rootProvider.ExportsChanging += OnExportsChangingInternal;
 
-            _providers = (providers != null) ? new ReadOnlyCollection<ExportProvider>((ExportProvider[])providers.Clone()) : EmptyProviders;
+            _providers = (providers is not null) ? new ReadOnlyCollection<ExportProvider>((ExportProvider[])providers.Clone()) : EmptyProviders;
         }
 
         internal CompositionOptions CompositionOptions
@@ -253,7 +253,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 ThrowIfDisposed();
 
-                return (_catalogExportProvider != null) ? _catalogExportProvider.Catalog : null;
+                return (_catalogExportProvider is not null) ? _catalogExportProvider.Catalog : null;
             }
         }
 
@@ -284,7 +284,7 @@ namespace System.ComponentModel.Composition.Hosting
             get
             {
                 ThrowIfDisposed();
-                Debug.Assert(_providers != null);
+                Debug.Assert(_providers is not null);
 
                 return _providers;
             }
@@ -348,38 +348,38 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                     }
 
-                    if (rootProvider != null)
+                    if (rootProvider is not null)
                     {
                         rootProvider.ExportsChanged -= OnExportsChangedInternal;
                         rootProvider.ExportsChanging -= OnExportsChangingInternal;
                     }
 
-                    if (disposableRootProvider != null)
+                    if (disposableRootProvider is not null)
                     {
                         disposableRootProvider.Dispose();
                     }
 
-                    if (disposableAncestorExportProvider != null)
+                    if (disposableAncestorExportProvider is not null)
                     {
                         disposableAncestorExportProvider.Dispose();
                     }
 
-                    if (disposableLocalExportProvider != null)
+                    if (disposableLocalExportProvider is not null)
                     {
                         disposableLocalExportProvider.Dispose();
                     }
 
-                    if (catalogExportProvider != null)
+                    if (catalogExportProvider is not null)
                     {
                         catalogExportProvider.Dispose();
                     }
 
-                    if (partExportProvider != null)
+                    if (partExportProvider is not null)
                     {
                         partExportProvider.Dispose();
                     }
 
-                    if (importEngine != null)
+                    if (importEngine is not null)
                     {
                         importEngine.Dispose();
                     }
@@ -538,20 +538,20 @@ namespace System.ComponentModel.Composition.Hosting
         {
             ThrowIfDisposed();
 
-            if (_importEngine == null)
+            if (_importEngine is null)
             {
                 ImportEngine? importEngine = new ImportEngine(this, _compositionOptions);
 
                 lock (_lock)
                 {
-                    if (_importEngine == null)
+                    if (_importEngine is null)
                     {
                         Thread.MemoryBarrier();
                         _importEngine = importEngine;
                         importEngine = null;
                     }
                 }
-                if (importEngine != null)
+                if (importEngine is not null)
                 {
                     importEngine.Dispose();
                 }
@@ -603,21 +603,21 @@ namespace System.ComponentModel.Composition.Hosting
             switch ((ImportSource)source!)
             {
                 case ImportSource.Any:
-                    if (_rootProvider == null)
+                    if (_rootProvider is null)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
                     _rootProvider.TryGetExports(definition, atomicComposition, out exports);
                     break;
                 case ImportSource.Local:
-                    if (_localExportProvider == null)
+                    if (_localExportProvider is null)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
                     _localExportProvider.TryGetExports(definition.RemoveImportSource(), atomicComposition, out exports);
                     break;
                 case ImportSource.NonLocal:
-                    if (_ancestorExportProvider != null)
+                    if (_ancestorExportProvider is not null)
                     {
                         _ancestorExportProvider.TryGetExports(definition.RemoveImportSource(), atomicComposition, out exports);
                     }

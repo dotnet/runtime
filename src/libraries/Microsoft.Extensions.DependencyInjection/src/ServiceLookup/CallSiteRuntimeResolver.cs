@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             {
                 return constructorCallSite.ConstructorInfo.Invoke(parameterValues);
             }
-            catch (Exception ex) when (ex.InnerException != null)
+            catch (Exception ex) when (ex.InnerException is not null)
             {
                 ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
                 // The above line will always throw, but the compiler requires we throw explicitly.

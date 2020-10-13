@@ -324,7 +324,7 @@ namespace System.Net
                 {
                     throw new InvalidOperationException(SR.net_reqsubmitted);
                 }
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -506,7 +506,7 @@ namespace System.Net
             NetworkCredential? networkCredential = null;
             _uri = uri;
             _methodInfo = FtpMethodInfo.GetMethodInfo(WebRequestMethods.Ftp.DownloadFile);
-            if (_uri.UserInfo != null && _uri.UserInfo.Length != 0)
+            if (_uri.UserInfo is not null && _uri.UserInfo.Length != 0)
             {
                 string userInfo = _uri.UserInfo;
                 string username = userInfo;
@@ -520,7 +520,7 @@ namespace System.Net
                 }
                 networkCredential = new NetworkCredential(username, password);
             }
-            if (networkCredential == null)
+            if (networkCredential is null)
             {
                 networkCredential = s_defaultFtpNetworkCredential;
             }
@@ -538,7 +538,7 @@ namespace System.Net
             {
                 CheckError();
 
-                if (_ftpWebResponse != null)
+                if (_ftpWebResponse is not null)
                 {
                     return _ftpWebResponse;
                 }
@@ -575,7 +575,7 @@ namespace System.Net
                         }
 
                         // GetRequeststream or BeginGetRequestStream has not finished yet
-                        if (_readAsyncResult != null)
+                        if (_readAsyncResult is not null)
                             _readAsyncResult.InternalWaitForCompletion();
 
                         CheckError();
@@ -597,10 +597,10 @@ namespace System.Net
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
 
-                // if _exception == null, we are about to throw an exception to the user
+                // if _exception is null, we are about to throw an exception to the user
                 // and we haven't saved the exception, which also means we haven't dealt
                 // with it. So just release the connection and log this for investigation.
-                if (_exception == null)
+                if (_exception is null)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, exception);
                     SetException(exception);
@@ -622,7 +622,7 @@ namespace System.Net
 
             try
             {
-                if (_ftpWebResponse != null)
+                if (_ftpWebResponse is not null)
                 {
                     asyncResult = new ContextAwareResult(this, state, callback);
                     asyncResult.InvokeCallback(_ftpWebResponse);
@@ -658,7 +658,7 @@ namespace System.Net
                         }
                     }
 
-                    if (asyncResult == null)
+                    if (asyncResult is null)
                     {
                         // need to complete it now
                         asyncResult = (ContextAwareResult)_readAsyncResult;
@@ -694,12 +694,12 @@ namespace System.Net
             try
             {
                 // parameter validation
-                if (asyncResult == null)
+                if (asyncResult is null)
                 {
                     throw new ArgumentNullException(nameof(asyncResult));
                 }
                 LazyAsyncResult? castedAsyncResult = asyncResult as LazyAsyncResult;
-                if (castedAsyncResult == null)
+                if (castedAsyncResult is null)
                 {
                     throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
                 }
@@ -818,14 +818,14 @@ namespace System.Net
             Stream? requestStream = null;
             try
             {
-                if (asyncResult == null)
+                if (asyncResult is null)
                 {
                     throw new ArgumentNullException(nameof(asyncResult));
                 }
 
                 LazyAsyncResult? castedAsyncResult = asyncResult as LazyAsyncResult;
 
-                if (castedAsyncResult == null)
+                if (castedAsyncResult is null)
                 {
                     throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
                 }
@@ -874,7 +874,7 @@ namespace System.Net
                 {
                     FtpControlStream? connection = _connection;
 
-                    if (connection == null)
+                    if (connection is null)
                     {
                         if (isAsync)
                         {
@@ -1013,7 +1013,7 @@ namespace System.Net
             if (isAsync)
             {
                 // non-null in the case of re-submit (recovery)
-                if (_requestCompleteAsyncResult == null)
+                if (_requestCompleteAsyncResult is null)
                     _requestCompleteAsyncResult = new LazyAsyncResult(null, null, null);
                 return _connection!.SubmitRequest(this, true, true)!;
             }
@@ -1042,7 +1042,7 @@ namespace System.Net
                 throw ExceptionHelper.TimeoutException;
             }
 
-            if (stream != null)
+            if (stream is not null)
             {
                 lock (_syncObject)
                 {
@@ -1067,7 +1067,7 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this);
 
             FtpControlStream? connection = _connection;
-            if (connection != null)
+            if (connection is not null)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "aborting connection");
                 connection.AbortConnect();
@@ -1078,7 +1078,7 @@ namespace System.Net
         {
             get
             {
-                if (_timerQueue == null)
+                if (_timerQueue is null)
                 {
                     _timerQueue = TimerThread.GetOrCreateQueue(RemainingTimeout);
                 }
@@ -1096,7 +1096,7 @@ namespace System.Net
                 || _onceFailed
                 || _aborted
                 || _timedOut
-                || _connection == null
+                || _connection is null
                 || !_connection.RecoverableFailure)
             {
                 return false;
@@ -1105,7 +1105,7 @@ namespace System.Net
 
             lock (_syncObject)
             {
-                if (_connection != null)
+                if (_connection is not null)
                 {
                     _connection.CloseSocket();
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Releasing connection: {_connection}");
@@ -1133,7 +1133,7 @@ namespace System.Net
             }
 
             FtpControlStream? connection = _connection;
-            if (_exception == null)
+            if (_exception is null)
             {
                 if (exception is WebException)
                 {
@@ -1144,7 +1144,7 @@ namespace System.Net
                 {
                     _exception = exception;
                 }
-                else if (connection != null && connection.StatusCode != FtpStatusCode.Undefined)
+                else if (connection is not null && connection.StatusCode != FtpStatusCode.Undefined)
                 {
                     EnsureFtpWebResponse(exception);
                     _exception = new WebException(SR.Format(SR.net_ftp_servererror, connection.StatusLine), exception, WebExceptionStatus.ProtocolError, _ftpWebResponse);
@@ -1154,7 +1154,7 @@ namespace System.Net
                     _exception = new WebException(exception.Message, exception);
                 }
 
-                if (connection != null && _ftpWebResponse != null)
+                if (connection is not null && _ftpWebResponse is not null)
                     _ftpWebResponse.UpdateStatus(connection.StatusCode, connection.StatusLine, connection.ExitMessage);
             }
         }
@@ -1164,7 +1164,7 @@ namespace System.Net
         /// </summary>
         private void CheckError()
         {
-            if (_exception != null)
+            if (_exception is not null)
             {
                 ExceptionDispatchInfo.Throw(_exception);
             }
@@ -1187,12 +1187,12 @@ namespace System.Net
             RequestStage stageMode = RequestStage.CheckForError;
             try
             {
-                bool completedRequest = obj == null;
+                bool completedRequest = obj is null;
                 Exception? exception = obj as Exception;
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"exp:{exception} completedRequest:{completedRequest}");
 
-                if (exception != null)
+                if (exception is not null)
                 {
                     SetException(exception);
                 }
@@ -1204,7 +1204,7 @@ namespace System.Net
                 {
                     FtpControlStream? connection = _connection;
 
-                    if (connection != null)
+                    if (connection is not null)
                     {
                         EnsureFtpWebResponse(null);
 
@@ -1240,29 +1240,29 @@ namespace System.Net
                 FtpDataStream? stream = obj as FtpDataStream;
                 Exception? exception = obj as Exception;
 
-                bool completedRequest = (obj == null);
+                bool completedRequest = (obj is null);
 
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"stream:{stream} conn:{connection} exp:{exception} completedRequest:{completedRequest}");
                 while (true)
                 {
-                    if (exception != null)
+                    if (exception is not null)
                     {
                         if (AttemptedRecovery(exception))
                         {
                             connection = CreateConnection();
-                            if (connection == null)
+                            if (connection is null)
                                 return;
 
                             exception = null;
                         }
-                        if (exception != null)
+                        if (exception is not null)
                         {
                             SetException(exception);
                             break;
                         }
                     }
 
-                    if (connection != null)
+                    if (connection is not null)
                     {
                         lock (_syncObject)
                         {
@@ -1287,7 +1287,7 @@ namespace System.Net
                         }
                         return;
                     }
-                    else if (stream != null)
+                    else if (stream is not null)
                     {
                         lock (_syncObject)
                         {
@@ -1308,7 +1308,7 @@ namespace System.Net
                     {
                         connection = _connection;
 
-                        if (connection != null)
+                        if (connection is not null)
                         {
                             EnsureFtpWebResponse(null);
 
@@ -1352,7 +1352,7 @@ namespace System.Net
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"state:{stage}");
 
-            if (_exception != null)
+            if (_exception is not null)
                 stage = RequestStage.ReleaseConnection;
 
             RequestStage prev;
@@ -1385,7 +1385,7 @@ namespace System.Net
 
                 if (stage == RequestStage.ReleaseConnection)
                 {
-                    if (_exception == null &&
+                    if (_exception is null &&
                         !_aborted &&
                         prev != RequestStage.ReadReady &&
                         _methodInfo.IsDownload &&
@@ -1403,11 +1403,11 @@ namespace System.Net
                 // First check to see on releasing the connection
                 if ((stage == RequestStage.ReleaseConnection ||
                      prev == RequestStage.ReleaseConnection)
-                    && connection != null)
+                    && connection is not null)
                 {
                     try
                     {
-                        if (_exception != null)
+                        if (_exception is not null)
                         {
                             connection.Abort(_exception);
                         }
@@ -1417,7 +1417,7 @@ namespace System.Net
                         if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Releasing connection: {connection}");
                         connection.CloseSocket();
                         if (_async)
-                            if (_requestCompleteAsyncResult != null)
+                            if (_requestCompleteAsyncResult is not null)
                                 _requestCompleteAsyncResult.InvokeCallback();
                     }
                 }
@@ -1430,24 +1430,24 @@ namespace System.Net
                     // In any case we want to signal the writer if came here
                     if (stage >= RequestStage.WriteReady)
                     {
-                        // If writeResult == null and this is an upload request, it means
+                        // If writeResult is null and this is an upload request, it means
                         // that the user has called GetResponse() without calling
                         // GetRequestStream() first. So they are not interested in a
                         // stream. Therefore we close the stream so that the
                         // request/pipeline can continue
                         if (_methodInfo.IsUpload && !_getRequestStreamStarted)
                         {
-                            if (_stream != null)
+                            if (_stream is not null)
                                 _stream.Close();
                         }
-                        else if (writeResult != null && !writeResult.InternalPeekCompleted)
+                        else if (writeResult is not null && !writeResult.InternalPeekCompleted)
                             writeResult.InvokeCallback();
                     }
                 }
                 finally
                 {
                     // The response is ready either with or without a stream
-                    if (stage >= RequestStage.ReadReady && readResult != null && !readResult.InternalPeekCompleted)
+                    if (stage >= RequestStage.ReadReady && readResult is not null && !readResult.InternalPeekCompleted)
                         readResult.InvokeCallback();
                 }
             }
@@ -1476,7 +1476,7 @@ namespace System.Net
                     _exception = ExceptionHelper.RequestAbortedException;
                 }
 
-                if (stream != null)
+                if (stream is not null)
                 {
                     if (!(stream is ICloseEx))
                     {
@@ -1485,7 +1485,7 @@ namespace System.Net
 
                     ((ICloseEx)stream).CloseEx(CloseExState.Abort | CloseExState.Silent);
                 }
-                if (connection != null)
+                if (connection is not null)
                     connection.Abort(ExceptionHelper.RequestAbortedException);
             }
             catch (Exception exception)
@@ -1572,7 +1572,7 @@ namespace System.Net
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -1603,7 +1603,7 @@ namespace System.Net
         {
             get
             {
-                if (_ftpRequestHeaders == null)
+                if (_ftpRequestHeaders is null)
                 {
                     _ftpRequestHeaders = new WebHeaderCollection();
                 }
@@ -1677,11 +1677,11 @@ namespace System.Net
         /// </summary>
         private void EnsureFtpWebResponse(Exception? exception)
         {
-            if (_ftpWebResponse == null || (_ftpWebResponse.GetResponseStream() is FtpWebResponse.EmptyStream && _stream != null))
+            if (_ftpWebResponse is null || (_ftpWebResponse.GetResponseStream() is FtpWebResponse.EmptyStream && _stream is not null))
             {
                 lock (_syncObject)
                 {
-                    if (_ftpWebResponse == null || (_ftpWebResponse.GetResponseStream() is FtpWebResponse.EmptyStream && _stream != null))
+                    if (_ftpWebResponse is null || (_ftpWebResponse.GetResponseStream() is FtpWebResponse.EmptyStream && _stream is not null))
                     {
                         Stream? responseStream = _stream;
 
@@ -1690,16 +1690,16 @@ namespace System.Net
                             responseStream = null;
                         }
 
-                        if (_stream != null && _stream.CanRead && _stream.CanTimeout)
+                        if (_stream is not null && _stream.CanRead && _stream.CanTimeout)
                         {
                             _stream.ReadTimeout = ReadWriteTimeout;
                             _stream.WriteTimeout = ReadWriteTimeout;
                         }
 
                         FtpControlStream? connection = _connection;
-                        long contentLength = connection != null ? connection.ContentLength : -1;
+                        long contentLength = connection is not null ? connection.ContentLength : -1;
 
-                        if (responseStream == null)
+                        if (responseStream is null)
                         {
                             // If the last command was SIZE, we set the ContentLength on
                             // the FtpControlStream to be the size of the file returned in the
@@ -1710,13 +1710,13 @@ namespace System.Net
                                 contentLength = 0;
                         }
 
-                        if (_ftpWebResponse != null)
+                        if (_ftpWebResponse is not null)
                         {
                             _ftpWebResponse.SetResponseStream(responseStream);
                         }
                         else
                         {
-                            if (connection != null)
+                            if (connection is not null)
                                 _ftpWebResponse = new FtpWebResponse(responseStream, contentLength, connection.ResponseUri, connection.StatusCode, connection.StatusLine, connection.LastModified, connection.BannerMessage, connection.WelcomeMessage, connection.ExitMessage);
                             else
                                 _ftpWebResponse = new FtpWebResponse(responseStream, -1, _uri, FtpStatusCode.Undefined, null, DateTime.Now, null, null, null);
@@ -1736,7 +1736,7 @@ namespace System.Net
             {
                 if (!_async)
                 {
-                    if (_connection != null)
+                    if (_connection is not null)
                         _connection.CheckContinuePipeline();
                 }
                 else
@@ -1748,7 +1748,7 @@ namespace System.Net
             else
             {
                 FtpControlStream? connection = _connection;
-                if (connection != null)
+                if (connection is not null)
                     connection.Abort(ExceptionHelper.RequestAbortedException);
             }
         }

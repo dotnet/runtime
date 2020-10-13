@@ -90,7 +90,7 @@ namespace System.Xml.Xsl.IlGen
 
                 // Get metadata for method which computes this global's value
                 methGlobal = XmlILAnnotation.Write(iter).FunctionBinding;
-                Debug.Assert(methGlobal != null, "Metadata for global value should have already been computed");
+                Debug.Assert(methGlobal is not null, "Metadata for global value should have already been computed");
 
                 // Create an IteratorDescriptor for this global value
                 iterInfo = new IteratorDescriptor(_helper);
@@ -140,12 +140,12 @@ namespace System.Xml.Xsl.IlGen
                 // Compute value of global value
                 StartNestedIterator(iter);
 
-                if (param != null)
+                if (param is not null)
                 {
                     Debug.Assert(iter.XmlType == TypeFactory.ItemS, "IlGen currently only supports parameters of type item*.");
 
                     // param = runtime.ExternalContext.GetParameter(localName, namespaceUri);
-                    // if (param == null) goto LabelComputeGlobal;
+                    // if (param is null) goto LabelComputeGlobal;
                     LocalBuilder locParam = _helper.DeclareLocal("$$$param", typeof(object));
                     _helper.CallGetParameter(param.Name!.LocalName, param.Name.NamespaceUri);
                     _helper.Emit(OpCodes.Stloc, locParam);
@@ -171,7 +171,7 @@ namespace System.Xml.Xsl.IlGen
                 // LabelComputeGlobal:
                 _helper.MarkLabel(lblComputeGlobal);
 
-                if (iter.Binding != null)
+                if (iter.Binding is not null)
                 {
                     // runtime.SetGlobalValue(idxValue, (object) value);
                     _helper.LoadQueryRuntime();
@@ -240,11 +240,11 @@ namespace System.Xml.Xsl.IlGen
             foreach (QilIterator iter in ndFunc.Arguments)
             {
                 // DebugInfo: Sequence point just before generating code for the bound expression
-                if (_qil.IsDebug && iter.SourceLine != null)
+                if (_qil.IsDebug && iter.SourceLine is not null)
                     _helper.DebugSequencePoint(iter.SourceLine);
 
                 // Calculate default value of this parameter
-                if (iter.Binding != null)
+                if (iter.Binding is not null)
                 {
                     Debug.Assert(iter.XmlType == TypeFactory.ItemS, "IlGen currently only supports default values in parameters of type item*.");
                     paramId = (iter.Annotation as XmlILAnnotation)!.ArgumentPosition + 1;
@@ -290,11 +290,11 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         protected override QilNode Visit(QilNode nd)
         {
-            if (nd == null)
+            if (nd is null)
                 return null!;
 
             // DebugInfo: Sequence point just before generating code for this expression
-            if (_qil.IsDebug && nd.SourceLine != null && !(nd is QilIterator))
+            if (_qil.IsDebug && nd.SourceLine is not null && !(nd is QilIterator))
                 _helper.DebugSequencePoint(nd.SourceLine);
 
             // Expressions are constructed using one of several possible methods
@@ -407,7 +407,7 @@ namespace System.Xml.Xsl.IlGen
             locNav = _helper.DeclareLocal("$$$navDoc", typeof(XPathNavigator));
             _helper.Emit(OpCodes.Stloc, locNav);
 
-            // if (navDoc == null) goto LabelNextCtxt;
+            // if (navDoc is null) goto LabelNextCtxt;
             _helper.Emit(OpCodes.Ldloc, locNav);
             _helper.Emit(OpCodes.Brfalse, _iterCurr.GetLabelNext());
 
@@ -972,7 +972,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         private void ConditionalBranch(QilNode ndBranch, Type itemStorageType, LocalBuilder? locResult)
         {
-            if (locResult == null)
+            if (locResult is null)
             {
                 Debug.Assert(ndBranch.XmlType!.IsSingleton, "Conditional must produce a singleton");
 
@@ -1543,7 +1543,7 @@ namespace System.Xml.Xsl.IlGen
                 _helper.Call(XmlILMethods.StrCatClear);
 
                 // Set delimiter, if it's not empty string
-                if (delimiter != null)
+                if (delimiter is not null)
                 {
                     _helper.Emit(OpCodes.Ldloca, locStringConcat);
                     NestedVisitEnsureStack(delimiter);
@@ -2103,10 +2103,10 @@ namespace System.Xml.Xsl.IlGen
         private void StartBinding(QilIterator ndIter)
         {
             OptimizerPatterns patt = OptimizerPatterns.Read(ndIter);
-            Debug.Assert(ndIter != null);
+            Debug.Assert(ndIter is not null);
 
             // DebugInfo: Sequence point just before generating code for the bound expression
-            if (_qil.IsDebug && ndIter.SourceLine != null)
+            if (_qil.IsDebug && ndIter.SourceLine is not null)
                 _helper.DebugSequencePoint(ndIter.SourceLine);
 
             // Treat cardinality one Let iterators as if they were For iterators (no nesting necessary)
@@ -2155,7 +2155,7 @@ namespace System.Xml.Xsl.IlGen
 
             // DebugInfo: Open variable scope
             // DebugInfo: Ensure that for variable is stored in a local and tag it with the user-defined name
-            if (_qil.IsDebug && ndFor.DebugName != null)
+            if (_qil.IsDebug && ndFor.DebugName is not null)
             {
                 _helper.DebugStartScope();
 
@@ -2206,7 +2206,7 @@ namespace System.Xml.Xsl.IlGen
 
             // DebugInfo: Open variable scope
             // DebugInfo: Ensure that for variable is stored in a local and tag it with the user-defined name
-            if (_qil.IsDebug && ndLet.DebugName != null)
+            if (_qil.IsDebug && ndLet.DebugName is not null)
             {
                 _helper.DebugStartScope();
 
@@ -2227,10 +2227,10 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         private void EndBinding(QilIterator ndIter)
         {
-            Debug.Assert(ndIter != null);
+            Debug.Assert(ndIter is not null);
 
             // Variables go out of scope here
-            if (_qil.IsDebug && ndIter.DebugName != null)
+            if (_qil.IsDebug && ndIter.DebugName is not null)
                 _helper.DebugEndScope();
         }
 
@@ -2244,7 +2244,7 @@ namespace System.Xml.Xsl.IlGen
             Debug.Assert(ndIter.NodeType == QilNodeType.For);
 
             locPos = XmlILAnnotation.Write(ndIter).CachedIteratorDescriptor!.LocalPosition!;
-            Debug.Assert(locPos != null);
+            Debug.Assert(locPos is not null);
             _iterCurr.Storage = StorageDescriptor.Local(locPos, typeof(int), false);
 
             return ndPos;
@@ -2593,7 +2593,7 @@ namespace System.Xml.Xsl.IlGen
         protected override QilNode VisitAttribute(QilBinary ndAttr)
         {
             QilName? ndName = ndAttr.Right as QilName;
-            Debug.Assert(ndName != null, "Attribute node must have a literal QName as its second argument");
+            Debug.Assert(ndName is not null, "Attribute node must have a literal QName as its second argument");
 
             // XPathNavigator navAttr;
             LocalBuilder locNav = _helper.DeclareLocal("$$$navAttr", typeof(XPathNavigator));
@@ -3804,7 +3804,7 @@ namespace System.Xml.Xsl.IlGen
             }
 
             // XsltConvert.XXXToYYY(value);
-            if (meth != null)
+            if (meth is not null)
                 _helper.Call(meth);
 
             _iterCurr.Storage = StorageDescriptor.Stack(GetItemStorageType(typDst), !typDst.IsSingleton);
@@ -3882,7 +3882,7 @@ namespace System.Xml.Xsl.IlGen
                 else if ((object)typSrc == (object)TypeFactory.ItemS) meth = XmlILMethods.ItemsToStr;
             }
 
-            return meth != null;
+            return meth is not null;
         }
 
 
@@ -3946,7 +3946,7 @@ namespace System.Xml.Xsl.IlGen
             LoadSelectFilter(kinds, ndName);
             if (orSelf != TriState.Unknown)
                 _helper.LoadBoolean(orSelf == TriState.True);
-            if (ndEnd != null)
+            if (ndEnd is not null)
                 NestedVisitEnsureStack(ndEnd);
             _helper.Call(methCreate);
 
@@ -3977,7 +3977,7 @@ namespace System.Xml.Xsl.IlGen
             LocalBuilder locIter = _helper.DeclareLocal(iterName, iterType);
             Label lblOnEndNested;
             QilLoop ndLoop = (QilLoop)ndDod.Child;
-            Debug.Assert(ndDod.NodeType == QilNodeType.DocOrderDistinct && ndLoop != null);
+            Debug.Assert(ndDod.NodeType == QilNodeType.DocOrderDistinct && ndLoop is not null);
 
             // iter.Create(filter [, orSelf]);
             _helper.Emit(OpCodes.Ldloca, locIter);
@@ -4462,12 +4462,12 @@ namespace System.Xml.Xsl.IlGen
         private bool MightHaveNamespacesAfterAttributes(XmlILConstructInfo? info)
         {
             // Get parent element
-            if (info != null)
+            if (info is not null)
                 info = info.ParentElementInfo;
 
             // If a parent element has not been statically identified, then assume that the runtime
             // element will have namespaces added after attributes.
-            if (info == null)
+            if (info is null)
                 return true;
 
             return info.MightHaveNamespacesAfterAttributes;
@@ -4602,7 +4602,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         private void LoadSelectFilter(XmlNodeKindFlags xmlTypes, QilName? ndName)
         {
-            if (ndName != null)
+            if (ndName is not null)
             {
                 // Push NameFilter
                 Debug.Assert(xmlTypes == XmlNodeKindFlags.Element);
@@ -4644,7 +4644,7 @@ namespace System.Xml.Xsl.IlGen
         }
 
         /// <summary>
-        /// Start construction of a new nested iterator.  If this.iterCurr == null, then the new iterator
+        /// Start construction of a new nested iterator.  If this.iterCurr is null, then the new iterator
         /// is a top-level, or root iterator.  Otherwise, the new iterator will be nested within the
         /// current iterator.
         /// </summary>
@@ -4654,7 +4654,7 @@ namespace System.Xml.Xsl.IlGen
             IteratorDescriptor? iterParent = _iterCurr;
 
             // Create a new, nested iterator
-            if (iterParent == null)
+            if (iterParent is null)
             {
                 // Create a "root" iterator info that has no parernt
                 _iterCurr = new IteratorDescriptor(_helper);

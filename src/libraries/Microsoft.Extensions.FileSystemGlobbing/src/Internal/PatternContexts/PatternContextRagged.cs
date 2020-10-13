@@ -131,7 +131,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
 
             public string Stem
             {
-                get { return _stemItems == null ? null : string.Join("/", _stemItems); }
+                get { return _stemItems is null ? null : string.Join("/", _stemItems); }
             }
         }
 

@@ -24,7 +24,7 @@ namespace System.Threading
             Debug.Assert(initialCount <= maximumCount);
 
 #if TARGET_UNIX || TARGET_BROWSER
-            if (name != null)
+            if (name is not null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 #endif
             SafeWaitHandle myHandle = Interop.Kernel32.CreateSemaphoreEx(IntPtr.Zero, initialCount, maximumCount, name, 0, AccessRights);
@@ -45,7 +45,7 @@ namespace System.Threading
         private static OpenExistingResult OpenExistingWorker(string name, out Semaphore? result)
         {
 #if TARGET_WINDOWS
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));

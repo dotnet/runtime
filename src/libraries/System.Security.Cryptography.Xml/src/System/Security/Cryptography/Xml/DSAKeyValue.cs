@@ -97,14 +97,14 @@ namespace System.Security.Cryptography.Xml
             dsaKeyValueElement.AppendChild(yElement);
 
             // Add optional components if present
-            if (dsaParams.J != null)
+            if (dsaParams.J is not null)
             {
                 XmlElement jElement = xmlDocument.CreateElement(JElementName, SignedXml.XmlDsigNamespaceUrl);
                 jElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(dsaParams.J)));
                 dsaKeyValueElement.AppendChild(jElement);
             }
 
-            if (dsaParams.Seed != null)
+            if (dsaParams.Seed is not null)
             {  // note we assume counter is correct if Seed is present
                 XmlElement seedElement = xmlDocument.CreateElement(SeedElementName, SignedXml.XmlDsigNamespaceUrl);
                 seedElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(dsaParams.Seed)));
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography.Xml
         /// </exception>
         public override void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -152,19 +152,19 @@ namespace System.Security.Cryptography.Xml
             xmlNamespaceManager.AddNamespace(xmlDsigNamespacePrefix, SignedXml.XmlDsigNamespaceUrl);
 
             XmlNode dsaKeyValueElement = value.SelectSingleNode($"{xmlDsigNamespacePrefix}:{DSAKeyValueElementName}", xmlNamespaceManager);
-            if (dsaKeyValueElement == null)
+            if (dsaKeyValueElement is null)
             {
                 throw new CryptographicException($"{KeyValueElementName} must contain child element {DSAKeyValueElementName}");
             }
 
             XmlNode yNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{YElementName}", xmlNamespaceManager);
-            if (yNode == null)
+            if (yNode is null)
                 throw new CryptographicException($"{YElementName} is missing");
 
             XmlNode pNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{PElementName}", xmlNamespaceManager);
             XmlNode qNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{QElementName}", xmlNamespaceManager);
 
-            if ((pNode == null && qNode != null) || (pNode != null && qNode == null))
+            if ((pNode is null && qNode is not null) || (pNode is not null && qNode is null))
                 throw new CryptographicException($"{PElementName} and {QElementName} can only occur in combination");
 
 
@@ -173,20 +173,20 @@ namespace System.Security.Cryptography.Xml
 
             XmlNode seedNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{SeedElementName}", xmlNamespaceManager);
             XmlNode pgenCounterNode = dsaKeyValueElement.SelectSingleNode($"{xmlDsigNamespacePrefix}:{PgenCounterElementName}", xmlNamespaceManager);
-            if ((seedNode == null && pgenCounterNode != null) || (seedNode != null && pgenCounterNode == null))
+            if ((seedNode is null && pgenCounterNode is not null) || (seedNode is not null && pgenCounterNode is null))
                 throw new CryptographicException($"{SeedElementName} and {PgenCounterElementName} can only occur in combination");
 
             try
             {
                 Key.ImportParameters(new DSAParameters
                 {
-                    P = (pNode != null) ? Convert.FromBase64String(pNode.InnerText) : null,
-                    Q = (qNode != null) ? Convert.FromBase64String(qNode.InnerText) : null,
-                    G = (gNode != null) ? Convert.FromBase64String(gNode.InnerText) : null,
+                    P = (pNode is not null) ? Convert.FromBase64String(pNode.InnerText) : null,
+                    Q = (qNode is not null) ? Convert.FromBase64String(qNode.InnerText) : null,
+                    G = (gNode is not null) ? Convert.FromBase64String(gNode.InnerText) : null,
                     Y = Convert.FromBase64String(yNode.InnerText),
-                    J = (jNode != null) ? Convert.FromBase64String(jNode.InnerText) : null,
-                    Seed = (seedNode != null) ? Convert.FromBase64String(seedNode.InnerText) : null,
-                    Counter = (pgenCounterNode != null) ? Utils.ConvertByteArrayToInt(Convert.FromBase64String(pgenCounterNode.InnerText)) : 0
+                    J = (jNode is not null) ? Convert.FromBase64String(jNode.InnerText) : null,
+                    Seed = (seedNode is not null) ? Convert.FromBase64String(seedNode.InnerText) : null,
+                    Counter = (pgenCounterNode is not null) ? Utils.ConvertByteArrayToInt(Convert.FromBase64String(pgenCounterNode.InnerText)) : 0
                 });
             }
             catch (Exception ex)

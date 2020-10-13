@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Hosting
         private static Func<string[], T> ResolveFactory<T>(Assembly assembly, string name)
         {
             var programType = assembly?.EntryPoint?.DeclaringType;
-            if (programType == null)
+            if (programType is null)
             {
                 return null;
             }
@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.Hosting
         // TReturn Factory(string[] args);
         private static bool IsFactory<TReturn>(MethodInfo factory)
         {
-            return factory != null
+            return factory is not null
                 && typeof(TReturn).IsAssignableFrom(factory.ReturnType)
                 && factory.GetParameters().Length == 1
                 && typeof(string[]).Equals(factory.GetParameters()[0].ParameterType);
@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Hosting
         {
             // Prefer the older patterns by default for back compat.
             var webHostFactory = ResolveWebHostFactory<object>(assembly);
-            if (webHostFactory != null)
+            if (webHostFactory is not null)
             {
                 return args =>
                 {
@@ -68,7 +68,7 @@ namespace Microsoft.Extensions.Hosting
             }
 
             var webHostBuilderFactory = ResolveWebHostBuilderFactory<object>(assembly);
-            if (webHostBuilderFactory != null)
+            if (webHostBuilderFactory is not null)
             {
                 return args =>
                 {
@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.Hosting
             }
 
             var hostBuilderFactory = ResolveHostBuilderFactory<object>(assembly);
-            if (hostBuilderFactory != null)
+            if (hostBuilderFactory is not null)
             {
                 return args =>
                 {
@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.Hosting
 
         private static IServiceProvider GetServiceProvider(object host)
         {
-            if (host == null)
+            if (host is null)
             {
                 return null;
             }

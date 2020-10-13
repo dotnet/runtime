@@ -338,7 +338,7 @@ namespace System.Data.ProviderBase
             Debug.Assert(0 == activateCount, "activated multiple times?");
 #endif // DEBUG
 
-            if (PerformanceCounters != null)
+            if (PerformanceCounters is not null)
             { // Pool.Clear will DestroyObject that will clean performanceCounters before going here
                 PerformanceCounters.NumberOfActiveConnections.Decrement();
             }
@@ -423,10 +423,10 @@ namespace System.Data.ProviderBase
 
         protected internal virtual DataTable GetSchema(DbConnectionFactory factory, DbConnectionPoolGroup poolGroup, DbConnection outerConnection, string collectionName, string?[]? restrictions)
         {
-            Debug.Assert(outerConnection != null, "outerConnection may not be null.");
+            Debug.Assert(outerConnection is not null, "outerConnection may not be null.");
 
             DbMetaDataFactory metaDataFactory = factory.GetMetaDataFactory(poolGroup, this);
-            Debug.Assert(metaDataFactory != null, "metaDataFactory may not be null.");
+            Debug.Assert(metaDataFactory is not null, "metaDataFactory may not be null.");
 
             return metaDataFactory.GetSchema(outerConnection, collectionName, restrictions);
         }
@@ -591,7 +591,7 @@ namespace System.Data.ProviderBase
         internal void DetachCurrentTransactionIfEnded()
         {
             SysTx.Transaction? enlistedTransaction = EnlistedTransaction;
-            if (enlistedTransaction != null)
+            if (enlistedTransaction is not null)
             {
                 bool transactionIsDead;
                 try
@@ -623,7 +623,7 @@ namespace System.Data.ProviderBase
                 if (isExplicitlyReleasing || UnbindOnTransactionCompletion || null == owner)
                 {
                     SysTx.Transaction? currentEnlistedTransaction = _enlistedTransaction;
-                    if (currentEnlistedTransaction != null && transaction.Equals(currentEnlistedTransaction))
+                    if (currentEnlistedTransaction is not null && transaction.Equals(currentEnlistedTransaction))
                     {
                         EnlistedTransaction = null;
 

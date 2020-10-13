@@ -52,7 +52,7 @@ namespace System.Net
         {
             get
             {
-                if (_credentials != null && _credentials.IsAlive)
+                if (_credentials is not null && _credentials.IsAlive)
                 {
                     return (NetworkCredential?)_credentials.Target;
                 }
@@ -63,7 +63,7 @@ namespace System.Net
             }
             set
             {
-                if (_credentials == null)
+                if (_credentials is null)
                 {
                     _credentials = new WeakReference(null);
                 }
@@ -86,7 +86,7 @@ namespace System.Net
         internal void AbortConnect()
         {
             Socket? socket = _dataSocket;
-            if (socket != null)
+            if (socket is not null)
             {
                 try
                 {
@@ -163,13 +163,13 @@ namespace System.Net
         //    In case SSL and ASYNC we delay sigaling the user stream until the handshake is done.
         private PipelineInstruction QueueOrCreateFtpDataStream(ref Stream? stream)
         {
-            if (_dataSocket == null)
+            if (_dataSocket is null)
                 throw new InternalException();
 
             //
             // Re-entered pipeline with completed read on the TlsStream
             //
-            if (_tlsStream != null)
+            if (_tlsStream is not null)
             {
                 stream = new FtpDataStream(_tlsStream, (FtpWebRequest)_request!, IsFtpDataStreamWriteable());
                 _tlsStream = null;
@@ -225,7 +225,7 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Command:{entry?.Command} Description:{response?.StatusDescription}");
 
             // null response is not expected
-            if (response == null)
+            if (response is null)
                 return PipelineInstruction.Abort;
 
             FtpStatusCode status = (FtpStatusCode)response.Status;
@@ -329,7 +329,7 @@ namespace System.Net
             //
             if (status == FtpStatusCode.OpeningData || status == FtpStatusCode.DataAlreadyOpen)
             {
-                if (_dataSocket == null)
+                if (_dataSocket is null)
                 {
                     return PipelineInstruction.Abort;
                 }
@@ -484,7 +484,7 @@ namespace System.Net
                 string domainUserName = string.Empty;
                 string password = string.Empty;
 
-                if (Credentials != null)
+                if (Credentials is not null)
                 {
                     domainUserName = Credentials.UserName;
                     string domain = Credentials.Domain;
@@ -543,7 +543,7 @@ namespace System.Net
             // our relative paths work right and reduces unnecessary CWD commands.
             // Usually, we don't change the working directory except for some FTP commands.  If necessary,
             // we need to reset our working directory back to the login directory.
-            if (_establishedServerDirectory != null && _loginDirectory != null && _establishedServerDirectory != _loginDirectory)
+            if (_establishedServerDirectory is not null && _loginDirectory is not null && _establishedServerDirectory != _loginDirectory)
             {
                 commandList.Add(new PipelineEntry(FormatFtpCommand("CWD", _loginDirectory), PipelineEntryFlags.UserCommand));
                 _requestedServerDirectory = _loginDirectory;
@@ -687,7 +687,7 @@ namespace System.Net
 
             PipelineInstruction result;
 
-            if (_passiveEndPoint != null)
+            if (_passiveEndPoint is not null)
             {
                 IPEndPoint passiveEndPoint = _passiveEndPoint;
                 _passiveEndPoint = null;
@@ -849,7 +849,7 @@ namespace System.Net
         {
             get
             {
-                return (_bannerMessage != null) ? _bannerMessage.ToString() : null;
+                return (_bannerMessage is not null) ? _bannerMessage.ToString() : null;
             }
         }
 
@@ -860,7 +860,7 @@ namespace System.Net
         {
             get
             {
-                return (_welcomeMessage != null) ? _welcomeMessage.ToString() : null;
+                return (_welcomeMessage is not null) ? _welcomeMessage.ToString() : null;
             }
         }
 
@@ -871,7 +871,7 @@ namespace System.Net
         {
             get
             {
-                return (_exitMessage != null) ? _exitMessage.ToString() : null;
+                return (_exitMessage is not null) ? _exitMessage.ToString() : null;
             }
         }
 
@@ -1123,7 +1123,7 @@ namespace System.Net
         /// </summary>
         private string FormatFtpCommand(string command, string? parameter)
         {
-            StringBuilder stringBuilder = new StringBuilder(command.Length + ((parameter != null) ? parameter.Length : 0) + 3 /*size of ' ' \r\n*/);
+            StringBuilder stringBuilder = new StringBuilder(command.Length + ((parameter is not null) ? parameter.Length : 0) + 3 /*size of ' ' \r\n*/);
             stringBuilder.Append(command);
             if (!string.IsNullOrEmpty(parameter))
             {
@@ -1228,7 +1228,7 @@ namespace System.Net
         private TriState IsFtpDataStreamWriteable()
         {
             FtpWebRequest? request = _request as FtpWebRequest;
-            if (request != null)
+            if (request is not null)
             {
                 if (request.MethodInfo.IsUpload)
                 {

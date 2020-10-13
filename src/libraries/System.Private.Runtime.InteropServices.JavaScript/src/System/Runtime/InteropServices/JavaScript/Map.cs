@@ -106,14 +106,14 @@ namespace System.Runtime.InteropServices.JavaScript
             // Advance to the next item.
             public bool MoveNext()
             {
-                if (_mapIterator == null)
+                if (_mapIterator is null)
                     _mapIterator = (JSObject)_map.Invoke("entries");
 
                 using (var result = (JSObject)_mapIterator.Invoke("next"))
                 {
                     using (var resultValue = (Array)result.GetObjectProperty("value"))
                     {
-                        if (resultValue != null)
+                        if (resultValue is not null)
                         {
                             Key = resultValue[0];
                             Value = resultValue[1];
@@ -204,7 +204,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
                 public bool MoveNext()
                 {
-                    if (_mapItemIterator == null)
+                    if (_mapItemIterator is null)
                         _mapItemIterator = (JSObject)_mapItemCollection._map.Invoke(_mapItemCollection._iterator);
 
                     var done = false;

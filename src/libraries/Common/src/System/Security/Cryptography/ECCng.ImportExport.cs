@@ -22,7 +22,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(parameters.Curve.IsNamed);
 
-            bool includePrivateParameters = (parameters.D != null);
+            bool includePrivateParameters = (parameters.D is not null);
             byte[] blob;
             unsafe
             {
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(parameters.Curve.IsPrime);
 
-            bool includePrivateParameters = (parameters.D != null);
+            bool includePrivateParameters = (parameters.D is not null);
             ECCurve curve = parameters.Curve;
             byte[] blob;
             unsafe
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography
                     curve.G.Y!.Length +
                     curve.Order!.Length +
                     curve.Cofactor!.Length +
-                    (curve.Seed == null ? 0 : curve.Seed.Length) +
+                    (curve.Seed is null ? 0 : curve.Seed.Length) +
                     parameters.Q.X!.Length +
                     parameters.Q.Y!.Length;
 
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography
                         (ecdh ? KeyBlobMagicNumber.BCRYPT_ECDH_PUBLIC_GENERIC_MAGIC : KeyBlobMagicNumber.BCRYPT_ECDSA_PUBLIC_GENERIC_MAGIC);
                     pBcryptBlob->cbCofactor = curve.Cofactor.Length;
                     pBcryptBlob->cbFieldLength = parameters.Q.X.Length;
-                    pBcryptBlob->cbSeed = curve.Seed == null ? 0 : curve.Seed.Length;
+                    pBcryptBlob->cbSeed = curve.Seed is null ? 0 : curve.Seed.Length;
                     pBcryptBlob->cbSubgroupOrder = curve.Order.Length;
                     pBcryptBlob->CurveGenerationAlgId = GetHashAlgorithmId(curve.Hash);
                     pBcryptBlob->CurveType = ConvertToCurveTypeEnum(curve.CurveType);
@@ -133,7 +133,7 @@ namespace System.Security.Cryptography
                     Interop.BCrypt.Emit(blob, ref offset, curve.G.Y);
                     Interop.BCrypt.Emit(blob, ref offset, curve.Order);
                     Interop.BCrypt.Emit(blob, ref offset, curve.Cofactor);
-                    if (curve.Seed != null)
+                    if (curve.Seed is not null)
                     {
                         Interop.BCrypt.Emit(blob, ref offset, curve.Seed);
                     }
@@ -285,7 +285,7 @@ namespace System.Security.Cryptography
                     curve.G.Y!.Length +
                     curve.Order!.Length +
                     curve.Cofactor!.Length +
-                    (curve.Seed == null ? 0 : curve.Seed.Length);
+                    (curve.Seed is null ? 0 : curve.Seed.Length);
 
                 byte[] blob = new byte[blobSize];
                 fixed (byte* pBlob = &blob[0])
@@ -295,7 +295,7 @@ namespace System.Security.Cryptography
                     pBcryptBlob->Version = Interop.BCrypt.BCRYPT_ECC_PARAMETER_HEADER_V1;
                     pBcryptBlob->cbCofactor = curve.Cofactor.Length;
                     pBcryptBlob->cbFieldLength = curve.A.Length; // P, A, B, X, Y have the same length
-                    pBcryptBlob->cbSeed = curve.Seed == null ? 0 : curve.Seed.Length;
+                    pBcryptBlob->cbSeed = curve.Seed is null ? 0 : curve.Seed.Length;
                     pBcryptBlob->cbSubgroupOrder = curve.Order.Length;
                     pBcryptBlob->CurveGenerationAlgId = ECCng.GetHashAlgorithmId(curve.Hash);
                     pBcryptBlob->CurveType = ECCng.ConvertToCurveTypeEnum(curve.CurveType);
@@ -309,7 +309,7 @@ namespace System.Security.Cryptography
                     Interop.BCrypt.Emit(blob, ref offset, curve.G.Y);
                     Interop.BCrypt.Emit(blob, ref offset, curve.Order);
                     Interop.BCrypt.Emit(blob, ref offset, curve.Cofactor);
-                    if (curve.Seed != null)
+                    if (curve.Seed is not null)
                     {
                         Interop.BCrypt.Emit(blob, ref offset, curve.Seed);
                     }

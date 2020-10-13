@@ -24,9 +24,9 @@ namespace System.IO
         {
             byte[] result = new byte[_totalLength];
             int offset = 0;
-            for (MemoryChunk? chunk = _headChunk; chunk != null; chunk = chunk._next)
+            for (MemoryChunk? chunk = _headChunk; chunk is not null; chunk = chunk._next)
             {
-                Debug.Assert(chunk._next == null || chunk._freeOffset == chunk._buffer.Length);
+                Debug.Assert(chunk._next is null || chunk._freeOffset == chunk._buffer.Length);
                 Buffer.BlockCopy(chunk._buffer, 0, result, offset, chunk._freeOffset);
                 offset += chunk._freeOffset;
             }
@@ -37,7 +37,7 @@ namespace System.IO
         {
             while (count > 0)
             {
-                if (_currentChunk != null)
+                if (_currentChunk is not null)
                 {
                     int remaining = _currentChunk._buffer.Length - _currentChunk._freeOffset;
                     if (remaining > 0)
@@ -69,7 +69,7 @@ namespace System.IO
 
         private void AppendChunk(long count)
         {
-            int nextChunkLength = _currentChunk != null ? _currentChunk._buffer.Length * 2 : InitialChunkDefaultSize;
+            int nextChunkLength = _currentChunk is not null ? _currentChunk._buffer.Length * 2 : InitialChunkDefaultSize;
             if (count > nextChunkLength)
             {
                 nextChunkLength = (int)Math.Min(count, MaxChunkSize);
@@ -77,14 +77,14 @@ namespace System.IO
 
             MemoryChunk newChunk = new MemoryChunk(nextChunkLength);
 
-            if (_currentChunk == null)
+            if (_currentChunk is null)
             {
-                Debug.Assert(_headChunk == null);
+                Debug.Assert(_headChunk is null);
                 _headChunk = _currentChunk = newChunk;
             }
             else
             {
-                Debug.Assert(_headChunk != null);
+                Debug.Assert(_headChunk is not null);
                 _currentChunk._next = newChunk;
                 _currentChunk = newChunk;
             }
@@ -101,7 +101,7 @@ namespace System.IO
         public override long Seek(long offset, SeekOrigin origin) { throw new NotSupportedException(); }
         public override void SetLength(long value)
         {
-            if (_currentChunk != null) throw new NotSupportedException();
+            if (_currentChunk is not null) throw new NotSupportedException();
             AppendChunk(value);
         }
 

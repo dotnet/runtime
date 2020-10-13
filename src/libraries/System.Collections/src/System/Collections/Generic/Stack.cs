@@ -50,7 +50,7 @@ namespace System.Collections.Generic
         // pushed onto the stack in the same order they are read by the enumerator.
         public Stack(IEnumerable<T> collection)
         {
-            if (collection == null)
+            if (collection is null)
                 throw new ArgumentNullException(nameof(collection));
             _array = EnumerableHelpers.ToArray(collection, out _size);
         }
@@ -96,7 +96,7 @@ namespace System.Collections.Generic
         // Copies the stack into an array.
         public void CopyTo(T[] array, int arrayIndex)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -122,7 +122,7 @@ namespace System.Collections.Generic
 
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }

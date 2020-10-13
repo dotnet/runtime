@@ -69,7 +69,7 @@ namespace System.Xml.Xsl.XsltOld
             string namespaceURI = this.LookupNamespace(prefix);
             XmlQualifiedName qname = new XmlQualifiedName(name, namespaceURI);
             IXsltContextVariable? variable = _manager!.VariableScope.ResolveVariable(qname);
-            if (variable == null)
+            if (variable is null)
             {
                 throw XsltException.Create(SR.Xslt_InvalidVariable, qname.ToString());
             }
@@ -79,16 +79,16 @@ namespace System.Xml.Xsl.XsltOld
         internal object EvaluateVariable(VariableAction variable)
         {
             object result = _processor!.GetVariableValue(variable);
-            if (result == null && !variable.IsGlobal)
+            if (result is null && !variable.IsGlobal)
             {
                 // This was uninitialized local variable. May be we have sutable global var too?
                 VariableAction? global = _manager!.VariableScope.ResolveGlobalVariable(variable.Name!);
-                if (global != null)
+                if (global is not null)
                 {
                     result = _processor.GetVariableValue(global);
                 }
             }
-            if (result == null)
+            if (result is null)
             {
                 throw XsltException.Create(SR.Xslt_InvalidVariable, variable.Name!.ToString());
             }
@@ -129,7 +129,7 @@ namespace System.Xml.Xsl.XsltOld
                 // this is the only place we returning null in this function
                 return null;
             }
-            if (argTypes == null)
+            if (argTypes is null)
             {
                 // without arg types we can't do more detailed search
                 return methods[0];
@@ -187,10 +187,10 @@ namespace System.Xml.Xsl.XsltOld
         {
             FuncExtension? result = null;
             extension = _processor!.GetScriptObject(ns);
-            if (extension != null)
+            if (extension is not null)
             {
                 MethodInfo? method = FindBestMethod(extension.GetType().GetMethods(bindingFlags), /*ignoreCase:*/true, /*publicOnly:*/false, name, argTypes);
-                if (method != null)
+                if (method is not null)
                 {
                     result = new FuncExtension(extension, method);
                 }
@@ -198,10 +198,10 @@ namespace System.Xml.Xsl.XsltOld
             }
 
             extension = _processor.GetExtensionObject(ns);
-            if (extension != null)
+            if (extension is not null)
             {
                 MethodInfo? method = FindBestMethod(extension.GetType().GetMethods(bindingFlags), /*ignoreCase:*/false, /*publicOnly:*/true, name, argTypes);
-                if (method != null)
+                if (method is not null)
                 {
                     result = new FuncExtension(extension, method);
                 }
@@ -229,13 +229,13 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     object? extension;
                     func = GetExtentionMethod(ns, name, argTypes, out extension);
-                    if (extension == null)
+                    if (extension is null)
                     {
                         throw XsltException.Create(SR.Xslt_ScriptInvalidPrefix, prefix);  // BugBug: It's better to say that method 'name' not found
                     }
                 }
             }
-            if (func == null)
+            if (func is null)
             {
                 throw XsltException.Create(SR.Xslt_UnknownXsltFunction, name);
             }
@@ -251,7 +251,7 @@ namespace System.Xml.Xsl.XsltOld
         //
         private Uri ComposeUri(string thisUri, string baseUri)
         {
-            Debug.Assert(thisUri != null && baseUri != null);
+            Debug.Assert(thisUri is not null && baseUri is not null);
             XmlResolver resolver = _processor!.Resolver;
             Uri? uriBase = null;
             if (baseUri.Length != 0)
@@ -264,7 +264,7 @@ namespace System.Xml.Xsl.XsltOld
         private XPathNodeIterator Document(object arg0, string? baseUri)
         {
             XPathNodeIterator? it = arg0 as XPathNodeIterator;
-            if (it != null)
+            if (it is not null)
             {
                 ArrayList list = new ArrayList();
                 Hashtable documents = new Hashtable();
@@ -318,7 +318,7 @@ namespace System.Xml.Xsl.XsltOld
         private static void AddKeyValue(Hashtable keyTable, string key, XPathNavigator value, bool checkDuplicates)
         {
             ArrayList? list = (ArrayList?)keyTable[key];
-            if (list == null)
+            if (list is null)
             {
                 list = new ArrayList();
                 keyTable.Add(key, list);
@@ -353,7 +353,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             try
             {
-                if (matchExpr.MatchNode(node) == null)
+                if (matchExpr.MatchNode(node) is null)
                 {
                     return;
                 }
@@ -364,7 +364,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             object result = useExpr.Evaluate(new XPathSingletonIterator(node!, /*moved:*/true));
             XPathNodeIterator? it = result as XPathNodeIterator;
-            if (it != null)
+            if (it is not null)
             {
                 bool checkDuplicates = false;
                 while (it.MoveNext())
@@ -383,16 +383,16 @@ namespace System.Xml.Xsl.XsltOld
         private DecimalFormat ResolveFormatName(string? formatName)
         {
             string ns = string.Empty, local = string.Empty;
-            if (formatName != null)
+            if (formatName is not null)
             {
                 string prefix;
                 PrefixQName.ParseQualifiedName(formatName, out prefix, out local);
                 ns = LookupNamespace(prefix);
             }
             DecimalFormat? formatInfo = _processor!.RootAction!.GetDecimalFormat(new XmlQualifiedName(local, ns));
-            if (formatInfo == null)
+            if (formatInfo is null)
             {
-                if (formatName != null)
+                if (formatName is not null)
                 {
                     throw XsltException.Create(SR.Xslt_NoDecimalFormat, formatName);
                 }
@@ -477,21 +477,21 @@ namespace System.Xml.Xsl.XsltOld
                     name == "ceiling" ||
                     name == "round" ||
                     // XSLT functions:
-                    (s_FunctionTable[name] != null && name != "unparsed-entity-uri")
+                    (s_FunctionTable[name] is not null && name != "unparsed-entity-uri")
                 );
             }
             else
             {
                 // Is this script or extention function?
                 object? extension;
-                return GetExtentionMethod(ns, name, /*argTypes*/null, out extension) != null;
+                return GetExtentionMethod(ns, name, /*argTypes*/null, out extension) is not null;
             }
         }
 
         private XPathNodeIterator Current()
         {
             XPathNavigator? nav = _processor!.Current;
-            if (nav != null)
+            if (nav is not null)
             {
                 return new XPathSingletonIterator(nav.Clone());
             }
@@ -526,7 +526,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else
             {
-                if (urn == null && prefix != null)
+                if (urn is null && prefix is not null)
                 {
                     // if prefix exist it has to be mapped to namespace.
                     // Can it be "" here ?
@@ -628,7 +628,7 @@ namespace System.Xml.Xsl.XsltOld
             public static XPathNodeIterator ToIterator(object argument)
             {
                 XPathNodeIterator? it = argument as XPathNodeIterator;
-                if (it == null)
+                if (it is null)
                 {
                     throw XsltException.Create(SR.Xslt_NoNodeSetConversion);
                 }
@@ -638,7 +638,7 @@ namespace System.Xml.Xsl.XsltOld
             public static XPathNavigator ToNavigator(object argument)
             {
                 XPathNavigator? nav = argument as XPathNavigator;
-                if (nav == null)
+                if (nav is null)
                 {
                     throw XsltException.Create(SR.Xslt_NoNavigatorConversion);
                 }
@@ -647,7 +647,7 @@ namespace System.Xml.Xsl.XsltOld
 
             private static string IteratorToString(XPathNodeIterator it)
             {
-                Debug.Assert(it != null);
+                Debug.Assert(it is not null);
                 if (it.MoveNext())
                 {
                     return it.Current!.Value;
@@ -659,7 +659,7 @@ namespace System.Xml.Xsl.XsltOld
             public static string? ToString(object argument)
             {
                 XPathNodeIterator? it = argument as XPathNodeIterator;
-                if (it != null)
+                if (it is not null)
                 {
                     return IteratorToString(it);
                 }
@@ -672,12 +672,12 @@ namespace System.Xml.Xsl.XsltOld
             public static bool ToBoolean(object argument)
             {
                 XPathNodeIterator? it = argument as XPathNodeIterator;
-                if (it != null)
+                if (it is not null)
                 {
                     return Convert.ToBoolean(IteratorToString(it), CultureInfo.InvariantCulture);
                 }
                 XPathNavigator? nav = argument as XPathNavigator;
-                if (nav != null)
+                if (nav is not null)
                 {
                     return Convert.ToBoolean(nav.ToString(), CultureInfo.InvariantCulture);
                 }
@@ -687,12 +687,12 @@ namespace System.Xml.Xsl.XsltOld
             public static double ToNumber(object argument)
             {
                 XPathNodeIterator? it = argument as XPathNodeIterator;
-                if (it != null)
+                if (it is not null)
                 {
                     return XmlConvert.ToXPathDouble(IteratorToString(it));
                 }
                 XPathNavigator? nav = argument as XPathNavigator;
-                if (nav != null)
+                if (nav is not null)
                 {
                     return XmlConvert.ToXPathDouble(nav.ToString());
                 }
@@ -866,14 +866,14 @@ namespace System.Xml.Xsl.XsltOld
                     if (key.Name == keyName)
                     {
                         Hashtable? keyTable = key.GetKeys(root);
-                        if (keyTable == null)
+                        if (keyTable is null)
                         {
                             keyTable = xsltCompileContext.BuildKeyTable(key, root);
                             key.AddKey(root, keyTable);
                         }
 
                         XPathNodeIterator? it = args[1] as XPathNodeIterator;
-                        if (it != null)
+                        if (it is not null)
                         {
                             it = it.Clone();
                             while (it.MoveNext())
@@ -887,7 +887,7 @@ namespace System.Xml.Xsl.XsltOld
                         }
                     }
                 }
-                if (resultCollection == null)
+                if (resultCollection is null)
                 {
                     return XPathEmptyIterator.Instance;
                 }
@@ -903,11 +903,11 @@ namespace System.Xml.Xsl.XsltOld
 
             private static ArrayList? AddToList(ArrayList? resultCollection, ArrayList? newList)
             {
-                if (newList == null)
+                if (newList is null)
                 {
                     return resultCollection;
                 }
-                if (resultCollection == null)
+                if (resultCollection is null)
                 {
                     return newList;
                 }
@@ -953,8 +953,8 @@ namespace System.Xml.Xsl.XsltOld
 
             public FuncExtension(object extension, MethodInfo method)
             {
-                Debug.Assert(extension != null);
-                Debug.Assert(method != null);
+                Debug.Assert(extension is not null);
+                Debug.Assert(method is not null);
                 _extension = extension;
                 _method = method;
                 XPathResultType returnType = GetXPathType(method.ReturnType);

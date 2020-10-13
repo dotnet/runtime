@@ -16,7 +16,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         public UserPrincipal(PrincipalContext context) : base(context)
         {
-            if (context == null)
+            if (context is null)
                 throw new ArgumentException(SR.NullArguments);
 
             this.ContextRaw = context;
@@ -25,7 +25,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public UserPrincipal(PrincipalContext context, string samAccountName, string password, bool enabled) : this(context)
         {
-            if (samAccountName == null || password == null)
+            if (samAccountName is null || password is null)
                 throw new ArgumentException(SR.NullArguments);
 
             if (Context.ContextType != ContextType.ApplicationDirectory)
@@ -222,7 +222,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // We're running as the user, we know they must exist, but perhaps we don't have access
                 // to their user object
-                if (user == null)
+                if (user is null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Warn, "User", "Current: found no user");
                     throw new NoMatchingPrincipalException(SR.UserCouldNotFindCurrent);
@@ -304,7 +304,7 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             StoreCtx storeCtx = GetStoreCtxToUse();
-            Debug.Assert(storeCtx != null);
+            Debug.Assert(storeCtx is not null);
 
             GlobalDebug.WriteLineIf(
                     GlobalDebug.Info,
@@ -326,7 +326,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         internal override void LoadValueIntoProperty(string propertyName, object value)
         {
-            if (value == null)
+            if (value is null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "User", "LoadValueIntoProperty: name=" + propertyName + " value= null");
             }

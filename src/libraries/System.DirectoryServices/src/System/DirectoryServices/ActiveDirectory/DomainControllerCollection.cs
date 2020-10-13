@@ -11,7 +11,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal DomainControllerCollection(ArrayList values)
         {
-            if (values != null)
+            if (values is not null)
             {
                 InnerList.AddRange(values);
             }
@@ -21,7 +21,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(DomainController domainController)
         {
-            if (domainController == null)
+            if (domainController is null)
                 throw new ArgumentNullException(nameof(domainController));
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -37,7 +37,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(DomainController domainController)
         {
-            if (domainController == null)
+            if (domainController is null)
                 throw new ArgumentNullException(nameof(domainController));
 
             for (int i = 0; i < InnerList.Count; i++)

@@ -35,7 +35,7 @@ namespace Microsoft.Win32
         /// </summary>
         private static RegistryKey GetBaseKeyFromKeyName(string keyName, out string subKeyName)
         {
-            if (keyName == null)
+            if (keyName is null)
             {
                 throw new ArgumentNullException(nameof(keyName));
             }
@@ -55,7 +55,7 @@ namespace Microsoft.Win32
             }
 
             // If a potential base key was found, see if keyName actually starts with the potential base key's name.
-            if (baseKey != null && keyName.StartsWith(baseKey.Name, StringComparison.OrdinalIgnoreCase))
+            if (baseKey is not null && keyName.StartsWith(baseKey.Name, StringComparison.OrdinalIgnoreCase))
             {
                 subKeyName = (i == -1 || i == keyName.Length) ?
                     string.Empty :
@@ -88,7 +88,7 @@ namespace Microsoft.Win32
 
             using (RegistryKey? key = basekey.CreateSubKey(subKeyName))
             {
-                Debug.Assert(key != null, "An exception should be thrown if failed!");
+                Debug.Assert(key is not null, "An exception should be thrown if failed!");
                 key.SetValue(valueName, value, valueKind);
             }
         }

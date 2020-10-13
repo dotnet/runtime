@@ -28,11 +28,11 @@ namespace System.Net.Http.Headers
 
         protected TransferCodingHeaderValue(TransferCodingHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _value = source._value;
 
-            if (source._parameters != null)
+            if (source._parameters is not null)
             {
                 foreach (var parameter in source._parameters)
                 {
@@ -70,7 +70,7 @@ namespace System.Net.Http.Headers
         internal static int GetTransferCodingLength(string input, int startIndex,
             Func<TransferCodingHeaderValue> transferCodingCreator, out TransferCodingHeaderValue? parsedValue)
         {
-            Debug.Assert(transferCodingCreator != null);
+            Debug.Assert(transferCodingCreator is not null);
             Debug.Assert(startIndex >= 0);
 
             parsedValue = null;
@@ -131,7 +131,7 @@ namespace System.Net.Http.Headers
         {
             TransferCodingHeaderValue? other = obj as TransferCodingHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }

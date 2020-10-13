@@ -67,7 +67,7 @@ namespace System.Threading
                 throw new MissingMemberException(SR.Lazy_CreateValue_NoParameterlessCtorForT);
             }
 
-            Debug.Assert(target != null);
+            Debug.Assert(target is not null);
             return target;
         }
 
@@ -112,13 +112,13 @@ namespace System.Threading
         private static T EnsureInitializedCore<T>([NotNull] ref T? target, Func<T> valueFactory) where T : class
         {
             T value = valueFactory();
-            if (value == null)
+            if (value is null)
             {
                 throw new InvalidOperationException(SR.Lazy_StaticInit_InvalidOperation);
             }
 
             Interlocked.CompareExchange(ref target, value, null!);
-            Debug.Assert(target != null);
+            Debug.Assert(target is not null);
             return target;
         }
 
@@ -264,17 +264,17 @@ namespace System.Threading
             // Lazily initialize the lock if necessary and then double check if initialization is still required.
             lock (EnsureLockInitialized(ref syncLock))
             {
-                if (Volatile.Read(ref target) == null)
+                if (Volatile.Read(ref target) is null)
                 {
                     Volatile.Write(ref target, valueFactory());
-                    if (target == null)
+                    if (target is null)
                     {
                         throw new InvalidOperationException(SR.Lazy_StaticInit_InvalidOperation);
                     }
                 }
             }
 
-            Debug.Assert(target != null);
+            Debug.Assert(target is not null);
             return target;
         }
 

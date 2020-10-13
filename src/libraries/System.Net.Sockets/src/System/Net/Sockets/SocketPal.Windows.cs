@@ -60,7 +60,7 @@ namespace System.Net.Sockets
             ref SocketType socketType,
             ref ProtocolType protocolType)
         {
-            if (socketInformation.ProtocolInformation == null || socketInformation.ProtocolInformation.Length < sizeof(Interop.Winsock.WSAPROTOCOL_INFOW))
+            if (socketInformation.ProtocolInformation is null || socketInformation.ProtocolInformation.Length < sizeof(Interop.Winsock.WSAPROTOCOL_INFOW))
             {
                 throw new ArgumentException(SR.net_sockets_invalid_socketinformation, nameof(socketInformation));
             }
@@ -556,9 +556,9 @@ namespace System.Net.Sockets
                 handle,
                 ioControlCode,
                 optionInValue,
-                optionInValue != null ? optionInValue.Length : 0,
+                optionInValue is not null ? optionInValue.Length : 0,
                 optionOutValue,
-                optionOutValue != null ? optionOutValue.Length : 0,
+                optionOutValue is not null ? optionOutValue.Length : 0,
                 out optionLength,
                 IntPtr.Zero,
                 IntPtr.Zero);
@@ -603,7 +603,7 @@ namespace System.Net.Sockets
                     optionLevel,
                     optionName,
                     optionValuePtr,
-                    optionValue != null ? optionValue.Length : 0);
+                    optionValue is not null ? optionValue.Length : 0);
                 return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
             }
         }
@@ -635,7 +635,7 @@ namespace System.Net.Sockets
             ipmr.MulticastAddress = unchecked((int)optionValue.Group.Address);
 #pragma warning restore CS0618
 
-            if (optionValue.LocalAddress != null)
+            if (optionValue.LocalAddress is not null)
             {
 #pragma warning disable CS0618 // Address is marked obsolete
                 ipmr.InterfaceAddress = unchecked((int)optionValue.LocalAddress.Address);
@@ -653,7 +653,7 @@ namespace System.Net.Sockets
                                            (((uint) ipmr.MulticastAddress >> 8) & 0x0000FF00) |
                                            ((uint) ipmr.MulticastAddress >> 24));
 
-            if (optionValue.LocalAddress != null)
+            if (optionValue.LocalAddress is not null)
             {
                 ipmr.InterfaceAddress = (int) (((uint) ipmr.InterfaceAddress << 24) |
                                            (((uint) ipmr.InterfaceAddress & 0x0000FF00) << 8) |
@@ -914,7 +914,7 @@ namespace System.Net.Sockets
             static bool ShouldStackAlloc(IList? list, ref IntPtr[]? lease, out Span<IntPtr> span)
             {
                 int count;
-                if (list == null || (count = list.Count) == 0)
+                if (list is null || (count = list.Count) == 0)
                 {
                     span = default;
                     return false;
@@ -999,9 +999,9 @@ namespace System.Net.Sockets
             }
             finally
             {
-                if (leaseRead != null) ArrayPool<IntPtr>.Shared.Return(leaseRead);
-                if (leaseWrite != null) ArrayPool<IntPtr>.Shared.Return(leaseWrite);
-                if (leaseError != null) ArrayPool<IntPtr>.Shared.Return(leaseError);
+                if (leaseRead is not null) ArrayPool<IntPtr>.Shared.Return(leaseRead);
+                if (leaseWrite is not null) ArrayPool<IntPtr>.Shared.Return(leaseWrite);
+                if (leaseError is not null) ArrayPool<IntPtr>.Shared.Return(leaseError);
 
                 // This order matches with the AddToPollArray calls
                 // to release only the handles that were ref'd.
@@ -1114,14 +1114,14 @@ namespace System.Net.Sockets
             bool needTransmitFileBuffers = false;
             Interop.Mswsock.TransmitFileBuffers transmitFileBuffers = default(Interop.Mswsock.TransmitFileBuffers);
 
-            if (preBuffer != null && preBuffer.Length > 0)
+            if (preBuffer is not null && preBuffer.Length > 0)
             {
                 needTransmitFileBuffers = true;
                 transmitFileBuffers.Head = Marshal.UnsafeAddrOfPinnedArrayElement(preBuffer, 0);
                 transmitFileBuffers.HeadLength = preBuffer.Length;
             }
 
-            if (postBuffer != null && postBuffer.Length > 0)
+            if (postBuffer is not null && postBuffer.Length > 0)
             {
                 needTransmitFileBuffers = true;
                 transmitFileBuffers.Tail = Marshal.UnsafeAddrOfPinnedArrayElement(postBuffer, 0);
@@ -1132,7 +1132,7 @@ namespace System.Net.Sockets
             IntPtr fileHandlePtr = IntPtr.Zero;
             try
             {
-                if (fileHandle != null)
+                if (fileHandle is not null)
                 {
                     fileHandle.DangerousAddRef(ref releaseRef);
                     fileHandlePtr = fileHandle.DangerousGetHandle();

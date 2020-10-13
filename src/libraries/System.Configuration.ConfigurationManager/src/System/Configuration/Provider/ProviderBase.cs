@@ -25,13 +25,13 @@ namespace System.Configuration.Provider
                 _initialized = true;
             }
 
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException(SR.Config_provider_name_null_or_empty, nameof(name));
 
             _name = name;
-            if (config != null)
+            if (config is not null)
             {
                 _description = config["description"];
                 config.Remove("description");

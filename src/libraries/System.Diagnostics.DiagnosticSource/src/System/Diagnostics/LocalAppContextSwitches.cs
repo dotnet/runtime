@@ -16,7 +16,7 @@ namespace System
             if (!LocalAppContextSwitches.GetSwitchValue("System.Diagnostics.DefaultActivityIdFormatIsHierarchial", ref defaultActivityIdFormatIsHierarchial))
             {
                 string? switchValue = Environment.GetEnvironmentVariable("DOTNET_SYSTEM_DIAGNOSTICS_DEFAULTACTIVITYIDFORMATISHIERARCHIAL");
-                if (switchValue != null)
+                if (switchValue is not null)
                 {
                     defaultActivityIdFormatIsHierarchial = IsTrueStringIgnoreCase(switchValue) || switchValue.Equals("1");
                 }

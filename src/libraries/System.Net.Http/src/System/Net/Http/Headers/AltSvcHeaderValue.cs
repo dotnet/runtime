@@ -54,7 +54,7 @@ namespace System.Net.Http.Headers
 
             sb.Append(AlpnProtocolName);
             sb.Append("=\"");
-            if (Host != null) sb.Append(Host);
+            if (Host is not null) sb.Append(Host);
             sb.Append(':');
             sb.Append(Port.ToString(CultureInfo.InvariantCulture));
             sb.Append('"');

@@ -814,7 +814,7 @@ namespace System.Reflection.Metadata.Ecma335
         {
             int startRowNumber, endRowNumber;
 
-            if (this.PtrTable != null)
+            if (this.PtrTable is not null)
             {
                 this.Block.BinarySearchReferenceRange(
                     this.PtrTable,

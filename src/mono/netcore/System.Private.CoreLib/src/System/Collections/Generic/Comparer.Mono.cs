@@ -15,7 +15,7 @@ namespace System.Collections.Generic
             get
             {
                 Comparer<T>? comparer = defaultComparer;
-                if (comparer == null)
+                if (comparer is null)
                 {
                     // Do not use static constructor. Generic static constructors are problematic for Mono AOT.
                     Interlocked.CompareExchange(ref defaultComparer, CreateComparer(), null);

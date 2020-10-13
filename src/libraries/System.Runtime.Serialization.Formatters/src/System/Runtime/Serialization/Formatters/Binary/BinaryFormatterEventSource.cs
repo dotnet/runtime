@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         [NonEvent]
         public void SerializingObject(Type type)
         {
-            Debug.Assert(type != null);
+            Debug.Assert(type is not null);
 
             if (IsEnabled(EventLevel.Informational, Keywords.Serialization))
             {
@@ -79,7 +79,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         [NonEvent]
         public void DeserializingObject(Type type)
         {
-            Debug.Assert(type != null);
+            Debug.Assert(type is not null);
 
             if (IsEnabled(EventLevel.Informational, Keywords.Deserialization))
             {

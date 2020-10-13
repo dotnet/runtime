@@ -31,7 +31,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             get
             {
-                if (_metadataClassType == null)
+                if (_metadataClassType is null)
                 {
                     throw new InvalidOperationException(SR.MetadataTypeAttribute_TypeCannotBeNull);
                 }

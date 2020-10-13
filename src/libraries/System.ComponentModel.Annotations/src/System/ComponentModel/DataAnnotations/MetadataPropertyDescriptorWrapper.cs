@@ -17,7 +17,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             _descriptor = descriptor;
             var readOnlyAttribute = newAttributes.OfType<ReadOnlyAttribute>().FirstOrDefault();
-            _isReadOnly = (readOnlyAttribute != null ? readOnlyAttribute.IsReadOnly : false);
+            _isReadOnly = (readOnlyAttribute is not null ? readOnlyAttribute.IsReadOnly : false);
         }
 
         public override void AddValueChanged(object component, EventHandler handler) { _descriptor.AddValueChanged(component, handler); }

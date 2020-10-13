@@ -61,7 +61,7 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(modOpt))]  // Automatically keeps all previous fields too due to StructLayout
         internal FieldBuilder(TypeBuilder tb, string fieldName, Type type, FieldAttributes attributes, Type[]? modReq, Type[]? modOpt)
         {
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
             attrs = attributes & ~FieldAttributes.ReservedMask;
@@ -165,7 +165,7 @@ namespace System.Reflection.Emit
         {
             RejectIfCreated();
 
-            if (customBuilder == null)
+            if (customBuilder is null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
@@ -195,7 +195,7 @@ namespace System.Reflection.Emit
                 /* FIXME: check for errors */
                 return;
             }
-            if (cattrs != null)
+            if (cattrs is not null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
                 cattrs.CopyTo(new_array, 0);
@@ -245,7 +245,7 @@ namespace System.Reflection.Emit
             type = TypeBuilder.ResolveUserType(type);
             TypeBuilder.ResolveUserTypes(modReq);
             TypeBuilder.ResolveUserTypes(modOpt);
-            if (marshal_info != null)
+            if (marshal_info is not null)
                 marshal_info.marshaltyperef = TypeBuilder.ResolveUserType(marshal_info.marshaltyperef);
         }
 

@@ -16,15 +16,15 @@ namespace System.Configuration
         {
             get
             {
-                if (_callbackMethod == null)
+                if (_callbackMethod is null)
                 {
-                    if (_type == null) throw new ArgumentNullException(nameof(Type));
+                    if (_type is null) throw new ArgumentNullException(nameof(Type));
 
                     if (!string.IsNullOrEmpty(_callbackMethodName))
                     {
                         MethodInfo methodInfo = _type.GetMethod(_callbackMethodName, BindingFlags.Public | BindingFlags.Static);
 
-                        if (methodInfo != null)
+                        if (methodInfo is not null)
                         {
                             ParameterInfo[] parameters = methodInfo.GetParameters();
                             if ((parameters.Length == 1) && (parameters[0].ParameterType == typeof(object)))
@@ -35,7 +35,7 @@ namespace System.Configuration
                     }
                 }
 
-                if (_callbackMethod == null)
+                if (_callbackMethod is null)
                     throw new ArgumentException(SR.Format(SR.Validator_method_not_found, _callbackMethodName));
 
                 return new CallbackValidator(_callbackMethod);

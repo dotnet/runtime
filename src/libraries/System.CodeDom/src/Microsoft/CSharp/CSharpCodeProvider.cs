@@ -22,7 +22,7 @@ namespace Microsoft.CSharp
 
         public CSharpCodeProvider(IDictionary<string, string> providerOptions)
         {
-            if (providerOptions == null)
+            if (providerOptions is null)
             {
                 throw new ArgumentNullException(nameof(providerOptions));
             }

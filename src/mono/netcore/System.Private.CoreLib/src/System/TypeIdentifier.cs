@@ -77,7 +77,7 @@ namespace System
 
             public bool Equals(ITypeName? other)
             {
-                return other != null && DisplayName == other.DisplayName;
+                return other is not null && DisplayName == other.DisplayName;
             }
 
             public override int GetHashCode()

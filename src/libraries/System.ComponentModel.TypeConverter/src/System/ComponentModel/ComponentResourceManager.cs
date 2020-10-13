@@ -35,7 +35,7 @@ namespace System.ComponentModel
         {
             get
             {
-                if (_neutralResourcesCulture == null && MainAssembly != null)
+                if (_neutralResourcesCulture is null && MainAssembly is not null)
                 {
                     _neutralResourcesCulture = GetNeutralResourcesLanguage(MainAssembly);
                 }
@@ -62,15 +62,15 @@ namespace System.ComponentModel
         /// </summary>
         public virtual void ApplyResources(object value, string objectName, CultureInfo culture)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            if (objectName == null)
+            if (objectName is null)
             {
                 throw new ArgumentNullException(nameof(objectName));
             }
-            if (culture == null)
+            if (culture is null)
             {
                 culture = CultureInfo.CurrentUICulture;
             }
@@ -88,7 +88,7 @@ namespace System.ComponentModel
             // in an order consistent with codedom deserialization.
             SortedList<string, object> resources;
 
-            if (_resourceSets == null)
+            if (_resourceSets is null)
             {
                 _resourceSets = new Hashtable();
                 resources = FillResources(culture, out ResourceSet dummy);
@@ -97,7 +97,7 @@ namespace System.ComponentModel
             else
             {
                 resources = (SortedList<string, object>)_resourceSets[culture];
-                if (resources == null || (resources.Comparer.Equals(StringComparer.OrdinalIgnoreCase) != IgnoreCase))
+                if (resources is null || (resources.Comparer.Equals(StringComparer.OrdinalIgnoreCase) != IgnoreCase))
                 {
                     resources = FillResources(culture, out ResourceSet dummy);
                     _resourceSets[culture] = resources;
@@ -114,7 +114,7 @@ namespace System.ComponentModel
             if (value is IComponent)
             {
                 ISite site = ((IComponent)value).Site;
-                if (site != null && site.DesignMode)
+                if (site is not null && site.DesignMode)
                 {
                     componentReflect = true;
                 }
@@ -155,7 +155,7 @@ namespace System.ComponentModel
                 {
                     PropertyDescriptor prop = TypeDescriptor.GetProperties(value).Find(propName, IgnoreCase);
 
-                    if (prop != null && !prop.IsReadOnly && (kvp.Value == null || prop.PropertyType.IsInstanceOfType(kvp.Value)))
+                    if (prop is not null && !prop.IsReadOnly && (kvp.Value is null || prop.PropertyType.IsInstanceOfType(kvp.Value)))
                     {
                         prop.SetValue(value, kvp.Value);
                     }
@@ -177,10 +177,10 @@ namespace System.ComponentModel
                         {
                             prop = t.GetProperty(propName, flags | BindingFlags.DeclaredOnly);
                             t = t.BaseType;
-                        } while (prop == null && t != null && t != typeof(object));
+                        } while (prop is null && t is not null && t != typeof(object));
                     }
 
-                    if (prop != null && prop.CanWrite && (kvp.Value == null || prop.PropertyType.IsInstanceOfType(kvp.Value)))
+                    if (prop is not null && prop.CanWrite && (kvp.Value is null || prop.PropertyType.IsInstanceOfType(kvp.Value)))
                     {
                         prop.SetValue(value, kvp.Value, null);
                     }
@@ -227,7 +227,7 @@ namespace System.ComponentModel
             // parent resource set's instance was -- if they are the
             // same, we're looking at a cache we've already applied.
             resourceSet = GetResourceSet(culture, true, true);
-            if (resourceSet != null && !ReferenceEquals(resourceSet, parentResourceSet))
+            if (resourceSet is not null && !ReferenceEquals(resourceSet, parentResourceSet))
             {
                 foreach (DictionaryEntry de in resourceSet)
                 {

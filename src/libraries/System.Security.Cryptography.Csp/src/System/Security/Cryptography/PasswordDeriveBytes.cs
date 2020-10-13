@@ -58,7 +58,7 @@ namespace System.Security.Cryptography
             get { return _hashName!; }
             set
             {
-                if (_baseValue != null)
+                if (_baseValue is not null)
                     throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_ValuesFixed, nameof(HashName));
 
                 _hashName = value;
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography
             {
                 if (value <= 0)
                     throw new ArgumentOutOfRangeException(nameof(value), SR.ArgumentOutOfRange_NeedPosNum);
-                if (_baseValue != null)
+                if (_baseValue is not null)
                     throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_ValuesFixed, nameof(IterationCount));
 
                 _iterations = value;
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
             }
             set
             {
-                if (_baseValue != null)
+                if (_baseValue is not null)
                     throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_ValuesFixed, nameof(Salt));
 
                 _salt = (byte[]?)value?.Clone();
@@ -103,11 +103,11 @@ namespace System.Security.Cryptography
             byte[] rgb;
             byte[] rgbOut = new byte[cb];
 
-            if (_baseValue == null)
+            if (_baseValue is null)
             {
                 ComputeBaseValue();
             }
-            else if (_extra != null)
+            else if (_extra is not null)
             {
                 ib = _extra.Length - _extraCount;
                 if (ib >= cb)
@@ -160,22 +160,22 @@ namespace System.Security.Cryptography
             {
                 _hash?.Dispose();
 
-                if (_baseValue != null)
+                if (_baseValue is not null)
                 {
                     Array.Clear(_baseValue, 0, _baseValue.Length);
                 }
 
-                if (_extra != null)
+                if (_extra is not null)
                 {
                     Array.Clear(_extra, 0, _extra.Length);
                 }
 
-                if (_password != null)
+                if (_password is not null)
                 {
                     Array.Clear(_password, 0, _password.Length);
                 }
 
-                if (_salt != null)
+                if (_salt is not null)
                 {
                     Array.Clear(_salt, 0, _salt.Length);
                 }
@@ -184,11 +184,11 @@ namespace System.Security.Cryptography
 
         private byte[] ComputeBaseValue()
         {
-            Debug.Assert(_hash != null);
+            Debug.Assert(_hash is not null);
             _hash.Initialize();
             _hash.TransformBlock(_password, 0, _password.Length, _password, 0);
 
-            if (_salt != null)
+            if (_salt is not null)
             {
                 _hash.TransformBlock(_salt, 0, _salt.Length, _salt, 0);
             }

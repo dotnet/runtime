@@ -163,7 +163,7 @@ namespace System.Threading.Tasks
         /// <param name="segment">The segment in which to first attempt to store the item.</param>
         private void EnqueueSlow(T item, ref Segment segment)
         {
-            Debug.Assert(segment != null, "Expected a non-null segment.");
+            Debug.Assert(segment is not null, "Expected a non-null segment.");
 
             if (segment.m_state.m_firstCopy != segment.m_state.m_first)
             {
@@ -219,8 +219,8 @@ namespace System.Threading.Tasks
         /// <returns>true if an item could be dequeued; otherwise, false.</returns>
         private bool TryDequeueSlow(ref Segment segment, ref T[] array, [MaybeNullWhen(false)] out T result)
         {
-            Debug.Assert(segment != null, "Expected a non-null segment.");
-            Debug.Assert(array != null, "Expected a non-null item array.");
+            Debug.Assert(segment is not null, "Expected a non-null segment.");
+            Debug.Assert(array is not null, "Expected a non-null item array.");
 
             if (segment.m_state.m_last != segment.m_state.m_lastCopy)
             {
@@ -228,7 +228,7 @@ namespace System.Threading.Tasks
                 return TryDequeue(out result); // will only recur once for this dequeue operation
             }
 
-            if (segment.m_next != null && segment.m_state.m_first == segment.m_state.m_last)
+            if (segment.m_next is not null && segment.m_state.m_first == segment.m_state.m_last)
             {
                 segment = segment.m_next;
                 array = segment.m_array;
@@ -261,7 +261,7 @@ namespace System.Threading.Tasks
                 Segment head = m_head;
                 if (head.m_state.m_first != head.m_state.m_lastCopy) return false; // m_first is volatile, so the read of m_lastCopy cannot get reordered
                 if (head.m_state.m_first != head.m_state.m_last) return false;
-                return head.m_next == null;
+                return head.m_next is null;
             }
         }
 
@@ -269,7 +269,7 @@ namespace System.Threading.Tasks
         /// <remarks>WARNING: This should only be used for debugging purposes.  It is not safe to be used concurrently.</remarks>
         public IEnumerator<T> GetEnumerator()
         {
-            for (Segment? segment = m_head; segment != null; segment = segment.m_next)
+            for (Segment? segment = m_head; segment is not null; segment = segment.m_next)
             {
                 for (int pt = segment.m_state.m_first;
                     pt != segment.m_state.m_last;
@@ -290,7 +290,7 @@ namespace System.Threading.Tasks
             get
             {
                 int count = 0;
-                for (Segment? segment = m_head; segment != null; segment = segment.m_next)
+                for (Segment? segment = m_head; segment is not null; segment = segment.m_next)
                 {
                     int arraySize = segment.m_array.Length;
                     int first, last;
@@ -360,7 +360,7 @@ namespace System.Threading.Tasks
             /// <param name="queue">The queue being debugged.</param>
             public SingleProducerSingleConsumerQueue_DebugView(SingleProducerSingleConsumerQueue<T> queue)
             {
-                Debug.Assert(queue != null, "Expected a non-null queue.");
+                Debug.Assert(queue is not null, "Expected a non-null queue.");
                 m_queue = queue;
             }
         }

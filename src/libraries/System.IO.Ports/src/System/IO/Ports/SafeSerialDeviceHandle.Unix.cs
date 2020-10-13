@@ -18,7 +18,7 @@ namespace System.IO.Ports
 
         internal static SafeSerialDeviceHandle Open(string portName)
         {
-            Debug.Assert(portName != null);
+            Debug.Assert(portName is not null);
             SafeSerialDeviceHandle handle = Interop.Serial.SerialPortOpen(portName);
 
             if (handle.IsInvalid)

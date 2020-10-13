@@ -134,7 +134,7 @@ namespace System.IO.Compression
         internal unsafe void SetInput(byte* inputBufferPtr, int count)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(inputBufferPtr != null);
+            Debug.Assert(inputBufferPtr is not null);
 
             if (count == 0)
             {

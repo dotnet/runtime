@@ -30,9 +30,9 @@ namespace System.Security.Cryptography
 
         public static CngKey Open(string keyName, CngProvider provider, CngKeyOpenOptions openOptions)
         {
-            if (keyName == null)
+            if (keyName is null)
                 throw new ArgumentNullException(nameof(keyName));
-            if (provider == null)
+            if (provider is null)
                 throw new ArgumentNullException(nameof(provider));
 
             SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider();

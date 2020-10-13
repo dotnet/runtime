@@ -48,7 +48,7 @@ namespace System.Linq.Expressions
             {
                 Expression node = Visit(nodes[i]);
 
-                if (newNodes != null)
+                if (newNodes is not null)
                 {
                     newNodes[i] = node;
                 }
@@ -62,7 +62,7 @@ namespace System.Linq.Expressions
                     newNodes[i] = node;
                 }
             }
-            if (newNodes == null)
+            if (newNodes is null)
             {
                 return nodes;
             }
@@ -96,7 +96,7 @@ namespace System.Linq.Expressions
             for (int i = 0, n = nodes.Count; i < n; i++)
             {
                 T node = elementVisitor(nodes[i]);
-                if (newNodes != null)
+                if (newNodes is not null)
                 {
                     newNodes[i] = node;
                 }
@@ -110,7 +110,7 @@ namespace System.Linq.Expressions
                     newNodes[i] = node;
                 }
             }
-            if (newNodes == null)
+            if (newNodes is null)
             {
                 return nodes;
             }
@@ -129,12 +129,12 @@ namespace System.Linq.Expressions
         [return: NotNullIfNotNull("node")]
         public T? VisitAndConvert<T>(T? node, string? callerName) where T : Expression
         {
-            if (node == null)
+            if (node is null)
             {
                 return null;
             }
             node = (Visit(node) as T);
-            if (node == null)
+            if (node is null)
             {
                 throw Error.MustRewriteToSameNode(callerName, typeof(T), callerName);
             }
@@ -157,12 +157,12 @@ namespace System.Linq.Expressions
             for (int i = 0, n = nodes.Count; i < n; i++)
             {
                 T? node = Visit(nodes[i]) as T;
-                if (node == null)
+                if (node is null)
                 {
                     throw Error.MustRewriteToSameNode(callerName, typeof(T), callerName);
                 }
 
-                if (newNodes != null)
+                if (newNodes is not null)
                 {
                     newNodes[i] = node;
                 }
@@ -176,7 +176,7 @@ namespace System.Linq.Expressions
                     newNodes[i] = node;
                 }
             }
-            if (newNodes == null)
+            if (newNodes is null)
             {
                 return nodes;
             }
@@ -213,7 +213,7 @@ namespace System.Linq.Expressions
             Expression[]? nodes = ExpressionVisitorUtils.VisitBlockExpressions(this, node);
             ReadOnlyCollection<ParameterExpression> v = VisitAndConvert(node.Variables, "VisitBlock");
 
-            if (v == node.Variables && nodes == null)
+            if (v == node.Variables && nodes is null)
             {
                 return node;
             }
@@ -303,7 +303,7 @@ namespace System.Linq.Expressions
         {
             Expression e = Visit(node.Expression);
             Expression[]? a = VisitArguments(node);
-            if (e == node.Expression && a == null)
+            if (e == node.Expression && a is null)
             {
                 return node;
             }
@@ -346,7 +346,7 @@ namespace System.Linq.Expressions
             Expression body = Visit(node.Body);
             ParameterExpression[]? parameters = VisitParameters(node, nameof(VisitLambda));
 
-            if (body == node.Body && parameters == null)
+            if (body == node.Body && parameters is null)
             {
                 return node;
             }
@@ -386,7 +386,7 @@ namespace System.Linq.Expressions
         {
             Expression o = Visit(node.Object)!;
             Expression[]? a = VisitArguments(node);
-            if (o == node.Object && a == null)
+            if (o == node.Object && a is null)
             {
                 return node;
             }
@@ -404,7 +404,7 @@ namespace System.Linq.Expressions
         {
             Expression o = Visit(node.Object)!;
             Expression[]? a = VisitArguments(node);
-            if (o == node.Object && a == null)
+            if (o == node.Object && a is null)
             {
                 return node;
             }
@@ -432,7 +432,7 @@ namespace System.Linq.Expressions
         protected internal virtual Expression VisitNew(NewExpression node)
         {
             Expression[]? a = VisitArguments(node);
-            if (a == null)
+            if (a is null)
             {
                 return node;
             }
@@ -638,15 +638,15 @@ namespace System.Linq.Expressions
         //
         private static UnaryExpression ValidateUnary(UnaryExpression before, UnaryExpression after)
         {
-            if (before != after && before.Method == null)
+            if (before != after && before.Method is null)
             {
-                if (after.Method != null)
+                if (after.Method is not null)
                 {
                     throw Error.MustRewriteWithoutMethod(after.Method, nameof(VisitUnary));
                 }
 
                 // rethrow has null operand
-                if (before.Operand != null && after.Operand != null)
+                if (before.Operand is not null && after.Operand is not null)
                 {
                     ValidateChildType(before.Operand.Type, after.Operand.Type, nameof(VisitUnary));
                 }
@@ -656,9 +656,9 @@ namespace System.Linq.Expressions
 
         private static BinaryExpression ValidateBinary(BinaryExpression before, BinaryExpression after)
         {
-            if (before != after && before.Method == null)
+            if (before != after && before.Method is null)
             {
-                if (after.Method != null)
+                if (after.Method is not null)
                 {
                     throw Error.MustRewriteWithoutMethod(after.Method, nameof(VisitBinary));
                 }
@@ -674,7 +674,7 @@ namespace System.Linq.Expressions
         {
             // If we did not have a method, we don't want to bind to one,
             // it might not be the right thing.
-            if (before.Comparison == null && after.Comparison != null)
+            if (before.Comparison is null && after.Comparison is not null)
             {
                 throw Error.MustRewriteWithoutMethod(after.Comparison, nameof(VisitSwitch));
             }
@@ -712,7 +712,7 @@ namespace System.Linq.Expressions
         protected internal virtual Expression VisitDynamic(DynamicExpression node)
         {
             Expression[]? a = VisitArguments((IArgumentProvider)node);
-            if (a == null)
+            if (a is null)
             {
                 return node;
             }

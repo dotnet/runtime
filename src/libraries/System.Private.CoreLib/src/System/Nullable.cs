@@ -52,8 +52,8 @@ namespace System
 
         public override bool Equals(object? other)
         {
-            if (!hasValue) return other == null;
-            if (other == null) return false;
+            if (!hasValue) return other is null;
+            if (other is null) return false;
             return value.Equals(other);
         }
 

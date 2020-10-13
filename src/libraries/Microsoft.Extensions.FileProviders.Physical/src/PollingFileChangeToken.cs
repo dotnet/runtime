@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.FileProviders.Physical
             get => _tokenSource;
             set
             {
-                Debug.Assert(_tokenSource == null, "We expect CancellationTokenSource to be initialized exactly once.");
+                Debug.Assert(_tokenSource is null, "We expect CancellationTokenSource to be initialized exactly once.");
 
                 _tokenSource = value;
                 _changeToken = new CancellationChangeToken(_tokenSource.Token);

@@ -30,7 +30,7 @@ namespace System.Configuration
             // the appsettings add works more like a namevalue collection add in that it appends values
             // when add is called and teh key already exists.
             KeyValueConfigurationElement oldValue = (KeyValueConfigurationElement)BaseGet(keyValue.Key);
-            if (oldValue == null)
+            if (oldValue is null)
             {
                 BaseAdd(keyValue);
             }

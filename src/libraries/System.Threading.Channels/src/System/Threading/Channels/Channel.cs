@@ -16,7 +16,7 @@ namespace System.Threading.Channels
         /// <param name="options">Options that guide the behavior of the channel.</param>
         /// <returns>The created channel.</returns>
         public static Channel<T> CreateUnbounded<T>(UnboundedChannelOptions options) =>
-            options == null ? throw new ArgumentNullException(nameof(options)) :
+            options is null ? throw new ArgumentNullException(nameof(options)) :
             options.SingleReader ? new SingleConsumerUnboundedChannel<T>(!options.AllowSynchronousContinuations) :
             (Channel<T>)new UnboundedChannel<T>(!options.AllowSynchronousContinuations);
 
@@ -44,7 +44,7 @@ namespace System.Threading.Channels
         /// <returns>The created channel.</returns>
         public static Channel<T> CreateBounded<T>(BoundedChannelOptions options)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }

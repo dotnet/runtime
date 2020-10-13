@@ -17,12 +17,12 @@ namespace System.Xml.Xsl.Runtime
 
         public static XmlReader CreateReader(XmlReader baseReader, WhitespaceRuleLookup wsRules)
         {
-            if (wsRules == null)
+            if (wsRules is null)
             {
                 return baseReader;    // There is no rules to process
             }
             XmlReaderSettings readerSettings = baseReader.Settings;
-            if (readerSettings != null)
+            if (readerSettings is not null)
             {
                 if (readerSettings.IgnoreWhitespace)
                 {
@@ -32,12 +32,12 @@ namespace System.Xml.Xsl.Runtime
             else
             {
                 XmlTextReader txtReader = baseReader as XmlTextReader;
-                if (txtReader != null && txtReader.WhitespaceHandling == WhitespaceHandling.None)
+                if (txtReader is not null && txtReader.WhitespaceHandling == WhitespaceHandling.None)
                 {
                     return baseReader;        // V1 XmlTextReader that strips all WS
                 }
                 XmlTextReaderImpl txtReaderImpl = baseReader as XmlTextReaderImpl;
-                if (txtReaderImpl != null && txtReaderImpl.WhitespaceHandling == WhitespaceHandling.None)
+                if (txtReaderImpl is not null && txtReaderImpl.WhitespaceHandling == WhitespaceHandling.None)
                 {
                     return baseReader;        // XmlTextReaderImpl that strips all WS
                 }
@@ -47,7 +47,7 @@ namespace System.Xml.Xsl.Runtime
 
         private WhitespaceRuleReader(XmlReader baseReader, WhitespaceRuleLookup wsRules) : base(baseReader)
         {
-            Debug.Assert(wsRules != null);
+            Debug.Assert(wsRules is not null);
 
             _val = null;
             _stkStrip = new BitStack();
@@ -63,7 +63,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override string Value
         {
-            get { return (_val == null) ? base.Value : _val; }
+            get { return (_val is null) ? base.Value : _val; }
         }
 
         /// <summary>
@@ -110,7 +110,7 @@ namespace System.Xml.Xsl.Runtime
                                 goto case XmlNodeType.Whitespace;
 
                             // If whitespace was cached, then prepend it to text or CDATA value
-                            if (ws != null)
+                            if (ws is not null)
                                 _val = string.Concat(ws, base.Value);
 
                             // Preserve adjacent whitespace
@@ -128,7 +128,7 @@ namespace System.Xml.Xsl.Runtime
                         if (_shouldStrip)
                         {
                             // Save whitespace until it can be determined whether it will be stripped
-                            if (ws == null)
+                            if (ws is null)
                                 ws = base.Value;
                             else
                                 ws = string.Concat(ws, base.Value);

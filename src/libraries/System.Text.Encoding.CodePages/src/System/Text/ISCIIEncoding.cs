@@ -126,8 +126,8 @@ namespace System.Text
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, EncoderNLS? baseEncoder)
         {
             // Allow null bytes for counting
-            Debug.Assert(chars != null, "[ISCIIEncoding.GetBytes]chars!=null");
-            //            Debug.Assert(bytes != null, "[ISCIIEncoding.GetBytes]bytes!=null");
+            Debug.Assert(chars is not null, "[ISCIIEncoding.GetBytes]chars!=null");
+            //            Debug.Assert(bytes is not null, "[ISCIIEncoding.GetBytes]bytes!=null");
             Debug.Assert(charCount >= 0, "[ISCIIEncoding.GetBytes]charCount >=0");
             Debug.Assert(byteCount >= 0, "[ISCIIEncoding.GetBytes]byteCount >=0");
 
@@ -141,7 +141,7 @@ namespace System.Text
             bool bLastVirama = false;
 
             // Use encoder info if available
-            if (encoder != null)
+            if (encoder is not null)
             {
                 // Remember our old state
                 currentCodePage = encoder.currentCodePage;
@@ -261,7 +261,7 @@ namespace System.Text
             }
 
             // May need to switch back to our default code page
-            if (currentCodePage != _defaultCodePage && (encoder == null || encoder.MustFlush))
+            if (currentCodePage != _defaultCodePage && (encoder is null || encoder.MustFlush))
             {
                 // It changed, spit out the ATR
                 if (buffer.AddByte(ControlATR, (byte)(_defaultCodePage | ControlCodePageStart)))
@@ -277,7 +277,7 @@ namespace System.Text
             // Note that we don't care about flush because Virama and code page
             // changes are legal at the end.
             // Don't set encoder if we're just counting
-            if (encoder != null && bytes != null)
+            if (encoder is not null && bytes is not null)
             {
                 // Clear Encoder if necessary.
                 if (!buffer.fallbackBufferHelper.bUsedEncoder)
@@ -315,9 +315,9 @@ namespace System.Text
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             // Allow null chars for counting
-            Debug.Assert(bytes != null, "[ISCIIEncoding.GetChars]bytes is null");
+            Debug.Assert(bytes is not null, "[ISCIIEncoding.GetChars]bytes is null");
             Debug.Assert(byteCount >= 0, "[ISCIIEncoding.GetChars]byteCount is negative");
-            //            Debug.Assert(chars != null, "[ISCIIEncoding.GetChars]chars is null");
+            //            Debug.Assert(chars is not null, "[ISCIIEncoding.GetChars]chars is null");
             Debug.Assert(charCount >= 0, "[ISCIIEncoding.GetChars]charCount is negative");
 
             // Need the ISCII Decoder
@@ -334,7 +334,7 @@ namespace System.Text
             char cLastCharForNoNextNukta = '\0';
 
             // See if there's anything in our decoder
-            if (decoder != null)
+            if (decoder is not null)
             {
                 currentCodePage = decoder.currentCodePage;
                 bLastATR = decoder.bLastATR;
@@ -604,7 +604,7 @@ namespace System.Text
 
             // If we don't have a decoder, or if we had to flush, then we need to get rid
             // of last ATR, LastNoNextNukta and LastDevenagariExt.
-            if (decoder == null || decoder.MustFlush)
+            if (decoder is null || decoder.MustFlush)
             {
                 // If these fail (because of Convert with insufficient buffer), then they'll turn off MustFlush as well.
                 if (bLastATR)
@@ -642,7 +642,7 @@ namespace System.Text
 
             // Remember any left over stuff
             // (only remember if we aren't counting)
-            if (decoder != null && chars != null)
+            if (decoder is not null && chars is not null)
             {
                 // If not flushing or have state (from convert) then need to remember state
                 if (!decoder.MustFlush ||
@@ -714,7 +714,7 @@ namespace System.Text
             {
                 bLastVirama = false;
                 charLeftOver = (char)0;
-                if (m_fallbackBuffer != null)
+                if (m_fallbackBuffer is not null)
                     m_fallbackBuffer.Reset();
             }
 
@@ -754,7 +754,7 @@ namespace System.Text
                 bLastDevenagariStressAbbr = false;
                 cLastCharForNextNukta = '\0';
                 cLastCharForNoNextNukta = '\0';
-                if (m_fallbackBuffer != null)
+                if (m_fallbackBuffer is not null)
                     m_fallbackBuffer.Reset();
             }
 

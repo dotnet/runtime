@@ -28,7 +28,7 @@ namespace System.Net.Http.Headers
 
         public RangeConditionHeaderValue(EntityTagHeaderValue entityTag)
         {
-            if (entityTag == null)
+            if (entityTag is null)
             {
                 throw new ArgumentNullException(nameof(entityTag));
             }
@@ -43,7 +43,7 @@ namespace System.Net.Http.Headers
 
         private RangeConditionHeaderValue(RangeConditionHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _entityTag = source._entityTag;
             _date = source._date;
@@ -55,9 +55,9 @@ namespace System.Net.Http.Headers
 
         public override string ToString()
         {
-            if (_entityTag == null)
+            if (_entityTag is null)
             {
-                Debug.Assert(_date != null);
+                Debug.Assert(_date is not null);
                 return HttpDateParser.DateToString(_date.Value);
             }
             return _entityTag.ToString();
@@ -67,15 +67,15 @@ namespace System.Net.Http.Headers
         {
             RangeConditionHeaderValue? other = obj as RangeConditionHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
 
-            if (_entityTag == null)
+            if (_entityTag is null)
             {
-                Debug.Assert(_date != null);
-                return (other._date != null) && (_date.Value == other._date.Value);
+                Debug.Assert(_date is not null);
+                return (other._date is not null) && (_date.Value == other._date.Value);
             }
 
             return _entityTag.Equals(other._entityTag);
@@ -83,9 +83,9 @@ namespace System.Net.Http.Headers
 
         public override int GetHashCode()
         {
-            if (_entityTag == null)
+            if (_entityTag is null)
             {
-                Debug.Assert(_date != null);
+                Debug.Assert(_date is not null);
                 return _date.Value.GetHashCode();
             }
 
@@ -166,7 +166,7 @@ namespace System.Net.Http.Headers
             }
 
             RangeConditionHeaderValue result = new RangeConditionHeaderValue();
-            if (entityTag == null)
+            if (entityTag is null)
             {
                 result._date = date;
             }

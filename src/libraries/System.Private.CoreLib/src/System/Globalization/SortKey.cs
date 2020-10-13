@@ -46,11 +46,11 @@ namespace System.Globalization
         /// </summary>
         public static int Compare(SortKey sortkey1, SortKey sortkey2)
         {
-            if (sortkey1 == null)
+            if (sortkey1 is null)
             {
                 throw new ArgumentNullException(nameof(sortkey1));
             }
-            if (sortkey2 == null)
+            if (sortkey2 is null)
             {
                 throw new ArgumentNullException(nameof(sortkey2));
             }
@@ -58,8 +58,8 @@ namespace System.Globalization
             byte[] key1Data = sortkey1._keyData;
             byte[] key2Data = sortkey2._keyData;
 
-            Debug.Assert(key1Data != null, "key1Data != null");
-            Debug.Assert(key2Data != null, "key2Data != null");
+            Debug.Assert(key1Data is not null, "key1Data is not null");
+            Debug.Assert(key2Data is not null, "key2Data is not null");
 
             // SortKey comparisons are done as an ordinal comparison by the raw sort key bytes.
 

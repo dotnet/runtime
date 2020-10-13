@@ -39,18 +39,18 @@ namespace System.Collections.Generic
         internal override int IndexOf(T[] array, T value, int startIndex, int count)
         {
             int endIndex = startIndex + count;
-            if (value == null)
+            if (value is null)
             {
                 for (int i = startIndex; i < endIndex; i++)
                 {
-                    if (array[i] == null) return i;
+                    if (array[i] is null) return i;
                 }
             }
             else
             {
                 for (int i = startIndex; i < endIndex; i++)
                 {
-                    if (array[i] != null && array[i].Equals(value)) return i;
+                    if (array[i] is not null && array[i].Equals(value)) return i;
                 }
             }
             return -1;
@@ -59,18 +59,18 @@ namespace System.Collections.Generic
         internal override int LastIndexOf(T[] array, T value, int startIndex, int count)
         {
             int endIndex = startIndex - count + 1;
-            if (value == null)
+            if (value is null)
             {
                 for (int i = startIndex; i >= endIndex; i--)
                 {
-                    if (array[i] == null) return i;
+                    if (array[i] is null) return i;
                 }
             }
             else
             {
                 for (int i = startIndex; i >= endIndex; i--)
                 {
-                    if (array[i] != null && array[i].Equals(value)) return i;
+                    if (array[i] is not null && array[i].Equals(value)) return i;
                 }
             }
             return -1;
@@ -125,18 +125,18 @@ namespace System.Collections.Generic
         internal override int IndexOf(T[] array, T value, int startIndex, int count)
         {
             int endIndex = startIndex + count;
-            if (value == null)
+            if (value is null)
             {
                 for (int i = startIndex; i < endIndex; i++)
                 {
-                    if (array[i] == null) return i;
+                    if (array[i] is null) return i;
                 }
             }
             else
             {
                 for (int i = startIndex; i < endIndex; i++)
                 {
-                    if (array[i] != null && array[i]!.Equals(value)) return i; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    if (array[i] is not null && array[i]!.Equals(value)) return i; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                 }
             }
             return -1;
@@ -145,18 +145,18 @@ namespace System.Collections.Generic
         internal override int LastIndexOf(T[] array, T value, int startIndex, int count)
         {
             int endIndex = startIndex - count + 1;
-            if (value == null)
+            if (value is null)
             {
                 for (int i = startIndex; i >= endIndex; i--)
                 {
-                    if (array[i] == null) return i;
+                    if (array[i] is null) return i;
                 }
             }
             else
             {
                 for (int i = startIndex; i >= endIndex; i--)
                 {
-                    if (array[i] != null && array[i]!.Equals(value)) return i; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    if (array[i] is not null && array[i]!.Equals(value)) return i; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                 }
             }
             return -1;

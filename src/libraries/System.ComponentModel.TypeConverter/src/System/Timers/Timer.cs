@@ -75,7 +75,7 @@ namespace System.Timers
                 else if (_autoReset != value)
                 {
                     _autoReset = value;
-                    if (_timer != null)
+                    if (_timer is not null)
                     {
                         UpdateTimer();
                     }
@@ -107,7 +107,7 @@ namespace System.Timers
                 {
                     if (!value)
                     {
-                        if (_timer != null)
+                        if (_timer is not null)
                         {
                             _cookie = null;
                             _timer.Dispose();
@@ -118,7 +118,7 @@ namespace System.Timers
                     else
                     {
                         _enabled = value;
-                        if (_timer == null)
+                        if (_timer is null)
                         {
                             if (_disposed)
                             {
@@ -160,7 +160,7 @@ namespace System.Timers
                 }
 
                 _interval = value;
-                if (_timer != null)
+                if (_timer is not null)
                 {
                     UpdateTimer();
                 }
@@ -205,11 +205,11 @@ namespace System.Timers
         {
             get
             {
-                if (_synchronizingObject == null && DesignMode)
+                if (_synchronizingObject is null && DesignMode)
                 {
                     IDesignerHost host = (IDesignerHost)GetService(typeof(IDesignerHost));
                     object baseComponent = host?.RootComponent;
-                    if (baseComponent != null && baseComponent is ISynchronizeInvoke)
+                    if (baseComponent is not null && baseComponent is ISynchronizeInvoke)
                     {
                         _synchronizingObject = (ISynchronizeInvoke)baseComponent;
                     }
@@ -240,7 +240,7 @@ namespace System.Timers
             _delayedEnable = false;
             _enabled = false;
 
-            if (_timer != null)
+            if (_timer is not null)
             {
                 _timer.Dispose();
                 _timer = null;
@@ -295,9 +295,9 @@ namespace System.Timers
             {
                 // To avoid race between remove handler and raising the event
                 ElapsedEventHandler intervalElapsed = _onIntervalElapsed;
-                if (intervalElapsed != null)
+                if (intervalElapsed is not null)
                 {
-                    if (SynchronizingObject != null && SynchronizingObject.InvokeRequired)
+                    if (SynchronizingObject is not null && SynchronizingObject.InvokeRequired)
                         SynchronizingObject.BeginInvoke(intervalElapsed, new object[] { this, elapsedEventArgs });
                     else
                         intervalElapsed(this, elapsedEventArgs);

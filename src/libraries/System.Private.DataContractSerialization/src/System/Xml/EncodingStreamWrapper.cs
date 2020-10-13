@@ -64,7 +64,7 @@ namespace System.Xml
 
                 // Get the byte order mark so we can determine the encoding
                 // May want to try to delay allocating everything until we know the BOM
-                SupportedEncoding declEnc = ReadBOMEncoding(encoding == null);
+                SupportedEncoding declEnc = ReadBOMEncoding(encoding is null);
 
                 // Check that the expected encoding matches the decl encoding.
                 if (expectedEnc != SupportedEncoding.None && expectedEnc != declEnc)
@@ -150,7 +150,7 @@ namespace System.Xml
 
         private static SupportedEncoding GetSupportedEncoding(Encoding? encoding)
         {
-            if (encoding == null)
+            if (encoding is null)
                 return SupportedEncoding.None;
             else if (encoding.WebName == s_validatingUTF8.WebName)
                 return SupportedEncoding.UTF8;
@@ -297,14 +297,14 @@ namespace System.Xml
         private void EnsureBuffers()
         {
             EnsureByteBuffer();
-            if (_chars == null)
+            if (_chars is null)
                 _chars = new char[BufferLength];
         }
 
         [MemberNotNull(nameof(_bytes))]
         private void EnsureByteBuffer()
         {
-            if (_bytes != null)
+            if (_bytes is not null)
                 return;
 
             _bytes = new byte[BufferLength * 4];
@@ -457,7 +457,7 @@ namespace System.Xml
                 ArraySegment<byte> seg;
 
                 SupportedEncoding expectedEnc = GetSupportedEncoding(encoding);
-                SupportedEncoding declEnc = ReadBOMEncoding(buffer[offset], buffer[offset + 1], buffer[offset + 2], buffer[offset + 3], encoding == null, out preserve);
+                SupportedEncoding declEnc = ReadBOMEncoding(buffer[offset], buffer[offset + 1], buffer[offset + 2], buffer[offset + 3], encoding is null, out preserve);
                 if (expectedEnc != SupportedEncoding.None && expectedEnc != declEnc)
                     ThrowExpectedEncodingMismatch(expectedEnc, declEnc);
 
@@ -607,8 +607,8 @@ namespace System.Xml
                     if (_encodingCode == SupportedEncoding.UTF8)
                         return _stream.Read(buffer, offset, count);
 
-                    Debug.Assert(_bytes != null);
-                    Debug.Assert(_chars != null);
+                    Debug.Assert(_bytes is not null);
+                    Debug.Assert(_chars is not null);
 
                     // No more bytes than can be turned into characters
                     _byteOffset = 0;
@@ -642,7 +642,7 @@ namespace System.Xml
 
         private void CleanupCharBreak()
         {
-            Debug.Assert(_bytes != null);
+            Debug.Assert(_bytes is not null);
 
             int max = _byteOffset + _byteCount;
 
@@ -704,8 +704,8 @@ namespace System.Xml
                 return;
             }
 
-            Debug.Assert(_bytes != null);
-            Debug.Assert(_chars != null);
+            Debug.Assert(_bytes is not null);
+            Debug.Assert(_chars is not null);
 
             while (count > 0)
             {

@@ -103,7 +103,7 @@ namespace System.Collections.Generic
                 return Array.Empty<T>();
             }
 
-            Debug.Assert(_array != null); // Nonzero _count should imply this
+            Debug.Assert(_array is not null); // Nonzero _count should imply this
 
             T[] result = _array;
             if (_count < result.Length)

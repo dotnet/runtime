@@ -16,7 +16,7 @@ namespace System.Reflection.PortableExecutable
 
         internal PEMemoryBlock(AbstractMemoryBlock block, int offset = 0)
         {
-            Debug.Assert(block != null);
+            Debug.Assert(block is not null);
             Debug.Assert(offset >= 0 && offset <= block.Size);
 
             _block = block;
@@ -26,7 +26,7 @@ namespace System.Reflection.PortableExecutable
         /// <summary>
         /// Pointer to the first byte of the block.
         /// </summary>
-        public unsafe byte* Pointer => (_block != null) ? _block.Pointer + _offset : null;
+        public unsafe byte* Pointer => (_block is not null) ? _block.Pointer + _offset : null;
 
         /// <summary>
         /// Length of the block.

@@ -36,7 +36,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Oid GetSecretType()
         {
-            if (_secretTypeOid == null)
+            if (_secretTypeOid is null)
             {
                 _secretTypeOid = new Oid(_decoded.SecretTypeId);
             }
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static byte[] EncodeBagValue(Oid secretTypeOid, in ReadOnlyMemory<byte> secretValue)
         {
-            Debug.Assert(secretTypeOid != null && secretTypeOid.Value != null);
+            Debug.Assert(secretTypeOid is not null && secretTypeOid.Value is not null);
 
             SecretBagAsn secretBagAsn = new SecretBagAsn
             {

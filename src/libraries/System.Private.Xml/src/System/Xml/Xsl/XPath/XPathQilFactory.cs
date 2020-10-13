@@ -46,43 +46,43 @@ namespace System.Xml.Xsl.XPath
         [Conditional("DEBUG")]
         public void CheckNode(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType!.IsSingleton && n.XmlType.IsNode, "Must be a singleton node");
+            Debug.Assert(n is not null && n.XmlType!.IsSingleton && n.XmlType.IsNode, "Must be a singleton node");
         }
 
         [Conditional("DEBUG")]
         public void CheckNodeSet(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType!.IsNode, "Must be a node-set");
+            Debug.Assert(n is not null && n.XmlType!.IsNode, "Must be a node-set");
         }
 
         [Conditional("DEBUG")]
         public void CheckNodeNotRtf(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType!.IsSingleton && n.XmlType.IsNode && n.XmlType.IsNotRtf, "Must be a singleton node and not an Rtf");
+            Debug.Assert(n is not null && n.XmlType!.IsSingleton && n.XmlType.IsNode && n.XmlType.IsNotRtf, "Must be a singleton node and not an Rtf");
         }
 
         [Conditional("DEBUG")]
         public void CheckString(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.StringX), "Must be a singleton string");
+            Debug.Assert(n is not null && n.XmlType!.IsSubtypeOf(T.StringX), "Must be a singleton string");
         }
 
         [Conditional("DEBUG")]
         public void CheckStringS(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.StringXS), "Must be a sequence of strings");
+            Debug.Assert(n is not null && n.XmlType!.IsSubtypeOf(T.StringXS), "Must be a sequence of strings");
         }
 
         [Conditional("DEBUG")]
         public void CheckDouble(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.DoubleX), "Must be a singleton Double");
+            Debug.Assert(n is not null && n.XmlType!.IsSubtypeOf(T.DoubleX), "Must be a singleton Double");
         }
 
         [Conditional("DEBUG")]
         public void CheckBool(QilNode n)
         {
-            Debug.Assert(n != null && n.XmlType!.IsSubtypeOf(T.BooleanX), "Must be a singleton Bool");
+            Debug.Assert(n is not null && n.XmlType!.IsSubtypeOf(T.BooleanX), "Must be a singleton Bool");
         }
 
         // Return true if inferred type of the given expression is never a subtype of T.NodeS
@@ -308,7 +308,7 @@ namespace System.Xml.Xsl.XPath
         public QilNode EnsureNodeSet(QilNode n)
         {
             QilNode? result = TryEnsureNodeSet(n);
-            if (result == null)
+            if (result is null)
             {
                 throw new XPathCompileException(SR.XPath_NodeSetExpected);
             }

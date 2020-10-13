@@ -27,7 +27,7 @@ namespace System.Configuration
         {
             ValidatorUtils.HelperParamValidation(value, typeof(string));
 
-            if (value == null) return;
+            if (value is null) return;
 
             Match match = _regex.Match((string)value);
 

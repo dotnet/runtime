@@ -120,7 +120,7 @@ namespace System.Management
 
             // If the string passed is empty or null then throw
             // an exception
-            if (dmtf == null)
+            if (dmtf is null)
             {
                 throw new ArgumentOutOfRangeException(nameof(dmtfDate));
             }
@@ -318,7 +318,7 @@ namespace System.Management
             string dmtfts = dmtfTimespan;
             TimeSpan timespan = TimeSpan.MinValue;
 
-            if (dmtfts == null)
+            if (dmtfts is null)
             {
                 throw new System.ArgumentOutOfRangeException(nameof(dmtfTimespan));
             }

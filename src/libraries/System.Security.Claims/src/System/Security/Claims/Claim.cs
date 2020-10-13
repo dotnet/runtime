@@ -58,7 +58,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'reader' is null.</exception>
         public Claim(BinaryReader reader, ClaimsIdentity? subject)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -253,12 +253,12 @@ namespace System.Security.Claims
         /// <param name="propertyValue">The value associated with the property.</param>
         internal Claim(string type, string value, string? valueType, string? issuer, string? originalIssuer, ClaimsIdentity? subject, string? propertyKey, string? propertyValue)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
 
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -270,7 +270,7 @@ namespace System.Security.Claims
             _originalIssuer = string.IsNullOrEmpty(originalIssuer) ? _issuer : originalIssuer;
             _subject = subject;
 
-            if (propertyKey != null)
+            if (propertyKey is not null)
             {
                 _properties = new Dictionary<string, string>();
                 _properties[propertyKey] = propertyValue!;
@@ -284,7 +284,7 @@ namespace System.Security.Claims
         /// <remarks><see cref="Claim.Subject"/>will be set to 'null'.</remarks>
         /// <exception cref="ArgumentNullException">if 'other' is null.</exception>
         protected Claim(Claim other)
-            : this(other, (other == null ? (ClaimsIdentity?)null : other._subject))
+            : this(other, (other is null ? (ClaimsIdentity?)null : other._subject))
         {
         }
 
@@ -297,7 +297,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'other' is null.</exception>
         protected Claim(Claim other, ClaimsIdentity? subject)
         {
-            if (other == null)
+            if (other is null)
                 throw new ArgumentNullException(nameof(other));
 
             _issuer = other._issuer;
@@ -306,12 +306,12 @@ namespace System.Security.Claims
             _type = other._type;
             _value = other._value;
             _valueType = other._valueType;
-            if (other._properties != null)
+            if (other._properties is not null)
             {
                 _properties = new Dictionary<string, string>(other._properties);
             }
 
-            if (other._userSerializationData != null)
+            if (other._userSerializationData is not null)
             {
                 _userSerializationData = other._userSerializationData.Clone() as byte[];
             }
@@ -356,7 +356,7 @@ namespace System.Security.Claims
         {
             get
             {
-                if (_properties == null)
+                if (_properties is null)
                 {
                     _properties = new Dictionary<string, string>();
                 }
@@ -434,7 +434,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'writer' is null.</exception>
         protected virtual void WriteTo(BinaryWriter writer, byte[]? userData)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -476,13 +476,13 @@ namespace System.Security.Claims
                 mask |= SerializationMask.OriginalIssuer;
             }
 
-            if (_properties != null && _properties.Count > 0)
+            if (_properties is not null && _properties.Count > 0)
             {
                 numberOfPropertiesWritten++;
                 mask |= SerializationMask.HasProperties;
             }
 
-            if (userData != null && userData.Length > 0)
+            if (userData is not null && userData.Length > 0)
             {
                 numberOfPropertiesWritten++;
                 mask |= SerializationMask.UserData;

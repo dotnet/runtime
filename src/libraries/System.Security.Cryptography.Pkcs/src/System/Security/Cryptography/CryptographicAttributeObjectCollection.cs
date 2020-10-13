@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
 
         public int Add(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData == null)
+            if (asnEncodedData is null)
                 throw new ArgumentNullException(nameof(asnEncodedData));
 
             return Add(new CryptographicAttributeObject(asnEncodedData.Oid!, new AsnEncodedDataCollection(asnEncodedData)));
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
 
         public int Add(CryptographicAttributeObject attribute)
         {
-            if (attribute == null)
+            if (attribute is null)
                 throw new ArgumentNullException(nameof(attribute));
 
             //
@@ -73,13 +73,13 @@ namespace System.Security.Cryptography
 
         internal void AddWithoutMerge(CryptographicAttributeObject attribute)
         {
-            Debug.Assert(attribute != null);
+            Debug.Assert(attribute is not null);
             _list.Add(attribute);
         }
 
         public void Remove(CryptographicAttributeObject attribute)
         {
-            if (attribute == null)
+            if (attribute is null)
                 throw new ArgumentNullException(nameof(attribute));
 
             _list.Remove(attribute);
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography
 
         public void CopyTo(CryptographicAttributeObject[] array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);

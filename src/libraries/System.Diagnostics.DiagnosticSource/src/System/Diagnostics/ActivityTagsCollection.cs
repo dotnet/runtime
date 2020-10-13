@@ -36,14 +36,14 @@ namespace System.Diagnostics
         /// <param name="list">Initial list to store in the collection.</param>
         public ActivityTagsCollection(IEnumerable<KeyValuePair<string, object?>> list)
         {
-            if (list == null)
+            if (list is null)
             {
                 throw new ArgumentNullException(nameof(list));
             }
 
             foreach (KeyValuePair<string, object?> kvp in list)
             {
-                if (kvp.Key != null)
+                if (kvp.Key is not null)
                 {
                     this[kvp.Key] = kvp.Value;
                 }
@@ -68,13 +68,13 @@ namespace System.Diagnostics
 
             set
             {
-                if (key == null)
+                if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key));
                 }
 
                 int index = FindIndex(key);
-                if (value == null)
+                if (value is null)
                 {
                     if (index >= 0)
                     {
@@ -144,7 +144,7 @@ namespace System.Diagnostics
         /// <param name="value">The tag value.</param>
         public void Add(string key, object? value)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -164,7 +164,7 @@ namespace System.Diagnostics
         /// <param name="item">Key and value pair of the tag to add to the collection.</param>
         public void Add(KeyValuePair<string, object?> item)
         {
-            if (item.Key == null)
+            if (item.Key is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
@@ -221,7 +221,7 @@ namespace System.Diagnostics
         /// <returns>True if the item existed and removed. False otherwise.</returns>
         public bool Remove(string key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }

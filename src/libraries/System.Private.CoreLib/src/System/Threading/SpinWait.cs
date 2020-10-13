@@ -314,7 +314,7 @@ namespace System.Threading
                 throw new ArgumentOutOfRangeException(
                    nameof(millisecondsTimeout), millisecondsTimeout, SR.SpinWait_SpinUntil_TimeoutWrong);
             }
-            if (condition == null)
+            if (condition is null)
             {
                 throw new ArgumentNullException(nameof(condition), SR.SpinWait_SpinUntil_ArgumentNull);
             }

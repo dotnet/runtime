@@ -112,7 +112,7 @@ namespace System.Collections.Generic
         /// <param name="count">The number of items to copy.</param>
         public void CopyTo(T[] array, int arrayIndex, int count)
         {
-            Debug.Assert(array != null);
+            Debug.Assert(array is not null);
             Debug.Assert(arrayIndex >= 0);
             Debug.Assert(count >= 0 && count <= Count);
             Debug.Assert(array.Length - arrayIndex >= count);

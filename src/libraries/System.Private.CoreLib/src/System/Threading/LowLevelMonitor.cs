@@ -48,7 +48,7 @@ namespace System.Threading
         private void VerifyIsNotLockedByAnyThread()
         {
 #if DEBUG
-            Debug.Assert(_ownerThread == null);
+            Debug.Assert(_ownerThread is null);
 #endif
         }
 

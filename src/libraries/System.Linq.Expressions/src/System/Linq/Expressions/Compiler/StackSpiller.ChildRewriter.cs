@@ -121,7 +121,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 Debug.Assert(!_done);
 
-                if (expression == null)
+                if (expression is null)
                 {
                     _expressions[_expressionsCount++] = null;
                     return;
@@ -232,7 +232,7 @@ namespace System.Linq.Expressions.Compiler
             /// </returns>
             private static bool ShouldSaveToTemp(Expression? expression)
             {
-                if (expression == null)
+                if (expression is null)
                     return false;
 
                 // Some expressions have no side-effects and don't have to be
@@ -265,7 +265,7 @@ namespace System.Linq.Expressions.Compiler
                     case ExpressionType.MemberAccess:
                         var member = (MemberExpression)expression;
                         var field = member.Member as FieldInfo;
-                        if (field != null)
+                        if (field is not null)
                         {
                             // Emits ldc for the raw value of the field
                             if (field.IsLiteral)
@@ -350,7 +350,7 @@ namespace System.Linq.Expressions.Compiler
             /// </param>
             private void MarkRef(int index)
             {
-                if (_byRefs == null)
+                if (_byRefs is null)
                 {
                     _byRefs = new bool[_expressions.Length];
                 }

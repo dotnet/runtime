@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
     {
         public CngKeyBlobFormat(string format)
         {
-            if (format == null)
+            if (format is null)
                 throw new ArgumentNullException(nameof(format));
             if (format.Length == 0)
                 throw new ArgumentException(SR.Format(SR.Cryptography_InvalidKeyBlobFormat, format), nameof(format));
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography
 
         public override bool Equals(object? obj)
         {
-            Debug.Assert(_format != null);
+            Debug.Assert(_format is not null);
 
             return Equals(obj as CngKeyBlobFormat);
         }
@@ -75,13 +75,13 @@ namespace System.Security.Cryptography
 
         public override int GetHashCode()
         {
-            Debug.Assert(_format != null);
+            Debug.Assert(_format is not null);
             return _format.GetHashCode();
         }
 
         public override string ToString()
         {
-            Debug.Assert(_format != null);
+            Debug.Assert(_format is not null);
             return _format;
         }
 

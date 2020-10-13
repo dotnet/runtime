@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                if (_attributes == null)
+                if (_attributes is null)
                 {
                     _attributes = new CryptographicAttributeObjectCollection();
                 }
@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.Pkcs
 
             internal set
             {
-                Debug.Assert(value != null);
+                Debug.Assert(value is not null);
                 _attributes = value;
             }
         }
@@ -56,7 +56,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Oid GetBagId()
         {
-            if (_bagOid == null)
+            if (_bagOid is null)
             {
                 _bagOid = new Oid(_bagIdValue);
             }

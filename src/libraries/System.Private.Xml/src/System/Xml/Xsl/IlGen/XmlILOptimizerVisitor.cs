@@ -89,7 +89,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         protected override QilNode Visit(QilNode nd)
         {
-            if (nd != null)
+            if (nd is not null)
             {
                 if (this[XmlILOptimization.EliminateNamespaceDecl])
                 {
@@ -125,12 +125,12 @@ namespace System.Xml.Xsl.IlGen
         {
             QilNode? newNode = _subs.FindReplacement(oldNode);
 
-            if (newNode == null)
+            if (newNode is null)
                 newNode = oldNode;
 
             // Fold reference to constant value
             // This is done here because "p" currently cannot match references
-            if (this[XmlILOptimization.EliminateLiteralVariables] && newNode != null)
+            if (this[XmlILOptimization.EliminateLiteralVariables] && newNode is not null)
             {
                 if (newNode.NodeType == QilNodeType.Let || newNode.NodeType == QilNodeType.For)
                 {
@@ -173,7 +173,7 @@ namespace System.Xml.Xsl.IlGen
         {
             // Calculate MaybeSideEffects pattern.  This is done here rather than using P because every node needs
             // to compute it and P has no good way of matching every node type.
-            if (node != null)
+            if (node is not null)
             {
                 switch (node.NodeType)
                 {
@@ -202,7 +202,7 @@ namespace System.Xml.Xsl.IlGen
                         // If any of the visited node's children have side effects, then mark the node as also having side effects
                         for (int i = 0; i < node.Count; i++)
                         {
-                            if (node[i] != null)
+                            if (node[i] is not null)
                             {
                                 if (OptimizerPatterns.Read(node[i]).MatchesPattern(OptimizerPatternName.MaybeSideEffects))
                                     goto case QilNodeType.XsltInvokeLateBound;
@@ -4982,7 +4982,7 @@ namespace System.Xml.Xsl.IlGen
 
             protected override QilNode Visit(QilNode n)
             {
-                if (n == null)
+                if (n is null)
                     return null!;
 
                 if (n == this.target)
@@ -5066,7 +5066,7 @@ namespace System.Xml.Xsl.IlGen
             /// </summary>
             protected override bool OnFound(QilNode expr)
             {
-                return this.parent != null && this.parent.NodeType == QilNodeType.PositionOf;
+                return this.parent is not null && this.parent.NodeType == QilNodeType.PositionOf;
             }
         }
 

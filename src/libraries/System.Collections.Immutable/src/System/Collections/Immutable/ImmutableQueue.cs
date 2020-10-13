@@ -41,7 +41,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(items, nameof(items));
 
             var array = items as T[];
-            if (array != null)
+            if (array is not null)
             {
                 return Create(items: array);
             }

@@ -40,7 +40,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                 switch (keyEncryptionAlgorithm)
                 {
                     case Oids.Rsa:
-                        if (parameters != null &&
+                        if (parameters is not null &&
                             !parameters.Value.Span.SequenceEqual(s_rsaPkcsParameters))
                         {
                             exception = new CryptographicException(SR.Cryptography_Der_Invalid_Encoding);
@@ -89,13 +89,13 @@ namespace Internal.Cryptography.Pal.AnyOS
                         return null;
                 }
 
-                if (privateKey != null)
+                if (privateKey is not null)
                 {
                     return DecryptKey(privateKey, encryptionPadding, encryptedKey, out exception);
                 }
                 else
                 {
-                    Debug.Assert(cert != null);
+                    Debug.Assert(cert is not null);
                     using (RSA? rsa = cert.GetRSAPrivateKey())
                     {
                         return DecryptKey(rsa, encryptionPadding, encryptedKey, out exception);
@@ -183,7 +183,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             ReadOnlySpan<byte> encryptedKey,
             out Exception? exception)
         {
-            if (privateKey == null)
+            if (privateKey is null)
             {
                 exception = new CryptographicException(SR.Cryptography_Cms_Signing_RequiresPrivateKey);
                 return null;
@@ -214,7 +214,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             }
             finally
             {
-                if (cek != null)
+                if (cek is not null)
                 {
                     CryptoPool.Return(cek, cekLength);
                 }

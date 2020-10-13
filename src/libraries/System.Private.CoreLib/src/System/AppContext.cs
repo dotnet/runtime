@@ -31,10 +31,10 @@ namespace System
 
         public static object? GetData(string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
-            if (s_dataStore == null)
+            if (s_dataStore is null)
                 return null;
 
             object? data;
@@ -47,10 +47,10 @@ namespace System
 
         public static void SetData(string name, object? data)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
-            if (s_dataStore == null)
+            if (s_dataStore is null)
             {
                 Interlocked.CompareExchange(ref s_dataStore, new Dictionary<string, object?>(), null);
             }
@@ -84,12 +84,12 @@ namespace System
         /// <returns>A return value of true represents that the switch was set and <paramref name="isEnabled"/> contains the value of the switch</returns>
         public static bool TryGetSwitch(string switchName, out bool isEnabled)
         {
-            if (switchName == null)
+            if (switchName is null)
                 throw new ArgumentNullException(nameof(switchName));
             if (switchName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(switchName));
 
-            if (s_switches != null)
+            if (s_switches is not null)
             {
                 lock (s_switches)
                 {
@@ -114,12 +114,12 @@ namespace System
         /// <param name="isEnabled">The value to assign</param>
         public static void SetSwitch(string switchName, bool isEnabled)
         {
-            if (switchName == null)
+            if (switchName is null)
                 throw new ArgumentNullException(nameof(switchName));
             if (switchName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(switchName));
 
-            if (s_switches == null)
+            if (s_switches is null)
             {
                 // Compatibility switches are rarely used. Initialize the Dictionary lazily
                 Interlocked.CompareExchange(ref s_switches, new Dictionary<string, bool>(), null);
@@ -134,7 +134,7 @@ namespace System
 #if !CORERT
         internal static unsafe void Setup(char** pNames, char** pValues, int count)
         {
-            Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");
+            Debug.Assert(s_dataStore is null, "s_dataStore is not expected to be inited before Setup is called");
             s_dataStore = new Dictionary<string, object?>(count);
             for (int i = 0; i < count; i++)
             {

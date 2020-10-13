@@ -20,21 +20,21 @@ namespace System.CodeDom.Compiler
 
         protected CodeTypeDeclaration CurrentClass => _currentClass;
 
-        protected string CurrentTypeName => _currentClass != null ? _currentClass.Name : "<% unknown %>";
+        protected string CurrentTypeName => _currentClass is not null ? _currentClass.Name : "<% unknown %>";
 
         protected CodeTypeMember CurrentMember => _currentMember;
 
-        protected string CurrentMemberName => _currentMember != null ? _currentMember.Name : "<% unknown %>";
+        protected string CurrentMemberName => _currentMember is not null ? _currentMember.Name : "<% unknown %>";
 
-        protected bool IsCurrentInterface => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsInterface : false;
+        protected bool IsCurrentInterface => _currentClass is not null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsInterface : false;
 
-        protected bool IsCurrentClass => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsClass : false;
+        protected bool IsCurrentClass => _currentClass is not null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsClass : false;
 
-        protected bool IsCurrentStruct => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsStruct : false;
+        protected bool IsCurrentStruct => _currentClass is not null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsStruct : false;
 
-        protected bool IsCurrentEnum => _currentClass != null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsEnum : false;
+        protected bool IsCurrentEnum => _currentClass is not null && !(_currentClass is CodeTypeDelegate) ? _currentClass.IsEnum : false;
 
-        protected bool IsCurrentDelegate => _currentClass != null && _currentClass is CodeTypeDelegate;
+        protected bool IsCurrentDelegate => _currentClass is not null && _currentClass is CodeTypeDelegate;
 
         protected int Indent
         {
@@ -59,7 +59,7 @@ namespace System.CodeDom.Compiler
 
             GenerateCommentStatements(e.Comments);
 
-            if (e.LinePragma != null)
+            if (e.LinePragma is not null)
             {
                 GenerateLinePragmaStart(e.LinePragma);
             }
@@ -89,7 +89,7 @@ namespace System.CodeDom.Compiler
             _currentClass = e;
 
             GenerateTypeEnd(e);
-            if (e.LinePragma != null)
+            if (e.LinePragma is not null)
             {
                 GenerateLinePragmaEnd(e.LinePragma);
             }
@@ -129,7 +129,7 @@ namespace System.CodeDom.Compiler
 
             GenerateCommentStatements(member.Comments);
 
-            if (member.LinePragma != null)
+            if (member.LinePragma is not null)
             {
                 GenerateLinePragmaStart(member.LinePragma);
             }
@@ -184,7 +184,7 @@ namespace System.CodeDom.Compiler
                 Output.WriteLine();
             }
 
-            if (member.LinePragma != null)
+            if (member.LinePragma is not null)
             {
                 GenerateLinePragmaEnd(member.LinePragma);
             }
@@ -213,9 +213,9 @@ namespace System.CodeDom.Compiler
                     }
                     GenerateCommentStatements(_currentMember.Comments);
                     CodeTypeConstructor imp = (CodeTypeConstructor)current;
-                    if (imp.LinePragma != null) GenerateLinePragmaStart(imp.LinePragma);
+                    if (imp.LinePragma is not null) GenerateLinePragmaStart(imp.LinePragma);
                     GenerateTypeConstructor(imp);
-                    if (imp.LinePragma != null) GenerateLinePragmaEnd(imp.LinePragma);
+                    if (imp.LinePragma is not null) GenerateLinePragmaEnd(imp.LinePragma);
                     if (_currentMember.EndDirectives.Count > 0)
                     {
                         GenerateDirectives(_currentMember.EndDirectives);
@@ -234,7 +234,7 @@ namespace System.CodeDom.Compiler
 
         protected void GenerateTypes(CodeNamespace e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -254,11 +254,11 @@ namespace System.CodeDom.Compiler
         void ICodeGenerator.GenerateCodeFromType(CodeTypeDeclaration e, TextWriter w, CodeGeneratorOptions o)
         {
             bool setLocal = false;
-            if (_output != null && w != _output.InnerWriter)
+            if (_output is not null && w != _output.InnerWriter)
             {
                 throw new InvalidOperationException(SR.CodeGenOutputWriter);
             }
-            if (_output == null)
+            if (_output is null)
             {
                 setLocal = true;
                 _options = o ?? new CodeGeneratorOptions();
@@ -282,11 +282,11 @@ namespace System.CodeDom.Compiler
         void ICodeGenerator.GenerateCodeFromExpression(CodeExpression e, TextWriter w, CodeGeneratorOptions o)
         {
             bool setLocal = false;
-            if (_output != null && w != _output.InnerWriter)
+            if (_output is not null && w != _output.InnerWriter)
             {
                 throw new InvalidOperationException(SR.CodeGenOutputWriter);
             }
-            if (_output == null)
+            if (_output is null)
             {
                 setLocal = true;
                 _options = o ?? new CodeGeneratorOptions();
@@ -310,11 +310,11 @@ namespace System.CodeDom.Compiler
         void ICodeGenerator.GenerateCodeFromCompileUnit(CodeCompileUnit e, TextWriter w, CodeGeneratorOptions o)
         {
             bool setLocal = false;
-            if (_output != null && w != _output.InnerWriter)
+            if (_output is not null && w != _output.InnerWriter)
             {
                 throw new InvalidOperationException(SR.CodeGenOutputWriter);
             }
-            if (_output == null)
+            if (_output is null)
             {
                 setLocal = true;
                 _options = o ?? new CodeGeneratorOptions();
@@ -345,11 +345,11 @@ namespace System.CodeDom.Compiler
         void ICodeGenerator.GenerateCodeFromNamespace(CodeNamespace e, TextWriter w, CodeGeneratorOptions o)
         {
             bool setLocal = false;
-            if (_output != null && w != _output.InnerWriter)
+            if (_output is not null && w != _output.InnerWriter)
             {
                 throw new InvalidOperationException(SR.CodeGenOutputWriter);
             }
-            if (_output == null)
+            if (_output is null)
             {
                 setLocal = true;
                 _options = o ?? new CodeGeneratorOptions();
@@ -373,11 +373,11 @@ namespace System.CodeDom.Compiler
         void ICodeGenerator.GenerateCodeFromStatement(CodeStatement e, TextWriter w, CodeGeneratorOptions o)
         {
             bool setLocal = false;
-            if (_output != null && w != _output.InnerWriter)
+            if (_output is not null && w != _output.InnerWriter)
             {
                 throw new InvalidOperationException(SR.CodeGenOutputWriter);
             }
-            if (_output == null)
+            if (_output is null)
             {
                 setLocal = true;
                 _options = o ?? new CodeGeneratorOptions();
@@ -400,11 +400,11 @@ namespace System.CodeDom.Compiler
 
         public virtual void GenerateCodeFromMember(CodeTypeMember member, TextWriter writer, CodeGeneratorOptions options)
         {
-            if (member == null)
+            if (member is null)
             {
                 throw new ArgumentNullException(nameof(member));
             }
-            if (_output != null)
+            if (_output is not null)
             {
                 throw new InvalidOperationException(SR.CodeGenReentrance);
             }
@@ -453,12 +453,12 @@ namespace System.CodeDom.Compiler
                     }
                     GenerateCommentStatements(_currentMember.Comments);
                     CodeConstructor imp = (CodeConstructor)current;
-                    if (imp.LinePragma != null)
+                    if (imp.LinePragma is not null)
                     {
                         GenerateLinePragmaStart(imp.LinePragma);
                     }
                     GenerateConstructor(imp, e);
-                    if (imp.LinePragma != null)
+                    if (imp.LinePragma is not null)
                     {
                         GenerateLinePragmaEnd(imp.LinePragma);
                     }
@@ -488,12 +488,12 @@ namespace System.CodeDom.Compiler
                     }
                     GenerateCommentStatements(_currentMember.Comments);
                     CodeMemberEvent imp = (CodeMemberEvent)current;
-                    if (imp.LinePragma != null)
+                    if (imp.LinePragma is not null)
                     {
                         GenerateLinePragmaStart(imp.LinePragma);
                     }
                     GenerateEvent(imp, e);
-                    if (imp.LinePragma != null)
+                    if (imp.LinePragma is not null)
                     {
                         GenerateLinePragmaEnd(imp.LinePragma);
                     }
@@ -609,7 +609,7 @@ namespace System.CodeDom.Compiler
             }
             else
             {
-                if (e == null)
+                if (e is null)
                 {
                     throw new ArgumentNullException(nameof(e));
                 }
@@ -638,12 +638,12 @@ namespace System.CodeDom.Compiler
                     }
                     GenerateCommentStatements(_currentMember.Comments);
                     CodeMemberField imp = (CodeMemberField)current;
-                    if (imp.LinePragma != null)
+                    if (imp.LinePragma is not null)
                     {
                         GenerateLinePragmaStart(imp.LinePragma);
                     }
                     GenerateField(imp);
-                    if (imp.LinePragma != null)
+                    if (imp.LinePragma is not null)
                     {
                         GenerateLinePragmaEnd(imp.LinePragma);
                     }
@@ -675,7 +675,7 @@ namespace System.CodeDom.Compiler
                     }
                     GenerateCommentStatements(_currentMember.Comments);
                     CodeSnippetTypeMember imp = (CodeSnippetTypeMember)current;
-                    if (imp.LinePragma != null)
+                    if (imp.LinePragma is not null)
                     {
                         GenerateLinePragmaStart(imp.LinePragma);
                     }
@@ -691,7 +691,7 @@ namespace System.CodeDom.Compiler
                     // Restore the indent
                     Indent = savedIndent;
 
-                    if (imp.LinePragma != null)
+                    if (imp.LinePragma is not null)
                     {
                         GenerateLinePragmaEnd(imp.LinePragma);
                     }
@@ -712,19 +712,19 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateSnippetCompileUnit(CodeSnippetCompileUnit e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
 
             GenerateDirectives(e.StartDirectives);
 
-            if (e.LinePragma != null)
+            if (e.LinePragma is not null)
             {
                 GenerateLinePragmaStart(e.LinePragma);
             }
             Output.WriteLine(e.Value);
-            if (e.LinePragma != null)
+            if (e.LinePragma is not null)
             {
                 GenerateLinePragmaEnd(e.LinePragma);
             }
@@ -753,7 +753,7 @@ namespace System.CodeDom.Compiler
                     }
                     GenerateCommentStatements(_currentMember.Comments);
                     CodeMemberMethod imp = (CodeMemberMethod)current;
-                    if (imp.LinePragma != null)
+                    if (imp.LinePragma is not null)
                     {
                         GenerateLinePragmaStart(imp.LinePragma);
                     }
@@ -765,7 +765,7 @@ namespace System.CodeDom.Compiler
                     {
                         GenerateMethod(imp, e);
                     }
-                    if (imp.LinePragma != null)
+                    if (imp.LinePragma is not null)
                     {
                         GenerateLinePragmaEnd(imp.LinePragma);
                     }
@@ -802,7 +802,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateNamespace(CodeNamespace e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -819,20 +819,20 @@ namespace System.CodeDom.Compiler
 
         protected void GenerateNamespaceImports(CodeNamespace e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
 
             foreach (CodeNamespaceImport imp in e.Imports)
             {
-                if (imp.LinePragma != null)
+                if (imp.LinePragma is not null)
                 {
                     GenerateLinePragmaStart(imp.LinePragma);
                 }
 
                 GenerateNamespaceImport(imp);
-                if (imp.LinePragma != null)
+                if (imp.LinePragma is not null)
                 {
                     GenerateLinePragmaEnd(imp.LinePragma);
                 }
@@ -857,12 +857,12 @@ namespace System.CodeDom.Compiler
                     }
                     GenerateCommentStatements(_currentMember.Comments);
                     CodeMemberProperty imp = (CodeMemberProperty)current;
-                    if (imp.LinePragma != null)
+                    if (imp.LinePragma is not null)
                     {
                         GenerateLinePragmaStart(imp.LinePragma);
                     }
                     GenerateProperty(imp, e);
-                    if (imp.LinePragma != null)
+                    if (imp.LinePragma is not null)
                     {
                         GenerateLinePragmaEnd(imp.LinePragma);
                     }
@@ -876,7 +876,7 @@ namespace System.CodeDom.Compiler
 
         protected void GenerateStatement(CodeStatement e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -886,7 +886,7 @@ namespace System.CodeDom.Compiler
                 GenerateDirectives(e.StartDirectives);
             }
 
-            if (e.LinePragma != null)
+            if (e.LinePragma is not null)
             {
                 GenerateLinePragmaStart(e.LinePragma);
             }
@@ -961,7 +961,7 @@ namespace System.CodeDom.Compiler
                 throw new ArgumentException(SR.Format(SR.InvalidElementType, e.GetType().FullName), nameof(e));
             }
 
-            if (e.LinePragma != null)
+            if (e.LinePragma is not null)
             {
                 GenerateLinePragmaEnd(e.LinePragma);
             }
@@ -973,7 +973,7 @@ namespace System.CodeDom.Compiler
 
         protected void GenerateStatements(CodeStatementCollection stmts)
         {
-            if (stmts == null)
+            if (stmts is null)
             {
                 throw new ArgumentNullException(nameof(stmts));
             }
@@ -986,7 +986,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void OutputAttributeDeclarations(CodeAttributeDeclarationCollection attributes)
         {
-            if (attributes == null)
+            if (attributes is null)
             {
                 throw new ArgumentNullException(nameof(attributes));
             }
@@ -1033,7 +1033,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void OutputAttributeArgument(CodeAttributeArgument arg)
         {
-            if (arg == null)
+            if (arg is null)
             {
                 throw new ArgumentNullException(nameof(arg));
             }
@@ -1289,7 +1289,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void OutputParameters(CodeParameterDeclarationExpressionCollection parameters)
         {
-            if (parameters == null)
+            if (parameters is null)
             {
                 throw new ArgumentNullException(nameof(parameters));
             }
@@ -1327,7 +1327,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateBinaryOperatorExpression(CodeBinaryOperatorExpression e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1383,7 +1383,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateParameterDeclarationExpression(CodeParameterDeclarationExpression e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1400,7 +1400,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateDirectionExpression(CodeDirectionExpression e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1411,12 +1411,12 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GeneratePrimitiveExpression(CodePrimitiveExpression e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
 
-            if (e.Value == null)
+            if (e.Value is null)
             {
                 Output.Write(NullToken);
             }
@@ -1491,7 +1491,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateTypeReferenceExpression(CodeTypeReferenceExpression e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1501,7 +1501,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateTypeOfExpression(CodeTypeOfExpression e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1516,11 +1516,11 @@ namespace System.CodeDom.Compiler
         protected abstract void GenerateThrowExceptionStatement(CodeThrowExceptionStatement e);
         protected virtual void GenerateCommentStatement(CodeCommentStatement e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
-            if (e.Comment == null)
+            if (e.Comment is null)
             {
                 throw new ArgumentException(SR.Format(SR.Argument_NullComment, nameof(e)), nameof(e));
             }
@@ -1529,7 +1529,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateCommentStatements(CodeCommentStatementCollection e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1552,7 +1552,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateSnippetStatement(CodeSnippetStatement e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1576,7 +1576,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateCompileUnitStart(CodeCompileUnit e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }
@@ -1589,7 +1589,7 @@ namespace System.CodeDom.Compiler
 
         protected virtual void GenerateCompileUnitEnd(CodeCompileUnit e)
         {
-            if (e == null)
+            if (e is null)
             {
                 throw new ArgumentNullException(nameof(e));
             }

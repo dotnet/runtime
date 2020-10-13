@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
 
         public DSASignatureDeformatter(AsymmetricAlgorithm key) : this()
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             _dsaKey = (DSA)key;
@@ -23,7 +23,7 @@ namespace System.Security.Cryptography
 
         public override void SetKey(AsymmetricAlgorithm key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             _dsaKey = (DSA)key;
@@ -40,11 +40,11 @@ namespace System.Security.Cryptography
 
         public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
         {
-            if (rgbHash == null)
+            if (rgbHash is null)
                 throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
+            if (rgbSignature is null)
                 throw new ArgumentNullException(nameof(rgbSignature));
-            if (_dsaKey == null)
+            if (_dsaKey is null)
                 throw new CryptographicUnexpectedOperationException(SR.Cryptography_MissingKey);
 
             return _dsaKey.VerifySignature(rgbHash, rgbSignature);

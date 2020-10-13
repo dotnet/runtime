@@ -50,7 +50,7 @@ namespace System.Diagnostics.Tracing
         {
             if (e.Command == EventCommand.Enable || e.Command == EventCommand.Update)
             {
-                Debug.Assert(e.Arguments != null);
+                Debug.Assert(e.Arguments is not null);
 
                 if (e.Arguments.TryGetValue("EventCounterIntervalSec", out string? valueStr) && float.TryParse(valueStr, out float value))
                 {
@@ -81,7 +81,7 @@ namespace System.Diagnostics.Tracing
         private static void EnsureEventSourceIndexAvailable(int eventSourceIndex)
         {
             Debug.Assert(Monitor.IsEntered(s_counterGroupLock));
-            if (CounterGroup.s_counterGroups == null)
+            if (CounterGroup.s_counterGroups is null)
             {
                 CounterGroup.s_counterGroups = new WeakReference<CounterGroup>[eventSourceIndex + 1];
             }
@@ -99,9 +99,9 @@ namespace System.Diagnostics.Tracing
             {
                 int eventSourceIndex = EventListener.EventSourceIndex(eventSource);
                 EnsureEventSourceIndexAvailable(eventSourceIndex);
-                Debug.Assert(s_counterGroups != null);
+                Debug.Assert(s_counterGroups is not null);
                 WeakReference<CounterGroup> weakRef = CounterGroup.s_counterGroups[eventSourceIndex];
-                if (weakRef == null || !weakRef.TryGetTarget(out CounterGroup? ret))
+                if (weakRef is null || !weakRef.TryGetTarget(out CounterGroup? ret))
                 {
                     ret = new CounterGroup(eventSource);
                     CounterGroup.s_counterGroups[eventSourceIndex] = new WeakReference<CounterGroup>(ret);
@@ -144,7 +144,7 @@ namespace System.Diagnostics.Tracing
                     _nextPollingTimeStamp = DateTime.UtcNow + new TimeSpan(0, 0, (int)pollingIntervalInSeconds);
 
                     // Create the polling thread and init all the shared state if needed
-                    if (s_pollingThread == null)
+                    if (s_pollingThread is null)
                     {
                         s_pollingThreadSleepEvent = new AutoResetEvent(false);
                         s_counterGroupEnabledList = new List<CounterGroup>();

@@ -368,7 +368,7 @@ namespace System.Formats.Asn1
                 Slice(source, headerLength, contentLength),
                 ruleSet,
                 destination,
-                contentLength == null,
+                contentLength is null,
                 out int bytesRead,
                 out bytesWritten);
 
@@ -464,7 +464,7 @@ namespace System.Formats.Asn1
                 }
             }
 
-            if (rented != null)
+            if (rented is not null)
             {
                 CryptoPool.Return(rented, contents.Length);
             }
@@ -500,7 +500,7 @@ namespace System.Formats.Asn1
                 encoding,
                 out charsWritten);
 
-            if (rented != null)
+            if (rented is not null)
             {
                 CryptoPool.Return(rented, contents.Length);
             }

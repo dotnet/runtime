@@ -96,10 +96,10 @@ namespace System.Collections.Immutable
             // Note that this allows for automatic upcasting and downcasting of arrays
             // where the CLR allows it.
             var immutableArray = items as IImmutableArray;
-            if (immutableArray != null)
+            if (immutableArray is not null)
             {
                 Array? array = immutableArray.Array;
-                if (array == null)
+                if (array is null)
                 {
                     throw new InvalidOperationException(SR.InvalidOperationOnDefaultArray);
                 }
@@ -136,7 +136,7 @@ namespace System.Collections.Immutable
         /// <returns>An immutable array.</returns>
         public static ImmutableArray<T> Create<T>(params T[]? items)
         {
-            if (items == null || items.Length == 0)
+            if (items is null || items.Length == 0)
             {
                 return ImmutableArray<T>.Empty;
             }

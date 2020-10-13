@@ -81,11 +81,11 @@ internal static partial class Interop
                 curve.G.Y!, curve.G.Y!.Length,
                 curve.Order!, curve.Order!.Length,
                 curve.Cofactor, curve.Cofactor!.Length,
-                curve.Seed, curve.Seed == null ? 0 : curve.Seed.Length);
+                curve.Seed, curve.Seed is null ? 0 : curve.Seed.Length);
 
-            if (key == null || key.IsInvalid)
+            if (key is null || key.IsInvalid)
             {
-                if (key != null)
+                if (key is not null)
                     key.Dispose();
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }

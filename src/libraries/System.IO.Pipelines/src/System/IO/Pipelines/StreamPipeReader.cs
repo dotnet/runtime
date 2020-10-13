@@ -42,7 +42,7 @@ namespace System.IO.Pipelines
         {
             InnerStream = readingStream ?? throw new ArgumentNullException(nameof(readingStream));
 
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }
@@ -50,7 +50,7 @@ namespace System.IO.Pipelines
             _bufferSegmentPool = new BufferSegmentStack(InitialSegmentPoolSize);
             _minimumReadThreshold = Math.Min(options.MinimumReadSize, options.BufferSize);
             _pool = options.Pool == MemoryPool<byte>.Shared ? null : options.Pool;
-            _bufferSize = _pool == null ? options.BufferSize : Math.Min(options.BufferSize, _pool.MaxBufferSize);
+            _bufferSize = _pool is null ? options.BufferSize : Math.Min(options.BufferSize, _pool.MaxBufferSize);
             _leaveOpen = options.LeaveOpen;
         }
 
@@ -71,7 +71,7 @@ namespace System.IO.Pipelines
             {
                 lock (_lock)
                 {
-                    if (_internalTokenSource == null)
+                    if (_internalTokenSource is null)
                     {
                         _internalTokenSource = new CancellationTokenSource();
                     }
@@ -90,12 +90,12 @@ namespace System.IO.Pipelines
 
         private void AdvanceTo(BufferSegment? consumedSegment, int consumedIndex, BufferSegment? examinedSegment, int examinedIndex)
         {
-            if (consumedSegment == null || examinedSegment == null)
+            if (consumedSegment is null || examinedSegment is null)
             {
                 return;
             }
 
-            if (_readHead == null)
+            if (_readHead is null)
             {
                 ThrowHelper.ThrowInvalidOperationException_AdvanceToInvalidCursor();
             }
@@ -172,7 +172,7 @@ namespace System.IO.Pipelines
             _isReaderCompleted = true;
 
             BufferSegment? segment = _readHead;
-            while (segment != null)
+            while (segment is not null)
             {
                 BufferSegment returnSegment = segment;
                 segment = segment.NextSegment;
@@ -284,7 +284,7 @@ namespace System.IO.Pipelines
                     ClearCancellationToken();
                 }
 
-                ReadOnlySequence<byte> buffer = _readHead == null ? default : GetCurrentReadOnlySequence();
+                ReadOnlySequence<byte> buffer = _readHead is null ? default : GetCurrentReadOnlySequence();
 
                 result = new ReadResult(buffer, isCancellationRequested, _isStreamCompleted);
                 return true;
@@ -296,21 +296,21 @@ namespace System.IO.Pipelines
 
         private ReadOnlySequence<byte> GetCurrentReadOnlySequence()
         {
-            Debug.Assert(_readHead != null &&_readTail != null);
+            Debug.Assert(_readHead is not null &&_readTail is not null);
             return new ReadOnlySequence<byte>(_readHead, _readIndex, _readTail, _readTail.End);
         }
 
         private void AllocateReadTail()
         {
-            if (_readHead == null)
+            if (_readHead is null)
             {
-                Debug.Assert(_readTail == null);
+                Debug.Assert(_readTail is null);
                 _readHead = AllocateSegment();
                 _readTail = _readHead;
             }
             else
             {
-                Debug.Assert(_readTail != null);
+                Debug.Assert(_readTail is not null);
                 if (_readTail.WritableBytes < _minimumReadThreshold)
                 {
                     BufferSegment nextSegment = AllocateSegment();

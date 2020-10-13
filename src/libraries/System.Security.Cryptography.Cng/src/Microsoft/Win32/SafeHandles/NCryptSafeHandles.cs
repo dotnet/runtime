@@ -73,7 +73,7 @@ namespace Microsoft.Win32.SafeHandles
         protected SafeNCryptHandle(IntPtr handle, SafeHandle parentHandle)
             : base(true)
         {
-            if (parentHandle == null)
+            if (parentHandle is null)
                 throw new ArgumentNullException(nameof(parentHandle));
             if (parentHandle.IsClosed || parentHandle.IsInvalid)
                 throw new ArgumentException(SR.Argument_Invalid_SafeHandleInvalidOrClosed, nameof(parentHandle));
@@ -103,9 +103,9 @@ namespace Microsoft.Win32.SafeHandles
         {
             get
             {
-                Debug.Assert((_ownershipState == OwnershipState.Duplicate && _holder != null) ||
-                             (_ownershipState != OwnershipState.Duplicate && _holder == null));
-                Debug.Assert(_holder == null || _holder._ownershipState == OwnershipState.Holder);
+                Debug.Assert((_ownershipState == OwnershipState.Duplicate && _holder is not null) ||
+                             (_ownershipState != OwnershipState.Duplicate && _holder is null));
+                Debug.Assert(_holder is null || _holder._ownershipState == OwnershipState.Holder);
 
                 return _holder;
             }
@@ -136,7 +136,7 @@ namespace Microsoft.Win32.SafeHandles
                 {
                     // Owner handles do not have a holder
                     case OwnershipState.Owner:
-                        return Holder == null && !IsInvalid && !IsClosed;
+                        return Holder is null && !IsInvalid && !IsClosed;
 
                     // Duplicate handles have valid open holders with the same raw handle value,
                     // and should not be tracking a distinct parent.
@@ -147,19 +147,19 @@ namespace Microsoft.Win32.SafeHandles
                         {
                             IntPtr holderRawHandle = IntPtr.Zero;
 
-                            if (Holder != null)
+                            if (Holder is not null)
                             {
                                 Holder.DangerousAddRef(ref acquiredHolder);
                                 holderRawHandle = Holder.DangerousGetHandle();
                             }
 
 
-                            bool holderValid = Holder != null &&
+                            bool holderValid = Holder is not null &&
                                                !Holder.IsInvalid &&
                                                !Holder.IsClosed &&
                                                holderRawHandle != IntPtr.Zero &&
                                                holderRawHandle == handle &&
-                                               _parentHandle == null;
+                                               _parentHandle is null;
 
                             return holderValid && !IsInvalid && !IsClosed;
                         }
@@ -173,7 +173,7 @@ namespace Microsoft.Win32.SafeHandles
 
                     // Holder handles do not have a holder
                     case OwnershipState.Holder:
-                        return Holder == null && !IsInvalid && !IsClosed;
+                        return Holder is null && !IsInvalid && !IsClosed;
 
                     // Unknown ownership state
                     default:
@@ -273,7 +273,7 @@ namespace Microsoft.Win32.SafeHandles
 
 
             // Move the parent handle to the Holder
-            if (_parentHandle != null)
+            if (_parentHandle is not null)
             {
                 holder._parentHandle = _parentHandle;
                 _parentHandle = null;
@@ -313,7 +313,7 @@ namespace Microsoft.Win32.SafeHandles
                 Holder!.DangerousRelease();
                 return true;
             }
-            else if (_parentHandle != null)
+            else if (_parentHandle is not null)
             {
                 _parentHandle.DangerousRelease();
                 return true;

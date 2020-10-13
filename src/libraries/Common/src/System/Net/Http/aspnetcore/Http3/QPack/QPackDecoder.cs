@@ -148,19 +148,19 @@ namespace System.Net.Http.QPack
 
         public void Dispose()
         {
-            if (_stringOctets != null)
+            if (_stringOctets is not null)
             {
                 Pool.Return(_stringOctets, true);
                 _stringOctets = null!;
             }
 
-            if (_headerNameOctets != null)
+            if (_headerNameOctets is not null)
             {
                 Pool.Return(_headerNameOctets, true);
                 _headerNameOctets = null!;
             }
 
-            if (_headerValueOctets != null)
+            if (_headerValueOctets is not null)
             {
                 Pool.Return(_headerValueOctets, true);
                 _headerValueOctets = null!;

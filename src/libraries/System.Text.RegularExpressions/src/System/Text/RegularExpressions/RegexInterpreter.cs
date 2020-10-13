@@ -23,8 +23,8 @@ namespace System.Text.RegularExpressions
 
         public RegexInterpreter(RegexCode code, CultureInfo culture)
         {
-            Debug.Assert(code != null, "code must not be null.");
-            Debug.Assert(culture != null, "culture must not be null.");
+            Debug.Assert(code is not null, "code must not be null.");
+            Debug.Assert(culture is not null, "culture must not be null.");
 
             _code = code;
             _textInfo = culture.TextInfo;
@@ -388,7 +388,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 return
-                    _code.BoyerMoorePrefix == null || // found a valid start or end anchor
+                    _code.BoyerMoorePrefix is null || // found a valid start or end anchor
                     _code.BoyerMoorePrefix.IsMatch(runtext!, runtextpos, runtextbeg, runtextend);
             }
 
@@ -416,7 +416,7 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            if (_code.BoyerMoorePrefix != null)
+            if (_code.BoyerMoorePrefix is not null)
             {
                 runtextpos = _code.BoyerMoorePrefix.Scan(runtext!, runtextpos, runtextbeg, runtextend);
 

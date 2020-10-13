@@ -19,7 +19,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal static Action BuiltInRule()
         {
-            Debug.Assert(s_BuiltInRule != null);
+            Debug.Assert(s_BuiltInRule is not null);
             return s_BuiltInRule;
         }
 
@@ -53,13 +53,13 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             switch (frame.State)
             {
                 case Initialized:
-                    Debug.Assert(frame != null);
-                    Debug.Assert(frame.NodeSet != null);
+                    Debug.Assert(frame is not null);
+                    Debug.Assert(frame.NodeSet is not null);
 
                     string? value = processor.ValueOf(frame, _selectKey);
 
@@ -75,7 +75,7 @@ namespace System.Xml.Xsl.XsltOld
                     break;
 
                 case ResultStored:
-                    Debug.Assert(frame.StoredOutput != null);
+                    Debug.Assert(frame.StoredOutput is not null);
                     processor.TextEvent(frame.StoredOutput);
                     frame.Finished();
                     break;
@@ -92,13 +92,13 @@ namespace System.Xml.Xsl.XsltOld
         private const int ResultStored = 2;
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             switch (frame.State)
             {
                 case Initialized:
-                    Debug.Assert(frame != null);
-                    Debug.Assert(frame.NodeSet != null);
+                    Debug.Assert(frame is not null);
+                    Debug.Assert(frame.NodeSet is not null);
 
                     string value = processor.ValueOf(frame.NodeSet.Current!);
 
@@ -114,7 +114,7 @@ namespace System.Xml.Xsl.XsltOld
                     break;
 
                 case ResultStored:
-                    Debug.Assert(frame.StoredOutput != null);
+                    Debug.Assert(frame.StoredOutput is not null);
                     processor.TextEvent(frame.StoredOutput);
                     frame.Finished();
                     break;

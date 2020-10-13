@@ -341,13 +341,13 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitLoad(object? value, Type? type)
         {
-            if (value == null)
+            if (value is null)
             {
                 Emit(s_null ?? (s_null = new LoadObjectInstruction(null)));
                 return;
             }
 
-            if (type == null || type.IsValueType)
+            if (type is null || type.IsValueType)
             {
                 if (value is bool)
                 {
@@ -360,7 +360,7 @@ namespace System.Linq.Expressions.Interpreter
                     int i = (int)value;
                     if (i >= PushIntMinCachedValue && i <= PushIntMaxCachedValue)
                     {
-                        if (s_Ints == null)
+                        if (s_Ints is null)
                         {
                             s_Ints = new Instruction[PushIntMaxCachedValue - PushIntMinCachedValue + 1];
                         }
@@ -371,10 +371,10 @@ namespace System.Linq.Expressions.Interpreter
                 }
             }
 
-            if (_objects == null)
+            if (_objects is null)
             {
                 _objects = new List<object>();
-                if (s_loadObjectCached == null)
+                if (s_loadObjectCached is null)
                 {
                     s_loadObjectCached = new Instruction[CachedObjectCount];
                 }
@@ -411,7 +411,7 @@ namespace System.Linq.Expressions.Interpreter
             if (_instructions[instructionIndex] is IBoxableInstruction instruction)
             {
                 Instruction? newInstruction = instruction.BoxIfIndexMatches(index);
-                if (newInstruction != null)
+                if (newInstruction is not null)
                 {
                     _instructions[instructionIndex] = newInstruction;
                 }
@@ -432,7 +432,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitLoadLocal(int index)
         {
-            if (s_loadLocal == null)
+            if (s_loadLocal is null)
             {
                 s_loadLocal = new Instruction[LocalInstrCacheSize];
             }
@@ -454,7 +454,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal static Instruction LoadLocalBoxed(int index)
         {
-            if (s_loadLocalBoxed == null)
+            if (s_loadLocalBoxed is null)
             {
                 s_loadLocalBoxed = new Instruction[LocalInstrCacheSize];
             }
@@ -471,7 +471,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitLoadLocalFromClosure(int index)
         {
-            if (s_loadLocalFromClosure == null)
+            if (s_loadLocalFromClosure is null)
             {
                 s_loadLocalFromClosure = new Instruction[LocalInstrCacheSize];
             }
@@ -488,7 +488,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitLoadLocalFromClosureBoxed(int index)
         {
-            if (s_loadLocalFromClosureBoxed == null)
+            if (s_loadLocalFromClosureBoxed is null)
             {
                 s_loadLocalFromClosureBoxed = new Instruction[LocalInstrCacheSize];
             }
@@ -505,7 +505,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitAssignLocal(int index)
         {
-            if (s_assignLocal == null)
+            if (s_assignLocal is null)
             {
                 s_assignLocal = new Instruction[LocalInstrCacheSize];
             }
@@ -522,7 +522,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitStoreLocal(int index)
         {
-            if (s_storeLocal == null)
+            if (s_storeLocal is null)
             {
                 s_storeLocal = new Instruction[LocalInstrCacheSize];
             }
@@ -544,7 +544,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal static Instruction AssignLocalBoxed(int index)
         {
-            if (s_assignLocalBoxed == null)
+            if (s_assignLocalBoxed is null)
             {
                 s_assignLocalBoxed = new Instruction[LocalInstrCacheSize];
             }
@@ -566,7 +566,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal static Instruction StoreLocalBoxed(int index)
         {
-            if (s_storeLocalBoxed == null)
+            if (s_storeLocalBoxed is null)
             {
                 s_storeLocalBoxed = new Instruction[LocalInstrCacheSize];
             }
@@ -583,7 +583,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public void EmitAssignLocalToClosure(int index)
         {
-            if (s_assignLocalToClosure == null)
+            if (s_assignLocalToClosure is null)
             {
                 s_assignLocalToClosure = new Instruction[LocalInstrCacheSize];
             }
@@ -607,7 +607,7 @@ namespace System.Linq.Expressions.Interpreter
         public void EmitInitializeLocal(int index, Type type)
         {
             object? value = ScriptingRuntimeHelpers.GetPrimitiveDefaultValue(type);
-            if (value != null)
+            if (value is not null)
             {
                 Emit(new InitializeLocalInstruction.ImmutableValue(index, value));
             }
@@ -967,7 +967,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public BranchLabel MakeLabel()
         {
-            if (_labels == null)
+            if (_labels is null)
             {
                 _labels = new List<BranchLabel>();
             }

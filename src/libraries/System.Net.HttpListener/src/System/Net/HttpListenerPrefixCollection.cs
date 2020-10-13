@@ -38,7 +38,7 @@ namespace System.Net
         public void CopyTo(Array array, int offset)
         {
             _httpListener.CheckDisposed();
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -60,7 +60,7 @@ namespace System.Net
         public void CopyTo(string[] array, int offset)
         {
             _httpListener.CheckDisposed();
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }

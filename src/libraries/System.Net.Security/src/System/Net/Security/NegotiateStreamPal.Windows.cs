@@ -111,7 +111,7 @@ namespace System.Net.Security
             }
 
             int resultSize = buffer.Length + sizes.cbSecurityTrailer + sizes.cbBlockSize;
-            if (output == null || output.Length < resultSize + 4)
+            if (output is null || output.Length < resultSize + 4)
             {
                 output = new byte[resultSize + 4];
             }
@@ -185,13 +185,13 @@ namespace System.Net.Security
             out int newOffset,
             uint sequenceNumber)
         {
-            if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
+            if (offset < 0 || offset > (buffer is null ? 0 : buffer.Length))
             {
                 NetEventSource.Fail(null, "Argument 'offset' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            if (count < 0 || count > (buffer == null ? 0 : buffer.Length - offset))
+            if (count < 0 || count > (buffer is null ? 0 : buffer.Length - offset))
             {
                 NetEventSource.Fail(null, "Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));

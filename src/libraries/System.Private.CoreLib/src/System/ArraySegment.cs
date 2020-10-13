@@ -39,7 +39,7 @@ namespace System
 
         public ArraySegment(T[] array)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
             _array = array;
@@ -52,7 +52,7 @@ namespace System
             // Validate arguments, check is minimal instructions with reduced branching for inlinable fast-path
             // Negative values discovered though conversion to high values when converted to unsigned
             // Failure should be rare and location determination and message is delegated to failure functions
-            if (array == null || (uint)offset > (uint)array.Length || (uint)count > (uint)(array.Length - offset))
+            if (array is null || (uint)offset > (uint)array.Length || (uint)count > (uint)(array.Length - offset))
                 ThrowHelper.ThrowArraySegmentCtorValidationFailedExceptions(array, offset, count);
 
             _array = array;
@@ -166,7 +166,7 @@ namespace System
 
         public static bool operator !=(ArraySegment<T> a, ArraySegment<T> b) => !(a == b);
 
-        public static implicit operator ArraySegment<T>(T[] array) => array != null ? new ArraySegment<T>(array) : default;
+        public static implicit operator ArraySegment<T>(T[] array) => array is not null ? new ArraySegment<T>(array) : default;
 
         #region IList<T>
         T IList<T>.this[int index]
@@ -262,7 +262,7 @@ namespace System
 
         private void ThrowInvalidOperationIfDefault()
         {
-            if (_array == null)
+            if (_array is null)
             {
                 ThrowHelper.ThrowInvalidOperationException(ExceptionResource.InvalidOperation_NullArray);
             }
@@ -277,7 +277,7 @@ namespace System
 
             internal Enumerator(ArraySegment<T> arraySegment)
             {
-                Debug.Assert(arraySegment.Array != null);
+                Debug.Assert(arraySegment.Array is not null);
                 Debug.Assert(arraySegment.Offset >= 0);
                 Debug.Assert(arraySegment.Count >= 0);
                 Debug.Assert(arraySegment.Offset + arraySegment.Count <= arraySegment.Array.Length);

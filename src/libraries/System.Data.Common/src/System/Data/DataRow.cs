@@ -88,11 +88,11 @@ namespace System.Data
         [AllowNull]
         public string RowError
         {
-            get { return _error == null ? string.Empty : _error.Text; }
+            get { return _error is null ? string.Empty : _error.Text; }
             set
             {
                 DataCommonEventSource.Log.Trace("<ds.DataRow.set_RowError|API> {0}, value='{1}'", _objectID, value);
-                if (_error == null)
+                if (_error is null)
                 {
                     if (!string.IsNullOrEmpty(value))
                     {
@@ -202,7 +202,7 @@ namespace System.Data
             // and index creation may fail. The check will be done
             // after all the loading is done _and_ we are sure there
             // are no holes in the collection.
-            if (_table._fInLoadDiffgram || (_table.DataSet != null && _table.DataSet._fInLoadDiffgram))
+            if (_table._fInLoadDiffgram || (_table.DataSet is not null && _table.DataSet._fInLoadDiffgram))
             {
                 return;
             }
@@ -210,7 +210,7 @@ namespace System.Data
             int count = _table.Rows.Count, i = 0;
             // need to optimize this for count > 100
             DataRow? parent = GetParentRow(rel);
-            while (parent != null)
+            while (parent is not null)
             {
                 if ((parent == this) || (i > count))
                 {
@@ -227,7 +227,7 @@ namespace System.Data
             DataRelation[] nestedParentRelations = _table.NestedParentRelations;
             foreach (DataRelation rel in nestedParentRelations)
             {
-                if (rel == null) // don't like this but done for backward code compatability
+                if (rel is null) // don't like this but done for backward code compatability
                 {
                     continue;
                 }
@@ -236,7 +236,7 @@ namespace System.Data
                     CheckForLoops(rel);
                 }
                 DataRow? row = GetParentRow(rel);
-                if (row != null)
+                if (row is not null)
                 {
                     count++;
                 }
@@ -628,7 +628,7 @@ namespace System.Data
 
         private void CheckColumn(DataColumn column)
         {
-            if (column == null)
+            if (column is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(column));
             }
@@ -705,7 +705,7 @@ namespace System.Data
         public void SetColumnError(int columnIndex, string? error)
         {
             DataColumn column = _columns[columnIndex];
-            if (column == null)
+            if (column is null)
             {
                 throw ExceptionBuilder.ColumnOutOfRange(columnIndex);
             }
@@ -731,7 +731,7 @@ namespace System.Data
             long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataRow.SetColumnError|API> {0}, column={1}, error='{2}'", _objectID, column.ObjectID, error);
             try
             {
-                if (_error == null) _error = new DataError();
+                if (_error is null) _error = new DataError();
                 if (GetColumnError(column) != error)
                 {
                     _error.SetColumnError(column, error);
@@ -760,7 +760,7 @@ namespace System.Data
         public string GetColumnError(DataColumn column)
         {
             CheckColumn(column);
-            if (_error == null) _error = new DataError();
+            if (_error is null) _error = new DataError();
             return _error.GetColumnError(column);
         }
 
@@ -770,7 +770,7 @@ namespace System.Data
         /// </summary>
         public void ClearErrors()
         {
-            if (_error != null)
+            if (_error is not null)
             {
                 _error.Clear();
                 RowErrorChanged();
@@ -779,7 +779,7 @@ namespace System.Data
 
         internal void ClearError(DataColumn column)
         {
-            if (_error != null)
+            if (_error is not null)
             {
                 _error.Clear(column);
                 RowErrorChanged();
@@ -789,12 +789,12 @@ namespace System.Data
         /// <summary>
         /// Gets a value indicating whether there are errors in a columns collection.
         /// </summary>
-        public bool HasErrors => _error == null ? false : _error.HasErrors;
+        public bool HasErrors => _error is null ? false : _error.HasErrors;
 
         /// <summary>
         /// Gets an array of columns that have errors.
         /// </summary>
-        public DataColumn[] GetColumnsInError() => _error == null ?
+        public DataColumn[] GetColumnsInError() => _error is null ?
             Array.Empty<DataColumn>() : _error.GetColumnsInError();
 
         public DataRow[] GetChildRows(string? relationName) =>
@@ -815,7 +815,7 @@ namespace System.Data
         /// </summary>
         public DataRow[] GetChildRows(DataRelation? relation, DataRowVersion version)
         {
-            if (relation == null)
+            if (relation is null)
             {
                 return _table.NewRowArray(0);
             }
@@ -859,7 +859,7 @@ namespace System.Data
         /// </summary>
         public DataRow? GetParentRow(DataRelation? relation, DataRowVersion version)
         {
-            if (relation == null)
+            if (relation is null)
             {
                 return null;
             }
@@ -885,7 +885,7 @@ namespace System.Data
             DataRelation[] nestedParentRelations = _table.NestedParentRelations;
             foreach (DataRelation rel in nestedParentRelations)
             {
-                if (rel == null) // don't like this but done for backward code compatability
+                if (rel is null) // don't like this but done for backward code compatability
                 {
                     continue;
                 }
@@ -895,7 +895,7 @@ namespace System.Data
                 }
 
                 DataRow? row = GetParentRow(rel, version);
-                if (row != null)
+                if (row is not null)
                 {
                     return row;
                 }
@@ -921,7 +921,7 @@ namespace System.Data
         /// </summary>
         public DataRow[] GetParentRows(DataRelation? relation, DataRowVersion version)
         {
-            if (relation == null)
+            if (relation is null)
             {
                 return _table.NewRowArray(0);
             }
@@ -1266,7 +1266,7 @@ namespace System.Data
 
         internal void SetNestedParentRow(DataRow? parentRow, bool setNonNested)
         {
-            if (parentRow == null)
+            if (parentRow is null)
             {
                 SetParentRowToDBNull();
                 return;
@@ -1307,13 +1307,13 @@ namespace System.Data
         /// </summary>
         public void SetParentRow(DataRow? parentRow, DataRelation? relation)
         {
-            if (relation == null)
+            if (relation is null)
             {
                 SetParentRow(parentRow);
                 return;
             }
 
-            if (parentRow == null)
+            if (parentRow is null)
             {
                 SetParentRowToDBNull(relation);
                 return;
@@ -1348,7 +1348,7 @@ namespace System.Data
 
         internal void SetParentRowToDBNull(DataRelation relation)
         {
-            Debug.Assert(relation != null, "The relation should not be null here.");
+            Debug.Assert(relation is not null, "The relation should not be null here.");
 
             if (relation.ChildKey.Table != _table)
             {
@@ -1434,7 +1434,7 @@ namespace System.Data
         private void VerifyValueFromStorage(DataColumn column, DataRowVersion version, object valueFromStorage)
         {
             // ignore deleted rows by adding "newRecord != -1" condition - we do not evaluate computed rows if they are deleted
-            if (column.DataExpression != null && !_inChangingEvent && _tempRecord == -1 && _newRecord != -1)
+            if (column.DataExpression is not null && !_inChangingEvent && _tempRecord == -1 && _newRecord != -1)
             {
                 // for unchanged rows, check current if original is asked for.
                 // this is because by design, there is only single storage for an unchanged row.

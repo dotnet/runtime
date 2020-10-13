@@ -37,7 +37,7 @@ internal static partial class Interop
                 //  and -1 because GetMaxCharCount pessimistically assumes the buffer may start with a partial surrogate
                 Debug.Assert(buffer.Length >= Encoding.UTF8.GetMaxCharCount(NameBufferSize - 1 - 1));
 
-                Debug.Assert(Name != null, "should not have a null name");
+                Debug.Assert(Name is not null, "should not have a null name");
 
                 ReadOnlySpan<byte> nameBytes = (NameLength == -1)
                     // In this case the struct was allocated via struct dirent *readdir(DIR *dirp);

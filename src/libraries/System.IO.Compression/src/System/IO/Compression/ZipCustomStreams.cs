@@ -397,7 +397,7 @@ namespace System.IO.Compression
         public override void Write(byte[] buffer, int offset, int count)
         {
             // we can't pass the argument checking down a level
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentNeedNonNegative);

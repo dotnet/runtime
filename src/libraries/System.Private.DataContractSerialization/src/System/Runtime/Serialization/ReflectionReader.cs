@@ -29,7 +29,7 @@ namespace System.Runtime.Serialization
 
         public object ReflectionReadClass(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context, XmlDictionaryString[]? memberNames, XmlDictionaryString[]? memberNamespaces, ClassDataContract classContract)
         {
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
 
             object obj = CreateObject(classContract);
             context.AddNewObject(obj);
@@ -41,7 +41,7 @@ namespace System.Runtime.Serialization
             }
             else
             {
-                Debug.Assert(memberNames != null);
+                Debug.Assert(memberNames is not null);
                 ReflectionReadMembers(xmlReader, context, memberNames, memberNamespaces, classContract, ref obj);
             }
 
@@ -68,7 +68,7 @@ namespace System.Runtime.Serialization
             if (xmlReader.IsStartElement(collectionItemName, collectionItemNamespace))
             {
 
-                if (resultCollection == null)
+                if (resultCollection is null)
                 {
                     XmlObjectSerializerReadContext.ThrowNullValueReturnedForGetOnlyCollectionException(collectionContract.UnderlyingType);
                 }
@@ -183,7 +183,7 @@ namespace System.Runtime.Serialization
 
         protected int ReflectionGetMembers(ClassDataContract classContract, DataMember[] members)
         {
-            int memberCount = (classContract.BaseContract == null) ? 0 : ReflectionGetMembers(classContract.BaseContract, members);
+            int memberCount = (classContract.BaseContract is null) ? 0 : ReflectionGetMembers(classContract.BaseContract, members);
             int childElementIndex = memberCount;
             for (int i = 0; i < classContract.Members!.Count; i++, memberCount++)
             {
@@ -197,7 +197,7 @@ namespace System.Runtime.Serialization
         {
             DataMember dataMember = members[memberIndex];
 
-            Debug.Assert(dataMember != null);
+            Debug.Assert(dataMember is not null);
             if (dataMember.IsGetOnlyCollection)
             {
                 var memberValue = ReflectionGetMemberValue(obj, dataMember);
@@ -209,7 +209,7 @@ namespace System.Runtime.Serialization
                 context.ResetCollectionMemberInfo();
                 var value = ReflectionReadValue(xmlReader, context, dataMember, classContract.StableName.Namespace);
                 MemberInfo memberInfo = dataMember.MemberInfo;
-                Debug.Assert(memberInfo != null);
+                Debug.Assert(memberInfo is not null);
 
                 ReflectionSetMemberValue(ref obj, value, dataMember);
             }
@@ -229,7 +229,7 @@ namespace System.Runtime.Serialization
                 PrimitiveDataContract.GetPrimitiveDataContract(type)
                 : (primitiveContractForOriginalType ?? PrimitiveDataContract.GetPrimitiveDataContract(type));
 
-            if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.IsValueType)
+            if ((primitiveContract is not null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.IsValueType)
             {
                 value = ReadItemOfPrimitiveType(xmlReader, context, type, name, ns, primitiveContract, nullables);
             }
@@ -247,7 +247,7 @@ namespace System.Runtime.Serialization
             context.ReadAttributes(xmlReader);
             string objectId = context.ReadIfNullOrRef(xmlReader, type, DataContract.IsTypeSerializable(type));
             bool typeIsValueType = type.IsValueType;
-            if (objectId != null)
+            if (objectId is not null)
             {
                 if (objectId.Length == 0)
                 {
@@ -258,7 +258,7 @@ namespace System.Runtime.Serialization
                         throw new SerializationException(SR.Format(SR.ValueTypeCannotHaveId, DataContract.GetClrTypeFullName(type)));
                     }
 
-                    if (primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject)
+                    if (primitiveContract is not null && primitiveContract.UnderlyingType != Globals.TypeOfObject)
                     {
                         value = primitiveContract.ReadXmlValue(xmlReader, context);
                     }
@@ -315,7 +315,7 @@ namespace System.Runtime.Serialization
             }
 
             PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(type);
-            if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.IsValueType)
+            if ((primitiveContract is not null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.IsValueType)
             {
                 return (xmlReaderArg, contextArg, collectionContract, typeArg, nameArg, nsArg) =>
                 {
@@ -353,9 +353,9 @@ namespace System.Runtime.Serialization
 
         private void InvokeOnDeserializing(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
-            if (classContract.BaseContract != null)
+            if (classContract.BaseContract is not null)
                 InvokeOnDeserializing(context, classContract.BaseContract, obj);
-            if (classContract.OnDeserializing != null)
+            if (classContract.OnDeserializing is not null)
             {
                 var contextArg = context.GetStreamingContext();
                 classContract.OnDeserializing.Invoke(obj, new object[] { contextArg });
@@ -364,9 +364,9 @@ namespace System.Runtime.Serialization
 
         private void InvokeOnDeserialized(XmlObjectSerializerReadContext context, ClassDataContract classContract, object obj)
         {
-            if (classContract.BaseContract != null)
+            if (classContract.BaseContract is not null)
                 InvokeOnDeserialized(context, classContract.BaseContract, obj);
-            if (classContract.OnDeserialized != null)
+            if (classContract.OnDeserialized is not null)
             {
                 var contextArg = context.GetStreamingContext();
                 classContract.OnDeserialized.Invoke(obj, new object[] { contextArg });
@@ -556,7 +556,7 @@ namespace System.Runtime.Serialization
                 else
                 {
                     MethodInfo? addMethod = collectionContract.AddMethod;
-                    if (addMethod == null)
+                    if (addMethod is null)
                     {
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.CollectionMustHaveAddMethod, DataContract.GetClrTypeFullName(collectionContract.UnderlyingType))));
                     }
@@ -575,7 +575,7 @@ namespace System.Runtime.Serialization
             resultArray = null;
 
             PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
-            if (primitiveContract == null)
+            if (primitiveContract is null)
                 return false;
 
             switch (itemType.GetTypeCode())
@@ -646,7 +646,7 @@ namespace System.Runtime.Serialization
                 default:
                     return false;
             }
-            return resultArray != null;
+            return resultArray is not null;
         }
     }
 }

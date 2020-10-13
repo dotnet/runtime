@@ -16,7 +16,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public TextEvent(string text)
         {
-            Debug.Assert(text != null);
+            Debug.Assert(text is not null);
             _text = text;
         }
 

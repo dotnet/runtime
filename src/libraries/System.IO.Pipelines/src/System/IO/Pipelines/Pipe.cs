@@ -97,7 +97,7 @@ namespace System.IO.Pipelines
         /// </summary>
         public Pipe(PipeOptions options)
         {
-            if (options == null)
+            if (options is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.options);
             }
@@ -189,7 +189,7 @@ namespace System.IO.Pipelines
             {
                 _operationState.BeginWrite();
 
-                if (_writingHead == null)
+                if (_writingHead is null)
                 {
                     // We need to allocate memory to write since nobody has written before
                     BufferSegment newSegment = AllocateSegment(sizeHint);
@@ -285,7 +285,7 @@ namespace System.IO.Pipelines
             }
 
             // Update the writing head
-            Debug.Assert(_writingHead != null);
+            Debug.Assert(_writingHead is not null);
             _writingHead.End += _writingHeadBytesBuffered;
 
             // Always move the read tail to the write head
@@ -409,7 +409,7 @@ namespace System.IO.Pipelines
                 CompletePipe();
             }
 
-            if (completionCallbacks != null)
+            if (completionCallbacks is not null)
             {
                 ScheduleCallbacks(_readerScheduler, completionCallbacks);
             }
@@ -438,7 +438,7 @@ namespace System.IO.Pipelines
         private void AdvanceReader(BufferSegment? consumedSegment, int consumedIndex, BufferSegment? examinedSegment, int examinedIndex)
         {
             // Throw if examined < consumed
-            if (consumedSegment != null && examinedSegment != null && BufferSegment.GetLength(consumedSegment, consumedIndex, examinedSegment, examinedIndex) < 0)
+            if (consumedSegment is not null && examinedSegment is not null && BufferSegment.GetLength(consumedSegment, consumedIndex, examinedSegment, examinedIndex) < 0)
             {
                 ThrowHelper.ThrowInvalidOperationException_InvalidExaminedOrConsumedPosition();
             }
@@ -456,7 +456,7 @@ namespace System.IO.Pipelines
                     examinedEverything = examinedIndex == _readTailIndex;
                 }
 
-                if (examinedSegment != null && _lastExaminedIndex >= 0)
+                if (examinedSegment is not null && _lastExaminedIndex >= 0)
                 {
                     long examinedBytes = BufferSegment.GetLength(_lastExaminedIndex, examinedSegment, examinedIndex);
                     long oldLength = _unconsumedBytes;
@@ -480,9 +480,9 @@ namespace System.IO.Pipelines
                     }
                 }
 
-                if (consumedSegment != null)
+                if (consumedSegment is not null)
                 {
-                    if (_readHead == null)
+                    if (_readHead is null)
                     {
                         ThrowHelper.ThrowInvalidOperationException_AdvanceToInvalidCursor();
                         return;
@@ -546,7 +546,7 @@ namespace System.IO.Pipelines
                     _readerAwaitable.SetUncompleted();
                 }
 
-                while (returnStart != null && returnStart != returnEnd)
+                while (returnStart is not null && returnStart != returnEnd)
                 {
                     BufferSegment? next = returnStart.NextSegment;
                     returnStart.ResetMemory();
@@ -587,7 +587,7 @@ namespace System.IO.Pipelines
                 CompletePipe();
             }
 
-            if (completionCallbacks != null)
+            if (completionCallbacks is not null)
             {
                 ScheduleCallbacks(_writerScheduler, completionCallbacks);
             }
@@ -608,7 +608,7 @@ namespace System.IO.Pipelines
                 completionCallbacks = _writerCompletion.AddCallback(callback, state);
             }
 
-            if (completionCallbacks != null)
+            if (completionCallbacks is not null)
             {
                 ScheduleCallbacks(_readerScheduler, completionCallbacks);
             }
@@ -647,7 +647,7 @@ namespace System.IO.Pipelines
                 completionCallbacks = _readerCompletion.AddCallback(callback, state);
             }
 
-            if (completionCallbacks != null)
+            if (completionCallbacks is not null)
             {
                 ScheduleCallbacks(_writerScheduler, completionCallbacks);
             }
@@ -709,7 +709,7 @@ namespace System.IO.Pipelines
 
         private static void ScheduleCallbacks(PipeScheduler scheduler, PipeCompletionCallbacks completionCallbacks)
         {
-            Debug.Assert(completionCallbacks != null);
+            Debug.Assert(completionCallbacks is not null);
 
             scheduler.UnsafeSchedule(s_invokeCompletionCallbacks, completionCallbacks);
         }
@@ -743,7 +743,7 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ScheduleWithContext(PipeScheduler scheduler, in CompletionData completionData)
         {
-            Debug.Assert(completionData.SynchronizationContext != null || completionData.ExecutionContext != null);
+            Debug.Assert(completionData.SynchronizationContext is not null || completionData.ExecutionContext is not null);
 
             if (completionData.SynchronizationContext is null)
             {
@@ -775,7 +775,7 @@ namespace System.IO.Pipelines
         private static void ExecuteWithExecutionContext(object state)
         {
             CompletionData completionData = (CompletionData)state;
-            Debug.Assert(completionData.ExecutionContext != null);
+            Debug.Assert(completionData.ExecutionContext is not null);
             ExecutionContext.Run(completionData.ExecutionContext, s_executionContextRawCallback, state);
         }
 
@@ -793,7 +793,7 @@ namespace System.IO.Pipelines
                 // if _readHead is null we need to try return _commitHead
                 // because there might be a block allocated for writing
                 BufferSegment? segment = _readHead ?? _readTail;
-                while (segment != null)
+                while (segment is not null)
                 {
                     BufferSegment returnSegment = segment;
                     segment = segment.NextSegment;
@@ -875,9 +875,9 @@ namespace System.IO.Pipelines
 
             // No need to read end if there is no head
             BufferSegment? head = _readHead;
-            if (head != null)
+            if (head is not null)
             {
-                Debug.Assert(_readTail != null);
+                Debug.Assert(_readTail is not null);
                 // Reading commit head shared with writer
                 var readOnlySequence = new ReadOnlySequence<byte>(head, _readHeadIndex, _readTail, _readTailIndex);
                 result = new ReadResult(readOnlySequence, isCanceled, isCompleted);
@@ -995,7 +995,7 @@ namespace System.IO.Pipelines
 
         private void WriteMultiSegment(ReadOnlySpan<byte> source)
         {
-            Debug.Assert(_writingHead != null);
+            Debug.Assert(_writingHead is not null);
             Span<byte> destination = _writingHeadMemory.Span;
 
             while (true)

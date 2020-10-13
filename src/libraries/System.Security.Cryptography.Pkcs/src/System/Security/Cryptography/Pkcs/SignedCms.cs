@@ -42,9 +42,9 @@ namespace System.Security.Cryptography.Pkcs
 
         public SignedCms(SubjectIdentifierType signerIdentifierType, ContentInfo contentInfo, bool detached)
         {
-            if (contentInfo == null)
+            if (contentInfo is null)
                 throw new ArgumentNullException(nameof(contentInfo));
-            if (contentInfo.Content == null)
+            if (contentInfo.Content is null)
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "contentInfo.Content"), nameof(contentInfo));
 
             // Normalize the subject identifier type the same way as .NET Framework.
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 CertificateChoiceAsn[]? certChoices = _signedData.CertificateSet;
 
-                if (certChoices == null)
+                if (certChoices is null)
                 {
                     return coll;
                 }
@@ -136,7 +136,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 SignedDataAsn copy = _signedData;
                 copy.EncapContentInfo.Content = null;
-                Debug.Assert(_signedData.EncapContentInfo.Content != null);
+                Debug.Assert(_signedData.EncapContentInfo.Content is not null);
 
                 AsnWriter detachedWriter = new AsnWriter(AsnEncodingRules.DER);
                 copy.Encode(detachedWriter);
@@ -152,7 +152,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void Decode(byte[] encodedMessage)
         {
-            if (encodedMessage == null)
+            if (encodedMessage is null)
                 throw new ArgumentNullException(nameof(encodedMessage));
 
             Decode(new ReadOnlySpan<byte>(encodedMessage));
@@ -275,7 +275,7 @@ namespace System.Security.Cryptography.Pkcs
             }
             finally
             {
-                if (rented != null)
+                if (rented is not null)
                 {
                     CryptoPool.Return(rented, bytesWritten);
                 }
@@ -292,7 +292,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void ComputeSignature(CmsSigner signer, bool silent)
         {
-            if (signer == null)
+            if (signer is null)
             {
                 throw new ArgumentNullException(nameof(signer));
             }
@@ -314,7 +314,7 @@ namespace System.Security.Cryptography.Pkcs
                 throw new CryptographicException(SR.Cryptography_Cms_Sign_No_Signature_First_Signer);
             }
 
-            if (signer.Certificate == null && signer.SignerIdentifierType != SubjectIdentifierType.NoSignature)
+            if (signer.Certificate is null && signer.SignerIdentifierType != SubjectIdentifierType.NoSignature)
             {
                 if (silent)
                 {
@@ -375,7 +375,7 @@ namespace System.Security.Cryptography.Pkcs
             {
                 Reencode();
 
-                Debug.Assert(_heldContent != null);
+                Debug.Assert(_heldContent is not null);
                 Debug.Assert(_contentType == contentType);
             }
         }
@@ -401,7 +401,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void RemoveSignature(SignerInfo signerInfo)
         {
-            if (signerInfo == null)
+            if (signerInfo is null)
                 throw new ArgumentNullException(nameof(signerInfo));
 
             int idx = SignerInfos.FindIndexForSigner(signerInfo);
@@ -462,7 +462,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
 
                 Decode(encoded);
-                Debug.Assert(_heldContent != null);
+                Debug.Assert(_heldContent is not null);
             }
             finally
             {
@@ -576,7 +576,7 @@ namespace System.Security.Cryptography.Pkcs
                 return;
             }
 
-            if (_signedData.CertificateSet == null)
+            if (_signedData.CertificateSet is null)
             {
                 _signedData.CertificateSet = new CertificateChoiceAsn[newCerts.Count];
             }
@@ -601,7 +601,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             if (!_hasData)
                 throw new InvalidOperationException(SR.Cryptography_Cms_MessageNotSigned);
-            if (extraStore == null)
+            if (extraStore is null)
                 throw new ArgumentNullException(nameof(extraStore));
 
             CheckSignatures(SignerInfos, extraStore, verifySignatureOnly);
@@ -612,7 +612,7 @@ namespace System.Security.Cryptography.Pkcs
             X509Certificate2Collection extraStore,
             bool verifySignatureOnly)
         {
-            Debug.Assert(signers != null);
+            Debug.Assert(signers is not null);
 
             if (signers.Count < 1)
             {
@@ -638,7 +638,7 @@ namespace System.Security.Cryptography.Pkcs
                 throw new InvalidOperationException(SR.Cryptography_Cms_MessageNotSigned);
 
             SignerInfoCollection signers = SignerInfos;
-            Debug.Assert(signers != null);
+            Debug.Assert(signers is not null);
 
             if (signers.Count < 1)
             {
@@ -676,7 +676,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
             }
 
-            if (_signedData.CertificateSet == null)
+            if (_signedData.CertificateSet is null)
             {
                 _signedData.CertificateSet = new CertificateChoiceAsn[1];
             }

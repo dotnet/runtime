@@ -25,7 +25,7 @@ namespace System.Reflection
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly? LoadWithPartialName(string partialName)
         {
-            if (partialName == null)
+            if (partialName is null)
                 throw new ArgumentNullException(nameof(partialName));
 
             if ((partialName.Length == 0) || (partialName[0] == '\0'))
@@ -47,7 +47,7 @@ namespace System.Reflection
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public static Assembly Load(AssemblyName assemblyRef)
         {
-            if (assemblyRef == null)
+            if (assemblyRef is null)
                 throw new ArgumentNullException(nameof(assemblyRef));
 
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;

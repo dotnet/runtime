@@ -25,7 +25,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static Type GetDefaultTypeFromMember(this MemberInfo member)
         {
-            if (member == null)
+            if (member is null)
             {
                 throw new ArgumentNullException(nameof(member));
             }
@@ -63,12 +63,12 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static Type AdjustSpecifiedTypeIdentityType(this Type specifiedContractType, Type? memberType)
         {
-            if (specifiedContractType == null)
+            if (specifiedContractType is null)
             {
                 throw new ArgumentNullException(nameof(specifiedContractType));
             }
 
-            if ((memberType != null) && memberType.IsGenericType && specifiedContractType.IsGenericType)
+            if ((memberType is not null) && memberType.IsGenericType && specifiedContractType.IsGenericType)
             {
                 // if the memeber type is closed and the specified contract type is open and they have exatly the same number of parameters
                 // we will close the specfied contract type
@@ -116,7 +116,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static string GetTypeIdentityFromExport(this MemberInfo member, Type? typeIdentityType)
         {
-            if (typeIdentityType != null)
+            if (typeIdentityType is not null)
             {
                 string typeIdentity = AttributedModelServices.GetTypeIdentity(typeIdentityType);
                 if (typeIdentityType.ContainsGenericParameters)
@@ -128,7 +128,7 @@ namespace System.ComponentModel.Composition.Hosting
             else
             {
                 MethodInfo? method = member as MethodInfo;
-                if (method == null)
+                if (method is null)
                 {
                     throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                 }
@@ -138,7 +138,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private static Type? GetTypeIdentityTypeFromExport(this MemberInfo member, ExportAttribute export)
         {
-            if (export.ContractType != null)
+            if (export.ContractType is not null)
             {
                 return export.ContractType.AdjustSpecifiedTypeIdentityType(member);
             }
@@ -155,7 +155,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static Type GetContractTypeFromImport(this IAttributedImport import, ImportType importType)
         {
-            if (import.ContractType != null)
+            if (import.ContractType is not null)
             {
                 return import.ContractType.AdjustSpecifiedTypeIdentityType(importType.ContractType);
             }
@@ -235,7 +235,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                     GenericParameterAttributes attributes = genericArgument.GenericParameterAttributes;
 
-                    if ((constraints != null) || (attributes != GenericParameterAttributes.None))
+                    if ((constraints is not null) || (attributes != GenericParameterAttributes.None))
                     {
                         genericParameterConstraints[i] = constraints;
                         genericParameterAttributes[i] = attributes;
@@ -268,7 +268,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 var provider = attr as ExportMetadataAttribute;
 
-                if (provider != null)
+                if (provider is not null)
                 {
                     if (reservedMetadataNames.Contains(provider.Name, StringComparers.MetadataKeyNames))
                     {
@@ -291,7 +291,7 @@ namespace System.ComponentModel.Composition.Hosting
                         bool allowsMultiple = false;
                         AttributeUsageAttribute? usage = attrType.GetFirstAttribute<AttributeUsageAttribute>(true);
 
-                        if (usage != null)
+                        if (usage is not null)
                         {
                             allowsMultiple = usage.AllowMultiple;
                         }
@@ -311,7 +311,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                             object? value = pi.GetValue(attr, null);
 
-                            if (value != null && !IsValidAttributeType(value.GetType()))
+                            if (value is not null && !IsValidAttributeType(value.GetType()))
                             {
                                 throw ExceptionBuilder.CreateDiscoveryException(SR.Discovery_MetadataContainsValueWithInvalidType, pi.GetDisplayName(), value.GetType().GetDisplayName());
                             }
@@ -329,7 +329,7 @@ namespace System.ComponentModel.Composition.Hosting
             foreach (var key in dictionary.Keys.ToArray())
             {
                 var list = dictionary[key] as MetadataList;
-                if (list != null)
+                if (list is not null)
                 {
                     dictionary[key] = list.ToArray();
                 }
@@ -354,7 +354,7 @@ namespace System.ComponentModel.Composition.Hosting
             else
             {
                 var list = metadataValue as MetadataList;
-                if (!allowsMultiple || list == null)
+                if (!allowsMultiple || list is null)
                 {
                     // Either single value already found when should be multiple
                     // or a duplicate name already exists
@@ -377,7 +377,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public void Add(object? item, Type? itemType)
             {
-                _containsNulls |= (item == null);
+                _containsNulls |= (item is null);
 
                 // if we've been passed typeof(object), we basically have no type inmformation
                 if (itemType == ObjectType)
@@ -386,7 +386,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
 
                 // if we have no type information, get it from the item, if we can
-                if ((itemType == null) && (item != null))
+                if ((itemType is null) && (item is not null))
                 {
                     itemType = item.GetType();
                 }
@@ -398,7 +398,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
 
                 // only try to call this if we got a meaningful type
-                if (itemType != null)
+                if (itemType is not null)
                 {
                     InferArrayType(itemType);
                 }
@@ -408,12 +408,12 @@ namespace System.ComponentModel.Composition.Hosting
 
             private void InferArrayType(Type itemType)
             {
-                if (itemType == null)
+                if (itemType is null)
                 {
                     throw new ArgumentNullException(nameof(itemType));
                 }
 
-                if (_arrayType == null)
+                if (_arrayType is null)
                 {
                     // this is the first typed element we've been given, it sets the type of the array
                     _arrayType = itemType;
@@ -432,7 +432,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public Array ToArray()
             {
-                if (_arrayType == null)
+                if (_arrayType is null)
                 {
                     // if the array type has not been set, assume Object
                     _arrayType = ObjectType;
@@ -456,12 +456,12 @@ namespace System.ComponentModel.Composition.Hosting
         //UNDONE: Need to add these warnings somewhere...Dev10:472538 should address
         //internal static CompositionResult MatchRequiredMetadata(this IDictionary<string, object> metadata, IEnumerable<string> requiredMetadata, string contractName)
         //{
-        //    Assumes.IsTrue(metadata != null);
+        //    Assumes.IsTrue(metadata is not null);
 
         //    var result = CompositionResult.SucceededResult;
 
-        //    var missingMetadata = (requiredMetadata == null) ? null : requiredMetadata.Except<string>(metadata.Keys);
-        //    if (missingMetadata != null && missingMetadata.Any())
+        //    var missingMetadata = (requiredMetadata is null) ? null : requiredMetadata.Except<string>(metadata.Keys);
+        //    if (missingMetadata is not null && missingMetadata.Any())
         //    {
         //        result = result.MergeIssue(
         //            CompositionError.CreateIssueAsWarning(CompositionErrorId.RequiredMetadataNotFound,
@@ -477,7 +477,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static IEnumerable<KeyValuePair<string, Type>> GetRequiredMetadata(Type? metadataViewType)
         {
-            if ((metadataViewType == null) ||
+            if ((metadataViewType is null) ||
                 ExportServices.IsDefaultMetadataViewType(metadataViewType) ||
                 ExportServices.IsDictionaryConstructorViewType(metadataViewType) ||
                 !metadataViewType.IsInterface)
@@ -487,7 +487,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             // A metadata view is required to be an Intrerface, and therefore only properties are allowed
             List<PropertyInfo> properties = metadataViewType.GetAllProperties().
-                Where(property => property.GetFirstAttribute<DefaultValueAttribute>() == null).
+                Where(property => property.GetFirstAttribute<DefaultValueAttribute>() is null).
                 ToList();
 
             // NOTE : this is a carefully found balance between eager and delay-evaluation - the properties are filtered once and upfront
@@ -522,16 +522,16 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             // Default value is ImportSource.Any
-            if (attributedImport != null && attributedImport.Source != ImportSource.Any)
+            if (attributedImport is not null && attributedImport.Source != ImportSource.Any)
             {
-                if (metadata == null)
+                if (metadata is null)
                 {
                     metadata = new Dictionary<string, object?>();
                 }
                 metadata[CompositionConstants.ImportSourceMetadataName] = attributedImport.Source;
             }
 
-            if (metadata != null)
+            if (metadata is not null)
             {
                 return metadata.AsReadOnly();
             }
@@ -543,7 +543,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal static object? GetExportedValueFromComposedPart(ImportEngine? engine, ComposablePart part, ExportDefinition definition)
         {
-            if (engine != null)
+            if (engine is not null)
             {
                 try
                 {
@@ -629,7 +629,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private static bool IsValidAttributeType(Type type, bool arrayAllowed)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }

@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Xml
 
         public void Add(Transform transform)
         {
-            if (transform != null)
+            if (transform is not null)
                 _transforms.Add(transform);
         }
 
@@ -63,7 +63,7 @@ namespace System.Security.Cryptography.Xml
             object currentInput = inputObject;
             foreach (Transform transform in _transforms)
             {
-                if (currentInput == null || transform.AcceptsType(currentInput.GetType()))
+                if (currentInput is null || transform.AcceptsType(currentInput.GetType()))
                 {
                     //in this case, no translation necessary, pump it through
                     transform.Resolver = resolver;
@@ -165,11 +165,11 @@ namespace System.Security.Cryptography.Xml
             XmlElement transformsElement = document.CreateElement("Transforms", ns);
             foreach (Transform transform in _transforms)
             {
-                if (transform != null)
+                if (transform is not null)
                 {
                     // Construct the individual transform element
                     XmlElement transformElement = transform.GetXml(document);
-                    if (transformElement != null)
+                    if (transformElement is not null)
                         transformsElement.AppendChild(transformElement);
                 }
             }
@@ -178,7 +178,7 @@ namespace System.Security.Cryptography.Xml
 
         internal void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
@@ -194,7 +194,7 @@ namespace System.Security.Cryptography.Xml
                 XmlElement transformElement = (XmlElement)transformNodes.Item(i);
                 string algorithm = Utils.GetAttribute(transformElement, "Algorithm", SignedXml.XmlDsigNamespaceUrl);
                 Transform transform = CryptoHelpers.CreateFromName<Transform>(algorithm);
-                if (transform == null)
+                if (transform is null)
                     throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
                 // let the transform read the children of the transformElement for data
                 transform.LoadInnerXml(transformElement.ChildNodes);

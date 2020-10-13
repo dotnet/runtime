@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
                 SafeDsaHandle key = GetKey();
 
                 DSAParameters dsaParameters = Interop.Crypto.ExportDsaParameters(key, includePrivateParameters);
-                bool hasPrivateKey = dsaParameters.X != null;
+                bool hasPrivateKey = dsaParameters.X is not null;
 
                 if (hasPrivateKey != includePrivateParameters)
                     throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
@@ -98,15 +98,15 @@ namespace System.Security.Cryptography
 
             public override void ImportParameters(DSAParameters parameters)
             {
-                if (parameters.P == null || parameters.Q == null || parameters.G == null || parameters.Y == null)
+                if (parameters.P is null || parameters.Q is null || parameters.G is null || parameters.Y is null)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MissingFields);
 
                 // J is not required and is not even used on CNG blobs. It should however be less than P (J == (P-1) / Q). This validation check
                 // is just to maintain parity with DSACNG and DSACryptoServiceProvider, which also perform this check.
-                if (parameters.J != null && parameters.J.Length >= parameters.P.Length)
+                if (parameters.J is not null && parameters.J.Length >= parameters.P.Length)
                     throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedPJ);
 
-                bool hasPrivateKey = parameters.X != null;
+                bool hasPrivateKey = parameters.X is not null;
 
                 int keySize = parameters.P.Length;
                 if (parameters.G.Length != keySize || parameters.Y.Length != keySize)
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography
                     parameters.Q, parameters.Q.Length,
                     parameters.G, parameters.G.Length,
                     parameters.Y, parameters.Y.Length,
-                    parameters.X, parameters.X != null ? parameters.X.Length : 0))
+                    parameters.X, parameters.X is not null ? parameters.X.Length : 0))
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
@@ -163,11 +163,11 @@ namespace System.Security.Cryptography
 
             private void FreeKey()
             {
-                if (_key != null && _key.IsValueCreated)
+                if (_key is not null && _key.IsValueCreated)
                 {
                     SafeDsaHandle handle = _key.Value;
 
-                    if (handle != null)
+                    if (handle is not null)
                     {
                         handle.Dispose();
                     }
@@ -176,7 +176,7 @@ namespace System.Security.Cryptography
 
             private static void CheckInvalidKey(SafeDsaHandle key)
             {
-                if (key == null || key.IsInvalid)
+                if (key is null || key.IsInvalid)
                 {
                     throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
                 }
@@ -197,7 +197,7 @@ namespace System.Security.Cryptography
             protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
             {
                 // we're sealed and the base should have checked this already
-                Debug.Assert(data != null);
+                Debug.Assert(data is not null);
                 Debug.Assert(offset >= 0 && offset <= data.Length);
                 Debug.Assert(count >= 0 && count <= data.Length);
                 Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
@@ -213,7 +213,7 @@ namespace System.Security.Cryptography
 
             public override byte[] CreateSignature(byte[] rgbHash)
             {
-                if (rgbHash == null)
+                if (rgbHash is null)
                     throw new ArgumentNullException(nameof(rgbHash));
 
                 SafeDsaHandle key = GetKey();
@@ -334,9 +334,9 @@ namespace System.Security.Cryptography
 
             public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
             {
-                if (rgbHash == null)
+                if (rgbHash is null)
                     throw new ArgumentNullException(nameof(rgbHash));
-                if (rgbSignature == null)
+                if (rgbSignature is null)
                     throw new ArgumentNullException(nameof(rgbSignature));
 
                 return VerifySignature((ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature);
@@ -384,7 +384,7 @@ namespace System.Security.Cryptography
 
             private void ThrowIfDisposed()
             {
-                if (_key == null)
+                if (_key is null)
                 {
                     throw new ObjectDisposedException(
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS

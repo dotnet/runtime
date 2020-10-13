@@ -17,11 +17,11 @@ namespace System.Security.Cryptography
 
         public virtual byte[] CreateSignature(HashAlgorithm hash)
         {
-            if (hash == null)
+            if (hash is null)
                 throw new ArgumentNullException(nameof(hash));
 
             SetHashAlgorithm(hash.ToAlgorithmName()!);
-            Debug.Assert(hash.Hash != null);
+            Debug.Assert(hash.Hash is not null);
             return CreateSignature(hash.Hash);
         }
 

@@ -67,7 +67,7 @@ namespace System.Diagnostics
         /// <param name="context">The ActivityContext object created from the parsing operation.</param>
         public static bool TryParse(string traceParent, string? traceState, out ActivityContext context)
         {
-            if (traceParent == null)
+            if (traceParent is null)
             {
                 throw new ArgumentNullException(nameof(traceParent));
             }

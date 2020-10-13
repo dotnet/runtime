@@ -53,7 +53,7 @@ namespace System.Net
 
         public static string GetHeaderValue(string name, char[] array, int startIndex, int length)
         {
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
             CharArrayHelpers.DebugAssertArrayInputs(array, startIndex, length);
 
             if (length == 0)
@@ -87,11 +87,11 @@ namespace System.Net
             Func<string, T, int, int, bool> equals,
             [NotNullWhen(true)] out string? name)
         {
-            Debug.Assert(key != null);
+            Debug.Assert(key is not null);
             Debug.Assert(startIndex >= 0);
             Debug.Assert(length >= 0);
-            Debug.Assert(charAt != null);
-            Debug.Assert(equals != null);
+            Debug.Assert(charAt is not null);
+            Debug.Assert(equals is not null);
 
             // When adding a new constant, add it to HttpKnownHeaderNames.cs as well.
 
@@ -333,7 +333,7 @@ namespace System.Net
             return false;
 
             TryMatch:
-            Debug.Assert(potentialHeader != null);
+            Debug.Assert(potentialHeader is not null);
             return TryMatch(potentialHeader, key, startIndex, length, equals, out name);
         }
 
@@ -343,11 +343,11 @@ namespace System.Net
         /// </summary>
         private static bool TryMatch<T>(string known, T key, int startIndex, int length, Func<string, T, int, int, bool> equals, [NotNullWhen(true)] out string? name)
         {
-            Debug.Assert(known != null);
+            Debug.Assert(known is not null);
             Debug.Assert(known.Length > 0);
             Debug.Assert(startIndex >= 0);
             Debug.Assert(length > 0);
-            Debug.Assert(equals != null);
+            Debug.Assert(equals is not null);
 
             // The lengths should be equal because this method is only called
             // from within a "switch (length) { ... }".
@@ -365,7 +365,7 @@ namespace System.Net
 
         private static unsafe bool EqualsOrdinal(string left, IntPtr right, int rightLength)
         {
-            Debug.Assert(left != null);
+            Debug.Assert(left is not null);
             Debug.Assert(right != IntPtr.Zero);
             Debug.Assert(rightLength > 0);
 

@@ -185,7 +185,7 @@ namespace System.Reflection
             get
             {
                 Debug.Assert(0 <= index && index < Length);
-                if (largeResult != null)
+                if (largeResult is not null)
                     return largeResult[index];
 
                 fixed (int* p = smallResult)
@@ -312,7 +312,7 @@ namespace System.Reflection
             void* name;
             _GetUserString(m_metadataImport2, mdToken, &name, out int length);
 
-            return name != null ?
+            return name is not null ?
                 new string((char*)name, 0, length) :
                 null;
         }

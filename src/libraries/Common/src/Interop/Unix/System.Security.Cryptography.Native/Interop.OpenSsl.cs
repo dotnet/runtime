@@ -125,12 +125,12 @@ internal static partial class Interop
                 byte[]? cipherList =
                     CipherSuitesPolicyPal.GetOpenSslCipherList(sslAuthenticationOptions.CipherSuitesPolicy, protocols, policy);
 
-                Debug.Assert(cipherList == null || (cipherList.Length >= 1 && cipherList[cipherList.Length - 1] == 0));
+                Debug.Assert(cipherList is null || (cipherList.Length >= 1 && cipherList[cipherList.Length - 1] == 0));
 
                 byte[]? cipherSuites =
                     CipherSuitesPolicyPal.GetOpenSslCipherSuites(sslAuthenticationOptions.CipherSuitesPolicy, protocols, policy);
 
-                Debug.Assert(cipherSuites == null || (cipherSuites.Length >= 1 && cipherSuites[cipherSuites.Length - 1] == 0));
+                Debug.Assert(cipherSuites is null || (cipherSuites.Length >= 1 && cipherSuites[cipherSuites.Length - 1] == 0));
 
                 unsafe
                 {
@@ -146,8 +146,8 @@ internal static partial class Interop
                 }
 
                 bool hasCertificateAndKey =
-                    certHandle != null && !certHandle.IsInvalid
-                    && certKeyHandle != null && !certKeyHandle.IsInvalid;
+                    certHandle is not null && !certHandle.IsInvalid
+                    && certKeyHandle is not null && !certKeyHandle.IsInvalid;
 
                 if (hasCertificateAndKey)
                 {
@@ -162,7 +162,7 @@ internal static partial class Interop
                 GCHandle alpnHandle = default;
                 try
                 {
-                    if (sslAuthenticationOptions.ApplicationProtocols != null)
+                    if (sslAuthenticationOptions.ApplicationProtocols is not null)
                     {
                         if (sslAuthenticationOptions.IsServer)
                         {
@@ -179,7 +179,7 @@ internal static partial class Interop
                     }
 
                     context = SafeSslHandle.Create(innerContext, sslAuthenticationOptions.IsServer);
-                    Debug.Assert(context != null, "Expected non-null return value from SafeSslHandle.Create");
+                    Debug.Assert(context is not null, "Expected non-null return value from SafeSslHandle.Create");
                     if (context.IsInvalid)
                     {
                         context.Dispose();
@@ -198,7 +198,7 @@ internal static partial class Interop
                         }
                     }
 
-                    if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
+                    if (sslAuthenticationOptions.CertificateContext is not null && sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
                     {
                         if (!Ssl.AddExtraChainCertificates(context, sslAuthenticationOptions.CertificateContext!.IntermediateCertificates))
                         {
@@ -261,7 +261,7 @@ internal static partial class Interop
                 {
                     sendCount = BioRead(context.OutputBio!, sendBuf, sendCount);
                 }
-                catch (Exception) when (handshakeException != null)
+                catch (Exception) when (handshakeException is not null)
                 {
                     // If we already have handshake exception, ignore any exception from BioRead().
                 }
@@ -277,7 +277,7 @@ internal static partial class Interop
                 }
             }
 
-            if (handshakeException != null)
+            if (handshakeException is not null)
             {
                 throw handshakeException;
             }
@@ -327,7 +327,7 @@ internal static partial class Interop
             {
                 int capacityNeeded = Crypto.BioCtrlPending(context.OutputBio!);
 
-                if (output == null || output.Length < capacityNeeded)
+                if (output is null || output.Length < capacityNeeded)
                 {
                     output = new byte[capacityNeeded];
                 }
@@ -489,7 +489,7 @@ internal static partial class Interop
 
         private static int BioRead(SafeBioHandle bio, byte[] buffer, int count)
         {
-            Debug.Assert(buffer != null);
+            Debug.Assert(buffer is not null);
             Debug.Assert(count >= 0);
             Debug.Assert(buffer.Length >= count);
 
@@ -503,7 +503,7 @@ internal static partial class Interop
 
         private static int BioWrite(SafeBioHandle bio, byte[] buffer, int offset, int count)
         {
-            Debug.Assert(buffer != null);
+            Debug.Assert(buffer is not null);
             Debug.Assert(offset >= 0);
             Debug.Assert(count >= 0);
             Debug.Assert(buffer.Length >= offset + count);
@@ -555,8 +555,8 @@ internal static partial class Interop
 
         private static void SetSslCertificate(SafeSslContextHandle contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)
         {
-            Debug.Assert(certPtr != null && !certPtr.IsInvalid, "certPtr != null && !certPtr.IsInvalid");
-            Debug.Assert(keyPtr != null && !keyPtr.IsInvalid, "keyPtr != null && !keyPtr.IsInvalid");
+            Debug.Assert(certPtr is not null && !certPtr.IsInvalid, "certPtr is not null && !certPtr.IsInvalid");
+            Debug.Assert(keyPtr is not null && !keyPtr.IsInvalid, "keyPtr is not null && !keyPtr.IsInvalid");
 
             int retVal = Ssl.SslCtxUseCertificate(contextPtr, certPtr);
 

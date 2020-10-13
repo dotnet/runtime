@@ -41,7 +41,7 @@ namespace System.Diagnostics
         public TextWriterTraceListener(Stream stream, string? name)
             : base(name)
         {
-            if (stream == null) throw new ArgumentNullException(nameof(stream));
+            if (stream is null) throw new ArgumentNullException(nameof(stream));
             _writer = new StreamWriter(stream);
         }
 
@@ -63,7 +63,7 @@ namespace System.Diagnostics
         public TextWriterTraceListener(TextWriter writer, string? name)
             : base(name)
         {
-            if (writer == null) throw new ArgumentNullException(nameof(writer));
+            if (writer is null) throw new ArgumentNullException(nameof(writer));
             _writer = writer;
         }
 
@@ -110,7 +110,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public override void Close()
         {
-            if (_writer != null)
+            if (_writer is not null)
             {
                 try
                 {
@@ -132,7 +132,7 @@ namespace System.Diagnostics
         {
             try
             {
-                if (disposing && _writer != null)
+                if (disposing && _writer is not null)
                 {
                     _writer.Dispose();
                 }
@@ -163,7 +163,7 @@ namespace System.Diagnostics
         public override void Write(string? message)
         {
             EnsureWriter();
-            if (_writer != null)
+            if (_writer is not null)
             {
                 if (NeedIndent) WriteIndent();
                 try
@@ -182,7 +182,7 @@ namespace System.Diagnostics
         public override void WriteLine(string? message)
         {
             EnsureWriter();
-            if (_writer != null)
+            if (_writer is not null)
             {
                 if (NeedIndent) WriteIndent();
                 try
@@ -206,11 +206,11 @@ namespace System.Diagnostics
 
         internal void EnsureWriter()
         {
-            if (_writer == null)
+            if (_writer is null)
             {
                 bool success = false;
 
-                if (_fileName == null)
+                if (_fileName is null)
                     return;
 
                 // StreamWriter by default uses UTF8Encoding which will throw on invalid encoding errors.

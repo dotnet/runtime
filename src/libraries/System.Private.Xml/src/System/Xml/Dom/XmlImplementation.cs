@@ -24,7 +24,7 @@ namespace System.Xml
         {
             if (string.Equals("XML", strFeature, StringComparison.OrdinalIgnoreCase))
             {
-                if (strVersion == null || strVersion == "1.0" || strVersion == "2.0")
+                if (strVersion is null || strVersion == "1.0" || strVersion == "2.0")
                     return true;
             }
             return false;

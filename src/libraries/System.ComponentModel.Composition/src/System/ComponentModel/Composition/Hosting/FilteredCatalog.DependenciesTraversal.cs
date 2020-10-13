@@ -19,12 +19,12 @@ namespace System.ComponentModel.Composition.Hosting
 
             public DependenciesTraversal(FilteredCatalog catalog, Func<ImportDefinition, bool> importFilter)
             {
-                if (catalog == null)
+                if (catalog is null)
                 {
                     throw new ArgumentNullException(nameof(catalog));
                 }
 
-                if (importFilter == null)
+                if (importFilter is null)
                 {
                     throw new ArgumentNullException(nameof(importFilter));
                 }
@@ -69,7 +69,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     // Find all parts that we know will import each export
                     List<ComposablePartDefinition>? candidateReachableParts = null;
-                    Debug.Assert(_exportersIndex != null);
+                    Debug.Assert(_exportersIndex is not null);
                     foreach (var contractName in import.GetCandidateContractNames(part))
                     {
                         if (_exportersIndex.TryGetValue(contractName, out candidateReachableParts))
@@ -81,7 +81,7 @@ namespace System.ComponentModel.Composition.Hosting
                                 {
                                     if (import.IsImportDependentOnPart(candidateReachablePart, export, part.IsGeneric() != candidateReachablePart.IsGeneric()))
                                     {
-                                        if (reachablePartList == null)
+                                        if (reachablePartList is null)
                                         {
                                             reachablePartList = new List<ComposablePartDefinition>();
                                         }
@@ -94,7 +94,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
 
                 reachableParts = reachablePartList;
-                return (reachableParts != null);
+                return (reachableParts is not null);
             }
         }
     }

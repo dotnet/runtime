@@ -31,7 +31,7 @@ namespace Microsoft.Extensions.Logging.Console
         public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter)
         {
             string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
-            if (logEntry.Exception == null && message == null)
+            if (logEntry.Exception is null && message is null)
             {
                 return;
             }
@@ -46,7 +46,7 @@ namespace Microsoft.Extensions.Logging.Console
                 {
                     writer.WriteStartObject();
                     var timestampFormat = FormatterOptions.TimestampFormat;
-                    if (timestampFormat != null)
+                    if (timestampFormat is not null)
                     {
                         DateTimeOffset dateTimeOffset = FormatterOptions.UseUtcTimestamp ? DateTimeOffset.UtcNow : DateTimeOffset.Now;
                         writer.WriteString("Timestamp", dateTimeOffset.ToString(timestampFormat));
@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.Logging.Console
                     writer.WriteString(nameof(logEntry.Category), category);
                     writer.WriteString("Message", message);
 
-                    if (exception != null)
+                    if (exception is not null)
                     {
                         string exceptionMessage = exception.ToString();
                         if (!FormatterOptions.JsonWriterOptions.Indented)
@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Logging.Console
                         writer.WriteString(nameof(Exception), exceptionMessage);
                     }
 
-                    if (logEntry.State != null)
+                    if (logEntry.State is not null)
                     {
                         writer.WriteStartObject(nameof(logEntry.State));
                         writer.WriteString("Message", logEntry.State.ToString());
@@ -108,7 +108,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         private void WriteScopeInformation(Utf8JsonWriter writer, IExternalScopeProvider scopeProvider)
         {
-            if (FormatterOptions.IncludeScopes && scopeProvider != null)
+            if (FormatterOptions.IncludeScopes && scopeProvider is not null)
             {
                 writer.WriteStartArray("Scopes");
                 scopeProvider.ForEachScope((scope, state) =>

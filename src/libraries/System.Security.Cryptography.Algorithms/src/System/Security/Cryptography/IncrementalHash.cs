@@ -28,7 +28,7 @@ namespace System.Security.Cryptography
         private IncrementalHash(HashAlgorithmName name, HashProvider hash)
         {
             Debug.Assert(!string.IsNullOrEmpty(name.Name));
-            Debug.Assert(hash != null);
+            Debug.Assert(hash is not null);
 
             _algorithmName = name;
             _hash = hash;
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography
         private IncrementalHash(HashAlgorithmName name, HMACCommon hmac)
         {
             Debug.Assert(!string.IsNullOrEmpty(name.Name));
-            Debug.Assert(hmac != null);
+            Debug.Assert(hmac is not null);
 
             _algorithmName = new HashAlgorithmName("HMAC" + name.Name);
             _hmac = hmac;
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void AppendData(byte[] data)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
 
             AppendData(new ReadOnlySpan<byte>(data));
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void AppendData(byte[] data, int offset, int count)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -107,8 +107,8 @@ namespace System.Security.Cryptography
                 throw new ObjectDisposedException(nameof(IncrementalHash));
             }
 
-            Debug.Assert((_hash != null) ^ (_hmac != null));
-            if (_hash != null)
+            Debug.Assert((_hash is not null) ^ (_hmac is not null));
+            if (_hash is not null)
             {
                 _hash.AppendHashData(data);
             }
@@ -184,8 +184,8 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(destination.Length >= HashLengthInBytes);
 
-            Debug.Assert((_hash != null) ^ (_hmac != null));
-            return _hash != null ?
+            Debug.Assert((_hash is not null) ^ (_hmac is not null));
+            return _hash is not null ?
                 _hash.FinalizeHashAndReset(destination) :
                 _hmac!.FinalizeHashAndReset(destination);
         }
@@ -277,8 +277,8 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(destination.Length >= HashLengthInBytes);
 
-            Debug.Assert((_hash != null) ^ (_hmac != null));
-            return _hash != null ?
+            Debug.Assert((_hash is not null) ^ (_hmac is not null));
+            return _hash is not null ?
                 _hash.GetCurrentHash(destination) :
                 _hmac!.GetCurrentHash(destination);
         }
@@ -291,13 +291,13 @@ namespace System.Security.Cryptography
         {
             _disposed = true;
 
-            if (_hash != null)
+            if (_hash is not null)
             {
                 _hash.Dispose();
                 _hash = null;
             }
 
-            if (_hmac != null)
+            if (_hmac is not null)
             {
                 _hmac.Dispose(true);
                 _hmac = null;
@@ -350,7 +350,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, byte[] key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             return CreateHMAC(hashAlgorithm, (ReadOnlySpan<byte>)key);

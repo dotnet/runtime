@@ -78,7 +78,7 @@ namespace System.Net.WebSockets
         {
             get
             {
-                if (_innerWebSocket != null && !_innerWebSocket.IsDisposed)
+                if (_innerWebSocket is not null && !_innerWebSocket.IsDisposed)
                 {
                     return ReadyStateToDotNetState((int)_innerWebSocket.GetObjectProperty("readyState"));
                 }
@@ -102,11 +102,11 @@ namespace System.Net.WebSockets
                 _ => WebSocketState.None
             };
 
-        public override WebSocketCloseStatus? CloseStatus => _innerWebSocket == null ? null : _innerWebSocketCloseStatus;
+        public override WebSocketCloseStatus? CloseStatus => _innerWebSocket is null ? null : _innerWebSocketCloseStatus;
 
-        public override string? CloseStatusDescription => _innerWebSocket == null ? null : _innerWebSocketCloseStatusDescription;
+        public override string? CloseStatusDescription => _innerWebSocket is null ? null : _innerWebSocketCloseStatusDescription;
 
-        public override string? SubProtocol => _innerWebSocket != null && !_innerWebSocket.IsDisposed ? _innerWebSocket!.GetObjectProperty("protocol")?.ToString() : null;
+        public override string? SubProtocol => _innerWebSocket is not null && !_innerWebSocket.IsDisposed ? _innerWebSocket!.GetObjectProperty("protocol")?.ToString() : null;
 
         #endregion Properties
 
@@ -277,22 +277,22 @@ namespace System.Net.WebSockets
         {
             // We need to clear the events on websocket as well or stray events
             // are possible leading to crashes.
-            if (_onClose != null)
+            if (_onClose is not null)
             {
                 _innerWebSocket?.SetObjectProperty("onclose", "");
                 _onClose = null;
             }
-            if (_onError != null)
+            if (_onError is not null)
             {
                 _innerWebSocket?.SetObjectProperty("onerror", "");
                 _onError = null;
             }
-            if (_onOpen != null)
+            if (_onOpen is not null)
             {
                 _innerWebSocket?.SetObjectProperty("onopen", "");
                 _onOpen = null;
             }
-            if (_onMessage != null)
+            if (_onMessage is not null)
             {
                 _innerWebSocket?.SetObjectProperty("onmessage", "");
                 _onMessage = null;
@@ -377,7 +377,7 @@ namespace System.Net.WebSockets
                         }
                         break;
                     default:
-                        string strBuffer = buffer.Array == null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
+                        string strBuffer = buffer.Array is null ? string.Empty : Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);
                         _innerWebSocket!.Invoke("send", strBuffer);
                         break;
                 }

@@ -26,7 +26,7 @@ namespace Internal.Cryptography.Pal.Windows
             )
         {
             SafeCryptMsgHandle hCryptMsg = Interop.Crypt32.CryptMsgOpenToDecode(MsgEncodingType.All, 0, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
-            if (hCryptMsg == null || hCryptMsg.IsInvalid)
+            if (hCryptMsg is null || hCryptMsg.IsInvalid)
                 throw Marshal.GetLastWin32Error().ToCryptographicException();
 
             if (!Interop.Crypt32.CryptMsgUpdate(

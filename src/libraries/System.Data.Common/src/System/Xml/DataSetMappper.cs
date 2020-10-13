@@ -14,7 +14,7 @@ namespace System.Xml
     // Maps XML nodes to schema
     //
     // With the exception of some functions (the most important is SearchMatchingTableSchema) all functions expect that each region rowElem is already associated
-    // w/ it's DataRow (basically the test to determine a rowElem is based on a != null associated DataRow). As a result of this, some functions will NOT work properly
+    // w/ it's DataRow (basically the test to determine a rowElem is based on a is not null associated DataRow). As a result of this, some functions will NOT work properly
     // when they are used on a tree for which rowElem's are not associated w/ a DataRow.
     //
 
@@ -29,7 +29,7 @@ namespace System.Xml
 
         internal DataSetMapper()
         {
-            Debug.Assert(_dataSet == null);
+            Debug.Assert(_dataSet is null);
             _tableSchemaMap = new Hashtable();
             _columnSchemaMap = new Hashtable();
         }
@@ -59,7 +59,7 @@ namespace System.Xml
             }
         }
 
-        internal bool IsMapped() => _dataSet != null;
+        internal bool IsMapped() => _dataSet is not null;
 
         internal DataTable SearchMatchingTableSchema(string localName, string namespaceURI)
         {
@@ -86,24 +86,24 @@ namespace System.Xml
         //
         internal DataTable? SearchMatchingTableSchema(XmlBoundElement? rowElem, XmlBoundElement elem)
         {
-            Debug.Assert(elem != null);
+            Debug.Assert(elem is not null);
 
             DataTable t = SearchMatchingTableSchema(elem.LocalName, elem.NamespaceURI);
-            if (t == null)
+            if (t is null)
             {
                 return null;
             }
 
-            if (rowElem == null)
+            if (rowElem is null)
             {
                 return t;
             }
 
             // Currently we expect we map things from top of the tree to the bottom
-            Debug.Assert(rowElem.Row != null);
+            Debug.Assert(rowElem.Row is not null);
 
             DataColumn? col = GetColumnSchemaForNode(rowElem, elem);
-            if (col == null)
+            if (col is null)
             {
                 return t;
             }
@@ -114,7 +114,7 @@ namespace System.Xml
                 // Some sanity check to catch errors like namespace attributes have the right localName/namespace value, but a wrong atomized namespace value
                 if (a.LocalName == "xmlns")
                 {
-                    Debug.Assert(a.Prefix != null && a.Prefix.Length == 0);
+                    Debug.Assert(a.Prefix is not null && a.Prefix.Length == 0);
                     Debug.Assert(a.NamespaceURI == (object)strReservedXmlns);
                 }
                 if (a.Prefix == "xmlns")
@@ -133,7 +133,7 @@ namespace System.Xml
                 }
             }
 
-            for (XmlNode? n = elem.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode? n = elem.FirstChild; n is not null; n = n.NextSibling)
             {
                 if (n.NodeType == XmlNodeType.Element)
                 {
@@ -148,18 +148,18 @@ namespace System.Xml
 
         internal DataColumn? GetColumnSchemaForNode(XmlBoundElement rowElem, XmlNode node)
         {
-            Debug.Assert(rowElem != null);
+            Debug.Assert(rowElem is not null);
             // The caller must make sure that node is not a row-element
-            Debug.Assert((node is XmlBoundElement) ? ((XmlBoundElement)node).Row == null : true);
+            Debug.Assert((node is XmlBoundElement) ? ((XmlBoundElement)node).Row is null : true);
 
             object tid = GetIdentity(rowElem.LocalName, rowElem.NamespaceURI);
             object cid = GetIdentity(node.LocalName, node.NamespaceURI);
 
             Hashtable? columns = (Hashtable?)_columnSchemaMap[tid];
-            if (columns != null)
+            if (columns is not null)
             {
                 DataColumn? col = (DataColumn?)(columns[cid]);
-                if (col == null)
+                if (col is null)
                 {
                     return null;
                 }
@@ -184,7 +184,7 @@ namespace System.Xml
         internal DataTable? GetTableSchemaForElement(XmlElement elem)
         {
             XmlBoundElement? be = elem as XmlBoundElement;
-            if (be == null)
+            if (be is null)
             {
                 return null;
             }
@@ -211,11 +211,11 @@ namespace System.Xml
         // This function does not work if the region is not associated w/ a DataRow (it uses DataRow association to know what is the row element associated w/ the region)
         internal bool GetRegion(XmlNode? node, [NotNullWhen(true)] out XmlBoundElement? rowElem)
         {
-            while (node != null)
+            while (node is not null)
             {
                 XmlBoundElement? be = node as XmlBoundElement;
                 // Break if found a region
-                if (be != null && GetRowFromElement(be) != null)
+                if (be is not null && GetRowFromElement(be) is not null)
                 {
                     rowElem = be;
                     return true;
@@ -238,7 +238,7 @@ namespace System.Xml
         internal bool IsRegionRadical(XmlBoundElement rowElem)
         {
             // You must pass a row element (which s/b associated w/ a DataRow)
-            Debug.Assert(rowElem.Row != null);
+            Debug.Assert(rowElem.Row is not null);
 
             if (rowElem.ElementState == ElementState.Defoliated)
             {
@@ -263,7 +263,7 @@ namespace System.Xml
 
                 // only mapped attrs are valid
                 DataColumn? schema = GetColumnSchemaForNode(rowElem, attr);
-                if (schema == null)
+                if (schema is null)
                 {
                     return false;
                 }
@@ -276,7 +276,7 @@ namespace System.Xml
 
                 // must have exactly one text node (XmlNodeType.Text) child
                 XmlNode? fc = attr.FirstChild;
-                if (fc == null || fc.NodeType != XmlNodeType.Text || fc.NextSibling != null)
+                if (fc is null || fc.NodeType != XmlNodeType.Text || fc.NextSibling is not null)
                 {
                     return false;
                 }
@@ -285,7 +285,7 @@ namespace System.Xml
             // check column elements
             iColumn = 0;
             XmlNode? n = rowElem.FirstChild;
-            for (; n != null; n = n.NextSibling)
+            for (; n is not null; n = n.NextSibling)
             {
                 // only elements can exist in radically structured data
                 if (n.NodeType != XmlNodeType.Element)
@@ -295,14 +295,14 @@ namespace System.Xml
                 XmlElement? e = n as XmlElement;
 
                 // only checking for column mappings in this loop
-                if (GetRowFromElement(e) != null)
+                if (GetRowFromElement(e) is not null)
                 {
                     break;
                 }
 
                 // element's must have schema to be radically structured
                 DataColumn? schema = GetColumnSchemaForNode(rowElem, e!);
-                if (schema == null)
+                if (schema is null)
                 {
                     return false;
                 }
@@ -321,14 +321,14 @@ namespace System.Xml
 
                 // must have exactly one text node child
                 XmlNode? fc = e.FirstChild;
-                if (fc == null || fc.NodeType != XmlNodeType.Text || fc.NextSibling != null)
+                if (fc is null || fc.NodeType != XmlNodeType.Text || fc.NextSibling is not null)
                 {
                     return false;
                 }
             }
 
             // check for remaining sub-regions
-            for (; n != null; n = n.NextSibling)
+            for (; n is not null; n = n.NextSibling)
             {
                 // only elements can exist in radically structured data
                 if (n.NodeType != XmlNodeType.Element)
@@ -338,7 +338,7 @@ namespace System.Xml
 
                 // element's must be regions in order to be radially structured
                 DataRow? row = GetRowFromElement((XmlElement?)n);
-                if (row == null)
+                if (row is null)
                 {
                     return false;
                 }
@@ -359,7 +359,7 @@ namespace System.Xml
             object idColumn = GetIdentity(col.EncodedColumnName, col.Namespace);
 
             Hashtable? columns = (Hashtable?)_columnSchemaMap[idTable];
-            if (columns == null)
+            if (columns is null)
             {
                 columns = new Hashtable();
                 _columnSchemaMap[idTable] = columns;

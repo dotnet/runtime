@@ -29,7 +29,7 @@ namespace System.Data
 
         internal void LoadSchema(XmlElement schemaRoot, DataSet ds)
         {
-            if (schemaRoot == null)
+            if (schemaRoot is null)
                 return;
 
             _schemaRoot = schemaRoot;
@@ -42,13 +42,13 @@ namespace System.Data
 
             // Get Locale and CaseSensitive properties
 
-            if (_schemaName == null || _schemaName.Length == 0)
+            if (_schemaName is null || _schemaName.Length == 0)
                 _schemaName = "NewDataSet";
 
             ds.Namespace = _schemaUri;
 
             // Walk all the top level Element tags.
-            for (XmlNode n = schemaRoot.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode n = schemaRoot.FirstChild; n is not null; n = n.NextSibling)
             {
                 if (!(n is XmlElement))
                     continue;
@@ -62,7 +62,7 @@ namespace System.Data
             }
 
             _schemaName = XmlConvert.DecodeName(_schemaName);
-            if (ds.Tables[_schemaName] == null)
+            if (ds.Tables[_schemaName] is null)
                 ds.DataSetName = _schemaName;
         }
 
@@ -86,7 +86,7 @@ namespace System.Data
             if (FEqualIdentity(node, Keywords.XDR_ELEMENT, Keywords.XDRNS) ||
                 FEqualIdentity(node, Keywords.XDR_ATTRIBUTE, Keywords.XDRNS))
             {
-                if (strType == null || strType.Length == 0)
+                if (strType is null || strType.Length == 0)
                     return null;
 
                 // Find an ELEMENTTYPE or ATTRIBUTETYPE with name=strType
@@ -105,16 +105,16 @@ namespace System.Data
                     }
 
                     // Move vn node
-                    if (vn.FirstChild != null)
+                    if (vn.FirstChild is not null)
                         vn = vn.FirstChild;
-                    else if (vn.NextSibling != null)
+                    else if (vn.NextSibling is not null)
                         vn = vn.NextSibling;
                     else
                     {
                         while (vn != vnRoof)
                         {
                             vn = vn.ParentNode;
-                            if (vn.NextSibling != null)
+                            if (vn.NextSibling is not null)
                             {
                                 vn = vn.NextSibling;
                                 break;
@@ -134,7 +134,7 @@ namespace System.Data
             Debug.Assert(FEqualIdentity(node, Keywords.XDR_ELEMENTTYPE, Keywords.XDRNS), "Invalid node type " + node.LocalName);
 
             string value = node.GetAttribute(Keywords.CONTENT);
-            if (value == null || value.Length == 0)
+            if (value is null || value.Length == 0)
             {
                 string type = node.GetAttribute(Keywords.DT_TYPE, Keywords.DTNS);
                 return !string.IsNullOrEmpty(type);
@@ -160,7 +160,7 @@ namespace System.Data
             if (!IsTextOnlyContent(typeNode))
                 return false;
 
-            for (XmlNode n = typeNode.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode n = typeNode.FirstChild; n is not null; n = n.NextSibling)
             {
                 if (FEqualIdentity(n, Keywords.XDR_ELEMENT, Keywords.XDRNS) ||
                     FEqualIdentity(n, Keywords.XDR_ATTRIBUTE, Keywords.XDRNS))
@@ -190,22 +190,22 @@ namespace System.Data
 
             string occurs = node.GetAttribute(Keywords.MINOCCURS);
 
-            if (occurs != null && occurs.Length > 0)
-                if ((Convert.ToInt32(occurs, CultureInfo.InvariantCulture) > 1) && (typeNode == null))
+            if (occurs is not null && occurs.Length > 0)
+                if ((Convert.ToInt32(occurs, CultureInfo.InvariantCulture) > 1) && (typeNode is null))
                 {
                     return InstantiateSimpleTable(_ds, node);
                 }
 
             occurs = node.GetAttribute(Keywords.MAXOCCURS);
 
-            if (occurs != null && occurs.Length > 0)
-                if (!string.Equals(occurs, "1", StringComparison.Ordinal) && (typeNode == null))
+            if (occurs is not null && occurs.Length > 0)
+                if (!string.Equals(occurs, "1", StringComparison.Ordinal) && (typeNode is null))
                 {
                     return InstantiateSimpleTable(_ds, node);
                 }
 
 
-            if (typeNode == null)
+            if (typeNode is null)
                 return null;
 
             if (IsXDRField(node, typeNode))
@@ -308,7 +308,7 @@ namespace System.Data
             }
 
             NameType nt = FindNameType(strType);
-            if (nt == s_enumerationNameType && (dtValues == null || dtValues.Length == 0))
+            if (nt == s_enumerationNameType && (dtValues is null || dtValues.Length == 0))
                 throw ExceptionBuilder.MissingAttribute("type", Keywords.DT_VALUES);
             return nt.type;
         }
@@ -321,7 +321,7 @@ namespace System.Data
                 FEqualIdentity(node, Keywords.XDR_ATTRIBUTETYPE, Keywords.XDRNS))
             {
                 instanceName = node.GetAttribute(Keywords.NAME);
-                if (instanceName == null || instanceName.Length == 0)
+                if (instanceName is null || instanceName.Length == 0)
                 {
                     throw ExceptionBuilder.MissingAttribute("Element", Keywords.NAME);
                 }
@@ -329,7 +329,7 @@ namespace System.Data
             else
             {
                 instanceName = node.GetAttribute(Keywords.TYPE);
-                if (instanceName == null || instanceName.Length == 0)
+                if (instanceName is null || instanceName.Length == 0)
                     throw ExceptionBuilder.MissingAttribute("Element", Keywords.TYPE);
             }
 
@@ -356,12 +356,12 @@ namespace System.Data
             {
                 string strRef = node.GetAttribute(Keywords.REF);
 
-                if (strRef != null && strRef.Length > 0)
+                if (strRef is not null && strRef.Length > 0)
                     return; //skip ref nodes. B2 item
 
                 strName = instanceName = GetInstanceName(node);
                 column = table.Columns[instanceName, _schemaUri];
-                if (column != null)
+                if (column is not null)
                 {
                     if (column.ColumnMapping == MappingType.Attribute)
                     {
@@ -388,7 +388,7 @@ namespace System.Data
 
             SimpleType xsdType = null;
 
-            if (typeNode == null)
+            if (typeNode is null)
             {
                 strType = node.GetAttribute(Keywords.TYPE);
                 throw ExceptionBuilder.UndefinedDatatype(strType);
@@ -396,7 +396,7 @@ namespace System.Data
 
             strType = typeNode.GetAttribute(Keywords.DT_TYPE, Keywords.DTNS);
             strValues = typeNode.GetAttribute(Keywords.DT_VALUES, Keywords.DTNS);
-            if (strType == null || strType.Length == 0)
+            if (strType is null || strType.Length == 0)
             {
                 strType = string.Empty;
                 type = typeof(string);
@@ -458,7 +458,7 @@ namespace System.Data
             column.Namespace = (isAttribute) ? string.Empty : _schemaUri;
 
             // We will skip handling expression columns in SetProperties, so we need set the expressions here
-            if (node.Attributes != null)
+            if (node.Attributes is not null)
             {
                 for (int i = 0; i < node.Attributes.Count; i++)
                 {
@@ -474,11 +474,11 @@ namespace System.Data
             }
 
             string targetNamespace = node.GetAttribute(Keywords.TARGETNAMESPACE);
-            if (targetNamespace != null && targetNamespace.Length > 0)
+            if (targetNamespace is not null && targetNamespace.Length > 0)
                 column.Namespace = targetNamespace;
 
             table.Columns.Add(column);
-            if (strDefault != null && strDefault.Length != 0)
+            if (strDefault is not null && strDefault.Length != 0)
                 try
                 {
                     column.DefaultValue = SqlConvert.ChangeTypeForXML(strDefault, type);
@@ -497,7 +497,7 @@ namespace System.Data
         internal void GetMinMax(XmlElement elNode, bool isAttribute, ref int minOccurs, ref int maxOccurs)
         {
             string occurs = elNode.GetAttribute(Keywords.MINOCCURS);
-            if (occurs != null && occurs.Length > 0)
+            if (occurs is not null && occurs.Length > 0)
             {
                 try
                 {
@@ -510,7 +510,7 @@ namespace System.Data
             }
             occurs = elNode.GetAttribute(Keywords.MAXOCCURS);
 
-            if (occurs != null && occurs.Length > 0)
+            if (occurs is not null && occurs.Length > 0)
             {
                 int bZeroOrMore = string.Compare(occurs, Keywords.STAR, StringComparison.Ordinal);
                 if (bZeroOrMore == 0)
@@ -540,7 +540,7 @@ namespace System.Data
         {
             DataTable tableChild;
 
-            for (XmlNode n = typeNode.FirstChild; n != null; n = n.NextSibling)
+            for (XmlNode n = typeNode.FirstChild; n is not null; n = n.NextSibling)
             {
                 if (!(n is XmlElement))
                     continue;
@@ -548,7 +548,7 @@ namespace System.Data
                 if (FEqualIdentity(n, Keywords.XDR_ELEMENT, Keywords.XDRNS))
                 {
                     tableChild = HandleTable((XmlElement)n);
-                    if (tableChild != null)
+                    if (tableChild is not null)
                     {
                         tableChildren.Add(tableChild);
                         continue;
@@ -580,7 +580,7 @@ namespace System.Data
             {
                 typeName = GetInstanceName(node);
                 table = dataSet.Tables.GetTable(typeName, _schemaUri);
-                if (table != null)
+                if (table is not null)
                 {
                     return table;
                 }
@@ -603,7 +603,7 @@ namespace System.Data
 
             // check to see if we fave unique constraint
 
-            if (keys != null)
+            if (keys is not null)
             {
                 string[] list = keys.TrimEnd(null).Split(null);
                 int keyLength = list.Length;
@@ -613,7 +613,7 @@ namespace System.Data
                 for (int i = 0; i < keyLength; i++)
                 {
                     DataColumn col = table.Columns[list[i], _schemaUri];
-                    if (col == null)
+                    if (col is null)
                         throw ExceptionBuilder.ElementTypeNotFound(list[i]);
                     cols[i] = col;
                 }
@@ -636,7 +636,7 @@ namespace System.Data
                         relation = childRelations[j];
                 }
 
-                if (relation != null)
+                if (relation is not null)
                     continue;
 
                 DataColumn parentKey = table.AddUniqueKey();
@@ -666,7 +666,7 @@ namespace System.Data
 
             typeName = GetInstanceName(node);
             table = dataSet.Tables.GetTable(typeName, _schemaUri);
-            if (table != null)
+            if (table is not null)
             {
                 throw ExceptionBuilder.DuplicateDeclaration(typeName);
             }

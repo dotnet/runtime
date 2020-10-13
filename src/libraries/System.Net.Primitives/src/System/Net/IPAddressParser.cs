@@ -90,7 +90,7 @@ namespace System.Net
 
         internal static string IPv6AddressToString(ushort[] address, uint scopeId)
         {
-            Debug.Assert(address != null);
+            Debug.Assert(address is not null);
             Debug.Assert(address.Length == IPAddressParserStatics.IPv6AddressShorts);
 
             StringBuilder buffer = IPv6AddressToStringHelper(address, scopeId);
@@ -100,7 +100,7 @@ namespace System.Net
 
         internal static bool IPv6AddressToString(ushort[] address, uint scopeId, Span<char> destination, out int charsWritten)
         {
-            Debug.Assert(address != null);
+            Debug.Assert(address is not null);
             Debug.Assert(address.Length == IPAddressParserStatics.IPv6AddressShorts);
 
             StringBuilder buffer = IPv6AddressToStringHelper(address, scopeId);
@@ -198,7 +198,6 @@ namespace System.Net
 
         public static unsafe bool Ipv6StringToAddress(ReadOnlySpan<char> ipSpan, Span<ushort> numbers, int numbersLength, out uint scope)
         {
-            Debug.Assert(numbers != null);
             Debug.Assert(numbersLength >= IPAddressParserStatics.IPv6AddressShorts);
 
             int end = ipSpan.Length;

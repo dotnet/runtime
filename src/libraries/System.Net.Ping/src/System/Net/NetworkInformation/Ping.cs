@@ -42,7 +42,7 @@ namespace System.Net.NetworkInformation
         private void CheckArgs(int timeout, byte[] buffer, PingOptions? options)
         {
             CheckDisposed();
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -62,7 +62,7 @@ namespace System.Net.NetworkInformation
         {
             CheckArgs(timeout, buffer, options);
 
-            if (address == null)
+            if (address is null)
             {
                 throw new ArgumentNullException(nameof(address));
             }
@@ -440,7 +440,7 @@ namespace System.Net.NetworkInformation
         {
             get
             {
-                if (_defaultSendBuffer == null)
+                if (_defaultSendBuffer is null)
                 {
                     _defaultSendBuffer = new byte[DefaultSendBufferSize];
                     for (int i = 0; i < DefaultSendBufferSize; i++)

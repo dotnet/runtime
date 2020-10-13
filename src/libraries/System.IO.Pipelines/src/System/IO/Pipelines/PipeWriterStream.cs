@@ -13,7 +13,7 @@ namespace System.IO.Pipelines
 
         public PipeWriterStream(PipeWriter pipeWriter, bool leaveOpen)
         {
-            Debug.Assert(pipeWriter != null);
+            Debug.Assert(pipeWriter is not null);
             _pipeWriter = pipeWriter;
             LeaveOpen = leaveOpen;
         }

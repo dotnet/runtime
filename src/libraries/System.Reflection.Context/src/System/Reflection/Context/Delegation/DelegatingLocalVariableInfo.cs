@@ -9,7 +9,7 @@ namespace System.Reflection.Context.Delegation
     {
         public DelegatingLocalVariableInfo(LocalVariableInfo variable)
         {
-            Debug.Assert(variable != null);
+            Debug.Assert(variable is not null);
 
             UnderlyingVariable = variable;
         }

@@ -144,7 +144,7 @@ namespace System.Globalization
 
         private void InitUserOverride(bool useUserOverride)
         {
-            Debug.Assert(_sWindowsName != null, "[CultureData.InitUserOverride] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sWindowsName is not null, "[CultureData.InitUserOverride] Expected _sWindowsName to be populated by already");
             _bUseOverrides = useUserOverride && _sWindowsName == CultureInfo.UserDefaultLocaleName;
         }
 
@@ -167,7 +167,7 @@ namespace System.Globalization
                 {
                     geoIsoIdLength -= geoIso2Letters[geoIsoIdLength - 1] == 0 ? 1 : 0; // handle null termination and exclude it.
                     CultureData? cd = GetCultureDataForRegion(geoIso2Letters.Slice(0, geoIsoIdLength).ToString(), true);
-                    if (cd != null)
+                    if (cd is not null)
                     {
                         return cd;
                     }
@@ -195,7 +195,7 @@ namespace System.Globalization
 
         private string[]? GetTimeFormatsCore(bool shortFormat)
         {
-            Debug.Assert(_sWindowsName != null, "[CultureData.GetTimeFormatsCore] Expected _sWindowsName to be populated by already");
+            Debug.Assert(_sWindowsName is not null, "[CultureData.GetTimeFormatsCore] Expected _sWindowsName to be populated by already");
 
             if (GlobalizationMode.UseNls)
             {

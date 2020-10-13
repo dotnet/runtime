@@ -20,7 +20,7 @@ namespace System.Security.AccessControl
         protected DirectoryObjectSecurity(CommonSecurityDescriptor securityDescriptor)
             : base(securityDescriptor)
         {
-            if (securityDescriptor == null)
+            if (securityDescriptor is null)
             {
                 throw new ArgumentNullException(nameof(securityDescriptor));
             }
@@ -75,7 +75,7 @@ namespace System.Security.AccessControl
                     }
                 }
 
-                if (acl == null)
+                if (acl is null)
                 {
                     //
                     // The required ACL was not present; return an empty collection.
@@ -102,7 +102,7 @@ namespace System.Security.AccessControl
                         //
                         QualifiedAce? ace = acl[i] as QualifiedAce;
 
-                        if (ace == null)
+                        if (ace is null)
                         {
                             //
                             // Only consider qualified ACEs
@@ -152,10 +152,10 @@ namespace System.Security.AccessControl
                     //
                     QualifiedAce? ace = acl[i] as CommonAce;
 
-                    if (ace == null)
+                    if (ace is null)
                     {
                         ace = acl[i] as ObjectAce;
-                        if (ace == null)
+                        if (ace is null)
                         {
                             //
                             // Only consider common or object ACEs
@@ -212,7 +212,7 @@ namespace System.Security.AccessControl
                             {
                                 CommonAce? commonAce = ace as CommonAce;
 
-                                if (commonAce == null)
+                                if (commonAce is null)
                                 {
                                     continue;
                                 }
@@ -230,7 +230,7 @@ namespace System.Security.AccessControl
                             {
                                 CommonAce? commonAce = ace as CommonAce;
 
-                                if (commonAce == null)
+                                if (commonAce is null)
                                 {
                                     continue;
                                 }
@@ -256,7 +256,7 @@ namespace System.Security.AccessControl
         {
             bool result = true;
 
-            if (SecurityDescriptor.DiscretionaryAcl == null)
+            if (SecurityDescriptor.DiscretionaryAcl is null)
             {
                 if (modification == AccessControlModification.Remove || modification == AccessControlModification.RemoveAll || modification == AccessControlModification.RemoveSpecific)
                 {
@@ -289,7 +289,7 @@ namespace System.Security.AccessControl
 
             SecurityIdentifier sid = (SecurityIdentifier)rule.IdentityReference.Translate(typeof(SecurityIdentifier));
 
-            Debug.Assert(SecurityDescriptor.DiscretionaryAcl != null);
+            Debug.Assert(SecurityDescriptor.DiscretionaryAcl is not null);
             if (rule.AccessControlType == AccessControlType.Allow)
             {
                 switch (modification)
@@ -397,7 +397,7 @@ namespace System.Security.AccessControl
         {
             bool result = true;
 
-            if (SecurityDescriptor.SystemAcl == null)
+            if (SecurityDescriptor.SystemAcl is null)
             {
                 if (modification == AccessControlModification.Remove || modification == AccessControlModification.RemoveAll || modification == AccessControlModification.RemoveSpecific)
                 {
@@ -430,7 +430,7 @@ namespace System.Security.AccessControl
 
             SecurityIdentifier sid = (SecurityIdentifier)rule.IdentityReference.Translate(typeof(SecurityIdentifier));
 
-            Debug.Assert(SecurityDescriptor.SystemAcl != null);
+            Debug.Assert(SecurityDescriptor.SystemAcl is not null);
             switch (modification)
             {
                 case AccessControlModification.Add:
@@ -522,7 +522,7 @@ namespace System.Security.AccessControl
 
         protected void AddAccessRule(ObjectAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -544,7 +544,7 @@ namespace System.Security.AccessControl
 
         protected void SetAccessRule(ObjectAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -564,7 +564,7 @@ namespace System.Security.AccessControl
 
         protected void ResetAccessRule(ObjectAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -584,7 +584,7 @@ namespace System.Security.AccessControl
 
         protected bool RemoveAccessRule(ObjectAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -593,7 +593,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                if (SecurityDescriptor == null)
+                if (SecurityDescriptor is null)
                 {
                     return true;
                 }
@@ -609,7 +609,7 @@ namespace System.Security.AccessControl
 
         protected void RemoveAccessRuleAll(ObjectAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -618,7 +618,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                if (SecurityDescriptor == null)
+                if (SecurityDescriptor is null)
                 {
                     return;
                 }
@@ -634,12 +634,12 @@ namespace System.Security.AccessControl
 
         protected void RemoveAccessRuleSpecific(ObjectAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
 
-            if (SecurityDescriptor == null)
+            if (SecurityDescriptor is null)
             {
                 return;
             }
@@ -659,7 +659,7 @@ namespace System.Security.AccessControl
 
         protected void AddAuditRule(ObjectAuditRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -679,7 +679,7 @@ namespace System.Security.AccessControl
 
         protected void SetAuditRule(ObjectAuditRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -699,7 +699,7 @@ namespace System.Security.AccessControl
 
         protected bool RemoveAuditRule(ObjectAuditRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -719,7 +719,7 @@ namespace System.Security.AccessControl
 
         protected void RemoveAuditRuleAll(ObjectAuditRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -739,7 +739,7 @@ namespace System.Security.AccessControl
 
         protected void RemoveAuditRuleSpecific(ObjectAuditRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }

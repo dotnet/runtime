@@ -176,14 +176,14 @@ namespace System.Linq.Expressions
         public DynamicExpression Update(IEnumerable<Expression>? arguments)
         {
             ICollection<Expression>? args;
-            if (arguments == null)
+            if (arguments is null)
             {
                 args = null;
             }
             else
             {
                 args = arguments as ICollection<Expression>;
-                if (args == null)
+                if (args is null)
                 {
                     arguments = args = arguments.ToReadOnly();
                 }
@@ -542,7 +542,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 1)
+            if (arguments is not null && arguments.Count == 1)
             {
                 using (IEnumerator<Expression> en = arguments.GetEnumerator())
                 {
@@ -602,7 +602,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 2)
+            if (arguments is not null && arguments.Count == 2)
             {
                 if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
@@ -673,7 +673,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 3)
+            if (arguments is not null && arguments.Count == 3)
             {
                 if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {
@@ -750,7 +750,7 @@ namespace System.Linq.Expressions
 
         internal override bool SameArguments(ICollection<Expression>? arguments)
         {
-            if (arguments != null && arguments.Count == 4)
+            if (arguments is not null && arguments.Count == 4)
             {
                 if (_arg0 is ReadOnlyCollection<Expression> alreadyCollection)
                 {

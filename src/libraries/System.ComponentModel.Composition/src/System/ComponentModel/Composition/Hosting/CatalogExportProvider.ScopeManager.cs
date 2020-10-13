@@ -15,11 +15,11 @@ namespace System.ComponentModel.Composition.Hosting
 
             public ScopeManager(CatalogExportProvider catalogExportProvider, CompositionScopeDefinition scopeDefinition)
             {
-                if (catalogExportProvider == null)
+                if (catalogExportProvider is null)
                 {
                     throw new ArgumentNullException(nameof(catalogExportProvider));
                 }
-                if (scopeDefinition == null)
+                if (scopeDefinition is null)
                 {
                     throw new ArgumentNullException(nameof(scopeDefinition));
                 }
@@ -33,7 +33,7 @@ namespace System.ComponentModel.Composition.Hosting
                 List<Export> exports = new List<Export>();
 
                 ImportDefinition? queryImport = TranslateImport(definition);
-                if (queryImport == null)
+                if (queryImport is null)
                 {
                     return exports;
                 }
@@ -84,7 +84,7 @@ namespace System.ComponentModel.Composition.Hosting
             private static ImportDefinition? TranslateImport(ImportDefinition definition)
             {
                 IPartCreatorImportDefinition? factoryDefinition = definition as IPartCreatorImportDefinition;
-                if (factoryDefinition == null)
+                if (factoryDefinition is null)
                 {
                     return null;
                 }

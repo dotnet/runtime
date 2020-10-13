@@ -95,7 +95,7 @@ namespace System.IO.Pipes
         // This method may also be called to uninitialize a handle, setting it to null.
         protected void InitializeHandle(SafePipeHandle? handle, bool isExposed, bool isAsync)
         {
-            if (isAsync && handle != null)
+            if (isAsync && handle is not null)
             {
                 InitializeAsyncHandle(handle);
             }
@@ -322,7 +322,7 @@ namespace System.IO.Pipes
 
         private void CheckReadWriteArgs(byte[] buffer, int offset, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -335,7 +335,7 @@ namespace System.IO.Pipes
         [Conditional("DEBUG")]
         private static void DebugAssertHandleValid(SafePipeHandle handle)
         {
-            Debug.Assert(handle != null, "handle is null");
+            Debug.Assert(handle is not null, "handle is null");
             Debug.Assert(!handle.IsClosed, "handle is closed");
         }
 
@@ -382,7 +382,7 @@ namespace System.IO.Pipes
             {
                 // Nothing will be done differently based on whether we are
                 // disposing vs. finalizing.
-                if (_handle != null && !_handle.IsClosed)
+                if (_handle is not null && !_handle.IsClosed)
                 {
                     _handle.Dispose();
                 }
@@ -434,12 +434,12 @@ namespace System.IO.Pipes
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_PipeDisconnected);
                 }
-                if (CheckOperationsRequiresSetHandle && _handle == null)
+                if (CheckOperationsRequiresSetHandle && _handle is null)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
                 }
 
-                if ((_state == PipeState.Closed) || (_handle != null && _handle.IsClosed))
+                if ((_state == PipeState.Closed) || (_handle is not null && _handle.IsClosed))
                 {
                     throw Error.GetPipeNotOpen();
                 }
@@ -465,7 +465,7 @@ namespace System.IO.Pipes
         {
             get
             {
-                if (_handle == null)
+                if (_handle is null)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
                 }
@@ -553,13 +553,13 @@ namespace System.IO.Pipes
         // or connected. Named client overrides
         protected internal virtual void CheckPipePropertyOperations()
         {
-            if (CheckOperationsRequiresSetHandle && _handle == null)
+            if (CheckOperationsRequiresSetHandle && _handle is null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }
 
             // these throw object disposed
-            if ((_state == PipeState.Closed) || (_handle != null && _handle.IsClosed))
+            if ((_state == PipeState.Closed) || (_handle is not null && _handle.IsClosed))
             {
                 throw Error.GetPipeNotOpen();
             }
@@ -578,13 +578,13 @@ namespace System.IO.Pipes
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeDisconnected);
             }
-            if (CheckOperationsRequiresSetHandle && _handle == null)
+            if (CheckOperationsRequiresSetHandle && _handle is null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }
 
             // these throw object disposed
-            if ((_state == PipeState.Closed) || (_handle != null && _handle.IsClosed))
+            if ((_state == PipeState.Closed) || (_handle is not null && _handle.IsClosed))
             {
                 throw Error.GetPipeNotOpen();
             }
@@ -602,7 +602,7 @@ namespace System.IO.Pipes
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeDisconnected);
             }
-            if (CheckOperationsRequiresSetHandle && _handle == null)
+            if (CheckOperationsRequiresSetHandle && _handle is null)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }
@@ -614,7 +614,7 @@ namespace System.IO.Pipes
             }
 
             // these throw object disposed
-            if ((_state == PipeState.Closed) || (_handle != null && _handle.IsClosed))
+            if ((_state == PipeState.Closed) || (_handle is not null && _handle.IsClosed))
             {
                 throw Error.GetPipeNotOpen();
             }

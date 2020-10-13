@@ -33,7 +33,7 @@ namespace System.Drawing
                 }
 
                 // Parse 4 integer values.
-                if (culture == null)
+                if (culture is null)
                 {
                     culture = CultureInfo.CurrentCulture;
                 }
@@ -61,7 +61,7 @@ namespace System.Drawing
 
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
@@ -70,7 +70,7 @@ namespace System.Drawing
             {
                 if (destinationType == typeof(string))
                 {
-                    if (culture == null)
+                    if (culture is null)
                     {
                         culture = CultureInfo.CurrentCulture;
                     }
@@ -93,7 +93,7 @@ namespace System.Drawing
                     ConstructorInfo ctor = typeof(Rectangle).GetConstructor(new Type[] {
                         typeof(int), typeof(int), typeof(int), typeof(int)});
 
-                    if (ctor != null)
+                    if (ctor is not null)
                     {
                         return new InstanceDescriptor(ctor, new object[] {
                             rect.X, rect.Y, rect.Width, rect.Height});
@@ -106,7 +106,7 @@ namespace System.Drawing
 
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
         {
-            if (propertyValues == null)
+            if (propertyValues is null)
             {
                 throw new ArgumentNullException(nameof(propertyValues));
             }
@@ -116,7 +116,7 @@ namespace System.Drawing
             object width = propertyValues["Width"];
             object height = propertyValues["Height"];
 
-            if (x == null || y == null || width == null || height == null ||
+            if (x is null || y is null || width is null || height is null ||
                 !(x is int) || !(y is int) || !(width is int) || !(height is int))
             {
                 throw new ArgumentException(SR.PropertyValueInvalidEntry);

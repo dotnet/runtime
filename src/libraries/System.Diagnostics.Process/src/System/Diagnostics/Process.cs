@@ -298,7 +298,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_modules == null)
+                if (_modules is null)
                 {
                     EnsureState(State.HaveNonExitedId | State.IsLocal);
                     _modules = ProcessManager.GetModules(_processId);
@@ -557,7 +557,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_startInfo == null)
+                if (_startInfo is null)
                 {
                     if (Associated)
                     {
@@ -570,7 +570,7 @@ namespace System.Diagnostics
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -594,7 +594,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_threads == null)
+                if (_threads is null)
                 {
                     EnsureState(State.HaveProcessInfo);
                     int count = _processInfo!._threadInfoList.Count;
@@ -683,7 +683,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_standardInput == null)
+                if (_standardInput is null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardIn);
                 }
@@ -700,7 +700,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_standardOutput == null)
+                if (_standardOutput is null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardOut);
                 }
@@ -725,7 +725,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_standardError == null)
+                if (_standardError is null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardError);
                 }
@@ -780,7 +780,7 @@ namespace System.Diagnostics
         /// <internalonly/>
         private void CompletionCallback(object? waitHandleContext, bool wasSignaled)
         {
-            Debug.Assert(waitHandleContext != null, "Process.CompletionCallback called with no waitHandleContext");
+            Debug.Assert(waitHandleContext is not null, "Process.CompletionCallback called with no waitHandleContext");
             lock (this)
             {
                 // Check the exited event that we get from the threadpool
@@ -863,7 +863,7 @@ namespace System.Diagnostics
                 // If they are referenced it is the user's responsibility to dispose of them.
                 try
                 {
-                    if (_standardOutput != null && (_outputStreamReadMode == StreamReadMode.AsyncMode || _outputStreamReadMode == StreamReadMode.Undefined))
+                    if (_standardOutput is not null && (_outputStreamReadMode == StreamReadMode.AsyncMode || _outputStreamReadMode == StreamReadMode.Undefined))
                     {
                         if (_outputStreamReadMode == StreamReadMode.AsyncMode)
                         {
@@ -873,7 +873,7 @@ namespace System.Diagnostics
                         _standardOutput.Close();
                     }
 
-                    if (_standardError != null && (_errorStreamReadMode == StreamReadMode.AsyncMode || _errorStreamReadMode == StreamReadMode.Undefined))
+                    if (_standardError is not null && (_errorStreamReadMode == StreamReadMode.AsyncMode || _errorStreamReadMode == StreamReadMode.Undefined))
                     {
                         if (_errorStreamReadMode == StreamReadMode.AsyncMode)
                         {
@@ -883,7 +883,7 @@ namespace System.Diagnostics
                         _standardError.Close();
                     }
 
-                    if (_standardInput != null && !_standardInputAccessed)
+                    if (_standardInput is not null && !_standardInputAccessed)
                     {
                         _standardInput.Close();
                     }
@@ -944,14 +944,14 @@ namespace System.Diagnostics
 
             if ((state & State.HaveProcessInfo) != (State)0)
             {
-                if (_processInfo == null)
+                if (_processInfo is null)
                 {
                     if ((state & State.HaveNonExitedId) != State.HaveNonExitedId)
                     {
                         EnsureState(State.HaveNonExitedId);
                     }
                     _processInfo = ProcessManager.GetProcessInfo(_processId, _machineName);
-                    if (_processInfo == null)
+                    if (_processInfo is null)
                     {
                         throw new InvalidOperationException(SR.NoProcessInfo);
                     }
@@ -1085,7 +1085,7 @@ namespace System.Diagnostics
         protected void OnExited()
         {
             EventHandler? exited = _onExited;
-            if (exited != null)
+            if (exited is not null)
             {
                 if (SynchronizingObject is ISynchronizeInvoke syncObj && syncObj.InvokeRequired)
                 {
@@ -1206,15 +1206,15 @@ namespace System.Diagnostics
             {
                 throw new InvalidOperationException(SR.FileNameMissing);
             }
-            if (startInfo.StandardInputEncoding != null && !startInfo.RedirectStandardInput)
+            if (startInfo.StandardInputEncoding is not null && !startInfo.RedirectStandardInput)
             {
                 throw new InvalidOperationException(SR.StandardInputEncodingNotAllowed);
             }
-            if (startInfo.StandardOutputEncoding != null && !startInfo.RedirectStandardOutput)
+            if (startInfo.StandardOutputEncoding is not null && !startInfo.RedirectStandardOutput)
             {
                 throw new InvalidOperationException(SR.StandardOutputEncodingNotAllowed);
             }
-            if (startInfo.StandardErrorEncoding != null && !startInfo.RedirectStandardError)
+            if (startInfo.StandardErrorEncoding is not null && !startInfo.RedirectStandardError)
             {
                 throw new InvalidOperationException(SR.StandardErrorEncodingNotAllowed);
             }
@@ -1270,9 +1270,9 @@ namespace System.Diagnostics
         /// </summary>
         public static Process Start(string fileName, IEnumerable<string> arguments)
         {
-            if (fileName == null)
+            if (fileName is null)
                 throw new ArgumentNullException(nameof(fileName));
-            if (arguments == null)
+            if (arguments is null)
                 throw new ArgumentNullException(nameof(arguments));
 
             var startInfo = new ProcessStartInfo(fileName);
@@ -1295,7 +1295,7 @@ namespace System.Diagnostics
         public static Process? Start(ProcessStartInfo startInfo)
         {
             Process process = new Process();
-            if (startInfo == null)
+            if (startInfo is null)
                 throw new ArgumentNullException(nameof(startInfo));
 
             process.StartInfo = startInfo;
@@ -1329,12 +1329,12 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (rwh != null)
+                if (rwh is not null)
                 {
                     rwh.Unregister(null);
                 }
 
-                if (wh != null)
+                if (wh is not null)
                 {
                     wh.Dispose();
                 }
@@ -1489,12 +1489,12 @@ namespace System.Diagnostics
 
             async ValueTask WaitUntilOutputEOF()
             {
-                if (_output != null)
+                if (_output is not null)
                 {
                     await _output.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
                 }
 
-                if (_error != null)
+                if (_error is not null)
                 {
                     await _error.WaitUntilEOFAsync(cancellationToken).ConfigureAwait(false);
                 }
@@ -1525,9 +1525,9 @@ namespace System.Diagnostics
 
             _pendingOutputRead = true;
             // We can't detect if there's a pending synchronous read, stream also doesn't.
-            if (_output == null)
+            if (_output is null)
             {
-                if (_standardOutput == null)
+                if (_standardOutput is null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardOut);
                 }
@@ -1565,9 +1565,9 @@ namespace System.Diagnostics
 
             _pendingErrorRead = true;
             // We can't detect if there's a pending synchronous read, stream also doesn't.
-            if (_error == null)
+            if (_error is null)
             {
-                if (_standardError == null)
+                if (_standardError is null)
                 {
                     throw new InvalidOperationException(SR.CantGetStandardError);
                 }
@@ -1586,7 +1586,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void CancelOutputRead()
         {
-            if (_output != null)
+            if (_output is not null)
             {
                 _output.CancelOperation();
             }
@@ -1606,7 +1606,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void CancelErrorRead()
         {
-            if (_error != null)
+            if (_error is not null)
             {
                 _error.CancelOperation();
             }
@@ -1622,7 +1622,7 @@ namespace System.Diagnostics
         {
             // To avoid race between remove handler and raising the event
             DataReceivedEventHandler? outputDataReceived = OutputDataReceived;
-            if (outputDataReceived != null)
+            if (outputDataReceived is not null)
             {
                 // Call back to user informing data is available
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);
@@ -1641,7 +1641,7 @@ namespace System.Diagnostics
         {
             // To avoid race between remove handler and raising the event
             DataReceivedEventHandler? errorDataReceived = ErrorDataReceived;
-            if (errorDataReceived != null)
+            if (errorDataReceived is not null)
             {
                 // Call back to user informing data is available.
                 DataReceivedEventArgs e = new DataReceivedEventArgs(data);

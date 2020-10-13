@@ -480,7 +480,7 @@ namespace System.Globalization
         {
             get
             {
-                if (m_eras == null)
+                if (m_eras is null)
                 {
                     m_eras = new int[m_EraInfo.Length];
                     for (int i = 0; i < m_EraInfo.Length; i++)

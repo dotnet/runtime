@@ -192,7 +192,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_attributes == null)
+                if (_attributes is null)
                 {
                     _attributes = new XmlSchemaObjectCollection();
                 }
@@ -231,7 +231,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_attributeUses == null)
+                if (_attributeUses is null)
                 {
                     _attributeUses = new XmlSchemaObjectTable();
                 }
@@ -250,7 +250,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_localElements == null)
+                if (_localElements is null)
                 {
                     _localElements = new XmlSchemaObjectTable();
                 }
@@ -296,7 +296,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_contentModel == null)
+                if (_contentModel is null)
                 {
                     // type derived from anyType
                     return XmlQualifiedName.Empty;
@@ -327,7 +327,7 @@ namespace System.Xml.Schema
                 if (attribute!.Use != XmlSchemaUse.Prohibited)
                 {
                     XmlSchemaDatatype? datatype = attribute.Datatype;
-                    if (datatype != null && datatype.TypeCode == XmlTypeCode.Id)
+                    if (datatype is not null && datatype.TypeCode == XmlTypeCode.Id)
                     {
                         idCount++;
                         if (idCount > 1)
@@ -351,15 +351,15 @@ namespace System.Xml.Schema
             XmlSchemaComplexType complexType = (XmlSchemaComplexType)MemberwiseClone();
 
             //Deep clone the QNames as these will be updated on chameleon includes
-            if (complexType.ContentModel != null)
+            if (complexType.ContentModel is not null)
             { //simpleContent or complexContent
                 XmlSchemaSimpleContent? simpleContent = complexType.ContentModel as XmlSchemaSimpleContent;
-                if (simpleContent != null)
+                if (simpleContent is not null)
                 {
                     XmlSchemaSimpleContent newSimpleContent = (XmlSchemaSimpleContent)simpleContent.Clone();
 
                     XmlSchemaSimpleContentExtension? simpleExt = simpleContent.Content as XmlSchemaSimpleContentExtension;
-                    if (simpleExt != null)
+                    if (simpleExt is not null)
                     {
                         XmlSchemaSimpleContentExtension newSimpleExt = (XmlSchemaSimpleContentExtension)simpleExt.Clone();
                         newSimpleExt.BaseTypeName = simpleExt.BaseTypeName.Clone();
@@ -383,7 +383,7 @@ namespace System.Xml.Schema
                     XmlSchemaComplexContent newComplexContent = (XmlSchemaComplexContent)complexContent.Clone();
 
                     XmlSchemaComplexContentExtension? complexExt = complexContent.Content as XmlSchemaComplexContentExtension;
-                    if (complexExt != null)
+                    if (complexExt is not null)
                     {
                         XmlSchemaComplexContentExtension newComplexExt = (XmlSchemaComplexContentExtension)complexExt.Clone();
                         newComplexExt.BaseTypeName = complexExt.BaseTypeName.Clone();
@@ -447,7 +447,7 @@ namespace System.Xml.Schema
                 {
                     xso = attributes[i];
                     attributeGroupRef = xso as XmlSchemaAttributeGroupRef;
-                    if (attributeGroupRef != null)
+                    if (attributeGroupRef is not null)
                     {
                         newAttGroupRef = (XmlSchemaAttributeGroupRef)attributeGroupRef.Clone();
                         newAttGroupRef.RefName = attributeGroupRef.RefName.Clone();
@@ -483,7 +483,7 @@ namespace System.Xml.Schema
         internal static XmlSchemaParticle? CloneParticle(XmlSchemaParticle? particle, XmlSchema? parentSchema)
         {
             XmlSchemaGroupBase? groupBase = particle as XmlSchemaGroupBase;
-            if (groupBase != null)
+            if (groupBase is not null)
             { //Choice or sequence
                 XmlSchemaGroupBase newGroupBase = groupBase;
 
@@ -506,7 +506,7 @@ namespace System.Xml.Schema
                 //   - it references its type by name
                 //   - it's form (effective) is qualified (meaning it will inherint namespace from chameleon includes if that happens)
                 // then the element itself needs to be cloned.
-                if (oldElem != null && (!oldElem.RefName.IsEmpty || !oldElem.SchemaTypeName.IsEmpty ||
+                if (oldElem is not null && (!oldElem.RefName.IsEmpty || !oldElem.SchemaTypeName.IsEmpty ||
                     GetResolvedElementForm(parentSchema, oldElem) == XmlSchemaForm.Qualified))
                 {
                     XmlSchemaElement newElem = (XmlSchemaElement)oldElem.Clone(parentSchema);
@@ -524,7 +524,7 @@ namespace System.Xml.Schema
         //   schema.
         private static XmlSchemaForm GetResolvedElementForm(XmlSchema? parentSchema, XmlSchemaElement element)
         {
-            if (element.Form == XmlSchemaForm.None && parentSchema != null)
+            if (element.Form == XmlSchemaForm.None && parentSchema is not null)
             {
                 return parentSchema.ElementFormDefault;
             }
@@ -537,7 +537,7 @@ namespace System.Xml.Schema
         internal static bool HasParticleRef(XmlSchemaParticle? particle, XmlSchema? parentSchema)
         {
             XmlSchemaGroupBase? groupBase = particle as XmlSchemaGroupBase;
-            if (groupBase != null)
+            if (groupBase is not null)
             {
                 bool foundRef = false;
                 int i = 0;
@@ -555,7 +555,7 @@ namespace System.Xml.Schema
                         //   that's on purpose. This method is used to determine if we need to clone the whole particle.
                         //   If we do, then the CloneParticle is called and it will try to clone only
                         //   those elements which need cloning - and those are the ones matching this condition.
-                        if (elem != null && (!elem.RefName.IsEmpty || !elem.SchemaTypeName.IsEmpty ||
+                        if (elem is not null && (!elem.RefName.IsEmpty || !elem.SchemaTypeName.IsEmpty ||
                             GetResolvedElementForm(parentSchema, elem) == XmlSchemaForm.Qualified))
                         {
                             foundRef = true;

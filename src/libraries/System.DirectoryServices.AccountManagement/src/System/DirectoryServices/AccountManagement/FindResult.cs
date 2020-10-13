@@ -34,7 +34,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearchResult", "Dispose: disposing");
 
-                if (_resultSet != null)
+                if (_resultSet is not null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalSearchResult", "Dispose: disposing resultSet");
 

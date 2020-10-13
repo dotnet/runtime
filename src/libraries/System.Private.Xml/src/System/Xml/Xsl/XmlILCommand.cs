@@ -26,7 +26,7 @@ namespace System.Xml.Xsl
         /// </summary>
         public XmlILCommand(ExecuteDelegate delExec, XmlQueryStaticData staticData)
         {
-            Debug.Assert(delExec != null && staticData != null);
+            Debug.Assert(delExec is not null && staticData is not null);
             _delExec = delExec;
             _staticData = staticData;
         }
@@ -46,7 +46,7 @@ namespace System.Xml.Xsl
         /// provided name. The results are output to the provided XmlWriter.
         /// </summary>
         public override void Execute(XmlReader contextDocument, XmlResolver dataSources, XsltArgumentList argumentList, XmlWriter results) {
-            if (results == null)
+            if (results is null)
                 throw new ArgumentNullException(nameof(results));
 
             Execute(contextDocument, dataSources, argumentList, results, false);
@@ -58,7 +58,7 @@ namespace System.Xml.Xsl
         /// provided name. The results are output to the provided TextWriter.
         /// </summary>
         public override void Execute(XmlReader contextDocument, XmlResolver dataSources, XsltArgumentList argumentList, TextWriter results) {
-            if (results == null)
+            if (results is null)
                 throw new ArgumentNullException(nameof(results));
 
             Execute(contextDocument, dataSources, argumentList, XmlWriter.Create(results, this.staticData.DefaultWriterSettings), true);
@@ -70,7 +70,7 @@ namespace System.Xml.Xsl
         /// provided name. The results are output to the provided Stream.
         /// </summary>
         public override void Execute(XmlReader contextDocument, XmlResolver dataSources, XsltArgumentList argumentList, Stream results) {
-            if (results == null)
+            if (results is null)
                 throw new ArgumentNullException(nameof(results));
 
             Execute(contextDocument, dataSources, argumentList, XmlWriter.Create(results, this.staticData.DefaultWriterSettings), true);
@@ -104,8 +104,8 @@ namespace System.Xml.Xsl
                 // Try to extract a RawWriter
                 XmlWellFormedWriter? wellFormedWriter = writer as XmlWellFormedWriter;
 
-                if (wellFormedWriter != null &&
-                    wellFormedWriter.RawWriter != null &&
+                if (wellFormedWriter is not null &&
+                    wellFormedWriter.RawWriter is not null &&
                     wellFormedWriter.WriteState == WriteState.Start &&
                     wellFormedWriter.Settings.ConformanceLevel != ConformanceLevel.Document)
                 {
@@ -129,10 +129,10 @@ namespace System.Xml.Xsl
         /// </summary>
         private void Execute(object defaultDocument, XmlResolver? dataSources, XsltArgumentList? argumentList, XmlSequenceWriter results)
         {
-            Debug.Assert(results != null);
+            Debug.Assert(results is not null);
 
             // Ensure that dataSources is always non-null
-            if (dataSources == null)
+            if (dataSources is null)
                 dataSources = XmlNullResolver.Singleton;
 
             _delExec(new XmlQueryRuntime(_staticData, defaultDocument, dataSources, argumentList, results));

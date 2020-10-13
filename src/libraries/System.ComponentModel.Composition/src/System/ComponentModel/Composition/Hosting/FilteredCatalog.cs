@@ -72,7 +72,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                         finally
                         {
-                            if (notifyCatalog != null)
+                            if (notifyCatalog is not null)
                             {
                                 notifyCatalog.Changed -= OnChangedInternal;
                                 notifyCatalog.Changing -= OnChangingInternal;
@@ -102,12 +102,12 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 ThrowIfDisposed();
 
-                if (_complement == null)
+                if (_complement is null)
                 {
                     FilteredCatalog? complement = new FilteredCatalog(_innerCatalog, p => !_filter(p), this);
                     lock (_lock)
                     {
-                        if (_complement == null)
+                        if (_complement is null)
                         {
                             Thread.MemoryBarrier();
                             _complement = complement;
@@ -115,7 +115,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                     }
 
-                    if (complement != null)
+                    if (complement is not null)
                     {
                         complement.Dispose();
                     }
@@ -183,7 +183,7 @@ namespace System.ComponentModel.Composition.Hosting
         protected virtual void OnChanged(ComposablePartCatalogChangeEventArgs e)
         {
             EventHandler<ComposablePartCatalogChangeEventArgs>? changedEvent = Changed;
-            if (changedEvent != null)
+            if (changedEvent is not null)
             {
                 changedEvent.Invoke(this, e);
             }
@@ -196,7 +196,7 @@ namespace System.ComponentModel.Composition.Hosting
         protected virtual void OnChanging(ComposablePartCatalogChangeEventArgs e)
         {
             EventHandler<ComposablePartCatalogChangeEventArgs>? changingEvent = Changing;
-            if (changingEvent != null)
+            if (changingEvent is not null)
             {
                 changingEvent.Invoke(this, e);
             }
@@ -205,7 +205,7 @@ namespace System.ComponentModel.Composition.Hosting
         private void OnChangedInternal(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
             var processedArgs = ProcessEventArgs(e);
-            if (processedArgs != null)
+            if (processedArgs is not null)
             {
                 OnChanged(ProcessEventArgs(processedArgs)!);
             }
@@ -214,7 +214,7 @@ namespace System.ComponentModel.Composition.Hosting
         private void OnChangingInternal(object? sender, ComposablePartCatalogChangeEventArgs e)
         {
             var processedArgs = ProcessEventArgs(e);
-            if (processedArgs != null)
+            if (processedArgs is not null)
             {
                 OnChanging(ProcessEventArgs(processedArgs)!);
             }

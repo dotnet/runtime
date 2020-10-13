@@ -21,7 +21,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                return (_cachedXml != null);
+                return (_cachedXml is not null);
             }
         }
 
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                if (_keyInfo == null)
+                if (_keyInfo is null)
                     _keyInfo = new KeyInfo();
                 return _keyInfo;
             }
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                if (_props == null)
+                if (_props is null)
                     _props = new EncryptionPropertyCollection();
                 return _props;
             }
@@ -105,14 +105,14 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                if (_cipherData == null)
+                if (_cipherData is null)
                     _cipherData = new CipherData();
 
                 return _cipherData;
             }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 _cipherData = value;

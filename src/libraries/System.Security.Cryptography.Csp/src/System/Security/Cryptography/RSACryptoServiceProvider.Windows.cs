@@ -73,7 +73,7 @@ namespace System.Security.Cryptography
             {
                 // Force-read the SafeKeyHandle property, which will summon it into existence.
                 SafeKeyHandle localHandle = SafeKeyHandle;
-                Debug.Assert(localHandle != null);
+                Debug.Assert(localHandle is not null);
             }
         }
 
@@ -81,15 +81,15 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (_safeProvHandle == null)
+                if (_safeProvHandle is null)
                 {
                     lock (_parameters)
                     {
-                        if (_safeProvHandle == null)
+                        if (_safeProvHandle is null)
                         {
                             SafeProvHandle hProv = CapiHelper.CreateProvHandle(_parameters, _randomKeyContainer);
 
-                            Debug.Assert(hProv != null);
+                            Debug.Assert(hProv is not null);
                             Debug.Assert(!hProv.IsInvalid);
                             Debug.Assert(!hProv.IsClosed);
 
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography
                         return;
                     }
 
-                    if (current != null)
+                    if (current is not null)
                     {
                         SafeKeyHandle? keyHandle = _safeKeyHandle;
                         _safeKeyHandle = null;
@@ -130,11 +130,11 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (_safeKeyHandle == null)
+                if (_safeKeyHandle is null)
                 {
                     lock (_parameters)
                     {
-                        if (_safeKeyHandle == null)
+                        if (_safeKeyHandle is null)
                         {
                             SafeKeyHandle hKey = CapiHelper.GetKeyPairHelper(
                                 CapiHelper.CspAlgorithmType.Rsa,
@@ -142,7 +142,7 @@ namespace System.Security.Cryptography
                                 _keySize,
                                 SafeProvHandle);
 
-                            Debug.Assert(hKey != null);
+                            Debug.Assert(hKey is not null);
                             Debug.Assert(!hKey.IsInvalid);
                             Debug.Assert(!hKey.IsClosed);
 
@@ -182,7 +182,7 @@ namespace System.Security.Cryptography
                 // .NET Framework compat: Read the SafeKeyHandle property to force the key to load,
                 // because it might throw here.
                 SafeKeyHandle localHandle = SafeKeyHandle;
-                Debug.Assert(localHandle != null);
+                Debug.Assert(localHandle is not null);
 
                 return new CspKeyContainerInfo(_parameters, _randomKeyContainer);
             }
@@ -264,7 +264,7 @@ namespace System.Security.Cryptography
         /// <returns>decrypted data</returns>
         public byte[] Decrypt(byte[] rgb, bool fOAEP)
         {
-            if (rgb == null)
+            if (rgb is null)
             {
                 throw new ArgumentNullException(nameof(rgb));
             }
@@ -295,12 +295,12 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                if (_safeKeyHandle != null && !_safeKeyHandle.IsClosed)
+                if (_safeKeyHandle is not null && !_safeKeyHandle.IsClosed)
                 {
                     _safeKeyHandle.Dispose();
                 }
 
-                if (_safeProvHandle != null && !_safeProvHandle.IsClosed)
+                if (_safeProvHandle is not null && !_safeProvHandle.IsClosed)
                 {
                     _safeProvHandle.Dispose();
                 }
@@ -322,7 +322,7 @@ namespace System.Security.Cryptography
         /// <returns>Encrypted key</returns>
         public byte[] Encrypt(byte[] rgb, bool fOAEP)
         {
-            if (rgb == null)
+            if (rgb is null)
             {
                 throw new ArgumentNullException(nameof(rgb));
             }
@@ -487,7 +487,7 @@ namespace System.Security.Cryptography
         /// <returns>The RSA signature for the specified data.</returns>
         public byte[] SignHash(byte[] rgbHash, string? str)
         {
-            if (rgbHash == null)
+            if (rgbHash is null)
                 throw new ArgumentNullException(nameof(rgbHash));
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
@@ -506,7 +506,7 @@ namespace System.Security.Cryptography
         /// <returns>The RSA signature for the specified data.</returns>
         private byte[] SignHash(byte[] rgbHash, int calgHash)
         {
-            Debug.Assert(rgbHash != null);
+            Debug.Assert(rgbHash is not null);
 
             return CapiHelper.SignValue(
                 SafeProvHandle,
@@ -533,9 +533,9 @@ namespace System.Security.Cryptography
         /// </summary>
         public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature)
         {
-            if (rgbHash == null)
+            if (rgbHash is null)
                 throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
+            if (rgbSignature is null)
                 throw new ArgumentNullException(nameof(rgbSignature));
 
             int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
@@ -561,7 +561,7 @@ namespace System.Security.Cryptography
         /// </summary>
         private static bool IsPublic(byte[] keyBlob)
         {
-            if (keyBlob == null)
+            if (keyBlob is null)
             {
                 throw new ArgumentNullException(nameof(keyBlob));
             }
@@ -584,7 +584,7 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
             // we're sealed and the base should have checked this already
-            Debug.Assert(data != null);
+            Debug.Assert(data is not null);
             Debug.Assert(count >= 0 && count <= data.Length);
             Debug.Assert(offset >= 0 && offset <= data.Length - count);
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
@@ -598,7 +598,7 @@ namespace System.Security.Cryptography
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
         {
             // we're sealed and the base should have checked this already
-            Debug.Assert(data != null);
+            Debug.Assert(data is not null);
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
             using (HashAlgorithm hash = GetHashAlgorithm(hashAlgorithm))
@@ -633,9 +633,9 @@ namespace System.Security.Cryptography
 
         public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
-            if (padding == null)
+            if (padding is null)
                 throw new ArgumentNullException(nameof(padding));
 
             if (padding == RSAEncryptionPadding.Pkcs1)
@@ -654,9 +654,9 @@ namespace System.Security.Cryptography
 
         public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
-            if (padding == null)
+            if (padding is null)
                 throw new ArgumentNullException(nameof(padding));
 
             if (padding == RSAEncryptionPadding.Pkcs1)
@@ -678,11 +678,11 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             RSASignaturePadding padding)
         {
-            if (hash == null)
+            if (hash is null)
                 throw new ArgumentNullException(nameof(hash));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
+            if (padding is null)
                 throw new ArgumentNullException(nameof(padding));
             if (padding != RSASignaturePadding.Pkcs1)
                 throw PaddingModeNotSupported();
@@ -696,13 +696,13 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             RSASignaturePadding padding)
         {
-            if (hash == null)
+            if (hash is null)
                 throw new ArgumentNullException(nameof(hash));
-            if (signature == null)
+            if (signature is null)
                 throw new ArgumentNullException(nameof(signature));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
+            if (padding is null)
                 throw new ArgumentNullException(nameof(padding));
             if (padding != RSASignaturePadding.Pkcs1)
                 throw PaddingModeNotSupported();

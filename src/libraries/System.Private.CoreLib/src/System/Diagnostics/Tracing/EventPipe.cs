@@ -180,12 +180,12 @@ namespace System.Diagnostics.Tracing
 
         internal static void Enable(EventPipeConfiguration configuration)
         {
-            if (configuration == null)
+            if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            if (configuration.Providers == null)
+            if (configuration.Providers is null)
             {
                 throw new ArgumentNullException(nameof(configuration.Providers));
             }
@@ -224,11 +224,11 @@ namespace System.Diagnostics.Tracing
 
             internal void Release()
             {
-                if (m_pProviderName != null)
+                if (m_pProviderName is not null)
                 {
                     Marshal.FreeCoTaskMem((IntPtr)m_pProviderName);
                 }
-                if (m_pFilterData != null)
+                if (m_pFilterData is not null)
                 {
                     Marshal.FreeCoTaskMem((IntPtr)m_pFilterData);
                 }

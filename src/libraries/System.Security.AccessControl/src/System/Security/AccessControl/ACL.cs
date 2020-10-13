@@ -39,7 +39,7 @@ namespace System.Security.AccessControl
 
         internal AceEnumerator(GenericAcl collection)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
@@ -169,7 +169,7 @@ namespace System.Security.AccessControl
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -242,7 +242,7 @@ namespace System.Security.AccessControl
 
         private static void VerifyHeader(byte[] binaryForm, int offset, out byte revision, out int count, out int length)
         {
-            if (binaryForm == null)
+            if (binaryForm is null)
             {
                 throw new ArgumentNullException(nameof(binaryForm));
             }
@@ -288,7 +288,7 @@ namespace System.Security.AccessControl
 
         private void MarshalHeader(byte[] binaryForm, int offset)
         {
-            if (binaryForm == null)
+            if (binaryForm is null)
             {
                 throw new ArgumentNullException(nameof(binaryForm));
             }
@@ -531,7 +531,7 @@ namespace System.Security.AccessControl
 
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -568,7 +568,7 @@ namespace System.Security.AccessControl
 
         public void InsertAce(int index, GenericAce ace)
         {
-            if (ace == null)
+            if (ace is null)
             {
                 throw new ArgumentNullException(nameof(ace));
             }
@@ -1088,7 +1088,7 @@ namespace System.Security.AccessControl
 
             KnownAce? knownAce = ace as KnownAce;
 
-            if (knownAce != null)
+            if (knownAce is not null)
             {
                 if (knownAce.AccessMask == 0)
                 {
@@ -1153,7 +1153,7 @@ namespace System.Security.AccessControl
 
                 unchecked { ace.AceFlags &= ~AuditFlags; }
 
-                if (qualifiedAce != null)
+                if (qualifiedAce is not null)
                 {
                     //
                     // Qualified ACEs in a DACL must be allow or deny ACEs
@@ -1182,7 +1182,7 @@ namespace System.Security.AccessControl
                 // Qualified ACEs in a SACL must be audit ACEs
                 //
 
-                if (qualifiedAce != null)
+                if (qualifiedAce is not null)
                 {
                     if (qualifiedAce.AceQualifier != AceQualifier.SystemAudit)
                     {
@@ -1241,14 +1241,14 @@ namespace System.Security.AccessControl
                 {
                     QualifiedAce? thisAce = _acl[i] as QualifiedAce;
 
-                    if (thisAce == null)
+                    if (thisAce is null)
                     {
                         continue;
                     }
 
                     QualifiedAce? nextAce = _acl[i + 1] as QualifiedAce;
 
-                    if (nextAce == null)
+                    if (nextAce is null)
                     {
                         continue;
                     }
@@ -1482,7 +1482,7 @@ namespace System.Security.AccessControl
             byte[]? aceOpaque = ace.GetOpaque();
             byte[]? newAceOpaque = newAce.GetOpaque();
 
-            if (aceOpaque == null || newAceOpaque == null)
+            if (aceOpaque is null || newAceOpaque is null)
             {
                 return aceOpaque == newAceOpaque;
             }
@@ -1710,7 +1710,7 @@ namespace System.Security.AccessControl
                     {
                         QualifiedAce? qualifiedAce = ace as QualifiedAce;
 
-                        if (qualifiedAce == null)
+                        if (qualifiedAce is null)
                         {
                             //
                             // Explicit ACE is not recognized - this is not a canonical ACL
@@ -1772,14 +1772,14 @@ namespace System.Security.AccessControl
 
                     GenericAce ace = _acl[i];
 
-                    if (ace == null)
+                    if (ace is null)
                     {
                         //
                         // <markpu-9/19/2004> Afraid to yank this statement now
                         // for fear of destabilization, so adding an assert instead
                         //
 
-                        Debug.Assert(ace != null, "How did a null ACE end up in a SACL?");
+                        Debug.Assert(ace is not null, "How did a null ACE end up in a SACL?");
                         continue;
                     }
 
@@ -1791,7 +1791,7 @@ namespace System.Security.AccessControl
                     {
                         QualifiedAce? qualifiedAce = ace as QualifiedAce;
 
-                        if (qualifiedAce == null)
+                        if (qualifiedAce is null)
                         {
                             //
                             // Explicit ACE is not recognized - this is not a canonical ACL
@@ -1866,7 +1866,7 @@ namespace System.Security.AccessControl
         internal CommonAcl(bool isContainer, bool isDS, RawAcl rawAcl, bool trusted, bool isDacl)
             : base()
         {
-            if (rawAcl == null)
+            if (rawAcl is null)
             {
                 throw new ArgumentNullException(nameof(rawAcl));
             }
@@ -1993,7 +1993,7 @@ namespace System.Security.AccessControl
 
         internal void AddQualifiedAce(SecurityIdentifier sid, AceQualifier qualifier, int accessMask, AceFlags flags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
         {
-            if (sid == null)
+            if (sid is null)
             {
                 throw new ArgumentNullException(nameof(sid));
             }
@@ -2045,7 +2045,7 @@ namespace System.Security.AccessControl
             {
                 QualifiedAce? ace = _acl[i] as QualifiedAce;
 
-                if (ace == null)
+                if (ace is null)
                 {
                     continue;
                 }
@@ -2076,7 +2076,7 @@ namespace System.Security.AccessControl
 
         internal void SetQualifiedAce(SecurityIdentifier sid, AceQualifier qualifier, int accessMask, AceFlags flags, ObjectAceFlags objectFlags, Guid objectType, Guid inheritedObjectType)
         {
-            if (sid == null)
+            if (sid is null)
             {
                 throw new ArgumentNullException(nameof(sid));
             }
@@ -2126,7 +2126,7 @@ namespace System.Security.AccessControl
                 // Not a qualified ACE - keep going
                 //
 
-                if (ace == null)
+                if (ace is null)
                 {
                     continue;
                 }
@@ -2202,7 +2202,7 @@ namespace System.Security.AccessControl
                     nameof(flags));
             }
 
-            if (sid == null)
+            if (sid is null)
             {
                 throw new ArgumentNullException(nameof(sid));
             }
@@ -2249,7 +2249,7 @@ namespace System.Security.AccessControl
                     // Not a qualified ACE - keep going
                     //
 
-                    if (ace == null)
+                    if (ace is null)
                     {
                         continue;
                     }
@@ -2645,7 +2645,7 @@ namespace System.Security.AccessControl
                     nameof(flags));
             }
 
-            if (sid == null)
+            if (sid is null)
             {
                 throw new ArgumentNullException(nameof(sid));
             }
@@ -2660,7 +2660,7 @@ namespace System.Security.AccessControl
                 // Not a qualified ACE - keep going
                 //
 
-                if (ace == null)
+                if (ace is null)
                 {
                     continue;
                 }
@@ -2864,7 +2864,7 @@ namespace System.Security.AccessControl
 
         public void Purge(SecurityIdentifier sid)
         {
-            if (sid == null)
+            if (sid is null)
             {
                 throw new ArgumentNullException(nameof(sid));
             }
@@ -2879,7 +2879,7 @@ namespace System.Security.AccessControl
                 // Skip over unknown ACEs
                 //
 
-                if (ace == null)
+                if (ace is null)
                 {
                     continue;
                 }
@@ -3094,7 +3094,7 @@ namespace System.Security.AccessControl
         //
 
         internal DiscretionaryAcl(bool isContainer, bool isDS, RawAcl? rawAcl, bool trusted)
-            : base(isContainer, isDS, rawAcl == null ? new RawAcl(isDS ? AclRevisionDS : AclRevision, 0) : rawAcl, trusted, true)
+            : base(isContainer, isDS, rawAcl is null ? new RawAcl(isDS ? AclRevisionDS : AclRevision, 0) : rawAcl, trusted, true)
         {
         }
 

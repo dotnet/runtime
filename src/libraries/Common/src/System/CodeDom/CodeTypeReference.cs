@@ -42,7 +42,7 @@ namespace System.Runtime.Serialization
 
         public CodeTypeReference(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -267,7 +267,7 @@ namespace System.Runtime.Serialization
             }
 
             // Now see if we have some arity.  baseType could be null if this is an array type.
-            if (_baseType != null && _baseType.IndexOf('`') != -1) // string.Contains(char) is .NetCore2.1+ specific
+            if (_baseType is not null && _baseType.IndexOf('`') != -1) // string.Contains(char) is .NetCore2.1+ specific
             {
                 _needsFixup = false;
             }
@@ -275,7 +275,7 @@ namespace System.Runtime.Serialization
 
         public CodeTypeReference(string typeName, params CodeTypeReference[] typeArguments) : this(typeName)
         {
-            if (typeArguments != null && typeArguments.Length > 0)
+            if (typeArguments is not null && typeArguments.Length > 0)
             {
                 TypeArguments.AddRange(typeArguments);
             }
@@ -307,13 +307,13 @@ namespace System.Runtime.Serialization
 
         public int ArrayRank { get; set; }
 
-        internal int NestedArrayDepth => ArrayElementType == null ? 0 : 1 + ArrayElementType.NestedArrayDepth;
+        internal int NestedArrayDepth => ArrayElementType is null ? 0 : 1 + ArrayElementType.NestedArrayDepth;
 
         public string BaseType
         {
             get
             {
-                if (ArrayRank > 0 && ArrayElementType != null)
+                if (ArrayRank > 0 && ArrayElementType is not null)
                 {
                     return ArrayElementType.BaseType;
                 }
@@ -341,12 +341,12 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (ArrayRank > 0 && ArrayElementType != null)
+                if (ArrayRank > 0 && ArrayElementType is not null)
                 {
                     return ArrayElementType.TypeArguments;
                 }
 
-                if (_typeArguments == null)
+                if (_typeArguments is null)
                 {
                     _typeArguments = new CodeTypeReferenceCollection();
                 }

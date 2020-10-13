@@ -25,7 +25,7 @@ namespace System.Net
 
         internal CallbackClosure(ExecutionContext context, AsyncCallback? callback)
         {
-            if (callback != null)
+            if (callback is not null)
             {
                 _savedCallback = callback;
                 _savedContext = context;
@@ -34,7 +34,7 @@ namespace System.Net
 
         internal bool IsCompatible(AsyncCallback? callback)
         {
-            if (callback == null || _savedCallback == null)
+            if (callback is null || _savedCallback is null)
             {
                 return false;
             }
@@ -139,13 +139,13 @@ namespace System.Net
                 }
 
                 ExecutionContext? context = _context;
-                if (context != null)
+                if (context is not null)
                 {
                     return context; // No need to copy on CoreCLR; ExecutionContext is immutable
                 }
 
                 // Make sure the context was requested.
-                if (AsyncCallback == null && (_flags & StateFlags.CaptureContext) == 0)
+                if (AsyncCallback is null && (_flags & StateFlags.CaptureContext) == 0)
                 {
                     NetEventSource.Fail(this, "No context captured - specify a callback or forceCaptureContext.");
                 }
@@ -154,7 +154,7 @@ namespace System.Net
                 // don't need a context anyway.
                 if ((_flags & StateFlags.PostBlockFinished) == 0)
                 {
-                    if (_lock == null)
+                    if (_lock is null)
                     {
                         NetEventSource.Fail(this, "Must lock (StartPostingAsyncOp()) { ... FinishPostingAsyncOp(); } when calling ContextCopy (unless it's only called after FinishPostingAsyncOp).");
                     }
@@ -239,7 +239,7 @@ namespace System.Net
             // Need a copy of this ref argument since it can be used in many of these calls simultaneously.
             CallbackClosure? closureCopy = closure;
             ExecutionContext? cachedContext;
-            if (closureCopy == null)
+            if (closureCopy is null)
             {
                 cachedContext = null;
             }
@@ -263,7 +263,7 @@ namespace System.Net
             bool calledCallback = CaptureOrComplete(ref cachedContext, true);
 
             // Set up new cached context if we didn't use the previous one.
-            if (closure == null && AsyncCallback != null && cachedContext != null)
+            if (closure is null && AsyncCallback is not null && cachedContext is not null)
             {
                 closure = new CallbackClosure(cachedContext, AsyncCallback);
             }
@@ -291,7 +291,7 @@ namespace System.Net
             }
 
             // See if we're going to need to capture the context.
-            bool capturingContext = AsyncCallback != null || (_flags & StateFlags.CaptureContext) != 0;
+            bool capturingContext = AsyncCallback is not null || (_flags & StateFlags.CaptureContext) != 0;
 
             // Peek if we've already completed, but don't fix CompletedSynchronously yet
             // Capture the identity if requested, unless we're going to capture the context anyway, unless
@@ -308,12 +308,12 @@ namespace System.Net
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "starting capture");
 
-                if (cachedContext == null)
+                if (cachedContext is null)
                 {
                     cachedContext = ExecutionContext.Capture();
                 }
 
-                if (cachedContext != null)
+                if (cachedContext is not null)
                 {
                     if (!returnContext)
                     {
@@ -334,7 +334,7 @@ namespace System.Net
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Skipping capture");
 
                 cachedContext = null;
-                if (AsyncCallback != null && !CompletedSynchronously)
+                if (AsyncCallback is not null && !CompletedSynchronously)
                 {
                     NetEventSource.Fail(this, "Didn't capture context, but didn't complete synchronously!");
                 }
@@ -358,7 +358,7 @@ namespace System.Net
         // This method is guaranteed to be called only once.  If called with a non-zero userToken, the context is not flowed.
         protected override void Complete(IntPtr userToken)
         {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_context(set):{_context != null} userToken:{userToken}");
+            if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"_context(set):{_context is not null} userToken:{userToken}");
 
             // If no flowing, just complete regularly.
             if ((_flags & StateFlags.PostBlockStarted) == 0)
@@ -379,7 +379,7 @@ namespace System.Net
             // If the context is being abandoned or wasn't captured (SuppressFlow, null AsyncCallback), just
             // complete regularly, as long as CaptureOrComplete() has finished.
             //
-            if (userToken != IntPtr.Zero || context == null)
+            if (userToken != IntPtr.Zero || context is null)
             {
                 base.Complete(userToken);
                 return;

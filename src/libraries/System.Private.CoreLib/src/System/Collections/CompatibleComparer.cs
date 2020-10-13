@@ -27,12 +27,12 @@ namespace System.Collections
         {
             if (a == b)
                 return 0;
-            if (a == null)
+            if (a is null)
                 return -1;
-            if (b == null)
+            if (b is null)
                 return 1;
 
-            if (_comparer != null)
+            if (_comparer is not null)
             {
                 return _comparer.Compare(a, b);
             }
@@ -47,12 +47,12 @@ namespace System.Collections
 
         public int GetHashCode(object obj)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            return _hcp != null ?
+            return _hcp is not null ?
                 _hcp.GetHashCode(obj) :
                 obj.GetHashCode();
         }

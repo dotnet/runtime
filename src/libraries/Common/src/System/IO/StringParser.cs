@@ -32,7 +32,7 @@ namespace System.IO
         /// <param name="skipEmpty">true if empty subcomponents should be skipped; false to treat them as valid entries.  Defaults to false.</param>
         public StringParser(string buffer, char separator, bool skipEmpty = false)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -47,7 +47,7 @@ namespace System.IO
         /// <returns>true if there is a next component to be parsed; otherwise, false.</returns>
         public bool MoveNext()
         {
-            if (_buffer == null)
+            if (_buffer is null)
             {
                 throw new InvalidOperationException();
             }
@@ -128,7 +128,7 @@ namespace System.IO
         /// </summary>
         public string ExtractCurrent()
         {
-            if (_buffer == null || _startIndex == -1)
+            if (_buffer is null || _startIndex == -1)
             {
                 throw new InvalidOperationException();
             }
@@ -315,7 +315,7 @@ namespace System.IO
         /// </summary>
         public string ExtractCurrentToEnd()
         {
-            if (_buffer == null || _startIndex == -1)
+            if (_buffer is null || _startIndex == -1)
             {
                 throw new InvalidOperationException();
             }

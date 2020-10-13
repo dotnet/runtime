@@ -408,7 +408,7 @@ namespace System.Net.Http.Headers
         internal static KnownHeader? TryGetKnownHeader(string name)
         {
             KnownHeader? candidate = GetCandidate(new StringAccessor(name));
-            if (candidate != null && StringComparer.OrdinalIgnoreCase.Equals(name, candidate.Name))
+            if (candidate is not null && StringComparer.OrdinalIgnoreCase.Equals(name, candidate.Name))
             {
                 return candidate;
             }
@@ -421,7 +421,7 @@ namespace System.Net.Http.Headers
             fixed (byte* p = &MemoryMarshal.GetReference(name))
             {
                 KnownHeader? candidate = GetCandidate(new BytePtrAccessor(p, name.Length));
-                if (candidate != null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate.Name, name))
+                if (candidate is not null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate.Name, name))
                 {
                     return candidate;
                 }

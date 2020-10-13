@@ -51,8 +51,8 @@ namespace System.Text.RegularExpressions
 
         private RegexParser(string pattern, RegexOptions options, CultureInfo culture, Hashtable caps, int capsize, Hashtable? capnames, Span<int> optionSpan)
         {
-            Debug.Assert(pattern != null, "Pattern must be set");
-            Debug.Assert(culture != null, "Culture must be set");
+            Debug.Assert(pattern is not null, "Pattern must be set");
+            Debug.Assert(culture is not null, "Culture must be set");
 
             _pattern = pattern;
             _options = options;
@@ -357,7 +357,7 @@ namespace System.Text.RegularExpressions
                         PopGroup();
                         PopOptions();
 
-                        if (Unit() == null)
+                        if (Unit() is null)
                         {
                             goto ContinueOuterScan;
                         }
@@ -395,7 +395,7 @@ namespace System.Text.RegularExpressions
                     case '*':
                     case '+':
                     case '?':
-                        if (Unit() == null)
+                        if (Unit() is null)
                         {
                             throw wasPrevQuantifier ?
                                 MakeException(RegexParseError.NestedQuantifiersNotParenthesized, SR.Format(SR.NestedQuantifiersNotParenthesized, ch)) :
@@ -419,7 +419,7 @@ namespace System.Text.RegularExpressions
                 ch = RightCharMoveRight();
 
                 // Handle quantifiers
-                while (Unit() != null)
+                while (Unit() is not null)
                 {
                     int min;
                     int max;
@@ -1285,7 +1285,7 @@ namespace System.Text.RegularExpressions
                     int pos = Textpos() - 1;
                     while (newcapnum <= _captop)
                     {
-                        if (IsCaptureSlot(newcapnum) && (_caps == null || (int)_caps[newcapnum]! < pos))
+                        if (IsCaptureSlot(newcapnum) && (_caps is null || (int)_caps[newcapnum]! < pos))
                         {
                             capnum = newcapnum;
                         }
@@ -1928,7 +1928,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Notes a used capture slot</summary>
         private void NoteCaptureName(string name, int pos)
         {
-            if (_capnames == null)
+            if (_capnames is null)
             {
                 _capnames = new Hashtable();
                 _capnamelist = new List<string>();
@@ -1944,7 +1944,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Assigns unused slot numbers to the capture names.</summary>
         private void AssignNameSlots()
         {
-            if (_capnames != null)
+            if (_capnames is not null)
             {
                 for (int i = 0; i < _capnamelist!.Count; i++)
                 {
@@ -1981,13 +1981,13 @@ namespace System.Text.RegularExpressions
 
             // merge capsnumlist into capnamelist
 
-            if (_capnames != null || _capnumlist != null)
+            if (_capnames is not null || _capnumlist is not null)
             {
                 List<string>? oldcapnamelist;
                 int next;
                 int k = 0;
 
-                if (_capnames == null)
+                if (_capnames is null)
                 {
                     oldcapnamelist = null;
                     _capnames = new Hashtable();
@@ -2003,7 +2003,7 @@ namespace System.Text.RegularExpressions
 
                 for (int i = 0; i < _capcount; i++)
                 {
-                    int j = (_capnumlist == null) ? i : _capnumlist[i];
+                    int j = (_capnumlist is null) ? i : _capnumlist[i];
 
                     if (next == j)
                     {
@@ -2026,7 +2026,7 @@ namespace System.Text.RegularExpressions
         /// <summary>True if the capture slot was noted</summary>
         private bool IsCaptureSlot(int i)
         {
-            if (_caps != null)
+            if (_caps is not null)
             {
                 return _caps.ContainsKey(i);
             }
@@ -2035,7 +2035,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Looks up the slot number for a given name</summary>
-        private bool IsCaptureName(string capname) => _capnames != null && _capnames.ContainsKey(capname);
+        private bool IsCaptureName(string capname) => _capnames is not null && _capnames.ContainsKey(capname);
 
         /// <summary>True if N option disabling '(' autocapture is on.</summary>
         private bool UseOptionN() => (_options & RegexOptions.ExplicitCapture) != 0;
@@ -2174,7 +2174,7 @@ namespace System.Text.RegularExpressions
             // The first () inside a Testgroup group goes directly to the group
             if (_group.Type == RegexNode.Testgroup && _group.ChildCount() == 0)
             {
-                if (_unit == null)
+                if (_unit is null)
                 {
                     throw MakeException(RegexParseError.AlternationHasMalformedCondition, SR.AlternationHasMalformedCondition);
                 }
@@ -2185,7 +2185,7 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>True if the group stack is empty.</summary>
-        private bool EmptyStack() => _stack == null;
+        private bool EmptyStack() => _stack is null;
 
         /// <summary>Start a new round for the parser state (in response to an open paren or string start)</summary>
         private void StartGroup(RegexNode openGroup)

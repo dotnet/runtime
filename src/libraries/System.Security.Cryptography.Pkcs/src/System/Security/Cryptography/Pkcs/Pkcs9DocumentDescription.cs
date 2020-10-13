@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Pkcs
         [return: NotNullIfNotNull("rawData")]
         private static string? Decode(byte[]? rawData)
         {
-            if (rawData == null)
+            if (rawData is null)
                 return null;
 
             byte[] octets = PkcsHelpers.DecodeOctetString(rawData);
@@ -64,7 +64,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static byte[] Encode(string documentDescription)
         {
-            if (documentDescription == null)
+            if (documentDescription is null)
                 throw new ArgumentNullException(nameof(documentDescription));
 
             byte[] octets = documentDescription.UnicodeToOctetString();

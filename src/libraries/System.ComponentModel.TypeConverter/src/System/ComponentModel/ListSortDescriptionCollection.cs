@@ -15,7 +15,7 @@ namespace System.ComponentModel
 
         public ListSortDescriptionCollection(ListSortDescription[] sorts)
         {
-            if (sorts != null)
+            if (sorts is not null)
             {
                 for (int i = 0; i < sorts.Length; i++)
                 {

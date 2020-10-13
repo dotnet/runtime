@@ -167,7 +167,7 @@ namespace Microsoft.Extensions.Internal
         private static object? GetService(IServiceProvider sp, Type type, Type requiredBy, bool isDefaultParameterRequired)
         {
             object? service = sp.GetService(type);
-            if (service == null && !isDefaultParameterRequired)
+            if (service is null && !isDefaultParameterRequired)
             {
                 string? message = $"Unable to resolve service for type '{type}' while attempting to activate '{requiredBy}'.";
                 throw new InvalidOperationException(message);
@@ -190,7 +190,7 @@ namespace Microsoft.Extensions.Internal
                 Type? parameterType = constructorParameter.ParameterType;
                 bool hasDefaultValue = ParameterDefaultValue.TryGetDefaultValue(constructorParameter, out object? defaultValue);
 
-                if (parameterMap[i] != null)
+                if (parameterMap[i] is not null)
                 {
                     constructorArguments[i] = Expression.ArrayAccess(factoryArgumentArray, Expression.Constant(parameterMap[i]));
                 }
@@ -253,7 +253,7 @@ namespace Microsoft.Extensions.Internal
 
                 if (TryCreateParameterMap(constructor.GetParameters(), argumentTypes, out int?[] tempParameterMap))
                 {
-                    if (matchingConstructor != null)
+                    if (matchingConstructor is not null)
                     {
                         throw new InvalidOperationException($"Multiple constructors accepting all given argument types have been found in type '{instanceType}'. There should only be one applicable constructor.");
                     }
@@ -263,9 +263,9 @@ namespace Microsoft.Extensions.Internal
                 }
             }
 
-            if (matchingConstructor != null)
+            if (matchingConstructor is not null)
             {
-                Debug.Assert(parameterMap != null);
+                Debug.Assert(parameterMap is not null);
                 return true;
             }
 
@@ -305,9 +305,9 @@ namespace Microsoft.Extensions.Internal
                 }
             }
 
-            if (matchingConstructor != null)
+            if (matchingConstructor is not null)
             {
-                Debug.Assert(parameterMap != null);
+                Debug.Assert(parameterMap is not null);
                 return true;
             }
 
@@ -327,7 +327,7 @@ namespace Microsoft.Extensions.Internal
 
                 for (int j = 0; j < constructorParameters.Length; j++)
                 {
-                    if (parameterMap[j] != null)
+                    if (parameterMap[j] is not null)
                     {
                         // This ctor parameter has already been matched
                         continue;
@@ -374,7 +374,7 @@ namespace Microsoft.Extensions.Internal
 
                     for (int applyIndex = applyIndexStart; givenMatched == false && applyIndex != _parameters.Length; ++applyIndex)
                     {
-                        if (_parameterValues[applyIndex] == null &&
+                        if (_parameterValues[applyIndex] is null &&
                             _parameters[applyIndex].ParameterType.GetTypeInfo().IsAssignableFrom(givenType))
                         {
                             givenMatched = true;
@@ -402,10 +402,10 @@ namespace Microsoft.Extensions.Internal
             {
                 for (int index = 0; index != _parameters.Length; index++)
                 {
-                    if (_parameterValues[index] == null)
+                    if (_parameterValues[index] is null)
                     {
                         object? value = provider.GetService(_parameters[index].ParameterType);
-                        if (value == null)
+                        if (value is null)
                         {
                             if (!ParameterDefaultValue.TryGetDefaultValue(_parameters[index], out object? defaultValue))
                             {
@@ -430,7 +430,7 @@ namespace Microsoft.Extensions.Internal
                 {
                     return _constructor.Invoke(_parameterValues);
                 }
-                catch (TargetInvocationException ex) when (ex.InnerException != null)
+                catch (TargetInvocationException ex) when (ex.InnerException is not null)
                 {
                     ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
                     // The above line will always throw, but the compiler requires we throw explicitly.

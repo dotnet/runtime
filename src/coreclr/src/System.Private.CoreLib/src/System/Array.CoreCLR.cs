@@ -23,7 +23,7 @@ namespace System
                 ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
 
             RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
+            if (t is null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
             return InternalCreate((void*)t.TypeHandle.Value, 1, &length, null);
         }
@@ -38,7 +38,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length2, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
+            if (t is null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
             int* pLengths = stackalloc int[2];
             pLengths[0] = length1;
@@ -58,7 +58,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.length3, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
+            if (t is null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
             int* pLengths = stackalloc int[3];
             pLengths[0] = length1;
@@ -71,13 +71,13 @@ namespace System
         {
             if (elementType is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (lengths == null)
+            if (lengths is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
             if (lengths.Length == 0)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
 
             RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
+            if (t is null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             // Check to make sure the lengths are all positive. Note that we check this here to give
@@ -94,11 +94,11 @@ namespace System
 
         public static unsafe Array CreateInstance(Type elementType, int[] lengths, int[] lowerBounds)
         {
-            if (elementType == null)
+            if (elementType is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.elementType);
-            if (lengths == null)
+            if (lengths is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
-            if (lowerBounds == null)
+            if (lowerBounds is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lowerBounds);
             if (lengths.Length != lowerBounds!.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RanksAndBounds);
@@ -106,7 +106,7 @@ namespace System
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_NeedAtLeast1Rank);
 
             RuntimeType? t = elementType.UnderlyingSystemType as RuntimeType;
-            if (t == null)
+            if (t is null)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_MustBeType, ExceptionArgument.elementType);
 
             // Check to make sure the lenghts are all positive. Note that we check this here to give
@@ -130,9 +130,9 @@ namespace System
         //
         public static unsafe void Copy(Array sourceArray, Array destinationArray, int length)
         {
-            if (sourceArray == null)
+            if (sourceArray is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.sourceArray);
-            if (destinationArray == null)
+            if (destinationArray is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
 
             MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
@@ -163,7 +163,7 @@ namespace System
         //
         public static unsafe void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length)
         {
-            if (sourceArray != null && destinationArray != null)
+            if (sourceArray is not null && destinationArray is not null)
             {
                 MethodTable* pMT = RuntimeHelpers.GetMethodTable(sourceArray);
                 if (pMT == RuntimeHelpers.GetMethodTable(destinationArray) &&
@@ -193,9 +193,9 @@ namespace System
 
         private static unsafe void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            if (sourceArray == null)
+            if (sourceArray is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.sourceArray);
-            if (destinationArray == null)
+            if (destinationArray is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.destinationArray);
 
             if (sourceArray.GetType() != destinationArray.GetType() && sourceArray.Rank != destinationArray.Rank)
@@ -271,7 +271,7 @@ namespace System
         //
         public static unsafe void Clear(Array array, int index, int length)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
             ref byte p = ref Unsafe.As<RawArrayData>(array).Data;
@@ -306,7 +306,7 @@ namespace System
         // The various Get values...
         public unsafe object? GetValue(params int[] indices)
         {
-            if (indices == null)
+            if (indices is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
@@ -397,7 +397,7 @@ namespace System
 
         public unsafe void SetValue(object? value, params int[] indices)
         {
-            if (indices == null)
+            if (indices is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);

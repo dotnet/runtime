@@ -40,7 +40,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Memory(T[]? array)
         {
-            if (array == null)
+            if (array is null)
             {
                 this = default;
                 return; // returns default
@@ -56,7 +56,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Memory(T[]? array, int start)
         {
-            if (array == null)
+            if (array is null)
             {
                 if (start != 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
@@ -88,7 +88,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public Memory(T[]? array, int start, int length)
         {
-            if (array == null)
+            if (array is null)
             {
                 if (start != 0 || length != 0)
                     ThrowHelper.ThrowArgumentOutOfRangeException();
@@ -124,7 +124,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Memory(MemoryManager<T> manager, int length)
         {
-            Debug.Assert(manager != null);
+            Debug.Assert(manager is not null);
 
             if (length < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
@@ -148,7 +148,7 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal Memory(MemoryManager<T> manager, int start, int length)
         {
-            Debug.Assert(manager != null);
+            Debug.Assert(manager is not null);
 
             if (length < 0 || start < 0)
                 ThrowHelper.ThrowArgumentOutOfRangeException();
@@ -164,7 +164,7 @@ namespace System
             // No validation performed in release builds; caller must provide any necessary validation.
 
             // 'obj is T[]' below also handles things like int[] <-> uint[] being convertible
-            Debug.Assert((obj == null)
+            Debug.Assert((obj is null)
                 || (typeof(T) == typeof(char) && obj is string)
 #if FEATURE_UTF8STRING
                 || ((typeof(T) == typeof(byte) || typeof(T) == typeof(Char8)) && obj is Utf8String)
@@ -293,7 +293,7 @@ namespace System
                 // Copy this field into a local so that it can't change out from under us mid-operation.
 
                 object? tmpObject = _object;
-                if (tmpObject != null)
+                if (tmpObject is not null)
                 {
                     if (typeof(T) == typeof(char) && tmpObject.GetType() == typeof(string))
                     {
@@ -415,7 +415,7 @@ namespace System
             // and we're not required to keep this as safe as the other Span-based APIs.
 
             object? tmpObject = _object;
-            if (tmpObject != null)
+            if (tmpObject is not null)
             {
                 if (typeof(T) == typeof(char) && tmpObject is string s)
                 {
@@ -507,7 +507,7 @@ namespace System
         {
             // We use RuntimeHelpers.GetHashCode instead of Object.GetHashCode because the hash
             // code is based on object identity and referential equality, not deep equality (as common with string).
-            return (_object != null) ? HashCode.Combine(RuntimeHelpers.GetHashCode(_object), _index, _length) : 0;
+            return (_object is not null) ? HashCode.Combine(RuntimeHelpers.GetHashCode(_object), _index, _length) : 0;
         }
     }
 }

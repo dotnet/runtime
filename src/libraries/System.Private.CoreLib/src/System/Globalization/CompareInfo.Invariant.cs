@@ -11,8 +11,8 @@ namespace System.Globalization
     {
         internal static unsafe int InvariantIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
         {
-            Debug.Assert(source != null);
-            Debug.Assert(value != null);
+            Debug.Assert(source is not null);
+            Debug.Assert(value is not null);
             Debug.Assert(startIndex >= 0 && startIndex < source.Length);
 
             fixed (char* pSource = source) fixed (char* pValue = value)
@@ -42,7 +42,7 @@ namespace System.Globalization
         internal static unsafe int InvariantLastIndexOf(string source, string value, int startIndex, int count, bool ignoreCase)
         {
             Debug.Assert(!string.IsNullOrEmpty(source));
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
             Debug.Assert(startIndex >= 0 && startIndex < source.Length);
 
             fixed (char* pSource = source) fixed (char* pValue = value)
@@ -65,8 +65,8 @@ namespace System.Globalization
             char valueChar;     // Character for case lookup in value
             int lastSourceStart;
 
-            Debug.Assert(source != null);
-            Debug.Assert(value != null);
+            Debug.Assert(source is not null);
+            Debug.Assert(value is not null);
             Debug.Assert(sourceCount >= 0);
             Debug.Assert(valueCount >= 0);
 
@@ -215,7 +215,7 @@ namespace System.Globalization
 
         private SortKey InvariantCreateSortKey(string source, CompareOptions options)
         {
-            if (source == null) { throw new ArgumentNullException(nameof(source)); }
+            if (source is null) { throw new ArgumentNullException(nameof(source)); }
 
             if ((options & ValidCompareMaskOffFlags) != 0)
             {

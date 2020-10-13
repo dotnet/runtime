@@ -77,7 +77,7 @@ namespace System.Net
         {
             get
             {
-                if (_lastProtocolName == null)
+                if (_lastProtocolName is null)
                 {
                     _lastProtocolName = ProtocolName;
                 }

@@ -41,7 +41,7 @@ namespace Microsoft.Win32.SafeHandles
         {
             if (_releaseRef)
             {
-                Debug.Assert(_handle != null);
+                Debug.Assert(_handle is not null);
                 _handle.DangerousRelease();
             }
             return true;

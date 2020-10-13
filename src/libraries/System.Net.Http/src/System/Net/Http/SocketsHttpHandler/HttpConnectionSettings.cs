@@ -73,7 +73,7 @@ namespace System.Net.Http
                 AllowDraftHttp3 && allowHttp2 ? Http3Connection.HttpVersion30 :
                 allowHttp2 ? HttpVersion.Version20 :
                 HttpVersion.Version11;
-            _defaultCredentialsUsedForProxy = _proxy != null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials);
+            _defaultCredentialsUsedForProxy = _proxy is not null && (_proxy.Credentials == CredentialCache.DefaultCredentials || _defaultProxyCredentials == CredentialCache.DefaultCredentials);
             _defaultCredentialsUsedForServer = _credentials == CredentialCache.DefaultCredentials;
         }
 
@@ -81,7 +81,7 @@ namespace System.Net.Http
         public HttpConnectionSettings CloneAndNormalize()
         {
             // Force creation of the cookie container if needed, so the original and clone share the same instance.
-            if (_useCookies && _cookieContainer == null)
+            if (_useCookies && _cookieContainer is null)
             {
                 _cookieContainer = new CookieContainer();
             }
@@ -138,7 +138,7 @@ namespace System.Net.Http
 
                 // AppContext switch wasn't used. Check the environment variable.
                 string? envVar = Environment.GetEnvironmentVariable(Http2SupportEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
+                if (envVar is not null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
                 {
                     // Disallow HTTP/2 protocol.
                     return false;
@@ -164,7 +164,7 @@ namespace System.Net.Http
 
                 // AppContext switch wasn't used. Check the environment variable.
                 string? envVar = Environment.GetEnvironmentVariable(Http3DraftSupportEnvironmentVariableSettingName);
-                if (envVar != null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
+                if (envVar is not null && (envVar.Equals("false", StringComparison.OrdinalIgnoreCase) || envVar.Equals("0")))
                 {
                     // Disallow HTTP/3 protocol for HTTP endpoints.
                     return false;

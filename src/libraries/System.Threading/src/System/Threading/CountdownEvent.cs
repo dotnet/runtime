@@ -175,7 +175,7 @@ namespace System.Threading
         public bool Signal()
         {
             ThrowIfDisposed();
-            Debug.Assert(_event != null);
+            Debug.Assert(_event is not null);
 
             if (_currentCount <= 0)
             {
@@ -221,7 +221,7 @@ namespace System.Threading
             }
 
             ThrowIfDisposed();
-            Debug.Assert(_event != null);
+            Debug.Assert(_event is not null);
 
             int observedCount;
             SpinWait spin = default;

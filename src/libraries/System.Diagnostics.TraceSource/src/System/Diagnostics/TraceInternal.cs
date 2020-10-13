@@ -57,11 +57,11 @@ namespace System.Diagnostics
             get
             {
                 InitializeSettings();
-                if (s_listeners == null)
+                if (s_listeners is null)
                 {
                     lock (critSec)
                     {
-                        if (s_listeners == null)
+                        if (s_listeners is null)
                         {
                             // This is where we override default DebugProvider because we know
                             // for sure that we have some Listeners to write to.
@@ -84,7 +84,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (s_appName == null)
+                if (s_appName is null)
                 {
                     s_appName = Assembly.GetEntryAssembly()?.GetName().Name ?? string.Empty;
                 }
@@ -157,7 +157,7 @@ namespace System.Diagnostics
 
         public static void Flush()
         {
-            if (s_listeners != null)
+            if (s_listeners is not null)
             {
                 if (UseGlobalLock)
                 {
@@ -191,7 +191,7 @@ namespace System.Diagnostics
 
         public static void Close()
         {
-            if (s_listeners != null)
+            if (s_listeners is not null)
             {
                 // Use global lock
                 lock (critSec)
@@ -329,7 +329,7 @@ namespace System.Diagnostics
             {
                 lock (critSec)
                 {
-                    if (args == null)
+                    if (args is null)
                     {
                         foreach (TraceListener listener in Listeners)
                         {
@@ -349,7 +349,7 @@ namespace System.Diagnostics
             }
             else
             {
-                if (args == null)
+                if (args is null)
                 {
                     foreach (TraceListener listener in Listeners)
                     {

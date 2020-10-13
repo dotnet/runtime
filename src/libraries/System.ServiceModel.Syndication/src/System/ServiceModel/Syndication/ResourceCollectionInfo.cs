@@ -18,7 +18,7 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public ResourceCollectionInfo(string title, Uri link) : this((title == null) ? null : new TextSyndicationContent(title), link)
+        public ResourceCollectionInfo(string title, Uri link) : this((title is null) ? null : new TextSyndicationContent(title), link)
         {
         }
 
@@ -36,7 +36,7 @@ namespace System.ServiceModel.Syndication
             Title = title ?? throw new ArgumentNullException(nameof(title));
             Link = link ?? throw new ArgumentNullException(nameof(link));
 
-            if (categories != null)
+            if (categories is not null)
             {
                 _categories = new NullNotAllowedCollection<CategoriesDocument>();
                 foreach (CategoriesDocument category in categories)
@@ -45,7 +45,7 @@ namespace System.ServiceModel.Syndication
                 }
             }
 
-            if (accepts != null)
+            if (accepts is not null)
             {
                 _accepts = new NullNotAllowedCollection<string>();
                 foreach (string accept in accepts)
@@ -117,7 +117,7 @@ namespace System.ServiceModel.Syndication
 
         private static IEnumerable<string> CreateSingleEmptyAccept()
         {
-            if (s_singleEmptyAccept == null)
+            if (s_singleEmptyAccept is null)
             {
                 s_singleEmptyAccept = new List<string>(1) { string.Empty }.AsReadOnly();
             }

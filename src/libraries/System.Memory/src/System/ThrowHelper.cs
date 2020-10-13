@@ -68,9 +68,9 @@ namespace System
 
         private static Exception CreateArgumentValidationException<T>(ReadOnlySequenceSegment<T>? startSegment, int startIndex, ReadOnlySequenceSegment<T>? endSegment)
         {
-            if (startSegment == null)
+            if (startSegment is null)
                 return CreateArgumentNullException(ExceptionArgument.startSegment);
-            else if (endSegment == null)
+            else if (endSegment is null)
                 return CreateArgumentNullException(ExceptionArgument.endSegment);
             else if (startSegment != endSegment && startSegment.RunningIndex > endSegment.RunningIndex)
                 return CreateArgumentOutOfRangeException(ExceptionArgument.endSegment);
@@ -86,7 +86,7 @@ namespace System
 
         private static Exception CreateArgumentValidationException(Array? array, int start)
         {
-            if (array == null)
+            if (array is null)
                 return CreateArgumentNullException(ExceptionArgument.array);
             else if ((uint)start > (uint)array.Length)
                 return CreateArgumentOutOfRangeException(ExceptionArgument.start);

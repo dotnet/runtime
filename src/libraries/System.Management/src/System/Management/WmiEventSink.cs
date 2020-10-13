@@ -176,7 +176,7 @@ namespace System.Management
 
                     // Fire Completed event
                     CompletedEventArgs args2 = null;
-                    if (errObj != null)
+                    if (errObj is not null)
                     {
                         args2 = new CompletedEventArgs(context, hResult,
                                                 new ManagementBaseObject(errObj)

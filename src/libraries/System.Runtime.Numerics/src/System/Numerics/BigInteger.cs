@@ -477,7 +477,7 @@ namespace System.Numerics
         /// <param name="negative">The bool indicating the sign of the value.</param>
         internal BigInteger(uint[] value, bool negative)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             int len;
@@ -514,7 +514,7 @@ namespace System.Numerics
         /// <param name="value"></param>
         private BigInteger(uint[] value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             int dwordCount = value.Length;
@@ -625,7 +625,7 @@ namespace System.Numerics
             {
                 AssertValid();
 
-                if (_bits == null)
+                if (_bits is null)
                     return (_sign & (_sign - 1)) == 0 && _sign != 0;
 
                 if (_sign != 1)
@@ -644,9 +644,9 @@ namespace System.Numerics
 
         public bool IsZero { get { AssertValid(); return _sign == 0; } }
 
-        public bool IsOne { get { AssertValid(); return _sign == 1 && _bits == null; } }
+        public bool IsOne { get { AssertValid(); return _sign == 1 && _bits is null; } }
 
-        public bool IsEven { get { AssertValid(); return _bits == null ? (_sign & 1) == 0 : (_bits[0] & 1) == 0; } }
+        public bool IsEven { get { AssertValid(); return _bits is null ? (_sign & 1) == 0 : (_bits[0] & 1) == 0; } }
 
         public int Sign
         {
@@ -738,8 +738,8 @@ namespace System.Numerics
             dividend.AssertValid();
             divisor.AssertValid();
 
-            bool trivialDividend = dividend._bits == null;
-            bool trivialDivisor = divisor._bits == null;
+            bool trivialDividend = dividend._bits is null;
+            bool trivialDivisor = divisor._bits is null;
 
             if (trivialDividend && trivialDivisor)
             {
@@ -755,7 +755,7 @@ namespace System.Numerics
                 return s_bnZeroInt;
             }
 
-            Debug.Assert(dividend._bits != null);
+            Debug.Assert(dividend._bits is not null);
 
             if (trivialDivisor)
             {
@@ -766,7 +766,7 @@ namespace System.Numerics
                 return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
             }
 
-            Debug.Assert(divisor._bits != null);
+            Debug.Assert(divisor._bits is not null);
 
             if (dividend._bits.Length < divisor._bits.Length)
             {
@@ -801,7 +801,7 @@ namespace System.Numerics
                 return value.IsOne ? 0.0D : double.NaN;
             if (baseValue == 0.0D && !value.IsOne)
                 return double.NaN;
-            if (value._bits == null)
+            if (value._bits is null)
                 return Math.Log(value._sign, baseValue);
 
             ulong h = value._bits[value._bits.Length - 1];
@@ -830,8 +830,8 @@ namespace System.Numerics
             left.AssertValid();
             right.AssertValid();
 
-            bool trivialLeft = left._bits == null;
-            bool trivialRight = right._bits == null;
+            bool trivialLeft = left._bits is null;
+            bool trivialRight = right._bits is null;
 
             if (trivialLeft && trivialRight)
             {
@@ -840,7 +840,7 @@ namespace System.Numerics
 
             if (trivialLeft)
             {
-                Debug.Assert(right._bits != null);
+                Debug.Assert(right._bits is not null);
                 return left._sign != 0
                     ? BigIntegerCalculator.Gcd(right._bits, NumericsHelpers.Abs(left._sign))
                     : new BigInteger(right._bits, false);
@@ -848,13 +848,13 @@ namespace System.Numerics
 
             if (trivialRight)
             {
-                Debug.Assert(left._bits != null);
+                Debug.Assert(left._bits is not null);
                 return right._sign != 0
                     ? BigIntegerCalculator.Gcd(left._bits, NumericsHelpers.Abs(right._sign))
                     : new BigInteger(left._bits, false);
             }
 
-            Debug.Assert(left._bits != null && right._bits != null);
+            Debug.Assert(left._bits is not null && right._bits is not null);
 
             if (BigIntegerCalculator.Compare(left._bits, right._bits) < 0)
             {
@@ -914,9 +914,9 @@ namespace System.Numerics
             exponent.AssertValid();
             modulus.AssertValid();
 
-            bool trivialValue = value._bits == null;
-            bool trivialExponent = exponent._bits == null;
-            bool trivialModulus = modulus._bits == null;
+            bool trivialValue = value._bits is null;
+            bool trivialExponent = exponent._bits is null;
+            bool trivialModulus = modulus._bits is null;
 
             if (trivialModulus)
             {
@@ -950,7 +950,7 @@ namespace System.Numerics
             if (exponent == 1)
                 return value;
 
-            bool trivialValue = value._bits == null;
+            bool trivialValue = value._bits is null;
 
             if (trivialValue)
             {
@@ -973,7 +973,7 @@ namespace System.Numerics
         {
             AssertValid();
 
-            if (_bits == null)
+            if (_bits is null)
                 return _sign;
             int hash = _sign;
             for (int iv = _bits.Length; --iv >= 0;)
@@ -994,7 +994,7 @@ namespace System.Numerics
         {
             AssertValid();
 
-            if (_bits == null)
+            if (_bits is null)
                 return _sign == other;
 
             int cu;
@@ -1015,7 +1015,7 @@ namespace System.Numerics
 
             if (_sign < 0)
                 return false;
-            if (_bits == null)
+            if (_bits is null)
                 return (ulong)_sign == other;
 
             int cu = _bits.Length;
@@ -1034,10 +1034,10 @@ namespace System.Numerics
             if (_sign != other._sign)
                 return false;
             if (_bits == other._bits)
-                // _sign == other._sign && _bits == null && other._bits == null
+                // _sign == other._sign && _bits is null && other._bits is null
                 return true;
 
-            if (_bits == null || other._bits == null)
+            if (_bits is null || other._bits is null)
                 return false;
             int cu = _bits.Length;
             if (cu != other._bits.Length)
@@ -1050,7 +1050,7 @@ namespace System.Numerics
         {
             AssertValid();
 
-            if (_bits == null)
+            if (_bits is null)
                 return ((long)_sign).CompareTo(other);
             int cu;
             if ((_sign ^ other) < 0 || (cu = _bits.Length) > 2)
@@ -1067,7 +1067,7 @@ namespace System.Numerics
 
             if (_sign < 0)
                 return -1;
-            if (_bits == null)
+            if (_bits is null)
                 return ((ulong)_sign).CompareTo(other);
             int cu = _bits.Length;
             if (cu > 2)
@@ -1088,14 +1088,14 @@ namespace System.Numerics
             }
 
             // Same signs
-            if (_bits == null)
+            if (_bits is null)
             {
-                if (other._bits == null)
+                if (other._bits is null)
                     return _sign < other._sign ? -1 : _sign > other._sign ? +1 : 0;
                 return -other._sign;
             }
             int cuThis, cuOther;
-            if (other._bits == null || (cuThis = _bits.Length) > (cuOther = other._bits.Length))
+            if (other._bits is null || (cuThis = _bits.Length) > (cuOther = other._bits.Length))
                 return _sign;
             if (cuThis < cuOther)
                 return -_sign;
@@ -1108,7 +1108,7 @@ namespace System.Numerics
 
         public int CompareTo(object? obj)
         {
-            if (obj == null)
+            if (obj is null)
                 return 1;
             if (!(obj is BigInteger))
                 throw new ArgumentException(SR.Argument_MustBeBigInt, nameof(obj));
@@ -1179,7 +1179,7 @@ namespace System.Numerics
         public bool TryWriteBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false)
         {
             bytesWritten = 0;
-            if (TryGetBytes(GetBytesMode.Span, destination, isUnsigned, isBigEndian, ref bytesWritten) == null)
+            if (TryGetBytes(GetBytesMode.Span, destination, isUnsigned, isBigEndian, ref bytesWritten) is null)
             {
                 bytesWritten = 0;
                 return false;
@@ -1190,7 +1190,7 @@ namespace System.Numerics
         internal bool TryWriteOrCountBytes(Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false)
         {
             bytesWritten = 0;
-            return TryGetBytes(GetBytesMode.Span, destination, isUnsigned, isBigEndian, ref bytesWritten) != null;
+            return TryGetBytes(GetBytesMode.Span, destination, isUnsigned, isBigEndian, ref bytesWritten) is not null;
         }
 
         /// <summary>Gets the number of bytes that will be output by <see cref="ToByteArray(bool, bool)"/> and <see cref="TryWriteBytes(Span{byte}, out int, bool, bool)"/>.</summary>
@@ -1261,7 +1261,7 @@ namespace System.Numerics
             int nonZeroDwordIndex = 0;
             uint highDword;
             uint[]? bits = _bits;
-            if (bits == null)
+            if (bits is null)
             {
                 highByte = (byte)((sign < 0) ? 0xff : 0x00);
                 highDword = unchecked((uint)sign);
@@ -1324,7 +1324,7 @@ namespace System.Numerics
             // Ensure high bit is 0 if positive, 1 if negative
             bool needExtraByte = (msb & 0x80) != (highByte & 0x80) && !isUnsigned;
             int length = msbIndex + 1 + (needExtraByte ? 1 : 0);
-            if (bits != null)
+            if (bits is not null)
             {
                 length = checked(4 * (bits.Length - 1) + length);
             }
@@ -1351,7 +1351,7 @@ namespace System.Numerics
             int curByte = isBigEndian ? length - 1 : 0;
             int increment = isBigEndian ? -1 : 1;
 
-            if (bits != null)
+            if (bits is not null)
             {
                 for (int i = 0; i < bits.Length - 1; i++)
                 {
@@ -1417,13 +1417,13 @@ namespace System.Numerics
         /// <returns></returns>
         private uint[] ToUInt32Array()
         {
-            if (_bits == null && _sign == 0)
+            if (_bits is null && _sign == 0)
                 return new uint[] { 0 };
 
             uint[] dwords;
             uint highDWord;
 
-            if (_bits == null)
+            if (_bits is null)
             {
                 dwords = new uint[] { unchecked((uint)_sign) };
                 highDWord = (_sign < 0) ? uint.MaxValue : 0;
@@ -1483,8 +1483,8 @@ namespace System.Numerics
 
         private static BigInteger Add(uint[]? leftBits, int leftSign, uint[]? rightBits, int rightSign)
         {
-            bool trivialLeft = leftBits == null;
-            bool trivialRight = rightBits == null;
+            bool trivialLeft = leftBits is null;
+            bool trivialRight = rightBits is null;
 
             if (trivialLeft && trivialRight)
             {
@@ -1493,19 +1493,19 @@ namespace System.Numerics
 
             if (trivialLeft)
             {
-                Debug.Assert(rightBits != null);
+                Debug.Assert(rightBits is not null);
                 uint[] bits = BigIntegerCalculator.Add(rightBits, NumericsHelpers.Abs(leftSign));
                 return new BigInteger(bits, leftSign < 0);
             }
 
             if (trivialRight)
             {
-                Debug.Assert(leftBits != null);
+                Debug.Assert(leftBits is not null);
                 uint[] bits = BigIntegerCalculator.Add(leftBits, NumericsHelpers.Abs(rightSign));
                 return new BigInteger(bits, leftSign < 0);
             }
 
-            Debug.Assert(leftBits != null && rightBits != null);
+            Debug.Assert(leftBits is not null && rightBits is not null);
 
             if (leftBits.Length < rightBits.Length)
             {
@@ -1531,8 +1531,8 @@ namespace System.Numerics
 
         private static BigInteger Subtract(uint[]? leftBits, int leftSign, uint[]? rightBits, int rightSign)
         {
-            bool trivialLeft = leftBits == null;
-            bool trivialRight = rightBits == null;
+            bool trivialLeft = leftBits is null;
+            bool trivialRight = rightBits is null;
 
             if (trivialLeft && trivialRight)
             {
@@ -1541,19 +1541,19 @@ namespace System.Numerics
 
             if (trivialLeft)
             {
-                Debug.Assert(rightBits != null);
+                Debug.Assert(rightBits is not null);
                 uint[] bits = BigIntegerCalculator.Subtract(rightBits, NumericsHelpers.Abs(leftSign));
                 return new BigInteger(bits, leftSign >= 0);
             }
 
             if (trivialRight)
             {
-                Debug.Assert(leftBits != null);
+                Debug.Assert(leftBits is not null);
                 uint[] bits = BigIntegerCalculator.Subtract(leftBits, NumericsHelpers.Abs(rightSign));
                 return new BigInteger(bits, leftSign < 0);
             }
 
-            Debug.Assert(leftBits != null && rightBits != null);
+            Debug.Assert(leftBits is not null && rightBits is not null);
 
             if (BigIntegerCalculator.Compare(leftBits, rightBits) < 0)
             {
@@ -1651,7 +1651,7 @@ namespace System.Numerics
         public static explicit operator int(BigInteger value)
         {
             value.AssertValid();
-            if (value._bits == null)
+            if (value._bits is null)
             {
                 return value._sign;  // Value packed into int32 sign
             }
@@ -1676,7 +1676,7 @@ namespace System.Numerics
         public static explicit operator uint(BigInteger value)
         {
             value.AssertValid();
-            if (value._bits == null)
+            if (value._bits is null)
             {
                 return checked((uint)value._sign);
             }
@@ -1693,7 +1693,7 @@ namespace System.Numerics
         public static explicit operator long(BigInteger value)
         {
             value.AssertValid();
-            if (value._bits == null)
+            if (value._bits is null)
             {
                 return value._sign;
             }
@@ -1727,7 +1727,7 @@ namespace System.Numerics
         public static explicit operator ulong(BigInteger value)
         {
             value.AssertValid();
-            if (value._bits == null)
+            if (value._bits is null)
             {
                 return checked((ulong)value._sign);
             }
@@ -1757,7 +1757,7 @@ namespace System.Numerics
             int sign = value._sign;
             uint[]? bits = value._bits;
 
-            if (bits == null)
+            if (bits is null)
                 return sign;
 
             int length = bits.Length;
@@ -1790,7 +1790,7 @@ namespace System.Numerics
         public static explicit operator decimal(BigInteger value)
         {
             value.AssertValid();
-            if (value._bits == null)
+            if (value._bits is null)
                 return value._sign;
 
             int length = value._bits.Length;
@@ -1815,7 +1815,7 @@ namespace System.Numerics
                 return Zero;
             }
 
-            if (left._bits == null && right._bits == null)
+            if (left._bits is null && right._bits is null)
             {
                 return left._sign & right._sign;
             }
@@ -1842,7 +1842,7 @@ namespace System.Numerics
             if (right.IsZero)
                 return left;
 
-            if (left._bits == null && right._bits == null)
+            if (left._bits is null && right._bits is null)
             {
                 return left._sign | right._sign;
             }
@@ -1864,7 +1864,7 @@ namespace System.Numerics
 
         public static BigInteger operator ^(BigInteger left, BigInteger right)
         {
-            if (left._bits == null && right._bits == null)
+            if (left._bits is null && right._bits is null)
             {
                 return left._sign ^ right._sign;
             }
@@ -2022,8 +2022,8 @@ namespace System.Numerics
             left.AssertValid();
             right.AssertValid();
 
-            bool trivialLeft = left._bits == null;
-            bool trivialRight = right._bits == null;
+            bool trivialLeft = left._bits is null;
+            bool trivialRight = right._bits is null;
 
             if (trivialLeft && trivialRight)
             {
@@ -2032,19 +2032,19 @@ namespace System.Numerics
 
             if (trivialLeft)
             {
-                Debug.Assert(right._bits != null);
+                Debug.Assert(right._bits is not null);
                 uint[] bits = BigIntegerCalculator.Multiply(right._bits, NumericsHelpers.Abs(left._sign));
                 return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
             }
 
             if (trivialRight)
             {
-                Debug.Assert(left._bits != null);
+                Debug.Assert(left._bits is not null);
                 uint[] bits = BigIntegerCalculator.Multiply(left._bits, NumericsHelpers.Abs(right._sign));
                 return new BigInteger(bits, (left._sign < 0) ^ (right._sign < 0));
             }
 
-            Debug.Assert(left._bits != null && right._bits != null);
+            Debug.Assert(left._bits is not null && right._bits is not null);
 
             if (left._bits == right._bits)
             {
@@ -2069,8 +2069,8 @@ namespace System.Numerics
             dividend.AssertValid();
             divisor.AssertValid();
 
-            bool trivialDividend = dividend._bits == null;
-            bool trivialDivisor = divisor._bits == null;
+            bool trivialDividend = dividend._bits is null;
+            bool trivialDivisor = divisor._bits is null;
 
             if (trivialDividend && trivialDivisor)
             {
@@ -2086,12 +2086,12 @@ namespace System.Numerics
 
             if (trivialDivisor)
             {
-                Debug.Assert(dividend._bits != null);
+                Debug.Assert(dividend._bits is not null);
                 uint[] bits = BigIntegerCalculator.Divide(dividend._bits, NumericsHelpers.Abs(divisor._sign));
                 return new BigInteger(bits, (dividend._sign < 0) ^ (divisor._sign < 0));
             }
 
-            Debug.Assert(dividend._bits != null && divisor._bits != null);
+            Debug.Assert(dividend._bits is not null && divisor._bits is not null);
 
             if (dividend._bits.Length < divisor._bits.Length)
             {
@@ -2109,8 +2109,8 @@ namespace System.Numerics
             dividend.AssertValid();
             divisor.AssertValid();
 
-            bool trivialDividend = dividend._bits == null;
-            bool trivialDivisor = divisor._bits == null;
+            bool trivialDividend = dividend._bits is null;
+            bool trivialDivisor = divisor._bits is null;
 
             if (trivialDividend && trivialDivisor)
             {
@@ -2126,12 +2126,12 @@ namespace System.Numerics
 
             if (trivialDivisor)
             {
-                Debug.Assert(dividend._bits != null);
+                Debug.Assert(dividend._bits is not null);
                 uint remainder = BigIntegerCalculator.Remainder(dividend._bits, NumericsHelpers.Abs(divisor._sign));
                 return dividend._sign < 0 ? -1 * remainder : remainder;
             }
 
-            Debug.Assert(dividend._bits != null && divisor._bits != null);
+            Debug.Assert(dividend._bits is not null && divisor._bits is not null);
 
             if (dividend._bits.Length < divisor._bits.Length)
             {
@@ -2316,7 +2316,7 @@ namespace System.Numerics
             int sign = _sign;
             uint[]? bits = _bits;
 
-            if (bits == null)
+            if (bits is null)
             {
                 bitsArrayLength = 1;
                 highValue = (uint)(sign < 0 ? -sign : sign);
@@ -2366,7 +2366,7 @@ namespace System.Numerics
         /// <returns>True for negative numbers.</returns>
         private static bool GetPartsForBitManipulation(ref BigInteger x, out uint[] xd, out int xl)
         {
-            if (x._bits == null)
+            if (x._bits is null)
             {
                 if (x._sign < 0)
                 {
@@ -2401,7 +2401,7 @@ namespace System.Numerics
         [Conditional("DEBUG")]
         private void AssertValid()
         {
-            if (_bits != null)
+            if (_bits is not null)
             {
                 // _sign must be +1 or -1 when _bits is non-null
                 Debug.Assert(_sign == 1 || _sign == -1);

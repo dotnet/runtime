@@ -430,7 +430,7 @@ namespace System.Text.RegularExpressions
             _subtractor = subtraction;
         }
 
-        public bool CanMerge => !_negate && _subtractor == null;
+        public bool CanMerge => !_negate && _subtractor is null;
 
         public bool Negate
         {
@@ -453,7 +453,7 @@ namespace System.Text.RegularExpressions
                 EnsureRangeList().AddRange(cc._rangelist!);
             }
 
-            if (cc._categories != null)
+            if (cc._categories is not null)
             {
                 EnsureCategories().Append(cc._categories);
             }
@@ -491,7 +491,7 @@ namespace System.Text.RegularExpressions
 
         public void AddSubtraction(RegexCharClass sub)
         {
-            Debug.Assert(_subtractor == null, "Can't add two subtractions to a char class. ");
+            Debug.Assert(_subtractor is null, "Can't add two subtractions to a char class. ");
             _subtractor = sub;
         }
 
@@ -542,7 +542,7 @@ namespace System.Text.RegularExpressions
         public void AddLowercase(CultureInfo culture)
         {
             List<SingleRange>? rangeList = _rangelist;
-            if (rangeList != null)
+            if (rangeList is not null)
             {
                 int count = rangeList.Count;
                 for (int i = 0; i < count; i++)
@@ -712,7 +712,7 @@ namespace System.Text.RegularExpressions
         }
 
         public static bool IsMergeable(string charClass) =>
-            charClass != null &&
+            charClass is not null &&
             !IsNegated(charClass) &&
             !IsSubtraction(charClass);
 
@@ -1359,7 +1359,7 @@ namespace System.Text.RegularExpressions
 
             // Append ranges
             List<SingleRange>? rangelist = _rangelist;
-            if (rangelist != null)
+            if (rangelist is not null)
             {
                 for (int i = 0; i < rangelist.Count; i++)
                 {
@@ -1395,7 +1395,7 @@ namespace System.Text.RegularExpressions
         private void Canonicalize()
         {
             List<SingleRange>? rangelist = _rangelist;
-            if (rangelist != null)
+            if (rangelist is not null)
             {
                 // Find and eliminate overlapping or abutting ranges.
                 if (rangelist.Count > 1)

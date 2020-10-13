@@ -45,7 +45,7 @@ namespace System.Security.Principal
         {
             get
             {
-                if (_unmappedIdentities == null)
+                if (_unmappedIdentities is null)
                 {
                     _unmappedIdentities = new IdentityReferenceCollection();
                 }

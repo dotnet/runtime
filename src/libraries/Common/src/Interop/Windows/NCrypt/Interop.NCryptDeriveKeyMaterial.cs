@@ -65,7 +65,7 @@ internal static partial class Interop
                         // Now marshal the other parameters
                         //
 
-                        if (pHmacKey != null)
+                        if (pHmacKey is not null)
                         {
                             NCryptBuffer hmacKeyBuffer = default;
                             hmacKeyBuffer.cbBuffer = hmacKey!.Length;
@@ -76,7 +76,7 @@ internal static partial class Interop
                             parameterCount++;
                         }
 
-                        if (pSecretPrepend != null)
+                        if (pSecretPrepend is not null)
                         {
                             NCryptBuffer secretPrependBuffer = default;
                             secretPrependBuffer.cbBuffer = secretPrepend!.Length;
@@ -87,7 +87,7 @@ internal static partial class Interop
                             parameterCount++;
                         }
 
-                        if (pSecretAppend != null)
+                        if (pSecretAppend is not null)
                         {
                             NCryptBuffer secretAppendBuffer = default;
                             secretAppendBuffer.cbBuffer = secretAppend!.Length;

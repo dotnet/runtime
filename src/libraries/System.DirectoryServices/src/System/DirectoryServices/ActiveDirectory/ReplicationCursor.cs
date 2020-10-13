@@ -53,7 +53,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 // get the source server name if we are on win2k, or above win2k and serverDN is not NULL (means KCC translation is successful)
-                if (!_advanced || (_advanced && _serverDN != null))
+                if (!_advanced || (_advanced && _serverDN is not null))
                 {
                     _sourceServer = Utils.GetServerNameFromInvocationID(_serverDN, SourceInvocationId, _server);
                 }

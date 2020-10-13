@@ -69,7 +69,7 @@ namespace System.Net.Security
                             }
                         }
 
-                        if (store != null)
+                        if (store is not null)
                         {
                             using (store)
                             {

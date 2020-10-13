@@ -28,7 +28,7 @@ namespace System.Reflection.Context
 
         public override Assembly MapAssembly(Assembly assembly)
         {
-            if (assembly == null)
+            if (assembly is null)
             {
                 throw new ArgumentNullException(nameof(assembly));
             }
@@ -38,7 +38,7 @@ namespace System.Reflection.Context
 
         public override TypeInfo MapType(TypeInfo type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -112,14 +112,14 @@ namespace System.Reflection.Context
             // Setting DeclaringType on the user provided virtual properties.
             foreach (PropertyInfo prop in newProperties)
             {
-                if (prop == null)
+                if (prop is null)
                     throw new InvalidOperationException(SR.InvalidOperation_AddNullProperty);
 
                 VirtualPropertyBase vp = prop as VirtualPropertyBase;
-                if (vp == null || vp.ReflectionContext != this)
+                if (vp is null || vp.ReflectionContext != this)
                     throw new InvalidOperationException(SR.InvalidOperation_AddPropertyDifferentContext);
 
-                if (vp.DeclaringType == null)
+                if (vp.DeclaringType is null)
                     vp.SetDeclaringType(type);
                 else if (!vp.DeclaringType.Equals(type))
                     throw new InvalidOperationException(SR.InvalidOperation_AddPropertyDifferentType);

@@ -10,7 +10,7 @@ namespace System.Configuration
 
         public SubclassTypeValidator(Type baseClass)
         {
-            if (baseClass == null)
+            if (baseClass is null)
                 throw new ArgumentNullException(nameof(baseClass));
 
             _base = baseClass;
@@ -23,7 +23,7 @@ namespace System.Configuration
 
         public override void Validate(object value)
         {
-            if (value == null) return;
+            if (value is null) return;
 
             // Make a check here since value.GetType() returns RuntimeType rather then Type
             if (!(value is Type)) ValidatorUtils.HelperParamValidation(value, typeof(Type));

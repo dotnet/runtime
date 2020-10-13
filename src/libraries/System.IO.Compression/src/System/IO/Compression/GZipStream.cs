@@ -137,7 +137,7 @@ namespace System.IO.Compression
         {
             try
             {
-                if (disposing && _deflateStream != null)
+                if (disposing && _deflateStream is not null)
                 {
                     _deflateStream.Dispose();
                 }
@@ -157,7 +157,7 @@ namespace System.IO.Compression
             }
 
             DeflateStream? ds = _deflateStream;
-            if (ds != null)
+            if (ds is not null)
             {
                 _deflateStream = null!;
                 return ds.DisposeAsync();
@@ -226,7 +226,7 @@ namespace System.IO.Compression
 
         private void CheckDeflateStream()
         {
-            if (_deflateStream == null)
+            if (_deflateStream is null)
             {
                 ThrowStreamClosedException();
             }

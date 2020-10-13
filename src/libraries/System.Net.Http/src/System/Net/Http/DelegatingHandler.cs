@@ -25,7 +25,7 @@ namespace System.Net.Http
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -47,7 +47,7 @@ namespace System.Net.Http
 
         protected internal override HttpResponseMessage Send(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
+            if (request is null)
             {
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
@@ -57,7 +57,7 @@ namespace System.Net.Http
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
+            if (request is null)
             {
                 throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
             }
@@ -70,7 +70,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-                if (_innerHandler != null)
+                if (_innerHandler is not null)
                 {
                     _innerHandler.Dispose();
                 }
@@ -99,7 +99,7 @@ namespace System.Net.Http
         private void SetOperationStarted()
         {
             CheckDisposed();
-            if (_innerHandler == null)
+            if (_innerHandler is null)
             {
                 throw new InvalidOperationException(SR.net_http_handler_not_assigned);
             }

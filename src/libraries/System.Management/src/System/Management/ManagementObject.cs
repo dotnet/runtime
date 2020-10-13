@@ -101,7 +101,7 @@ namespace System.Management
 
         public new void Dispose()
         {
-            if (wmiClass != null)
+            if (wmiClass is not null)
             {
                 wmiClass.Dispose();
                 wmiClass = null;
@@ -114,7 +114,7 @@ namespace System.Management
 
         internal void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
+            if (IdentifierChanged is not null)
                 IdentifierChanged(this, null);
         }
 
@@ -142,7 +142,7 @@ namespace System.Management
         internal bool IsBound
         {
             get
-            { return _wbemObject != null; }
+            { return _wbemObject is not null; }
         }
 
         //internal constructor
@@ -503,7 +503,7 @@ namespace System.Management
         {
             get
             {
-                if (scope == null)
+                if (scope is null)
                     return scope = ManagementScope._Clone(null);
                 else
                     return scope;
@@ -558,7 +558,7 @@ namespace System.Management
         {
             get
             {
-                if (path == null)
+                if (path is null)
                     return path = ManagementPath._Clone(null);
                 else
                     return path;
@@ -570,7 +570,7 @@ namespace System.Management
                 //If the new path contains a namespace path and the scope is currently defaulted,
                 //we want to set the scope to the new namespace path provided
                 string nsPath = newPath.GetNamespacePath((int)tag_WBEM_GET_TEXT_FLAGS.WBEMPATH_GET_SERVER_AND_NAMESPACE_ONLY);
-                if ((nsPath.Length > 0) && (scope != null) && (scope.IsDefaulted))
+                if ((nsPath.Length > 0) && (scope is not null) && (scope.IsDefaulted))
                     Scope = new ManagementScope(nsPath);
 
                 // This must be a class for a ManagementClass object or an instance for a ManagementObject, or empty
@@ -625,7 +625,7 @@ namespace System.Management
         {
             get
             {
-                if (options == null)
+                if (options is null)
                     return options = ObjectGetOptions._Clone(null);
                 else
                     return options;
@@ -806,7 +806,7 @@ namespace System.Management
                 }
                 finally
                 {
-                    if (securityHandler != null)
+                    if (securityHandler is not null)
                         securityHandler.Reset();
                 }
             }
@@ -926,7 +926,7 @@ namespace System.Management
                                             sink.Stub);
 
 
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
 
                 if (status < 0)
@@ -1077,7 +1077,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
             }
 
@@ -1311,7 +1311,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
             }
 
@@ -1418,7 +1418,7 @@ namespace System.Management
                                                         sink.Stub);
 
 
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
 
                 if (status < 0)
@@ -1526,7 +1526,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
 
                 if (ppwbemCallResult != IntPtr.Zero)                    // Cleanup from allocations above.
@@ -1535,7 +1535,7 @@ namespace System.Management
                 if (pwbemCallResult != IntPtr.Zero)
                     Marshal.Release(pwbemCallResult);
 
-                if (wbemCallResult != null)
+                if (wbemCallResult is not null)
                     Marshal.ReleaseComObject(wbemCallResult);
             }
 
@@ -1581,13 +1581,13 @@ namespace System.Management
                     object pathValue = GetPropertyValue("__PATH");
 
                     // No path? Try Relpath?
-                    if (pathValue != null)
+                    if (pathValue is not null)
                         newPath = new ManagementPath((string)pathValue);
                     else
                     {
                         pathValue = GetPropertyValue("__RELPATH");
 
-                        if (pathValue != null)
+                        if (pathValue is not null)
                         {
                             newPath = new ManagementPath(scope.Path.Path);
                             newPath.RelativePath = (string)pathValue;
@@ -1600,7 +1600,7 @@ namespace System.Management
             {
             }
 
-            if (newPath == null)
+            if (newPath is null)
                 newPath = new ManagementPath();
 
             return newPath;
@@ -1669,7 +1669,7 @@ namespace System.Management
                 }
 
 
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
 
                 if (status < 0)
@@ -1829,7 +1829,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
 
                 if (ppwbemCallResult != IntPtr.Zero)                    // Cleanup from allocations above.
@@ -1838,7 +1838,7 @@ namespace System.Management
                 if (pwbemCallResult != IntPtr.Zero)
                     Marshal.Release(pwbemCallResult);
 
-                if (wbemCallResult != null)
+                if (wbemCallResult is not null)
                     Marshal.ReleaseComObject(wbemCallResult);
             }
 
@@ -1928,7 +1928,7 @@ namespace System.Management
                 }
 
 
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
 
                 if (status < 0)
@@ -2004,7 +2004,7 @@ namespace System.Management
             }
             finally
             {
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
             }
         }
@@ -2063,7 +2063,7 @@ namespace System.Management
                 }
 
 
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
 
                 if (status < 0)
@@ -2332,12 +2332,12 @@ namespace System.Management
                             Marshal.ThrowExceptionForHR(status, WmiNetUtilsHelper.GetErrorInfo_f());
                     }
 
-                    if (outParams != null)
+                    if (outParams is not null)
                         outParameters = new ManagementBaseObject(outParams);
                 }
                 finally
                 {
-                    if (securityHandler != null)
+                    if (securityHandler is not null)
                         securityHandler.Reset();
                 }
             }
@@ -2398,7 +2398,7 @@ namespace System.Management
                     inParams,
                     sink.Stub);
 
-                if (securityHandler != null)
+                if (securityHandler is not null)
                     securityHandler.Reset();
 
                 if (status < 0)
@@ -2483,7 +2483,7 @@ namespace System.Management
                 if (status >= 0)
                 {
                     // Hand out instances
-                    if (inParametersClass != null)
+                    if (inParametersClass is not null)
                     {
                         IWbemClassObjectFreeThreaded inParamsInstance = null;
                         status = inParametersClass.SpawnInstance_(0, out inParamsInstance);
@@ -2685,7 +2685,7 @@ namespace System.Management
                         }
                         finally
                         {
-                            if (securityHandler != null)
+                            if (securityHandler is not null)
                                 securityHandler.Reset();
                         }
                     }

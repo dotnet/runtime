@@ -12,7 +12,7 @@ namespace System.Globalization
 
             string? strDefault = UserDefaultLocaleName;
 
-            return strDefault != null ?
+            return strDefault is not null ?
                 GetCultureByName(strDefault) :
                 CultureInfo.InvariantCulture;
         }

@@ -13,17 +13,17 @@ namespace System.Data
 
         internal DataTableReaderListener(DataTableReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(DataTableReader));
             }
-            if (_currentDataTable != null)
+            if (_currentDataTable is not null)
             {
                 UnSubscribeEvents();
             }
             _readerWeak = new WeakReference(reader);
             _currentDataTable = reader.CurrentDataTable;
-            if (_currentDataTable != null)
+            if (_currentDataTable is not null)
             {
                 SubscribeEvents();
             }
@@ -33,7 +33,7 @@ namespace System.Data
 
         internal void UpdataTable(DataTable datatable)
         {
-            if (datatable == null)
+            if (datatable is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(DataTable));
             }
@@ -45,7 +45,7 @@ namespace System.Data
 
         private void SubscribeEvents()
         {
-            if (_currentDataTable == null)
+            if (_currentDataTable is null)
             {
                 return;
             }
@@ -65,7 +65,7 @@ namespace System.Data
 
         private void UnSubscribeEvents()
         {
-            if (_currentDataTable == null)
+            if (_currentDataTable is null)
             {
                 return;
             }
@@ -87,7 +87,7 @@ namespace System.Data
         private void DataTableCleared(object sender, DataTableClearEventArgs e)
         {
             DataTableReader? reader = (DataTableReader?)_readerWeak.Target;
-            if (reader != null)
+            if (reader is not null)
             {
                 reader.DataTableCleared();
             }
@@ -100,7 +100,7 @@ namespace System.Data
         private void SchemaChanged(object sender, CollectionChangeEventArgs e)
         {
             DataTableReader? reader = (DataTableReader?)_readerWeak.Target;
-            if (reader != null)
+            if (reader is not null)
             {
                 reader.SchemaChanged();
             }
@@ -113,7 +113,7 @@ namespace System.Data
         private void DataChanged(object sender, DataRowChangeEventArgs args)
         {
             DataTableReader? reader = (DataTableReader?)_readerWeak.Target;
-            if (reader != null)
+            if (reader is not null)
             {
                 reader.DataChanged(args);
             }

@@ -22,7 +22,7 @@ namespace System.ComponentModel.DataAnnotations
 
         public override bool IsValid(object? value)
         {
-            if (EnumType == null)
+            if (EnumType is null)
             {
                 throw new InvalidOperationException(SR.EnumDataTypeAttribute_TypeCannotBeNull);
             }
@@ -31,7 +31,7 @@ namespace System.ComponentModel.DataAnnotations
                 throw new InvalidOperationException(SR.Format(SR.EnumDataTypeAttribute_TypeNeedsToBeAnEnum, EnumType.FullName));
             }
 
-            if (value == null)
+            if (value is null)
             {
                 return true;
             }
@@ -74,7 +74,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 try
                 {
-                    convertedValue = stringValue != null
+                    convertedValue = stringValue is not null
                         ? Enum.Parse(EnumType, stringValue, false)
                         : Enum.ToObject(EnumType, value);
                 }

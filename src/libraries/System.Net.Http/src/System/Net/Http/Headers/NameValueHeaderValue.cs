@@ -53,7 +53,7 @@ namespace System.Net.Http.Headers
 
         protected NameValueHeaderValue(NameValueHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _name = source._name;
             _value = source._value;
@@ -61,7 +61,7 @@ namespace System.Net.Http.Headers
 
         public override int GetHashCode()
         {
-            Debug.Assert(_name != null);
+            Debug.Assert(_name is not null);
 
             int nameHashCode = StringComparer.OrdinalIgnoreCase.GetHashCode(_name);
 
@@ -84,7 +84,7 @@ namespace System.Net.Http.Headers
         {
             NameValueHeaderValue? other = obj as NameValueHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -167,9 +167,9 @@ namespace System.Net.Http.Headers
         internal static void ToString(ObjectCollection<NameValueHeaderValue>? values, char separator, bool leadingSeparator,
             StringBuilder destination)
         {
-            Debug.Assert(destination != null);
+            Debug.Assert(destination is not null);
 
-            if ((values == null) || (values.Count == 0))
+            if ((values is null) || (values.Count == 0))
             {
                 return;
             }
@@ -187,7 +187,7 @@ namespace System.Net.Http.Headers
 
         internal static int GetHashCode(ObjectCollection<NameValueHeaderValue>? values)
         {
-            if ((values == null) || (values.Count == 0))
+            if ((values is null) || (values.Count == 0))
             {
                 return 0;
             }
@@ -208,9 +208,9 @@ namespace System.Net.Http.Headers
         internal static int GetNameValueLength(string input, int startIndex,
             Func<NameValueHeaderValue> nameValueCreator, out NameValueHeaderValue? parsedValue)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
             Debug.Assert(startIndex >= 0);
-            Debug.Assert(nameValueCreator != null);
+            Debug.Assert(nameValueCreator is not null);
 
             parsedValue = null;
 
@@ -267,7 +267,7 @@ namespace System.Net.Http.Headers
         internal static int GetNameValueListLength(string? input, int startIndex, char delimiter,
             ObjectCollection<NameValueHeaderValue> nameValueCollection)
         {
-            Debug.Assert(nameValueCollection != null);
+            Debug.Assert(nameValueCollection is not null);
             Debug.Assert(startIndex >= 0);
 
             if ((string.IsNullOrEmpty(input)) || (startIndex >= input.Length))
@@ -305,9 +305,9 @@ namespace System.Net.Http.Headers
 
         internal static NameValueHeaderValue? Find(ObjectCollection<NameValueHeaderValue>? values, string name)
         {
-            Debug.Assert((name != null) && (name.Length > 0));
+            Debug.Assert((name is not null) && (name.Length > 0));
 
-            if ((values == null) || (values.Count == 0))
+            if ((values is null) || (values.Count == 0))
             {
                 return null;
             }
@@ -324,7 +324,7 @@ namespace System.Net.Http.Headers
 
         internal static int GetValueLength(string input, int startIndex)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
 
             if (startIndex >= input.Length)
             {

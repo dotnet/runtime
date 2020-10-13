@@ -46,7 +46,7 @@ namespace System.Security.Cryptography
         internal SafeEvpPKeyHandle UpRefKeyHandle()
         {
             SafeEcKeyHandle currentKey = _key.Value;
-            Debug.Assert(currentKey != null, "null TODO");
+            Debug.Assert(currentKey is not null, "null TODO");
 
             SafeEvpPKeyHandle pkeyHandle = Interop.Crypto.EvpPkeyCreate();
 
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography
 
         internal void SetKey(SafeEcKeyHandle key)
         {
-            Debug.Assert(key != null, "key != null");
+            Debug.Assert(key is not null, "key is not null");
             Debug.Assert(!key.IsInvalid, "!key.IsInvalid");
             Debug.Assert(!key.IsClosed, "!key.IsClosed");
 
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography
 
                 SafeEcKeyHandle? key = Interop.Crypto.EcKeyCreateByOid(oid);
 
-                if (key == null || key.IsInvalid)
+                if (key is null || key.IsInvalid)
                 {
                     throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));
                 }
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography
 
         private void FreeKey()
         {
-            if (_key != null)
+            if (_key is not null)
             {
                 if (_key.IsValueCreated)
                 {

@@ -176,7 +176,7 @@ namespace System.ComponentModel.Composition.Hosting
             var typesList = new List<Type>();
             foreach (var type in types)
             {
-                if (type == null)
+                if (type is null)
                 {
                     throw ExceptionBuilder.CreateContainsNullElement(nameof(types));
                 }
@@ -185,10 +185,10 @@ namespace System.ComponentModel.Composition.Hosting
                     throw new ArgumentException(SR.Format(SR.Argument_ElementReflectionOnlyType, nameof(types)), nameof(types));
                 }
                 var typeInfo = type.GetTypeInfo();
-                var lclType = (reflectionContext != null) ? reflectionContext.MapType(typeInfo) : typeInfo;
+                var lclType = (reflectionContext is not null) ? reflectionContext.MapType(typeInfo) : typeInfo;
 
                 // It is valid for the reflectionContext to delete types by mapping them to null
-                if (lclType != null)
+                if (lclType is not null)
                 {
                     // The final mapped type may be activated so we check to see if it is in a reflect only assembly
                     if (lclType.Assembly.ReflectionOnly)
@@ -205,7 +205,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             foreach (var type in types)
             {
-                if (type == null)
+                if (type is null)
                 {
                     throw ExceptionBuilder.CreateContainsNullElement(nameof(types));
                 }
@@ -249,13 +249,13 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                if (_parts == null)
+                if (_parts is null)
                 {
                     lock (_thisLock)
                     {
-                        if (_parts == null)
+                        if (_parts is null)
                         {
-                            if (_types == null)
+                            if (_types is null)
                             {
                                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                             }
@@ -264,7 +264,7 @@ namespace System.ComponentModel.Composition.Hosting
                             foreach (Type type in _types)
                             {
                                 var definition = AttributedModelDiscovery.CreatePartDefinitionIfDiscoverable(type, _definitionOrigin);
-                                if (definition != null)
+                                if (definition is not null)
                                 {
                                     collection.Add(definition);
                                 }
@@ -283,7 +283,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal override IEnumerable<ComposablePartDefinition>? GetCandidateParts(ImportDefinition definition)
         {
-            if (definition == null)
+            if (definition is null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
@@ -304,7 +304,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private List<ComposablePartDefinition>? GetCandidateParts(string? contractName)
         {
-            if (contractName == null)
+            if (contractName is null)
             {
                 return null;
             }

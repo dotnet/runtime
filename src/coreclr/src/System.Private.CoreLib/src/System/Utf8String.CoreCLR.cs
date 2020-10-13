@@ -230,7 +230,7 @@ namespace System
 #endif
         private unsafe Utf8String Ctor(char* value)
         {
-            if (value == null)
+            if (value is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }

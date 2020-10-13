@@ -12,7 +12,7 @@ namespace System.Drawing
     {
         public static Color ConvertFromString(string strValue, CultureInfo culture)
         {
-            Debug.Assert(culture != null);
+            Debug.Assert(culture is not null);
 
             string text = strValue.Trim();
 
@@ -114,7 +114,7 @@ namespace System.Drawing
                 }
                 else
                 {
-                    Debug.Assert(culture != null);
+                    Debug.Assert(culture is not null);
                     var formatInfo = (NumberFormatInfo?)culture.GetFormat(typeof(NumberFormatInfo));
                     return IntFromString(text, formatInfo);
                 }

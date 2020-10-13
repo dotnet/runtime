@@ -116,7 +116,7 @@ namespace System.Security.Cryptography
 
             private void ThrowIfDisposed()
             {
-                if (_key == null)
+                if (_key is null)
                 {
                     throw new ObjectDisposedException(
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS

@@ -45,7 +45,7 @@ namespace System.Globalization
 
         public bool Equals(SortVersion? other)
         {
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -62,7 +62,7 @@ namespace System.Globalization
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool operator ==(SortVersion? left, SortVersion? right)
         {
-            // Test "right" first to allow branch elimination when inlined for null checks (== null)
+            // Test "right" first to allow branch elimination when inlined for null checks (is null)
             // so it can become a simple test
             if (right is null)
             {

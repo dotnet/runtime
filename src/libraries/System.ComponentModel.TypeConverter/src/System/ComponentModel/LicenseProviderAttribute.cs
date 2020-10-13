@@ -53,7 +53,7 @@ namespace System.ComponentModel
         {
             get
             {
-                if (_licenseProviderType == null && _licenseProviderName != null)
+                if (_licenseProviderType is null && _licenseProviderName is not null)
                 {
                     _licenseProviderType = Type.GetType(_licenseProviderName);
                 }
@@ -74,7 +74,7 @@ namespace System.ComponentModel
             {
                 string typeName = _licenseProviderName;
 
-                if (typeName == null && _licenseProviderType != null)
+                if (typeName is null && _licenseProviderType is not null)
                 {
                     typeName = _licenseProviderType.FullName;
                 }
@@ -84,7 +84,7 @@ namespace System.ComponentModel
 
         public override bool Equals(object value)
         {
-            if (value is LicenseProviderAttribute && value != null)
+            if (value is LicenseProviderAttribute && value is not null)
             {
                 Type type = ((LicenseProviderAttribute)value).LicenseProvider;
                 if (type == LicenseProvider)
@@ -93,7 +93,7 @@ namespace System.ComponentModel
                 }
                 else
                 {
-                    if (type != null && type.Equals(LicenseProvider))
+                    if (type is not null && type.Equals(LicenseProvider))
                     {
                         return true;
                     }

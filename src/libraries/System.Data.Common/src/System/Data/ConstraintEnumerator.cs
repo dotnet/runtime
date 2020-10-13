@@ -17,7 +17,7 @@ namespace System.Data
 
         public ConstraintEnumerator(DataSet? dataSet)
         {
-            _tables = (dataSet != null) ? dataSet.Tables.GetEnumerator() : null;
+            _tables = (dataSet is not null) ? dataSet.Tables.GetEnumerator() : null;
             _currentObject = null;
         }
 
@@ -25,9 +25,9 @@ namespace System.Data
         {
             Constraint candidate;
             _currentObject = null;
-            while (_tables != null)
+            while (_tables is not null)
             {
-                if (_constraints == null)
+                if (_constraints is null)
                 {
                     if (!_tables.MoveNext())
                     {
@@ -57,7 +57,7 @@ namespace System.Data
         public Constraint GetConstraint()
         {
             // If currentObject is null we are before first GetNext or after last GetNext--consumer is bad
-            Debug.Assert(_currentObject != null, "GetObject should never be called w/ null currentObject.");
+            Debug.Assert(_currentObject is not null, "GetObject should never be called w/ null currentObject.");
             return _currentObject;
         }
 
@@ -75,7 +75,7 @@ namespace System.Data
         public ForeignKeyConstraint GetForeignKeyConstraint()
         {
             // If CurrentObject is null we are before first GetNext or after last GetNext--consumer is bad
-            Debug.Assert(CurrentObject != null, "GetObject should never be called w/ null currentObject.");
+            Debug.Assert(CurrentObject is not null, "GetObject should never be called w/ null currentObject.");
             return (ForeignKeyConstraint)CurrentObject;
         }
     }

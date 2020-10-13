@@ -34,7 +34,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ImportType(Type type, ImportCardinality cardinality)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -86,7 +86,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private Type CheckForCollection(Type type)
         {
             ElementType = CollectionServices.GetEnumerableElementType(type);
-            if (ElementType != null)
+            if (ElementType is not null)
             {
                 return ElementType;
             }
@@ -95,7 +95,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         private static bool IsGenericDescendentOf(Type? type, Type baseGenericTypeDefinition)
         {
-            if (type == typeof(object) || type == null)
+            if (type == typeof(object) || type is null)
             {
                 return false;
             }
@@ -110,12 +110,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static bool IsDescendentOf(Type type, Type baseType)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
 
-            if (baseType == null)
+            if (baseType is null)
             {
                 throw new ArgumentNullException(nameof(baseType));
             }
@@ -157,7 +157,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             // we have found the cast function, which means, that we have found either Lazy of EF
             // in this case the contract is always argument[0] and the metadata view is always argument[1]
-            IsPartCreator = !IsLazyGenericType(genericType) && (genericType != null);
+            IsPartCreator = !IsLazyGenericType(genericType) && (genericType is not null);
             _contractType = arguments[0];
             if (arguments.Length == 2)
             {
@@ -192,7 +192,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 return true;
             }
 
-            if (genericType != null && IsDescendentOf(genericType, ExportFactoryOfTType))
+            if (genericType is not null && IsDescendentOf(genericType, ExportFactoryOfTType))
             {
                 if (arguments.Length == 1)
                 {

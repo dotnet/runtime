@@ -30,12 +30,12 @@ namespace System.Composition.Hosting.Core
         /// <returns>The composed object graph.</returns>
         public static object Run(LifetimeContext outermostLifetimeContext, CompositeActivator compositionRootActivator)
         {
-            if (outermostLifetimeContext == null)
+            if (outermostLifetimeContext is null)
             {
                 throw new ArgumentNullException(nameof(outermostLifetimeContext));
             }
 
-            if (compositionRootActivator == null)
+            if (compositionRootActivator is null)
             {
                 throw new ArgumentNullException(nameof(compositionRootActivator));
             }
@@ -55,10 +55,10 @@ namespace System.Composition.Hosting.Core
         /// <param name="action">Action to run.</param>
         public void AddNonPrerequisiteAction(Action action)
         {
-            if (action == null)
+            if (action is null)
                 throw new ArgumentNullException(nameof(action));
 
-            if (_nonPrerequisiteActions == null)
+            if (_nonPrerequisiteActions is null)
                 _nonPrerequisiteActions = new List<Action>();
 
             _nonPrerequisiteActions.Add(action);
@@ -71,12 +71,12 @@ namespace System.Composition.Hosting.Core
         /// <param name="action">Action to run.</param>
         public void AddPostCompositionAction(Action action)
         {
-            if (action == null)
+            if (action is null)
             {
                 throw new ArgumentNullException(nameof(action));
             }
 
-            if (_postCompositionActions == null)
+            if (_postCompositionActions is null)
                 _postCompositionActions = new List<Action>();
 
             _postCompositionActions.Add(action);
@@ -84,9 +84,9 @@ namespace System.Composition.Hosting.Core
 
         internal void EnterSharingLock(object sharingLock)
         {
-            Debug.Assert(sharingLock != null, "Expected a sharing lock to be passed.");
+            Debug.Assert(sharingLock is not null, "Expected a sharing lock to be passed.");
 
-            if (_sharingLock == null)
+            if (_sharingLock is null)
             {
                 _sharingLock = sharingLock;
                 Monitor.Enter(sharingLock);
@@ -100,10 +100,10 @@ namespace System.Composition.Hosting.Core
 
         private void Complete()
         {
-            while (_nonPrerequisiteActions != null)
+            while (_nonPrerequisiteActions is not null)
                 RunAndClearActions();
 
-            if (_postCompositionActions != null)
+            if (_postCompositionActions is not null)
             {
                 foreach (var action in _postCompositionActions)
                     action();
@@ -126,7 +126,7 @@ namespace System.Composition.Hosting.Core
         /// </summary>
         public void Dispose()
         {
-            if (_sharingLock != null)
+            if (_sharingLock is not null)
                 Monitor.Exit(_sharingLock);
         }
     }

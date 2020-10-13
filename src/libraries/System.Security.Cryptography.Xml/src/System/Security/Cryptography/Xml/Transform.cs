@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Xml
 
         internal bool AcceptsType(Type inputType)
         {
-            if (InputTypes != null)
+            if (InputTypes is not null)
             {
                 for (int i = 0; i < InputTypes.Length; i++)
                 {
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.Xml
             if (!string.IsNullOrEmpty(Algorithm))
                 transformElement.SetAttribute("Algorithm", Algorithm);
             XmlNodeList children = GetInnerXml();
-            if (children != null)
+            if (children is not null)
             {
                 foreach (XmlNode node in children)
                 {
@@ -158,12 +158,12 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                if (_context != null)
+                if (_context is not null)
                     return _context;
 
                 Reference reference = Reference;
-                SignedXml signedXml = (reference == null ? SignedXml : reference.SignedXml);
-                if (signedXml == null)
+                SignedXml signedXml = (reference is null ? SignedXml : reference.SignedXml);
+                if (signedXml is null)
                     return null;
 
                 return signedXml._context;
@@ -178,14 +178,14 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                if (_propagatedNamespaces != null)
+                if (_propagatedNamespaces is not null)
                     return _propagatedNamespaces;
 
                 Reference reference = Reference;
-                SignedXml signedXml = (reference == null ? SignedXml : reference.SignedXml);
+                SignedXml signedXml = (reference is null ? SignedXml : reference.SignedXml);
 
                 // If the reference is not a Uri reference with a DataObject target, return an empty hashtable.
-                if (reference != null &&
+                if (reference is not null &&
                     ((reference.ReferenceTargetType != ReferenceTargetType.UriReference) ||
                      (string.IsNullOrEmpty(reference.Uri) || reference.Uri[0] != '#')))
                 {
@@ -194,13 +194,13 @@ namespace System.Security.Cryptography.Xml
                 }
 
                 CanonicalXmlNodeList namespaces = null;
-                if (reference != null)
+                if (reference is not null)
                     namespaces = reference._namespaces;
-                else if (signedXml?._context != null)
+                else if (signedXml?._context is not null)
                     namespaces = Utils.GetPropagatedAttributes(signedXml._context);
 
                 // if no namespaces have been propagated, return an empty hashtable.
-                if (namespaces == null)
+                if (namespaces is null)
                 {
                     _propagatedNamespaces = new Hashtable(0);
                     return _propagatedNamespaces;

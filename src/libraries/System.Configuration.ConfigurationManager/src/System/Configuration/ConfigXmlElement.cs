@@ -27,7 +27,7 @@ namespace System.Configuration
         {
             XmlNode cloneNode = base.CloneNode(deep);
             ConfigXmlElement clone = cloneNode as ConfigXmlElement;
-            if (clone != null)
+            if (clone is not null)
             {
                 clone._line = _line;
                 clone._filename = _filename;

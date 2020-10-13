@@ -58,7 +58,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             if (s_lookup.TryGetValue(signatureAlgorithmOid, out CmsSignature? processor))
             {
-                if (key != null && !processor.VerifyKeyType(key))
+                if (key is not null && !processor.VerifyKeyType(key))
                 {
                     return null;
                 }
@@ -84,7 +84,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             CmsSignature? processor = ResolveAndVerifyKeyType(certificate.GetKeyAlgorithm(), key);
 
-            if (processor == null)
+            if (processor is null)
             {
                 oid = null;
                 signatureValue = default;

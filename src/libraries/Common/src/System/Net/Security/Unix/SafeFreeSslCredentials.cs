@@ -45,29 +45,29 @@ namespace System.Net.Security
             : base(IntPtr.Zero, true)
         {
             Debug.Assert(
-                certificate == null || certificate is X509Certificate2,
+                certificate is null || certificate is X509Certificate2,
                 "Only X509Certificate2 certificates are supported at this time");
 
             X509Certificate2? cert = (X509Certificate2?)certificate;
 
-            if (cert != null)
+            if (cert is not null)
             {
                 Debug.Assert(cert.HasPrivateKey, "cert.HasPrivateKey");
 
                 using (RSAOpenSsl? rsa = (RSAOpenSsl?)cert.GetRSAPrivateKey())
                 {
-                    if (rsa != null)
+                    if (rsa is not null)
                     {
                         _certKeyHandle = rsa.DuplicateKeyHandle();
                         Interop.Crypto.CheckValidOpenSslHandle(_certKeyHandle);
                     }
                 }
 
-                if (_certKeyHandle == null)
+                if (_certKeyHandle is null)
                 {
                     using (ECDsaOpenSsl? ecdsa = (ECDsaOpenSsl?)cert.GetECDsaPrivateKey())
                     {
-                        if (ecdsa != null)
+                        if (ecdsa is not null)
                         {
                             _certKeyHandle = ecdsa.DuplicateKeyHandle();
                             Interop.Crypto.CheckValidOpenSslHandle(_certKeyHandle);
@@ -75,7 +75,7 @@ namespace System.Net.Security
                     }
                 }
 
-                if (_certKeyHandle == null)
+                if (_certKeyHandle is null)
                 {
                     throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
                 }
@@ -95,12 +95,12 @@ namespace System.Net.Security
 
         protected override bool ReleaseHandle()
         {
-            if (_certHandle != null)
+            if (_certHandle is not null)
             {
                 _certHandle.Dispose();
             }
 
-            if (_certKeyHandle != null)
+            if (_certKeyHandle is not null)
             {
                 _certKeyHandle.Dispose();
             }

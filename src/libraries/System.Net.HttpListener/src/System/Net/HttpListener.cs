@@ -60,7 +60,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -86,11 +86,11 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
-                if (value.CustomChannelBinding != null)
+                if (value.CustomChannelBinding is not null)
                 {
                     throw new ArgumentException(SR.net_listener_cannot_set_custom_cbt, nameof(value));
                 }
@@ -115,7 +115,7 @@ namespace System.Net
             string? registeredPrefix = null;
             try
             {
-                if (uriPrefix == null)
+                if (uriPrefix is null)
                 {
                     throw new ArgumentNullException(nameof(uriPrefix));
                 }
@@ -199,7 +199,7 @@ namespace System.Net
             {
                 CheckDisposed();
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"uriPrefix: {uriPrefix}");
-                if (uriPrefix == null)
+                if (uriPrefix is null)
                 {
                     throw new ArgumentNullException(nameof(uriPrefix));
                 }

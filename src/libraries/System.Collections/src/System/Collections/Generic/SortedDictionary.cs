@@ -30,7 +30,7 @@ namespace System.Collections.Generic
 
         public SortedDictionary(IDictionary<TKey, TValue> dictionary, IComparer<TKey>? comparer)
         {
-            if (dictionary == null)
+            if (dictionary is null)
             {
                 throw new ArgumentNullException(nameof(dictionary));
             }
@@ -56,14 +56,14 @@ namespace System.Collections.Generic
         bool ICollection<KeyValuePair<TKey, TValue>>.Contains(KeyValuePair<TKey, TValue> keyValuePair)
         {
             TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(keyValuePair);
-            if (node == null)
+            if (node is null)
             {
                 return false;
             }
 
-            if (keyValuePair.Value == null)
+            if (keyValuePair.Value is null)
             {
-                return node.Item.Value == null;
+                return node.Item.Value is null;
             }
             else
             {
@@ -74,7 +74,7 @@ namespace System.Collections.Generic
         bool ICollection<KeyValuePair<TKey, TValue>>.Remove(KeyValuePair<TKey, TValue> keyValuePair)
         {
             TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(keyValuePair);
-            if (node == null)
+            if (node is null)
             {
                 return false;
             }
@@ -99,13 +99,13 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (key == null)
+                if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key));
                 }
 
                 TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
-                if (node == null)
+                if (node is null)
                 {
                     throw new KeyNotFoundException(SR.Format(SR.Arg_KeyNotFoundWithKey, key.ToString()));
                 }
@@ -114,13 +114,13 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (key == null)
+                if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key));
                 }
 
                 TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
-                if (node == null)
+                if (node is null)
                 {
                     _set.Add(new KeyValuePair<TKey, TValue>(key, value));
                 }
@@ -152,7 +152,7 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (_keys == null) _keys = new KeyCollection(this);
+                if (_keys is null) _keys = new KeyCollection(this);
                 return _keys;
             }
         }
@@ -177,7 +177,7 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (_values == null) _values = new ValueCollection(this);
+                if (_values is null) _values = new ValueCollection(this);
                 return _values;
             }
         }
@@ -200,7 +200,7 @@ namespace System.Collections.Generic
 
         public void Add(TKey key, TValue value)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -214,7 +214,7 @@ namespace System.Collections.Generic
 
         public bool ContainsKey(TKey key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -225,11 +225,11 @@ namespace System.Collections.Generic
         public bool ContainsValue(TValue value)
         {
             bool found = false;
-            if (value == null)
+            if (value is null)
             {
                 _set.InOrderTreeWalk(delegate (TreeSet<KeyValuePair<TKey, TValue>>.Node node)
                 {
-                    if (node.Item.Value == null)
+                    if (node.Item.Value is null)
                     {
                         found = true;
                         return false;  // stop the walk
@@ -270,7 +270,7 @@ namespace System.Collections.Generic
 
         public bool Remove(TKey key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -280,13 +280,13 @@ namespace System.Collections.Generic
 
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TValue value)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
             TreeSet<KeyValuePair<TKey, TValue>>.Node? node = _set.FindNode(new KeyValuePair<TKey, TValue>(key, default(TValue)!));
-            if (node == null)
+            if (node is null)
             {
                 value = default;
                 return false;
@@ -337,12 +337,12 @@ namespace System.Collections.Generic
             }
             set
             {
-                if (key == null)
+                if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key));
                 }
 
-                if (value == null && !(default(TValue) == null))
+                if (value is null && !(default(TValue) is null))
                     throw new ArgumentNullException(nameof(value));
 
                 try
@@ -366,12 +366,12 @@ namespace System.Collections.Generic
 
         void IDictionary.Add(object key, object? value)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (value == null && !(default(TValue) == null))
+            if (value is null && !(default(TValue) is null))
                 throw new ArgumentNullException(nameof(value));
 
             try
@@ -404,7 +404,7 @@ namespace System.Collections.Generic
 
         private static bool IsCompatibleKey(object key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -559,7 +559,7 @@ namespace System.Collections.Generic
 
             public KeyCollection(SortedDictionary<TKey, TValue> dictionary)
             {
-                if (dictionary == null)
+                if (dictionary is null)
                 {
                     throw new ArgumentNullException(nameof(dictionary));
                 }
@@ -583,7 +583,7 @@ namespace System.Collections.Generic
 
             public void CopyTo(TKey[] array, int index)
             {
-                if (array == null)
+                if (array is null)
                 {
                     throw new ArgumentNullException(nameof(array));
                 }
@@ -603,7 +603,7 @@ namespace System.Collections.Generic
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array == null)
+                if (array is null)
                 {
                     throw new ArgumentNullException(nameof(array));
                 }
@@ -629,7 +629,7 @@ namespace System.Collections.Generic
                 }
 
                 TKey[]? keys = array as TKey[];
-                if (keys != null)
+                if (keys is not null)
                 {
                     CopyTo(keys, index);
                 }
@@ -742,7 +742,7 @@ namespace System.Collections.Generic
 
             public ValueCollection(SortedDictionary<TKey, TValue> dictionary)
             {
-                if (dictionary == null)
+                if (dictionary is null)
                 {
                     throw new ArgumentNullException(nameof(dictionary));
                 }
@@ -766,7 +766,7 @@ namespace System.Collections.Generic
 
             public void CopyTo(TValue[] array, int index)
             {
-                if (array == null)
+                if (array is null)
                 {
                     throw new ArgumentNullException(nameof(array));
                 }
@@ -786,7 +786,7 @@ namespace System.Collections.Generic
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array == null)
+                if (array is null)
                 {
                     throw new ArgumentNullException(nameof(array));
                 }
@@ -812,7 +812,7 @@ namespace System.Collections.Generic
                 }
 
                 TValue[]? values = array as TValue[];
-                if (values != null)
+                if (values is not null)
                 {
                     CopyTo(values, index);
                 }
@@ -924,7 +924,7 @@ namespace System.Collections.Generic
 
             public KeyValuePairComparer(IComparer<TKey>? keyComparer)
             {
-                if (keyComparer == null)
+                if (keyComparer is null)
                 {
                     this.keyComparer = Comparer<TKey>.Default;
                 }

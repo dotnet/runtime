@@ -36,13 +36,13 @@ namespace System.Security.Cryptography
 
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, HashAlgorithmName hashAlgorithm)
         {
-            if (salt == null)
+            if (salt is null)
                 throw new ArgumentNullException(nameof(salt));
             if (salt.Length < MinimumSaltSize)
                 throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt, nameof(salt));
             if (iterations <= 0)
                 throw new ArgumentOutOfRangeException(nameof(iterations), SR.ArgumentOutOfRange_NeedPosNum);
-            if (password == null)
+            if (password is null)
                 throw new NullReferenceException();  // This "should" be ArgumentNullException but for compat, we throw NullReferenceException.
 
             _salt = new byte[salt.Length + sizeof(uint)];
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
                 if (value.Length < MinimumSaltSize)
                     throw new ArgumentException(SR.Cryptography_PasswordDerivedBytes_FewBytesSalt);
@@ -144,17 +144,17 @@ namespace System.Security.Cryptography
         {
             if (disposing)
             {
-                if (_hmac != null)
+                if (_hmac is not null)
                 {
                     _hmac.Dispose();
                     _hmac = null!;
                 }
 
-                if (_buffer != null)
+                if (_buffer is not null)
                     Array.Clear(_buffer, 0, _buffer.Length);
-                if (_password != null)
+                if (_password is not null)
                     Array.Clear(_password, 0, _password.Length);
-                if (_salt != null)
+                if (_salt is not null)
                     Array.Clear(_salt, 0, _salt.Length);
             }
             base.Dispose(disposing);
@@ -227,7 +227,7 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "HMACSHA1 is needed for compat. (https://github.com/dotnet/runtime/issues/17618)")]
         private HMAC OpenHmac()
         {
-            Debug.Assert(_password != null);
+            Debug.Assert(_password is not null);
 
             HashAlgorithmName hashAlgorithm = HashAlgorithm;
 
@@ -249,7 +249,7 @@ namespace System.Security.Cryptography
         [MemberNotNull(nameof(_buffer))]
         private void Initialize()
         {
-            if (_buffer != null)
+            if (_buffer is not null)
                 Array.Clear(_buffer, 0, _buffer.Length);
             _buffer = new byte[_blockSize];
             _block = 0;

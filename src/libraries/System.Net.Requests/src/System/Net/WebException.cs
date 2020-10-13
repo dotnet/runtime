@@ -46,7 +46,7 @@ namespace System.Net
             _status = status;
             _response = response;
 
-            if (innerException != null)
+            if (innerException is not null)
             {
                 HResult = innerException.HResult;
             }
@@ -73,7 +73,7 @@ namespace System.Net
 
         internal static Exception CreateCompatibleException(Exception exception)
         {
-            Debug.Assert(exception != null);
+            Debug.Assert(exception is not null);
             if (exception is HttpRequestException hre)
             {
                 return new WebException(

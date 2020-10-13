@@ -102,11 +102,11 @@ namespace System.ComponentModel.Composition.Hosting
 
             // This will take the lock, if necesary
             IDisposable? compositionLockHolder = _lock.IsThreadSafe ? _lock.LockComposition() : null;
-            bool compositionLockTaken = (compositionLockHolder != null);
+            bool compositionLockTaken = (compositionLockHolder is not null);
             try
             {
                 // revert actions are processed in the reverse order, so we have to add the "release lock" action now
-                if (compositionLockTaken && (atomicComposition != null))
+                if (compositionLockTaken && (atomicComposition is not null))
                 {
                     atomicComposition.AddRevertAction(() => compositionLockHolder!.Dispose());
                 }
@@ -118,7 +118,7 @@ namespace System.ComponentModel.Composition.Hosting
                 StartSatisfyingImports(partManager, atomicComposition);
 
                 // Add the "release lock" to the commit actions
-                if (compositionLockTaken && (atomicComposition != null))
+                if (compositionLockTaken && (atomicComposition is not null))
                 {
                     atomicComposition.AddCompleteAction(() => compositionLockHolder!.Dispose());
                 }
@@ -126,7 +126,7 @@ namespace System.ComponentModel.Composition.Hosting
             finally
             {
                 // We haven't updated the queues, so we can release the lock now
-                if (compositionLockTaken && (atomicComposition == null))
+                if (compositionLockTaken && (atomicComposition is null))
                 {
                     compositionLockHolder!.Dispose();
                 }
@@ -233,7 +233,7 @@ namespace System.ComponentModel.Composition.Hosting
             using (_lock.LockComposition())
             {
                 PartManager? partManager = GetPartManager(part, false);
-                if (partManager != null)
+                if (partManager is not null)
                 {
                     StopSatisfyingImports(partManager, atomicComposition);
                 }
@@ -274,7 +274,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                     }
 
-                    if (sourceProviderToUnsubscribeFrom != null)
+                    if (sourceProviderToUnsubscribeFrom is not null)
                     {
                         sourceProviderToUnsubscribeFrom.ExportsChanging -= OnExportsChanging;
                     }
@@ -409,7 +409,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private CompositionResult TrySatisfyImports(PartManager partManager, ComposablePart part, bool shouldTrackImports)
         {
-            if (part == null)
+            if (part is null)
             {
                 throw new ArgumentNullException(nameof(part));
             }
@@ -459,7 +459,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 var exports = partManager.GetSavedImport(import);
 
-                if (exports == null)
+                if (exports is null)
                 {
                     CompositionResult<IEnumerable<Export>> exportsResult = TryGetExports(
                         _sourceProvider, part, import, atomicComposition);
@@ -472,7 +472,7 @@ namespace System.ComponentModel.Composition.Hosting
                     exports = exportsResult.Value.AsArray();
                 }
 
-                if (atomicComposition == null)
+                if (atomicComposition is null)
                 {
                     result = result.MergeResult(
                         partManager.TrySetImport(import, exports));
@@ -496,7 +496,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             // When in a atomicComposition account for everything that isn't yet reflected in the
             // index
-            if (atomicComposition != null)
+            if (atomicComposition is not null)
             {
                 if (atomicComposition.TryGetValue(this, out EngineContext? engineContext))
                 {
@@ -553,7 +553,7 @@ namespace System.ComponentModel.Composition.Hosting
             // schedule it for later
             if (result.Succeeded && recomposedImport && partComposed)
             {
-                if (atomicComposition == null)
+                if (atomicComposition is null)
                 {
                     result = result.MergeResult(partManager.TryOnComposed());
                 }
@@ -588,7 +588,7 @@ namespace System.ComponentModel.Composition.Hosting
                 // Knowing that the part has already been composed before and that the only possible
                 // changes are to recomposable imports, we can safely go ahead and do this now or
                 // schedule it for later
-                if (atomicComposition == null)
+                if (atomicComposition is null)
                 {
                     return partManager.TrySetImport(import, exports);
                 }
@@ -609,7 +609,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             // When not running in a atomicCompositional state, schedule reindexing after ensuring
             // that this isn't a redundant addition
-            if (atomicComposition == null)
+            if (atomicComposition is null)
             {
                 if (!partManager.TrackingImports)
                 {
@@ -629,7 +629,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             // When not running in a atomicCompositional state, schedule reindexing after ensuring
             // that this isn't a redundant removal
-            if (atomicComposition == null)
+            if (atomicComposition is null)
             {
                 ConditionalWeakTable<ComposablePart, PartManager>? partManagers = null;
                 RecompositionManager? recompositionManager = null;
@@ -639,7 +639,7 @@ namespace System.ComponentModel.Composition.Hosting
                     partManagers = _partManagers;
                     recompositionManager = _recompositionManager;
                 }
-                if (partManagers != null)                            // Disposal race may have been won by dispose
+                if (partManagers is not null)                            // Disposal race may have been won by dispose
                 {
                     partManagers.Remove(partManager.Part);
 
@@ -688,7 +688,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private EngineContext GetEngineContext(AtomicComposition atomicComposition)
         {
-            if (atomicComposition == null)
+            if (atomicComposition is null)
             {
                 throw new ArgumentNullException(nameof(atomicComposition));
             }
@@ -745,7 +745,7 @@ namespace System.ComponentModel.Composition.Hosting
             try
             {
                 IEnumerable<Export>? exports = null;
-                if (provider != null)
+                if (provider is not null)
                 {
                     exports = provider.GetExports(definition, atomicComposition).AsArray();
                 }

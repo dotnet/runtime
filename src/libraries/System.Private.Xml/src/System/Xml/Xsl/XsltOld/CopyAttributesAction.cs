@@ -19,13 +19,13 @@ namespace System.Xml.Xsl.XsltOld
 
         internal static CopyAttributesAction GetAction()
         {
-            Debug.Assert(s_Action != null);
+            Debug.Assert(s_Action is not null);
             return s_Action;
         }
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             while (processor.CanContinue)
             {

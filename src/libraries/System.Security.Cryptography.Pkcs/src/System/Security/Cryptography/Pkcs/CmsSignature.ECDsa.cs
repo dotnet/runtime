@@ -33,7 +33,7 @@ namespace System.Security.Cryptography.Pkcs
 
             protected override bool VerifyKeyType(AsymmetricAlgorithm key)
             {
-                return (key as ECDsa) != null;
+                return (key as ECDsa) is not null;
             }
 
             internal override bool VerifySignature(
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography.Pkcs
 
                 ECDsa? key = certificate.GetECDsaPublicKey();
 
-                if (key == null)
+                if (key is null)
                 {
                     return false;
                 }
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography.Pkcs
                     PkcsPal.Instance.GetPrivateKeyForSigning<ECDsa>(certificate, silent) ??
                     certificate.GetECDsaPublicKey();
 
-                if (key == null)
+                if (key is null)
                 {
                     signatureAlgorithm = null;
                     signatureValue = null;
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.Pkcs
                     hashAlgorithmName == HashAlgorithmName.SHA512 ? Oids.ECDsaWithSha512 :
                     null;
 
-                if (oidValue == null)
+                if (oidValue is null)
                 {
                     signatureAlgorithm = null;
                     signatureValue = null;
@@ -156,7 +156,7 @@ namespace System.Security.Cryptography.Pkcs
                     {
                         var signedHash = new ReadOnlySpan<byte>(rented, 0, bytesWritten);
 
-                        if (key != null && !certificate.GetECDsaPublicKey()!.VerifyHash(dataHash, signedHash))
+                        if (key is not null && !certificate.GetECDsaPublicKey()!.VerifyHash(dataHash, signedHash))
                         {
                             // key did not match certificate
                             signatureValue = null;

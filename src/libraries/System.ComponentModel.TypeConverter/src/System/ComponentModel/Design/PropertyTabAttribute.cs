@@ -77,7 +77,7 @@ namespace System.ComponentModel
         {
             get
             {
-                if (_tabClasses == null && _tabClassNames != null)
+                if (_tabClasses is null && _tabClassNames is not null)
                 {
                     _tabClasses = new Type[_tabClassNames.Length];
                     for (int i = 0; i < _tabClassNames.Length; i++)
@@ -98,12 +98,12 @@ namespace System.ComponentModel
 
                         _tabClasses[i] = Type.GetType(className, false);
 
-                        if (_tabClasses[i] == null)
+                        if (_tabClasses[i] is null)
                         {
-                            if (assemblyName != null)
+                            if (assemblyName is not null)
                             {
                                 Assembly a = Assembly.Load(assemblyName);
-                                if (a != null)
+                                if (a is not null)
                                 {
                                     _tabClasses[i] = a.GetType(className, true);
                                 }
@@ -182,29 +182,29 @@ namespace System.ComponentModel
 
         private void InitializeArrays(string[] tabClassNames, Type[] tabClasses, PropertyTabScope[] tabScopes)
         {
-            if (tabClasses != null)
+            if (tabClasses is not null)
             {
-                if (tabScopes != null && tabClasses.Length != tabScopes.Length)
+                if (tabScopes is not null && tabClasses.Length != tabScopes.Length)
                 {
                     throw new ArgumentException(SR.PropertyTabAttributeArrayLengthMismatch);
                 }
                 _tabClasses = (Type[])tabClasses.Clone();
             }
-            else if (tabClassNames != null)
+            else if (tabClassNames is not null)
             {
-                if (tabScopes != null && tabClassNames.Length != tabScopes.Length)
+                if (tabScopes is not null && tabClassNames.Length != tabScopes.Length)
                 {
                     throw new ArgumentException(SR.PropertyTabAttributeArrayLengthMismatch);
                 }
                 _tabClassNames = (string[])tabClassNames.Clone();
                 _tabClasses = null;
             }
-            else if (_tabClasses == null && _tabClassNames == null)
+            else if (_tabClasses is null && _tabClassNames is null)
             {
                 throw new ArgumentException(SR.PropertyTabAttributeParamsBothNull);
             }
 
-            if (tabScopes != null)
+            if (tabScopes is not null)
             {
                 for (int i = 0; i < tabScopes.Length; i++)
                 {

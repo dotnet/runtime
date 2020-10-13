@@ -42,17 +42,17 @@ namespace System.Security.AccessControl
                     break;
 
                 case Interop.Errors.ERROR_FILE_NOT_FOUND:
-                    if ((context != null) && (context is bool) && ((bool)context))
+                    if ((context is not null) && (context is bool) && ((bool)context))
                     {
                         // DirectorySecurity
-                        if ((name != null) && (name.Length != 0))
+                        if ((name is not null) && (name.Length != 0))
                             exception = new DirectoryNotFoundException(name);
                         else
                             exception = new DirectoryNotFoundException();
                     }
                     else
                     {
-                        if ((name != null) && (name.Length != 0))
+                        if ((name is not null) && (name.Length != 0))
                             exception = new FileNotFoundException(name);
                         else
                             exception = new FileNotFoundException();
@@ -164,7 +164,7 @@ namespace System.Security.AccessControl
 
         public bool RemoveAccessRule(FileSystemAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
                 throw new ArgumentNullException(nameof(rule));
 
             // If the rule to be removed matches what is there currently then
@@ -208,7 +208,7 @@ namespace System.Security.AccessControl
 
         public void RemoveAccessRuleSpecific(FileSystemAccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
                 throw new ArgumentNullException(nameof(rule));
 
             // If the rule to be removed matches what is there currently then

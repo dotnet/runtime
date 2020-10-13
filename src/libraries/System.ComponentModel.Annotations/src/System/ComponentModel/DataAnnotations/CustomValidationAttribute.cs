@@ -157,7 +157,7 @@ namespace System.ComponentModel.DataAnnotations
             if (!TryConvertValue(value, out convertedValue))
             {
                 return new ValidationResult(SR.Format(SR.CustomValidationAttribute_Type_Conversion_Failed,
-                                            (value != null ? value.GetType().ToString() : "null"),
+                                            (value is not null ? value.GetType().ToString() : "null"),
                                             _firstParameterType,
                                             ValidatorType,
                                             Method));
@@ -180,7 +180,7 @@ namespace System.ComponentModel.DataAnnotations
                 // otherwise we use the normal message supplied via the ctor
                 _lastMessage = null;
 
-                if (result != null)
+                if (result is not null)
                 {
                     _lastMessage = result.ErrorMessage;
                 }
@@ -225,7 +225,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <returns><c>null</c> or the appropriate error message.</returns>
         private string? ValidateValidatorTypeParameter()
         {
-            if (ValidatorType == null)
+            if (ValidatorType is null)
             {
                 return SR.CustomValidationAttribute_ValidatorType_Required;
             }
@@ -253,7 +253,7 @@ namespace System.ComponentModel.DataAnnotations
             var methodInfo = ValidatorType.GetRuntimeMethods()
                 .SingleOrDefault(m => string.Equals(m.Name, Method, StringComparison.Ordinal)
                                     && m.IsPublic && m.IsStatic);
-            if (methodInfo == null)
+            if (methodInfo is null)
             {
                 return SR.Format(SR.CustomValidationAttribute_Method_Not_Found, Method, ValidatorType.Name);
             }
@@ -296,7 +296,7 @@ namespace System.ComponentModel.DataAnnotations
         private void ThrowIfAttributeNotWellFormed()
         {
             string? errorMessage = _malformedErrorMessage.Value;
-            if (errorMessage != null)
+            if (errorMessage is not null)
             {
                 throw new InvalidOperationException(errorMessage);
             }
@@ -315,7 +315,7 @@ namespace System.ComponentModel.DataAnnotations
             var expectedValueType = _firstParameterType!;
 
             // Null is permitted for reference types or for Nullable<>'s only
-            if (value == null)
+            if (value is null)
             {
                 if (expectedValueType.IsValueType
                     && (!expectedValueType.IsGenericType

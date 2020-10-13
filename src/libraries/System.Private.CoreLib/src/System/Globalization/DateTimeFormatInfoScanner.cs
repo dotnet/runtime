@@ -259,7 +259,7 @@ namespace System.Globalization
         {
             // Skip any whitespaces so we will start from a letter.
             int newIndex = SkipWhiteSpacesAndNonLetter(pattern, index);
-            if (newIndex != index && formatPostfix != null)
+            if (newIndex != index && formatPostfix is not null)
             {
                 // There are whitespaces. This will not be a postfix.
                 formatPostfix = null;
@@ -301,7 +301,7 @@ namespace System.Globalization
                 {
                     // Found a whitespace.  We have to add the current date word/postfix.
                     AddDateWordOrPostfix(formatPostfix, dateWord.ToString());
-                    if (formatPostfix != null)
+                    if (formatPostfix is not null)
                     {
                         // Done with postfix.  The rest will be regular date word.
                         formatPostfix = null;
@@ -352,7 +352,7 @@ namespace System.Globalization
 
         internal void AddIgnorableSymbols(string? text)
         {
-            if (m_dateWords == null)
+            if (m_dateWords is null)
             {
                 // Create the date word array.
                 m_dateWords = new List<string>();
@@ -521,7 +521,7 @@ namespace System.Globalization
             }
 
             string[]? result = null;
-            if (m_dateWords != null && m_dateWords.Count > 0)
+            if (m_dateWords is not null && m_dateWords.Count > 0)
             {
                 result = new string[m_dateWords.Count];
                 for (i = 0; i < m_dateWords.Count; i++)

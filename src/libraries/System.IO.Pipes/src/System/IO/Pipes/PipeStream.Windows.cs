@@ -320,7 +320,7 @@ namespace System.IO.Pipes
         private unsafe int ReadFileNative(SafePipeHandle handle, Span<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
         {
             DebugAssertHandleValid(handle);
-            Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to ReadFileNative.");
+            Debug.Assert((_isAsync && overlapped is not null) || (!_isAsync && overlapped is null), "Async IO parameter screwup in call to ReadFileNative.");
 
             // You can't use the fixed statement on an array of length 0. Note that async callers
             // check to avoid calling this first, so they can call user's callback
@@ -358,7 +358,7 @@ namespace System.IO.Pipes
         private unsafe int WriteFileNative(SafePipeHandle handle, ReadOnlySpan<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
         {
             DebugAssertHandleValid(handle);
-            Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to WriteFileNative.");
+            Debug.Assert((_isAsync && overlapped is not null) || (!_isAsync && overlapped is null), "Async IO parameter screwup in call to WriteFileNative.");
 
             // You can't use the fixed statement on an array of length 0. Note that async callers
             // check to avoid calling this first, so they can call user's callback
@@ -405,7 +405,7 @@ namespace System.IO.Pipes
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
-            if (pipeSecurity != null)
+            if (pipeSecurity is not null)
             {
                 byte[] securityDescriptor = pipeSecurity.GetSecurityDescriptorBinaryForm();
                 pinningHandle = GCHandle.Alloc(securityDescriptor, GCHandleType.Pinned);

@@ -58,7 +58,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private FilteredCatalog Traverse(IComposablePartCatalogTraversal traversal)
         {
-            if (traversal == null)
+            if (traversal is null)
             {
                 throw new ArgumentNullException(nameof(traversal));
             }
@@ -82,7 +82,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private static HashSet<ComposablePartDefinition> GetTraversalClosure(IEnumerable<ComposablePartDefinition> parts, IComposablePartCatalogTraversal traversal)
         {
-            if (traversal == null)
+            if (traversal is null)
             {
                 throw new ArgumentNullException(nameof(traversal));
             }

@@ -113,12 +113,12 @@ namespace System.Data.ProviderBase
             }
 
             // Then, if a new collection was created, release the pools from the old collection
-            if (oldPoolCollection != null)
+            if (oldPoolCollection is not null)
             {
                 foreach (var entry in oldPoolCollection)
                 {
                     DbConnectionPool pool = entry.Value;
-                    if (pool != null)
+                    if (pool is not null)
                     {
                         DbConnectionFactory connectionFactory = pool.ConnectionFactory;
                         connectionFactory.QueuePoolForRelease(pool, true);
@@ -239,7 +239,7 @@ namespace System.Data.ProviderBase
                     foreach (var entry in _poolCollection)
                     {
                         DbConnectionPool pool = entry.Value;
-                        if (pool != null)
+                        if (pool is not null)
                         {
                             // Actually prune the pool if there are no connections in the pool and no errors occurred.
                             // Empty pool during pruning indicates zero or low activity, but

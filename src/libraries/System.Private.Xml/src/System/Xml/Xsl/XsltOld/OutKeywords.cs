@@ -14,7 +14,7 @@ namespace System.Xml.Xsl.XsltOld
 #endif
         internal OutKeywords(XmlNameTable nameTable)
         {
-            Debug.Assert(nameTable != null);
+            Debug.Assert(nameTable is not null);
 #if DEBUG
             _NameTable = nameTable;
 #endif
@@ -111,7 +111,7 @@ namespace System.Xml.Xsl.XsltOld
         private void CheckKeyword(string keyword)
         {
 #if DEBUG
-            Debug.Assert(keyword != null);
+            Debug.Assert(keyword is not null);
             Debug.Assert((object)keyword == (object?)_NameTable.Get(keyword));
 #endif
         }

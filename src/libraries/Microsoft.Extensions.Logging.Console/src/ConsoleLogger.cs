@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         internal ConsoleLogger(string name, ConsoleLoggerProcessor loggerProcessor)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Logging.Console
             {
                 return;
             }
-            if (formatter == null)
+            if (formatter is null)
             {
                 throw new ArgumentNullException(nameof(formatter));
             }

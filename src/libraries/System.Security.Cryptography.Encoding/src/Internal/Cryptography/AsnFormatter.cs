@@ -20,7 +20,7 @@ namespace Internal.Cryptography
 
         protected static string EncodeSpaceSeparatedHexString(byte[] sArray)
         {
-            Debug.Assert(sArray != null && sArray.Length != 0);
+            Debug.Assert(sArray is not null && sArray.Length != 0);
 
             int length = (sArray.Length * 3) - 1; // two chars per byte, plus 1 space between each
 

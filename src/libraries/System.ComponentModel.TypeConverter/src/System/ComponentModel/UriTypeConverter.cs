@@ -63,7 +63,7 @@ namespace System
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
@@ -73,7 +73,7 @@ namespace System
                 if (destinationType == typeof(InstanceDescriptor))
                 {
                     ConstructorInfo ctor = typeof(Uri).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(string), typeof(UriKind) }, null);
-                    Debug.Assert(ctor != null, "Couldn't find constructor");
+                    Debug.Assert(ctor is not null, "Couldn't find constructor");
                     return new InstanceDescriptor(ctor, new object[] { uri.OriginalString, GetUriKind(uri) });
                 }
 

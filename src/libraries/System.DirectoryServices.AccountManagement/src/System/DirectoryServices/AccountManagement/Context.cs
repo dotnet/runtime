@@ -70,7 +70,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             _fastConcurrentSupported = !(serverProperties.OsVersion == DomainControllerMode.Win2k);
 
-            if (contextType == ContextType.Machine && serverName == null)
+            if (contextType == ContextType.Machine && serverName is null)
             {
                 _serverName = Environment.MachineName;
             }
@@ -141,7 +141,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (value != null)
+                if (value is not null)
                     System.Runtime.InteropServices.Marshal.ReleaseComObject(value);
             }
 
@@ -244,7 +244,7 @@ namespace System.DirectoryServices.AccountManagement
             // empty username and password on the local box
             // causes authentication to succeed.  If the username is empty we should just fail it
             // here.
-            if (userName != null && userName.Length == 0)
+            if (userName is not null && userName.Length == 0)
                 return false;
 
             if (_contextType == ContextType.Domain || _contextType == ContextType.ApplicationDirectory)
@@ -311,7 +311,7 @@ namespace System.DirectoryServices.AccountManagement
             // empty username and password on the local box
             // causes authentication to succeed.  If the username is empty we should just fail it
             // here.
-            if (userName != null && userName.Length == 0)
+            if (userName is not null && userName.Length == 0)
                 return false;
 
             if (_contextType == ContextType.Domain || _contextType == ContextType.ApplicationDirectory)
@@ -374,8 +374,8 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "Entering ctor");
 
-            if ((userName == null && password != null) ||
-                (userName != null && password == null))
+            if ((userName is null && password is not null) ||
+                (userName is not null && password is null))
                 throw new ArgumentException(SR.ContextBadUserPwdCombo);
 
             if ((options & ~(ContextOptions.Signing | ContextOptions.Negotiate | ContextOptions.Sealing | ContextOptions.SecureSocketLayer | ContextOptions.SimpleBind | ContextOptions.ServerBind)) != 0)
@@ -404,7 +404,7 @@ namespace System.DirectoryServices.AccountManagement
                 throw new InvalidEnumArgumentException(nameof(contextType), (int)contextType, typeof(ContextType));
             }
 
-            if ((contextType == ContextType.Machine) && (container != null))
+            if ((contextType == ContextType.Machine) && (container is not null))
                 throw new ArgumentException(SR.ContextNoContainerForMachineCtx);
 
             if ((contextType == ContextType.ApplicationDirectory) && ((string.IsNullOrEmpty(container)) || (string.IsNullOrEmpty(name))))
@@ -486,10 +486,10 @@ namespace System.DirectoryServices.AccountManagement
                 Initialize();
 
                 // Unless we're not initialized, connectedServer should not be null
-                Debug.Assert(_connectedServer != null || _initialized == false);
+                Debug.Assert(_connectedServer is not null || _initialized == false);
 
                 // connectedServer should never be an empty string
-                Debug.Assert(_connectedServer == null || _connectedServer.Length != 0);
+                Debug.Assert(_connectedServer is null || _connectedServer.Length != 0);
 
                 return _connectedServer;
             }
@@ -504,8 +504,8 @@ namespace System.DirectoryServices.AccountManagement
         {
             CheckDisposed();
 
-            if ((userName == null && password != null) ||
-                (userName != null && password == null))
+            if ((userName is null && password is not null) ||
+                (userName is not null && password is null))
                 throw new ArgumentException(SR.ContextBadUserPwdCombo);
 
 #if TESTHOOK
@@ -527,8 +527,8 @@ namespace System.DirectoryServices.AccountManagement
             // Perform credential validation using fast concurrent bind...
             CheckDisposed();
 
-            if ((userName == null && password != null) ||
-                (userName != null && password == null))
+            if ((userName is null && password is not null) ||
+                (userName is not null && password is null))
                 throw new ArgumentException(SR.ContextBadUserPwdCombo);
 
             if (options != ContextOptions.Negotiate && _contextType == ContextType.Machine)
@@ -593,7 +593,7 @@ namespace System.DirectoryServices.AccountManagement
 
             Debug.Assert(_contextType == ContextType.ApplicationDirectory);
 
-            if (_container == null)
+            if (_container is null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoApplicationDirecotryInit: using no-container path");
                 DoLDAPDirectoryInitNoContainer();
@@ -610,7 +610,7 @@ namespace System.DirectoryServices.AccountManagement
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "Entering DoMachineInit");
 
             Debug.Assert(_contextType == ContextType.Machine);
-            Debug.Assert(_container == null);
+            Debug.Assert(_container is null);
 
             DirectoryEntry de = null;
 
@@ -618,7 +618,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 string hostname = _name;
 
-                if (hostname == null)
+                if (hostname is null)
                     hostname = Utils.GetComputerFlatName();
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoMachineInit: hostname is " + hostname);
@@ -652,7 +652,7 @@ namespace System.DirectoryServices.AccountManagement
                                                    " and message " + e.Message);
 
                 // Cleanup the DE on failure
-                if (de != null)
+                if (de is not null)
                     de.Dispose();
 
                 throw;
@@ -665,7 +665,7 @@ namespace System.DirectoryServices.AccountManagement
 
             Debug.Assert(_contextType == ContextType.Domain);
 
-            if (_container == null)
+            if (_container is null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "DoDomainInit: using no-container path");
                 DoLDAPDirectoryInitNoContainer();
@@ -698,7 +698,7 @@ namespace System.DirectoryServices.AccountManagement
             // use the servername if they gave us one, else let ADSI figure it out
             string serverName = "";
 
-            if (_name != null)
+            if (_name is not null)
             {
                 if (_contextType == ContextType.ApplicationDirectory)
                 {
@@ -759,7 +759,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 // Cleanup the DE on failure
-                if (de != null)
+                if (de is not null)
                     de.Dispose();
             }
         }
@@ -790,7 +790,7 @@ namespace System.DirectoryServices.AccountManagement
 
             // use the servername if they gave us one, else let ADSI figure it out
             string serverName = "";
-            if (_name != null)
+            if (_name is not null)
             {
                 serverName = _name + "/";
             }
@@ -816,7 +816,7 @@ namespace System.DirectoryServices.AccountManagement
             finally
             {
                 // Don't allow the DE to leak
-                if (deRootDse != null)
+                if (deRootDse is not null)
                     deRootDse.Dispose();
             }
 
@@ -847,7 +847,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     if (Utils.AreBytesEqual(USERS_CONTAINER_GUID, (byte[])value.BinaryValue))
                     {
-                        Debug.Assert(adsPathUserGroupOrg == null);
+                        Debug.Assert(adsPathUserGroupOrg is null);
                         adsPathUserGroupOrg = "LDAP://" + serverName + value.DNString;
 
                         GlobalDebug.WriteLineIf(
@@ -859,7 +859,7 @@ namespace System.DirectoryServices.AccountManagement
                     // Is it the computer container?
                     if (Utils.AreBytesEqual(COMPUTERS_CONTAINER_GUID, (byte[])value.BinaryValue))
                     {
-                        Debug.Assert(adsPathComputer == null);
+                        Debug.Assert(adsPathComputer is null);
                         adsPathComputer = "LDAP://" + serverName + value.DNString;
 
                         GlobalDebug.WriteLineIf(
@@ -869,7 +869,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
 
-                if ((adsPathUserGroupOrg == null) || (adsPathComputer == null))
+                if ((adsPathUserGroupOrg is null) || (adsPathComputer is null))
                 {
                     // Something's wrong with the domain, it's not exposing the proper
                     // well-known object fields.
@@ -913,22 +913,22 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Cleanup on failure.  Once a DE has been successfully handed off to a ADStoreCtx,
                 // that ADStoreCtx will handle Dispose()'ing it
-                if (deUserGroupOrg != null)
+                if (deUserGroupOrg is not null)
                     deUserGroupOrg.Dispose();
 
-                if (deComputer != null)
+                if (deComputer is not null)
                     deComputer.Dispose();
 
-                if (deBase != null)
+                if (deBase is not null)
                     deBase.Dispose();
 
-                if (storeCtxUserGroupOrg != null)
+                if (storeCtxUserGroupOrg is not null)
                     storeCtxUserGroupOrg.Dispose();
 
-                if (storeCtxComputer != null)
+                if (storeCtxComputer is not null)
                     storeCtxComputer.Dispose();
 
-                if (storeCtxBase != null)
+                if (storeCtxBase is not null)
                     storeCtxBase.Dispose();
 
                 throw;
@@ -998,16 +998,16 @@ namespace System.DirectoryServices.AccountManagement
                 // This is okay, since StoreCtxs allow multiple Dispose() calls, and ignore
                 // all but the first call.
 
-                if (_userCtx != null)
+                if (_userCtx is not null)
                     _userCtx.Dispose();
 
-                if (_groupCtx != null)
+                if (_groupCtx is not null)
                     _groupCtx.Dispose();
 
-                if (_computerCtx != null)
+                if (_computerCtx is not null)
                     _computerCtx.Dispose();
 
-                if (_queryCtx != null)
+                if (_queryCtx is not null)
                     _queryCtx.Dispose();
 
                 _disposed = true;
@@ -1173,7 +1173,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             finally
             {
-                if (ldapConnection != null)
+                if (ldapConnection is not null)
                 {
                     ldapConnection.Dispose();
                 }
@@ -1184,7 +1184,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             StoreCtx storeCtx;
 
-            Debug.Assert(entry != null);
+            Debug.Assert(entry is not null);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalContext", "CreateContextFromDirectoryEntry: path is " + entry.Path);
 

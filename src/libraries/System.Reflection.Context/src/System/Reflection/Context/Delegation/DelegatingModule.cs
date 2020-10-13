@@ -84,7 +84,7 @@ namespace System.Reflection.Context.Delegation
 
         protected override MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
         {
-            if (types == null)
+            if (types is null)
             {
                 return UnderlyingModule.GetMethod(name);
             }

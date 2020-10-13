@@ -140,7 +140,7 @@ namespace System.ComponentModel.DataAnnotations
 
                 // Explicitly setting ErrorMessage also sets DefaultErrorMessage if null.
                 // This prevents subsequent read of ErrorMessage from returning default.
-                if (value == null)
+                if (value is null)
                 {
                     _defaultErrorMessage = null;
                 }
@@ -197,12 +197,12 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is malformed.</exception>
         private void SetupResourceAccessor()
         {
-            if (_errorMessageResourceAccessor == null)
+            if (_errorMessageResourceAccessor is null)
             {
                 string? localErrorMessage = ErrorMessage;
                 bool resourceNameSet = !string.IsNullOrEmpty(_errorMessageResourceName);
                 bool errorMessageSet = !string.IsNullOrEmpty(_errorMessage);
-                bool resourceTypeSet = _errorMessageResourceType != null;
+                bool resourceTypeSet = _errorMessageResourceType is not null;
                 bool defaultMessageSet = !string.IsNullOrEmpty(_defaultErrorMessage);
 
                 // The following combinations are illegal and throw InvalidOperationException:
@@ -238,28 +238,28 @@ namespace System.ComponentModel.DataAnnotations
 
         private void SetResourceAccessorByPropertyLookup()
         {
-            Debug.Assert(_errorMessageResourceType != null);
+            Debug.Assert(_errorMessageResourceType is not null);
             Debug.Assert(!string.IsNullOrEmpty(_errorMessageResourceName));
             var property = _errorMessageResourceType
                 .GetTypeInfo().GetDeclaredProperty(_errorMessageResourceName);
-            if (property != null && !ValidationAttributeStore.IsStatic(property))
+            if (property is not null && !ValidationAttributeStore.IsStatic(property))
             {
                 property = null;
             }
 
-            if (property != null)
+            if (property is not null)
             {
                 var propertyGetter = property.GetMethod;
 
                 // We only support internal and public properties
-                if (propertyGetter == null || (!propertyGetter.IsAssembly && !propertyGetter.IsPublic))
+                if (propertyGetter is null || (!propertyGetter.IsAssembly && !propertyGetter.IsPublic))
                 {
                     // Set the property to null so the exception is thrown as if the property wasn't found
                     property = null;
                 }
             }
 
-            if (property == null)
+            if (property is null)
             {
                 throw new InvalidOperationException(SR.Format(SR.ValidationAttribute_ResourceTypeDoesNotHaveProperty,
                                                     _errorMessageResourceType.FullName,
@@ -411,7 +411,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </exception>
         public ValidationResult? GetValidationResult(object? value, ValidationContext validationContext)
         {
-            if (validationContext == null)
+            if (validationContext is null)
             {
                 throw new ArgumentNullException(nameof(validationContext));
             }
@@ -419,7 +419,7 @@ namespace System.ComponentModel.DataAnnotations
             var result = IsValid(value, validationContext);
 
             // If validation fails, we want to ensure we have a ValidationResult that guarantees it has an ErrorMessage
-            if (result != null)
+            if (result is not null)
             {
                 if (string.IsNullOrEmpty(result.ErrorMessage))
                 {
@@ -481,14 +481,14 @@ namespace System.ComponentModel.DataAnnotations
         /// </exception>
         public void Validate(object? value, ValidationContext validationContext)
         {
-            if (validationContext == null)
+            if (validationContext is null)
             {
                 throw new ArgumentNullException(nameof(validationContext));
             }
 
             ValidationResult? result = GetValidationResult(value, validationContext);
 
-            if (result != null)
+            if (result is not null)
             {
                 // Convenience -- if implementation did not fill in an error message,
                 throw new ValidationException(result, this, value);

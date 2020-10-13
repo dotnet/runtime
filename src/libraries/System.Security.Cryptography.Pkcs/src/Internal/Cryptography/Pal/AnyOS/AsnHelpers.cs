@@ -60,7 +60,7 @@ namespace Internal.Cryptography.Pal.AnyOS
             {
                 case Oids.Rc2Cbc:
                     {
-                        if (asn.Parameters == null)
+                        if (asn.Parameters is null)
                         {
                             keyLength = 0;
                             break;
@@ -90,7 +90,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     }
                 case Oids.Rc4:
                     {
-                        if (asn.Parameters == null)
+                        if (asn.Parameters is null)
                         {
                             keyLength = 0;
                             break;
@@ -138,7 +138,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     break;
                 case Oids.RsaOaep when !asn.HasNullEquivalentParameters():
                     keyLength = 0;
-                    Debug.Assert(asn.Parameters != null);
+                    Debug.Assert(asn.Parameters is not null);
                     parameters = asn.Parameters.Value.ToArray();
                     break;
                 default:

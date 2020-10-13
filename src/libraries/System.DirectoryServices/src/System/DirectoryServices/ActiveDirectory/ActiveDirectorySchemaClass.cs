@@ -48,17 +48,17 @@ namespace System.DirectoryServices.ActiveDirectory
         #region constructors
         public ActiveDirectorySchemaClass(DirectoryContext context, string ldapDisplayName)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if ((context.Name == null) && (!context.isRootDomain()))
+            if ((context.Name is null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
-            if (context.Name != null)
+            if (context.Name is not null)
             {
                 // the target should be a valid forest name or a server
                 if (!((context.isRootDomain()) || (context.isADAMConfigSet()) || (context.isServer())))
@@ -67,7 +67,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-            if (ldapDisplayName == null)
+            if (ldapDisplayName is null)
             {
                 throw new ArgumentNullException(nameof(ldapDisplayName));
             }
@@ -142,7 +142,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             // all relevant properties have already been retrieved from the server
             _propertyValuesFromServer = propertyValuesFromServer;
-            Debug.Assert(_propertyValuesFromServer != null);
+            Debug.Assert(_propertyValuesFromServer is not null);
             _propertiesFromSchemaContainerInitialized = true;
             _classEntry = GetSchemaClassDirectoryEntry();
 
@@ -195,25 +195,25 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (disposing)
                 {
                     // dispose schema entry
-                    if (_schemaEntry != null)
+                    if (_schemaEntry is not null)
                     {
                         _schemaEntry.Dispose();
                         _schemaEntry = null;
                     }
                     // dispose class entry
-                    if (_classEntry != null)
+                    if (_classEntry is not null)
                     {
                         _classEntry.Dispose();
                         _classEntry = null;
                     }
                     // dispose abstract class entry
-                    if (_abstractClassEntry != null)
+                    if (_abstractClassEntry is not null)
                     {
                         _abstractClassEntry.Dispose();
                         _abstractClassEntry = null;
                     }
                     // dispose the schema object
-                    if (_schema != null)
+                    if (_schema is not null)
                     {
                         _schema.Dispose();
                     }
@@ -228,17 +228,17 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             ActiveDirectorySchemaClass schemaClass = null;
 
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
 
-            if ((context.Name == null) && (!context.isRootDomain()))
+            if ((context.Name is null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
-            if (context.Name != null)
+            if (context.Name is not null)
             {
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
                 {
@@ -246,7 +246,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
             }
 
-            if (ldapDisplayName == null)
+            if (ldapDisplayName is null)
             {
                 throw new ArgumentNullException(nameof(ldapDisplayName));
             }
@@ -288,7 +288,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 try
                 {
                     // create a new directory entry for this class
-                    if (_schemaEntry == null)
+                    if (_schemaEntry is null)
                     {
                         _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
                     }
@@ -318,25 +318,25 @@ namespace System.DirectoryServices.ActiveDirectory
                 SetProperty(PropertyManager.Description, _description);
 
                 // set the possibleSuperiors property
-                if (_possibleSuperiors != null)
+                if (_possibleSuperiors is not null)
                 {
                     _classEntry.Properties[PropertyManager.PossibleSuperiors].AddRange(_possibleSuperiors.GetMultiValuedProperty());
                 }
 
                 // set the mandatoryProperties property
-                if (_mandatoryProperties != null)
+                if (_mandatoryProperties is not null)
                 {
                     _classEntry.Properties[PropertyManager.MustContain].AddRange(_mandatoryProperties.GetMultiValuedProperty());
                 }
 
                 // set the optionalProperties property
-                if (_optionalProperties != null)
+                if (_optionalProperties is not null)
                 {
                     _classEntry.Properties[PropertyManager.MayContain].AddRange(_optionalProperties.GetMultiValuedProperty());
                 }
 
                 // set the subClassOf property
-                if (_subClassOf != null)
+                if (_subClassOf is not null)
                 {
                     SetProperty(PropertyManager.SubClassOf, _subClassOf.Name);
                 }
@@ -350,13 +350,13 @@ namespace System.DirectoryServices.ActiveDirectory
                 SetProperty(PropertyManager.ObjectClassCategory, _type);
 
                 // set the schemaIDGuid property
-                if (_schemaGuidBinaryForm != null)
+                if (_schemaGuidBinaryForm is not null)
                 {
                     SetProperty(PropertyManager.SchemaIDGuid, _schemaGuidBinaryForm);
                 }
 
                 // set the default security descriptor
-                if (_defaultSDSddlForm != null)
+                if (_defaultSDSddlForm is not null)
                 {
                     SetProperty(PropertyManager.DefaultSecurityDescriptor, _defaultSDSddlForm);
                 }
@@ -368,7 +368,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 _classEntry.CommitChanges();
 
                 // Refresh the schema cache on the schema role owner
-                if (_schema == null)
+                if (_schema is null)
                 {
                     ActiveDirectorySchema schemaObject = ActiveDirectorySchema.GetSchema(_context);
                     bool alreadyUsingSchemaRoleOwnerContext = false;
@@ -393,7 +393,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     }
                     finally
                     {
-                        if (schemaRoleOwner != null)
+                        if (schemaRoleOwner is not null)
                         {
                             schemaRoleOwner.Dispose();
                         }
@@ -450,7 +450,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             GetSchemaClassDirectoryEntry();
-            Debug.Assert(_classEntry != null);
+            Debug.Assert(_classEntry is not null);
 
             return DirectoryEntryManager.GetDirectoryEntryInternal(_context, _classEntry.Path);
         }
@@ -474,7 +474,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isBound)
                 {
-                    if (_commonName == null)
+                    if (_commonName is null)
                     {
                         // get the property from the server
                         _commonName = (string)GetValueFromCache(PropertyManager.Cn, true);
@@ -503,7 +503,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isBound)
                 {
-                    if (_oid == null)
+                    if (_oid is null)
                     {
                         // get the property from the abstract schema/ schema container
                         // (for non-defunt classes this property is available in the abstract schema)
@@ -596,7 +596,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 CheckIfDisposed();
 
-                if (_possibleSuperiors == null)
+                if (_possibleSuperiors is null)
                 {
                     if (isBound)
                     {
@@ -673,7 +673,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 CheckIfDisposed();
 
-                if (_possibleInferiors == null)
+                if (_possibleInferiors is null)
                 {
                     if (isBound)
                     {
@@ -695,7 +695,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 CheckIfDisposed();
 
-                if (_mandatoryProperties == null)
+                if (_mandatoryProperties is null)
                 {
                     if (isBound)
                     {
@@ -771,7 +771,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 CheckIfDisposed();
 
-                if (_optionalProperties == null)
+                if (_optionalProperties is null)
                 {
                     if (isBound)
                     {
@@ -856,7 +856,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 CheckIfDisposed();
 
-                if (_auxiliaryClasses == null)
+                if (_auxiliaryClasses is null)
                 {
                     if (isBound)
                     {
@@ -934,7 +934,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isBound)
                 {
-                    if (_subClassOf == null)
+                    if (_subClassOf is null)
                     {
                         // get the property from the server
                         _subClassOf = new ActiveDirectorySchemaClass(_context, (string)GetValueFromCache(PropertyManager.SubClassOf, true), (DirectoryEntry)null, _schemaEntry);
@@ -999,7 +999,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (isBound)
                 {
-                    if (_schemaGuidBinaryForm == null)
+                    if (_schemaGuidBinaryForm is null)
                     {
                         // get the property from the server
                         _schemaGuidBinaryForm = (byte[])GetValueFromCache(PropertyManager.SchemaIDGuid, true);
@@ -1041,7 +1041,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
 
                 // we cache the sddl form and create a ActiveDirectorySecurity object each time
-                if (_defaultSDSddlForm != null)
+                if (_defaultSDSddlForm is not null)
                 {
                     defaultObjectSecurityDescriptor = new ActiveDirectorySecurity();
                     defaultObjectSecurityDescriptor.SetSecurityDescriptorSddlForm(_defaultSDSddlForm);
@@ -1056,9 +1056,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (isBound)
                 {
                     // set the value on the directory entry
-                    SetProperty(PropertyManager.DefaultSecurityDescriptor, (value == null) ? null : value.GetSecurityDescriptorSddlForm(AccessControlSections.All));
+                    SetProperty(PropertyManager.DefaultSecurityDescriptor, (value is null) ? null : value.GetSecurityDescriptorSddlForm(AccessControlSections.All));
                 }
-                _defaultSDSddlForm = (value == null) ? null : value.GetSecurityDescriptorSddlForm(AccessControlSections.All);
+                _defaultSDSddlForm = (value is null) ? null : value.GetSecurityDescriptorSddlForm(AccessControlSections.All);
             }
         }
 
@@ -1087,10 +1087,10 @@ namespace System.DirectoryServices.ActiveDirectory
             // retrieve the properties from the server if necessary
             InitializePropertiesFromSchemaContainer();
 
-            Debug.Assert(_propertyValuesFromServer != null);
+            Debug.Assert(_propertyValuesFromServer is not null);
             ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLowerInvariant()];
 
-            Debug.Assert(values != null);
+            Debug.Assert(values is not null);
             if (values.Count < 1 && mustExist)
             {
                 throw new ActiveDirectoryOperationException(SR.Format(SR.PropertyNotFound, propertyName));
@@ -1112,10 +1112,10 @@ namespace System.DirectoryServices.ActiveDirectory
             // retrieve the properties from the server if necessary
             InitializePropertiesFromSchemaContainer();
 
-            Debug.Assert(_propertyValuesFromServer != null);
+            Debug.Assert(_propertyValuesFromServer is not null);
             ArrayList values = (ArrayList)_propertyValuesFromServer[propertyName.ToLowerInvariant()];
 
-            Debug.Assert(values != null);
+            Debug.Assert(values is not null);
             return values;
         }
 
@@ -1126,7 +1126,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             if (!_propertiesFromSchemaContainerInitialized)
             {
-                if (_schemaEntry == null)
+                if (_schemaEntry is null)
                 {
                     _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
                 }
@@ -1257,7 +1257,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal DirectoryEntry GetSchemaClassDirectoryEntry()
         {
-            if (_classEntry == null)
+            if (_classEntry is null)
             {
                 InitializePropertiesFromSchemaContainer();
                 _classEntry = DirectoryEntryManager.GetDirectoryEntry(_context, (string)GetValueFromCache(PropertyManager.DistinguishedName, true));
@@ -1270,11 +1270,11 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             // get the distinguished name to construct the directory entry
             GetSchemaClassDirectoryEntry();
-            Debug.Assert(_classEntry != null);
+            Debug.Assert(_classEntry is not null);
 
             try
             {
-                if ((value == null))
+                if ((value is null))
                 {
                     if (_classEntry.Properties.Contains(propertyName))
                     {
@@ -1308,7 +1308,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     return classes;
                 }
 
-                if (_schemaEntry == null)
+                if (_schemaEntry is null)
                 {
                     _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
                 }
@@ -1361,7 +1361,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
+                if (resCol is not null)
                 {
                     resCol.Dispose();
                 }
@@ -1386,7 +1386,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     return properties;
                 }
 
-                if (_schemaEntry == null)
+                if (_schemaEntry is null)
                 {
                     _schemaEntry = DirectoryEntryManager.GetDirectoryEntry(_context, WellKnownDN.SchemaNamingContext);
                 }
@@ -1439,7 +1439,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (resCol != null)
+                if (resCol is not null)
                 {
                     resCol.Dispose();
                 }

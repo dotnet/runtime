@@ -174,7 +174,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static object? IsInstanceOfAny(void* toTypeHnd, object? obj)
         {
-            if (obj != null)
+            if (obj is not null)
             {
                 void* mt = RuntimeHelpers.GetMethodTable(obj);
                 if (mt != toTypeHnd)
@@ -207,7 +207,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static object? IsInstanceOfInterface(void* toTypeHnd, object? obj)
         {
-            if (obj != null)
+            if (obj is not null)
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
                 nuint interfaceCount = mt->InterfaceCount;
@@ -255,7 +255,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static object? IsInstanceOfClass(void* toTypeHnd, object? obj)
         {
-            if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
+            if (obj is null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
                 return obj;
 
             MethodTable* mt = RuntimeHelpers.GetMethodTable(obj)->ParentMethodTable;
@@ -264,28 +264,28 @@ namespace System.Runtime.CompilerServices
                 if (mt == toTypeHnd)
                     goto done;
 
-                if (mt == null)
+                if (mt is null)
                     break;
 
                 mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
-                if (mt == null)
+                if (mt is null)
                     break;
 
                 mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
-                if (mt == null)
+                if (mt is null)
                     break;
 
                 mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
-                if (mt == null)
+                if (mt is null)
                     break;
 
                 mt = mt->ParentMethodTable;
@@ -335,7 +335,7 @@ namespace System.Runtime.CompilerServices
         {
             CastResult result;
 
-            if (obj != null)
+            if (obj is not null)
             {
                 void* mt = RuntimeHelpers.GetMethodTable(obj);
                 if (mt != toTypeHnd)
@@ -379,7 +379,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static object? ChkCastInterface(void* toTypeHnd, object? obj)
         {
-            if (obj != null)
+            if (obj is not null)
             {
                 MethodTable* mt = RuntimeHelpers.GetMethodTable(obj);
                 nuint interfaceCount = mt->InterfaceCount;
@@ -422,7 +422,7 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static object? ChkCastClass(void* toTypeHnd, object? obj)
         {
-            if (obj == null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
+            if (obj is null || RuntimeHelpers.GetMethodTable(obj) == toTypeHnd)
             {
                 return obj;
             }
@@ -444,28 +444,28 @@ namespace System.Runtime.CompilerServices
                 if (mt == toTypeHnd)
                     goto done;
 
-                if (mt == null)
+                if (mt is null)
                     break;
 
                 mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
-                if (mt == null)
+                if (mt is null)
                     break;
 
                 mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
-                if (mt == null)
+                if (mt is null)
                     break;
 
                 mt = mt->ParentMethodTable;
                 if (mt == toTypeHnd)
                     goto done;
 
-                if (mt == null)
+                if (mt is null)
                     break;
             }
 
@@ -529,7 +529,7 @@ namespace System.Runtime.CompilerServices
             ref object? element = ref Unsafe.As<ArrayElement[]>(array)[index].Value;
             void* elementType = RuntimeHelpers.GetMethodTable(array)->ElementType;
 
-            if (obj == null)
+            if (obj is null)
                 goto assigningNull;
 
             if (elementType != RuntimeHelpers.GetMethodTable(obj))
@@ -571,10 +571,10 @@ namespace System.Runtime.CompilerServices
         [DebuggerStepThrough]
         private static void StelemRef_Helper_NoCacheLookup(ref object? element, void* elementType, object obj)
         {
-            Debug.Assert(obj != null);
+            Debug.Assert(obj is not null);
 
             obj = IsInstanceOfAny_NoCacheLookup(elementType, obj);
-            if (obj != null)
+            if (obj is not null)
             {
                 WriteBarrier(ref element, obj);
                 return;

@@ -352,7 +352,7 @@ namespace System.Net
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(address, $"{address} DNS lookup failed with {errorCode}");
                     throw SocketExceptionFactory.CreateSocketException(errorCode, nativeErrorCode);
                 }
-                Debug.Assert(name != null);
+                Debug.Assert(name is not null);
             }
             catch when (LogFailure(stopwatch))
             {

@@ -7,7 +7,7 @@ namespace System.Reflection.Internal
     {
         internal static Exception UnexpectedValue(object value)
         {
-            if (value?.GetType().FullName != null)
+            if (value?.GetType().FullName is not null)
             {
                 return new InvalidOperationException(SR.Format(SR.UnexpectedValue, value, value.GetType().FullName));
             }

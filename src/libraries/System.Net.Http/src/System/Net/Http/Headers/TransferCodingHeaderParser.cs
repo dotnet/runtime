@@ -22,7 +22,7 @@ namespace System.Net.Http.Headers
             Func<TransferCodingHeaderValue> transferCodingCreator)
             : base(supportsMultipleValues)
         {
-            Debug.Assert(transferCodingCreator != null);
+            Debug.Assert(transferCodingCreator is not null);
 
             _transferCodingCreator = transferCodingCreator;
         }

@@ -32,12 +32,12 @@ namespace System.Runtime.Serialization
         {
             // If both member and arrayIndex are null, we don't have enough information to create
             // a tunnel to do the fixup.
-            if (member == null && parentIndex == null)
+            if (member is null && parentIndex is null)
             {
                 throw new ArgumentException(SR.Argument_MustSupplyParent);
             }
 
-            if (containerID == 0 && member == null)
+            if (containerID == 0 && member is null)
             {
                 _containerID = containerID;
                 _parentField = member;
@@ -46,9 +46,9 @@ namespace System.Runtime.Serialization
 
             // If the member isn't null, we know that they supplied a MemberInfo as the parent.  This means
             // that the arrayIndex must be null because we can't have a FieldInfo into an array.
-            if (member != null)
+            if (member is not null)
             {
-                if (parentIndex != null)
+                if (parentIndex is not null)
                 {
                     throw new ArgumentException(SR.Argument_MemberAndArray);
                 }

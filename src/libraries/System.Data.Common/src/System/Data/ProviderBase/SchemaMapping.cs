@@ -305,7 +305,7 @@ namespace System.Data.ProviderBase
 
         private object?[] GetMappedValues()
         { // mode 0
-            Debug.Assert(_readerDataValues != null);
+            Debug.Assert(_readerDataValues is not null);
 
             if (null != _xmlMap)
             {
@@ -515,7 +515,7 @@ namespace System.Data.ProviderBase
 
         private DataColumn[] ResizeColumnArray(DataColumn[] rgcol, int len)
         {
-            Debug.Assert(rgcol != null, "invalid call to ResizeArray");
+            Debug.Assert(rgcol is not null, "invalid call to ResizeArray");
             Debug.Assert(len <= rgcol.Length, "invalid len passed to ResizeArray");
             var tmp = new DataColumn[len];
             Array.Copy(rgcol, tmp, len);
@@ -566,9 +566,9 @@ namespace System.Data.ProviderBase
 
         private object[]? SetupSchemaWithoutKeyInfo(MissingMappingAction mappingAction, MissingSchemaAction schemaAction, bool gettingData, DataColumn? parentChapterColumn, object? chapterValue)
         {
-            Debug.Assert(_dataTable != null);
-            Debug.Assert(_fieldNames != null);
-            Debug.Assert(_tableMapping != null);
+            Debug.Assert(_dataTable is not null);
+            Debug.Assert(_fieldNames is not null);
+            Debug.Assert(_tableMapping is not null);
 
             int[]? columnIndexMap = null;
             bool[]? chapterIndexMap = null;
@@ -581,9 +581,9 @@ namespace System.Data.ProviderBase
             try
             {
                 DataColumnCollection columnCollection = _dataTable.Columns;
-                columnCollection.EnsureAdditionalCapacity(count + (chapterValue != null ? 1 : 0));
+                columnCollection.EnsureAdditionalCapacity(count + (chapterValue is not null ? 1 : 0));
                 // We can always just create column if there are no existing column or column mappings, and the mapping action is passthrough
-                bool alwaysCreateColumns = ((_dataTable.Columns.Count == 0) && ((_tableMapping.ColumnMappings == null) || (_tableMapping.ColumnMappings.Count == 0)) && (mappingAction == MissingMappingAction.Passthrough));
+                bool alwaysCreateColumns = ((_dataTable.Columns.Count == 0) && ((_tableMapping.ColumnMappings is null) || (_tableMapping.ColumnMappings.Count == 0)) && (mappingAction == MissingMappingAction.Passthrough));
 
                 for (int i = 0; i < count; ++i)
                 {
@@ -761,10 +761,10 @@ namespace System.Data.ProviderBase
 
         private object[]? SetupSchemaWithKeyInfo(MissingMappingAction mappingAction, MissingSchemaAction schemaAction, bool gettingData, DataColumn? parentChapterColumn, object? chapterValue)
         {
-            Debug.Assert(_dataTable != null);
-            Debug.Assert(_schemaTable != null);
-            Debug.Assert(_fieldNames != null);
-            Debug.Assert(_tableMapping != null);
+            Debug.Assert(_dataTable is not null);
+            Debug.Assert(_schemaTable is not null);
+            Debug.Assert(_fieldNames is not null);
+            Debug.Assert(_tableMapping is not null);
 
             // must sort rows from schema table by ordinal because Jet is sorted by coumn name
             DbSchemaRow[] schemaRows = DbSchemaRow.GetSortedSchemaRows(_schemaTable, _dataReader.ReturnProviderSpecificTypes);
@@ -1020,7 +1020,7 @@ namespace System.Data.ProviderBase
                     //
                     if (addPrimaryKeys && schemaRow.IsKey)
                     {
-                        if (keys == null)
+                        if (keys is null)
                         {
                             keys = new DataColumn[schemaRows.Length];
                         }

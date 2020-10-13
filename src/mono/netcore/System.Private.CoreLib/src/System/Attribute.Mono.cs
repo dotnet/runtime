@@ -9,14 +9,14 @@ namespace System
     {
         private static Attribute? GetAttr(ICustomAttributeProvider element, Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
             if (!attributeType.IsSubclassOf(typeof(Attribute)) && !attributeType.IsInterface
                 && attributeType != typeof(Attribute) && attributeType != typeof(CustomAttribute))
                 throw new ArgumentException(SR.Argument_MustHaveAttributeBaseClass + " " + attributeType.FullName);
 
             object[] attrs = CustomAttribute.GetCustomAttributes(element, attributeType, inherit);
-            if (attrs == null || attrs.Length == 0)
+            if (attrs is null || attrs.Length == 0)
                 return null;
             if (attrs.Length != 1)
                 throw new AmbiguousMatchException();

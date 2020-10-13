@@ -21,7 +21,7 @@ namespace System.Text.RegularExpressions
         internal RegexAssemblyCompiler(AssemblyName an, CustomAttributeBuilder[]? attribs, string? resourceFile) :
             base(persistsAssembly: true)
         {
-            if (resourceFile != null)
+            if (resourceFile is not null)
             {
                 // Unmanaged resources are not supported: _assembly.DefineUnmanagedResource(resourceFile);
                 throw new PlatformNotSupportedException();
@@ -29,7 +29,7 @@ namespace System.Text.RegularExpressions
 
             _assembly = AssemblyBuilder.DefineDynamicAssembly(an, AssemblyBuilderAccess.Run); // TODO https://github.com/dotnet/runtime/issues/30153: AssemblyBuilderAccess.Save
             _module = _assembly.DefineDynamicModule(an.Name + ".dll");
-            if (attribs != null)
+            if (attribs is not null)
             {
                 foreach (CustomAttributeBuilder attr in attribs)
                 {
@@ -142,17 +142,17 @@ namespace System.Text.RegularExpressions
             Ldthis();
             Ldc(code.CapSize);
             Stfld(RegexField(nameof(Regex.capsize)));
-            if (code.Caps != null)
+            if (code.Caps is not null)
             {
                 // Caps = new Hashtable {{0, 0}, {1, 1}, ... };
                 GenerateCreateHashtable(RegexField(nameof(Regex.caps)), code.Caps);
             }
-            if (code.Tree.CapNames != null)
+            if (code.Tree.CapNames is not null)
             {
                 // CapNames = new Hashtable {{"0", 0}, {"1", 1}, ...};
                 GenerateCreateHashtable(RegexField(nameof(Regex.capnames)), code.Tree.CapNames);
             }
-            if (code.Tree.CapsList != null)
+            if (code.Tree.CapsList is not null)
             {
                 // capslist = new string[...];
                 // capslist[0] = "0";

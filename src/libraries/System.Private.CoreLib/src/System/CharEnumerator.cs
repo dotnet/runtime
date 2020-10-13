@@ -48,7 +48,7 @@ namespace System
 
         public void Dispose()
         {
-            if (_str != null)
+            if (_str is not null)
                 _index = _str.Length;
             _str = null;
         }

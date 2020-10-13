@@ -16,9 +16,9 @@ namespace System
 
         private static string? GetEnvironmentVariableCore(string variable)
         {
-            Debug.Assert(variable != null);
+            Debug.Assert(variable is not null);
 
-            if (s_environment == null)
+            if (s_environment is null)
             {
                 return InternalGetEnvironmentVariable(variable);
             }
@@ -41,13 +41,13 @@ namespace System
 
         private static unsafe void SetEnvironmentVariableCore(string variable, string? value)
         {
-            Debug.Assert(variable != null);
+            Debug.Assert(variable is not null);
 
             EnsureEnvironmentCached();
             lock (s_environment!)
             {
                 variable = TrimStringOnFirstZero(variable);
-                value = value == null ? null : TrimStringOnFirstZero(value);
+                value = value is null ? null : TrimStringOnFirstZero(value);
                 if (string.IsNullOrEmpty(value))
                 {
                     s_environment.Remove(variable);
@@ -87,7 +87,7 @@ namespace System
 
         private static void EnsureEnvironmentCached()
         {
-            if (s_environment == null)
+            if (s_environment is null)
             {
                 Interlocked.CompareExchange(ref s_environment, GetSystemEnvironmentVariables(), null);
             }
@@ -99,7 +99,7 @@ namespace System
 
             foreach (string name in GetEnvironmentVariableNames())
             {
-                if (name != null)
+                if (name is not null)
                 {
                     results.Add(name, InternalGetEnvironmentVariable(name));
                 }

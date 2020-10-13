@@ -16,7 +16,7 @@ namespace System.Data
 
         internal DataViewSettingCollection(DataViewManager dataViewManager)
         {
-            if (dataViewManager == null)
+            if (dataViewManager is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(dataViewManager));
             }
@@ -27,12 +27,12 @@ namespace System.Data
         {
             get
             {
-                if (table == null)
+                if (table is null)
                 {
                     throw ExceptionBuilder.ArgumentNull(nameof(table));
                 }
                 DataViewSetting? dataViewSetting = (DataViewSetting?)_list[table];
-                if (dataViewSetting == null)
+                if (dataViewSetting is null)
                 {
                     dataViewSetting = new DataViewSetting();
                     this[table] = dataViewSetting;
@@ -41,7 +41,7 @@ namespace System.Data
             }
             set
             {
-                if (table == null)
+                if (table is null)
                 {
                     throw ExceptionBuilder.ArgumentNull(nameof(table));
                 }
@@ -55,7 +55,7 @@ namespace System.Data
         {
             DataTable? dt = null;
             DataSet? ds = _dataViewManager.DataSet;
-            if (ds != null)
+            if (ds is not null)
             {
                 dt = ds.Tables[tableName];
             }
@@ -66,7 +66,7 @@ namespace System.Data
         {
             DataTable? dt = null;
             DataSet? ds = _dataViewManager.DataSet;
-            if (ds != null)
+            if (ds is not null)
             {
                 dt = ds.Tables[index];
             }
@@ -78,7 +78,7 @@ namespace System.Data
             get
             {
                 DataTable? dt = GetTable(tableName);
-                if (dt != null)
+                if (dt is not null)
                 {
                     return this[dt];
                 }
@@ -92,7 +92,7 @@ namespace System.Data
             get
             {
                 DataTable? dt = GetTable(index);
-                if (dt != null)
+                if (dt is not null)
                 {
                     return this[dt];
                 }
@@ -101,7 +101,7 @@ namespace System.Data
             set
             {
                 DataTable? dt = GetTable(index);
-                if (dt != null)
+                if (dt is not null)
                 {
                     this[dt] = value;
                 }
@@ -132,7 +132,7 @@ namespace System.Data
             get
             {
                 DataSet? ds = _dataViewManager.DataSet;
-                return (ds == null) ? 0 : ds.Tables.Count;
+                return (ds is null) ? 0 : ds.Tables.Count;
             }
         }
 
@@ -163,7 +163,7 @@ namespace System.Data
             public DataViewSettingsEnumerator(DataViewManager dvm)
             {
                 DataSet? ds = dvm.DataSet;
-                if (ds != null)
+                if (ds is not null)
                 {
                     _dataViewSettings = dvm.DataViewSettings;
                     _tableEnumerator = dvm.DataSet!.Tables.GetEnumerator();

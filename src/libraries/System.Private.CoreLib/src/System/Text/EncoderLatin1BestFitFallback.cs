@@ -123,7 +123,7 @@ namespace System.Text
         {
             // Need to figure out our best fit character, low is beginning of array, high is 1 AFTER end of array
             int lowBound = 0;
-            Debug.Assert(s_arrayCharBestFit != null);
+            Debug.Assert(s_arrayCharBestFit is not null);
             int highBound = s_arrayCharBestFit.Length;
             int index;
 

@@ -33,7 +33,7 @@ namespace System.DirectoryServices.AccountManagement
         // Pushes the query represented by the QBE filter into the PrincipalSearcher's underlying native
         // searcher object (creating a fresh native searcher and assigning it to the PrincipalSearcher if one
         // doesn't already exist) and returns the native searcher.
-        // If the PrincipalSearcher does not have a query filter set (PrincipalSearcher.QueryFilter == null),
+        // If the PrincipalSearcher does not have a query filter set (PrincipalSearcher.QueryFilter is null),
         // produces a query that will match all principals in the store.
         //
         // For stores which don't have a native searcher (SAM), the StoreCtx
@@ -44,7 +44,7 @@ namespace System.DirectoryServices.AccountManagement
         internal override object PushFilterToNativeSearcher(PrincipalSearcher ps)
         {
             // There's no underlying searcher for SAM
-            Debug.Assert(ps.UnderlyingSearcher == null);
+            Debug.Assert(ps.UnderlyingSearcher is null);
 
             Principal qbeFilter = ps.QueryFilter;
             QbeFilterDescription filters;
@@ -53,7 +53,7 @@ namespace System.DirectoryServices.AccountManagement
             // Otherwise, use an empty set.  Note that we don't worry about filtering by
             // the type of the qbeFilter object (e.g., restricting the returned principals
             // to only Users, or only Groups) --- that's handled in Query().
-            if (qbeFilter != null)
+            if (qbeFilter is not null)
                 filters = BuildQbeFilterDescription(qbeFilter);
             else
                 filters = new QbeFilterDescription();
@@ -65,7 +65,7 @@ namespace System.DirectoryServices.AccountManagement
         // Given a PrincipalSearcher containg a query filter, transforms it into the store schema
         // and performs the query to get a collection of matching native objects (up to a maximum of sizeLimit,
         // or uses the sizelimit already set on the DirectorySearcher if sizeLimit == -1).
-        // If the PrincipalSearcher does not have a query filter (PrincipalSearcher.QueryFilter == null),
+        // If the PrincipalSearcher does not have a query filter (PrincipalSearcher.QueryFilter is null),
         // matches all principals in the store.
         //
         // The collection may not be complete, i.e., paging - the returned ResultSet will automatically
@@ -86,12 +86,12 @@ namespace System.DirectoryServices.AccountManagement
             // the child entries.  So we have to clone the ctxBase --- not ideal, but it prevents
             // multithreading issues.
             DirectoryEntries entries = SDSUtils.BuildDirectoryEntry(_ctxBase.Path, _credentials, _authTypes).Children;
-            Debug.Assert(entries != null);
+            Debug.Assert(entries is not null);
 
             // Determine the principal types of interest.  The SAMQuerySet will use this to restrict
             // the types of DirectoryEntry objects returned.
             Type qbeFilterType = typeof(Principal);
-            if (ps.QueryFilter != null)
+            if (ps.QueryFilter is not null)
                 qbeFilterType = ps.QueryFilter.GetType();
 
             List<string> schemaTypes = GetSchemaFilter(qbeFilterType);

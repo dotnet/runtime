@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
     {
         public CngAlgorithmGroup(string algorithmGroup)
         {
-            if (algorithmGroup == null)
+            if (algorithmGroup is null)
                 throw new ArgumentNullException(nameof(algorithmGroup));
             if (algorithmGroup.Length == 0)
                 throw new ArgumentException(SR.Format(SR.Cryptography_InvalidAlgorithmGroup, algorithmGroup), nameof(algorithmGroup));
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography
 
         public override bool Equals(object? obj)
         {
-            Debug.Assert(_algorithmGroup != null);
+            Debug.Assert(_algorithmGroup is not null);
 
             return Equals(obj as CngAlgorithmGroup);
         }
@@ -75,13 +75,13 @@ namespace System.Security.Cryptography
 
         public override int GetHashCode()
         {
-            Debug.Assert(_algorithmGroup != null);
+            Debug.Assert(_algorithmGroup is not null);
             return _algorithmGroup.GetHashCode();
         }
 
         public override string ToString()
         {
-            Debug.Assert(_algorithmGroup != null);
+            Debug.Assert(_algorithmGroup is not null);
             return _algorithmGroup;
         }
 

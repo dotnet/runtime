@@ -304,7 +304,7 @@ namespace System.Globalization
 
             private static unsafe char* MatchChars(char* p, char* pEnd, char* str)
             {
-                Debug.Assert(p != null && pEnd != null && p <= pEnd && str != null);
+                Debug.Assert(p is not null && pEnd is not null && p <= pEnd && str is not null);
 
                 if (*str == '\0')
                 {
@@ -330,8 +330,8 @@ namespace System.Globalization
 
             private static unsafe bool ParseNumber(ref char* str, char* strEnd, NumberStyles options, ref NumberBuffer number, StringBuilder? sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
-                Debug.Assert(str != null);
-                Debug.Assert(strEnd != null);
+                Debug.Assert(str is not null);
+                Debug.Assert(strEnd is not null);
                 Debug.Assert(str <= strEnd);
 
                 const int StateSign = 0x0001;
@@ -364,7 +364,7 @@ namespace System.Globalization
                 }
 
                 int state = 0;
-                bool bigNumber = (sb != null); // When a StringBuilder is provided then we use it in place of the number.digits char[50]
+                bool bigNumber = (sb is not null); // When a StringBuilder is provided then we use it in place of the number.digits char[50]
                 int maxParseDigits = bigNumber ? int.MaxValue : NumberMaxDigits;
 
                 char* p = str;
@@ -379,7 +379,7 @@ namespace System.Globalization
                     // "-Kr 1231.47" is legal but "- 1231.47" is not.
                     if (!IsWhite(ch) || (options & NumberStyles.AllowLeadingWhite) == 0 || ((state & StateSign) != 0 && ((state & StateCurrency) == 0 && numfmt.NumberNegativePattern != 2)))
                     {
-                        if ((((options & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, numfmt.PositiveSign)) != null || ((next = MatchChars(p, strEnd, numfmt.NegativeSign)) != null && (number.sign = true))))
+                        if ((((options & NumberStyles.AllowLeadingSign) != 0) && (state & StateSign) == 0) && ((next = MatchChars(p, strEnd, numfmt.PositiveSign)) is not null || ((next = MatchChars(p, strEnd, numfmt.NegativeSign)) is not null && (number.sign = true))))
                         {
                             state |= StateSign;
                             p = next - 1;
@@ -389,7 +389,7 @@ namespace System.Globalization
                             state |= StateSign | StateParens;
                             number.sign = true;
                         }
-                        else if (currSymbol != null && (next = MatchChars(p, strEnd, currSymbol)) != null)
+                        else if (currSymbol is not null && (next = MatchChars(p, strEnd, currSymbol)) is not null)
                         {
                             state |= StateCurrency;
                             currSymbol = null;
@@ -443,12 +443,12 @@ namespace System.Globalization
                             number.scale--;
                         }
                     }
-                    else if (((options & NumberStyles.AllowDecimalPoint) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, strEnd, decSep)) != null || ((parsingCurrency) && (state & StateCurrency) == 0) && (next = MatchChars(p, strEnd, numfmt.NumberDecimalSeparator)) != null))
+                    else if (((options & NumberStyles.AllowDecimalPoint) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, strEnd, decSep)) is not null || ((parsingCurrency) && (state & StateCurrency) == 0) && (next = MatchChars(p, strEnd, numfmt.NumberDecimalSeparator)) is not null))
                     {
                         state |= StateDecimal;
                         p = next - 1;
                     }
-                    else if (((options & NumberStyles.AllowThousands) != 0) && ((state & StateDigits) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, strEnd, groupSep)) != null || ((parsingCurrency) && (state & StateCurrency) == 0) && (next = MatchChars(p, strEnd, numfmt.NumberGroupSeparator)) != null))
+                    else if (((options & NumberStyles.AllowThousands) != 0) && ((state & StateDigits) != 0) && ((state & StateDecimal) == 0) && ((next = MatchChars(p, strEnd, groupSep)) is not null || ((parsingCurrency) && (state & StateCurrency) == 0) && (next = MatchChars(p, strEnd, numfmt.NumberGroupSeparator)) is not null))
                     {
                         p = next - 1;
                     }
@@ -471,11 +471,11 @@ namespace System.Globalization
                     {
                         char* temp = p;
                         ch = ++p < strEnd ? *p : '\0';
-                        if ((next = MatchChars(p, strEnd, numfmt.PositiveSign)) != null)
+                        if ((next = MatchChars(p, strEnd, numfmt.PositiveSign)) is not null)
                         {
                             ch = (p = next) < strEnd ? *p : '\0';
                         }
-                        else if ((next = MatchChars(p, strEnd, numfmt.NegativeSign)) != null)
+                        else if ((next = MatchChars(p, strEnd, numfmt.NegativeSign)) is not null)
                         {
                             ch = (p = next) < strEnd ? *p : '\0';
                             negExp = true;
@@ -512,7 +512,7 @@ namespace System.Globalization
                     {
                         if (!IsWhite(ch) || (options & NumberStyles.AllowTrailingWhite) == 0)
                         {
-                            if (((options & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0)) && ((next = MatchChars(p, strEnd, numfmt.PositiveSign)) != null || (((next = MatchChars(p, strEnd, numfmt.NegativeSign)) != null) && (number.sign = true))))
+                            if (((options & NumberStyles.AllowTrailingSign) != 0 && ((state & StateSign) == 0)) && ((next = MatchChars(p, strEnd, numfmt.PositiveSign)) is not null || (((next = MatchChars(p, strEnd, numfmt.NegativeSign)) is not null) && (number.sign = true))))
                             {
                                 state |= StateSign;
                                 p = next - 1;
@@ -521,7 +521,7 @@ namespace System.Globalization
                             {
                                 state &= ~StateParens;
                             }
-                            else if (currSymbol != null && (next = MatchChars(p, strEnd, currSymbol)) != null)
+                            else if (currSymbol is not null && (next = MatchChars(p, strEnd, currSymbol)) is not null)
                             {
                                 currSymbol = null;
                                 p = next - 1;
@@ -569,7 +569,7 @@ namespace System.Globalization
 
             internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
-                Debug.Assert(numfmt != null);
+                Debug.Assert(numfmt is not null);
 
                 fixed (char* stringPointer = &MemoryMarshal.GetReference(str))
                 {
@@ -904,7 +904,7 @@ namespace System.Globalization
 
             private static unsafe void FormatFixed(ref ValueStringBuilder sb, ref NumberBuffer number, int nMinDigits, int nMaxDigits, NumberFormatInfo info, int[]? groupDigits, string sDecimal, string? sGroup)
             {
-                Debug.Assert(sGroup != null || groupDigits == null);
+                Debug.Assert(sGroup is not null || groupDigits is null);
 
                 int digPos = number.scale;
                 char* dig = number.digits;
@@ -912,7 +912,7 @@ namespace System.Globalization
 
                 if (digPos > 0)
                 {
-                    if (groupDigits != null)
+                    if (groupDigits is not null)
                     {
                         int groupSizeIndex = 0;                             // Index into the groupDigits array.
                         int groupSizeCount = groupDigits[groupSizeIndex];   // The current total of group size.

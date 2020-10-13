@@ -22,32 +22,32 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
             Debug.Assert(frame.State == Initialized);
 
             Action? action = null;
 
-            if (this.mode != null)
+            if (this.mode is not null)
             {
-                action = importsOf == null
+                action = importsOf is null
                     ? processor.Stylesheet.FindTemplate(processor, frame.Node!, this.mode)
                     : importsOf.FindTemplateImports(processor, frame.Node!, this.mode);
             }
             else
             {
-                action = importsOf == null
+                action = importsOf is null
                     ? processor.Stylesheet.FindTemplate(processor, frame.Node!)
                     : importsOf.FindTemplateImports(processor, frame.Node!);
             }
 
             // Built-int template rules
-            if (action == null)
+            if (action is null)
             {
                 action = BuiltInTemplate(frame.Node!);
             }
 
             // Jump
-            if (action != null)
+            if (action is not null)
             {
                 frame.SetAction(action);
             }
@@ -59,7 +59,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal Action? BuiltInTemplate(XPathNavigator node)
         {
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
             Action? action = null;
 
             switch (node.NodeType)
@@ -98,9 +98,9 @@ namespace System.Xml.Xsl.XsltOld
     {
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
             Debug.Assert(frame.State == Initialized);
-            Debug.Assert(processor.Debugger != null);
+            Debug.Assert(processor.Debugger is not null);
 
             Action? action = null;
 
@@ -112,31 +112,31 @@ namespace System.Xml.Xsl.XsltOld
             }
             processor.SetCurrentMode(this.mode);
 
-            if (this.mode != null)
+            if (this.mode is not null)
             {
-                action = importsOf == null
+                action = importsOf is null
                     ? processor.Stylesheet.FindTemplate(processor, frame.Node!, this.mode)
                     : importsOf.FindTemplateImports(processor, frame.Node!, this.mode);
             }
             else
             {
-                action = importsOf == null
+                action = importsOf is null
                     ? processor.Stylesheet.FindTemplate(processor, frame.Node!)
                     : importsOf.FindTemplateImports(processor, frame.Node!);
             }
 
             // Built-int template rules
-            if (action == null && processor.RootAction!.builtInSheet != null)
+            if (action is null && processor.RootAction!.builtInSheet is not null)
             {
                 action = processor.RootAction.builtInSheet.FindTemplate(processor, frame.Node!, Compiler.BuiltInMode);
             }
-            if (action == null)
+            if (action is null)
             {
                 action = BuiltInTemplate(frame.Node!);
             }
 
             // Jump
-            if (action != null)
+            if (action is not null)
             {
                 frame.SetAction(action);
             }

@@ -67,7 +67,7 @@ namespace System.Net.Http
 #pragma warning disable CS8600
                             (connection, response) = await connectionPool.CreateHttp11ConnectionAsync(request, async, cancellationToken).ConfigureAwait(false);
 #pragma warning restore CS8600
-                            if (response != null)
+                            if (response is not null)
                             {
                                 return response;
                             }
@@ -88,7 +88,7 @@ namespace System.Net.Http
                         // Ignore the 'Host' header if this is proxy authentication since we need to use
                         // the host name of the proxy itself for SPN calculation.
                         string hostName;
-                        if (!isProxyAuth && request.HasHeaders && request.Headers.Host != null)
+                        if (!isProxyAuth && request.HasHeaders && request.Headers.Host is not null)
                         {
                             // Use the host name without any normalization.
                             hostName = request.Headers.Host;
@@ -134,7 +134,7 @@ namespace System.Net.Http
                             while (true)
                             {
                                 string? challengeResponse = authContext.GetOutgoingBlob(challengeData);
-                                if (challengeResponse == null)
+                                if (challengeResponse is null)
                                 {
                                     // Response indicated denial even after login, so stop processing and return current response.
                                     break;
@@ -181,7 +181,7 @@ namespace System.Net.Http
 
         public static Task<HttpResponseMessage> SendWithNtConnectionAuthAsync(HttpRequestMessage request, bool async, ICredentials credentials, HttpConnection connection, HttpConnectionPool connectionPool, CancellationToken cancellationToken)
         {
-            Debug.Assert(request.RequestUri != null);
+            Debug.Assert(request.RequestUri is not null);
             return SendWithNtAuthAsync(request, request.RequestUri, async, credentials, isProxyAuth: false, connection, connectionPool, cancellationToken);
         }
     }

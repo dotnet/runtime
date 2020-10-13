@@ -44,7 +44,7 @@ namespace Microsoft.Extensions.Logging.Debug
                 return;
             }
 
-            if (formatter == null)
+            if (formatter is null)
             {
                 throw new ArgumentNullException(nameof(formatter));
             }
@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Logging.Debug
 
             message = $"{ logLevel }: {message}";
 
-            if (exception != null)
+            if (exception is not null)
             {
                 message += Environment.NewLine + Environment.NewLine + exception;
             }

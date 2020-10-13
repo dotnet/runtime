@@ -108,13 +108,13 @@ namespace System.Diagnostics
     {
         public override void OnActivityImport(Activity activity, object? payload)
         {
-            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription is not null; curSubscription = curSubscription.Next)
                 curSubscription.OnActivityImport?.Invoke(activity, payload);
         }
 
         public override void OnActivityExport(Activity activity, object? payload)
         {
-            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription is not null; curSubscription = curSubscription.Next)
                 curSubscription.OnActivityExport?.Invoke(activity, payload);
         }
 
@@ -128,7 +128,7 @@ namespace System.Diagnostics
         public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object?>> observer, Func<string, object?, object?, bool>? isEnabled,
             Action<Activity, object?>? onActivityImport = null, Action<Activity, object?>? onActivityExport = null)
         {
-            return isEnabled == null ?
+            return isEnabled is null ?
              SubscribeInternal(observer, null, null, onActivityImport, onActivityExport) :
              SubscribeInternal(observer, name => IsEnabled(name, null, null), isEnabled, onActivityImport, onActivityExport);
         }

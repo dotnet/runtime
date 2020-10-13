@@ -66,7 +66,7 @@ namespace Microsoft.Extensions.Configuration
         /// </summary>
         public void ResolveFileProvider()
         {
-            if (FileProvider == null &&
+            if (FileProvider is null &&
                 !string.IsNullOrEmpty(Path) &&
                 System.IO.Path.IsPathRooted(Path))
             {

@@ -98,10 +98,10 @@ namespace System.Threading
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
-            if (waitObject == null)
+            if (waitObject is null)
                 throw new ArgumentNullException(nameof(waitObject));
 
-            if (callBack == null)
+            if (callBack is null)
                 throw new ArgumentNullException(nameof(callBack));
 
             throw new PlatformNotSupportedException();

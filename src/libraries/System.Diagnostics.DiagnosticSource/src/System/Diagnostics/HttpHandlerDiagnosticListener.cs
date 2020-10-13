@@ -217,10 +217,10 @@ namespace System.Diagnostics
                 set
                 {
                     WeakReference weakRef = value as WeakReference;
-                    if (weakRef != null && weakRef.IsAlive)
+                    if (weakRef is not null && weakRef.IsAlive)
                     {
                         ServicePoint servicePoint = weakRef.Target as ServicePoint;
-                        if (servicePoint != null)
+                        if (servicePoint is not null)
                         {
                             // Replace the ConnectionGroup hashtable inside this ServicePoint object,
                             // which allows us to intercept each new ConnectionGroup object added under
@@ -520,7 +520,7 @@ namespace System.Diagnostics
             public override int Add(object value)
             {
                 HttpWebRequest request = value as HttpWebRequest;
-                if (request != null)
+                if (request is not null)
                 {
                     s_instance.RaiseRequestEvent(request);
                 }
@@ -531,10 +531,10 @@ namespace System.Diagnostics
             public override void RemoveAt(int index)
             {
                 HttpWebRequest request = base[index] as HttpWebRequest;
-                if (request != null)
+                if (request is not null)
                 {
                     HttpWebResponse response = s_httpResponseAccessor(request);
-                    if (response != null)
+                    if (response is not null)
                     {
                         s_instance.RaiseResponseEvent(request, response);
                     }
@@ -548,7 +548,7 @@ namespace System.Diagnostics
                         // or the internal HTTP reponse representation having status, content and headers
 
                         var coreResponse = s_coreResponseAccessor(request);
-                        if (coreResponse != null && s_coreResponseDataType.IsInstanceOfType(coreResponse))
+                        if (coreResponse is not null && s_coreResponseDataType.IsInstanceOfType(coreResponse))
                         {
                             HttpStatusCode status = s_coreStatusCodeAccessor(coreResponse);
                             WebHeaderCollection headers = s_coreHeadersAccessor(coreResponse);
@@ -582,7 +582,7 @@ namespace System.Diagnostics
 
         private void RaiseRequestEvent(HttpWebRequest request)
         {
-            if (request.Headers.Get(RequestIdHeaderName) != null)
+            if (request.Headers.Get(RequestIdHeaderName) is not null)
             {
                 // this request was instrumented by previous RaiseRequestEvent
                 return;
@@ -606,12 +606,12 @@ namespace System.Diagnostics
                 {
                     // do not inject header if it was injected already
                     // perhaps tracing systems wants to override it
-                    if (request.Headers.Get(TraceParentHeaderName) == null)
+                    if (request.Headers.Get(TraceParentHeaderName) is null)
                     {
                         request.Headers.Add(TraceParentHeaderName, activity.Id);
 
                         var traceState = activity.TraceStateString;
-                        if (traceState != null)
+                        if (traceState is not null)
                         {
                             request.Headers.Add(TraceStateHeaderName, traceState);
                         }
@@ -621,13 +621,13 @@ namespace System.Diagnostics
                 {
                     // do not inject header if it was injected already
                     // perhaps tracing systems wants to override it
-                    if (request.Headers.Get(RequestIdHeaderName) == null)
+                    if (request.Headers.Get(RequestIdHeaderName) is null)
                     {
                         request.Headers.Add(RequestIdHeaderName, activity.Id);
                     }
                 }
 
-                if (request.Headers.Get(CorrelationContextHeaderName) == null)
+                if (request.Headers.Get(CorrelationContextHeaderName) is null)
                 {
                     // we expect baggage to be empty or contain a few items
                     using (IEnumerator<KeyValuePair<string, string>> e = activity.Baggage.GetEnumerator())
@@ -657,7 +657,7 @@ namespace System.Diagnostics
             // Response event could be received several times for the same request in case it was redirected
             // IsLastResponse checks if response is the last one (no more redirects will happen)
             // based on response StatusCode and number or redirects done so far
-            bool wasRequestInstrumented = request.Headers.Get(TraceParentHeaderName) != null || request.Headers.Get(RequestIdHeaderName) != null;
+            bool wasRequestInstrumented = request.Headers.Get(TraceParentHeaderName) is not null || request.Headers.Get(RequestIdHeaderName) is not null;
             if (wasRequestInstrumented && IsLastResponse(request, response.StatusCode))
             {
                 // only send Stop if request was instrumented
@@ -670,7 +670,7 @@ namespace System.Diagnostics
             // Response event could be received several times for the same request in case it was redirected
             // IsLastResponse checks if response is the last one (no more redirects will happen)
             // based on response StatusCode and number or redirects done so far
-            if (request.Headers.Get(RequestIdHeaderName) != null && IsLastResponse(request, statusCode))
+            if (request.Headers.Get(RequestIdHeaderName) is not null && IsLastResponse(request, statusCode))
             {
                 this.Write(RequestStopExName, new { Request = request, StatusCode = statusCode, Headers = headers });
             }
@@ -711,22 +711,22 @@ namespace System.Diagnostics
             s_coreResponseAccessor = CreateFieldGetter<HttpWebRequest, object>("_CoreResponse", BindingFlags.NonPublic | BindingFlags.Instance);
 
             s_coreResponseDataType = systemNetHttpAssembly?.GetType("System.Net.CoreResponseData");
-            if (s_coreResponseDataType != null)
+            if (s_coreResponseDataType is not null)
             {
                 s_coreStatusCodeAccessor = CreateFieldGetter<HttpStatusCode>(s_coreResponseDataType, "m_StatusCode", BindingFlags.Public | BindingFlags.Instance);
                 s_coreHeadersAccessor = CreateFieldGetter<WebHeaderCollection>(s_coreResponseDataType, "m_ResponseHeaders", BindingFlags.Public | BindingFlags.Instance);
             }
             // Double checking to make sure we have all the pieces initialized
-            if (s_connectionGroupListField == null ||
-                s_connectionGroupType == null ||
-                s_connectionListField == null ||
-                s_connectionType == null ||
-                s_writeListField == null ||
-                s_httpResponseAccessor == null ||
-                s_autoRedirectsAccessor == null ||
-                s_coreResponseDataType == null ||
-                s_coreStatusCodeAccessor == null ||
-                s_coreHeadersAccessor == null)
+            if (s_connectionGroupListField is null ||
+                s_connectionGroupType is null ||
+                s_connectionListField is null ||
+                s_connectionType is null ||
+                s_writeListField is null ||
+                s_httpResponseAccessor is null ||
+                s_autoRedirectsAccessor is null ||
+                s_coreResponseDataType is null ||
+                s_coreStatusCodeAccessor is null ||
+                s_coreHeadersAccessor is null)
             {
                 // If anything went wrong here, just return false. There is nothing we can do.
                 throw new InvalidOperationException("Unable to initialize all required reflection objects");
@@ -736,7 +736,7 @@ namespace System.Diagnostics
         private static void PerformInjection()
         {
             FieldInfo servicePointTableField = typeof(ServicePointManager).GetField("s_ServicePointTable", BindingFlags.Static | BindingFlags.NonPublic);
-            if (servicePointTableField == null)
+            if (servicePointTableField is null)
             {
                 // If anything went wrong here, just return false. There is nothing we can do.
                 throw new InvalidOperationException("Unable to access the ServicePointTable field");
@@ -751,7 +751,7 @@ namespace System.Diagnostics
         private static Func<TClass, TField> CreateFieldGetter<TClass, TField>(string fieldName, BindingFlags flags) where TClass : class
         {
             FieldInfo field = typeof(TClass).GetField(fieldName, flags);
-            if (field != null)
+            if (field is not null)
             {
                 string methodName = field.ReflectedType.FullName + ".get_" + field.Name;
                 DynamicMethod getterMethod = new DynamicMethod(methodName, typeof(TField), new[] { typeof(TClass) }, true);
@@ -773,7 +773,7 @@ namespace System.Diagnostics
         private static Func<object, TField> CreateFieldGetter<TField>(Type classType, string fieldName, BindingFlags flags)
         {
             FieldInfo field = classType.GetField(fieldName, flags);
-            if (field != null)
+            if (field is not null)
             {
                 string methodName = classType.FullName + ".get_" + field.Name;
                 DynamicMethod getterMethod = new DynamicMethod(methodName, typeof(TField), new[] { typeof(object) }, true);

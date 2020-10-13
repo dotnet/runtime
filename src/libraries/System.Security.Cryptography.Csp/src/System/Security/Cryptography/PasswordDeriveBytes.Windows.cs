@@ -26,7 +26,7 @@ namespace System.Security.Cryptography
             if (algid == 0)
                 throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_InvalidAlgorithm);
 
-            if (rgbIV == null)
+            if (rgbIV is null)
                 throw new CryptographicException(SR.Cryptography_PasswordDerivedBytes_InvalidIV);
 
             byte[]? key = null;
@@ -38,11 +38,11 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (_safeProvHandle == null)
+                if (_safeProvHandle is null)
                 {
                     lock (this)
                     {
-                        if (_safeProvHandle == null)
+                        if (_safeProvHandle is null)
                         {
                             SafeProvHandle safeProvHandle = AcquireSafeProviderHandle(_cspParams);
                             System.Threading.Thread.MemoryBarrier();
@@ -56,7 +56,7 @@ namespace System.Security.Cryptography
 
         private static SafeProvHandle AcquireSafeProviderHandle(CspParameters? cspParams)
         {
-            if (cspParams == null)
+            if (cspParams is null)
             {
                 cspParams = new CspParameters(CapiHelper.DefaultRsaProviderType);
             }

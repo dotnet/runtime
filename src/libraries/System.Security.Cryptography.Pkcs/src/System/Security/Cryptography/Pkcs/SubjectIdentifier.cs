@@ -19,7 +19,7 @@ namespace System.Security.Cryptography.Pkcs
 
         internal SubjectIdentifier(SubjectIdentifierType type, object value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 #if DEBUG
             switch (type)
             {
@@ -82,7 +82,7 @@ namespace System.Security.Cryptography.Pkcs
                     Value = new X509IssuerSerial(name.Name, serial.ToBigEndianHex());
                 }
             }
-            else if (subjectKeyIdentifier != null)
+            else if (subjectKeyIdentifier is not null)
             {
                 Type = SubjectIdentifierType.SubjectKeyIdentifier;
                 Value = subjectKeyIdentifier.Value.Span.ToBigEndianHex();

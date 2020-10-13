@@ -308,7 +308,7 @@ namespace System.Net.Http.HPack
         public static int Decode(ReadOnlySpan<byte> src, ref byte[] dstArray)
         {
             Span<byte> dst = dstArray;
-            Debug.Assert(dst != null && dst.Length > 0);
+            Debug.Assert(dst.Length > 0);
 
             int i = 0;
             int j = 0;

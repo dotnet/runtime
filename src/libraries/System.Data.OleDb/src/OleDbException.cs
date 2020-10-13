@@ -139,11 +139,11 @@ namespace System.Data.OleDb
 
             public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
             {
-                if (destinationType == null)
+                if (destinationType is null)
                 {
                     throw ADP.ArgumentNull("destinationType");
                 }
-                if ((destinationType == typeof(string)) && (value != null) && (value is int))
+                if ((destinationType == typeof(string)) && (value is not null) && (value is int))
                 {
                     return ODB.ELookup((OleDbHResult)value);
                 }

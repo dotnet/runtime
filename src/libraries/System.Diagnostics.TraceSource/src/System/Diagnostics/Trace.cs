@@ -23,7 +23,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (s_correlationManager == null)
+                if (s_correlationManager is null)
                 {
                     s_correlationManager = new CorrelationManager();
                 }

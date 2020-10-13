@@ -104,7 +104,7 @@ namespace System.Xml.Xsl.Runtime
         {
             if (_state != IteratorState.NeedDescendant)
             {
-                if (input == null)
+                if (input is null)
                     return IteratorResult.NoMoreNodes;
 
                 // Descendants of the input node will be duplicates if the input node is in the subtree
@@ -429,7 +429,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 case IteratorState.NeedCandidateCurrent:
                     // If there are no more input nodes, then iteration is complete
-                    if (input == null)
+                    if (input is null)
                         return IteratorResult.NoMoreNodes;
 
                     // Save input node as current node
@@ -441,7 +441,7 @@ namespace System.Xml.Xsl.Runtime
 
                 case IteratorState.HaveCandidateCurrent:
                     // If there are no more input nodes,
-                    if (input == null)
+                    if (input is null)
                     {
                         // Then candidate node has been selected, and there are no further input nodes
                         _state = IteratorState.HaveCurrentNoNext;
@@ -458,7 +458,7 @@ namespace System.Xml.Xsl.Runtime
 
                 case IteratorState.HaveCurrentNeedNext:
                     // If there are no more input nodes,
-                    if (input == null)
+                    if (input is null)
                     {
                         // Then candidate node has been selected, and there are no further input nodes
                         _state = IteratorState.HaveCurrentNoNext;
@@ -751,7 +751,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 case IteratorState.NeedCandidateCurrent:
                     // If there are no more input nodes, then iteration is complete
-                    if (input == null)
+                    if (input is null)
                         return IteratorResult.NoMoreNodes;
 
                     // Save input node as current node
@@ -763,7 +763,7 @@ namespace System.Xml.Xsl.Runtime
 
                 case IteratorState.HaveCandidateCurrent:
                     // If there are no more input nodes,
-                    if (input == null)
+                    if (input is null)
                     {
                         // Then candidate node has been selected, and there are no further input nodes
                         _state = IteratorState.HaveCurrentNoNext;

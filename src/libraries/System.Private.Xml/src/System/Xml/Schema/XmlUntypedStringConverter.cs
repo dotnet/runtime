@@ -57,8 +57,8 @@ namespace System.Xml.Schema
 
         internal object FromString(string value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
-            if (destinationType == null) throw new ArgumentNullException(nameof(destinationType));
+            if (value is null) throw new ArgumentNullException(nameof(value));
+            if (destinationType is null) throw new ArgumentNullException(nameof(destinationType));
 
             if (destinationType == s_objectType) destinationType = typeof(string);
             if (destinationType == s_booleanType) return XmlConvert.ToBoolean((string)value);
@@ -170,12 +170,12 @@ namespace System.Xml.Schema
             }
 
             // Throw error if no namespaces are in scope
-            if (nsResolver == null)
+            if (nsResolver is null)
                 throw new InvalidCastException(SR.Format(SR.XmlConvert_TypeNoNamespace, value, prefix));
 
             // Lookup namespace
             ns = nsResolver.LookupNamespace(prefix);
-            if (ns == null)
+            if (ns is null)
                 throw new InvalidCastException(SR.Format(SR.XmlConvert_TypeNoNamespace, value, prefix));
 
             // Create XmlQualfiedName

@@ -19,7 +19,7 @@ namespace System.Data
 
         internal RecordManager(DataTable table)
         {
-            if (table == null)
+            if (table is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(table));
             }
@@ -34,7 +34,7 @@ namespace System.Data
 
             // set up internal map : record --> row
             DataRow[] newRows = _table.NewRowArray(_recordCapacity);
-            if (_rows != null)
+            if (_rows is not null)
             {
                 Array.Copy(_rows, newRows, Math.Min(_lastFreeRecord, _rows.Length));
             }
@@ -208,7 +208,7 @@ namespace System.Data
         // No impact on AutoIncrementCurrent if over written
         internal int CopyRecord(DataTable src, int record, int copy)
         {
-            Debug.Assert(src != null, "Can not Merge record without a table");
+            Debug.Assert(src is not null, "Can not Merge record without a table");
 
             if (record == -1)
             {

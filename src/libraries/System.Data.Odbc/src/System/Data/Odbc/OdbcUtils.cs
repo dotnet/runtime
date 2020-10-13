@@ -361,7 +361,7 @@ namespace System.Data.Odbc
             _quote = quote;
             _escape = escape;
             _sqlstatement = text;
-            if (text != null)
+            if (text is not null)
             {
                 int iNul = text.IndexOf('\0');
                 _len = (0 > iNul) ? text.Length : iNul;

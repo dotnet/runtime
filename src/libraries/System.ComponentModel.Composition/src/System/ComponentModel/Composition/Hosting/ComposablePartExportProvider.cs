@@ -85,7 +85,7 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                     finally
                     {
-                        if (importEngine != null)
+                        if (importEngine is not null)
                         {
                             importEngine.Dispose();
                         }
@@ -152,16 +152,16 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                if (_importEngine == null)
+                if (_importEngine is null)
                 {
-                    if (_sourceProvider == null)
+                    if (_sourceProvider is null)
                     {
                         throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                     }
                     ImportEngine? importEngine = new ImportEngine(_sourceProvider, _compositionOptions);
                     using (_lock.LockStateForWrite())
                     {
-                        if (_importEngine == null)
+                        if (_importEngine is null)
                         {
                             Thread.MemoryBarrier();
                             _importEngine = importEngine;
@@ -170,7 +170,7 @@ namespace System.ComponentModel.Composition.Hosting
                     }
 
                     // if we have created an engine and didn't set it because of a race condition, we need to dispose of it
-                    if (importEngine != null)
+                    if (importEngine is not null)
                     {
                         importEngine.Dispose();
                     }
@@ -320,7 +320,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private List<ComposablePart> GetUpdatedPartsList(ref CompositionBatch batch)
         {
-            if (batch == null)
+            if (batch is null)
             {
                 throw new ArgumentNullException(nameof(batch));
             }
@@ -345,7 +345,7 @@ namespace System.ComponentModel.Composition.Hosting
             {
                 if (parts.Remove(part))
                 {
-                    if (partsToRemove == null)
+                    if (partsToRemove is null)
                     {
                         partsToRemove = new List<ComposablePart>();
                     }
@@ -363,7 +363,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void Recompose(CompositionBatch batch, AtomicComposition atomicComposition)
         {
-            if (batch == null)
+            if (batch is null)
             {
                 throw new ArgumentNullException(nameof(batch));
             }
@@ -417,7 +417,7 @@ namespace System.ComponentModel.Composition.Hosting
         [DebuggerStepThrough]
         private void EnsureCanRun()
         {
-            if (_sourceProvider == null)
+            if (_sourceProvider is null)
             {
                 throw new InvalidOperationException(SR.Format(SR.ObjectMustBeInitialized, "SourceProvider")); // NOLOC
             }
@@ -443,7 +443,7 @@ namespace System.ComponentModel.Composition.Hosting
         private void EnsureCanSet<T>(T? currentValue)
             where T : class
         {
-            if ((_isRunning) || (currentValue != null))
+            if ((_isRunning) || (currentValue is not null))
             {
                 throw new InvalidOperationException(SR.ObjectAlreadyInitialized);
             }

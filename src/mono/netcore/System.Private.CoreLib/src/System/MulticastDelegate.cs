@@ -29,7 +29,7 @@ namespace System
 
         protected sealed override object? DynamicInvokeImpl(object?[]? args)
         {
-            if (delegates == null)
+            if (delegates is null)
             {
                 return base.DynamicInvokeImpl(args);
             }
@@ -56,7 +56,7 @@ namespace System
         // Do not remove this API
         internal bool HasSingleTarget
         {
-            get { return delegates == null; }
+            get { return delegates is null; }
         }
 
         // <remarks>
@@ -71,11 +71,11 @@ namespace System
             if (!(obj is MulticastDelegate d))
                 return false;
 
-            if (delegates == null && d.delegates == null)
+            if (delegates is null && d.delegates is null)
             {
                 return true;
             }
-            else if (delegates == null ^ d.delegates == null)
+            else if (delegates is null ^ d.delegates is null)
             {
                 return false;
             }
@@ -104,7 +104,7 @@ namespace System
 
         protected override MethodInfo GetMethodImpl()
         {
-            if (delegates != null)
+            if (delegates is not null)
                 return delegates[delegates.Length - 1].Method;
 
             return base.GetMethodImpl();
@@ -116,7 +116,7 @@ namespace System
         // </summary>
         public sealed override Delegate[] GetInvocationList()
         {
-            if (delegates != null)
+            if (delegates is not null)
                 return (Delegate[])delegates.Clone();
             else
                 return new Delegate[1] { this };
@@ -130,25 +130,25 @@ namespace System
         // </summary>
         protected sealed override Delegate CombineImpl(Delegate? follow)
         {
-            if (follow == null)
+            if (follow is null)
                 return this;
 
             MulticastDelegate other = (MulticastDelegate)follow;
 
             MulticastDelegate ret = AllocDelegateLike_internal(this);
 
-            if (delegates == null && other.delegates == null)
+            if (delegates is null && other.delegates is null)
             {
                 ret.delegates = new Delegate[2] { this, other };
             }
-            else if (delegates == null)
+            else if (delegates is null)
             {
                 ret.delegates = new Delegate[1 + other.delegates!.Length];
 
                 ret.delegates[0] = this;
                 Array.Copy(other.delegates, 0, ret.delegates, 1, other.delegates.Length);
             }
-            else if (other.delegates == null)
+            else if (other.delegates is null)
             {
                 ret.delegates = new Delegate[delegates.Length + 1];
 
@@ -197,18 +197,18 @@ namespace System
 
         protected sealed override Delegate? RemoveImpl(Delegate value)
         {
-            if (value == null)
+            if (value is null)
                 return this;
 
             MulticastDelegate other = (MulticastDelegate)value;
 
-            if (delegates == null && other.delegates == null)
+            if (delegates is null && other.delegates is null)
             {
                 /* if they are not equal and the current one is not
                  * a multicastdelegate then we cannot delete it */
                 return this.Equals(other) ? null : this;
             }
-            else if (delegates == null)
+            else if (delegates is null)
             {
                 foreach (Delegate? d in other.delegates!)
                 {
@@ -217,7 +217,7 @@ namespace System
                 }
                 return this;
             }
-            else if (other.delegates == null)
+            else if (other.delegates is null)
             {
                 int idx = Array.LastIndexOf(delegates, other);
                 if (idx == -1)
@@ -268,16 +268,16 @@ namespace System
 
         public static bool operator ==(MulticastDelegate? d1, MulticastDelegate? d2)
         {
-            if (d1 == null)
-                return d2 == null;
+            if (d1 is null)
+                return d2 is null;
 
             return d1.Equals(d2);
         }
 
         public static bool operator !=(MulticastDelegate? d1, MulticastDelegate? d2)
         {
-            if (d1 == null)
-                return d2 != null;
+            if (d1 is null)
+                return d2 is not null;
 
             return !d1.Equals(d2);
         }

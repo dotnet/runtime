@@ -14,7 +14,7 @@ namespace System.Security.Authentication.ExtendedProtection
     {
         public ServiceNameCollection(ICollection items)
         {
-            if (items == null)
+            if (items is null)
             {
                 throw new ArgumentNullException(nameof(items));
             }
@@ -45,7 +45,7 @@ namespace System.Security.Authentication.ExtendedProtection
 
         private ServiceNameCollection(IList list, int additionalCapacity)
         {
-            Debug.Assert(list != null);
+            Debug.Assert(list is not null);
             Debug.Assert(additionalCapacity >= 0);
 
             foreach (string? item in list)
@@ -79,14 +79,14 @@ namespace System.Security.Authentication.ExtendedProtection
         private void AddIfNew(IEnumerable serviceNames, bool expectStrings)
         {
             List<string>? list = serviceNames as List<string>;
-            if (list != null)
+            if (list is not null)
             {
                 AddIfNew(list);
                 return;
             }
 
             ServiceNameCollection? snc = serviceNames as ServiceNameCollection;
-            if (snc != null)
+            if (snc is not null)
             {
                 AddIfNew(snc.InnerList);
                 return;
@@ -109,7 +109,7 @@ namespace System.Security.Authentication.ExtendedProtection
         /// </summary>
         private void AddIfNew(List<string> serviceNames)
         {
-            Debug.Assert(serviceNames != null);
+            Debug.Assert(serviceNames is not null);
 
             foreach (string serviceName in serviceNames)
             {
@@ -122,7 +122,7 @@ namespace System.Security.Authentication.ExtendedProtection
         /// </summary>
         private void AddIfNew(IList serviceNames)
         {
-            Debug.Assert(serviceNames != null);
+            Debug.Assert(serviceNames is not null);
 
             foreach (string serviceName in serviceNames)
             {
@@ -154,7 +154,7 @@ namespace System.Security.Authentication.ExtendedProtection
         private static int GetCountOrOne(IEnumerable collection)
         {
             ICollection<string>? c = collection as ICollection<string>;
-            return c != null ? c.Count : 1;
+            return c is not null ? c.Count : 1;
         }
 
         // Normalizes any punycode to Unicode in an Service Name (SPN) host.

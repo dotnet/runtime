@@ -66,7 +66,7 @@ namespace System.Net.Http
             switch (statusCode)
             {
                 case HttpStatusCode.Unauthorized:
-                    if (state.ServerCredentials == null || state.LastStatusCode == HttpStatusCode.Unauthorized)
+                    if (state.ServerCredentials is null || state.LastStatusCode == HttpStatusCode.Unauthorized)
                     {
                         // Either we don't have server credentials or we already tried
                         // to set the credentials and it failed before.
@@ -121,10 +121,10 @@ namespace System.Net.Http
                     state.LastStatusCode = statusCode;
 
                     // If we don't have any proxy credentials to try, then we end up with 407.
-                    ICredentials proxyCreds = state.Proxy == null ?
+                    ICredentials proxyCreds = state.Proxy is null ?
                         state.DefaultProxyCredentials :
                         state.Proxy.Credentials;
-                    if (proxyCreds == null)
+                    if (proxyCreds is null)
                     {
                         break;
                     }
@@ -179,7 +179,7 @@ namespace System.Net.Http
             {
                 ICredentials proxyCredentials;
                 Uri proxyUri;
-                if (state.Proxy != null)
+                if (state.Proxy is not null)
                 {
                     proxyCredentials = state.Proxy.Credentials;
                     proxyUri = state.Proxy.GetProxy(state.RequestMessage.RequestUri);
@@ -238,7 +238,7 @@ namespace System.Net.Http
                 foreach (uint authScheme in s_authSchemePriorityOrder)
                 {
                     cred = _credentialCache.GetCredential(uri, s_authSchemeStringMapping[authScheme]);
-                    if (cred != null)
+                    if (cred is not null)
                     {
                         serverAuthScheme = authScheme;
                         serverCredentials = cred;
@@ -257,7 +257,7 @@ namespace System.Net.Http
             Debug.Assert(!string.IsNullOrEmpty(authType));
 
             NetworkCredential cred = serverCredentials.GetCredential(uri, authType);
-            if (cred != null)
+            if (cred is not null)
             {
                 lock (_credentialCacheLock)
                 {
@@ -306,14 +306,14 @@ namespace System.Net.Http
             string userName;
             string password;
 
-            Debug.Assert(credentials != null);
+            Debug.Assert(credentials is not null);
             Debug.Assert(authScheme != 0);
             Debug.Assert(authTarget == Interop.WinHttp.WINHTTP_AUTH_TARGET_PROXY ||
                          authTarget == Interop.WinHttp.WINHTTP_AUTH_TARGET_SERVER);
 
             NetworkCredential networkCredential = credentials.GetCredential(uri, s_authSchemeStringMapping[authScheme]);
 
-            if (networkCredential == null)
+            if (networkCredential is null)
             {
                 return false;
             }
@@ -369,12 +369,12 @@ namespace System.Net.Http
 
         private static uint ChooseAuthScheme(uint supportedSchemes, Uri uri, ICredentials credentials)
         {
-            if (credentials == null)
+            if (credentials is null)
             {
                 return 0;
             }
 
-            if (uri == null && !(credentials is NetworkCredential))
+            if (uri is null && !(credentials is NetworkCredential))
             {
                 // https://github.com/dotnet/runtime/issues/16737.
                 // If the credentials are a NetworkCredential, the uri isn't used when calling .GetCredential() since
@@ -385,7 +385,7 @@ namespace System.Net.Http
 
             foreach (uint authScheme in s_authSchemePriorityOrder)
             {
-                if ((supportedSchemes & authScheme) != 0 && credentials.GetCredential(uri, s_authSchemeStringMapping[authScheme]) != null)
+                if ((supportedSchemes & authScheme) != 0 && credentials.GetCredential(uri, s_authSchemeStringMapping[authScheme]) is not null)
                 {
                     return authScheme;
                 }

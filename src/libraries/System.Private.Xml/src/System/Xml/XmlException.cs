@@ -26,8 +26,8 @@ namespace System.Xml
 
         private readonly string? _sourceUri;
 
-        // message != null for V1 exceptions deserialized in Whidbey
-        // message == null for V2 or higher exceptions; the exception message is stored on the base class (Exception._message)
+        // message is not null for V1 exceptions deserialized in Whidbey
+        // message is null for V2 or higher exceptions; the exception message is stored on the base class (Exception._message)
         private readonly string? _message;
 
         protected XmlException(SerializationInfo info, StreamingContext context) : base(info, context)
@@ -53,7 +53,7 @@ namespace System.Xml
                 }
             }
 
-            if (version == null)
+            if (version is null)
             {
                 // deserializing V1 exception
                 _message = CreateMessage(_res, _args, _lineNumber, _linePosition);
@@ -84,7 +84,7 @@ namespace System.Xml
         //provided to meet the ECMA standards
         public XmlException(string? message) : this(message, ((Exception?)null), 0, 0)
         {
-            Debug.Assert(message == null || !message.StartsWith("Xml_", StringComparison.Ordinal), "Do not pass a resource here!");
+            Debug.Assert(message is null || !message.StartsWith("Xml_", StringComparison.Ordinal), "Do not pass a resource here!");
         }
 
         //provided to meet ECMA standards
@@ -102,7 +102,7 @@ namespace System.Xml
             base(FormatUserMessage(message, lineNumber, linePosition), innerException)
         {
             HResult = HResults.Xml;
-            _res = (message == null ? SR.Xml_DefaultException : SR.Xml_UserException);
+            _res = (message is null ? SR.Xml_DefaultException : SR.Xml_UserException);
             _args = new string?[] { message };
             _sourceUri = sourceUri;
             _lineNumber = lineNumber;
@@ -126,7 +126,7 @@ namespace System.Xml
         { }
 
         internal XmlException(string res, string? arg, Exception? innerException, IXmlLineInfo? lineInfo) :
-            this(res, new string?[] { arg }, innerException, (lineInfo == null ? 0 : lineInfo.LineNumber), (lineInfo == null ? 0 : lineInfo.LinePosition), null)
+            this(res, new string?[] { arg }, innerException, (lineInfo is null ? 0 : lineInfo.LineNumber), (lineInfo is null ? 0 : lineInfo.LinePosition), null)
         { }
 
         internal XmlException(string res, string?[]? args, IXmlLineInfo? lineInfo) :
@@ -134,7 +134,7 @@ namespace System.Xml
         { }
 
         internal XmlException(string res, string?[]? args, IXmlLineInfo? lineInfo, string? sourceUri) :
-            this(res, args, null, (lineInfo == null ? 0 : lineInfo.LineNumber), (lineInfo == null ? 0 : lineInfo.LinePosition), sourceUri)
+            this(res, args, null, (lineInfo is null ? 0 : lineInfo.LineNumber), (lineInfo is null ? 0 : lineInfo.LinePosition), sourceUri)
         {
         }
 
@@ -171,7 +171,7 @@ namespace System.Xml
 
         private static string FormatUserMessage(string? message, int lineNumber, int linePosition)
         {
-            if (message == null)
+            if (message is null)
             {
                 return CreateMessage(SR.Xml_DefaultException, null, lineNumber, linePosition);
             }
@@ -194,7 +194,7 @@ namespace System.Xml
         {
             try
             {
-                string message = (args == null) ? res : string.Format(res, args);
+                string message = (args is null) ? res : string.Format(res, args);
 
                 // Line information is available -> we need to append it to the error message
                 if (lineNumber != 0)
@@ -273,7 +273,7 @@ namespace System.Xml
         {
             get
             {
-                return (_message == null) ? base.Message : _message;
+                return (_message is null) ? base.Message : _message;
             }
         }
 
@@ -287,7 +287,7 @@ namespace System.Xml
 
         internal static bool IsCatchableException(Exception e)
         {
-            Debug.Assert(e != null, "Unexpected null exception");
+            Debug.Assert(e is not null, "Unexpected null exception");
             return !(
                 e is OutOfMemoryException ||
                 e is NullReferenceException

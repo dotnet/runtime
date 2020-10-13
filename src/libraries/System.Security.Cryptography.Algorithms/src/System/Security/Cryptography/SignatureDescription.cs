@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
 
         public SignatureDescription(SecurityElement el)
         {
-            if (el == null)
+            if (el is null)
                 throw new ArgumentNullException(nameof(el));
             KeyAlgorithm = el.SearchForTextOfTag("Key");
             DigestAlgorithm = el.SearchForTextOfTag("Digest");

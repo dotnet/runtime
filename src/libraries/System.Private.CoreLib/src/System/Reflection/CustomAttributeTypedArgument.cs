@@ -17,7 +17,7 @@ namespace System.Reflection
         public CustomAttributeTypedArgument(Type argumentType, object? value)
         {
             // value can be null.
-            if (argumentType == null)
+            if (argumentType is null)
                 throw new ArgumentNullException(nameof(argumentType));
 
             m_value = (value is null) ? null : CanonicalizeValue(value);
@@ -27,7 +27,7 @@ namespace System.Reflection
         public CustomAttributeTypedArgument(object value)
         {
             // value cannot be null.
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             m_value = CanonicalizeValue(value);
@@ -39,12 +39,12 @@ namespace System.Reflection
 
         internal string ToString(bool typed)
         {
-            if (m_argumentType == null)
+            if (m_argumentType is null)
                 return base.ToString()!;
 
             if (ArgumentType.IsEnum)
                 return string.Format(typed ? "{0}" : "({1}){0}", Value, ArgumentType.FullName);
-            else if (Value == null)
+            else if (Value is null)
                 return string.Format(typed ? "null" : "({0})null", ArgumentType.Name);
             else if (ArgumentType == typeof(string))
                 return string.Format("\"{0}\"", Value);

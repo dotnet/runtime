@@ -22,7 +22,7 @@ namespace System.Diagnostics
             foreach (int pid in procIds)
             {
                 ProcessInfo pi = CreateProcessInfo(pid);
-                if (pi != null)
+                if (pi is not null)
                 {
                     processes.Add(pi);
                 }

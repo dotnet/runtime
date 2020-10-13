@@ -83,7 +83,7 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public ListInitExpression Update(NewExpression newExpression, IEnumerable<ElementInit> initializers)
         {
-            if (newExpression == NewExpression && initializers != null)
+            if (newExpression == NewExpression && initializers is not null)
             {
                 if (ExpressionUtils.SameElements(ref initializers!, Initializers))
                 {
@@ -150,7 +150,7 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="ListInitExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.ListInit"/> and the <see cref="ListInitExpression.NewExpression"/> property set to the specified value.</returns>
         public static ListInitExpression ListInit(NewExpression newExpression, MethodInfo? addMethod, IEnumerable<Expression> initializers)
         {
-            if (addMethod == null)
+            if (addMethod is null)
             {
                 return ListInit(newExpression, initializers);
             }

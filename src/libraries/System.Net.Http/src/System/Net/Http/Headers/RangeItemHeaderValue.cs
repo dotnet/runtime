@@ -47,7 +47,7 @@ namespace System.Net.Http.Headers
 
         private RangeItemHeaderValue(RangeItemHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _from = source._from;
             _to = source._to;
@@ -57,7 +57,7 @@ namespace System.Net.Http.Headers
         {
             if (!_from.HasValue)
             {
-                Debug.Assert(_to != null);
+                Debug.Assert(_to is not null);
                 return "-" + _to.Value.ToString(NumberFormatInfo.InvariantInfo);
             }
             else if (!_to.HasValue)
@@ -72,7 +72,7 @@ namespace System.Net.Http.Headers
         {
             RangeItemHeaderValue? other = obj as RangeItemHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -97,7 +97,7 @@ namespace System.Net.Http.Headers
         internal static int GetRangeItemListLength(string? input, int startIndex,
             ICollection<RangeItemHeaderValue> rangeCollection)
         {
-            Debug.Assert(rangeCollection != null);
+            Debug.Assert(rangeCollection is not null);
             Debug.Assert(startIndex >= 0);
 
             if ((string.IsNullOrEmpty(input)) || (startIndex >= input.Length))

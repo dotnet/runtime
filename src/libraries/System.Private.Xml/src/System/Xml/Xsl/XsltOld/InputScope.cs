@@ -50,7 +50,7 @@ namespace System.Xml.Xsl.XsltOld
             this.scopes = null;
             _parent = parent;
 
-            if (_parent != null)
+            if (_parent is not null)
             {
                 _forwardCompatibility = _parent._forwardCompatibility;
                 _canHaveApplyImports = _parent._canHaveApplyImports;
@@ -59,7 +59,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void InsertExtensionNamespace(string nspace)
         {
-            if (_extensionNamespaces == null)
+            if (_extensionNamespaces is null)
             {
                 _extensionNamespaces = new Hashtable();
             }
@@ -68,7 +68,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool IsExtensionNamespace(string nspace)
         {
-            if (_extensionNamespaces == null)
+            if (_extensionNamespaces is null)
             {
                 return false;
             }
@@ -77,7 +77,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void InsertExcludedNamespace(string nspace)
         {
-            if (_excludedNamespaces == null)
+            if (_excludedNamespaces is null)
             {
                 _excludedNamespaces = new Hashtable();
             }
@@ -86,7 +86,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool IsExcludedNamespace(string nspace)
         {
-            if (_excludedNamespaces == null)
+            if (_excludedNamespaces is null)
             {
                 return false;
             }
@@ -95,9 +95,9 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void InsertVariable(VariableAction variable)
         {
-            Debug.Assert(variable != null);
+            Debug.Assert(variable is not null);
 
-            if (_variables == null)
+            if (_variables is null)
             {
                 _variables = new Hashtable();
             }
@@ -106,7 +106,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal int GetVeriablesCount()
         {
-            if (_variables == null)
+            if (_variables is null)
             {
                 return 0;
             }
@@ -115,12 +115,12 @@ namespace System.Xml.Xsl.XsltOld
 
         public VariableAction? ResolveVariable(XmlQualifiedName qname)
         {
-            for (InputScope? inputScope = this; inputScope != null; inputScope = inputScope.Parent)
+            for (InputScope? inputScope = this; inputScope is not null; inputScope = inputScope.Parent)
             {
-                if (inputScope.Variables != null)
+                if (inputScope.Variables is not null)
                 {
                     VariableAction? variable = (VariableAction?)inputScope.Variables[qname];
-                    if (variable != null)
+                    if (variable is not null)
                     {
                         return variable;
                     }
@@ -132,7 +132,7 @@ namespace System.Xml.Xsl.XsltOld
         public VariableAction? ResolveGlobalVariable(XmlQualifiedName qname)
         {
             InputScope? prevScope = null;
-            for (InputScope? inputScope = this; inputScope != null; inputScope = inputScope.Parent)
+            for (InputScope? inputScope = this; inputScope is not null; inputScope = inputScope.Parent)
             {
                 prevScope = inputScope;
             }

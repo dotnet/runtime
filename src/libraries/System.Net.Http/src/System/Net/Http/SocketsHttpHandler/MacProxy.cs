@@ -97,7 +97,7 @@ namespace System.Net.Http
                         if (proxy.ProxyType == CFProxy.kCFProxyTypeAutoConfigurationURL || proxy.ProxyType == CFProxy.kCFProxyTypeAutoConfigurationJavaScript)
                         {
                             Uri? result = ExecuteProxyAutoConfiguration(cfurl, proxy);
-                            if (result != null)
+                            if (result is not null)
                                 return result;
                         }
                         else if (proxy.ProxyType == CFProxy.kCFProxyTypeHTTP || proxy.ProxyType == CFProxy.kCFProxyTypeHTTPS)
@@ -113,11 +113,11 @@ namespace System.Net.Http
 
         public bool IsBypassed(Uri targetUri)
         {
-            if (targetUri == null)
+            if (targetUri is null)
                 throw new ArgumentNullException(nameof(targetUri));
 
             Uri? proxyUri = GetProxy(targetUri);
-            return Equals(proxyUri, targetUri) || proxyUri == null;
+            return Equals(proxyUri, targetUri) || proxyUri is null;
         }
     }
 }

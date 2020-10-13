@@ -1355,7 +1355,7 @@ namespace System.Data.Common
 
         private void UpdateBatchExecute(BatchCommandInfo[] batchCommands, int commandCount, RowUpdatedEventArgs rowUpdatedEvent)
         {
-            Debug.Assert(rowUpdatedEvent.Rows != null);
+            Debug.Assert(rowUpdatedEvent.Rows is not null);
             try
             {
                 // the batch execution may succeed, partially succeed and throw an exception (or not), or totally fail
@@ -1623,7 +1623,7 @@ namespace System.Data.Common
             {
                 var batchCommand = batchCommands[i];
                 DataRow row = batchCommand._row;
-                if ((null == batchCommand._errors) && batchCommand._recordsAffected != null && (0 != batchCommand._recordsAffected.Value))
+                if ((null == batchCommand._errors) && batchCommand._recordsAffected is not null && (0 != batchCommand._recordsAffected.Value))
                 {
                     Debug.Assert(null != row, "null dataRow?");
                     if (acdu)

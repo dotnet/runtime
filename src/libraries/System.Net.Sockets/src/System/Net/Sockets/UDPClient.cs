@@ -86,7 +86,7 @@ namespace System.Net.Sockets
         public UdpClient(IPEndPoint localEP)
         {
             // Validate input parameters.
-            if (localEP == null)
+            if (localEP is null)
             {
                 throw new ArgumentNullException(nameof(localEP));
             }
@@ -238,7 +238,7 @@ namespace System.Net.Sockets
                 }
 
                 Socket chkClientSocket = _clientSocket;
-                if (chkClientSocket != null)
+                if (chkClientSocket is not null)
                 {
                     // If the NetworkStream wasn't retrieved, the Socket might
                     // still be there and needs to be closed to release the effect
@@ -261,7 +261,7 @@ namespace System.Net.Sockets
             // and in that case we set SocketOptionName.Broadcast on the socket to allow its use.
             // if the user really wants complete control over Broadcast addresses they need to
             // inherit from UdpClient and gain control over the Socket and do whatever is appropriate.
-            if (_clientSocket != null && !_isBroadcast && IsBroadcast(ipAddress))
+            if (_clientSocket is not null && !_isBroadcast && IsBroadcast(ipAddress))
             {
                 // We need to set the Broadcast socket option.
                 // Note that once we set the option on the Socket we never reset it.
@@ -317,7 +317,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (datagram == null)
+            if (datagram is null)
             {
                 throw new ArgumentNullException(nameof(datagram));
             }
@@ -327,7 +327,7 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(bytes));
             }
 
-            if (_active && endPoint != null)
+            if (_active && endPoint is not null)
             {
                 // Do not allow sending packets to arbitrary host when connected.
                 throw new InvalidOperationException(SR.net_udpconnected);
@@ -336,14 +336,14 @@ namespace System.Net.Sockets
 
         private IPEndPoint? GetEndpoint(string? hostname, int port)
         {
-            if (_active && ((hostname != null) || (port != 0)))
+            if (_active && ((hostname is not null) || (port != 0)))
             {
                 // Do not allow sending packets to arbitrary host when connected.
                 throw new InvalidOperationException(SR.net_udpconnected);
             }
 
             IPEndPoint? ipEndPoint = null;
-            if (hostname != null && port != 0)
+            if (hostname is not null && port != 0)
             {
                 IPAddress[] addresses = Dns.GetHostAddresses(hostname);
 
@@ -420,7 +420,7 @@ namespace System.Net.Sockets
             // Validate input parameters.
             ThrowIfDisposed();
 
-            if (multicastAddr == null)
+            if (multicastAddr is null)
             {
                 throw new ArgumentNullException(nameof(multicastAddr));
             }
@@ -478,7 +478,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             // Validate input parameters.
-            if (multicastAddr == null)
+            if (multicastAddr is null)
             {
                 throw new ArgumentNullException(nameof(multicastAddr));
             }
@@ -509,7 +509,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             // parameter validation;
-            if (multicastAddr == null)
+            if (multicastAddr is null)
             {
                 throw new ArgumentNullException(nameof(multicastAddr));
             }
@@ -534,7 +534,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             // Validate input parameters.
-            if (multicastAddr == null)
+            if (multicastAddr is null)
             {
                 throw new ArgumentNullException(nameof(multicastAddr));
             }
@@ -572,7 +572,7 @@ namespace System.Net.Sockets
             ThrowIfDisposed();
 
             // Validate input parameters.
-            if (multicastAddr == null)
+            if (multicastAddr is null)
             {
                 throw new ArgumentNullException(nameof(multicastAddr));
             }
@@ -649,7 +649,7 @@ namespace System.Net.Sockets
 
         public UdpClient(string hostname, int port)
         {
-            if (hostname == null)
+            if (hostname is null)
             {
                 throw new ArgumentNullException(nameof(hostname));
             }
@@ -674,7 +674,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (hostname == null)
+            if (hostname is null)
             {
                 throw new ArgumentNullException(nameof(hostname));
             }
@@ -695,7 +695,7 @@ namespace System.Net.Sockets
 
             try
             {
-                if (_clientSocket == null)
+                if (_clientSocket is null)
                 {
                     if (Socket.OSSupportsIPv4)
                     {
@@ -712,25 +712,25 @@ namespace System.Net.Sockets
                 {
                     try
                     {
-                        if (_clientSocket == null)
+                        if (_clientSocket is null)
                         {
                             // We came via the <hostname,port> constructor. Set the
                             // address family appropriately, create the socket and
                             // try to connect.
-                            if (address.AddressFamily == AddressFamily.InterNetwork && ipv4Socket != null)
+                            if (address.AddressFamily == AddressFamily.InterNetwork && ipv4Socket is not null)
                             {
                                 ipv4Socket.Connect(address, port);
                                 _clientSocket = ipv4Socket;
-                                if (ipv6Socket != null)
+                                if (ipv6Socket is not null)
                                 {
                                     ipv6Socket.Close();
                                 }
                             }
-                            else if (ipv6Socket != null)
+                            else if (ipv6Socket is not null)
                             {
                                 ipv6Socket.Connect(address, port);
                                 _clientSocket = ipv6Socket;
-                                if (ipv4Socket != null)
+                                if (ipv4Socket is not null)
                                 {
                                     ipv4Socket.Close();
                                 }
@@ -776,18 +776,18 @@ namespace System.Net.Sockets
                 //did we connect?
                 if (!_active)
                 {
-                    if (ipv6Socket != null)
+                    if (ipv6Socket is not null)
                     {
                         ipv6Socket.Close();
                     }
 
-                    if (ipv4Socket != null)
+                    if (ipv4Socket is not null)
                     {
                         ipv4Socket.Close();
                     }
 
                     // The connect failed - rethrow the last error we had
-                    if (lastex != null)
+                    if (lastex is not null)
                     {
                         throw lastex;
                     }
@@ -803,7 +803,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (addr == null)
+            if (addr is null)
             {
                 throw new ArgumentNullException(nameof(addr));
             }
@@ -821,7 +821,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (endPoint == null)
+            if (endPoint is null)
             {
                 throw new ArgumentNullException(nameof(endPoint));
             }
@@ -872,17 +872,17 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (dgram == null)
+            if (dgram is null)
             {
                 throw new ArgumentNullException(nameof(dgram));
             }
-            if (_active && endPoint != null)
+            if (_active && endPoint is not null)
             {
                 // Do not allow sending packets to arbitrary host when connected
                 throw new InvalidOperationException(SR.net_udpconnected);
             }
 
-            if (endPoint == null)
+            if (endPoint is null)
             {
                 return Client.Send(dgram, 0, bytes, SocketFlags.None);
             }
@@ -898,17 +898,17 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (dgram == null)
+            if (dgram is null)
             {
                 throw new ArgumentNullException(nameof(dgram));
             }
-            if (_active && ((hostname != null) || (port != 0)))
+            if (_active && ((hostname is not null) || (port != 0)))
             {
                 // Do not allow sending packets to arbitrary host when connected
                 throw new InvalidOperationException(SR.net_udpconnected);
             }
 
-            if (hostname == null || port == 0)
+            if (hostname is null || port == 0)
             {
                 return Client.Send(dgram, 0, bytes, SocketFlags.None);
             }
@@ -937,7 +937,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (dgram == null)
+            if (dgram is null)
             {
                 throw new ArgumentNullException(nameof(dgram));
             }

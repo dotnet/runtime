@@ -40,7 +40,7 @@ namespace System.Configuration
         {
             get
             {
-                if (_escaper == null)
+                if (_escaper is null)
                 {
                     _escaper = new XmlEscaper();
                 }
@@ -56,7 +56,7 @@ namespace System.Configuration
         {
             get
             {
-                if (_store == null)
+                if (_store is null)
                 {
                     _store = new ClientSettingsStore();
                 }
@@ -99,16 +99,16 @@ namespace System.Configuration
 
                 // First look for and handle "special" settings
                 SpecialSettingAttribute attr = setting.Attributes[typeof(SpecialSettingAttribute)] as SpecialSettingAttribute;
-                bool isConnString = (attr != null) ? (attr.SpecialSetting == SpecialSetting.ConnectionString) : false;
+                bool isConnString = (attr is not null) ? (attr.SpecialSetting == SpecialSetting.ConnectionString) : false;
 
                 if (isConnString)
                 {
                     string connStringName = sectionName + "." + settingName;
-                    if (connStrings != null && connStrings[connStringName] != null)
+                    if (connStrings is not null && connStrings[connStringName] is not null)
                     {
                         value.PropertyValue = connStrings[connStringName].ConnectionString;
                     }
-                    else if (setting.DefaultValue != null && setting.DefaultValue is string)
+                    else if (setting.DefaultValue is not null && setting.DefaultValue is string)
                     {
                         value.PropertyValue = setting.DefaultValue;
                     }
@@ -148,7 +148,7 @@ namespace System.Configuration
 
                     value.SerializedValue = valueString;
                 }
-                else if (setting.DefaultValue != null)
+                else if (setting.DefaultValue is not null)
                 {
                     value.SerializedValue = setting.DefaultValue;
                 }
@@ -331,7 +331,7 @@ namespace System.Configuration
 
                         if (Version.TryParse(directory.Name, out tempVersion) && tempVersion < currentVersion)
                         {
-                            if (previousVersion == null)
+                            if (previousVersion is null)
                             {
                                 previousVersion = tempVersion;
                                 previousDirectory = directory;
@@ -344,7 +344,7 @@ namespace System.Configuration
                         }
                     }
 
-                    if (previousDirectory != null)
+                    if (previousDirectory is not null)
                     {
                         file = Path.Combine(previousDirectory.FullName, ConfigurationManagerInternalFactory.Instance.UserConfigFilename);
                     }
@@ -377,7 +377,7 @@ namespace System.Configuration
             string groupName = (string)context["GroupName"];
             string key = (string)context["SettingsKey"];
 
-            Debug.Assert(groupName != null, "SettingsContext did not have a GroupName!");
+            Debug.Assert(groupName is not null, "SettingsContext did not have a GroupName!");
 
             string sectionName = groupName;
 
@@ -430,7 +430,7 @@ namespace System.Configuration
         private static bool IsRoamingSetting(SettingsProperty setting)
         {
             SettingsManageabilityAttribute manageAttr = setting.Attributes[typeof(SettingsManageabilityAttribute)] as SettingsManageabilityAttribute;
-            return manageAttr != null && ((manageAttr.Manageability & SettingsManageability.Roaming) == SettingsManageability.Roaming);
+            return manageAttr is not null && ((manageAttr.Manageability & SettingsManageability.Roaming) == SettingsManageability.Roaming);
         }
 
         /// <summary>
@@ -462,20 +462,20 @@ namespace System.Configuration
 
             string serializedValue = value.SerializedValue as string;
 
-            if (serializedValue == null && setting.SerializeAs == SettingsSerializeAs.Binary)
+            if (serializedValue is null && setting.SerializeAs == SettingsSerializeAs.Binary)
             {
                 // SettingsPropertyValue returns a byte[] in the binary serialization case. We need to
                 // encode this - we use base64 since SettingsPropertyValue understands it and we won't have
                 // to special case while deserializing.
 
                 byte[] buffer = value.SerializedValue as byte[];
-                if (buffer != null)
+                if (buffer is not null)
                 {
                     serializedValue = Convert.ToBase64String(buffer);
                 }
             }
 
-            if (serializedValue == null)
+            if (serializedValue is null)
             {
                 serializedValue = string.Empty;
             }
@@ -498,7 +498,7 @@ namespace System.Configuration
                     break;
                 }
             }
-            if (unwanted != null)
+            if (unwanted is not null)
             {
                 valueXml.RemoveChild(unwanted);
             }

@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
         public ILEmitResolverBuilder(CallSiteRuntimeResolver runtimeResolver, IServiceScopeFactory serviceScopeFactory, ServiceProviderEngineScope rootScope) :
             base()
         {
-            if (runtimeResolver == null)
+            if (runtimeResolver is null)
             {
                 throw new ArgumentNullException(nameof(runtimeResolver));
             }
@@ -245,7 +245,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         protected override object VisitFactory(FactoryCallSite factoryCallSite, ILEmitResolverBuilderContext argument)
         {
-            if (argument.Factories == null)
+            if (argument.Factories is null)
             {
                 argument.Factories = new List<Func<IServiceProvider, object>>();
             }
@@ -266,7 +266,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
 
         private void AddConstant(ILEmitResolverBuilderContext argument, object value)
         {
-            if (argument.Constants == null)
+            if (argument.Constants is null)
             {
                 argument.Constants = new List<object>();
             }

@@ -49,7 +49,7 @@ namespace Microsoft.Win32.SafeHandles
             long capacity)
             : base(ownsHandle: true)
         {
-            Debug.Assert(!ownsFileStream || fileStream != null, "We can only own a FileStream we're actually given.");
+            Debug.Assert(!ownsFileStream || fileStream is not null, "We can only own a FileStream we're actually given.");
 
             // Store the arguments.  We'll actually open the map when the view is created.
             _fileStream = fileStream;

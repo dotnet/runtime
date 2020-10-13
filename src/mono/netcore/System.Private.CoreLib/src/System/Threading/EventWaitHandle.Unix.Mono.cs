@@ -40,7 +40,7 @@ namespace System.Threading
 
         private unsafe void CreateEventCore(bool initialState, EventResetMode mode, string? name, out bool createdNew)
         {
-            if (name != null)
+            if (name is not null)
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_NamedSynchronizationPrimitives);
 
             SafeWaitHandle handle = new SafeWaitHandle(CreateEventInternal(mode == EventResetMode.ManualReset, initialState, null, 0, out int errorCode), ownsHandle: true);

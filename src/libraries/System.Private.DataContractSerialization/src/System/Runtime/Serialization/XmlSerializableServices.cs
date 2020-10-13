@@ -11,7 +11,7 @@ namespace System.Runtime.Serialization
     {
         public static XmlNode[] ReadNodes(XmlReader xmlReader)
         {
-            if (xmlReader == null)
+            if (xmlReader is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(xmlReader));
             XmlDocument doc = new XmlDocument();
             List<XmlNode> nodeList = new List<XmlNode>();
@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization
                     if (IsValidAttribute(xmlReader))
                     {
                         XmlNode? node = doc.ReadNode(xmlReader);
-                        if (node == null)
+                        if (node is null)
                             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
                         nodeList.Add(node);
                     }
@@ -36,7 +36,7 @@ namespace System.Runtime.Serialization
                 while (xmlReader.Depth > startDepth && xmlReader.NodeType != XmlNodeType.EndElement)
                 {
                     XmlNode? node = doc.ReadNode(xmlReader);
-                    if (node == null)
+                    if (node is null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.UnexpectedEndOfFile));
                     nodeList.Add(node);
                 }
@@ -54,20 +54,20 @@ namespace System.Runtime.Serialization
 
         public static void WriteNodes(XmlWriter xmlWriter, XmlNode?[]? nodes)
         {
-            if (xmlWriter == null)
+            if (xmlWriter is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(xmlWriter));
-            if (nodes != null)
+            if (nodes is not null)
                 for (int i = 0; i < nodes.Length; i++)
-                    if (nodes[i] != null)
+                    if (nodes[i] is not null)
                         nodes[i]!.WriteTo(xmlWriter);
         }
 
         internal static string AddDefaultSchemaMethodName = "AddDefaultSchema";
         public static void AddDefaultSchema(XmlSchemaSet schemas, XmlQualifiedName typeQName)
         {
-            if (schemas == null)
+            if (schemas is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(schemas));
-            if (typeQName == null)
+            if (typeQName is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(typeQName));
             SchemaExporter.AddDefaultXmlType(schemas, typeQName.Name, typeQName.Namespace);
         }

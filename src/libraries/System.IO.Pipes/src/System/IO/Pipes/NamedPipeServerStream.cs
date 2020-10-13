@@ -94,7 +94,7 @@ namespace System.IO.Pipes
             int outBufferSize,
             HandleInheritability inheritability)
         {
-            if (pipeName == null)
+            if (pipeName is null)
             {
                 throw new ArgumentNullException(nameof(pipeName));
             }
@@ -148,7 +148,7 @@ namespace System.IO.Pipes
         public NamedPipeServerStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
             : base(direction, PipeTransmissionMode.Byte, 0)
         {
-            if (safePipeHandle == null)
+            if (safePipeHandle is null)
             {
                 throw new ArgumentNullException(nameof(safePipeHandle));
             }
@@ -193,7 +193,7 @@ namespace System.IO.Pipes
             {
                 throw Error.GetPipeNotOpen();
             }
-            if (InternalHandle != null && InternalHandle.IsClosed) // only check IsClosed if we have a handle
+            if (InternalHandle is not null && InternalHandle.IsClosed) // only check IsClosed if we have a handle
             {
                 throw Error.GetPipeNotOpen();
             }
@@ -214,11 +214,11 @@ namespace System.IO.Pipes
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeAlreadyDisconnected);
             }
-            if (InternalHandle == null && CheckOperationsRequiresSetHandle)
+            if (InternalHandle is null && CheckOperationsRequiresSetHandle)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_PipeHandleNotSet);
             }
-            if ((State == PipeState.Closed) || (InternalHandle != null && InternalHandle.IsClosed))
+            if ((State == PipeState.Closed) || (InternalHandle is not null && InternalHandle.IsClosed))
             {
                 throw Error.GetPipeNotOpen();
             }

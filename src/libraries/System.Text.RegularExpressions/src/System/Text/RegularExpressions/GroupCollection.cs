@@ -48,7 +48,7 @@ namespace System.Text.RegularExpressions
 
         private Group GetGroup(int groupnum)
         {
-            if (_captureMap != null)
+            if (_captureMap is not null)
             {
                 if (_captureMap.TryGetValue(groupnum, out int groupNumImpl))
                 {
@@ -238,7 +238,7 @@ namespace System.Text.RegularExpressions
 
             internal Enumerator(GroupCollection collection)
             {
-                Debug.Assert(collection != null, "collection cannot be null.");
+                Debug.Assert(collection is not null, "collection cannot be null.");
 
                 _collection = collection;
                 _index = -1;

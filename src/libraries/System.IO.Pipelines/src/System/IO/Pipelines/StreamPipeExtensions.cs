@@ -17,12 +17,12 @@ namespace System.IO.Pipelines
         /// <returns>A task that represents the asynchronous copy operation.</returns>
         public static Task CopyToAsync(this Stream source, PipeWriter destination, CancellationToken cancellationToken = default)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
-            if (destination == null)
+            if (destination is null)
             {
                 throw new ArgumentNullException(nameof(destination));
             }

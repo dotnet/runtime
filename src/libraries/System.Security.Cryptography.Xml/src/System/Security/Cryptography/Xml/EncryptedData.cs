@@ -9,7 +9,7 @@ namespace System.Security.Cryptography.Xml
     {
         public override void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
@@ -25,18 +25,18 @@ namespace System.Security.Cryptography.Xml
 
             // EncryptionMethod
             EncryptionMethod = new EncryptionMethod();
-            if (encryptionMethodNode != null)
+            if (encryptionMethodNode is not null)
                 EncryptionMethod.LoadXml(encryptionMethodNode as XmlElement);
 
             // Key Info
             KeyInfo = new KeyInfo();
             XmlNode keyInfoNode = value.SelectSingleNode("ds:KeyInfo", nsm);
-            if (keyInfoNode != null)
+            if (keyInfoNode is not null)
                 KeyInfo.LoadXml(keyInfoNode as XmlElement);
 
             // CipherData
             XmlNode cipherDataNode = value.SelectSingleNode("enc:CipherData", nsm);
-            if (cipherDataNode == null)
+            if (cipherDataNode is null)
                 throw new CryptographicException(SR.Cryptography_Xml_MissingCipherData);
 
             CipherData = new CipherData();
@@ -44,11 +44,11 @@ namespace System.Security.Cryptography.Xml
 
             // EncryptionProperties
             XmlNode encryptionPropertiesNode = value.SelectSingleNode("enc:EncryptionProperties", nsm);
-            if (encryptionPropertiesNode != null)
+            if (encryptionPropertiesNode is not null)
             {
                 // Select the EncryptionProperty elements inside the EncryptionProperties element
                 XmlNodeList encryptionPropertyNodes = encryptionPropertiesNode.SelectNodes("enc:EncryptionProperty", nsm);
-                if (encryptionPropertyNodes != null)
+                if (encryptionPropertyNodes is not null)
                 {
                     foreach (XmlNode node in encryptionPropertyNodes)
                     {
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.Xml
                 encryptedDataElement.SetAttribute("Encoding", Encoding);
 
             // EncryptionMethod
-            if (EncryptionMethod != null)
+            if (EncryptionMethod is not null)
                 encryptedDataElement.AppendChild(EncryptionMethod.GetXml(document));
 
             // KeyInfo
@@ -96,7 +96,7 @@ namespace System.Security.Cryptography.Xml
                 encryptedDataElement.AppendChild(KeyInfo.GetXml(document));
 
             // CipherData is required.
-            if (CipherData == null)
+            if (CipherData is null)
                 throw new CryptographicException(SR.Cryptography_Xml_MissingCipherData);
             encryptedDataElement.AppendChild(CipherData.GetXml(document));
 

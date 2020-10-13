@@ -15,12 +15,12 @@ namespace System.Runtime.InteropServices
         {
             get
             {
-                if (s_frameworkDescription == null)
+                if (s_frameworkDescription is null)
                 {
                     string? versionString = typeof(object).Assembly.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
                     // Strip the git hash if there is one
-                    if (versionString != null)
+                    if (versionString is not null)
                     {
                         int plusIndex = versionString.IndexOf('+');
                         if (plusIndex != -1)

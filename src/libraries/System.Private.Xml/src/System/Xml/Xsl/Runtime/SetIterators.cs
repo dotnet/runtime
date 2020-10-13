@@ -91,15 +91,15 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // Merge left and right nodes
-            if (_navCurr == null)
+            if (_navCurr is null)
             {
                 // If both navCurr and navOther are null, then iteration is complete
-                if (_navOther == null)
+                if (_navOther is null)
                     return SetIteratorResult.NoMoreNodes;
 
                 Swap();
             }
-            else if (_navOther != null)
+            else if (_navOther is not null)
             {
                 int order = _runtime.ComparePosition(_navOther, _navCurr);
 
@@ -211,12 +211,12 @@ namespace System.Xml.Xsl.Runtime
 
                 case IteratorState.HaveCurrent:
                     // Just returned left node as current, so fetch new left and right nodes
-                    Debug.Assert(nestedNavigator == null, "null is passed to MoveNext after IteratorState.HaveCurrent has been returned.");
+                    Debug.Assert(nestedNavigator is null, "null is passed to MoveNext after IteratorState.HaveCurrent has been returned.");
                     _state = IteratorState.NeedLeftAndRight;
                     return SetIteratorResult.NeedLeftNode;
             }
 
-            if (_navLeft == null || _navRight == null)
+            if (_navLeft is null || _navRight is null)
             {
                 // No more nodes from either left or right iterator (or both), so iteration is complete
                 return SetIteratorResult.NoMoreNodes;
@@ -311,17 +311,17 @@ namespace System.Xml.Xsl.Runtime
 
                 case IteratorState.HaveCurrent:
                     // Just returned left node as current, so fetch new left node
-                    Debug.Assert(nestedNavigator == null, "null is passed to MoveNext after IteratorState.HaveCurrent has been returned.");
+                    Debug.Assert(nestedNavigator is null, "null is passed to MoveNext after IteratorState.HaveCurrent has been returned.");
                     _state = IteratorState.NeedLeft;
                     return SetIteratorResult.NeedLeftNode;
             }
 
-            if (_navLeft == null)
+            if (_navLeft is null)
             {
                 // If navLeft is null, then difference operation is complete
                 return SetIteratorResult.NoMoreNodes;
             }
-            else if (_navRight != null)
+            else if (_navRight is not null)
             {
                 int order = _runtime.ComparePosition(_navLeft, _navRight);
 

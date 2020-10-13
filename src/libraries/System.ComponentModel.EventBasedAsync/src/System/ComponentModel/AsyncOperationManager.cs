@@ -19,7 +19,7 @@ namespace System.ComponentModel
         {
             get
             {
-                if (SynchronizationContext.Current == null)
+                if (SynchronizationContext.Current is null)
                 {
                     SynchronizationContext.SetSynchronizationContext(new SynchronizationContext());
                 }

@@ -124,10 +124,10 @@ namespace System.Xml
 
         public override bool MoveTo(XPathNavigator other)
         {
-            if (other != null)
+            if (other is not null)
             {
                 DataDocumentXPathNavigator? otherDataDocXPathNav = other as DataDocumentXPathNavigator;
-                if (otherDataDocXPathNav != null && _curNode.MoveTo(otherDataDocXPathNav.CurNode))
+                if (otherDataDocXPathNav is not null && _curNode.MoveTo(otherDataDocXPathNav.CurNode))
                 {
                     _doc = _curNode.Document;
                     return true;
@@ -141,10 +141,10 @@ namespace System.Xml
 
         public override bool IsSamePosition(XPathNavigator other)
         {
-            if (other != null)
+            if (other is not null)
             {
                 DataDocumentXPathNavigator? otherDataDocXPathNav = other as DataDocumentXPathNavigator;
-                if (otherDataDocXPathNav != null &&
+                if (otherDataDocXPathNav is not null &&
                     _doc == otherDataDocXPathNav.Document && _curNode.IsSamePosition(otherDataDocXPathNav.CurNode))
                 {
                     return true;
@@ -159,14 +159,14 @@ namespace System.Xml
 
         public override XmlNodeOrder ComparePosition(XPathNavigator? other)
         {
-            if (other == null)
+            if (other is null)
             {
                 return XmlNodeOrder.Unknown; // this is what XPathDocument does.
             }
 
             DataDocumentXPathNavigator? otherDataDocXPathNav = other as DataDocumentXPathNavigator;
 
-            return otherDataDocXPathNav == null || otherDataDocXPathNav.Document != _doc ?
+            return otherDataDocXPathNav is null || otherDataDocXPathNav.Document != _doc ?
                 XmlNodeOrder.Unknown :
                 _curNode.ComparePosition(otherDataDocXPathNav.CurNode);
         }

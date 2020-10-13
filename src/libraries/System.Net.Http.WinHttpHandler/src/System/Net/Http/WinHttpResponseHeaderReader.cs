@@ -90,7 +90,7 @@ namespace System.Net.Http
         /// <returns>true if the next line was read successfully, or false if all characters have been read.</returns>
         private bool ReadLine(out int startIndex, out int length)
         {
-            Debug.Assert(_buffer != null);
+            Debug.Assert(_buffer is not null);
 
             int i = _position;
 

@@ -22,7 +22,7 @@ namespace System.Net.Http
 
             public override int Read(Span<byte> buffer)
             {
-                if (_connection == null || buffer.Length == 0)
+                if (_connection is null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data.
                     return 0;
@@ -58,7 +58,7 @@ namespace System.Net.Http
             {
                 CancellationHelper.ThrowIfCancellationRequested(cancellationToken);
 
-                if (_connection == null || buffer.Length == 0)
+                if (_connection is null || buffer.Length == 0)
                 {
                     // Response body fully consumed or the caller didn't ask for any data
                     return 0;
@@ -125,7 +125,7 @@ namespace System.Net.Http
                     return Task.FromCanceled(cancellationToken);
                 }
 
-                if (_connection == null)
+                if (_connection is null)
                 {
                     // null if response body fully consumed
                     return Task.CompletedTask;
@@ -143,7 +143,7 @@ namespace System.Net.Http
 
             private async Task CompleteCopyToAsync(Task copyTask, CancellationToken cancellationToken)
             {
-                Debug.Assert(_connection != null);
+                Debug.Assert(_connection is not null);
                 CancellationTokenRegistration ctr = _connection.RegisterCancellation(cancellationToken);
                 try
                 {
@@ -173,7 +173,7 @@ namespace System.Net.Http
             {
                 Debug.Assert(maxBytesToRead > 0);
                 Debug.Assert(_contentBytesRemaining > 0);
-                Debug.Assert(_connection != null);
+                Debug.Assert(_connection is not null);
 
                 ReadOnlyMemory<byte> connectionBuffer = _connection.RemainingBuffer;
                 if (connectionBuffer.Length == 0)
@@ -190,11 +190,11 @@ namespace System.Net.Http
                 return connectionBuffer.Slice(0, bytesToConsume);
             }
 
-            public override bool NeedsDrain => (_connection != null);
+            public override bool NeedsDrain => (_connection is not null);
 
             public override async ValueTask<bool> DrainAsync(int maxDrainBytes)
             {
-                Debug.Assert(_connection != null);
+                Debug.Assert(_connection is not null);
                 Debug.Assert(_contentBytesRemaining > 0);
 
                 ReadFromConnectionBuffer(int.MaxValue);

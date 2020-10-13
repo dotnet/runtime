@@ -15,10 +15,10 @@ namespace System
 
         private void SetMessageField()
         {
-            if (_message != null)
+            if (_message is not null)
                 return;
 
-            if (_className == null)
+            if (_className is null)
             {
                 _message = SR.Arg_TypeLoadException;
                 return;

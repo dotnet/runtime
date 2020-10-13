@@ -425,7 +425,7 @@ namespace System.Globalization
 
             // First check if GetCultureData() can find it (ie: its a real culture)
             CultureData? retVal = GetCultureData(cultureName, useUserOverride);
-            if (retVal != null && !retVal.IsNeutralCulture)
+            if (retVal is not null && !retVal.IsNeutralCulture)
             {
                 return retVal;
             }
@@ -440,7 +440,7 @@ namespace System.Globalization
             string hashName = AnsiToLower(useUserOverride ? cultureName : cultureName + '*');
             Dictionary<string, CultureData>? tempHashTable = s_cachedRegions;
 
-            if (tempHashTable == null)
+            if (tempHashTable is null)
             {
                 // No table yet, make a new one
                 tempHashTable = new Dictionary<string, CultureData>();
@@ -452,7 +452,7 @@ namespace System.Globalization
                 {
                     tempHashTable.TryGetValue(hashName, out retVal);
                 }
-                if (retVal != null)
+                if (retVal is not null)
                 {
                     return retVal;
                 }
@@ -461,7 +461,7 @@ namespace System.Globalization
             // Not found in the hash table, look it up the hard way
 
             // If not a valid mapping from the registry we'll have to try the hard coded table
-            if (retVal == null || retVal.IsNeutralCulture)
+            if (retVal is null || retVal.IsNeutralCulture)
             {
                 // Not a valid mapping, try the hard coded table
                 if (RegionNames.TryGetValue(cultureName, out string? name))
@@ -472,13 +472,13 @@ namespace System.Globalization
             }
 
             // If not found in the hard coded table we'll have to find a culture that works for us
-            if (!GlobalizationMode.Invariant && (retVal == null || retVal.IsNeutralCulture))
+            if (!GlobalizationMode.Invariant && (retVal is null || retVal.IsNeutralCulture))
             {
                 retVal = GlobalizationMode.UseNls ? NlsGetCultureDataFromRegionName(cultureName) : IcuGetCultureDataFromRegionName(cultureName);
             }
 
             // If we found one we can use, then cache it for next time
-            if (retVal != null && !retVal.IsNeutralCulture)
+            if (retVal is not null && !retVal.IsNeutralCulture)
             {
                 // first add it to the cache
                 lock (s_lock)
@@ -679,7 +679,7 @@ namespace System.Globalization
             // Try the hash table first
             string hashName = AnsiToLower(useUserOverride ? cultureName : cultureName + '*');
             Dictionary<string, CultureData>? tempHashTable = s_cachedCultures;
-            if (tempHashTable == null)
+            if (tempHashTable is null)
             {
                 // No table yet, make a new one
                 tempHashTable = new Dictionary<string, CultureData>();
@@ -693,7 +693,7 @@ namespace System.Globalization
                 {
                     ret = tempHashTable.TryGetValue(hashName, out retVal);
                 }
-                if (ret && retVal != null)
+                if (ret && retVal is not null)
                 {
                     return retVal;
                 }
@@ -701,7 +701,7 @@ namespace System.Globalization
 
             // Not found in the hash table, need to see if we can build one that works for us
             CultureData? culture = CreateCultureData(cultureName, useUserOverride);
-            if (culture == null)
+            if (culture is null)
             {
                 return null;
             }
@@ -879,7 +879,7 @@ namespace System.Globalization
             }
 
             // If not successful, throw
-            if (retVal == null)
+            if (retVal is null)
             {
                 throw new CultureNotFoundException(nameof(culture), culture, SR.Argument_CultureNotSupported);
             }
@@ -895,7 +895,7 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(_sRealName != null, "[CultureData.CultureName] Expected _sRealName to be populated by already");
+                Debug.Assert(_sRealName is not null, "[CultureData.CultureName] Expected _sRealName to be populated by already");
                 // since windows doesn't know about zh-CHS and zh-CHT,
                 // we leave sRealName == zh-Hanx but we still need to
                 // pretend that it was zh-CHX.
@@ -929,7 +929,7 @@ namespace System.Globalization
             get
             {
                 string? localizedDisplayName = _sLocalizedDisplayName;
-                if (localizedDisplayName == null && !GlobalizationMode.Invariant)
+                if (localizedDisplayName is null && !GlobalizationMode.Invariant)
                 {
                     if (IsSupplementalCustomCulture)
                     {
@@ -982,8 +982,8 @@ namespace System.Globalization
                             // if DefaultThreadCurrentUICulture was set
                             CultureInfo ci;
 
-                            if (CultureInfo.DefaultThreadCurrentUICulture != null &&
-                                ((ci = CultureInfo.GetUserDefaultCulture()) != null) &&
+                            if (CultureInfo.DefaultThreadCurrentUICulture is not null &&
+                                ((ci = CultureInfo.GetUserDefaultCulture()) is not null) &&
                                 !CultureInfo.DefaultThreadCurrentUICulture.Name.Equals(ci.Name))
                             {
                                 localizedDisplayName = NativeName;
@@ -1014,7 +1014,7 @@ namespace System.Globalization
             get
             {
                 string? englishDisplayName = _sEnglishDisplayName;
-                if (englishDisplayName == null && !GlobalizationMode.Invariant)
+                if (englishDisplayName is null && !GlobalizationMode.Invariant)
                 {
                     // If its neutral use the language name
                     if (IsNeutralCulture)
@@ -1071,7 +1071,7 @@ namespace System.Globalization
             get
             {
                 string? nativeDisplayName = _sNativeDisplayName;
-                if (nativeDisplayName == null && !GlobalizationMode.Invariant)
+                if (nativeDisplayName is null && !GlobalizationMode.Invariant)
                 {
                     // If its neutral use the language name
                     if (IsNeutralCulture)
@@ -1115,7 +1115,7 @@ namespace System.Globalization
             get
             {
                 // This got populated during the culture initialization
-                Debug.Assert(_sSpecificCulture != null, "[CultureData.SpecificCultureName] Expected this.sSpecificCulture to be populated by culture data initialization already");
+                Debug.Assert(_sSpecificCulture is not null, "[CultureData.SpecificCultureName] Expected this.sSpecificCulture to be populated by culture data initialization already");
                 return _sSpecificCulture;
             }
         }
@@ -1145,14 +1145,14 @@ namespace System.Globalization
         {
             get
             {
-                if (_sLocalizedLanguage == null && !GlobalizationMode.Invariant)
+                if (_sLocalizedLanguage is null && !GlobalizationMode.Invariant)
                 {
                     // Usually the UI culture shouldn't be different than what we got from WinRT except
                     // if DefaultThreadCurrentUICulture was set
                     CultureInfo ci;
 
-                    if (CultureInfo.DefaultThreadCurrentUICulture != null &&
-                        ((ci = CultureInfo.GetUserDefaultCulture()) != null) &&
+                    if (CultureInfo.DefaultThreadCurrentUICulture is not null &&
+                        ((ci = CultureInfo.GetUserDefaultCulture()) is not null) &&
                         !CultureInfo.DefaultThreadCurrentUICulture!.Name.Equals(ci.Name))
                     {
                         _sLocalizedLanguage = NativeLanguageName;
@@ -1202,7 +1202,7 @@ namespace System.Globalization
             get
             {
                 string? localizedCountry = _sLocalizedCountry;
-                if (localizedCountry == null && !GlobalizationMode.Invariant)
+                if (localizedCountry is null && !GlobalizationMode.Invariant)
                 {
                     try
                     {
@@ -1400,12 +1400,12 @@ namespace System.Globalization
         {
             get
             {
-                if (_saLongTimes == null && !GlobalizationMode.Invariant)
+                if (_saLongTimes is null && !GlobalizationMode.Invariant)
                 {
                     Debug.Assert(!GlobalizationMode.Invariant);
 
                     string[]? longTimes = GetTimeFormatsCore(shortFormat: false);
-                    if (longTimes == null || longTimes.Length == 0)
+                    if (longTimes is null || longTimes.Length == 0)
                     {
                         _saLongTimes = Invariant._saLongTimes!;
                     }
@@ -1426,14 +1426,14 @@ namespace System.Globalization
         {
             get
             {
-                if (_saShortTimes == null && !GlobalizationMode.Invariant)
+                if (_saShortTimes is null && !GlobalizationMode.Invariant)
                 {
                     Debug.Assert(!GlobalizationMode.Invariant);
 
                     // Try to get the short times from the OS/culture.dll
                     string[]? shortTimes = GetTimeFormatsCore(shortFormat: true);
 
-                    if (shortTimes == null || shortTimes.Length == 0)
+                    if (shortTimes is null || shortTimes.Length == 0)
                     {
                         //
                         // If we couldn't find short times, then compute them from long times
@@ -1689,13 +1689,13 @@ namespace System.Globalization
         {
             get
             {
-                if (_waCalendars == null && !GlobalizationMode.Invariant)
+                if (_waCalendars is null && !GlobalizationMode.Invariant)
                 {
                     // We pass in an array of ints, and native side fills it up with count calendars.
                     // We then have to copy that list to a new array of the right size.
                     // Default calendar should be first
                     CalendarId[] calendars = new CalendarId[23];
-                    Debug.Assert(_sWindowsName != null, "[CultureData.CalendarIds] Expected _sWindowsName to be populated by already");
+                    Debug.Assert(_sWindowsName is not null, "[CultureData.CalendarIds] Expected _sWindowsName to be populated by already");
 
                     int count = CalendarData.GetCalendarsCore(_sWindowsName, _bUseOverrides, calendars);
 
@@ -1777,9 +1777,9 @@ namespace System.Globalization
             // right after we insert the newly created CalendarData (below)
             CalendarData? calendarData = _calendars[calendarIndex];
             // Make sure that calendar has data
-            if (calendarData == null)
+            if (calendarData is null)
             {
-                Debug.Assert(_sWindowsName != null, "[CultureData.GetCalendar] Expected _sWindowsName to be populated by already");
+                Debug.Assert(_sWindowsName is not null, "[CultureData.GetCalendar] Expected _sWindowsName to be populated by already");
                 calendarData = new CalendarData(_sWindowsName, calendarId, _bUseOverrides);
                 _calendars[calendarIndex] = calendarData;
             }
@@ -1808,7 +1808,7 @@ namespace System.Globalization
             {
                 if (_iReadingLayout == undef && !GlobalizationMode.Invariant)
                 {
-                    Debug.Assert(_sRealName != null, "[CultureData.IsRightToLeft] Expected _sRealName to be populated by already");
+                    Debug.Assert(_sRealName is not null, "[CultureData.IsRightToLeft] Expected _sRealName to be populated by already");
                     _iReadingLayout = GetLocaleInfoCore(LocaleNumberData.ReadingLayout);
                 }
 
@@ -1832,7 +1832,7 @@ namespace System.Globalization
             {
                 // Note: Custom cultures might point at another culture's textinfo, however windows knows how
                 // to redirect it to the desired textinfo culture, so this is OK.
-                Debug.Assert(_sRealName != null, "[CultureData.TextInfoName] Expected _sRealName to be populated by already");
+                Debug.Assert(_sRealName is not null, "[CultureData.TextInfoName] Expected _sRealName to be populated by already");
                 return _sRealName;
             }
         }
@@ -1844,7 +1844,7 @@ namespace System.Globalization
         {
             get
             {
-                Debug.Assert(_sRealName != null, "[CultureData.SortName] Expected _sRealName to be populated by already");
+                Debug.Assert(_sRealName is not null, "[CultureData.SortName] Expected _sRealName to be populated by already");
                 return _sRealName;
             }
         }
@@ -1917,7 +1917,7 @@ namespace System.Globalization
             {
                 if (_iLanguage == 0 && !GlobalizationMode.Invariant)
                 {
-                    Debug.Assert(_sRealName != null, "[CultureData.LCID] Expected this.sRealName to be populated already");
+                    Debug.Assert(_sRealName is not null, "[CultureData.LCID] Expected this.sRealName to be populated already");
                     _iLanguage = GlobalizationMode.UseNls ? NlsLocaleNameToLCID(_sRealName) : IcuLocaleNameToLCID(_sRealName);
                 }
                 return _iLanguage;
@@ -1983,7 +1983,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_sTimeSeparator == null && !GlobalizationMode.Invariant)
+                if (_sTimeSeparator is null && !GlobalizationMode.Invariant)
                 {
                     string? longTimeFormat = ShouldUseUserOverrideNlsData ? NlsGetTimeFormatString() : IcuGetTimeFormatString();
                     if (string.IsNullOrEmpty(longTimeFormat))
@@ -2041,7 +2041,7 @@ namespace System.Globalization
         /// </summary>
         private static string UnescapeNlsString(string str, int start, int end)
         {
-            Debug.Assert(str != null);
+            Debug.Assert(str is not null);
             Debug.Assert(start >= 0);
             Debug.Assert(end >= 0);
             StringBuilder? result = null;
@@ -2067,7 +2067,7 @@ namespace System.Globalization
                 }
             }
 
-            if (result == null)
+            if (result is null)
             {
                 return str.Substring(start, end - start + 1);
             }
@@ -2190,7 +2190,7 @@ namespace System.Globalization
             }
             else
             {
-                Debug.Assert(_sWindowsName != null, "[CultureData.GetNFIValues] Expected _sWindowsName to be populated by already");
+                Debug.Assert(_sWindowsName is not null, "[CultureData.GetNFIValues] Expected _sWindowsName to be populated by already");
                 // String values
                 nfi._positiveSign = GetLocaleInfoCoreUserOverride(LocaleStringData.PositiveSign);
                 nfi._negativeSign = GetLocaleInfoCoreUserOverride(LocaleStringData.NegativeSign);
@@ -2216,7 +2216,7 @@ namespace System.Globalization
                     nfi._nativeDigits[i] = char.ToString(digits[i]);
                 }
 
-                Debug.Assert(_sRealName != null);
+                Debug.Assert(_sRealName is not null);
                 nfi._digitSubstitution = ShouldUseUserOverrideNlsData ? NlsGetLocaleInfo(LocaleNumberData.DigitSubstitution) : IcuGetDigitSubstitution(_sRealName);
             }
 

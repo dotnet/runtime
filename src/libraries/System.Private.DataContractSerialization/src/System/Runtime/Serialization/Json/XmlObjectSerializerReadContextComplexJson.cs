@@ -136,7 +136,7 @@ namespace System.Runtime.Serialization.Json
 
         internal override void ReadAttributes(XmlReaderDelegator xmlReader)
         {
-            if (attributes == null)
+            if (attributes is null)
                 attributes = new Attributes();
             attributes.Reset();
 

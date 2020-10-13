@@ -14,7 +14,7 @@ namespace System.Reflection.Context.Virtual
         public InheritedMethodInfo(MethodInfo baseMethod, Type reflectedType)
             : base(baseMethod)
         {
-            Debug.Assert(reflectedType != null);
+            Debug.Assert(reflectedType is not null);
             Debug.Assert(reflectedType.IsSubclassOf(baseMethod.DeclaringType));
             Debug.Assert(baseMethod is VirtualMethodBase);
 
@@ -36,7 +36,7 @@ namespace System.Reflection.Context.Virtual
         {
             var other = o as InheritedMethodInfo;
 
-            return other != null &&
+            return other is not null &&
                    UnderlyingMethod.Equals(other.UnderlyingMethod) &&
                    ReflectedType.Equals(other.ReflectedType);
         }

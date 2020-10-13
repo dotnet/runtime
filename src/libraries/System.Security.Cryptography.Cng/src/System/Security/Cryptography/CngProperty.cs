@@ -18,13 +18,13 @@ namespace System.Security.Cryptography
         public CngProperty(string name, byte[]? value, CngPropertyOptions options)
             : this()
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             Name = name;
             Options = options;
             _lazyHashCode = default(int?);
-            _value = (value == null) ? null : value.CloneByteArray();
+            _value = (value is null) ? null : value.CloneByteArray();
         }
 
         /// <summary>
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography
         /// <returns></returns>
         public byte[]? GetValue()
         {
-            return (_value == null) ? null : _value.CloneByteArray();
+            return (_value is null) ? null : _value.CloneByteArray();
         }
 
         /// <summary>
@@ -63,10 +63,10 @@ namespace System.Security.Cryptography
             if (Options != other.Options)
                 return false;
 
-            if (_value == null)
-                return other._value == null;
+            if (_value is null)
+                return other._value is null;
 
-            if (other._value == null)
+            if (other._value is null)
                 return false;
 
             if (_value.Length != other._value.Length)
@@ -89,7 +89,7 @@ namespace System.Security.Cryptography
 
                 // The hash code for a byte is just the value of that byte. Since this will only modify the
                 // lower bits of the hash code, we'll xor each byte into different sections of the hash code
-                if (_value != null)
+                if (_value is not null)
                 {
                     for (int i = 0; i < _value.Length; i++)
                     {

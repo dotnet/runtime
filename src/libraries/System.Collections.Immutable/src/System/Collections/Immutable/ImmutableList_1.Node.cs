@@ -105,8 +105,8 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    Debug.Assert(!(_left == null ^ _right == null));
-                    return _left == null;
+                    Debug.Assert(!(_left is null ^ _right is null));
+                    return _left is null;
                 }
             }
 
@@ -170,7 +170,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     Requires.Range(index >= 0 && index < this.Count, nameof(index));
-                    Debug.Assert(_left != null && _right != null);
+                    Debug.Assert(_left is not null && _right is not null);
 
                     if (index < _left._count)
                     {
@@ -196,7 +196,7 @@ namespace System.Collections.Immutable
             {
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
 
-                Debug.Assert(_left != null && _right != null);
+                Debug.Assert(_left is not null && _right is not null);
                 if (index < _left._count)
                 {
                     return ref _left.ItemRef(index);
@@ -379,7 +379,7 @@ namespace System.Collections.Immutable
             internal Node RemoveAt(int index)
             {
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
-                Debug.Assert(_left != null && _right != null);
+                Debug.Assert(_left is not null && _right is not null);
 
                 Node result = this;
                 if (index == _left._count)
@@ -466,7 +466,7 @@ namespace System.Collections.Immutable
                     enumerator.Dispose();
                 }
 
-                Debug.Assert(result != null);
+                Debug.Assert(result is not null);
                 return result;
             }
 
@@ -1040,7 +1040,7 @@ namespace System.Collections.Immutable
                 {
                     if (match(item))
                     {
-                        if (list == null)
+                        if (list is null)
                         {
                             list = new List<T>();
                         }
@@ -1049,7 +1049,7 @@ namespace System.Collections.Immutable
                     }
                 }
 
-                return list != null ?
+                return list is not null ?
                     ImmutableList.CreateRange(list) :
                     ImmutableList<T>.Empty;
             }
@@ -1399,19 +1399,19 @@ namespace System.Collections.Immutable
             private Node BalanceMany()
             {
                 Node tree = this;
-                Debug.Assert(tree._left != null && tree._right != null);
+                Debug.Assert(tree._left is not null && tree._right is not null);
                 while (!tree.IsBalanced)
                 {
                     if (tree.IsRightHeavy)
                     {
                         tree = tree.BalanceRight();
-                        Debug.Assert(tree._left != null);
+                        Debug.Assert(tree._left is not null);
                         tree.MutateLeft(tree._left.BalanceMany());
                     }
                     else
                     {
                         tree = tree.BalanceLeft();
-                        Debug.Assert(tree._right != null);
+                        Debug.Assert(tree._right is not null);
                         tree.MutateRight(tree._right.BalanceMany());
                     }
                 }

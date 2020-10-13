@@ -26,7 +26,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (propertyName == null)
+                if (propertyName is null)
                     throw new ArgumentNullException(nameof(propertyName));
 
                 if (null != _pc)
@@ -54,7 +54,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (_pc != null)
+                if (_pc is not null)
                 {
                     return _pc[index];
                 }
@@ -68,13 +68,13 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                return (_pc != null ? _pc.Count : _rc.Count);
+                return (_pc is not null ? _pc.Count : _rc.Count);
             }
         }
 
         public IEnumerator GetEnumerator()
         {
-            return (_pc != null ? _pc.GetEnumerator() : _rc.GetEnumerator());
+            return (_pc is not null ? _pc.GetEnumerator() : _rc.GetEnumerator());
         }
     }
 }

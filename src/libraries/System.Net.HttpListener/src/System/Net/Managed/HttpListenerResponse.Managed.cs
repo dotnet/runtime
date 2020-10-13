@@ -53,7 +53,7 @@ namespace System.Net
 
         private void EnsureResponseStream()
         {
-            if (_responseStream == null)
+            if (_responseStream is null)
             {
                 _responseStream = _httpContext!.Connection.GetResponseStream();
             }
@@ -65,7 +65,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -123,7 +123,7 @@ namespace System.Net
         {
             CheckDisposed();
 
-            if (responseEntity == null)
+            if (responseEntity is null)
             {
                 throw new ArgumentNullException(nameof(responseEntity));
             }
@@ -176,12 +176,12 @@ namespace System.Net
         {
             if (!isWebSocketHandshake)
             {
-                if (_webHeaders[HttpKnownHeaderNames.Server] == null)
+                if (_webHeaders[HttpKnownHeaderNames.Server] is null)
                 {
                     _webHeaders.Set(HttpKnownHeaderNames.Server, HttpHeaderStrings.NetCoreServerName);
                 }
 
-                if (_webHeaders[HttpKnownHeaderNames.Date] == null)
+                if (_webHeaders[HttpKnownHeaderNames.Date] is null)
                 {
                     _webHeaders.Set(HttpKnownHeaderNames.Date, DateTime.UtcNow.ToString("r", CultureInfo.InvariantCulture));
                 }

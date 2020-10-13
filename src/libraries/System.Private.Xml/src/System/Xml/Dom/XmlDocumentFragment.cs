@@ -47,7 +47,7 @@ namespace System.Xml
 
         protected internal XmlDocumentFragment(XmlDocument ownerDocument) : base()
         {
-            if (ownerDocument == null)
+            if (ownerDocument is null)
                 throw new ArgumentException(SR.Xdom_Node_Null_Doc);
 
             parentNode = ownerDocument;
@@ -106,7 +106,7 @@ namespace System.Xml
         // Creates a duplicate of this node.
         public override XmlNode CloneNode(bool deep)
         {
-            Debug.Assert(OwnerDocument != null);
+            Debug.Assert(OwnerDocument is not null);
             XmlDocument doc = OwnerDocument;
             XmlDocumentFragment clone = doc.CreateDocumentFragment();
             if (deep)
@@ -142,7 +142,7 @@ namespace System.Xml
                 case XmlNodeType.XmlDeclaration:
                     //if there is an XmlDeclaration node, it has to be the first node;
                     XmlNode? firstNode = FirstChild;
-                    if (firstNode == null || firstNode.NodeType != XmlNodeType.XmlDeclaration)
+                    if (firstNode is null || firstNode.NodeType != XmlNodeType.XmlDeclaration)
                         return true;
                     else
                         return false; //not allowed to insert a second XmlDeclaration node
@@ -152,13 +152,13 @@ namespace System.Xml
         }
         internal override bool CanInsertAfter(XmlNode newChild, XmlNode? refChild)
         {
-            Debug.Assert(newChild != null); //should be checked that newChild is not null before this function call
+            Debug.Assert(newChild is not null); //should be checked that newChild is not null before this function call
             if (newChild.NodeType == XmlNodeType.XmlDeclaration)
             {
-                if (refChild == null)
+                if (refChild is null)
                 {
                     //append at the end
-                    return (LastNode == null);
+                    return (LastNode is null);
                 }
                 else
                     return false;
@@ -168,10 +168,10 @@ namespace System.Xml
 
         internal override bool CanInsertBefore(XmlNode newChild, XmlNode? refChild)
         {
-            Debug.Assert(newChild != null); //should be checked that newChild is not null before this function call
+            Debug.Assert(newChild is not null); //should be checked that newChild is not null before this function call
             if (newChild.NodeType == XmlNodeType.XmlDeclaration)
             {
-                return (refChild == null || refChild == FirstChild);
+                return (refChild is null || refChild == FirstChild);
             }
             return true;
         }

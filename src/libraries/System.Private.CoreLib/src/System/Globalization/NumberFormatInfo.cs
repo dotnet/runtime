@@ -77,7 +77,7 @@ namespace System.Globalization
 
         private static void VerifyDecimalSeparator(string decSep, string propertyName)
         {
-            if (decSep == null)
+            if (decSep is null)
             {
                 throw new ArgumentNullException(propertyName);
             }
@@ -90,7 +90,7 @@ namespace System.Globalization
 
         private static void VerifyGroupSeparator(string groupSep, string propertyName)
         {
-            if (groupSep == null)
+            if (groupSep is null)
             {
                 throw new ArgumentNullException(propertyName);
             }
@@ -98,7 +98,7 @@ namespace System.Globalization
 
         private static void VerifyNativeDigits(string[] nativeDig, string propertyName)
         {
-            if (nativeDig == null)
+            if (nativeDig is null)
             {
                 throw new ArgumentNullException(propertyName, SR.ArgumentNull_Array);
             }
@@ -110,7 +110,7 @@ namespace System.Globalization
 
             for (int i = 0; i < nativeDig.Length; i++)
             {
-                if (nativeDig[i] == null)
+                if (nativeDig[i] is null)
                 {
                     throw new ArgumentNullException(propertyName, SR.ArgumentNull_ArrayValue);
                 }
@@ -163,7 +163,7 @@ namespace System.Globalization
 
         internal NumberFormatInfo(CultureData? cultureData)
         {
-            if (cultureData != null)
+            if (cultureData is not null)
             {
                 // We directly use fields here since these data is coming from data table or Win32, so we
                 // don't need to verify their values (except for invalid parsing situations).
@@ -193,7 +193,7 @@ namespace System.Globalization
 
         public static NumberFormatInfo GetInstance(IFormatProvider? formatProvider)
         {
-            return formatProvider == null ?
+            return formatProvider is null ?
                 CurrentInfo : // Fast path for a null provider
                 GetProviderNonNull(formatProvider);
 
@@ -280,7 +280,7 @@ namespace System.Globalization
             get => (int[])_currencyGroupSizes.Clone();
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -298,7 +298,7 @@ namespace System.Globalization
             get => (int[])_numberGroupSizes.Clone();
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -316,7 +316,7 @@ namespace System.Globalization
             get => (int[])_percentGroupSizes.Clone();
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -344,7 +344,7 @@ namespace System.Globalization
             get => _currencySymbol;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -366,7 +366,7 @@ namespace System.Globalization
                 if (!culture._isInherited)
                 {
                     NumberFormatInfo? info = culture._numInfo;
-                    if (info != null)
+                    if (info is not null)
                     {
                         return info;
                     }
@@ -381,7 +381,7 @@ namespace System.Globalization
             get => _nanSymbol;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -471,7 +471,7 @@ namespace System.Globalization
             get => _negativeInfinitySymbol;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -486,7 +486,7 @@ namespace System.Globalization
             get => _negativeSign;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -560,7 +560,7 @@ namespace System.Globalization
             get => _positiveInfinitySymbol;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -575,7 +575,7 @@ namespace System.Globalization
             get => _positiveSign;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -631,7 +631,7 @@ namespace System.Globalization
             get => _percentSymbol;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -646,7 +646,7 @@ namespace System.Globalization
             get => _perMilleSymbol;
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -685,7 +685,7 @@ namespace System.Globalization
 
         public static NumberFormatInfo ReadOnly(NumberFormatInfo nfi)
         {
-            if (nfi == null)
+            if (nfi is null)
             {
                 throw new ArgumentNullException(nameof(nfi));
             }

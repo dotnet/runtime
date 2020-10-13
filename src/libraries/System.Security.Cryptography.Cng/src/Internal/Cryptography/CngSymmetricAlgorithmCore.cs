@@ -30,9 +30,9 @@ namespace Internal.Cryptography
         /// </summary>
         public CngSymmetricAlgorithmCore(ICngSymmetricAlgorithm outer, string keyName, CngProvider provider, CngKeyOpenOptions openOptions)
         {
-            if (keyName == null)
+            if (keyName is null)
                 throw new ArgumentNullException(nameof(keyName));
-            if (provider == null)
+            if (provider is null)
                 throw new ArgumentNullException(nameof(provider));
 
             _outer = outer;
@@ -81,7 +81,7 @@ namespace Internal.Cryptography
         {
             // Warning: This gets invoked once before "this" is initialized, due to Aes(), DES(), etc., setting the KeySize property in their
             // nullary constructor. That's why we require "outer" being passed as parameter.
-            Debug.Assert(_outer == null || _outer == outer);
+            Debug.Assert(_outer is null || _outer == outer);
 
             outer.BaseKeySize = keySize;
             _keyName = null; // Setting _keyName to null signifies that this object is now based on a plaintext key, not a stored CNG key.
@@ -131,7 +131,7 @@ namespace Internal.Cryptography
 
         private ICryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
         {
-            if (rgbKey == null)
+            if (rgbKey is null)
                 throw new ArgumentNullException(nameof(rgbKey));
 
             byte[] key = rgbKey.CloneByteArray();
@@ -143,7 +143,7 @@ namespace Internal.Cryptography
             if (_outer.IsWeakKey(key))
                 throw new CryptographicException(SR.Cryptography_WeakKey);
 
-            if (rgbIV != null && rgbIV.Length != _outer.BlockSize.BitSizeToByteSize())
+            if (rgbIV is not null && rgbIV.Length != _outer.BlockSize.BitSizeToByteSize())
                 throw new ArgumentException(SR.Cryptography_InvalidIVSize, nameof(rgbIV));
 
             // CloneByteArray is null-preserving. So even when GetCipherIv returns null the iv variable
@@ -192,7 +192,7 @@ namespace Internal.Cryptography
 
         private bool KeyInPlainText
         {
-            get { return _keyName == null; }
+            get { return _keyName is null; }
         }
 
         private readonly ICngSymmetricAlgorithm _outer;

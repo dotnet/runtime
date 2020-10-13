@@ -61,7 +61,7 @@ namespace System
             bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
+            if (typeName is null)
                 throw new ArgumentNullException(nameof(typeName));
             if (typeName.Length > 0 && typeName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
@@ -70,7 +70,7 @@ namespace System
 
             SafeTypeNameParserHandle? handle = CreateTypeNameParser(typeName, throwOnError);
 
-            if (handle != null)
+            if (handle is not null)
             {
                 // If we get here the typeName must have been successfully parsed.
                 // Let's construct the Type object.
@@ -114,13 +114,13 @@ namespace System
             string asmName = GetAssemblyName();
 
             // GetAssemblyName never returns null
-            Debug.Assert(asmName != null);
+            Debug.Assert(asmName is not null);
 
             if (asmName.Length > 0)
             {
                 assembly = ResolveAssembly(asmName, assemblyResolver, throwOnError, ref stackMark);
 
-                if (assembly == null)
+                if (assembly is null)
                 {
                     // Cannot resolve the assembly. If throwOnError is true we should have already thrown.
                     return null;
@@ -128,7 +128,7 @@ namespace System
             }
 
             string[]? names = GetNames();
-            if (names == null)
+            if (names is null)
             {
                 // This can only happen if the type name is an empty string or if the first char is '\0'
                 if (throwOnError)
@@ -139,7 +139,7 @@ namespace System
 
             Type? baseType = ResolveType(assembly, names, typeResolver, throwOnError, ignoreCase, ref stackMark);
 
-            if (baseType == null)
+            if (baseType is null)
             {
                 // Cannot resolve the type. If throwOnError is true we should have already thrown.
                 Debug.Assert(!throwOnError);
@@ -149,19 +149,19 @@ namespace System
             SafeTypeNameParserHandle[]? typeArguments = GetTypeArguments();
 
             Type?[]? types = null;
-            if (typeArguments != null)
+            if (typeArguments is not null)
             {
                 types = new Type[typeArguments.Length];
                 for (int i = 0; i < typeArguments.Length; i++)
                 {
-                    Debug.Assert(typeArguments[i] != null);
+                    Debug.Assert(typeArguments[i] is not null);
 
                     using (TypeNameParser argParser = new TypeNameParser(typeArguments[i]))
                     {
                         types[i] = argParser.ConstructType(assemblyResolver, typeResolver, throwOnError, ignoreCase, ref stackMark);
                     }
 
-                    if (types[i] == null)
+                    if (types[i] is null)
                     {
                         // If throwOnError is true argParser.ConstructType should have already thrown.
                         Debug.Assert(!throwOnError);
@@ -175,7 +175,7 @@ namespace System
             fixed (int* ptr = modifiers)
             {
                 IntPtr intPtr = new IntPtr(ptr);
-                return RuntimeTypeHandle.GetTypeHelper(baseType, types!, intPtr, modifiers == null ? 0 : modifiers.Length);
+                return RuntimeTypeHandle.GetTypeHelper(baseType, types!, intPtr, modifiers is null ? 0 : modifiers.Length);
             }
         }
 
@@ -184,7 +184,7 @@ namespace System
             Debug.Assert(!string.IsNullOrEmpty(asmName));
 
             Assembly? assembly;
-            if (assemblyResolver == null)
+            if (assemblyResolver is null)
             {
                 if (throwOnError)
                 {
@@ -207,7 +207,7 @@ namespace System
             else
             {
                 assembly = assemblyResolver(new AssemblyName(asmName));
-                if (assembly == null && throwOnError)
+                if (assembly is null && throwOnError)
                 {
                     throw new FileNotFoundException(SR.Format(SR.FileNotFound_ResolveAssembly, asmName));
                 }
@@ -218,7 +218,7 @@ namespace System
 
         private static Type? ResolveType(Assembly? assembly, string[] names, Func<Assembly?, string, bool, Type?>? typeResolver, bool throwOnError, bool ignoreCase, ref StackCrawlMark stackMark)
         {
-            Debug.Assert(names != null && names.Length > 0);
+            Debug.Assert(names is not null && names.Length > 0);
 
             Type? type;
 
@@ -226,13 +226,13 @@ namespace System
             string OuterMostTypeName = EscapeTypeName(names[0]);
 
             // Resolve the top level type.
-            if (typeResolver != null)
+            if (typeResolver is not null)
             {
                 type = typeResolver(assembly, OuterMostTypeName, ignoreCase);
 
-                if (type == null && throwOnError)
+                if (type is null && throwOnError)
                 {
-                    string errorString = assembly == null ?
+                    string errorString = assembly is null ?
                         SR.Format(SR.TypeLoad_ResolveType, OuterMostTypeName) :
                         SR.Format(SR.TypeLoad_ResolveTypeFromAssembly, OuterMostTypeName, assembly.FullName);
 
@@ -241,7 +241,7 @@ namespace System
             }
             else
             {
-                if (assembly == null)
+                if (assembly is null)
                 {
                     type = RuntimeType.GetType(OuterMostTypeName, throwOnError, ignoreCase, ref stackMark);
                 }
@@ -252,7 +252,7 @@ namespace System
             }
 
             // Resolve nested types.
-            if (type != null)
+            if (type is not null)
             {
                 BindingFlags bindingFlags = BindingFlags.NonPublic | BindingFlags.Public;
                 if (ignoreCase)
@@ -262,7 +262,7 @@ namespace System
                 {
                     type = type.GetNestedType(names[i], bindingFlags);
 
-                    if (type == null)
+                    if (type is null)
                     {
                         if (throwOnError)
                             throw new TypeLoadException(SR.Format(SR.TypeLoad_ResolveNestedType, names[i], names[i - 1]));

@@ -11,7 +11,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ApplicationPartitionCollection(ArrayList values)
         {
-            if (values != null)
+            if (values is not null)
             {
                 InnerList.AddRange(values);
             }
@@ -21,7 +21,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ApplicationPartition applicationPartition)
         {
-            if (applicationPartition == null)
+            if (applicationPartition is null)
             {
                 throw new ArgumentNullException(nameof(applicationPartition));
             }
@@ -39,7 +39,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ApplicationPartition applicationPartition)
         {
-            if (applicationPartition == null)
+            if (applicationPartition is null)
             {
                 throw new ArgumentNullException(nameof(applicationPartition));
             }

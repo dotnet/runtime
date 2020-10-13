@@ -54,11 +54,11 @@ namespace System.Xml.Xsl.Xslt
             }
         }
 
-        // This can be ns declaration or ns exclussion. Las one when prefix == null;
+        // This can be ns declaration or ns exclussion. Las one when prefix is null;
         public void AddNamespace(string prefix, string uri)
         {
-            Debug.Assert(prefix != null);
-            Debug.Assert(uri != null);
+            Debug.Assert(prefix is not null);
+            Debug.Assert(uri is not null);
             //            uri = nameTable.Add(uri);
             AddRecord(prefix, uri);
         }
@@ -99,8 +99,8 @@ namespace System.Xml.Xsl.Xslt
 
         //// We need following methods:
         //public void InvalidatePrefix(string prefix) {
-        //    Debug.Assert(prefix != null);
-        //    if (LookupNamespace(prefix) == null) { // This is optimisation. May be better just add this record?
+        //    Debug.Assert(prefix is not null);
+        //    if (LookupNamespace(prefix) is null) { // This is optimisation. May be better just add this record?
         //        return;
         //    }
         //    AddRecord(prefix, null);
@@ -108,7 +108,7 @@ namespace System.Xml.Xsl.Xslt
 
         public void InvalidateAllPrefixes()
         {
-            if (_records[_lastRecord].prefix == null)
+            if (_records[_lastRecord].prefix is null)
             {
                 return;                            // Averything was invalidated already. Nothing to do.
             }
@@ -118,7 +118,7 @@ namespace System.Xml.Xsl.Xslt
         public void InvalidateNonDefaultPrefixes()
         {
             string? defaultNs = LookupNamespace(string.Empty);
-            if (defaultNs == null)
+            if (defaultNs is null)
             {             // We don't know default NS anyway.
                 InvalidateAllPrefixes();
             }
@@ -126,7 +126,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 if (
                     _records[_lastRecord].prefix!.Length == 0 &&
-                    _records[_lastRecord - 1].prefix == null
+                    _records[_lastRecord - 1].prefix is null
                 )
                 {
                     return;                       // Averything was already done
@@ -139,10 +139,10 @@ namespace System.Xml.Xsl.Xslt
 
         public string? LookupNamespace(string prefix)
         {
-            Debug.Assert(prefix != null);
+            Debug.Assert(prefix is not null);
             for (
                 int record = _lastRecord;              // from last record
-                 _records[record].prefix != null;      // till lookup barrier
+                 _records[record].prefix is not null;      // till lookup barrier
                 --record                             // in reverce direction
             )
             {

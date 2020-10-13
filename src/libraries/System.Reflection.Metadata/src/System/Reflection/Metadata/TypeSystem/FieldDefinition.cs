@@ -15,7 +15,7 @@ namespace System.Reflection.Metadata
 
         internal FieldDefinition(MetadataReader reader, uint treatmentAndRowId)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(treatmentAndRowId != 0);
 
             _reader = reader;

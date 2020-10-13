@@ -23,7 +23,7 @@ namespace System.ComponentModel.Design
 
         public void AddRange(DesignerVerb[] value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -36,7 +36,7 @@ namespace System.ComponentModel.Design
 
         public void AddRange(DesignerVerbCollection value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }

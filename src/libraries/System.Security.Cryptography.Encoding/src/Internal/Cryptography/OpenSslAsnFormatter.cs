@@ -12,7 +12,7 @@ namespace Internal.Cryptography
     {
         protected override string? FormatNative(Oid? oid, byte[] rawData, bool multiLine)
         {
-            if (oid == null || string.IsNullOrEmpty(oid.Value))
+            if (oid is null || string.IsNullOrEmpty(oid.Value))
             {
                 return EncodeSpaceSeparatedHexString(rawData);
             }

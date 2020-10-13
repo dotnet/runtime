@@ -44,7 +44,7 @@ namespace System.Runtime.CompilerServices
         /// </remarks>
         public DynamicAttribute(bool[] transformFlags)
         {
-            if (transformFlags == null)
+            if (transformFlags is null)
             {
                 throw new ArgumentNullException(nameof(transformFlags));
             }

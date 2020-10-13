@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Xml
             depth = -1;
             for (int i = _ancestorStack.Count - 1; i >= 0; i--)
             {
-                if ((attr = GetScopeAt(i).GetRendered(nsPrefix)) != null)
+                if ((attr = GetScopeAt(i).GetRendered(nsPrefix)) is not null)
                 {
                     depth = i;
                     return attr;
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Xml
             depth = -1;
             for (int i = _ancestorStack.Count - 1; i >= 0; i--)
             {
-                if ((attr = GetScopeAt(i).GetUnrendered(nsPrefix)) != null)
+                if ((attr = GetScopeAt(i).GetUnrendered(nsPrefix)) is not null)
                 {
                     depth = i;
                     return attr;

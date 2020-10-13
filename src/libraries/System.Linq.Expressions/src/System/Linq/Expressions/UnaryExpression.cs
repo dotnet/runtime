@@ -60,7 +60,7 @@ namespace System.Linq.Expressions
                 }
                 bool operandIsNullable = Operand.Type.IsNullableType();
                 bool resultIsNullable = this.Type.IsNullableType();
-                if (Method != null)
+                if (Method is not null)
                 {
                     return (operandIsNullable && !TypeUtils.AreEquivalent(Method.GetParametersCached()[0].ParameterType, Operand.Type)) ||
                            (resultIsNullable && !TypeUtils.AreEquivalent(Method.ReturnType, this.Type));
@@ -175,7 +175,7 @@ namespace System.Linq.Expressions
         private Expression ReduceMember()
         {
             var member = (MemberExpression)Operand;
-            if (member.Expression == null)
+            if (member.Expression is null)
             {
                 //static member, reduce the same as variable
                 return ReduceVariable();
@@ -343,7 +343,7 @@ namespace System.Linq.Expressions
         private static UnaryExpression GetUserDefinedUnaryOperatorOrThrow(ExpressionType unaryType, string name, Expression operand)
         {
             UnaryExpression? u = GetUserDefinedUnaryOperator(unaryType, name, operand);
-            if (u != null)
+            if (u is not null)
             {
                 ValidateParamswithOperandsOrThrow(u.Method!.GetParametersCached()[0].ParameterType, operand.Type, unaryType, name);
                 return u;
@@ -357,7 +357,7 @@ namespace System.Linq.Expressions
             Type[] types = new Type[] { operandType };
             Type nnOperandType = operandType.GetNonNullableType();
             MethodInfo? method = nnOperandType.GetAnyStaticMethodValidated(name, types);
-            if (method != null)
+            if (method is not null)
             {
                 return new UnaryExpression(unaryType, operand, method.ReturnType, method);
             }
@@ -366,7 +366,7 @@ namespace System.Linq.Expressions
             {
                 types[0] = nnOperandType;
                 method = nnOperandType.GetAnyStaticMethodValidated(name, types);
-                if (method != null && method.ReturnType.IsValueType && !method.ReturnType.IsNullableType())
+                if (method is not null && method.ReturnType.IsValueType && !method.ReturnType.IsNullableType())
                 {
                     return new UnaryExpression(unaryType, operand, method.ReturnType.GetNullableType(), method);
                 }
@@ -376,7 +376,7 @@ namespace System.Linq.Expressions
 
         private static UnaryExpression GetMethodBasedUnaryOperator(ExpressionType unaryType, Expression operand, MethodInfo method)
         {
-            Debug.Assert(method != null);
+            Debug.Assert(method is not null);
             ValidateOperator(method);
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 1)
@@ -400,7 +400,7 @@ namespace System.Linq.Expressions
         private static UnaryExpression GetUserDefinedCoercionOrThrow(ExpressionType coercionType, Expression expression, Type convertToType)
         {
             UnaryExpression? u = GetUserDefinedCoercion(coercionType, expression, convertToType);
-            if (u != null)
+            if (u is not null)
             {
                 return u;
             }
@@ -410,7 +410,7 @@ namespace System.Linq.Expressions
         private static UnaryExpression? GetUserDefinedCoercion(ExpressionType coercionType, Expression expression, Type convertToType)
         {
             MethodInfo? method = TypeUtils.GetUserDefinedCoercionMethod(expression.Type, convertToType);
-            if (method != null)
+            if (method is not null)
             {
                 return new UnaryExpression(coercionType, expression, convertToType, method);
             }
@@ -422,7 +422,7 @@ namespace System.Linq.Expressions
 
         private static UnaryExpression GetMethodBasedCoercionOperator(ExpressionType unaryType, Expression operand, Type convertToType, MethodInfo method)
         {
-            Debug.Assert(method != null);
+            Debug.Assert(method is not null);
             ValidateOperator(method);
             ParameterInfo[] pms = method.GetParametersCached();
             if (pms.Length != 1)
@@ -468,7 +468,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression Negate(Expression expression, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            if (method == null)
+            if (method is null)
             {
                 if (expression.Type.IsArithmetic() && !expression.Type.IsUnsignedInt())
                 {
@@ -503,7 +503,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression UnaryPlus(Expression expression, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            if (method == null)
+            if (method is null)
             {
                 if (expression.Type.IsArithmetic())
                 {
@@ -537,7 +537,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression NegateChecked(Expression expression, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            if (method == null)
+            if (method is null)
             {
                 if (expression.Type.IsArithmetic() && !expression.Type.IsUnsignedInt())
                 {
@@ -572,14 +572,14 @@ namespace System.Linq.Expressions
         public static UnaryExpression Not(Expression expression, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            if (method == null)
+            if (method is null)
             {
                 if (expression.Type.IsIntegerOrBool())
                 {
                     return new UnaryExpression(ExpressionType.Not, expression, expression.Type, null);
                 }
                 UnaryExpression? u = GetUserDefinedUnaryOperator(ExpressionType.Not, "op_LogicalNot", expression);
-                if (u != null)
+                if (u is not null)
                 {
                     return u;
                 }
@@ -607,7 +607,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression IsFalse(Expression expression, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            if (method == null)
+            if (method is null)
             {
                 if (expression.Type.IsBool())
                 {
@@ -637,7 +637,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression IsTrue(Expression expression, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            if (method == null)
+            if (method is null)
             {
                 if (expression.Type.IsBool())
                 {
@@ -667,7 +667,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression OnesComplement(Expression expression, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            if (method == null)
+            if (method is null)
             {
                 if (expression.Type.IsInteger())
                 {
@@ -744,7 +744,7 @@ namespace System.Linq.Expressions
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));
-            if (method == null)
+            if (method is null)
             {
                 if (expression.Type.HasIdentityPrimitiveOrNullableConversionTo(type) ||
                     expression.Type.HasReferenceConversionTo(type))
@@ -784,7 +784,7 @@ namespace System.Linq.Expressions
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));
-            if (method == null)
+            if (method is null)
             {
                 if (expression.Type.HasIdentityPrimitiveOrNullableConversionTo(type))
                 {
@@ -831,7 +831,7 @@ namespace System.Linq.Expressions
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             LambdaExpression? lambda = expression as LambdaExpression;
-            if (lambda == null)
+            if (lambda is null)
             {
                 throw Error.QuotedExpressionMustBeLambda(nameof(expression));
             }
@@ -878,7 +878,7 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));
-            if (value != null)
+            if (value is not null)
             {
                 ExpressionUtils.RequiresCanRead(value, nameof(value));
                 if (value.Type.IsValueType) throw Error.ArgumentMustNotHaveValueType(nameof(value));
@@ -905,7 +905,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression Increment(Expression expression, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            if (method == null)
+            if (method is null)
             {
                 if (expression.Type.IsArithmetic())
                 {
@@ -935,7 +935,7 @@ namespace System.Linq.Expressions
         public static UnaryExpression Decrement(Expression expression, MethodInfo? method)
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
-            if (method == null)
+            if (method is null)
             {
                 if (expression.Type.IsArithmetic())
                 {
@@ -1044,7 +1044,7 @@ namespace System.Linq.Expressions
             RequiresCanWrite(expression, nameof(expression));
 
             UnaryExpression result;
-            if (method == null)
+            if (method is null)
             {
                 if (expression.Type.IsArithmetic())
                 {

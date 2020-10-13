@@ -124,7 +124,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DirectoryEntryManager directoryEntryMgr = null;
 
             // check that the context argument is not null
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
             // target should be DC
@@ -173,7 +173,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainController FindOne(DirectoryContext context)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -188,7 +188,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainController FindOne(DirectoryContext context, string siteName)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -198,7 +198,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -208,7 +208,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainController FindOne(DirectoryContext context, LocatorOptions flag)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -223,7 +223,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainController FindOne(DirectoryContext context, string siteName, LocatorOptions flag)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -233,7 +233,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -243,7 +243,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainControllerCollection FindAll(DirectoryContext context)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -261,7 +261,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static DomainControllerCollection FindAll(DirectoryContext context, string siteName)
         {
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -271,7 +271,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.TargetShouldBeDomain, nameof(context));
             }
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -292,7 +292,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 DirectoryEntry serverNtdsaEntry = directoryEntryMgr.GetCachedDirectoryEntry(NtdsaObjectName);
                 // set the NTDSDSA_OPT_IS_GC flag on the "options" property
                 int options = 0;
-                if (serverNtdsaEntry.Properties[PropertyManager.Options].Value != null)
+                if (serverNtdsaEntry.Properties[PropertyManager.Options].Value is not null)
                 {
                     options = (int)serverNtdsaEntry.Properties[PropertyManager.Options].Value;
                 }
@@ -318,7 +318,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // check if the NTDSDSA_OPT_IS_GC flag is set in the
                 // "options" attribute (lowest bit)
                 int options = 0;
-                if (serverNtdsaEntry.Properties[PropertyManager.Options].Value != null)
+                if (serverNtdsaEntry.Properties[PropertyManager.Options].Value is not null)
                 {
                     options = (int)serverNtdsaEntry.Properties[PropertyManager.Options].Value;
                 }
@@ -429,7 +429,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (roleObjectEntry != null)
+                if (roleObjectEntry is not null)
                 {
                     roleObjectEntry.Dispose();
                 }
@@ -467,7 +467,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (partition == null)
+            if (partition is null)
                 throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
@@ -501,7 +501,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (partition == null)
+            if (partition is null)
                 throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
@@ -540,7 +540,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (objectPath == null)
+            if (objectPath is null)
                 throw new ArgumentNullException(nameof(objectPath));
 
             if (objectPath.Length == 0)
@@ -557,13 +557,13 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (partition == null)
+            if (partition is null)
                 throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(partition));
 
-            if (sourceServer == null)
+            if (sourceServer is null)
                 throw new ArgumentNullException(nameof(sourceServer));
 
             if (sourceServer.Length == 0)
@@ -579,7 +579,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (partition == null)
+            if (partition is null)
                 throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
@@ -595,7 +595,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (_disposed)
                 throw new ObjectDisposedException(GetType().Name);
 
-            if (partition == null)
+            if (partition is null)
                 throw new ArgumentNullException(nameof(partition));
 
             if (partition.Length == 0)
@@ -614,7 +614,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_currentForest == null)
+                if (_currentForest is null)
                 {
                     DirectoryContext forestContext = Utils.GetNewDirectoryContext(Name, DirectoryContextType.DirectoryServer, context);
                     _currentForest = Forest.GetForest(forestContext);
@@ -670,7 +670,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedOSVersion == null)
+                if (_cachedOSVersion is null)
                 {
                     // get the operating system version attribute
                     DirectoryEntry computerEntry = directoryEntryMgr.GetCachedDirectoryEntry(ComputerObjectName);
@@ -712,7 +712,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedRoles == null)
+                if (_cachedRoles is null)
                 {
                     _cachedRoles = new ActiveDirectoryRoleCollection(GetRoles());
                 }
@@ -725,7 +725,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedDomain == null)
+                if (_cachedDomain is null)
                 {
                     string domainName = null;
                     try
@@ -774,7 +774,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     GetDomainControllerInfo();
                 }
-                if (cachedSiteName == null)
+                if (cachedSiteName is null)
                 {
                     throw new ActiveDirectoryOperationException(SR.Format(SR.SiteNameNotFound, Name));
                 }
@@ -792,7 +792,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     GetDomainControllerInfo();
                 }
-                if (cachedSiteObjectName == null)
+                if (cachedSiteObjectName is null)
                 {
                     throw new ActiveDirectoryOperationException(SR.Format(SR.SiteObjectNameNotFound, Name));
                 }
@@ -809,7 +809,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     GetDomainControllerInfo();
                 }
-                if (_cachedComputerObjectName == null)
+                if (_cachedComputerObjectName is null)
                 {
                     throw new ActiveDirectoryOperationException(SR.Format(SR.ComputerObjectNameNotFound, Name));
                 }
@@ -826,7 +826,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     GetDomainControllerInfo();
                 }
-                if (cachedServerObjectName == null)
+                if (cachedServerObjectName is null)
                 {
                     throw new ActiveDirectoryOperationException(SR.Format(SR.ServerObjectNameNotFound, Name));
                 }
@@ -843,7 +843,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     GetDomainControllerInfo();
                 }
-                if (cachedNtdsaObjectName == null)
+                if (cachedNtdsaObjectName is null)
                 {
                     throw new ActiveDirectoryOperationException(SR.Format(SR.NtdsaObjectNameNotFound, Name));
                 }
@@ -994,7 +994,7 @@ namespace System.DirectoryServices.ActiveDirectory
             DomainControllerInfo domainControllerInfo;
             int errorCode = 0;
 
-            if (siteName != null && siteName.Length == 0)
+            if (siteName is not null && siteName.Length == 0)
             {
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
@@ -1005,7 +1005,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException(SR.InvalidFlags, nameof(flag));
             }
 
-            if (domainName == null)
+            if (domainName is null)
             {
                 domainName = DirectoryContext.GetLoggedOnDomain();
             }
@@ -1041,16 +1041,16 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             ArrayList dcList = new ArrayList();
 
-            if (siteName != null && siteName.Length == 0)
+            if (siteName is not null && siteName.Length == 0)
             {
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
 
-            if (domainName == null || !isDnsDomainName)
+            if (domainName is null || !isDnsDomainName)
             {
                 // get the dns name of the domain
                 DomainControllerInfo domainControllerInfo;
-                int errorCode = Locator.DsGetDcNameWrapper(null, (domainName != null) ? domainName : DirectoryContext.GetLoggedOnDomain(), null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
+                int errorCode = Locator.DsGetDcNameWrapper(null, (domainName is not null) ? domainName : DirectoryContext.GetLoggedOnDomain(), null, (long)PrivateLocatorFlags.DirectoryServicesRequired, out domainControllerInfo);
 
                 if (errorCode == NativeMethods.ERROR_NO_SUCH_DOMAIN)
                 {
@@ -1062,7 +1062,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw ExceptionHelper.GetExceptionFromErrorCode(errorCode);
                 }
 
-                Debug.Assert(domainControllerInfo.DomainName != null);
+                Debug.Assert(domainControllerInfo.DomainName is not null);
                 domainName = domainControllerInfo.DomainName;
             }
 
@@ -1117,7 +1117,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             DsDomainControllerInfo3 domainControllerInfo3 = new DsDomainControllerInfo3();
                             Marshal.PtrToStructure(currentDc, domainControllerInfo3);
                             // check if this is the same as "this" DC
-                            if (domainControllerInfo3 != null)
+                            if (domainControllerInfo3 is not null)
                             {
                                 if (Utils.Compare(domainControllerInfo3.dnsHostName, replicaName) == 0)
                                 {
@@ -1139,7 +1139,7 @@ namespace System.DirectoryServices.ActiveDirectory
                             DsDomainControllerInfo2 domainControllerInfo2 = new DsDomainControllerInfo2();
                             Marshal.PtrToStructure(currentDc, domainControllerInfo2);
                             // check if this is the same as "this" DC
-                            if (domainControllerInfo2 != null)
+                            if (domainControllerInfo2 is not null)
                             {
                                 if (Utils.Compare(domainControllerInfo2.dnsHostName, replicaName) == 0)
                                 {

@@ -24,7 +24,7 @@ namespace System.Linq.Expressions.Compiler
 
             // Heuristic: only emit the tree rewrite logic if we have hoisted
             // locals.
-            if (_scope.NearestHoistedLocals != null)
+            if (_scope.NearestHoistedLocals is not null)
             {
                 // HoistedLocals is internal so emit as System.Object
                 EmitConstant(_scope.NearestHoistedLocals, typeof(object));
@@ -43,7 +43,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitThrow(UnaryExpression expr, CompilationFlags flags)
         {
-            if (expr.Operand == null)
+            if (expr.Operand is null)
             {
                 CheckRethrow();
 
@@ -65,7 +65,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitUnary(UnaryExpression node, CompilationFlags flags)
         {
-            if (node.Method != null)
+            if (node.Method is not null)
             {
                 EmitUnaryMethod(node, flags);
             }
@@ -285,7 +285,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitConvert(UnaryExpression node, CompilationFlags flags)
         {
-            if (node.Method != null)
+            if (node.Method is not null)
             {
                 // User-defined conversions are only lifted if both source and
                 // destination types are value types.  The C# compiler gets this wrong.
@@ -306,7 +306,7 @@ namespace System.Linq.Expressions.Compiler
                 if (node.IsLifted && (!node.Type.IsValueType || !node.Operand.Type.IsValueType))
                 {
                     ParameterInfo[] pis = node.Method.GetParametersCached();
-                    Debug.Assert(pis != null && pis.Length == 1);
+                    Debug.Assert(pis is not null && pis.Length == 1);
                     Type paramType = pis[0].ParameterType;
                     if (paramType.IsByRef)
                     {
@@ -314,11 +314,11 @@ namespace System.Linq.Expressions.Compiler
                     }
 
                     UnaryExpression operand = Expression.Convert(node.Operand, paramType);
-                    Debug.Assert(operand.Method == null);
+                    Debug.Assert(operand.Method is null);
 
                     node = Expression.Convert(Expression.Call(node.Method, operand), node.Type);
 
-                    Debug.Assert(node.Method == null);
+                    Debug.Assert(node.Method is null);
                 }
                 else
                 {

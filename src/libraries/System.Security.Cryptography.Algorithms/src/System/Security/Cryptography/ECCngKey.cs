@@ -86,7 +86,7 @@ namespace System.Security.Cryptography
                             throw new ArgumentException(SR.Cryptography_InvalidKeySize);
                     }
 
-                    if (_keyHandle != null)
+                    if (_keyHandle is not null)
                     {
                         DisposeKey();
                     }
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography
             curve.Validate();
             ThrowIfDisposed();
 
-            if (_keyHandle != null)
+            if (_keyHandle is not null)
             {
                 DisposeKey();
             }
@@ -205,7 +205,7 @@ namespace System.Security.Cryptography
 
         internal void DisposeKey()
         {
-            if (_keyHandle != null)
+            if (_keyHandle is not null)
             {
                 _keyHandle.Dispose();
                 _keyHandle = null;

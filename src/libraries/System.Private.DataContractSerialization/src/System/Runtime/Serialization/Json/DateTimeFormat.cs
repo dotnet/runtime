@@ -34,12 +34,12 @@ namespace System.Runtime.Serialization
         /// <param name="formatProvider">Specifies the formatProvider to be used.</param>
         public DateTimeFormat(string formatString, IFormatProvider formatProvider)
         {
-            if (formatString == null)
+            if (formatString is null)
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(formatString));
             }
 
-            if (formatProvider == null)
+            if (formatProvider is null)
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(formatProvider));
             }

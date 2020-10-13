@@ -137,7 +137,7 @@ namespace System
         // Returns a value less than zero if this  object
         public int CompareTo(object? value)
         {
-            if (value == null) return 1;
+            if (value is null) return 1;
             if (!(value is TimeSpan))
                 throw new ArgumentException(SR.Arg_MustBeTimeSpan);
             long t = ((TimeSpan)value)._ticks;
@@ -276,13 +276,13 @@ namespace System
         }
         public static TimeSpan Parse(string s)
         {
-            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            if (s is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             /* Constructs a TimeSpan from a string.  Leading and trailing white space characters are allowed. */
             return TimeSpanParse.Parse(s, null);
         }
         public static TimeSpan Parse(string input, IFormatProvider? formatProvider)
         {
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            if (input is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             return TimeSpanParse.Parse(input, formatProvider);
         }
         public static TimeSpan Parse(ReadOnlySpan<char> input, IFormatProvider? formatProvider = null)
@@ -291,20 +291,20 @@ namespace System
         }
         public static TimeSpan ParseExact(string input, string format, IFormatProvider? formatProvider)
         {
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
-            if (format == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
+            if (input is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            if (format is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
             return TimeSpanParse.ParseExact(input, format, formatProvider, TimeSpanStyles.None);
         }
         public static TimeSpan ParseExact(string input, string[] formats, IFormatProvider? formatProvider)
         {
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            if (input is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             return TimeSpanParse.ParseExactMultiple(input, formats, formatProvider, TimeSpanStyles.None);
         }
         public static TimeSpan ParseExact(string input, string format, IFormatProvider? formatProvider, TimeSpanStyles styles)
         {
             ValidateStyles(styles, nameof(styles));
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
-            if (format == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
+            if (input is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            if (format is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.format);
             return TimeSpanParse.ParseExact(input, format, formatProvider, styles);
         }
 
@@ -316,7 +316,7 @@ namespace System
         public static TimeSpan ParseExact(string input, string[] formats, IFormatProvider? formatProvider, TimeSpanStyles styles)
         {
             ValidateStyles(styles, nameof(styles));
-            if (input == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
+            if (input is null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.input);
             return TimeSpanParse.ParseExactMultiple(input, formats, formatProvider, styles);
         }
         public static TimeSpan ParseExact(ReadOnlySpan<char> input, string[] formats, IFormatProvider? formatProvider, TimeSpanStyles styles = TimeSpanStyles.None)
@@ -326,7 +326,7 @@ namespace System
         }
         public static bool TryParse([NotNullWhen(true)] string? s, out TimeSpan result)
         {
-            if (s == null)
+            if (s is null)
             {
                 result = default;
                 return false;
@@ -340,7 +340,7 @@ namespace System
 
         public static bool TryParse([NotNullWhen(true)] string? input, IFormatProvider? formatProvider, out TimeSpan result)
         {
-            if (input == null)
+            if (input is null)
             {
                 result = default;
                 return false;
@@ -353,7 +353,7 @@ namespace System
         }
         public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, IFormatProvider? formatProvider, out TimeSpan result)
         {
-            if (input == null || format == null)
+            if (input is null || format is null)
             {
                 result = default;
                 return false;
@@ -367,7 +367,7 @@ namespace System
         }
         public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, out TimeSpan result)
         {
-            if (input == null)
+            if (input is null)
             {
                 result = default;
                 return false;
@@ -382,7 +382,7 @@ namespace System
         public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
-            if (input == null || format == null)
+            if (input is null || format is null)
             {
                 result = default;
                 return false;
@@ -399,7 +399,7 @@ namespace System
         public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string?[]? formats, IFormatProvider? formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             ValidateStyles(styles, nameof(styles));
-            if (input == null)
+            if (input is null)
             {
                 result = default;
                 return false;

@@ -127,15 +127,15 @@ namespace System.Reflection.Emit
             Justification = "Reflection emitted types have all of their members")]
         internal static Type? InflateType(Type? type, Type[]? type_args, Type[]? method_args)
         {
-            if (type == null)
+            if (type is null)
                 return null;
             if (!type.IsGenericParameter && !type.ContainsGenericParameters)
                 return type;
             if (type.IsGenericParameter)
             {
-                if (type.DeclaringMethod == null)
-                    return type_args == null ? type : type_args[type.GenericParameterPosition];
-                return method_args == null ? type : method_args[type.GenericParameterPosition];
+                if (type.DeclaringMethod is null)
+                    return type_args is null ? type : type_args[type.GenericParameterPosition];
+                return method_args is null ? type : method_args[type.GenericParameterPosition];
             }
             if (type.IsPointer)
                 return InflateType(type.GetElementType(), type_args, method_args)!.MakePointerType();
@@ -176,7 +176,7 @@ namespace System.Reflection.Emit
 
         internal override MethodInfo GetMethod(MethodInfo fromNoninstanciated)
         {
-            if (methods == null)
+            if (methods is null)
                 methods = new Dictionary<MethodInfo, MethodInfo>();
             if (!methods.ContainsKey(fromNoninstanciated))
                 methods[fromNoninstanciated] = new MethodOnTypeBuilderInst(this, fromNoninstanciated);
@@ -185,7 +185,7 @@ namespace System.Reflection.Emit
 
         internal override ConstructorInfo GetConstructor(ConstructorInfo fromNoninstanciated)
         {
-            if (ctors == null)
+            if (ctors is null)
                 ctors = new Dictionary<ConstructorInfo, ConstructorInfo>();
             if (!ctors.ContainsKey(fromNoninstanciated))
                 ctors[fromNoninstanciated] = new ConstructorOnTypeBuilderInst(this, fromNoninstanciated);
@@ -194,7 +194,7 @@ namespace System.Reflection.Emit
 
         internal override FieldInfo GetField(FieldInfo fromNoninstanciated)
         {
-            if (fields == null)
+            if (fields is null)
                 fields = new Dictionary<FieldInfo, FieldInfo>();
             if (!fields.ContainsKey(fromNoninstanciated))
                 fields[fromNoninstanciated] = new FieldOnTypeBuilderInst(this, fromNoninstanciated);
@@ -297,14 +297,14 @@ namespace System.Reflection.Emit
                 {
                     string? assemblyName = type_arguments[i].Assembly.FullName;
                     name = type_arguments[i].FullName;
-                    if (name != null && assemblyName != null)
+                    if (name is not null && assemblyName is not null)
                         name = name + ", " + assemblyName;
                 }
                 else
                 {
                     name = type_arguments[i].ToString();
                 }
-                if (name == null)
+                if (name is null)
                 {
                     return null;
                 }

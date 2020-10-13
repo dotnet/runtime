@@ -52,7 +52,7 @@ namespace System.Text
 
             private unsafe byte[] GetBytesForSmallInput(string s)
             {
-                Debug.Assert(s != null);
+                Debug.Assert(s is not null);
                 Debug.Assert(s.Length <= MaxSmallInputElementCount);
 
                 byte* pDestination = stackalloc byte[MaxSmallInputElementCount * MaxUtf8BytesPerChar];
@@ -86,7 +86,7 @@ namespace System.Text
 
             private unsafe string GetStringForSmallInput(byte[] bytes)
             {
-                Debug.Assert(bytes != null);
+                Debug.Assert(bytes is not null);
                 Debug.Assert(bytes.Length <= MaxSmallInputElementCount);
 
                 char* pDestination = stackalloc char[MaxSmallInputElementCount]; // each byte produces at most one char

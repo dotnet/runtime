@@ -1281,7 +1281,7 @@ namespace System.Data.OleDb
 
         private bool PropertiesOnCommand(bool throwNotSupported)
         {
-            Debug.Assert(_connection != null);
+            Debug.Assert(_connection is not null);
 
             if (null != _icommandText)
             {

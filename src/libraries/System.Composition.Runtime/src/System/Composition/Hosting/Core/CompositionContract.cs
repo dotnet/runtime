@@ -44,7 +44,7 @@ namespace System.Composition.Hosting.Core
         /// <param name="metadataConstraints">Optionally, a non-empty collection of named constraints that apply to the contract.</param>
         public CompositionContract(Type contractType, string contractName, IDictionary<string, object> metadataConstraints)
         {
-            if (contractType == null) throw new ArgumentNullException(nameof(contractType));
+            if (contractType is null) throw new ArgumentNullException(nameof(contractType));
             if (metadataConstraints?.Count == 0) throw new ArgumentOutOfRangeException(nameof(metadataConstraints));
 
             _contractType = contractType;
@@ -76,9 +76,9 @@ namespace System.Composition.Hosting.Core
         public override bool Equals(object obj)
         {
             var contract = obj as CompositionContract;
-            return contract != null &&
+            return contract is not null &&
                 contract._contractType.Equals(_contractType) &&
-                (_contractName == null ? contract._contractName == null : _contractName.Equals(contract._contractName)) &&
+                (_contractName is null ? contract._contractName is null : _contractName.Equals(contract._contractName)) &&
                 ConstraintEqual(_metadataConstraints, contract._metadataConstraints);
         }
 
@@ -89,9 +89,9 @@ namespace System.Composition.Hosting.Core
         public override int GetHashCode()
         {
             var hc = _contractType.GetHashCode();
-            if (_contractName != null)
+            if (_contractName is not null)
                 hc = hc ^ _contractName.GetHashCode();
-            if (_metadataConstraints != null)
+            if (_metadataConstraints is not null)
                 hc = hc ^ ConstraintHashCode(_metadataConstraints);
             return hc;
         }
@@ -104,10 +104,10 @@ namespace System.Composition.Hosting.Core
         {
             var result = Formatters.Format(_contractType);
 
-            if (_contractName != null)
+            if (_contractName is not null)
                 result += " " + Formatters.Format(_contractName);
 
-            if (_metadataConstraints != null)
+            if (_metadataConstraints is not null)
                 result += string.Format(" {{ {0} }}",
                     string.Join(SR.Formatter_ListSeparatorWithSpace,
                         _metadataConstraints.Select(kv => string.Format("{0} = {1}", kv.Key, Formatters.Format(kv.Value)))));
@@ -124,7 +124,7 @@ namespace System.Composition.Hosting.Core
         /// new contract type.</returns>
         public CompositionContract ChangeType(Type newContractType)
         {
-            if (newContractType == null) throw new ArgumentNullException(nameof(newContractType));
+            if (newContractType is null) throw new ArgumentNullException(nameof(newContractType));
             return new CompositionContract(newContractType, _contractName, _metadataConstraints);
         }
 
@@ -140,12 +140,12 @@ namespace System.Composition.Hosting.Core
         /// <returns>True if the constraint is present and of the correct type, otherwise false.</returns>
         public bool TryUnwrapMetadataConstraint<T>(string constraintName, out T constraintValue, out CompositionContract remainingContract)
         {
-            if (constraintName == null) throw new ArgumentNullException(nameof(constraintName));
+            if (constraintName is null) throw new ArgumentNullException(nameof(constraintName));
 
             constraintValue = default(T);
             remainingContract = null;
 
-            if (_metadataConstraints == null)
+            if (_metadataConstraints is null)
                 return false;
 
             if (!_metadataConstraints.TryGetValue(constraintName, out object value))
@@ -174,7 +174,7 @@ namespace System.Composition.Hosting.Core
             if (first == second)
                 return true;
 
-            if (first == null || second == null)
+            if (first is null || second is null)
                 return false;
 
             if (first.Count != second.Count)
@@ -185,11 +185,11 @@ namespace System.Composition.Hosting.Core
                 if (!second.TryGetValue(firstItem.Key, out object secondValue))
                     return false;
 
-                if (firstItem.Value == null)
+                if (firstItem.Value is null)
                 {
-                    return secondValue == null;
+                    return secondValue is null;
                 }
-                else if (secondValue == null)
+                else if (secondValue is null)
                 {
                     return false;
                 }
@@ -198,7 +198,7 @@ namespace System.Composition.Hosting.Core
                     if (firstItem.Value is IEnumerable firstEnumerable && !(firstEnumerable is string))
                     {
                         var secondEnumerable = secondValue as IEnumerable;
-                        if (secondEnumerable == null || !Enumerable.SequenceEqual(firstEnumerable.Cast<object>(), secondEnumerable.Cast<object>()))
+                        if (secondEnumerable is null || !Enumerable.SequenceEqual(firstEnumerable.Cast<object>(), secondEnumerable.Cast<object>()))
                             return false;
                     }
                     else if (!firstItem.Value.Equals(secondValue))
@@ -217,7 +217,7 @@ namespace System.Composition.Hosting.Core
             foreach (KeyValuePair<string, object> kv in metadata)
             {
                 result ^= kv.Key.GetHashCode();
-                if (kv.Value != null)
+                if (kv.Value is not null)
                 {
                     if (kv.Value is string sval)
                     {
@@ -228,7 +228,7 @@ namespace System.Composition.Hosting.Core
                         if (kv.Value is IEnumerable enumerableValue)
                         {
                             foreach (var ev in enumerableValue)
-                                if (ev != null)
+                                if (ev is not null)
                                     result ^= ev.GetHashCode();
                         }
                         else

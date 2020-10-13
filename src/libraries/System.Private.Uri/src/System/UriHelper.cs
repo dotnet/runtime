@@ -192,7 +192,7 @@ namespace System
             for (; i < stringToEscape.Length && (c = stringToEscape[i]) <= 0x7F && noEscape[c]; i++) ;
             if (i == stringToEscape.Length)
             {
-                if (dest != null)
+                if (dest is not null)
                 {
                     EnsureCapacity(dest, destPos, stringToEscape.Length);
                     stringToEscape.CopyTo(dest.AsSpan(destPos));
@@ -217,7 +217,7 @@ namespace System
 
             static void EnsureCapacity(char[]? dest, int destSize, int requiredSize)
             {
-                if (dest == null || dest.Length - destSize < requiredSize)
+                if (dest is null || dest.Length - destSize < requiredSize)
                 {
                     Array.Resize(ref dest, destSize + requiredSize + 120); // 120 == arbitrary minimum-empty space copied from previous implementation
                 }
@@ -524,7 +524,7 @@ namespace System
                             }
                         }
 
-                        if (unescapedChars == null || unescapedChars.Length < bytes.Length)
+                        if (unescapedChars is null || unescapedChars.Length < bytes.Length)
                         {
                             unescapedChars = new char[bytes.Length];
                         }

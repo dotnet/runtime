@@ -73,7 +73,7 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e)
         {
-            if (e == null)
+            if (e is null)
                 throw new ArgumentNullException(nameof(e));
 
             InitializeForException(e, METHODS_TO_SKIP, false);
@@ -84,7 +84,7 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e, bool fNeedFileInfo)
         {
-            if (e == null)
+            if (e is null)
                 throw new ArgumentNullException(nameof(e));
 
             InitializeForException(e, METHODS_TO_SKIP, fNeedFileInfo);
@@ -96,7 +96,7 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e, int skipFrames)
         {
-            if (e == null)
+            if (e is null)
                 throw new ArgumentNullException(nameof(e));
 
             if (skipFrames < 0)
@@ -112,7 +112,7 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e, int skipFrames, bool fNeedFileInfo)
         {
-            if (e == null)
+            if (e is null)
                 throw new ArgumentNullException(nameof(e));
 
             if (skipFrames < 0)
@@ -143,7 +143,7 @@ namespace System.Diagnostics
         /// </summary>
         public virtual StackFrame? GetFrame(int index)
         {
-            if (_stackFrames != null && index < _numOfFrames && index >= 0)
+            if (_stackFrames is not null && index < _numOfFrames && index >= 0)
                 return _stackFrames[index + _methodsToSkip];
 
             return null;
@@ -157,7 +157,7 @@ namespace System.Diagnostics
         /// </summary>
         public virtual StackFrame[] GetFrames()
         {
-            if (_stackFrames == null || _numOfFrames <= 0)
+            if (_stackFrames is null || _numOfFrames <= 0)
                 return Array.Empty<StackFrame>();
 
             // We have to return a subset of the array. Unfortunately this
@@ -210,7 +210,7 @@ namespace System.Diagnostics
             {
                 StackFrame? sf = GetFrame(iFrameIndex);
                 MethodBase? mb = sf?.GetMethod();
-                if (mb != null && (ShowInStackTrace(mb) ||
+                if (mb is not null && (ShowInStackTrace(mb) ||
                                    (iFrameIndex == _numOfFrames - 1))) // Don't filter last frame
                 {
                     // We want a newline at the end of every line except for the last
@@ -225,7 +225,7 @@ namespace System.Diagnostics
                     Type? declaringType = mb.DeclaringType;
                     string methodName = mb.Name;
                     bool methodChanged = false;
-                    if (declaringType != null && declaringType.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false))
+                    if (declaringType is not null && declaringType.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false))
                     {
                         isAsync = declaringType.IsAssignableTo(typeof(IAsyncStateMachine));
                         if (isAsync || declaringType.IsAssignableTo(typeof(IEnumerator)))
@@ -236,7 +236,7 @@ namespace System.Diagnostics
 
                     // if there is a type (non global method) print it
                     // ResolveStateMachineMethod may have set declaringType to null
-                    if (declaringType != null)
+                    if (declaringType is not null)
                     {
                         // Append t.FullName, replacing '+' with '.'
                         string fullName = declaringType.FullName!;
@@ -279,7 +279,7 @@ namespace System.Diagnostics
                         // The parameter info cannot be loaded, so we don't
                         // append the parameter list.
                     }
-                    if (pi != null)
+                    if (pi is not null)
                     {
                         // arguments printing
                         sb.Append('(');
@@ -292,7 +292,7 @@ namespace System.Diagnostics
                                 fFirstParam = false;
 
                             string typeName = "<UnknownType>";
-                            if (pi[j].ParameterType != null)
+                            if (pi[j].ParameterType is not null)
                                 typeName = pi[j].ParameterType.Name;
                             sb.Append(typeName);
                             sb.Append(' ');
@@ -316,7 +316,7 @@ namespace System.Diagnostics
                         // then the file name will be null.
                         string? fileName = sf.GetFileName();
 
-                        if (fileName != null)
+                        if (fileName is not null)
                         {
                             // tack on " in c:\tmp\MyFile.cs:line 5"
                             sb.Append(' ');
@@ -342,7 +342,7 @@ namespace System.Diagnostics
 
         private static bool ShowInStackTrace(MethodBase mb)
         {
-            Debug.Assert(mb != null);
+            Debug.Assert(mb is not null);
 
             if ((mb.MethodImplementationFlags & MethodImplAttributes.AggressiveInlining) != 0)
             {
@@ -361,7 +361,7 @@ namespace System.Diagnostics
 
             Type? declaringType = mb.DeclaringType;
             // Methods don't always have containing types, for example dynamic RefEmit generated methods.
-            if (declaringType != null &&
+            if (declaringType is not null &&
                 declaringType.IsDefined(typeof(StackTraceHiddenAttribute), inherit: false))
             {
                 // Don't show where StackTraceHidden is applied to the containing Type of the method.
@@ -373,19 +373,19 @@ namespace System.Diagnostics
 
         private static bool TryResolveStateMachineMethod(ref MethodBase method, out Type declaringType)
         {
-            Debug.Assert(method != null);
-            Debug.Assert(method.DeclaringType != null);
+            Debug.Assert(method is not null);
+            Debug.Assert(method.DeclaringType is not null);
 
             declaringType = method.DeclaringType;
 
             Type? parentType = declaringType.DeclaringType;
-            if (parentType == null)
+            if (parentType is null)
             {
                 return false;
             }
 
             MethodInfo[]? methods = parentType.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            if (methods == null)
+            if (methods is null)
             {
                 return false;
             }
@@ -393,7 +393,7 @@ namespace System.Diagnostics
             foreach (MethodInfo candidateMethod in methods)
             {
                 IEnumerable<StateMachineAttribute>? attributes = candidateMethod.GetCustomAttributes<StateMachineAttribute>(inherit: false);
-                if (attributes == null)
+                if (attributes is null)
                 {
                     continue;
                 }

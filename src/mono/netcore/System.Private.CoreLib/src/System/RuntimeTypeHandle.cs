@@ -74,7 +74,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || GetType() != obj.GetType())
+            if (obj is null || GetType() != obj.GetType())
                 return false;
 
             return value == ((RuntimeTypeHandle)obj).Value;
@@ -92,22 +92,22 @@ namespace System
 
         public static bool operator ==(RuntimeTypeHandle left, object right)
         {
-            return (right != null) && (right is RuntimeTypeHandle) && left.Equals((RuntimeTypeHandle)right);
+            return (right is not null) && (right is RuntimeTypeHandle) && left.Equals((RuntimeTypeHandle)right);
         }
 
         public static bool operator !=(RuntimeTypeHandle left, object right)
         {
-            return (right == null) || !(right is RuntimeTypeHandle) || !left.Equals((RuntimeTypeHandle)right);
+            return (right is null) || !(right is RuntimeTypeHandle) || !left.Equals((RuntimeTypeHandle)right);
         }
 
         public static bool operator ==(object left, RuntimeTypeHandle right)
         {
-            return (left != null) && (left is RuntimeTypeHandle) && ((RuntimeTypeHandle)left).Equals(right);
+            return (left is not null) && (left is RuntimeTypeHandle) && ((RuntimeTypeHandle)left).Equals(right);
         }
 
         public static bool operator !=(object left, RuntimeTypeHandle right)
         {
-            return (left == null) || !(left is RuntimeTypeHandle) || !((RuntimeTypeHandle)left).Equals(right);
+            return (left is null) || !(left is RuntimeTypeHandle) || !((RuntimeTypeHandle)left).Equals(right);
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -290,7 +290,7 @@ namespace System
         internal static RuntimeType? GetTypeByName(string typeName, bool throwOnError, bool ignoreCase, bool reflectionOnly, ref StackCrawlMark stackMark,
                                                   bool loadTypeFromPartialName)
         {
-            if (typeName == null)
+            if (typeName is null)
                 throw new ArgumentNullException(nameof(typeName));
 
             if (typeName.Length == 0)
@@ -320,14 +320,14 @@ namespace System
             }
 
             RuntimeType? t = internal_from_name(typeName, ref stackMark, null, throwOnError, ignoreCase, false);
-            if (throwOnError && t == null)
+            if (throwOnError && t is null)
                 throw new TypeLoadException("Error loading '" + typeName + "'");
             return t;
         }
 
         internal static IntPtr[]? CopyRuntimeTypeHandles(RuntimeTypeHandle[]? inHandles, out int length)
         {
-            if (inHandles == null || inHandles.Length == 0)
+            if (inHandles is null || inHandles.Length == 0)
             {
                 length = 0;
                 return null;

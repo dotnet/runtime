@@ -112,7 +112,7 @@ namespace System.Security.AccessControl
         {
             int Length = BinaryLength; // Invokes the most derived property
 
-            if (binaryForm == null)
+            if (binaryForm is null)
             {
                 throw new ArgumentNullException(nameof(binaryForm));
             }
@@ -243,7 +243,7 @@ namespace System.Security.AccessControl
 
         internal static void VerifyHeader(byte[] binaryForm, int offset)
         {
-            if (binaryForm == null)
+            if (binaryForm is null)
             {
                 throw new ArgumentNullException(nameof(binaryForm));
             }
@@ -541,7 +541,7 @@ namespace System.Security.AccessControl
         {
             GenericAce? ace = (o as GenericAce);
 
-            if (ace == null)
+            if (ace is null)
             {
                 return false;
             }
@@ -609,11 +609,11 @@ namespace System.Security.AccessControl
             object? l = left;
             object? r = right;
 
-            if (l == null && r == null)
+            if (l is null && r is null)
             {
                 return true;
             }
-            else if (l == null || r == null)
+            else if (l is null || r is null)
             {
                 return false;
             }
@@ -663,7 +663,7 @@ namespace System.Security.AccessControl
         internal KnownAce(AceType type, AceFlags flags, int accessMask, SecurityIdentifier securityIdentifier)
             : base(type, flags)
         {
-            if (securityIdentifier == null)
+            if (securityIdentifier is null)
             {
                 throw new ArgumentNullException(nameof(securityIdentifier));
             }
@@ -713,7 +713,7 @@ namespace System.Security.AccessControl
             [MemberNotNull(nameof(_sid))]
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -781,7 +781,7 @@ namespace System.Security.AccessControl
         {
             get
             {
-                if (_opaque == null)
+                if (_opaque is null)
                 {
                     return 0;
                 }
@@ -821,7 +821,7 @@ namespace System.Security.AccessControl
 
         public void SetOpaque(byte[]? opaque)
         {
-            if (opaque != null)
+            if (opaque is not null)
             {
                 if (opaque.Length > MaxOpaqueLength)
                 {
@@ -1247,7 +1247,7 @@ namespace System.Security.AccessControl
         {
             get
             {
-                if (_opaque != null)
+                if (_opaque is not null)
                 {
                     return _opaque.Length;
                 }
@@ -1274,7 +1274,7 @@ namespace System.Security.AccessControl
 
         public void SetOpaque(byte[]? opaque)
         {
-            if (opaque != null)
+            if (opaque is not null)
             {
                 if (opaque.Length > MaxOpaqueLengthInternal)
                 {
@@ -1604,7 +1604,7 @@ namespace System.Security.AccessControl
             // Finally, if opaque is supported, store it
             //
 
-            if (GetOpaque() != null)
+            if (GetOpaque() is not null)
             {
                 if (OpaqueLength > MaxOpaqueLengthInternal)
                 {
@@ -2156,7 +2156,7 @@ namespace System.Security.AccessControl
             // Finally, if opaque is supported, store it
             //
 
-            if (GetOpaque() != null)
+            if (GetOpaque() is not null)
             {
                 if (OpaqueLength > MaxOpaqueLengthInternal)
                 {

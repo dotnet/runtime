@@ -136,7 +136,7 @@ namespace System.Text
 
                 currentSrc = currentSrc.m_ChunkPrevious;
             }
-            while (currentSrc != null);
+            while (currentSrc is not null);
         }
 
         /// <summary>
@@ -150,11 +150,11 @@ namespace System.Text
             StringBuilder result = this;
             while (result.m_ChunkOffset * sizeof(char) > byteIndex)
             {
-                Debug.Assert(result.m_ChunkPrevious != null);
+                Debug.Assert(result.m_ChunkPrevious is not null);
                 result = result.m_ChunkPrevious;
             }
 
-            Debug.Assert(result != null);
+            Debug.Assert(result is not null);
             return result;
         }
     }

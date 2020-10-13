@@ -194,12 +194,12 @@ namespace System.ComponentModel
         /// </summary>
         internal static void AddEditorTable(Type editorBaseType, Hashtable table)
         {
-            if (editorBaseType == null)
+            if (editorBaseType is null)
             {
                 throw new ArgumentNullException(nameof(editorBaseType));
             }
 
-            if (table == null)
+            if (table is null)
             {
                 Debug.Fail("COMPAT: Editor table should not be null");
                 // don't throw; RTM didn't so we can't do it either.
@@ -220,22 +220,22 @@ namespace System.ComponentModel
         /// </summary>
         public override object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
         {
-            Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
+            Debug.Assert(objectType is not null, "Should have arg-checked before coming in here");
 
             object obj = null;
 
-            if (argTypes != null)
+            if (argTypes is not null)
             {
                 obj = objectType.GetConstructor(argTypes)?.Invoke(args);
             }
             else
             {
-                if (args != null)
+                if (args is not null)
                 {
                     argTypes = new Type[args.Length];
                     for (int idx = 0; idx < args.Length; idx++)
                     {
-                        if (args[idx] != null)
+                        if (args[idx] is not null)
                         {
                             argTypes[idx] = args[idx].GetType();
                         }
@@ -283,13 +283,13 @@ namespace System.ComponentModel
         public override IDictionary GetCache(object instance)
         {
             IComponent comp = instance as IComponent;
-            if (comp != null && comp.Site != null)
+            if (comp is not null && comp.Site is not null)
             {
                 IDictionaryService ds = comp.Site.GetService(typeof(IDictionaryService)) as IDictionaryService;
-                if (ds != null)
+                if (ds is not null)
                 {
                     IDictionary dict = ds.GetValue(s_dictionaryKey) as IDictionary;
-                    if (dict == null)
+                    if (dict is null)
                     {
                         dict = new Hashtable();
                         ds.SetValue(s_dictionaryKey, dict);
@@ -366,7 +366,7 @@ namespace System.ComponentModel
             Hashtable editorTables = EditorTables;
             object table = editorTables[editorBaseType];
 
-            if (table == null)
+            if (table is null)
             {
                 // Before we give up, it is possible that the
                 // class initializer for editorBaseType hasn't
@@ -379,12 +379,12 @@ namespace System.ComponentModel
                 // sentinel in there so we don't
                 // go through this again.
                 //
-                if (table == null)
+                if (table is null)
                 {
                     lock (s_internalSyncObject)
                     {
                         table = editorTables[editorBaseType];
-                        if (table == null)
+                        if (table is null)
                         {
                             editorTables[editorBaseType] = editorTables;
                         }
@@ -512,12 +512,12 @@ namespace System.ComponentModel
             //
             PropertyDescriptorCollection properties = null;
 
-            if (cache != null)
+            if (cache is not null)
             {
                 properties = cache[s_extenderPropertiesKey] as PropertyDescriptorCollection;
             }
 
-            if (properties != null)
+            if (properties is not null)
             {
                 return properties;
             }
@@ -531,7 +531,7 @@ namespace System.ComponentModel
             {
                 PropertyDescriptor[] propertyArray = ReflectGetExtendedProperties(extenders[idx]);
 
-                if (propertyList == null)
+                if (propertyList is null)
                 {
                     propertyList = new List<PropertyDescriptor>(propertyArray.Length * extenders.Length);
                 }
@@ -541,11 +541,11 @@ namespace System.ComponentModel
                     PropertyDescriptor prop = propertyArray[propIdx];
                     ExtenderProvidedPropertyAttribute eppa = prop.Attributes[typeof(ExtenderProvidedPropertyAttribute)] as ExtenderProvidedPropertyAttribute;
 
-                    Debug.Assert(eppa != null, $"Extender property {prop.Name} has no provider attribute. We will skip it.");
-                    if (eppa != null)
+                    Debug.Assert(eppa is not null, $"Extender property {prop.Name} has no provider attribute. We will skip it.");
+                    if (eppa is not null)
                     {
                         Type receiverType = eppa.ReceiverType;
-                        if (receiverType != null)
+                        if (receiverType is not null)
                         {
                             if (receiverType.IsAssignableFrom(componentType))
                             {
@@ -559,7 +559,7 @@ namespace System.ComponentModel
             // propertyHash now contains ExtendedPropertyDescriptor objects
             // for each extended property.
             //
-            if (propertyList != null)
+            if (propertyList is not null)
             {
                 PropertyDescriptor[] fullArray = new PropertyDescriptor[propertyList.Count];
                 propertyList.CopyTo(fullArray, 0);
@@ -570,7 +570,7 @@ namespace System.ComponentModel
                 properties = PropertyDescriptorCollection.Empty;
             }
 
-            if (cache != null)
+            if (cache is not null)
             {
                 cache[s_extenderPropertiesKey] = properties;
             }
@@ -580,18 +580,18 @@ namespace System.ComponentModel
 
         protected internal override IExtenderProvider[] GetExtenderProviders(object instance)
         {
-            if (instance == null)
+            if (instance is null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
 
             IComponent component = instance as IComponent;
-            if (component != null && component.Site != null)
+            if (component is not null && component.Site is not null)
             {
                 IExtenderListService extenderList = component.Site.GetService(typeof(IExtenderListService)) as IExtenderListService;
                 IDictionary cache = TypeDescriptor.GetCache(instance);
 
-                if (extenderList != null)
+                if (extenderList is not null)
                 {
                     return GetExtenders(extenderList.GetExtenderProviders(), instance, cache);
                 }
@@ -599,7 +599,7 @@ namespace System.ComponentModel
                 else
                 {
                     IContainer cont = component.Site.Container;
-                    if (cont != null)
+                    if (cont is not null)
                     {
                         return GetExtenders(cont.Components, instance, cache);
                     }
@@ -636,12 +636,12 @@ namespace System.ComponentModel
             // time a component is asked for its properties.
             IExtenderProvider[] currentExtenders = components as IExtenderProvider[];
 
-            if (cache != null)
+            if (cache is not null)
             {
                 existingExtenders = cache[ExtenderProviderKey] as IExtenderProvider[];
             }
 
-            if (existingExtenders == null)
+            if (existingExtenders is null)
             {
                 newExtenders = true;
             }
@@ -649,7 +649,7 @@ namespace System.ComponentModel
             int curIdx = 0;
             int idx = 0;
 
-            if (currentExtenders != null)
+            if (currentExtenders is not null)
             {
                 for (curIdx = 0; curIdx < currentExtenders.Length; curIdx++)
                 {
@@ -666,12 +666,12 @@ namespace System.ComponentModel
                     }
                 }
             }
-            else if (components != null)
+            else if (components is not null)
             {
                 foreach (object obj in components)
                 {
                     IExtenderProvider prov = obj as IExtenderProvider;
-                    if (prov != null && prov.CanExtend(instance))
+                    if (prov is not null && prov.CanExtend(instance))
                     {
                         extenderCount++;
                         if (curIdx < maxCanExtendResults)
@@ -684,20 +684,20 @@ namespace System.ComponentModel
                     curIdx++;
                 }
             }
-            if (existingExtenders != null && extenderCount != existingExtenders.Length)
+            if (existingExtenders is not null && extenderCount != existingExtenders.Length)
             {
                 newExtenders = true;
             }
             if (newExtenders)
             {
-                if (currentExtenders == null || extenderCount != currentExtenders.Length)
+                if (currentExtenders is null || extenderCount != currentExtenders.Length)
                 {
                     IExtenderProvider[] newExtenderArray = new IExtenderProvider[extenderCount];
 
                     curIdx = 0;
                     idx = 0;
 
-                    if (currentExtenders != null && extenderCount > 0)
+                    if (currentExtenders is not null && extenderCount > 0)
                     {
                         while (curIdx < currentExtenders.Length)
                         {
@@ -717,7 +717,7 @@ namespace System.ComponentModel
                         {
                             IExtenderProvider p = component as IExtenderProvider;
 
-                            if (p != null && ((curIdx < maxCanExtendResults && (canExtend & ((ulong)1 << curIdx)) != 0) ||
+                            if (p is not null && ((curIdx < maxCanExtendResults && (canExtend & ((ulong)1 << curIdx)) != 0) ||
                                                 (curIdx >= maxCanExtendResults && p.CanExtend(instance))))
                             {
                                 Debug.Assert(idx < extenderCount, "There are more extenders than we expect");
@@ -730,7 +730,7 @@ namespace System.ComponentModel
                     currentExtenders = newExtenderArray;
                 }
 
-                if (cache != null)
+                if (cache is not null)
                 {
                     cache[ExtenderProviderKey] = currentExtenders;
                     cache.Remove(s_extenderPropertiesKey);
@@ -775,7 +775,7 @@ namespace System.ComponentModel
         {
             IComponent comp = component as IComponent;
             INestedSite ns = comp?.Site as INestedSite;
-            if (ns != null)
+            if (ns is not null)
             {
                 return ns.FullName;
             }
@@ -831,7 +831,7 @@ namespace System.ComponentModel
         /// </summary>
         public override Type GetReflectionType(Type objectType, object instance)
         {
-            Debug.Assert(objectType != null, "Should have arg-checked before coming in here");
+            Debug.Assert(objectType is not null, "Should have arg-checked before coming in here");
             return objectType;
         }
 
@@ -844,10 +844,10 @@ namespace System.ComponentModel
         {
             ReflectedTypeData td = null;
 
-            if (_typeData != null)
+            if (_typeData is not null)
             {
                 td = (ReflectedTypeData)_typeData[type];
-                if (td != null)
+                if (td is not null)
                 {
                     return td;
                 }
@@ -855,15 +855,15 @@ namespace System.ComponentModel
 
             lock (s_internalSyncObject)
             {
-                if (_typeData != null)
+                if (_typeData is not null)
                 {
                     td = (ReflectedTypeData)_typeData[type];
                 }
 
-                if (td == null && createIfNeeded)
+                if (td is null && createIfNeeded)
                 {
                     td = new ReflectedTypeData(type);
-                    if (_typeData == null)
+                    if (_typeData is null)
                     {
                         _typeData = new Hashtable();
                     }
@@ -895,7 +895,7 @@ namespace System.ComponentModel
         {
             Type t = Type.GetType(typeName);
 
-            if (t == null)
+            if (t is null)
             {
                 int commaIndex = typeName.IndexOf(',');
 
@@ -924,7 +924,7 @@ namespace System.ComponentModel
         internal bool IsPopulated(Type type)
         {
             ReflectedTypeData td = GetTypeData(type, false);
-            if (td != null)
+            if (td is not null)
             {
                 return td.IsPopulated;
             }
@@ -942,7 +942,7 @@ namespace System.ComponentModel
         {
             Hashtable attributeCache = AttributeCache;
             Attribute[] attrs = (Attribute[])attributeCache[type];
-            if (attrs != null)
+            if (attrs is not null)
             {
                 return attrs;
             }
@@ -950,7 +950,7 @@ namespace System.ComponentModel
             lock (s_internalSyncObject)
             {
                 attrs = (Attribute[])attributeCache[type];
-                if (attrs == null)
+                if (attrs is null)
                 {
                     // Get the type's attributes.
                     //
@@ -970,7 +970,7 @@ namespace System.ComponentModel
         {
             Hashtable attributeCache = AttributeCache;
             Attribute[] attrs = (Attribute[])attributeCache[member];
-            if (attrs != null)
+            if (attrs is not null)
             {
                 return attrs;
             }
@@ -978,7 +978,7 @@ namespace System.ComponentModel
             lock (s_internalSyncObject)
             {
                 attrs = (Attribute[])attributeCache[member];
-                if (attrs == null)
+                if (attrs is null)
                 {
                     // Get the member's attributes.
                     //
@@ -998,7 +998,7 @@ namespace System.ComponentModel
         {
             Hashtable eventCache = EventCache;
             EventDescriptor[] events = (EventDescriptor[])eventCache[type];
-            if (events != null)
+            if (events is not null)
             {
                 return events;
             }
@@ -1006,7 +1006,7 @@ namespace System.ComponentModel
             lock (s_internalSyncObject)
             {
                 events = (EventDescriptor[])eventCache[type];
-                if (events == null)
+                if (events is null)
                 {
                     BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
 
@@ -1034,7 +1034,7 @@ namespace System.ComponentModel
                             continue;
                         }
 
-                        if (eventInfo.AddMethod != null && eventInfo.RemoveMethod != null)
+                        if (eventInfo.AddMethod is not null && eventInfo.RemoveMethod is not null)
                         {
                             events[eventCount++] = new ReflectEventDescriptor(type, eventInfo);
                         }
@@ -1050,7 +1050,7 @@ namespace System.ComponentModel
 #if DEBUG
                     foreach (EventDescriptor dbgEvent in events)
                     {
-                        Debug.Assert(dbgEvent != null, "Holes in event array for type " + type);
+                        Debug.Assert(dbgEvent is not null, "Holes in event array for type " + type);
                     }
 #endif
                     eventCache[type] = events;
@@ -1081,10 +1081,10 @@ namespace System.ComponentModel
             IDictionary cache = TypeDescriptor.GetCache(provider);
             PropertyDescriptor[] properties;
 
-            if (cache != null)
+            if (cache is not null)
             {
                 properties = cache[s_extenderProviderPropertiesKey] as PropertyDescriptor[];
-                if (properties != null)
+                if (properties is not null)
                 {
                     return properties;
                 }
@@ -1097,7 +1097,7 @@ namespace System.ComponentModel
             Type providerType = provider.GetType();
             Hashtable extendedPropertyCache = ExtendedPropertyCache;
             ReflectPropertyDescriptor[] extendedProperties = (ReflectPropertyDescriptor[])extendedPropertyCache[providerType];
-            if (extendedProperties == null)
+            if (extendedProperties is null)
             {
                 lock (s_internalSyncObject)
                 {
@@ -1106,7 +1106,7 @@ namespace System.ComponentModel
                     // Our class-based property store failed as well, so we need to build up the set of
                     // extended properties here.
                     //
-                    if (extendedProperties == null)
+                    if (extendedProperties is null)
                     {
                         AttributeCollection attributes = TypeDescriptor.GetAttributes(providerType);
                         List<ReflectPropertyDescriptor> extendedList = new List<ReflectPropertyDescriptor>(attributes.Count);
@@ -1115,19 +1115,19 @@ namespace System.ComponentModel
                         {
                             ProvidePropertyAttribute provideAttr = attr as ProvidePropertyAttribute;
 
-                            if (provideAttr != null)
+                            if (provideAttr is not null)
                             {
                                 Type receiverType = GetTypeFromName(provideAttr.ReceiverTypeName);
 
-                                if (receiverType != null)
+                                if (receiverType is not null)
                                 {
                                     MethodInfo getMethod = providerType.GetMethod("Get" + provideAttr.PropertyName, new Type[] { receiverType });
 
-                                    if (getMethod != null && !getMethod.IsStatic && getMethod.IsPublic)
+                                    if (getMethod is not null && !getMethod.IsStatic && getMethod.IsPublic)
                                     {
                                         MethodInfo setMethod = providerType.GetMethod("Set" + provideAttr.PropertyName, new Type[] { receiverType, getMethod.ReturnType });
 
-                                        if (setMethod != null && (setMethod.IsStatic || !setMethod.IsPublic))
+                                        if (setMethod is not null && (setMethod.IsStatic || !setMethod.IsPublic))
                                         {
                                             setMethod = null;
                                         }
@@ -1156,7 +1156,7 @@ namespace System.ComponentModel
                 properties[idx] = new ExtendedPropertyDescriptor(rpd, rpd.ExtenderGetReceiverType(), provider, null);
             }
 
-            if (cache != null)
+            if (cache is not null)
             {
                 cache[s_extenderProviderPropertiesKey] = properties;
             }
@@ -1172,7 +1172,7 @@ namespace System.ComponentModel
         {
             Hashtable propertyCache = PropertyCache;
             PropertyDescriptor[] properties = (PropertyDescriptor[])propertyCache[type];
-            if (properties != null)
+            if (properties is not null)
             {
                 return properties;
             }
@@ -1181,7 +1181,7 @@ namespace System.ComponentModel
             {
                 properties = (PropertyDescriptor[])propertyCache[type];
 
-                if (properties == null)
+                if (properties is null)
                 {
                     BindingFlags bindingFlags = BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Instance;
 
@@ -1220,7 +1220,7 @@ namespace System.ComponentModel
                         // If a property had at least a get method, we consider it. We don't
                         // consider write-only properties.
                         //
-                        if (getMethod != null)
+                        if (getMethod is not null)
                         {
                             properties[propertyCount++] = new ReflectPropertyDescriptor(type, name,
                                                                                     propertyInfo.PropertyType,
@@ -1236,7 +1236,7 @@ namespace System.ComponentModel
                         properties = newProperties;
                     }
 
-                    Debug.Assert(!properties.Any(dbgProp => dbgProp == null), $"Holes in property array for type {type}");
+                    Debug.Assert(!properties.Any(dbgProp => dbgProp is null), $"Holes in property array for type {type}");
 
                     propertyCache[type] = properties;
                 }
@@ -1277,7 +1277,7 @@ namespace System.ComponentModel
             lock (table)
             {
                 Type baseType = callingType;
-                while (baseType != null && baseType != typeof(object))
+                while (baseType is not null && baseType != typeof(object))
                 {
                     hashEntry = table[baseType];
 
@@ -1285,16 +1285,16 @@ namespace System.ComponentModel
                     // resolve it.
                     //
                     string typeString = hashEntry as string;
-                    if (typeString != null)
+                    if (typeString is not null)
                     {
                         hashEntry = Type.GetType(typeString);
-                        if (hashEntry != null)
+                        if (hashEntry is not null)
                         {
                             table[baseType] = hashEntry;
                         }
                     }
 
-                    if (hashEntry != null)
+                    if (hashEntry is not null)
                     {
                         break;
                     }
@@ -1305,7 +1305,7 @@ namespace System.ComponentModel
                 // Now make a scan through each value in the table, looking for interfaces.
                 // If we find one, see if the object implements the interface.
                 //
-                if (hashEntry == null)
+                if (hashEntry is null)
                 {
                     // Manual use of IDictionaryEnumerator instead of foreach to avoid DictionaryEntry box allocations.
                     IDictionaryEnumerator e = table.GetEnumerator();
@@ -1314,21 +1314,21 @@ namespace System.ComponentModel
                         DictionaryEntry de = e.Entry;
                         Type keyType = de.Key as Type;
 
-                        if (keyType != null && keyType.IsInterface && keyType.IsAssignableFrom(callingType))
+                        if (keyType is not null && keyType.IsInterface && keyType.IsAssignableFrom(callingType))
                         {
                             hashEntry = de.Value;
                             string typeString = hashEntry as string;
 
-                            if (typeString != null)
+                            if (typeString is not null)
                             {
                                 hashEntry = Type.GetType(typeString);
-                                if (hashEntry != null)
+                                if (hashEntry is not null)
                                 {
                                     table[callingType] = hashEntry;
                                 }
                             }
 
-                            if (hashEntry != null)
+                            if (hashEntry is not null)
                             {
                                 break;
                             }
@@ -1338,7 +1338,7 @@ namespace System.ComponentModel
 
                 // Special case converters
                 //
-                if (hashEntry == null)
+                if (hashEntry is null)
                 {
                     if (callingType.IsGenericType && callingType.GetGenericTypeDefinition() == typeof(Nullable<>))
                     {
@@ -1356,7 +1356,7 @@ namespace System.ComponentModel
                 // Interfaces do not derive from object, so we
                 // must handle the case of no hash entry here.
                 //
-                if (hashEntry == null)
+                if (hashEntry is null)
                 {
                     hashEntry = table[typeof(object)];
                 }
@@ -1368,10 +1368,10 @@ namespace System.ComponentModel
                 //
                 Type type = hashEntry as Type;
 
-                if (type != null)
+                if (type is not null)
                 {
                     hashEntry = CreateInstance(type, callingType);
-                    if (type.GetConstructor(s_typeConstructor) == null)
+                    if (type.GetConstructor(s_typeConstructor) is null)
                     {
                         table[callingType] = hashEntry;
                     }
@@ -1427,7 +1427,7 @@ namespace System.ComponentModel
                         Type key = null;
 
                         Type baseType = callingType.BaseType;
-                        while (baseType != null && baseType != typeof(object))
+                        while (baseType is not null && baseType != typeof(object))
                         {
                             if (baseType == typeof(Uri) || baseType == typeof(CultureInfo))
                             {

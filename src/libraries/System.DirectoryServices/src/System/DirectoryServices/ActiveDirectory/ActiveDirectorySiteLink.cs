@@ -77,7 +77,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 cachedEntry = de.Children.Add(rdn, "siteLink");
                 cachedEntry.Properties["cost"].Value = appDefaultCost;
                 cachedEntry.Properties["replInterval"].Value = appDefaultInterval;
-                if (schedule != null)
+                if (schedule is not null)
                     cachedEntry.Properties[nameof(schedule)].Value = schedule.GetUnmanagedSchedule();
             }
             catch (COMException e)
@@ -155,7 +155,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                                       false /* don't need to cache result */
                                                       );
                 SearchResult srchResult = adSearcher.FindOne();
-                if (srchResult == null)
+                if (srchResult is null)
                 {
                     // no such sitelink object
                     Exception e = new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySiteLink), siteLinkName);
@@ -538,7 +538,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (cachedEntry.Properties.Contains("schedule"))
                     {
                         byte[] tmpSchedule = (byte[])cachedEntry.Properties["schedule"][0];
-                        Debug.Assert(tmpSchedule != null && tmpSchedule.Length == 188);
+                        Debug.Assert(tmpSchedule is not null && tmpSchedule.Length == 188);
                         schedule = new ActiveDirectorySchedule();
                         schedule.SetUnmanagedSchedule(tmpSchedule);
                     }
@@ -557,7 +557,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 try
                 {
-                    if (value == null)
+                    if (value is null)
                     {
                         if (cachedEntry.Properties.Contains("schedule"))
                             cachedEntry.Properties["schedule"].Clear();
@@ -654,7 +654,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (cachedEntry != null)
+                if (cachedEntry is not null)
                     cachedEntry.Dispose();
             }
 
@@ -666,23 +666,23 @@ namespace System.DirectoryServices.ActiveDirectory
         private static void ValidateArgument(DirectoryContext context, string siteLinkName, ActiveDirectoryTransportType transport)
         {
             // basic validation first
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
-            if ((context.Name == null) && (!context.isRootDomain()))
+            if ((context.Name is null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
             // more validation for the context, if the target is not null, then it should be either forest name or server name
-            if (context.Name != null)
+            if (context.Name is not null)
             {
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
                     throw new ArgumentException(SR.NotADOrADAM, nameof(context));
             }
 
-            if (siteLinkName == null)
+            if (siteLinkName is null)
                 throw new ArgumentNullException(nameof(siteLinkName));
 
             if (siteLinkName.Length == 0)
@@ -706,7 +706,7 @@ namespace System.DirectoryServices.ActiveDirectory
             ArrayList siteLists = (ArrayList)values[propertyName.ToLowerInvariant()];
 
             // somehow no site list
-            if (siteLists == null)
+            if (siteLists is null)
                 return;
 
             for (int i = 0; i < siteLists.Count; i++)
@@ -716,7 +716,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // escaping manipulation
                 pathCracker.Set(dn, NativeComInterfaces.ADS_SETTYPE_DN);
                 string rdn = pathCracker.Retrieve(NativeComInterfaces.ADS_FORMAT_LEAF);
-                Debug.Assert(rdn != null && Utils.Compare(rdn, 0, 3, "CN=", 0, 3) == 0);
+                Debug.Assert(rdn is not null && Utils.Compare(rdn, 0, 3, "CN=", 0, 3) == 0);
                 rdn = rdn.Substring(3);
                 ActiveDirectorySite site = new ActiveDirectorySite(context, rdn, true);
 

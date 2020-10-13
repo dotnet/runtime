@@ -39,7 +39,7 @@ namespace Internal.Cryptography
             if (DepaddingRequired)
             {
                 // If we have data saved from a previous call, decrypt that into the output first
-                if (_heldoverCipher != null)
+                if (_heldoverCipher is not null)
                 {
                     int depadDecryptLength = BasicSymmetricCipher.Transform(_heldoverCipher, outputBuffer);
                     outputBuffer = outputBuffer.Slice(depadDecryptLength);
@@ -83,7 +83,7 @@ namespace Internal.Cryptography
 
             try
             {
-                if (_heldoverCipher == null)
+                if (_heldoverCipher is null)
                 {
                     rentedCiphertextSize = inputBuffer.Length;
                     rentedCiphertext = CryptoPool.Rent(inputBuffer.Length);
@@ -123,7 +123,7 @@ namespace Internal.Cryptography
             }
             finally
             {
-                if (rentedCiphertext != null)
+                if (rentedCiphertext is not null)
                 {
                     CryptoPool.Return(rentedCiphertext, clearSize: rentedCiphertextSize);
                 }
@@ -169,7 +169,7 @@ namespace Internal.Cryptography
             {
                 byte[]? heldoverCipher = _heldoverCipher;
                 _heldoverCipher = null;
-                if (heldoverCipher != null)
+                if (heldoverCipher is not null)
                 {
                     Array.Clear(heldoverCipher, 0, heldoverCipher.Length);
                 }
@@ -180,7 +180,7 @@ namespace Internal.Cryptography
 
         private void Reset()
         {
-            if (_heldoverCipher != null)
+            if (_heldoverCipher is not null)
             {
                 Array.Clear(_heldoverCipher, 0, _heldoverCipher.Length);
                 _heldoverCipher = null;

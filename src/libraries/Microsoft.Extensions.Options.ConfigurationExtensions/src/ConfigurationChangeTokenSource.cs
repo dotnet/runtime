@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.Options
         /// <param name="config">The configuration instance.</param>
         public ConfigurationChangeTokenSource(string name, IConfiguration config)
         {
-            if (config == null)
+            if (config is null)
             {
                 throw new ArgumentNullException(nameof(config));
             }

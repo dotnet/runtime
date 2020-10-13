@@ -39,17 +39,17 @@ namespace System.Composition.Hosting.Core
         /// <param name="contract">The contract required by the dependency.</param>
         public static CompositionDependency Satisfied(CompositionContract contract, ExportDescriptorPromise target, bool isPrerequisite, object site)
         {
-            if (contract == null)
+            if (contract is null)
             {
                 throw new ArgumentNullException(nameof(contract));
             }
 
-            if (target == null)
+            if (target is null)
             {
                 throw new ArgumentNullException(nameof(target));
             }
 
-            if (site == null)
+            if (site is null)
             {
                 throw new ArgumentNullException(nameof(site));
             }
@@ -66,12 +66,12 @@ namespace System.Composition.Hosting.Core
         /// <param name="contract">The contract required by the dependency.</param>
         public static CompositionDependency Missing(CompositionContract contract, object site)
         {
-            if (contract == null)
+            if (contract is null)
             {
                 throw new ArgumentNullException(nameof(contract));
             }
 
-            if (site == null)
+            if (site is null)
             {
                 throw new ArgumentNullException(nameof(site));
             }
@@ -89,17 +89,17 @@ namespace System.Composition.Hosting.Core
         /// <param name="contract">The contract required by the dependency.</param>
         public static CompositionDependency Oversupplied(CompositionContract contract, IEnumerable<ExportDescriptorPromise> targets, object site)
         {
-            if (contract == null)
+            if (contract is null)
             {
                 throw new ArgumentNullException(nameof(contract));
             }
 
-            if (targets == null)
+            if (targets is null)
             {
                 throw new ArgumentNullException(nameof(targets));
             }
 
-            if (site == null)
+            if (site is null)
             {
                 throw new ArgumentNullException(nameof(site));
             }
@@ -164,13 +164,13 @@ namespace System.Composition.Hosting.Core
             return SR.Format(SR.Dependency_ToStringFormat, Site, Target.Contract, Target.Origin);
         }
 
-        internal bool IsError { get { return _target == null; } }
+        internal bool IsError { get { return _target is null; } }
 
         internal void DescribeError(StringBuilder message)
         {
             Debug.Assert(IsError, "Should be in error state.");
 
-            if (_oversuppliedTargets != null)
+            if (_oversuppliedTargets is not null)
             {
                 var list = Formatters.ReadableList(_oversuppliedTargets.Select(t => SR.Format(SR.Dependency_QuoteParameter, t.Origin)));
                 message.AppendFormat(SR.Dependency_TooManyExports, Contract, list);

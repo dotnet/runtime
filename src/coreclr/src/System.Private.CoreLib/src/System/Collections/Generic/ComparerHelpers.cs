@@ -27,7 +27,7 @@ namespace System.Collections.Generic
         /// </remarks>
         internal static object CreateDefaultComparer(Type type)
         {
-            Debug.Assert(type != null && type is RuntimeType);
+            Debug.Assert(type is not null && type is RuntimeType);
 
             object? result = null;
             var runtimeType = (RuntimeType)type;
@@ -61,7 +61,7 @@ namespace System.Collections.Generic
         /// <param name="nullableType">The nullable type to create the default comparer for.</param>
         private static object? TryCreateNullableComparer(RuntimeType nullableType)
         {
-            Debug.Assert(nullableType != null);
+            Debug.Assert(nullableType is not null);
             Debug.Assert(nullableType.IsGenericType && nullableType.GetGenericTypeDefinition() == typeof(Nullable<>));
 
             var embeddedType = (RuntimeType)nullableType.GetGenericArguments()[0];
@@ -80,7 +80,7 @@ namespace System.Collections.Generic
         /// <param name="enumType">The enum type to create the default comparer for.</param>
         private static object? TryCreateEnumComparer(RuntimeType enumType)
         {
-            Debug.Assert(enumType != null);
+            Debug.Assert(enumType is not null);
             Debug.Assert(enumType.IsEnum);
 
             // Explicitly call Enum.GetUnderlyingType here. Although GetTypeCode
@@ -115,7 +115,7 @@ namespace System.Collections.Generic
         /// </remarks>
         internal static object CreateDefaultEqualityComparer(Type type)
         {
-            Debug.Assert(type != null && type is RuntimeType);
+            Debug.Assert(type is not null && type is RuntimeType);
 
             object? result = null;
             var runtimeType = (RuntimeType)type;
@@ -154,7 +154,7 @@ namespace System.Collections.Generic
         /// <param name="nullableType">The nullable type to create the default equality comparer for.</param>
         private static object? TryCreateNullableEqualityComparer(RuntimeType nullableType)
         {
-            Debug.Assert(nullableType != null);
+            Debug.Assert(nullableType is not null);
             Debug.Assert(nullableType.IsGenericType && nullableType.GetGenericTypeDefinition() == typeof(Nullable<>));
 
             var embeddedType = (RuntimeType)nullableType.GetGenericArguments()[0];
@@ -173,7 +173,7 @@ namespace System.Collections.Generic
         /// <param name="enumType">The enum type to create the default equality comparer for.</param>
         private static object? TryCreateEnumEqualityComparer(RuntimeType enumType)
         {
-            Debug.Assert(enumType != null);
+            Debug.Assert(enumType is not null);
             Debug.Assert(enumType.IsEnum);
 
             // See the METHOD__JIT_HELPERS__UNSAFE_ENUM_CAST and METHOD__JIT_HELPERS__UNSAFE_ENUM_CAST_LONG cases in getILIntrinsicImplementation

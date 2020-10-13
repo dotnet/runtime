@@ -122,7 +122,7 @@ namespace System.Reflection.Context.Projection
         {
             var other = o as ProjectingMethodInfo;
 
-            return other != null &&
+            return other is not null &&
                    Projector == other.Projector &&
                    UnderlyingMethod.Equals(other.UnderlyingMethod);
         }

@@ -23,7 +23,7 @@ namespace System.Net.Http
         /// </summary>
         private static bool IsClientCertificate(X509Certificate2 cert)
         {
-            Debug.Assert(cert != null, "certificate cannot be null");
+            Debug.Assert(cert is not null, "certificate cannot be null");
 
             bool foundEku = false;
             bool foundKeyUsages = false;
@@ -37,7 +37,7 @@ namespace System.Net.Http
                 if (!foundEku)
                 {
                     X509EnhancedKeyUsageExtension? enhancedUsageExt = extension as X509EnhancedKeyUsageExtension;
-                    if (enhancedUsageExt != null)
+                    if (enhancedUsageExt is not null)
                     {
                         foundEku = true;
                         isClientAuth = false;
@@ -57,7 +57,7 @@ namespace System.Net.Http
                 if (!foundKeyUsages)
                 {
                     X509KeyUsageExtension? usageExt = extension as X509KeyUsageExtension;
-                    if (usageExt != null)
+                    if (usageExt is not null)
                     {
                         foundKeyUsages = true;
                         isDigitalSignature = (usageExt.KeyUsages & X509KeyUsageFlags.DigitalSignature) != 0;
@@ -105,7 +105,7 @@ namespace System.Net.Http
         {
             clientCertificate = null;
             clientCertChain = null;
-            if (certificates == null)
+            if (certificates is null)
             {
                 return false;
             }
@@ -125,7 +125,7 @@ namespace System.Net.Http
                         }
 
                         X509Chain? chain = BuildNewChain(cert, includeClientApplicationPolicy: true);
-                        if (chain == null)
+                        if (chain is null)
                         {
                             continue;
                         }

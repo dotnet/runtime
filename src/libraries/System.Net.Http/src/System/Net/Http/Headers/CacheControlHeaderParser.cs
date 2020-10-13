@@ -23,7 +23,7 @@ namespace System.Net.Http.Headers
             out object? parsedValue)
         {
             CacheControlHeaderValue? temp = storeValue as CacheControlHeaderValue;
-            Debug.Assert(storeValue == null || temp != null, "'storeValue' is not of type CacheControlHeaderValue");
+            Debug.Assert(storeValue is null || temp is not null, "'storeValue' is not of type CacheControlHeaderValue");
 
             int resultLength = CacheControlHeaderValue.GetCacheControlLength(value, startIndex, temp, out temp);
 

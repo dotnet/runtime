@@ -26,7 +26,7 @@ namespace System.Xml
 
         internal XmlNode(XmlDocument doc)
         {
-            if (doc == null)
+            if (doc is null)
                 throw new ArgumentException(SR.Xdom_Node_Null_Doc);
 
             this.parentNode = doc;
@@ -35,13 +35,13 @@ namespace System.Xml
         public virtual XPathNavigator? CreateNavigator()
         {
             XmlDocument? thisAsDoc = this as XmlDocument;
-            if (thisAsDoc != null)
+            if (thisAsDoc is not null)
             {
                 return thisAsDoc.CreateNavigator(this);
             }
 
             XmlDocument? doc = OwnerDocument;
-            Debug.Assert(doc != null);
+            Debug.Assert(doc is not null);
             return doc.CreateNavigator(this);
         }
 
@@ -50,7 +50,7 @@ namespace System.Xml
         {
             XmlNodeList? list = SelectNodes(xpath);
             // SelectNodes returns null for certain node types
-            return list != null ? list[0] : null;
+            return list is not null ? list[0] : null;
         }
 
         // Selects the first node that matches the xpath expression and given namespace context.
@@ -59,7 +59,7 @@ namespace System.Xml
             XPathNavigator? xn = (this).CreateNavigator();
             //if the method is called on node types like DocType, Entity, XmlDeclaration,
             //the navigator returned is null. So just return null from here for those node types.
-            if (xn == null)
+            if (xn is null)
                 return null;
 
             XPathExpression exp = xn.Compile(xpath);
@@ -73,7 +73,7 @@ namespace System.Xml
             XPathNavigator? n = (this).CreateNavigator();
             //if the method is called on node types like DocType, Entity, XmlDeclaration,
             //the navigator returned is null. So just return null from here for those node types.
-            if (n == null)
+            if (n is null)
                 return null;
 
             return new XPathNodeList(n.Select(xpath));
@@ -85,7 +85,7 @@ namespace System.Xml
             XPathNavigator? xn = (this).CreateNavigator();
             //if the method is called on node types like DocType, Entity, XmlDeclaration,
             //the navigator returned is null. So just return null from here for those node types.
-            if (xn == null)
+            if (xn is null)
                 return null;
 
             XPathExpression exp = xn.Compile(xpath);
@@ -117,7 +117,7 @@ namespace System.Xml
         {
             get
             {
-                Debug.Assert(parentNode != null);
+                Debug.Assert(parentNode is not null);
 
                 if (parentNode.NodeType != XmlNodeType.Document)
                 {
@@ -126,7 +126,7 @@ namespace System.Xml
 
                 // Linear lookup through the children of the document
                 XmlLinkedNode? firstChild = parentNode.FirstChild as XmlLinkedNode;
-                if (firstChild != null)
+                if (firstChild is not null)
                 {
                     XmlLinkedNode? node = firstChild;
                     do
@@ -138,7 +138,7 @@ namespace System.Xml
 
                         node = node.next;
                     }
-                    while (node != null
+                    while (node is not null
                            && node != firstChild);
                 }
 
@@ -176,7 +176,7 @@ namespace System.Xml
         {
             get
             {
-                Debug.Assert(parentNode != null);
+                Debug.Assert(parentNode is not null);
                 if (parentNode.NodeType == XmlNodeType.Document)
                     return (XmlDocument)parentNode;
                 return parentNode.OwnerDocument;
@@ -189,7 +189,7 @@ namespace System.Xml
             get
             {
                 XmlLinkedNode? linkedNode = LastNode;
-                if (linkedNode != null)
+                if (linkedNode is not null)
                     return linkedNode.next;
 
                 return null;
@@ -217,7 +217,7 @@ namespace System.Xml
         {
             XmlNode? n = this.ParentNode;
 
-            while (n != null && n != this)
+            while (n is not null && n != this)
             {
                 if (n == node)
                     return true;
@@ -231,9 +231,9 @@ namespace System.Xml
         internal bool IsConnected()
         {
             XmlNode? parent = ParentNode;
-            while (parent != null && !(parent.NodeType == XmlNodeType.Document))
+            while (parent is not null && !(parent.NodeType == XmlNodeType.Document))
                 parent = parent.ParentNode;
-            return parent != null;
+            return parent is not null;
         }
 
         // Inserts the specified node immediately before the specified reference node.
@@ -242,7 +242,7 @@ namespace System.Xml
             if (this == newChild || AncestorNode(newChild))
                 throw new ArgumentException(SR.Xdom_Node_Insert_Child);
 
-            if (refChild == null)
+            if (refChild is null)
                 return AppendChild(newChild);
 
             if (!IsContainer)
@@ -256,13 +256,13 @@ namespace System.Xml
 
             XmlDocument? childDoc = newChild.OwnerDocument;
             XmlDocument? thisDoc = OwnerDocument;
-            if (childDoc != null && childDoc != thisDoc && childDoc != this)
+            if (childDoc is not null && childDoc != thisDoc && childDoc != this)
                 throw new ArgumentException(SR.Xdom_Node_Insert_Context);
 
             if (!CanInsertBefore(newChild, refChild))
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_Location);
 
-            if (newChild.ParentNode != null)
+            if (newChild.ParentNode is not null)
                 newChild.ParentNode.RemoveChild(newChild);
 
             // special case for doc-fragment.
@@ -270,7 +270,7 @@ namespace System.Xml
             {
                 XmlNode? first = newChild.FirstChild;
                 XmlNode? node = first;
-                if (node != null)
+                if (node is not null)
                 {
                     newChild.RemoveChild(node);
                     InsertBefore(node, refChild);
@@ -290,7 +290,7 @@ namespace System.Xml
             string? newChildValue = newChild.Value;
             XmlNodeChangedEventArgs? args = GetEventArgs(newChild, newChild.ParentNode, this, newChildValue, newChildValue, XmlNodeChangedAction.Insert);
 
-            if (args != null)
+            if (args is not null)
                 BeforeEvent(args);
 
             if (refNode == FirstChild)
@@ -345,7 +345,7 @@ namespace System.Xml
                 }
             }
 
-            if (args != null)
+            if (args is not null)
                 AfterEvent(args);
 
             return newNode;
@@ -357,7 +357,7 @@ namespace System.Xml
             if (this == newChild || AncestorNode(newChild))
                 throw new ArgumentException(SR.Xdom_Node_Insert_Child);
 
-            if (refChild == null)
+            if (refChild is null)
                 return PrependChild(newChild);
 
             if (!IsContainer)
@@ -371,13 +371,13 @@ namespace System.Xml
 
             XmlDocument? childDoc = newChild.OwnerDocument;
             XmlDocument? thisDoc = OwnerDocument;
-            if (childDoc != null && childDoc != thisDoc && childDoc != this)
+            if (childDoc is not null && childDoc != thisDoc && childDoc != this)
                 throw new ArgumentException(SR.Xdom_Node_Insert_Context);
 
             if (!CanInsertAfter(newChild, refChild))
                 throw new InvalidOperationException(SR.Xdom_Node_Insert_Location);
 
-            if (newChild.ParentNode != null)
+            if (newChild.ParentNode is not null)
                 newChild.ParentNode.RemoveChild(newChild);
 
             // special case for doc-fragment.
@@ -386,7 +386,7 @@ namespace System.Xml
                 XmlNode last = refChild;
                 XmlNode? first = newChild.FirstChild;
                 XmlNode? node = first;
-                while (node != null)
+                while (node is not null)
                 {
                     XmlNode? next = node.NextSibling;
                     newChild.RemoveChild(node);
@@ -406,7 +406,7 @@ namespace System.Xml
             string? newChildValue = newChild.Value;
             XmlNodeChangedEventArgs? args = GetEventArgs(newChild, newChild.ParentNode, this, newChildValue, newChildValue, XmlNodeChangedAction.Insert);
 
-            if (args != null)
+            if (args is not null)
                 BeforeEvent(args);
 
             if (refNode == LastNode)
@@ -463,7 +463,7 @@ namespace System.Xml
             }
 
 
-            if (args != null)
+            if (args is not null)
                 AfterEvent(args);
 
             return newNode;
@@ -492,7 +492,7 @@ namespace System.Xml
             string? oldNodeValue = oldNode.Value;
             XmlNodeChangedEventArgs? args = GetEventArgs(oldNode, this, null, oldNodeValue, oldNodeValue, XmlNodeChangedAction.Remove);
 
-            if (args != null)
+            if (args is not null)
                 BeforeEvent(args);
 
             XmlLinkedNode? lastNode = LastNode;
@@ -558,7 +558,7 @@ namespace System.Xml
                 }
             }
 
-            if (args != null)
+            if (args is not null)
                 AfterEvent(args);
 
             return oldChild;
@@ -574,7 +574,7 @@ namespace System.Xml
         public virtual XmlNode? AppendChild(XmlNode newChild)
         {
             XmlDocument? thisDoc = OwnerDocument;
-            if (thisDoc == null)
+            if (thisDoc is null)
             {
                 thisDoc = this as XmlDocument;
             }
@@ -584,11 +584,11 @@ namespace System.Xml
             if (this == newChild || AncestorNode(newChild))
                 throw new ArgumentException(SR.Xdom_Node_Insert_Child);
 
-            if (newChild.ParentNode != null)
+            if (newChild.ParentNode is not null)
                 newChild.ParentNode.RemoveChild(newChild);
 
             XmlDocument? childDoc = newChild.OwnerDocument;
-            if (childDoc != null && childDoc != thisDoc && childDoc != this)
+            if (childDoc is not null && childDoc != thisDoc && childDoc != this)
                 throw new ArgumentException(SR.Xdom_Node_Insert_Context);
 
             // special case for doc-fragment.
@@ -596,7 +596,7 @@ namespace System.Xml
             {
                 XmlNode? first = newChild.FirstChild;
                 XmlNode? node = first;
-                while (node != null)
+                while (node is not null)
                 {
                     XmlNode? next = node.NextSibling;
                     newChild.RemoveChild(node);
@@ -617,13 +617,13 @@ namespace System.Xml
             string? newChildValue = newChild.Value;
             XmlNodeChangedEventArgs? args = GetEventArgs(newChild, newChild.ParentNode, this, newChildValue, newChildValue, XmlNodeChangedAction.Insert);
 
-            if (args != null)
+            if (args is not null)
                 BeforeEvent(args);
 
             XmlLinkedNode? refNode = LastNode;
             XmlLinkedNode newNode = (XmlLinkedNode)newChild;
 
-            if (refNode == null)
+            if (refNode is null)
             {
                 newNode.next = newNode;
                 LastNode = newNode;
@@ -645,7 +645,7 @@ namespace System.Xml
                 }
             }
 
-            if (args != null)
+            if (args is not null)
                 AfterEvent(args);
 
             return newNode;
@@ -656,13 +656,13 @@ namespace System.Xml
         {
             XmlNodeChangedEventArgs? args = doc.GetInsertEventArgsForLoad(newChild, this);
 
-            if (args != null)
+            if (args is not null)
                 doc.BeforeEvent(args);
 
             XmlLinkedNode? refNode = LastNode;
             XmlLinkedNode newNode = (XmlLinkedNode)newChild;
 
-            if (refNode == null)
+            if (refNode is null)
             {
                 newNode.next = newNode;
                 LastNode = newNode;
@@ -684,7 +684,7 @@ namespace System.Xml
                 }
             }
 
-            if (args != null)
+            if (args is not null)
                 doc.AfterEvent(args);
 
             return newNode;
@@ -708,7 +708,7 @@ namespace System.Xml
         // Gets a value indicating whether this node has any child nodes.
         public virtual bool HasChildNodes
         {
-            get { return LastNode != null; }
+            get { return LastNode is not null; }
         }
 
         // Creates a duplicate of this node.
@@ -716,7 +716,7 @@ namespace System.Xml
 
         internal virtual void CopyChildren(XmlDocument doc, XmlNode container, bool deep)
         {
-            for (XmlNode? child = container.FirstChild; child != null; child = child.NextSibling)
+            for (XmlNode? child = container.FirstChild; child is not null; child = child.NextSibling)
             {
                 AppendChildForLoad(child.CloneNode(deep), doc);
             }
@@ -733,7 +733,7 @@ namespace System.Xml
         {
             XmlNode? firstChildTextLikeNode = null;
             StringBuilder sb = StringBuilderCache.Acquire();
-            for (XmlNode? crtChild = this.FirstChild; crtChild != null;)
+            for (XmlNode? crtChild = this.FirstChild; crtChild is not null;)
             {
                 XmlNode? nextChild = crtChild.NextSibling;
                 switch (crtChild.NodeType)
@@ -750,7 +750,7 @@ namespace System.Xml
                             }
                             else
                             {
-                                if (firstChildTextLikeNode != null)
+                                if (firstChildTextLikeNode is not null)
                                     this.RemoveChild(firstChildTextLikeNode);
                                 firstChildTextLikeNode = crtChild;
                             }
@@ -764,7 +764,7 @@ namespace System.Xml
                         }
                     default:
                         {
-                            if (firstChildTextLikeNode != null)
+                            if (firstChildTextLikeNode is not null)
                             {
                                 firstChildTextLikeNode.Value = sb.ToString();
                                 firstChildTextLikeNode = null;
@@ -776,7 +776,7 @@ namespace System.Xml
                 }
                 crtChild = nextChild;
             }
-            if (firstChildTextLikeNode != null && sb.Length > 0)
+            if (firstChildTextLikeNode is not null && sb.Length > 0)
                 firstChildTextLikeNode.Value = sb.ToString();
 
             StringBuilderCache.Release(sb);
@@ -785,7 +785,7 @@ namespace System.Xml
         private XmlNode? NormalizeWinner(XmlNode? firstNode, XmlNode secondNode)
         {
             //first node has the priority
-            if (firstNode == null)
+            if (firstNode is null)
                 return secondNode;
             Debug.Assert(firstNode.NodeType == XmlNodeType.Text
                         || firstNode.NodeType == XmlNodeType.SignificantWhitespace
@@ -814,7 +814,7 @@ namespace System.Xml
         {
             if (string.Equals("XML", feature, StringComparison.OrdinalIgnoreCase))
             {
-                if (version == null || version == "1.0" || version == "2.0")
+                if (version is null || version == "1.0" || version == "2.0")
                     return true;
             }
             return false;
@@ -852,7 +852,7 @@ namespace System.Xml
 
         internal static bool HasReadOnlyParent(XmlNode? n)
         {
-            while (n != null)
+            while (n is not null)
             {
                 switch (n.NodeType)
                 {
@@ -897,9 +897,9 @@ namespace System.Xml
 
         private void AppendChildText(StringBuilder builder)
         {
-            for (XmlNode? child = FirstChild; child != null; child = child.NextSibling)
+            for (XmlNode? child = FirstChild; child is not null; child = child.NextSibling)
             {
-                if (child.FirstChild == null)
+                if (child.FirstChild is null)
                 {
                     if (child.NodeType == XmlNodeType.Text || child.NodeType == XmlNodeType.CDATA
                         || child.NodeType == XmlNodeType.Whitespace || child.NodeType == XmlNodeType.SignificantWhitespace)
@@ -919,11 +919,11 @@ namespace System.Xml
             get
             {
                 XmlNode? fc = FirstChild;
-                if (fc == null)
+                if (fc is null)
                 {
                     return string.Empty;
                 }
-                if (fc.NextSibling == null)
+                if (fc.NextSibling is null)
                 {
                     XmlNodeType nodeType = fc.NodeType;
                     switch (nodeType)
@@ -944,8 +944,8 @@ namespace System.Xml
             set
             {
                 XmlNode? firstChild = FirstChild;
-                if (firstChild != null  //there is one child
-                    && firstChild.NextSibling == null // and exactly one
+                if (firstChild is not null  //there is one child
+                    && firstChild.NextSibling is null // and exactly one
                     && firstChild.NodeType == XmlNodeType.Text)//which is a text node
                 {
                     //this branch is for perf reason and event fired when TextNode.Value is changed
@@ -1015,7 +1015,7 @@ namespace System.Xml
             get
             {
                 XmlNode? curNode = this.ParentNode; //save one while loop since if going to here, the nodetype of this node can't be document, entity and entityref
-                while (curNode != null)
+                while (curNode is not null)
                 {
                     XmlNodeType nt = curNode.NodeType;
                     //EntityReference's children come from the dtd where they are defined.
@@ -1045,7 +1045,7 @@ namespace System.Xml
             XmlNode? child = FirstChild;
             XmlNode? sibling = null;
 
-            while (child != null)
+            while (child is not null)
             {
                 sibling = child.NextSibling;
                 RemoveChild(child);
@@ -1077,14 +1077,14 @@ namespace System.Xml
             XmlDocument doc = Document;
             string? pref = prefix;
 
-            if (doc != null)
+            if (doc is not null)
             {
                 pref = doc.NameTable.Get(pref);
-                if (pref == null)
+                if (pref is null)
                     return null;
 
                 XmlNode? node = this;
-                while (node != null)
+                while (node is not null)
                 {
                     if (node.NodeType == XmlNodeType.Element)
                     {
@@ -1159,18 +1159,18 @@ namespace System.Xml
         public virtual string GetPrefixOfNamespace(string namespaceURI)
         {
             string? prefix = GetPrefixOfNamespaceStrict(namespaceURI);
-            return prefix != null ? prefix : string.Empty;
+            return prefix is not null ? prefix : string.Empty;
         }
 
         internal string? GetPrefixOfNamespaceStrict(string namespaceURI)
         {
             XmlDocument doc = Document;
-            if (doc != null)
+            if (doc is not null)
             {
                 namespaceURI = doc.NameTable.Add(namespaceURI);
 
                 XmlNode? node = this;
-                while (node != null)
+                while (node is not null)
                 {
                     if (node.NodeType == XmlNodeType.Element)
                     {
@@ -1238,7 +1238,7 @@ namespace System.Xml
         {
             get
             {
-                for (XmlNode? n = FirstChild; n != null; n = n.NextSibling)
+                for (XmlNode? n = FirstChild; n is not null; n = n.NextSibling)
                 {
                     if (n.NodeType == XmlNodeType.Element && n.Name == name)
                         return (XmlElement)n;
@@ -1254,7 +1254,7 @@ namespace System.Xml
         {
             get
             {
-                for (XmlNode? n = FirstChild; n != null; n = n.NextSibling)
+                for (XmlNode? n = FirstChild; n is not null; n = n.NextSibling)
                 {
                     if (n.NodeType == XmlNodeType.Element && n.LocalName == localname && n.NamespaceURI == ns)
                         return (XmlElement)n;
@@ -1266,7 +1266,7 @@ namespace System.Xml
 
         internal virtual void SetParent(XmlNode? node)
         {
-            if (node == null)
+            if (node is null)
             {
                 this.parentNode = OwnerDocument;
             }
@@ -1298,7 +1298,7 @@ namespace System.Xml
 
         internal virtual XmlNode? FindChild(XmlNodeType type)
         {
-            for (XmlNode? child = FirstChild; child != null; child = child.NextSibling)
+            for (XmlNode? child = FirstChild; child is not null; child = child.NextSibling)
             {
                 if (child.NodeType == type)
                 {
@@ -1312,11 +1312,11 @@ namespace System.Xml
         internal virtual XmlNodeChangedEventArgs? GetEventArgs(XmlNode node, XmlNode? oldParent, XmlNode? newParent, string? oldValue, string? newValue, XmlNodeChangedAction action)
         {
             XmlDocument? doc = OwnerDocument;
-            if (doc != null)
+            if (doc is not null)
             {
                 if (!doc.IsLoading)
                 {
-                    if (((newParent != null && newParent.IsReadOnly) || (oldParent != null && oldParent.IsReadOnly)))
+                    if (((newParent is not null && newParent.IsReadOnly) || (oldParent is not null && oldParent.IsReadOnly)))
                         throw new InvalidOperationException(SR.Xdom_Node_Modify_ReadOnly);
                 }
 
@@ -1328,13 +1328,13 @@ namespace System.Xml
 
         internal virtual void BeforeEvent(XmlNodeChangedEventArgs args)
         {
-            if (args != null)
+            if (args is not null)
                 OwnerDocument!.BeforeEvent(args);
         }
 
         internal virtual void AfterEvent(XmlNodeChangedEventArgs args)
         {
-            if (args != null)
+            if (args is not null)
                 OwnerDocument!.AfterEvent(args);
         }
 
@@ -1347,7 +1347,7 @@ namespace System.Xml
                 do
                 {
                     elem = node as XmlElement;
-                    if (elem != null && elem.HasAttribute("xml:space"))
+                    if (elem is not null && elem.HasAttribute("xml:space"))
                     {
                         switch (XmlConvert.TrimString(elem.GetAttribute("xml:space")))
                         {
@@ -1362,7 +1362,7 @@ namespace System.Xml
                     }
 
                     node = node.ParentNode;
-                } while (node != null);
+                } while (node is not null);
 
                 return XmlSpace.None;
             }
@@ -1377,14 +1377,14 @@ namespace System.Xml
                 do
                 {
                     elem = node as XmlElement;
-                    if (elem != null)
+                    if (elem is not null)
                     {
                         if (elem.HasAttribute("xml:lang"))
                             return elem.GetAttribute("xml:lang");
                     }
 
                     node = node.ParentNode;
-                } while (node != null);
+                } while (node is not null);
 
                 return string.Empty;
             }

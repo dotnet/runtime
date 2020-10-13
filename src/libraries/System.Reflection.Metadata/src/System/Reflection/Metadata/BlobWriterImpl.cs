@@ -146,7 +146,7 @@ namespace System.Reflection.Metadata
 
         internal static void WriteConstant(ref BlobWriter writer, object? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a 32-bit.
                 writer.WriteUInt32(0);
@@ -219,7 +219,7 @@ namespace System.Reflection.Metadata
 
         internal static void WriteConstant(BlobBuilder writer, object? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a 32-bit.
                 writer.WriteUInt32(0);

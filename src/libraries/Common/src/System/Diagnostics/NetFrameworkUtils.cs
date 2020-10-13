@@ -38,7 +38,7 @@ namespace System.Diagnostics
         // need to carefully partition the real CER part of out logic in a sub-method (and ensure the jit doesn't inline on us).
         private static bool SafeWaitForMutex(Mutex mutexIn, ref Mutex mutexOut)
         {
-            Debug.Assert(mutexOut == null, "You must pass in a null ref Mutex");
+            Debug.Assert(mutexOut is null, "You must pass in a null ref Mutex");
 
             // Wait as long as necessary for the mutex.
             while (true)
@@ -46,7 +46,7 @@ namespace System.Diagnostics
                 // Attempt to acquire the mutex but timeout quickly if we can't.
                 if (!SafeWaitForMutexOnce(mutexIn, ref mutexOut))
                     return false;
-                if (mutexOut != null)
+                if (mutexOut is not null)
                     return true;
 
                 // We come out here to the outer method every so often so we're not in a CER and a thread abort can interrupt us.
@@ -95,7 +95,7 @@ namespace System.Diagnostics
                 }
 
                 // If we're not leaving with the Mutex we don't require thread affinity and we're not a critical region any more.
-                if (mutexOut == null)
+                if (mutexOut is null)
                 {
                     Thread.EndThreadAffinity();
                     Thread.EndCriticalRegion();
@@ -119,14 +119,14 @@ namespace System.Diagnostics
                 else
                     baseKey = RegistryKey.OpenRemoteBaseKey(RegistryHive.LocalMachine, machineName);
 
-                if (baseKey == null)
+                if (baseKey is null)
                     throw new InvalidOperationException(SR.Format(SR.RegKeyMissingShort, "HKEY_LOCAL_MACHINE", machineName));
 
                 complusReg = baseKey.OpenSubKey("SOFTWARE\\Microsoft\\.NETFramework");
-                if (complusReg != null)
+                if (complusReg is not null)
                 {
                     string installRoot = (string)complusReg.GetValue("InstallRoot");
-                    if (installRoot != null && installRoot != string.Empty)
+                    if (installRoot is not null && installRoot != string.Empty)
                     {
                         // the "policy" subkey contains a v{major}.{minor} subkey for each version installed.  There are also
                         // some extra subkeys like "standards" and "upgrades" we want to ignore.
@@ -138,14 +138,14 @@ namespace System.Diagnostics
                         // This is the full version string of the install on the remote machine we want to use (for example "v2.0.50727")
                         string version = null;
 
-                        if (policyKey != null)
+                        if (policyKey is not null)
                         {
                             try
                             {
                                 // First check to see if there is a version of the runtime with the same minor and major number:
                                 RegistryKey bestKey = policyKey.OpenSubKey(versionPrefix);
 
-                                if (bestKey != null)
+                                if (bestKey is not null)
                                 {
                                     try
                                     {
@@ -184,7 +184,7 @@ namespace System.Diagnostics
                                             }
 
                                             RegistryKey k = policyKey.OpenSubKey(majorVersion);
-                                            if (k == null)
+                                            if (k is null)
                                             {
                                                 // We may be able to use another subkey
                                                 continue;
@@ -214,7 +214,7 @@ namespace System.Diagnostics
                                 policyKey.Close();
                             }
 
-                            if (version != null && version != string.Empty)
+                            if (version is not null && version != string.Empty)
                             {
                                 StringBuilder installBuilder = new StringBuilder();
                                 installBuilder.Append(installRoot);

@@ -13,7 +13,7 @@ namespace System.Text
             StringBuilder head = this;
             StringBuilder? current = this;
 
-            while (current != null)
+            while (current is not null)
             {
                 if (count < maxChunksToShow)
                 {
@@ -21,7 +21,7 @@ namespace System.Text
                 }
                 else
                 {
-                    Debug.Assert(head.m_ChunkPrevious != null);
+                    Debug.Assert(head.m_ChunkPrevious is not null);
                     head = head.m_ChunkPrevious;
                 }
                 current = current.m_ChunkPrevious;
@@ -32,7 +32,7 @@ namespace System.Text
             for (int i = count; i > 0; i--)
             {
                 chunks[i - 1] = new string(current.m_ChunkChars).Replace('\0', '.');
-                Debug.Assert(current.m_ChunkPrevious != null);
+                Debug.Assert(current.m_ChunkPrevious is not null);
                 current = current.m_ChunkPrevious;
             }
 

@@ -132,7 +132,7 @@ namespace System.Xml.Xsl
         public void Load(string stylesheetUri)
         {
             Reset();
-            if (stylesheetUri == null)
+            if (stylesheetUri is null)
             {
                 throw new ArgumentNullException(nameof(stylesheetUri));
             }
@@ -142,7 +142,7 @@ namespace System.Xml.Xsl
         public void Load(string stylesheetUri, XsltSettings? settings, XmlResolver? stylesheetResolver)
         {
             Reset();
-            if (stylesheetUri == null)
+            if (stylesheetUri is null)
             {
                 throw new ArgumentNullException(nameof(stylesheetUri));
             }
@@ -151,17 +151,17 @@ namespace System.Xml.Xsl
 
         private CompilerErrorCollection LoadInternal(object stylesheet, XsltSettings? settings, XmlResolver? stylesheetResolver)
         {
-            if (stylesheet == null)
+            if (stylesheet is null)
             {
                 throw new ArgumentNullException(nameof(stylesheet));
             }
-            if (settings == null)
+            if (settings is null)
             {
                 settings = XsltSettings.Default;
             }
             CompileXsltToQil(stylesheet, settings, stylesheetResolver);
             CompilerError? error = GetFirstError();
-            if (error != null)
+            if (error is not null)
             {
                 throw new XslLoadException(error);
             }
@@ -213,14 +213,14 @@ namespace System.Xml.Xsl
         {
 #if FEATURE_COMPILED_XSL
             Reset();
-            if (compiledStylesheet == null)
+            if (compiledStylesheet is null)
                 throw new ArgumentNullException(nameof(compiledStylesheet));
 
             object[] customAttrs = compiledStylesheet.GetCustomAttributes(typeof(GeneratedCodeAttribute), /*inherit:*/false);
             GeneratedCodeAttribute? generatedCodeAttr = customAttrs.Length > 0 ? (GeneratedCodeAttribute)customAttrs[0] : null;
 
             // If GeneratedCodeAttribute is not there, it is not a compiled stylesheet class
-            if (generatedCodeAttr != null && generatedCodeAttr.Tool == typeof(XslCompiledTransform).FullName)
+            if (generatedCodeAttr is not null && generatedCodeAttr.Tool == typeof(XslCompiledTransform).FullName)
             {
                 if (s_version < Version.Parse(generatedCodeAttr.Version!))
                 {
@@ -231,12 +231,12 @@ namespace System.Xml.Xsl
                 FieldInfo? fldTypes = compiledStylesheet.GetField(XmlQueryStaticData.TypesFieldName, BindingFlags.Static | BindingFlags.NonPublic);
 
                 // If private fields are not there, it is not a compiled stylesheet class
-                if (fldData != null && fldTypes != null)
+                if (fldData is not null && fldTypes is not null)
                 {
                     // Retrieve query static data from the type
                     byte[]? queryData = fldData.GetValue(/*this:*/null) as byte[];
 
-                    if (queryData != null)
+                    if (queryData is not null)
                     {
                         MethodInfo? executeMethod = compiledStylesheet.GetMethod("Execute", BindingFlags.Static | BindingFlags.NonPublic);
                         Type[]? earlyBoundTypes = (Type[]?)fldTypes.GetValue(/*this:*/null);
@@ -249,7 +249,7 @@ namespace System.Xml.Xsl
             }
 
             // Throw an exception if the command was not loaded
-            if (_command == null)
+            if (_command is null)
                 throw new ArgumentException(SR.Format(SR.Xslt_NotCompiledStylesheet, compiledStylesheet.FullName), nameof(compiledStylesheet));
 #else
             throw new PlatformNotSupportedException(SR.Xslt_NotSupported);
@@ -261,15 +261,15 @@ namespace System.Xml.Xsl
 #if FEATURE_COMPILED_XSL
             Reset();
 
-            if (executeMethod == null)
+            if (executeMethod is null)
                 throw new ArgumentNullException(nameof(executeMethod));
 
-            if (queryData == null)
+            if (queryData is null)
                 throw new ArgumentNullException(nameof(queryData));
 
 
             DynamicMethod? dm = executeMethod as DynamicMethod;
-            Delegate delExec = (dm != null) ? dm.CreateDelegate(typeof(ExecuteDelegate)) : executeMethod.CreateDelegate(typeof(ExecuteDelegate));
+            Delegate delExec = (dm is not null) ? dm.CreateDelegate(typeof(ExecuteDelegate)) : executeMethod.CreateDelegate(typeof(ExecuteDelegate));
             _command = new XmlILCommand((ExecuteDelegate)delExec, new XmlQueryStaticData(queryData, earlyBoundTypes));
             _outputSettings = _command.StaticData.DefaultWriterSettings;
 #else
@@ -398,10 +398,10 @@ namespace System.Xml.Xsl
 
         public void Transform(string inputUri, string resultsFile)
         {
-            if (inputUri == null)
+            if (inputUri is null)
                 throw new ArgumentNullException(nameof(inputUri));
 
-            if (resultsFile == null)
+            if (resultsFile is null)
                 throw new ArgumentNullException(nameof(resultsFile));
 
             // SQLBUDT 276415: Prevent wiping out the content of the input file if the output file is the same
@@ -449,19 +449,19 @@ namespace System.Xml.Xsl
 
         private static void CheckArguments(object input, object results)
         {
-            if (input == null)
+            if (input is null)
                 throw new ArgumentNullException(nameof(input));
 
-            if (results == null)
+            if (results is null)
                 throw new ArgumentNullException(nameof(results));
         }
 
         private static void CheckArguments(string inputUri, object results)
         {
-            if (inputUri == null)
+            if (inputUri is null)
                 throw new ArgumentNullException(nameof(inputUri));
 
-            if (results == null)
+            if (results is null)
                 throw new ArgumentNullException(nameof(results));
         }
 
@@ -469,7 +469,7 @@ namespace System.Xml.Xsl
         private void CheckCommand()
         {
 #if FEATURE_COMPILED_XSL
-            if (_command == null)
+            if (_command is null)
             {
                 throw new InvalidOperationException(SR.Xslt_NoStylesheetLoaded);
             }
@@ -503,7 +503,7 @@ namespace System.Xml.Xsl
 
         private void TestGenerate(XsltSettings settings)
         {
-            Debug.Assert(_qil != null, "You must compile to Qil first");
+            Debug.Assert(_qil is not null, "You must compile to Qil first");
             CompileQilToMsil(settings);
         }
 

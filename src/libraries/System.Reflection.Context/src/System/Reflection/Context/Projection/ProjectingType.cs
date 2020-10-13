@@ -137,7 +137,7 @@ namespace System.Reflection.Context.Projection
         public override bool IsAssignableFrom(Type c)
         {
             ProjectingType otherType = c as ProjectingType;
-            if (otherType == null || Projector != otherType.Projector)
+            if (otherType is null || Projector != otherType.Projector)
                 return false;
 
             return UnderlyingType.IsAssignableFrom(otherType.UnderlyingType);
@@ -153,7 +153,7 @@ namespace System.Reflection.Context.Projection
         public override bool IsEquivalentTo(Type other)
         {
             ProjectingType otherType = other as ProjectingType;
-            if (otherType == null || Projector != otherType.Projector)
+            if (otherType is null || Projector != otherType.Projector)
                 return false;
 
             return UnderlyingType.IsEquivalentTo(otherType.UnderlyingType);
@@ -172,7 +172,7 @@ namespace System.Reflection.Context.Projection
         public override bool IsSubclassOf(Type c)
         {
             ProjectingType otherType = c as ProjectingType;
-            if (otherType == null || Projector != otherType.Projector)
+            if (otherType is null || Projector != otherType.Projector)
                 return false;
 
             return UnderlyingType.IsSubclassOf(otherType.UnderlyingType);

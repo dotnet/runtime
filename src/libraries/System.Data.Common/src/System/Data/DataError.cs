@@ -37,16 +37,16 @@ namespace System.Data
         // this method resets the error to the new value.
         internal void SetColumnError(DataColumn column, string? error)
         {
-            Debug.Assert(column != null, "Invalid (null) argument");
-            Debug.Assert(column.Table != null, "Invalid (loose) column");
-            if (error == null || error.Length == 0)
+            Debug.Assert(column is not null, "Invalid (null) argument");
+            Debug.Assert(column.Table is not null, "Invalid (loose) column");
+            if (error is null || error.Length == 0)
             {
                 // remove error from the collection
                 Clear(column);
             }
             else
             {
-                if (_errorList == null)
+                if (_errorList is null)
                 {
                     _errorList = new ColumnError[initialCapacity];
                 }

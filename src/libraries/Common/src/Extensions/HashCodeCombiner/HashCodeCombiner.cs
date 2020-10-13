@@ -26,7 +26,7 @@ namespace Microsoft.Extensions.Internal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(IEnumerable e)
         {
-            if (e == null)
+            if (e is null)
             {
                 Add(0);
             }
@@ -57,21 +57,21 @@ namespace Microsoft.Extensions.Internal
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(string s)
         {
-            int hashCode = (s != null) ? s.GetHashCode() : 0;
+            int hashCode = (s is not null) ? s.GetHashCode() : 0;
             Add(hashCode);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(object o)
         {
-            int hashCode = (o != null) ? o.GetHashCode() : 0;
+            int hashCode = (o is not null) ? o.GetHashCode() : 0;
             Add(hashCode);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add<TValue>(TValue value, IEqualityComparer<TValue> comparer)
         {
-            int hashCode = value != null ? comparer.GetHashCode(value) : 0;
+            int hashCode = value is not null ? comparer.GetHashCode(value) : 0;
             Add(hashCode);
         }
 

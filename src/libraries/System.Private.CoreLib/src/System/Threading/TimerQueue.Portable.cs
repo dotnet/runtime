@@ -29,7 +29,7 @@ namespace System.Threading
 
         private static List<TimerQueue> InitializeScheduledTimerManager_Locked()
         {
-            Debug.Assert(s_scheduledTimers == null);
+            Debug.Assert(s_scheduledTimers is null);
 
             var timers = new List<TimerQueue>(Instances.Length);
             s_scheduledTimersToFire ??= new List<TimerQueue>(Instances.Length);
@@ -53,7 +53,7 @@ namespace System.Threading
                 if (!_isScheduled)
                 {
                     List<TimerQueue>? timers = s_scheduledTimers;
-                    if (timers == null)
+                    if (timers is null)
                     {
                         timers = InitializeScheduledTimerManager_Locked();
                     }

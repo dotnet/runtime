@@ -41,13 +41,13 @@ namespace System.Globalization
             using (RegistryKey? key = Registry.CurrentUser.OpenSubKey(InternationalRegKey))
             {
                 // Abort if we didn't find anything
-                if (key == null)
+                if (key is null)
                 {
                     return 0;
                 }
 
                 object? value = key.GetValue(HijriAdvanceRegKeyEntry);
-                if (value == null)
+                if (value is null)
                 {
                     return 0;
                 }

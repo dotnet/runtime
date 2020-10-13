@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Xml
         // An enveloped signature has no inner XML elements
         public override void LoadInnerXml(XmlNodeList nodeList)
         {
-            if (nodeList != null && nodeList.Count > 0)
+            if (nodeList is not null && nodeList.Count > 0)
                 throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
         }
 
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography.Xml
             XmlReader xmlReader = Utils.PreProcessStreamInput(stream, resolver, BaseURI);
             doc.Load(xmlReader);
             _containingDocument = doc;
-            if (_containingDocument == null)
+            if (_containingDocument is null)
                 throw new CryptographicException(SR.Cryptography_Xml_EnvelopedSignatureRequiresContext);
             _nsm = new XmlNamespaceManager(_containingDocument.NameTable);
             _nsm.AddNamespace("dsig", SignedXml.XmlDsigNamespaceUrl);
@@ -92,10 +92,10 @@ namespace System.Security.Cryptography.Xml
         private void LoadXmlNodeListInput(XmlNodeList nodeList)
         {
             // Empty node list is not acceptable
-            if (nodeList == null)
+            if (nodeList is null)
                 throw new ArgumentNullException(nameof(nodeList));
             _containingDocument = Utils.GetOwnerDocument(nodeList);
-            if (_containingDocument == null)
+            if (_containingDocument is null)
                 throw new CryptographicException(SR.Cryptography_Xml_EnvelopedSignatureRequiresContext);
 
             _nsm = new XmlNamespaceManager(_containingDocument.NameTable);
@@ -105,7 +105,7 @@ namespace System.Security.Cryptography.Xml
 
         private void LoadXmlDocumentInput(XmlDocument doc)
         {
-            if (doc == null)
+            if (doc is null)
                 throw new ArgumentNullException(nameof(doc));
             _containingDocument = doc;
             _nsm = new XmlNamespaceManager(_containingDocument.NameTable);
@@ -114,21 +114,21 @@ namespace System.Security.Cryptography.Xml
 
         public override object GetOutput()
         {
-            if (_containingDocument == null)
+            if (_containingDocument is null)
                 throw new CryptographicException(SR.Cryptography_Xml_EnvelopedSignatureRequiresContext);
 
             // If we have received an XmlNodeList as input
-            if (_inputNodeList != null)
+            if (_inputNodeList is not null)
             {
                 // If the position has not been set, then we don't want to remove any signature tags
                 if (_signaturePosition == 0) return _inputNodeList;
                 XmlNodeList signatureList = _containingDocument.SelectNodes("//dsig:Signature", _nsm);
-                if (signatureList == null) return _inputNodeList;
+                if (signatureList is null) return _inputNodeList;
 
                 CanonicalXmlNodeList resultNodeList = new CanonicalXmlNodeList();
                 foreach (XmlNode node in _inputNodeList)
                 {
-                    if (node == null) continue;
+                    if (node is null) continue;
                     // keep namespaces
                     if (Utils.IsXmlNamespaceNode(node) || Utils.IsNamespaceNode(node))
                     {
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography.Xml
                                 position++;
                                 if (node1 == result) break;
                             }
-                            if (result == null || position != _signaturePosition)
+                            if (result is null || position != _signaturePosition)
                             {
                                 resultNodeList.Add(node);
                             }
@@ -161,7 +161,7 @@ namespace System.Security.Cryptography.Xml
             else
             {
                 XmlNodeList signatureList = _containingDocument.SelectNodes("//dsig:Signature", _nsm);
-                if (signatureList == null) return _containingDocument;
+                if (signatureList is null) return _containingDocument;
                 if (signatureList.Count < _signaturePosition || _signaturePosition <= 0) return _containingDocument;
 
                 // Remove the signature node with all its children nodes
@@ -174,7 +174,7 @@ namespace System.Security.Cryptography.Xml
         {
             if (type == typeof(XmlNodeList) || type.IsSubclassOf(typeof(XmlNodeList)))
             {
-                if (_inputNodeList == null)
+                if (_inputNodeList is null)
                 {
                     _inputNodeList = Utils.AllDescendantNodes(_containingDocument, true);
                 }
@@ -182,7 +182,7 @@ namespace System.Security.Cryptography.Xml
             }
             else if (type == typeof(XmlDocument) || type.IsSubclassOf(typeof(XmlDocument)))
             {
-                if (_inputNodeList != null) throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
+                if (_inputNodeList is not null) throw new ArgumentException(SR.Cryptography_Xml_TransformIncorrectInputType, nameof(type));
                 return (XmlDocument)GetOutput();
             }
             else

@@ -74,9 +74,9 @@ namespace Microsoft.Win32
          */
         internal static Variant ChangeType(Variant source, Type targetClass, short options, CultureInfo culture)
         {
-            if (targetClass == null)
+            if (targetClass is null)
                 throw new ArgumentNullException(nameof(targetClass));
-            if (culture == null)
+            if (culture is null)
                 throw new ArgumentNullException(nameof(culture));
             Variant result = default;
             ChangeTypeEx(ref result, ref source,
@@ -92,7 +92,7 @@ namespace Microsoft.Win32
 
         private static int GetCVTypeFromClass(Type ctype)
         {
-            Debug.Assert(ctype != null);
+            Debug.Assert(ctype is not null);
             Debug.Assert(ClassTypes[CV_OBJECT] == typeof(object), "OAVariantLib::ClassTypes[CV_OBJECT] == Object.class");
 
             int cvtype = -1;

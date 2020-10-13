@@ -30,7 +30,7 @@ namespace System.Threading
 
         private void DisposeCore()
         {
-            if (_pMonitor == null)
+            if (_pMonitor is null)
             {
                 return;
             }

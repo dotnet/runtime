@@ -24,7 +24,7 @@ namespace System.Xml
         {
             if (id < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(id), SR.XmlInvalidID));
-            if (value == null)
+            if (value is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
             XmlDictionaryString? xmlString;
             if (TryLookup(id, out xmlString))
@@ -33,14 +33,14 @@ namespace System.Xml
             xmlString = new XmlDictionaryString(this, value, id);
             if (id >= MaxArrayEntries)
             {
-                if (_stringDict == null)
+                if (_stringDict is null)
                     _stringDict = new Dictionary<int, XmlDictionaryString>();
 
                 _stringDict.Add(id, xmlString);
             }
             else
             {
-                if (_strings == null)
+                if (_strings is null)
                 {
                     _strings = new XmlDictionaryString[Math.Max(id + 1, 16)];
                 }
@@ -57,14 +57,14 @@ namespace System.Xml
 
         public bool TryLookup(int key, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
-            if (_strings != null && key >= 0 && key < _strings.Length)
+            if (_strings is not null && key >= 0 && key < _strings.Length)
             {
                 result = _strings[key];
-                return result != null;
+                return result is not null;
             }
             else if (key >= MaxArrayEntries)
             {
-                if (_stringDict != null)
+                if (_stringDict is not null)
                     return _stringDict.TryGetValue(key, out result);
             }
             result = null;
@@ -73,15 +73,15 @@ namespace System.Xml
 
         public bool TryLookup(string value, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
-            if (value == null)
+            if (value is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(value));
 
-            if (_strings != null)
+            if (_strings is not null)
             {
                 for (int i = 0; i < _strings.Length; i++)
                 {
                     XmlDictionaryString s = _strings[i];
-                    if (s != null && s.Value == value)
+                    if (s is not null && s.Value == value)
                     {
                         result = s;
                         return true;
@@ -89,7 +89,7 @@ namespace System.Xml
                 }
             }
 
-            if (_stringDict != null)
+            if (_stringDict is not null)
             {
                 foreach (XmlDictionaryString s in _stringDict.Values)
                 {
@@ -107,7 +107,7 @@ namespace System.Xml
 
         public bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
-            if (value == null)
+            if (value is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
             if (value.Dictionary != this)
             {
@@ -120,10 +120,10 @@ namespace System.Xml
 
         public void Clear()
         {
-            if (_strings != null)
+            if (_strings is not null)
                 Array.Clear(_strings, 0, _strings.Length);
 
-            if (_stringDict != null)
+            if (_stringDict is not null)
                 _stringDict.Clear();
         }
     }

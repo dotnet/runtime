@@ -71,11 +71,11 @@ namespace System.ComponentModel
         public ReflectEventDescriptor(Type componentClass, string name, Type type, Attribute[] attributes)
             : base(name, attributes)
         {
-            if (componentClass == null)
+            if (componentClass is null)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, nameof(componentClass)));
             }
-            if (type == null || !(typeof(Delegate)).IsAssignableFrom(type))
+            if (type is null || !(typeof(Delegate)).IsAssignableFrom(type))
             {
                 throw new ArgumentException(SR.Format(SR.ErrorInvalidEventType, name));
             }
@@ -139,18 +139,18 @@ namespace System.ComponentModel
         {
             FillMethods();
 
-            if (component != null)
+            if (component is not null)
             {
                 ISite site = GetSite(component);
                 IComponentChangeService changeService = null;
 
                 // Announce that we are about to change this component
-                if (site != null)
+                if (site is not null)
                 {
                     changeService = (IComponentChangeService)site.GetService(typeof(IComponentChangeService));
                 }
 
-                if (changeService != null)
+                if (changeService is not null)
                 {
                     try
                     {
@@ -169,7 +169,7 @@ namespace System.ComponentModel
 
                 bool shadowed = false;
 
-                if (site != null && site.DesignMode)
+                if (site is not null && site.DesignMode)
                 {
                     // Events are final, so just check the class
                     if (EventType != value.GetType())
@@ -177,7 +177,7 @@ namespace System.ComponentModel
                         throw new ArgumentException(SR.Format(SR.ErrorInvalidEventHandler, Name));
                     }
                     IDictionaryService dict = (IDictionaryService)site.GetService(typeof(IDictionaryService));
-                    if (dict != null)
+                    if (dict is not null)
                     {
                         Delegate eventdesc = (Delegate)dict.GetValue(this);
                         eventdesc = Delegate.Combine(eventdesc, value);
@@ -215,17 +215,17 @@ namespace System.ComponentModel
             //     supercede existing values.
 
             FillMethods();
-            Debug.Assert(_componentClass != null, "Must have a component class for FilterAttributes");
-            if (_realEvent != null)
+            Debug.Assert(_componentClass is not null, "Must have a component class for FilterAttributes");
+            if (_realEvent is not null)
             {
                 FillEventInfoAttribute(_realEvent, attributes);
             }
             else
             {
-                Debug.Assert(_removeMethod != null, $"Null remove method for {Name}");
+                Debug.Assert(_removeMethod is not null, $"Null remove method for {Name}");
                 FillSingleMethodAttribute(_removeMethod, attributes);
 
-                Debug.Assert(_addMethod != null, $"Null remove method for {Name}");
+                Debug.Assert(_addMethod is not null, $"Null remove method for {Name}");
                 FillSingleMethodAttribute(_addMethod, attributes);
             }
 
@@ -239,7 +239,7 @@ namespace System.ComponentModel
             string eventName = realEventInfo.Name;
             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
             Type currentReflectType = realEventInfo.ReflectedType;
-            Debug.Assert(currentReflectType != null, "currentReflectType cannot be null");
+            Debug.Assert(currentReflectType is not null, "currentReflectType cannot be null");
             int depth = 0;
 
             // First, calculate the depth of the object hierarchy. We do this so we can do a single
@@ -262,7 +262,7 @@ namespace System.ComponentModel
                     MemberInfo memberInfo = currentReflectType.GetEvent(eventName, bindingFlags);
 
                     // Get custom attributes for the member info.
-                    if (memberInfo != null)
+                    if (memberInfo is not null)
                     {
                         attributeStack[--depth] = ReflectTypeDescriptionProvider.ReflectGetAttributes(memberInfo);
                     }
@@ -275,7 +275,7 @@ namespace System.ComponentModel
                 // from base class to most derived.
                 foreach (Attribute[] attributeArray in attributeStack)
                 {
-                    if (attributeArray != null)
+                    if (attributeArray is not null)
                     {
                         foreach (Attribute attr in attributeArray)
                         {
@@ -294,21 +294,21 @@ namespace System.ComponentModel
         {
             if (_filledMethods) return;
 
-            if (_realEvent != null)
+            if (_realEvent is not null)
             {
                 _addMethod = _realEvent.GetAddMethod();
                 _removeMethod = _realEvent.GetRemoveMethod();
 
                 EventInfo defined = null;
 
-                if (_addMethod == null || _removeMethod == null)
+                if (_addMethod is null || _removeMethod is null)
                 {
                     Type start = _componentClass.BaseType;
-                    while (start != null && start != typeof(object))
+                    while (start is not null && start != typeof(object))
                     {
                         BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
                         EventInfo test = start.GetEvent(_realEvent.Name, bindingFlags);
-                        if (test.GetAddMethod() != null)
+                        if (test.GetAddMethod() is not null)
                         {
                             defined = test;
                             break;
@@ -316,7 +316,7 @@ namespace System.ComponentModel
                     }
                 }
 
-                if (defined != null)
+                if (defined is not null)
                 {
                     _addMethod = defined.GetAddMethod();
                     _removeMethod = defined.GetRemoveMethod();
@@ -331,7 +331,7 @@ namespace System.ComponentModel
             {
                 // first, try to get the eventInfo...
                 _realEvent = _componentClass.GetEvent(Name);
-                if (_realEvent != null)
+                if (_realEvent is not null)
                 {
                     // if we got one, just recurse and return.
                     FillMethods();
@@ -341,7 +341,7 @@ namespace System.ComponentModel
                 Type[] argsType = new Type[] { _type };
                 _addMethod = FindMethod(_componentClass, "AddOn" + Name, argsType, typeof(void));
                 _removeMethod = FindMethod(_componentClass, "RemoveOn" + Name, argsType, typeof(void));
-                if (_addMethod == null || _removeMethod == null)
+                if (_addMethod is null || _removeMethod is null)
                 {
                     Debug.Fail($"Missing event accessors for {_componentClass.FullName}. {Name}");
                     throw new ArgumentException(SR.Format(SR.ErrorMissingEventAccessors, Name));
@@ -356,13 +356,13 @@ namespace System.ComponentModel
             string methodName = realMethodInfo.Name;
             BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly;
             Type currentReflectType = realMethodInfo.ReflectedType;
-            Debug.Assert(currentReflectType != null, "currentReflectType cannot be null");
+            Debug.Assert(currentReflectType is not null, "currentReflectType cannot be null");
 
             // First, calculate the depth of the object hierarchy. We do this so we can do a single
             // object create for an array of attributes.
             //
             int depth = 0;
-            while (currentReflectType != null && currentReflectType != typeof(object))
+            while (currentReflectType is not null && currentReflectType != typeof(object))
             {
                 depth++;
                 currentReflectType = currentReflectType.BaseType;
@@ -375,13 +375,13 @@ namespace System.ComponentModel
                 currentReflectType = realMethodInfo.ReflectedType;
                 Attribute[][] attributeStack = new Attribute[depth][];
 
-                while (currentReflectType != null && currentReflectType != typeof(object))
+                while (currentReflectType is not null && currentReflectType != typeof(object))
                 {
                     // Fill in our member info so we can get at the custom attributes.
                     MemberInfo memberInfo = currentReflectType.GetMethod(methodName, bindingFlags);
 
                     // Get custom attributes for the member info.
-                    if (memberInfo != null)
+                    if (memberInfo is not null)
                     {
                         attributeStack[--depth] = ReflectTypeDescriptionProvider.ReflectGetAttributes(memberInfo);
                     }
@@ -394,7 +394,7 @@ namespace System.ComponentModel
                 // from base class to most derived.
                 foreach (Attribute[] attributeArray in attributeStack)
                 {
-                    if (attributeArray != null)
+                    if (attributeArray is not null)
                     {
                         foreach (Attribute attr in attributeArray)
                         {
@@ -413,18 +413,18 @@ namespace System.ComponentModel
         {
             FillMethods();
 
-            if (component != null)
+            if (component is not null)
             {
                 ISite site = GetSite(component);
                 IComponentChangeService changeService = null;
 
                 // Announce that we are about to change this component
-                if (site != null)
+                if (site is not null)
                 {
                     changeService = (IComponentChangeService)site.GetService(typeof(IComponentChangeService));
                 }
 
-                if (changeService != null)
+                if (changeService is not null)
                 {
                     try
                     {
@@ -443,10 +443,10 @@ namespace System.ComponentModel
 
                 bool shadowed = false;
 
-                if (site != null && site.DesignMode)
+                if (site is not null && site.DesignMode)
                 {
                     IDictionaryService dict = (IDictionaryService)site.GetService(typeof(IDictionaryService));
-                    if (dict != null)
+                    if (dict is not null)
                     {
                         Delegate del = (Delegate)dict.GetValue(this);
                         del = Delegate.Remove(del, value);

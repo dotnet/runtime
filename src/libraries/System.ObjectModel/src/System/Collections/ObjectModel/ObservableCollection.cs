@@ -64,7 +64,7 @@ namespace System.Collections.ObjectModel
 
         private static List<T> CreateCopy(IEnumerable<T> collection, string paramName)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 throw new ArgumentNullException(paramName);
             }
@@ -196,7 +196,7 @@ namespace System.Collections.ObjectModel
         protected virtual void OnCollectionChanged(NotifyCollectionChangedEventArgs e)
         {
             NotifyCollectionChangedEventHandler? handler = CollectionChanged;
-            if (handler != null)
+            if (handler is not null)
             {
                 // Not calling BlockReentrancy() here to avoid the SimpleMonitor allocation.
                 _blockReentrancyCount++;
@@ -297,7 +297,7 @@ namespace System.Collections.ObjectModel
         [OnDeserialized]
         private void OnDeserialized(StreamingContext context)
         {
-            if (_monitor != null)
+            if (_monitor is not null)
             {
                 _blockReentrancyCount = _monitor._busyCount;
                 _monitor._collection = this;
@@ -316,7 +316,7 @@ namespace System.Collections.ObjectModel
 
             public SimpleMonitor(ObservableCollection<T> collection)
             {
-                Debug.Assert(collection != null);
+                Debug.Assert(collection is not null);
                 _collection = collection;
             }
 

@@ -19,7 +19,7 @@ namespace System
 
             string? directory = Path.GetDirectoryName(path);
 
-            if (directory == null)
+            if (directory is null)
                 return string.Empty;
 
             if (!Path.EndsInDirectorySeparator(directory))

@@ -135,7 +135,7 @@ namespace System.Net.Http.Headers
                         return 0;
                     }
 
-                    if (maxAge == null)
+                    if (maxAge is null)
                     {
                         maxAge = maxAgeTmp;
                     }

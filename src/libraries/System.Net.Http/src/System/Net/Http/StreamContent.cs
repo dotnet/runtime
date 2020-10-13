@@ -19,7 +19,7 @@ namespace System.Net.Http
 
         public StreamContent(Stream content)
         {
-            if (content == null)
+            if (content is null)
             {
                 throw new ArgumentNullException(nameof(content));
             }
@@ -30,7 +30,7 @@ namespace System.Net.Http
 
         public StreamContent(Stream content, int bufferSize)
         {
-            if (content == null)
+            if (content is null)
             {
                 throw new ArgumentNullException(nameof(content));
             }
@@ -56,7 +56,7 @@ namespace System.Net.Http
 
         protected override void SerializeToStream(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
-            Debug.Assert(stream != null);
+            Debug.Assert(stream is not null);
             PrepareContent();
             // If the stream can't be re-read, make sure that it gets disposed once it is consumed.
             StreamToStreamCopy.Copy(_content, stream, _bufferSize, !_content.CanSeek);
@@ -73,7 +73,7 @@ namespace System.Net.Http
 
         private Task SerializeToStreamAsyncCore(Stream stream, CancellationToken cancellationToken)
         {
-            Debug.Assert(stream != null);
+            Debug.Assert(stream is not null);
             PrepareContent();
             return StreamToStreamCopy.CopyAsync(
                 _content,

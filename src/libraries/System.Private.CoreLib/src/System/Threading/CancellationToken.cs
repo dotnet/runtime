@@ -68,7 +68,7 @@ namespace System.Threading
         /// particularly in situations where related objects are being canceled concurrently.
         /// </para>
         /// </remarks>
-        public bool IsCancellationRequested => _source != null && _source.IsCancellationRequested;
+        public bool IsCancellationRequested => _source is not null && _source.IsCancellationRequested;
 
         /// <summary>
         /// Gets whether this token is capable of being in the canceled state.
@@ -78,7 +78,7 @@ namespace System.Threading
         /// into a canceled state, meaning that <see cref="IsCancellationRequested"/> will never
         /// return true.
         /// </remarks>
-        public bool CanBeCanceled => _source != null;
+        public bool CanBeCanceled => _source is not null;
 
         /// <summary>
         /// Gets a <see cref="System.Threading.WaitHandle"/> that is signaled when the token is canceled.</summary>
@@ -294,11 +294,11 @@ namespace System.Threading
         /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         private CancellationTokenRegistration Register(Delegate callback, object? state, bool useSynchronizationContext, bool useExecutionContext)
         {
-            if (callback == null)
+            if (callback is null)
                 throw new ArgumentNullException(nameof(callback));
 
             CancellationTokenSource? source = _source;
-            return source != null ?
+            return source is not null ?
                 source.InternalRegister(callback, state, useSynchronizationContext ? SynchronizationContext.Current : null, useExecutionContext ? ExecutionContext.Capture() : null) :
                 default; // Nothing to do for tokens than can never reach the canceled state. Give back a dummy registration.
         }

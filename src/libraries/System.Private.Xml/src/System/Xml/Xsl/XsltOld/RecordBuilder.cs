@@ -52,9 +52,9 @@ namespace System.Xml.Xsl.XsltOld
 
         internal RecordBuilder(IRecordOutput output, XmlNameTable? nameTable)
         {
-            Debug.Assert(output != null);
+            Debug.Assert(output is not null);
             _output = output;
-            _nameTable = nameTable != null ? nameTable : new NameTable();
+            _nameTable = nameTable is not null ? nameTable : new NameTable();
             _atoms = new OutKeywords(_nameTable);
             _scopeManager = new OutputScopeManager(_nameTable, _atoms);
         }
@@ -137,9 +137,9 @@ namespace System.Xml.Xsl.XsltOld
             ResetRecord(state);
             PopElementScope();
 
-            prefix = (prefix != null) ? _nameTable.Add(prefix) : _atoms.Empty;
-            name = (name != null) ? _nameTable.Add(name) : _atoms.Empty;
-            nspace = (nspace != null) ? _nameTable.Add(nspace) : _atoms.Empty;
+            prefix = (prefix is not null) ? _nameTable.Add(prefix) : _atoms.Empty;
+            name = (name is not null) ? _nameTable.Add(name) : _atoms.Empty;
+            nspace = (nspace is not null) ? _nameTable.Add(nspace) : _atoms.Empty;
 
             switch (nodeType)
             {
@@ -258,7 +258,7 @@ namespace System.Xml.Xsl.XsltOld
 
             for (int attrib = 0; attrib < _attributeCount; attrib++)
             {
-                Debug.Assert(_attributeList[attrib] != null && _attributeList[attrib] is BuilderInfo);
+                Debug.Assert(_attributeList[attrib] is not null && _attributeList[attrib] is BuilderInfo);
 
                 BuilderInfo attribute = (BuilderInfo)_attributeList[attrib]!;
 
@@ -324,7 +324,7 @@ namespace System.Xml.Xsl.XsltOld
                 attrib = NewAttribute();
             }
 
-            Debug.Assert(_attributeList[attrib] != null && _attributeList[attrib] is BuilderInfo);
+            Debug.Assert(_attributeList[attrib] is not null && _attributeList[attrib] is BuilderInfo);
 
             BuilderInfo attribute = (BuilderInfo)_attributeList[attrib]!;
             attribute.Initialize(prefix, name, nspace);
@@ -358,7 +358,7 @@ namespace System.Xml.Xsl.XsltOld
             else
             {
                 string? nspaceDeclared = _scopeManager.ResolveNamespace(name, out thisScope);
-                if (nspaceDeclared != null)
+                if (nspaceDeclared is not null)
                 {
                     if (!Ref.Equal(nspace, nspaceDeclared))
                     {
@@ -473,7 +473,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void SetEmptyFlag(int state)
         {
-            Debug.Assert(_mainNode != null);
+            Debug.Assert(_mainNode is not null);
 
             if ((state & StateMachine.BeginChild) != 0)
             {
@@ -531,7 +531,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 bool thisScope = false;
                 string? nspace = _scopeManager.ResolveNamespace(_mainNode.Prefix, out thisScope);
-                if (nspace != null)
+                if (nspace is not null)
                 {
                     if (!Ref.Equal(_mainNode.NamespaceURI, nspace))
                     {
@@ -577,7 +577,7 @@ namespace System.Xml.Xsl.XsltOld
                     {
                         bool thisScope = false;
                         string? nspace = _scopeManager.ResolveNamespace(info.Prefix, out thisScope);
-                        if (nspace != null)
+                        if (nspace is not null)
                         {
                             if (!Ref.Equal(info.NamespaceURI, nspace))
                             {
@@ -626,7 +626,7 @@ namespace System.Xml.Xsl.XsltOld
                     case s_Minus:
                         if (minus)
                         {
-                            if (newComment == null)
+                            if (newComment is null)
                                 newComment = new StringBuilder(comment, begin, index, 2 * comment.Length);
                             else
                                 newComment.Append(comment, begin, index - begin);
@@ -642,7 +642,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
             }
 
-            if (newComment != null)
+            if (newComment is not null)
             {
                 if (begin < comment.Length)
                     newComment.Append(comment, begin, comment.Length - begin);
@@ -678,7 +678,7 @@ namespace System.Xml.Xsl.XsltOld
                     case s_Greater:
                         if (question)
                         {
-                            if (newPI == null)
+                            if (newPI is null)
                             {
                                 newPI = new StringBuilder(pi, begin, index, 2 * pi.Length);
                             }
@@ -697,7 +697,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
             }
 
-            if (newPI != null)
+            if (newPI is not null)
             {
                 if (begin < pi.Length)
                 {
@@ -743,7 +743,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             int index = NewNamespace();
 
-            Debug.Assert(_namespaceList[index] != null && _namespaceList[index] is BuilderInfo);
+            Debug.Assert(_namespaceList[index] is not null && _namespaceList[index] is BuilderInfo);
 
             BuilderInfo ns = (BuilderInfo)_namespaceList[index]!;
             if (prefix == _atoms.Empty)
@@ -774,7 +774,7 @@ namespace System.Xml.Xsl.XsltOld
 
             if (_scopeManager.FindPrefix(nspace, out prefix))
             {
-                Debug.Assert(prefix != null && prefix.Length > 0);
+                Debug.Assert(prefix is not null && prefix.Length > 0);
                 return prefix;
             }
             else

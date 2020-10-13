@@ -38,7 +38,7 @@ namespace System.Diagnostics.Tracing
 
             int count = 0;
             Array? array = (Array?)value.ReferenceValue;
-            if (array != null)
+            if (array is not null)
             {
                 count = array.Length;
                 for (int i = 0; i < array.Length; i++)
@@ -52,7 +52,7 @@ namespace System.Diagnostics.Tracing
 
         public override object? GetData(object? value)
         {
-            Debug.Assert(value != null, "null accepted only for some overrides");
+            Debug.Assert(value is not null, "null accepted only for some overrides");
             var array = (Array)value;
             var serializedArray = new object?[array.Length];
             for (int i = 0; i < array.Length; i++)

@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Asn1
                 wroteValue = true;
             }
 
-            if (Named != null)
+            if (Named is not null)
             {
                 if (wroteValue)
                     throw new CryptographicException();

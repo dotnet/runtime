@@ -24,15 +24,15 @@ namespace System.Configuration
             }
 
             XmlNode cipherNode = TraverseToChild(encryptedNode, "CipherData", false);
-            if (cipherNode == null)
+            if (cipherNode is null)
                 throw new ConfigurationErrorsException(SR.DPAPI_bad_data);
 
             XmlNode cipherValue = TraverseToChild(cipherNode, "CipherValue", true);
-            if (cipherValue == null)
+            if (cipherValue is null)
                 throw new ConfigurationErrorsException(SR.DPAPI_bad_data);
 
             string encText = cipherValue.InnerText;
-            if (encText == null)
+            if (encText is null)
                 throw new ConfigurationErrorsException(SR.DPAPI_bad_data);
 
             string decText = DecryptText(encText);
@@ -58,7 +58,7 @@ namespace System.Configuration
 
         private string EncryptText(string clearText)
         {
-            if (clearText == null || clearText.Length < 1)
+            if (clearText is null || clearText.Length < 1)
                 return clearText;
 
             byte[] inputData = PrepareDataBlob(clearText);
@@ -74,7 +74,7 @@ namespace System.Configuration
 
         private string DecryptText(string encText)
         {
-            if (encText == null || encText.Length < 1)
+            if (encText is null || encText.Length < 1)
                 return encText;
 
             byte[] inputData = Convert.FromBase64String(encText);
@@ -117,13 +117,13 @@ namespace System.Configuration
 
         private static byte[] PrepareDataBlob(string s)
         {
-            return (s != null) ? Encoding.Unicode.GetBytes(s) : Array.Empty<byte>();
+            return (s is not null) ? Encoding.Unicode.GetBytes(s) : Array.Empty<byte>();
         }
 
         private static bool GetBooleanValue(NameValueCollection configurationValues, string valueName, bool defaultValue)
         {
             string s = configurationValues[valueName];
-            if (s == null)
+            if (s is null)
                 return defaultValue;
             configurationValues.Remove(valueName);
             if (s == "true")

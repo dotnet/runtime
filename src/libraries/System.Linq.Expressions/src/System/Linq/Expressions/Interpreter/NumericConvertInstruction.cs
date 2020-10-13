@@ -21,7 +21,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             object? obj = frame.Pop();
             object? converted;
-            if (obj == null)
+            if (obj is null)
             {
                 if (_isLiftedToNull)
                 {

@@ -23,7 +23,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The combined path.</returns>
         public static string Combine(params string[] pathSegments)
         {
-            if (pathSegments == null)
+            if (pathSegments is null)
             {
                 throw new ArgumentNullException(nameof(pathSegments));
             }
@@ -37,7 +37,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The combined path.</returns>
         public static string Combine(IEnumerable<string> pathSegments)
         {
-            if (pathSegments == null)
+            if (pathSegments is null)
             {
                 throw new ArgumentNullException(nameof(pathSegments));
             }

@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Xml
 
         public int Add(object value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             if (!(value is DataReference) && !(value is KeyReference))
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Xml
 
         public void Insert(int index, object value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             if (!(value is DataReference) && !(value is KeyReference))
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Xml
             get { return _references[index]; }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 if (!(value is DataReference) && !(value is KeyReference))

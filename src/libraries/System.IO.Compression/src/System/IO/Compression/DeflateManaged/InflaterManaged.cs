@@ -86,7 +86,7 @@ namespace System.IO.Compression
             _codeLengthTreeCodeLength = new byte[HuffmanTree.NumberOfCodeLengthTreeElements];
             _deflate64 = deflate64;
             _uncompressedSize = uncompressedSize;
-            if (reader != null)
+            if (reader is not null)
             {
                 _formatReader = reader;
                 _hasFormatReader = true;
@@ -139,7 +139,7 @@ namespace System.IO.Compression
                 {
                     if (_hasFormatReader)
                     {
-                        Debug.Assert(_formatReader != null);
+                        Debug.Assert(_formatReader is not null);
                         _formatReader.UpdateWithBytesRead(bytes, offset, copied);
                     }
 
@@ -161,7 +161,7 @@ namespace System.IO.Compression
                 // But some data in output window might not be copied out.
                 if (_output.AvailableBytes == 0)
                 {
-                    Debug.Assert(_formatReader != null);
+                    Debug.Assert(_formatReader is not null);
                     _formatReader.Validate();
                 }
             }
@@ -202,7 +202,7 @@ namespace System.IO.Compression
 
             if (_hasFormatReader)
             {
-                Debug.Assert(_formatReader != null);
+                Debug.Assert(_formatReader is not null);
                 if (_state == InflaterState.ReadingHeader)
                 {
                     if (!_formatReader.ReadHeader(_input))
@@ -400,7 +400,7 @@ namespace System.IO.Compression
                     case InflaterState.DecodeTop:
                         // decode an element from the literal tree
 
-                        Debug.Assert(_literalLengthTree != null);
+                        Debug.Assert(_literalLengthTree is not null);
                         // TODO: optimize this!!!
                         symbol = _literalLengthTree.GetNextSymbol(_input);
                         if (symbol < 0)
@@ -474,7 +474,7 @@ namespace System.IO.Compression
                     case InflaterState.HaveFullLength:
                         if (_blockType == BlockType.Dynamic)
                         {
-                            Debug.Assert(_distanceTree != null);
+                            Debug.Assert(_distanceTree is not null);
                             _distanceCode = _distanceTree.GetNextSymbol(_input);
                         }
                         else
@@ -619,7 +619,7 @@ namespace System.IO.Compression
                     {
                         if (_state == InflaterState.ReadingTreeCodesBefore)
                         {
-                            Debug.Assert(_codeLengthTree != null);
+                            Debug.Assert(_codeLengthTree is not null);
                             if ((_lengthCode = _codeLengthTree.GetNextSymbol(_input)) < 0)
                             {
                                 return false;

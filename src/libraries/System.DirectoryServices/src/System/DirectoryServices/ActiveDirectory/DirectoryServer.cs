@@ -78,7 +78,7 @@ namespace System.DirectoryServices.ActiveDirectory
             CheckIfDisposed();
 
             // validate siteName
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -115,7 +115,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (newParentEntry != null)
+                    if (newParentEntry is not null)
                     {
                         newParentEntry.Dispose();
                     }
@@ -126,19 +126,19 @@ namespace System.DirectoryServices.ActiveDirectory
                 siteInfoModified = true;
                 cachedSiteName = null;
 
-                if (cachedSiteObjectName != null)
+                if (cachedSiteObjectName is not null)
                 {
                     directoryEntryMgr.RemoveIfExists(cachedSiteObjectName);
                     cachedSiteObjectName = null;
                 }
 
-                if (cachedServerObjectName != null)
+                if (cachedServerObjectName is not null)
                 {
                     directoryEntryMgr.RemoveIfExists(cachedServerObjectName);
                     cachedServerObjectName = null;
                 }
 
-                if (cachedNtdsaObjectName != null)
+                if (cachedNtdsaObjectName is not null)
                 {
                     directoryEntryMgr.RemoveIfExists(cachedNtdsaObjectName);
                     cachedNtdsaObjectName = null;
@@ -195,7 +195,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (cachedPartitions == null)
+                if (cachedPartitions is null)
                 {
                     cachedPartitions = new ReadOnlyStringCollection(GetPartitions());
                 }
@@ -257,7 +257,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 ArrayList readOnlyPartitions = (ArrayList)values[PropertyManager.HasPartialReplicaNCs.ToLowerInvariant()];
 
-                Debug.Assert(readOnlyPartitions != null);
+                Debug.Assert(readOnlyPartitions is not null);
                 foreach (string readOnlyPartition in readOnlyPartitions)
                 {
                     partitionList.Add(readOnlyPartition);
@@ -269,12 +269,12 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (rootDSE != null)
+                if (rootDSE is not null)
                 {
                     rootDSE.Dispose();
                 }
 
-                if (serverNtdsaEntry != null)
+                if (serverNtdsaEntry is not null)
                 {
                     serverNtdsaEntry.Dispose();
                 }
@@ -354,7 +354,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if (result != 0)
             {
-                if (partition != null)
+                if (partition is not null)
                 {
                     // this is the case of meta data
                     if (type == (int)DS_REPL_INFO_TYPE.DS_REPL_INFO_METADATA_2_FOR_OBJ)
@@ -495,7 +495,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     DS_REPL_NEIGHBORS neighbors = new DS_REPL_NEIGHBORS();
                     Marshal.PtrToStructure(info, neighbors);
-                    Debug.Assert(neighbors != null);
+                    Debug.Assert(neighbors is not null);
                     count = neighbors.cNumNeighbors;
                     if (count > 0)
                         collection.AddHelper(neighbors, info);
@@ -581,7 +581,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal bool SyncAllCallbackRoutine(IntPtr data, IntPtr update)
         {
-            if (SyncFromAllServersCallback == null)
+            if (SyncFromAllServersCallback is null)
             {
                 // user does not specify callback, resume the DsReplicaSyncAll execution
                 return true;
@@ -606,7 +606,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     // error information is available
                     exception = ExceptionHelper.CreateSyncAllException(temp, true);
-                    if (exception == null)
+                    if (exception is null)
                     {
                         // this is the special case that we ingore the failure when SyncAllOptions.CheckServerAlivenessOnly is specified
                         return true;
@@ -657,7 +657,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (errorInfo != (IntPtr)0)
                 {
                     SyncFromAllServersOperationException e = ExceptionHelper.CreateSyncAllException(errorInfo, false);
-                    if (e == null)
+                    if (e is null)
                         return;
                     else
                         throw e;
@@ -704,7 +704,7 @@ namespace System.DirectoryServices.ActiveDirectory
             unmanagedGuid = Marshal.AllocHGlobal(structSize);
             try
             {
-                if (sourceServer != null)
+                if (sourceServer is not null)
                 {
                     DirectoryContext newContext = Utils.GetNewDirectoryContext(sourceServer, DirectoryContextType.DirectoryServer, context);
                     if (isADAM)
@@ -753,17 +753,17 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (unmanagedGuid != (IntPtr)0)
                     Marshal.FreeHGlobal(unmanagedGuid);
 
-                if (adamServer != null)
+                if (adamServer is not null)
                     adamServer.Dispose();
 
-                if (dcServer != null)
+                if (dcServer is not null)
                     dcServer.Dispose();
             }
         }
 
         internal ReplicationConnectionCollection GetInboundConnectionsHelper()
         {
-            if (_inbound == null)
+            if (_inbound is null)
             {
                 // construct the replicationconnection collection
                 _inbound = new ReplicationConnectionCollection();
@@ -795,7 +795,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (srchResults != null)
+                    if (srchResults is not null)
                         srchResults.Dispose();
 
                     de.Dispose();
@@ -808,7 +808,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal ReplicationConnectionCollection GetOutboundConnectionsHelper()
         {
             // this is the first time that user tries to retrieve this property, so get it from the directory
-            if (_outbound == null)
+            if (_outbound is null)
             {
                 // search base is the site container
                 string siteName = (this is DomainController) ? ((DomainController)this).SiteObjectName : ((AdamInstance)this).SiteObjectName;
@@ -840,7 +840,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 finally
                 {
-                    if (results != null)
+                    if (results is not null)
                         results.Dispose();
 
                     de.Dispose();

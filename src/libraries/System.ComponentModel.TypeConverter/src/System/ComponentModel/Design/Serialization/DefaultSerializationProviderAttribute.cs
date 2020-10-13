@@ -18,7 +18,7 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public DefaultSerializationProviderAttribute(Type providerType)
         {
-            if (providerType == null)
+            if (providerType is null)
             {
                 throw new ArgumentNullException(nameof(providerType));
             }
@@ -31,7 +31,7 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public DefaultSerializationProviderAttribute(string providerTypeName)
         {
-            if (providerTypeName == null)
+            if (providerTypeName is null)
             {
                 throw new ArgumentNullException(nameof(providerTypeName));
             }

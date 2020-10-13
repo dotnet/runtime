@@ -89,7 +89,7 @@ namespace System.Linq.Expressions.Compiler
             // Prevent the label from being shadowed, which enforces cleaner
             // trees. Also we depend on this for simplicity (keeping only one
             // active IL Label per LabelInfo)
-            for (LabelScopeInfo? j = block; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = block; j is not null; j = j.Parent)
             {
                 if (j.ContainsTarget(_node!))
                 {
@@ -130,7 +130,7 @@ namespace System.Linq.Expressions.Compiler
             _opCode = _canReturn ? OpCodes.Ret : OpCodes.Br;
 
             // look for a simple jump out
-            for (LabelScopeInfo? j = reference; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = reference; j is not null; j = j.Parent)
             {
                 if (_definitions.Contains(j))
                 {
@@ -150,7 +150,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             _acrossBlockJump = true;
-            if (_node != null && _node.Type != typeof(void))
+            if (_node is not null && _node.Type != typeof(void))
             {
                 throw Error.NonLocalJumpWithValue(_node.Name);
             }
@@ -228,7 +228,7 @@ namespace System.Linq.Expressions.Compiler
         private void StoreValue()
         {
             EnsureLabelAndValue();
-            if (_value != null)
+            if (_value is not null)
             {
                 _ilg.Emit(OpCodes.Stloc, _value);
             }
@@ -268,7 +268,7 @@ namespace System.Linq.Expressions.Compiler
         internal void MarkWithEmptyStack()
         {
             _ilg.MarkLabel(Label);
-            if (_value != null)
+            if (_value is not null)
             {
                 // We always read the value from a local, because we don't know
                 // if there will be a "leave" instruction targeting it ("branch"
@@ -283,7 +283,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 _labelDefined = true;
                 _label = _ilg.DefineLabel();
-                if (_node != null && _node.Type != typeof(void))
+                if (_node is not null && _node.Type != typeof(void))
                 {
                     _value = _ilg.DeclareLocal(_node.Type);
                 }
@@ -358,7 +358,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal bool ContainsTarget(LabelTarget target)
         {
-            if (_labels == null)
+            if (_labels is null)
             {
                 return false;
             }
@@ -368,7 +368,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal bool TryGetLabelInfo(LabelTarget target, out LabelInfo? info)
         {
-            if (_labels == null)
+            if (_labels is null)
             {
                 info = null;
                 return false;
@@ -381,7 +381,7 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(CanJumpInto);
 
-            if (_labels == null)
+            if (_labels is null)
             {
                 _labels = new Dictionary<LabelTarget, LabelInfo>();
             }

@@ -33,7 +33,7 @@ namespace System.Threading
 
         public static void Run(CompressedStack compressedStack, ContextCallback callback, object? state)
         {
-            if (compressedStack == null)
+            if (compressedStack is null)
             {
                 throw new ArgumentNullException(nameof(compressedStack));
             }

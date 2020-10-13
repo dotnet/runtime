@@ -150,7 +150,7 @@ namespace System.Linq.Expressions
                     {
                         throw Error.ExpressionTypeCannotInitializeArrayType(expr.Type, type);
                     }
-                    if (newList == null)
+                    if (newList is null)
                     {
                         newList = new Expression[initializerList.Count];
                         for (int j = 0; j < i; j++)
@@ -159,12 +159,12 @@ namespace System.Linq.Expressions
                         }
                     }
                 }
-                if (newList != null)
+                if (newList is not null)
                 {
                     newList[i] = expr;
                 }
             }
-            if (newList != null)
+            if (newList is not null)
             {
                 initializerList = new TrueReadOnlyCollection<Expression>(newList);
             }

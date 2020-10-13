@@ -260,7 +260,7 @@ namespace System.Runtime.Serialization.Json
         private void VerifyType(DataContract dataContract, Type declaredType)
         {
             bool knownTypesAddedInCurrentScope = false;
-            if (dataContract.KnownDataContracts != null)
+            if (dataContract.KnownDataContracts is not null)
             {
                 scopedKnownTypes.Push(dataContract.KnownDataContracts);
                 knownTypesAddedInCurrentScope = true;
@@ -301,7 +301,7 @@ namespace System.Runtime.Serialization.Json
             {
                 // Don't write type or __type for XML types because we serialize them to strings
             }
-            else if ((dataType == Globals.TypeOfObject) && (dataNode.Value != null))
+            else if ((dataType == Globals.TypeOfObject) && (dataNode.Value is not null))
             {
                 DataContract dc = GetDataContract(dataNode.Value.GetType());
                 if (RequiresJsonTypeInfo(dc))
@@ -343,7 +343,7 @@ namespace System.Runtime.Serialization.Json
         [return: NotNullIfNotNull("oldItemContract")]
         internal static DataContract? GetRevisedItemContract(DataContract oldItemContract)
         {
-            if ((oldItemContract != null) &&
+            if ((oldItemContract is not null) &&
                 oldItemContract.UnderlyingType.IsGenericType &&
                 (oldItemContract.UnderlyingType.GetGenericTypeDefinition() == Globals.TypeOfKeyValue))
             {

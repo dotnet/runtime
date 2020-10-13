@@ -193,7 +193,7 @@ namespace System.Formats.Asn1
             out int bytesConsumed,
             Asn1Tag? expectedTag = null)
         {
-            if (enumType == null)
+            if (enumType is null)
                 throw new ArgumentNullException(nameof(enumType));
 
             const UniversalTagNumber TagNumber = UniversalTagNumber.Enumerated;

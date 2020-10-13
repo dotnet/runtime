@@ -50,7 +50,7 @@ namespace System.Xml.Schema
         private ValidationType DetectValidationType()
         {
             //Type not yet detected : Check in Schema Collection
-            if (reader.Schemas != null && reader.Schemas.Count > 0)
+            if (reader.Schemas is not null && reader.Schemas.Count > 0)
             {
                 XmlSchemaCollectionEnumerator enumerator = reader.Schemas.GetEnumerator();
                 while (enumerator.MoveNext())

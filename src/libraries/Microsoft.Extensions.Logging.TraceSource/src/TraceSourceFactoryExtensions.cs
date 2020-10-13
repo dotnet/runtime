@@ -23,12 +23,12 @@ namespace Microsoft.Extensions.Logging
             this ILoggingBuilder builder,
             string switchName)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (switchName == null)
+            if (switchName is null)
             {
                 throw new ArgumentNullException(nameof(switchName));
             }
@@ -48,17 +48,17 @@ namespace Microsoft.Extensions.Logging
             string switchName,
             TraceListener listener)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (switchName == null)
+            if (switchName is null)
             {
                 throw new ArgumentNullException(nameof(switchName));
             }
 
-            if (listener == null)
+            if (listener is null)
             {
                 throw new ArgumentNullException(nameof(listener));
             }
@@ -76,12 +76,12 @@ namespace Microsoft.Extensions.Logging
             this ILoggingBuilder builder,
             SourceSwitch sourceSwitch)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (sourceSwitch == null)
+            if (sourceSwitch is null)
             {
                 throw new ArgumentNullException(nameof(sourceSwitch));
             }
@@ -103,17 +103,17 @@ namespace Microsoft.Extensions.Logging
             SourceSwitch sourceSwitch,
             TraceListener listener)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 throw new ArgumentNullException(nameof(builder));
             }
 
-            if (sourceSwitch == null)
+            if (sourceSwitch is null)
             {
                 throw new ArgumentNullException(nameof(sourceSwitch));
             }
 
-            if (listener == null)
+            if (listener is null)
             {
                 throw new ArgumentNullException(nameof(listener));
             }

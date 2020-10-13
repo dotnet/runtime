@@ -21,7 +21,7 @@ namespace System.Net.Sockets
             {
                 // *nix does not support the reuse of an existing socket as the accepted
                 // socket.
-                Debug.Assert(value == null, $"Unexpected value: {value}");
+                Debug.Assert(value is null, $"Unexpected value: {value}");
             }
         }
 
@@ -32,7 +32,7 @@ namespace System.Net.Sockets
 
             if (errorCode == SocketError.Success)
             {
-                Debug.Assert(_listenSocket._rightEndPoint != null);
+                Debug.Assert(_listenSocket._rightEndPoint is not null);
 
                 Internals.SocketAddress remoteSocketAddress = IPEndPointExtensions.Serialize(_listenSocket._rightEndPoint);
                 System.Buffer.BlockCopy(socketAddress, 0, remoteSocketAddress.Buffer, 0, socketAddressLen);

@@ -13,7 +13,7 @@ namespace Internal.Cryptography
         [return: NotNullIfNotNull("src")]
         public static byte[]? CloneByteArray(this byte[]? src)
         {
-            if (src == null)
+            if (src is null)
             {
                 return null;
             }

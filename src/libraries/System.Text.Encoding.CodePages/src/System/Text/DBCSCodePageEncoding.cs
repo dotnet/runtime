@@ -216,7 +216,7 @@ namespace System.Text
         {
             get
             {
-                if (s_InternalSyncObject == null)
+                if (s_InternalSyncObject is null)
                 {
                     object o = new object();
                     Interlocked.CompareExchange<object?>(ref s_InternalSyncObject, o, null);
@@ -232,7 +232,7 @@ namespace System.Text
             lock (InternalSyncObject)
             {
                 // If we got a best fit array already then don't do this
-                if (arrayUnicodeBestFit == null)
+                if (arrayUnicodeBestFit is null)
                 {
                     //
                     // Read in Best Fit table.
@@ -508,16 +508,16 @@ namespace System.Text
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             Debug.Assert(count >= 0, "[DBCSCodePageEncoding.GetByteCount]count is negative");
-            Debug.Assert(chars != null, "[DBCSCodePageEncoding.GetByteCount]chars is null");
+            Debug.Assert(chars is not null, "[DBCSCodePageEncoding.GetByteCount]chars is null");
 
             // Assert because we shouldn't be able to have a null encoder.
-            Debug.Assert(EncoderFallback != null, "[DBCSCodePageEncoding.GetByteCount]Attempting to use null fallback");
+            Debug.Assert(EncoderFallback is not null, "[DBCSCodePageEncoding.GetByteCount]Attempting to use null fallback");
 
             CheckMemorySection();
 
             // Get any left over characters
             char charLeftOver = (char)0;
-            if (encoder != null)
+            if (encoder is not null)
             {
                 charLeftOver = encoder.charLeftOver;
 
@@ -539,7 +539,7 @@ namespace System.Text
             if (charLeftOver > 0)
             {
                 Debug.Assert(char.IsHighSurrogate(charLeftOver), "[DBCSCodePageEncoding.GetByteCount]leftover character should be high surrogate");
-                Debug.Assert(encoder != null,
+                Debug.Assert(encoder is not null,
                     "[DBCSCodePageEncoding.GetByteCount]Expect to have encoder if we have a charLeftOver");
 
                 // Since left over char was a surrogate, it'll have to be fallen back.
@@ -555,7 +555,7 @@ namespace System.Text
 
             // We have to use fallback method.
             char ch;
-            while ((ch = (fallbackBuffer == null) ? '\0' : fallbackHelper.InternalGetNextChar()) != 0 ||
+            while ((ch = (fallbackBuffer is null) ? '\0' : fallbackHelper.InternalGetNextChar()) != 0 ||
                     chars < charEnd)
             {
                 // First unwind any fallback
@@ -572,10 +572,10 @@ namespace System.Text
                 // Check for fallback, this'll catch surrogate pairs too.
                 if (sTemp == 0 && ch != (char)0)
                 {
-                    if (fallbackBuffer == null)
+                    if (fallbackBuffer is null)
                     {
                         // Initialize the buffer
-                        if (encoder == null)
+                        if (encoder is null)
                             fallbackBuffer = EncoderFallback!.CreateFallbackBuffer();
                         else
                             fallbackBuffer = encoder.FallbackBuffer;
@@ -603,13 +603,13 @@ namespace System.Text
                                                 byte* bytes, int byteCount, EncoderNLS? encoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Debug.Assert(bytes != null, "[DBCSCodePageEncoding.GetBytes]bytes is null");
+            Debug.Assert(bytes is not null, "[DBCSCodePageEncoding.GetBytes]bytes is null");
             Debug.Assert(byteCount >= 0, "[DBCSCodePageEncoding.GetBytes]byteCount is negative");
-            Debug.Assert(chars != null, "[DBCSCodePageEncoding.GetBytes]chars is null");
+            Debug.Assert(chars is not null, "[DBCSCodePageEncoding.GetBytes]chars is null");
             Debug.Assert(charCount >= 0, "[DBCSCodePageEncoding.GetBytes]charCount is negative");
 
             // Assert because we shouldn't be able to have a null encoder.
-            Debug.Assert(EncoderFallback != null, "[DBCSCodePageEncoding.GetBytes]Attempting to use null encoder fallback");
+            Debug.Assert(EncoderFallback is not null, "[DBCSCodePageEncoding.GetBytes]Attempting to use null encoder fallback");
 
             CheckMemorySection();
 
@@ -626,7 +626,7 @@ namespace System.Text
 
             // Get any left over characters
             char charLeftOver = (char)0;
-            if (encoder != null)
+            if (encoder is not null)
             {
                 charLeftOver = encoder.charLeftOver;
                 Debug.Assert(charLeftOver == 0 || char.IsHighSurrogate(charLeftOver),
@@ -644,7 +644,7 @@ namespace System.Text
                 // We may have a left over character from last time, try and process it.
                 if (charLeftOver > 0)
                 {
-                    Debug.Assert(encoder != null,
+                    Debug.Assert(encoder is not null,
                         "[DBCSCodePageEncoding.GetBytes]Expect to have encoder if we have a charLeftOver");
 
                     // Since left over char was a surrogate, it'll have to be fallen back.
@@ -657,7 +657,7 @@ namespace System.Text
 
             // Go ahead and do it, including the fallback.
             char ch;
-            while ((ch = (fallbackBuffer == null) ? '\0' : fallbackHelper.InternalGetNextChar()) != 0 ||
+            while ((ch = (fallbackBuffer is null) ? '\0' : fallbackHelper.InternalGetNextChar()) != 0 ||
                     chars < charEnd)
             {
                 // First unwind any fallback
@@ -674,10 +674,10 @@ namespace System.Text
                 // Check for fallback, this'll catch surrogate pairs too.
                 if (sTemp == 0 && ch != (char)0)
                 {
-                    if (fallbackBuffer == null)
+                    if (fallbackBuffer is null)
                     {
                         // Initialize the buffer
-                        Debug.Assert(encoder == null,
+                        Debug.Assert(encoder is null,
                             "[DBCSCodePageEncoding.GetBytes]Expected delayed create fallback only if no encoder.");
                         fallbackBuffer = EncoderFallback!.CreateFallbackBuffer();
                         fallbackHelper = new EncoderFallbackBufferHelper(fallbackBuffer);
@@ -698,7 +698,7 @@ namespace System.Text
                     if (bytes + 1 >= byteEnd)
                     {
                         // didn't use this char, we'll throw or use buffer
-                        if (fallbackBuffer == null || fallbackHelper.bFallingBack == false)
+                        if (fallbackBuffer is null || fallbackHelper.bFallingBack == false)
                         {
                             Debug.Assert(chars > charStart,
                                 "[DBCSCodePageEncoding.GetBytes]Expected chars to have advanced (double byte case)");
@@ -717,7 +717,7 @@ namespace System.Text
                 else if (bytes >= byteEnd)
                 {
                     // didn't use this char, we'll throw or use buffer
-                    if (fallbackBuffer == null || fallbackHelper.bFallingBack == false)
+                    if (fallbackBuffer is null || fallbackHelper.bFallingBack == false)
                     {
                         Debug.Assert(chars > charStart,
                             "[DBCSCodePageEncoding.GetBytes]Expected chars to have advanced (single byte case)");
@@ -734,10 +734,10 @@ namespace System.Text
             }
 
             // encoder stuff if we have one
-            if (encoder != null)
+            if (encoder is not null)
             {
                 // Fallback stuck it in encoder if necessary, but we have to clear MustFlush cases
-                if (fallbackBuffer != null && !fallbackHelper.bUsedEncoder)
+                if (fallbackBuffer is not null && !fallbackHelper.bUsedEncoder)
                     // Clear it in case of MustFlush
                     encoder.charLeftOver = (char)0;
 
@@ -752,7 +752,7 @@ namespace System.Text
         public override unsafe int GetCharCount(byte* bytes, int count, DecoderNLS? baseDecoder)
         {
             // Just assert, we're called internally so these should be safe, checked already
-            Debug.Assert(bytes != null, "[DBCSCodePageEncoding.GetCharCount]bytes is null");
+            Debug.Assert(bytes is not null, "[DBCSCodePageEncoding.GetCharCount]bytes is null");
             Debug.Assert(count >= 0, "[DBCSCodePageEncoding.GetCharCount]byteCount is negative");
 
             CheckMemorySection();
@@ -769,14 +769,14 @@ namespace System.Text
 
             // Shouldn't have anything in fallback buffer for GetCharCount
             // (don't have to check m_throwOnOverflow for count)
-            Debug.Assert(decoder == null ||
+            Debug.Assert(decoder is null ||
                 !decoder.InternalHasFallbackBuffer || decoder.FallbackBuffer.Remaining == 0,
                 "[DBCSCodePageEncoding.GetCharCount]Expected empty fallback buffer at start");
 
             DecoderFallbackBufferHelper fallbackHelper = new DecoderFallbackBufferHelper(fallbackBuffer);
 
             // If we have a left over byte, use it
-            if (decoder != null && decoder.bLeftOver > 0)
+            if (decoder is not null && decoder.bLeftOver > 0)
             {
                 // We have a left over byte?
                 if (count == 0)
@@ -789,7 +789,7 @@ namespace System.Text
                     }
 
 
-                    Debug.Assert(fallbackBuffer == null,
+                    Debug.Assert(fallbackBuffer is null,
                         "[DBCSCodePageEncoding.GetCharCount]Expected empty fallback buffer");
                     fallbackBuffer = decoder.FallbackBuffer;
                     fallbackHelper = new DecoderFallbackBufferHelper(fallbackBuffer);
@@ -814,7 +814,7 @@ namespace System.Text
                     charCount--;
 
                     // We'll need a fallback
-                    Debug.Assert(fallbackBuffer == null,
+                    Debug.Assert(fallbackBuffer is null,
                         "[DBCSCodePageEncoding.GetCharCount]Expected empty fallback buffer for unknown pair");
                     fallbackBuffer = decoder.FallbackBuffer;
                     fallbackHelper = new DecoderFallbackBufferHelper(fallbackBuffer);
@@ -851,7 +851,7 @@ namespace System.Text
                     else
                     {
                         // No input left
-                        if (decoder == null || decoder.MustFlush)
+                        if (decoder is null || decoder.MustFlush)
                         {
                             // have to flush anyway, set to unknown so we use fallback
                             charCount++; // reallocate deallocated lead byte
@@ -869,9 +869,9 @@ namespace System.Text
                 // Unknown and known chars already allocated, but fallbacks aren't
                 if (c == UNKNOWN_CHAR_FLAG && iBytes != 0)
                 {
-                    if (fallbackBuffer == null)
+                    if (fallbackBuffer is null)
                     {
-                        if (decoder == null)
+                        if (decoder is null)
                             fallbackBuffer = DecoderFallback.CreateFallbackBuffer();
                         else
                             fallbackBuffer = decoder.FallbackBuffer;
@@ -889,7 +889,7 @@ namespace System.Text
             }
 
             // Shouldn't have anything in fallback buffer for GetChars
-            Debug.Assert(decoder == null || !decoder.m_throwOnOverflow ||
+            Debug.Assert(decoder is null || !decoder.m_throwOnOverflow ||
                 !decoder.InternalHasFallbackBuffer || decoder.FallbackBuffer.Remaining == 0,
                 "[DBCSCodePageEncoding.GetCharCount]Expected empty fallback buffer at end");
 
@@ -901,9 +901,9 @@ namespace System.Text
                                                 char* chars, int charCount, DecoderNLS? baseDecoder)
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
-            Debug.Assert(bytes != null, "[DBCSCodePageEncoding.GetChars]bytes is null");
+            Debug.Assert(bytes is not null, "[DBCSCodePageEncoding.GetChars]bytes is null");
             Debug.Assert(byteCount >= 0, "[DBCSCodePageEncoding.GetChars]byteCount is negative");
-            Debug.Assert(chars != null, "[DBCSCodePageEncoding.GetChars]chars is null");
+            Debug.Assert(chars is not null, "[DBCSCodePageEncoding.GetChars]chars is null");
             Debug.Assert(charCount >= 0, "[DBCSCodePageEncoding.GetChars]charCount is negative");
 
             CheckMemorySection();
@@ -922,14 +922,14 @@ namespace System.Text
             DecoderFallbackBuffer? fallbackBuffer = null;
 
             // Shouldn't have anything in fallback buffer for GetChars
-            Debug.Assert(decoder == null || !decoder.m_throwOnOverflow ||
+            Debug.Assert(decoder is null || !decoder.m_throwOnOverflow ||
                 !decoder.InternalHasFallbackBuffer || decoder.FallbackBuffer.Remaining == 0,
                 "[DBCSCodePageEncoding.GetChars]Expected empty fallback buffer at start");
 
             DecoderFallbackBufferHelper fallbackHelper = new DecoderFallbackBufferHelper(fallbackBuffer);
 
             // If we have a left over byte, use it
-            if (decoder != null && decoder.bLeftOver > 0)
+            if (decoder is not null && decoder.bLeftOver > 0)
             {
                 // We have a left over byte?
                 if (byteCount == 0)
@@ -943,7 +943,7 @@ namespace System.Text
 
                     // Well, we're flushing, so use '?' or fallback
                     // fallback leftover byte
-                    Debug.Assert(fallbackBuffer == null,
+                    Debug.Assert(fallbackBuffer is null,
                         "[DBCSCodePageEncoding.GetChars]Expected empty fallback");
                     fallbackBuffer = decoder.FallbackBuffer;
                     fallbackHelper = new DecoderFallbackBufferHelper(fallbackBuffer);
@@ -969,7 +969,7 @@ namespace System.Text
                 char cDecoder = mapBytesToUnicode[iBytes];
                 if (cDecoder == UNKNOWN_CHAR_FLAG && iBytes != 0)
                 {
-                    Debug.Assert(fallbackBuffer == null,
+                    Debug.Assert(fallbackBuffer is null,
                         "[DBCSCodePageEncoding.GetChars]Expected empty fallback for two bytes");
                     fallbackBuffer = decoder.FallbackBuffer;
                     fallbackHelper = new DecoderFallbackBufferHelper(fallbackBuffer);
@@ -1012,7 +1012,7 @@ namespace System.Text
                     else
                     {
                         // No input left
-                        if (decoder == null || decoder.MustFlush)
+                        if (decoder is null || decoder.MustFlush)
                         {
                             // have to flush anyway, set to unknown so we use fallback
                             c = UNKNOWN_CHAR_FLAG;
@@ -1030,9 +1030,9 @@ namespace System.Text
                 // See if it was unknown
                 if (c == UNKNOWN_CHAR_FLAG && iBytes != 0)
                 {
-                    if (fallbackBuffer == null)
+                    if (fallbackBuffer is null)
                     {
-                        if (decoder == null)
+                        if (decoder is null)
                             fallbackBuffer = DecoderFallback.CreateFallbackBuffer();
                         else
                             fallbackBuffer = decoder.FallbackBuffer;
@@ -1079,7 +1079,7 @@ namespace System.Text
             }
 
             // We already stuck it in encoder if necessary, but we have to clear cases where nothing new got into decoder
-            if (decoder != null)
+            if (decoder is not null)
             {
                 // Clear it in case of MustFlush
                 if (bUsedDecoder == false)
@@ -1092,7 +1092,7 @@ namespace System.Text
             }
 
             // Shouldn't have anything in fallback buffer for GetChars
-            Debug.Assert(decoder == null || !decoder.m_throwOnOverflow ||
+            Debug.Assert(decoder is null || !decoder.m_throwOnOverflow ||
                 !decoder.InternalHasFallbackBuffer || decoder.FallbackBuffer.Remaining == 0,
                 "[DBCSCodePageEncoding.GetChars]Expected empty fallback buffer at end");
 
@@ -1156,7 +1156,7 @@ namespace System.Text
             public override void Reset()
             {
                 bLeftOver = 0;
-                if (m_fallbackBuffer != null)
+                if (m_fallbackBuffer is not null)
                     m_fallbackBuffer.Reset();
             }
 

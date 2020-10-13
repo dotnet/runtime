@@ -71,7 +71,7 @@ namespace System.Reflection.Emit
 
         public static SignatureHelper GetFieldSigHelper(Module? mod)
         {
-            if (mod != null && !(mod is ModuleBuilder))
+            if (mod is not null && !(mod is ModuleBuilder))
                 throw new ArgumentException("ModuleBuilder is expected");
 
             return new SignatureHelper((ModuleBuilder?)mod, SignatureHelperType.HELPER_FIELD);
@@ -79,7 +79,7 @@ namespace System.Reflection.Emit
 
         public static SignatureHelper GetLocalVarSigHelper(Module? mod)
         {
-            if (mod != null && !(mod is ModuleBuilder))
+            if (mod is not null && !(mod is ModuleBuilder))
                 throw new ArgumentException("ModuleBuilder is expected");
 
             return new SignatureHelper((ModuleBuilder?)mod, SignatureHelperType.HELPER_LOCAL);
@@ -151,7 +151,7 @@ namespace System.Reflection.Emit
         //
         private static int AppendArray([NotNull] ref Type[]? array, Type t)
         {
-            if (array != null)
+            if (array is not null)
             {
                 Type[] new_a = new Type[array.Length + 1];
                 Array.Copy(array, new_a, array.Length);
@@ -178,9 +178,9 @@ namespace System.Reflection.Emit
         //
         private static void AppendArrayAt([NotNull] ref Type[][]? array, Type[] t, int pos)
         {
-            int top = Math.Max(pos, array == null ? 0 : array.Length);
+            int top = Math.Max(pos, array is null ? 0 : array.Length);
             Type[][] new_a = new Type[top + 1][];
-            if (array != null)
+            if (array is not null)
                 Array.Copy(array, new_a, top);
             new_a[pos] = t;
             array = new_a;
@@ -190,7 +190,7 @@ namespace System.Reflection.Emit
         {
             foreach (Type modifier in parameter_modifiers)
             {
-                if (modifier == null)
+                if (modifier is null)
                     throw new ArgumentNullException(name);
                 if (modifier.IsArray)
                     throw new ArgumentException("Array type not permitted", name);
@@ -201,7 +201,7 @@ namespace System.Reflection.Emit
 
         private static void ValidateCustomModifier(int n, Type[][]? custom_modifiers, string name)
         {
-            if (custom_modifiers == null)
+            if (custom_modifiers is null)
                 return;
 
             if (custom_modifiers.Length != n)
@@ -209,7 +209,7 @@ namespace System.Reflection.Emit
 
             foreach (Type[] parameter_modifiers in custom_modifiers)
             {
-                if (parameter_modifiers == null)
+                if (parameter_modifiers is null)
                     continue;
 
                 ValidateParameterModifiers(name, parameter_modifiers);
@@ -224,11 +224,11 @@ namespace System.Reflection.Emit
         // FIXME: "Currently we ignore requiredCustomModifiers and optionalCustomModifiers"
         public void AddArguments(Type[]? arguments, Type[][]? requiredCustomModifiers, Type[][]? optionalCustomModifiers)
         {
-            if (arguments == null)
+            if (arguments is null)
                 throw new ArgumentNullException(nameof(arguments));
 
             // For now
-            if (requiredCustomModifiers != null || optionalCustomModifiers != null)
+            if (requiredCustomModifiers is not null || optionalCustomModifiers is not null)
             {
                 throw MissingFeature();
             }
@@ -250,24 +250,24 @@ namespace System.Reflection.Emit
 
         public void AddArgument(Type argument, Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers)
         {
-            if (argument == null)
+            if (argument is null)
                 throw new ArgumentNullException(nameof(argument));
 
-            if (requiredCustomModifiers != null)
+            if (requiredCustomModifiers is not null)
                 ValidateParameterModifiers("requiredCustomModifiers", requiredCustomModifiers);
-            if (optionalCustomModifiers != null)
+            if (optionalCustomModifiers is not null)
                 ValidateParameterModifiers("optionalCustomModifiers", optionalCustomModifiers);
 
             int p = AppendArray(ref arguments, argument);
-            if (requiredCustomModifiers != null)
+            if (requiredCustomModifiers is not null)
                 AppendArrayAt(ref modreqs, requiredCustomModifiers, p);
-            if (optionalCustomModifiers != null)
+            if (optionalCustomModifiers is not null)
                 AppendArrayAt(ref modopts, optionalCustomModifiers, p);
         }
 
         public void AddArgument(Type clsArgument)
         {
-            if (clsArgument == null)
+            if (clsArgument is null)
                 throw new ArgumentNullException(nameof(clsArgument));
 
             AppendArray(ref arguments, clsArgument);
@@ -281,13 +281,13 @@ namespace System.Reflection.Emit
 
         private static bool CompareOK(Type[][]? one, Type[][]? two)
         {
-            if (one == null)
+            if (one is null)
             {
-                if (two == null)
+                if (two is null)
                     return true;
                 return false;
             }
-            else if (two == null)
+            else if (two is null)
                 return false;
 
             if (one.Length != two.Length)
@@ -298,12 +298,12 @@ namespace System.Reflection.Emit
                 Type[] tone = one[i];
                 Type[] ttwo = two[i];
 
-                if (tone == null)
+                if (tone is null)
                 {
-                    if (ttwo == null)
+                    if (ttwo is null)
                         continue;
                 }
-                else if (ttwo == null)
+                else if (ttwo is null)
                     return false;
 
                 if (tone!.Length != ttwo.Length)
@@ -314,13 +314,13 @@ namespace System.Reflection.Emit
                     Type uone = tone[j];
                     Type utwo = ttwo[j];
 
-                    if (uone == null)
+                    if (uone is null)
                     {
-                        if (utwo == null)
+                        if (utwo is null)
                             continue;
                         return false;
                     }
-                    else if (utwo == null)
+                    else if (utwo is null)
                         return false;
 
                     if (!uone.Equals(utwo))
@@ -333,7 +333,7 @@ namespace System.Reflection.Emit
         public override bool Equals(object? obj)
         {
             SignatureHelper? other = obj as SignatureHelper;
-            if (other == null)
+            if (other is null)
                 return false;
 
             if (other.module != module ||
@@ -342,9 +342,9 @@ namespace System.Reflection.Emit
                 other.unmanagedCallConv != unmanagedCallConv)
                 return false;
 
-            if (arguments != null)
+            if (arguments is not null)
             {
-                if (other.arguments == null)
+                if (other.arguments is null)
                     return false;
                 if (arguments.Length != other.arguments.Length)
                     return false;
@@ -353,7 +353,7 @@ namespace System.Reflection.Emit
                     if (!other.arguments[i].Equals(arguments[i]))
                         return false;
             }
-            else if (other.arguments != null)
+            else if (other.arguments is not null)
                 return false;
 
             return CompareOK(other.modreqs, modreqs) && CompareOK(other.modopts, modopts);
@@ -392,15 +392,15 @@ namespace System.Reflection.Emit
         internal static SignatureHelper GetMethodSigHelper(Module? mod, CallingConventions callingConvention, CallingConvention unmanagedCallingConvention, Type? returnType,
                                                            Type[]? parameters)
         {
-            if (mod != null && !(mod is ModuleBuilder))
+            if (mod is not null && !(mod is ModuleBuilder))
                 throw new ArgumentException("ModuleBuilder is expected");
 
-            if (returnType == null)
+            if (returnType is null)
                 returnType = typeof(void);
 
             if (returnType.IsUserType)
                 throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
-            if (parameters != null)
+            if (parameters is not null)
             {
                 for (int i = 0; i < parameters.Length; ++i)
                     if (parameters[i].IsUserType)
@@ -413,7 +413,7 @@ namespace System.Reflection.Emit
             helper.callConv = callingConvention;
             helper.unmanagedCallConv = unmanagedCallingConvention;
 
-            if (parameters != null)
+            if (parameters is not null)
             {
                 helper.arguments = new Type[parameters.Length];
                 for (int i = 0; i < parameters.Length; ++i)

@@ -137,12 +137,12 @@ namespace System.Linq.Expressions.Interpreter
             {
                 yield return new InterpretedFrameInfo(frame.Name, frame.GetDebugInfo(frame.InstructionIndex));
                 frame = frame.Parent;
-            } while (frame != null);
+            } while (frame is not null);
         }
 
         internal void SaveTraceToException(Exception exception)
         {
-            if (exception.Data[typeof(InterpretedFrameInfo)] == null)
+            if (exception.Data[typeof(InterpretedFrameInfo)] is null)
             {
                 exception.Data[typeof(InterpretedFrameInfo)] = new List<InterpretedFrameInfo>(GetStackTraceDebugInfo()).ToArray();
             }
@@ -164,7 +164,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     trace.Add(frame.Name!);
                     frame = frame.Parent;
-                } while (frame != null);
+                } while (frame is not null);
                 return trace.ToArray();
             }
         }

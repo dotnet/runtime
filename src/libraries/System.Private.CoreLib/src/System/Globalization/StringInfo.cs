@@ -44,7 +44,7 @@ namespace System.Globalization
         {
             get
             {
-                if (_indexes == null && String.Length > 0)
+                if (_indexes is null && String.Length > 0)
                 {
                     _indexes = StringInfo.ParseCombiningCharacters(String);
                 }
@@ -176,7 +176,7 @@ namespace System.Globalization
 
         private static int[] ParseCombiningCharactersForLargeString(string str)
         {
-            Debug.Assert(str != null);
+            Debug.Assert(str is not null);
 
             // If we have a large string, we may as well take the hit of using a List<int>
             // instead of trying the stackalloc optimizations we have for smaller strings.

@@ -33,7 +33,7 @@ namespace System.Net.Http
         private void CheckDisposedOrStarted()
         {
             CheckDisposed();
-            if (_handler != null)
+            if (_handler is not null)
             {
                 throw new InvalidOperationException(SR.net_http_operation_started);
             }
@@ -460,7 +460,7 @@ namespace System.Net.Http
 
             HttpMessageHandlerStage handler;
 
-            if (settings._credentials == null)
+            if (settings._credentials is null)
             {
                 handler = new HttpConnectionHandler(poolManager);
             }
@@ -475,7 +475,7 @@ namespace System.Net.Http
                 // if the credential is anything other than a CredentialCache.
                 // We allow credentials in a CredentialCache since they are specifically tied to URIs.
                 HttpMessageHandlerStage redirectHandler =
-                    (settings._credentials == null || settings._credentials is CredentialCache) ?
+                    (settings._credentials is null || settings._credentials is CredentialCache) ?
                     handler :
                     new HttpConnectionHandler(poolManager);        // will not authenticate
 
@@ -488,7 +488,7 @@ namespace System.Net.Http
             }
 
             // Ensure a single handler is used for all requests.
-            if (Interlocked.CompareExchange(ref _handler, handler, null) != null)
+            if (Interlocked.CompareExchange(ref _handler, handler, null) is not null)
             {
                 handler.Dispose();
             }
@@ -519,7 +519,7 @@ namespace System.Net.Http
             }
 
             Exception? error = ValidateAndNormalizeRequest(request);
-            if (error != null)
+            if (error is not null)
             {
                 throw error;
             }
@@ -533,7 +533,7 @@ namespace System.Net.Http
             HttpMessageHandler handler = _handler ?? SetupHandlerChain();
 
             Exception? error = ValidateAndNormalizeRequest(request);
-            if (error != null)
+            if (error is not null)
             {
                 return Task.FromException<HttpResponseMessage>(error);
             }
@@ -551,7 +551,7 @@ namespace System.Net.Http
             // Add headers to define content transfer, if not present
             if (request.HasHeaders && request.Headers.TransferEncodingChunked.GetValueOrDefault())
             {
-                if (request.Content == null)
+                if (request.Content is null)
                 {
                     return new HttpRequestException(SR.net_http_client_execution_error,
                         new InvalidOperationException(SR.net_http_chunked_not_allowed_with_empty_content));
@@ -561,7 +561,7 @@ namespace System.Net.Http
                 // the Content-Length header if present, as sending both is invalid.
                 request.Content.Headers.ContentLength = null;
             }
-            else if (request.Content != null && request.Content.Headers.ContentLength == null)
+            else if (request.Content is not null && request.Content.Headers.ContentLength is null)
             {
                 // We have content, but neither Transfer-Encoding nor Content-Length is set.
                 request.Headers.TransferEncodingChunked = true;

@@ -82,9 +82,9 @@ namespace System.Security.Cryptography
 
         public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
-            if (padding == null)
+            if (padding is null)
                 throw new ArgumentNullException(nameof(padding));
 
             Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography
             RSAEncryptionPadding padding,
             out int bytesWritten)
         {
-            if (padding == null)
+            if (padding is null)
             {
                 throw new ArgumentNullException(nameof(padding));
             }
@@ -167,7 +167,7 @@ namespace System.Security.Cryptography
                     CryptographicOperations.ZeroMemory(tmp);
                 }
 
-                if (rent != null)
+                if (rent is not null)
                 {
                     // Already cleared
                     ArrayPool<byte>.Shared.Return(rent);
@@ -191,7 +191,7 @@ namespace System.Security.Cryptography
             // If rsaPadding is NoPadding then a depadding method should be present.
             Debug.Assert(
                 (rsaPadding == Interop.Crypto.RsaPadding.NoPadding) ==
-                (rsaPaddingProcessor != null));
+                (rsaPaddingProcessor is not null));
 
             // Caller should have already checked this.
             Debug.Assert(!key.IsInvalid);
@@ -212,7 +212,7 @@ namespace System.Security.Cryptography
             Span<byte> decryptBuf = destination;
             byte[]? paddingBuf = null;
 
-            if (rsaPaddingProcessor != null)
+            if (rsaPaddingProcessor is not null)
             {
                 paddingBuf = CryptoPool.Rent(rsaSize);
                 decryptBuf = paddingBuf;
@@ -223,7 +223,7 @@ namespace System.Security.Cryptography
                 int returnValue = Interop.Crypto.RsaPrivateDecrypt(data.Length, data, decryptBuf, key, rsaPadding);
                 CheckReturn(returnValue);
 
-                if (rsaPaddingProcessor != null)
+                if (rsaPaddingProcessor is not null)
                 {
                     return rsaPaddingProcessor.DepadOaep(paddingBuf, destination, out bytesWritten);
                 }
@@ -241,7 +241,7 @@ namespace System.Security.Cryptography
             }
             finally
             {
-                if (paddingBuf != null)
+                if (paddingBuf is not null)
                 {
                     // DecryptBuf is paddingBuf if paddingBuf is not null, erase it before returning it.
                     // If paddingBuf IS null then decryptBuf was destination, and shouldn't be cleared.
@@ -253,9 +253,9 @@ namespace System.Security.Cryptography
 
         public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
-            if (padding == null)
+            if (padding is null)
                 throw new ArgumentNullException(nameof(padding));
 
             Interop.Crypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
@@ -282,7 +282,7 @@ namespace System.Security.Cryptography
 
         public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
-            if (padding == null)
+            if (padding is null)
             {
                 throw new ArgumentNullException(nameof(padding));
             }
@@ -311,7 +311,7 @@ namespace System.Security.Cryptography
 
             int returnValue;
 
-            if (rsaPaddingProcessor != null)
+            if (rsaPaddingProcessor is not null)
             {
                 Debug.Assert(rsaPadding == Interop.Crypto.RsaPadding.NoPadding);
                 byte[] rented = CryptoPool.Rent(rsaSize);
@@ -374,7 +374,7 @@ namespace System.Security.Cryptography
             SafeRsaHandle key = GetKey();
 
             RSAParameters rsaParameters = Interop.Crypto.ExportRsaParameters(key, includePrivateParameters);
-            bool hasPrivateKey = rsaParameters.D != null;
+            bool hasPrivateKey = rsaParameters.D is not null;
 
             if (hasPrivateKey != includePrivateParameters || !HasConsistentPrivateKey(ref rsaParameters))
             {
@@ -399,21 +399,21 @@ namespace System.Security.Cryptography
                 if (!Interop.Crypto.SetRsaParameters(
                     key,
                     parameters.Modulus,
-                    parameters.Modulus != null ? parameters.Modulus.Length : 0,
+                    parameters.Modulus is not null ? parameters.Modulus.Length : 0,
                     parameters.Exponent,
-                    parameters.Exponent != null ? parameters.Exponent.Length : 0,
+                    parameters.Exponent is not null ? parameters.Exponent.Length : 0,
                     parameters.D,
-                    parameters.D != null ? parameters.D.Length : 0,
+                    parameters.D is not null ? parameters.D.Length : 0,
                     parameters.P,
-                    parameters.P != null ? parameters.P.Length : 0,
+                    parameters.P is not null ? parameters.P.Length : 0,
                     parameters.DP,
-                    parameters.DP != null ? parameters.DP.Length : 0,
+                    parameters.DP is not null ? parameters.DP.Length : 0,
                     parameters.Q,
-                    parameters.Q != null ? parameters.Q.Length : 0,
+                    parameters.Q is not null ? parameters.Q.Length : 0,
                     parameters.DQ,
-                    parameters.DQ != null ? parameters.DQ.Length : 0,
+                    parameters.DQ is not null ? parameters.DQ.Length : 0,
                     parameters.InverseQ,
-                    parameters.InverseQ != null ? parameters.InverseQ.Length : 0))
+                    parameters.InverseQ is not null ? parameters.InverseQ.Length : 0))
                 {
                     throw Interop.Crypto.CreateOpenSslCryptographicException();
                 }
@@ -501,7 +501,7 @@ namespace System.Security.Cryptography
 
         private void FreeKey()
         {
-            if (_key != null && _key.IsValueCreated)
+            if (_key is not null && _key.IsValueCreated)
             {
                 SafeRsaHandle handle = _key.Value;
                 handle?.Dispose();
@@ -510,7 +510,7 @@ namespace System.Security.Cryptography
 
         private static void ValidateParameters(ref RSAParameters parameters)
         {
-            if (parameters.Modulus == null || parameters.Exponent == null)
+            if (parameters.Modulus is null || parameters.Exponent is null)
                 throw new CryptographicException(SR.Argument_InvalidValue);
 
             if (!HasConsistentPrivateKey(ref parameters))
@@ -519,24 +519,24 @@ namespace System.Security.Cryptography
 
         private static bool HasConsistentPrivateKey(ref RSAParameters parameters)
         {
-            if (parameters.D == null)
+            if (parameters.D is null)
             {
-                if (parameters.P != null ||
-                    parameters.DP != null ||
-                    parameters.Q != null ||
-                    parameters.DQ != null ||
-                    parameters.InverseQ != null)
+                if (parameters.P is not null ||
+                    parameters.DP is not null ||
+                    parameters.Q is not null ||
+                    parameters.DQ is not null ||
+                    parameters.InverseQ is not null)
                 {
                     return false;
                 }
             }
             else
             {
-                if (parameters.P == null ||
-                    parameters.DP == null ||
-                    parameters.Q == null ||
-                    parameters.DQ == null ||
-                    parameters.InverseQ == null)
+                if (parameters.P is null ||
+                    parameters.DP is null ||
+                    parameters.Q is null ||
+                    parameters.DQ is null ||
+                    parameters.InverseQ is null)
                 {
                     return false;
                 }
@@ -547,7 +547,7 @@ namespace System.Security.Cryptography
 
         private void ThrowIfDisposed()
         {
-            if (_key == null)
+            if (_key is null)
             {
                 throw new ObjectDisposedException(
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
@@ -565,7 +565,7 @@ namespace System.Security.Cryptography
 
             SafeRsaHandle key = _key.Value;
 
-            if (key == null || key.IsInvalid)
+            if (key is null || key.IsInvalid)
             {
                 throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }
@@ -634,11 +634,11 @@ namespace System.Security.Cryptography
 
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (hash == null)
+            if (hash is null)
                 throw new ArgumentNullException(nameof(hash));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
+            if (padding is null)
                 throw new ArgumentNullException(nameof(padding));
 
             if (!TrySignHash(
@@ -653,7 +653,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException();
             }
 
-            Debug.Assert(signature != null);
+            Debug.Assert(signature is not null);
             return signature;
         }
 
@@ -668,7 +668,7 @@ namespace System.Security.Cryptography
             {
                 throw HashAlgorithmNameNullOrEmpty();
             }
-            if (padding == null)
+            if (padding is null)
             {
                 throw new ArgumentNullException(nameof(padding));
             }
@@ -682,7 +682,7 @@ namespace System.Security.Cryptography
                 out bytesWritten,
                 out byte[]? alloced);
 
-            Debug.Assert(alloced == null);
+            Debug.Assert(alloced is null);
             return ret;
         }
 
@@ -696,7 +696,7 @@ namespace System.Security.Cryptography
             out byte[]? signature)
         {
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
-            Debug.Assert(padding != null);
+            Debug.Assert(padding is not null);
 
             signature = null;
 
@@ -783,11 +783,11 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             RSASignaturePadding padding)
         {
-            if (hash == null)
+            if (hash is null)
             {
                 throw new ArgumentNullException(nameof(hash));
             }
-            if (signature == null)
+            if (signature is null)
             {
                 throw new ArgumentNullException(nameof(signature));
             }
@@ -801,7 +801,7 @@ namespace System.Security.Cryptography
             {
                 throw HashAlgorithmNameNullOrEmpty();
             }
-            if (padding == null)
+            if (padding is null)
             {
                 throw new ArgumentNullException(nameof(padding));
             }

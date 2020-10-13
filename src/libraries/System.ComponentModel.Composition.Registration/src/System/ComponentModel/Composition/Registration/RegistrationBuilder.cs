@@ -40,7 +40,7 @@ namespace System.ComponentModel.Composition.Registration
 
         public PartBuilder ForTypesDerivedFrom(Type type)
         {
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
             var partBuilder = new PartBuilder((t) => type != t && type.IsAssignableFrom(t));
@@ -59,7 +59,7 @@ namespace System.ComponentModel.Composition.Registration
 
         public PartBuilder ForType(Type type)
         {
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
             var partBuilder = new PartBuilder((t) => t == type);
@@ -70,7 +70,7 @@ namespace System.ComponentModel.Composition.Registration
 
         public PartBuilder<T> ForTypesMatching<T>(Predicate<Type> typeFilter)
         {
-            if (typeFilter == null)
+            if (typeFilter is null)
                 throw new ArgumentNullException(nameof(typeFilter));
 
             var partBuilder = new PartBuilder<T>(typeFilter);
@@ -81,7 +81,7 @@ namespace System.ComponentModel.Composition.Registration
 
         public PartBuilder ForTypesMatching(Predicate<Type> typeFilter)
         {
-            if (typeFilter == null)
+            if (typeFilter is null)
                 throw new ArgumentNullException(nameof(typeFilter));
 
             var partBuilder = new PartBuilder(typeFilter);
@@ -134,7 +134,7 @@ namespace System.ComponentModel.Composition.Registration
                     _memberInfos.TryGetValue(underlyingMemberType, out cachedAttributes);
                 }
 
-                if (cachedAttributes == null)
+                if (cachedAttributes is null)
                 {
                     using (new WriteLock(_lock))
                     {
@@ -145,7 +145,7 @@ namespace System.ComponentModel.Composition.Registration
                             foreach (Tuple<object, List<Attribute>> element in EvaluateThisTypeAgainstTheConvention((Type)member))
                             {
                                 attributeList = element.Item2;
-                                if (attributeList != null)
+                                if (attributeList is not null)
                                 {
                                     if (element.Item1 is MemberInfo)
                                     {
@@ -206,7 +206,7 @@ namespace System.ComponentModel.Composition.Registration
                 cachedAttributes = ReadMemberCustomAttributes(member);
             }
 
-            return cachedAttributes == null ? attributes : attributes.Concat(cachedAttributes);
+            return cachedAttributes is null ? attributes : attributes.Concat(cachedAttributes);
         }
 
         //This is where ParameterImports will be handled
@@ -215,7 +215,7 @@ namespace System.ComponentModel.Composition.Registration
             IEnumerable<object> attributes = base.GetCustomAttributes(parameter, declaredAttributes);
             List<Attribute> cachedAttributes = ReadParameterCustomAttributes(parameter);
 
-            return cachedAttributes == null ? attributes : attributes.Concat(cachedAttributes);
+            return cachedAttributes is null ? attributes : attributes.Concat(cachedAttributes);
         }
 
         private List<Attribute> ReadMemberCustomAttributes(MemberInfo member)

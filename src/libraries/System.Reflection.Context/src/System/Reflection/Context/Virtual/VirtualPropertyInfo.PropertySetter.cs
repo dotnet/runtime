@@ -35,12 +35,12 @@ namespace System.Reflection.Context.Virtual
             {
                 // invokeAttr, binder, and culture are ignored, similar to what runtime reflection does with the default binder.
 
-                if (parameters == null || parameters.Length != 1)
+                if (parameters is null || parameters.Length != 1)
                     throw new TargetParameterCountException();
 
                 object value = parameters[0];
 
-                if (obj == null)
+                if (obj is null)
                     throw new TargetException(SR.Target_InstanceMethodRequiresTarget);
 
                 if (!ReflectedType.IsInstanceOfType(obj))

@@ -145,7 +145,7 @@ namespace Microsoft.Extensions.Primitives
                         return str;
                     }
                 }
-                else if (value != null)
+                else if (value is not null)
                 {
                     // Not string, not null, can only be string[]
                     return Unsafe.As<string[]>(value)[index]; // may throw
@@ -209,7 +209,7 @@ namespace Microsoft.Extensions.Primitives
                 {
                     string value = values[i];
                     // Skip null and empty values
-                    if (value != null && value.Length > 0)
+                    if (value is not null && value.Length > 0)
                     {
                         if (length > 0)
                         {
@@ -228,7 +228,7 @@ namespace Microsoft.Extensions.Primitives
                     for (int i = 0; i < strings.Length; i++)
                     {
                         string value = strings[i];
-                        if (value != null && value.Length > 0)
+                        if (value is not null && value.Length > 0)
                         {
                             if (offset > 0)
                             {
@@ -249,7 +249,7 @@ namespace Microsoft.Extensions.Primitives
                 for (int i = 0; i < values.Length; i++)
                 {
                     string value = values[i];
-                    if (value != null && value.Length > 0)
+                    if (value is not null && value.Length > 0)
                     {
                         if (hasAdded)
                         {
@@ -288,7 +288,7 @@ namespace Microsoft.Extensions.Primitives
             {
                 return values;
             }
-            else if (value != null)
+            else if (value is not null)
             {
                 // value not array, can only be string
                 return new[] { Unsafe.As<string>(value) };
@@ -325,7 +325,7 @@ namespace Microsoft.Extensions.Primitives
                 return -1;
             }
 
-            if (value != null)
+            if (value is not null)
             {
                 // value not array, can only be string
                 return string.Equals(Unsafe.As<string>(value), item, StringComparison.Ordinal) ? 0 : -1;
@@ -365,9 +365,9 @@ namespace Microsoft.Extensions.Primitives
                 return;
             }
 
-            if (value != null)
+            if (value is not null)
             {
-                if (array == null)
+                if (array is null)
                 {
                     throw new ArgumentNullException(nameof(array));
                 }
@@ -478,7 +478,7 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>The concatenation of <paramref name="values"/> and <paramref name="value"/>.</returns>
         public static StringValues Concat(in StringValues values, string value)
         {
-            if (value == null)
+            if (value is null)
             {
                 return values;
             }
@@ -503,7 +503,7 @@ namespace Microsoft.Extensions.Primitives
         /// <returns>The concatenation of <paramref name="values"/> and <paramref name="values"/>.</returns>
         public static StringValues Concat(string value, in StringValues values)
         {
-            if (value == null)
+            if (value is null)
             {
                 return values;
             }
@@ -707,7 +707,7 @@ namespace Microsoft.Extensions.Primitives
         /// <returns><c>true</c> if the current object is equal to <paramref name="obj"/>; otherwise, <c>false</c>.</returns>
         public override bool Equals(object obj)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 return Equals(this, StringValues.Empty);
             }
@@ -789,7 +789,7 @@ namespace Microsoft.Extensions.Primitives
                 }
 
                 string[] values = _values;
-                if (values != null)
+                if (values is not null)
                 {
                     if ((uint)index < (uint)values.Length)
                     {
@@ -803,7 +803,7 @@ namespace Microsoft.Extensions.Primitives
                 }
 
                 _index = -1; // sentinel value
-                return _current != null;
+                return _current is not null;
             }
 
             public string Current => _current;

@@ -169,7 +169,7 @@ namespace System.Xml.Xsl
         /// </summary>
         public bool Equals(XmlQueryType? that)
         {
-            if (that == null)
+            if (that is null)
                 return false;
 
             // Check cardinality and DocOrderDistinct property
@@ -322,7 +322,7 @@ namespace System.Xml.Xsl
         {
             XmlQueryType? that = obj as XmlQueryType;
 
-            if (that == null)
+            if (that is null)
                 return false;
 
             return Equals(that);
@@ -343,7 +343,7 @@ namespace System.Xml.Xsl
 
                 unchecked
                 {
-                    if (schemaType != null)
+                    if (schemaType is not null)
                         hash += (hash << 7) ^ schemaType.GetHashCode();
 
                     hash += (hash << 7) ^ (int)NodeKinds;
@@ -496,7 +496,7 @@ namespace System.Xml.Xsl
 
                 // If type codes are not the same, then IsSubtypeOf can return true *only* if "baseType" is a built-in type
                 XmlSchemaType builtInType = XmlSchemaType.GetBuiltInSimpleType(baseType.TypeCode);
-                if (builtInType != null && baseSchemaType != builtInType)
+                if (builtInType is not null && baseSchemaType != builtInType)
                     return false;
 
                 // Now check whether TypeCode is derived from baseType.TypeCode

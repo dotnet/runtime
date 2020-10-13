@@ -28,7 +28,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -173,7 +173,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -318,7 +318,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -463,7 +463,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -608,7 +608,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -753,7 +753,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -898,7 +898,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -1043,7 +1043,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -1188,7 +1188,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -1333,7 +1333,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -1477,7 +1477,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -1621,7 +1621,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -1765,7 +1765,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -1909,7 +1909,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -2053,7 +2053,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -2197,7 +2197,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -2341,7 +2341,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -2485,7 +2485,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -2629,7 +2629,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {
@@ -2773,7 +2773,7 @@ namespace System.Dynamic
             //
             // Level 1 cache lookup
             //
-            if ((applicable = CallSiteOps.GetRules(@this)) != null)
+            if ((applicable = CallSiteOps.GetRules(@this)) is not null)
             {
                 for (int i = 0; i < applicable.Length; i++)
                 {

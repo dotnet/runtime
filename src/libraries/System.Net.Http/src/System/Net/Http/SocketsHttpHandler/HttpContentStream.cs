@@ -21,7 +21,7 @@ namespace System.Net.Http
         {
             if (disposing)
             {
-                if (_connection != null)
+                if (_connection is not null)
                 {
                     _connection.Dispose();
                     _connection = null;

@@ -21,7 +21,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 ActiveDirectorySiteLink link = (ActiveDirectorySiteLink)value;
 
-                if (link == null)
+                if (link is null)
                     throw new ArgumentNullException(nameof(value));
 
                 if (!link.existing)
@@ -36,7 +36,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int Add(ActiveDirectorySiteLink link)
         {
-            if (link == null)
+            if (link is null)
                 throw new ArgumentNullException(nameof(link));
 
             if (!link.existing)
@@ -50,7 +50,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ActiveDirectorySiteLink[] links)
         {
-            if (links == null)
+            if (links is null)
                 throw new ArgumentNullException(nameof(links));
 
             for (int i = 0; i < links.Length; i = i + 1)
@@ -59,7 +59,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void AddRange(ActiveDirectorySiteLinkCollection links)
         {
-            if (links == null)
+            if (links is null)
                 throw new ArgumentNullException(nameof(links));
 
             int count = links.Count;
@@ -69,7 +69,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ActiveDirectorySiteLink link)
         {
-            if (link == null)
+            if (link is null)
                 throw new ArgumentNullException(nameof(link));
 
             if (!link.existing)
@@ -97,7 +97,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ActiveDirectorySiteLink link)
         {
-            if (link == null)
+            if (link is null)
                 throw new ArgumentNullException(nameof(link));
 
             if (!link.existing)
@@ -120,7 +120,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Insert(int index, ActiveDirectorySiteLink link)
         {
-            if (link == null)
+            if (link is null)
                 throw new ArgumentNullException(nameof(link));
 
             if (!link.existing)
@@ -134,7 +134,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public void Remove(ActiveDirectorySiteLink link)
         {
-            if (link == null)
+            if (link is null)
                 throw new ArgumentNullException(nameof(link));
 
             if (!link.existing)
@@ -222,7 +222,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         protected override void OnValidate(object value)
         {
-            if (value == null) throw new ArgumentNullException(nameof(value));
+            if (value is null) throw new ArgumentNullException(nameof(value));
 
             if (!(value is ActiveDirectorySiteLink))
                 throw new ArgumentException(null, nameof(value));

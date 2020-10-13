@@ -50,7 +50,7 @@ namespace System.IO.IsolatedStorage
 
             Assembly? assembly = Assembly.GetEntryAssembly();
 
-            if (assembly == null)
+            if (assembly is null)
                 throw new IsolatedStorageException(SR.IsolatedStorage_Init);
 
             AssemblyName assemblyName = assembly.GetName();
@@ -59,7 +59,7 @@ namespace System.IO.IsolatedStorage
 #pragma warning restore SYSLIB0012
 
             hash = IdentityHelper.GetNormalizedStrongNameHash(assemblyName)!;
-            if (hash != null)
+            if (hash is not null)
             {
                 hash = "StrongName" + separator + hash;
                 identity = assemblyName;

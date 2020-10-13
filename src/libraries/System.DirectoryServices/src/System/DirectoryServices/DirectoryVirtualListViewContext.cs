@@ -13,7 +13,7 @@ namespace System.DirectoryServices
 
         internal DirectoryVirtualListViewContext(byte[] context)
         {
-            if (context == null)
+            if (context is null)
             {
                 _context = Array.Empty<byte>();
             }

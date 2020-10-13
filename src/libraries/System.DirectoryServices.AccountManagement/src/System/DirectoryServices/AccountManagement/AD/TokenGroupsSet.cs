@@ -47,7 +47,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (_currentSID != null)
+                if (_currentSID is not null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "TokenGroupSet", "CurrentAsPrincipal: using current");
 
@@ -79,7 +79,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             if (_atBeginning)
             {
-                Debug.Assert(_principalDN != null);
+                Debug.Assert(_principalDN is not null);
 
                 _current = SDSUtils.BuildDirectoryEntry(
                                             BuildPathFromDN(_principalDN),
@@ -129,7 +129,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 if (!_disposed)
                 {
-                    if (_current != null)
+                    if (_current is not null)
                         _current.Dispose();
 
                     _disposed = true;

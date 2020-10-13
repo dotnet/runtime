@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
 
         public static new ECDiffieHellman? Create(string algorithm)
         {
-            if (algorithm == null)
+            if (algorithm is null)
             {
                 throw new ArgumentNullException(nameof(algorithm));
             }
@@ -185,7 +185,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
+            if (pbeParameters is null)
                 throw new ArgumentNullException(nameof(pbeParameters));
 
             PasswordBasedEncryption.ValidatePbeParameters(
@@ -221,7 +221,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
+            if (pbeParameters is null)
                 throw new ArgumentNullException(nameof(pbeParameters));
 
             PasswordBasedEncryption.ValidatePbeParameters(

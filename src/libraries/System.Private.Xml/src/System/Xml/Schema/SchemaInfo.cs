@@ -74,7 +74,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_generalEntities == null)
+                if (_generalEntities is null)
                 {
                     _generalEntities = new Dictionary<XmlQualifiedName, SchemaEntity>();
                 }
@@ -86,7 +86,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_parameterEntities == null)
+                if (_parameterEntities is null)
                 {
                     _parameterEntities = new Dictionary<XmlQualifiedName, SchemaEntity>();
                 }
@@ -119,7 +119,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_notations == null)
+                if (_notations is null)
                 {
                     _notations = new Dictionary<string, SchemaNotation>();
                 }
@@ -159,7 +159,7 @@ namespace System.Xml.Schema
         internal XmlSchemaElement? GetElement(XmlQualifiedName qname)
         {
             SchemaElementDecl? ed = GetElementDecl(qname);
-            if (ed != null)
+            if (ed is not null)
             {
                 return ed.SchemaElement;
             }
@@ -180,10 +180,10 @@ namespace System.Xml.Schema
         internal SchemaAttDef? GetAttributeXdr(SchemaElementDecl? ed, XmlQualifiedName qname)
         {
             SchemaAttDef? attdef = null;
-            if (ed != null)
+            if (ed is not null)
             {
                 attdef = ed.GetAttDef(qname); ;
-                if (attdef == null)
+                if (attdef is null)
                 {
                     if (!ed.ContentValidator!.IsOpen || qname.Namespace.Length == 0)
                     {
@@ -204,16 +204,16 @@ namespace System.Xml.Schema
         {
             SchemaAttDef? attdef = null;
             attributeMatchState = AttributeMatchState.UndeclaredAttribute;
-            if (ed != null)
+            if (ed is not null)
             {
                 attdef = ed.GetAttDef(qname);
-                if (attdef != null)
+                if (attdef is not null)
                 {
                     attributeMatchState = AttributeMatchState.AttributeFound;
                     return attdef;
                 }
                 XmlSchemaAnyAttribute? any = ed.AnyAttribute;
-                if (any != null)
+                if (any is not null)
                 {
                     if (!any.NamespaceList!.Allows(qname))
                     {
@@ -247,10 +247,10 @@ namespace System.Xml.Schema
                     attributeMatchState = AttributeMatchState.ProhibitedAttribute;
                 }
             }
-            else if (partialValidationType != null)
+            else if (partialValidationType is not null)
             {
                 XmlSchemaAttribute? attr = partialValidationType as XmlSchemaAttribute;
-                if (attr != null)
+                if (attr is not null)
                 {
                     if (qname.Equals(attr.QualifiedName))
                     {
@@ -320,7 +320,7 @@ namespace System.Xml.Schema
             }
             else if (_schemaType != sinfo.SchemaType)
             {
-                if (eventhandler != null)
+                if (eventhandler is not null)
                 {
                     eventhandler(this, new ValidationEventArgs(new XmlSchemaException(SR.Sch_MixSchemaTypes, string.Empty)));
                 }
@@ -376,7 +376,7 @@ namespace System.Xml.Schema
                     {
                         _hasNonCDataAttributes = true;
                     }
-                    if (e.DefaultAttDefs != null)
+                    if (e.DefaultAttDefs is not null)
                     {
                         _hasDefaultAttributes = true;
                     }
@@ -426,7 +426,7 @@ namespace System.Xml.Schema
 
         IDtdEntityInfo? IDtdInfo.LookupEntity(string name)
         {
-            if (_generalEntities == null)
+            if (_generalEntities is null)
             {
                 return null;
             }

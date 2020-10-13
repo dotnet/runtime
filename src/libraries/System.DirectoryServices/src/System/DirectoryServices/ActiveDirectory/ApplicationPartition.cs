@@ -80,12 +80,12 @@ namespace System.DirectoryServices.ActiveDirectory
                     // resources to be freed, those should be done here
                     // if disposing = true, only unmanaged resources should
                     // be freed, else both managed and unmanaged.
-                    if (_crossRefEntry != null)
+                    if (_crossRefEntry is not null)
                     {
                         _crossRefEntry.Dispose();
                         _crossRefEntry = null;
                     }
-                    if (_domainDNSEntry != null)
+                    if (_domainDNSEntry is not null)
                     {
                         _domainDNSEntry.Dispose();
                         _domainDNSEntry = null;
@@ -106,7 +106,7 @@ namespace System.DirectoryServices.ActiveDirectory
         public static ApplicationPartition GetApplicationPartition(DirectoryContext context)
         {
             // validate the context
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
@@ -161,15 +161,15 @@ namespace System.DirectoryServices.ActiveDirectory
             DirectoryContext appNCContext = null;
 
             // check that the argument is not null
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
-            if ((context.Name == null) && (!context.isRootDomain()))
+            if ((context.Name is null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
-            if (context.Name != null)
+            if (context.Name is not null)
             {
                 // the target should be a valid forest name, configset name or a server
                 if (!((context.isRootDomain()) || (context.isADAMConfigSet()) || context.isServer()))
@@ -179,7 +179,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // check that the distingushed name of the application partition is not null or empty
-            if (distinguishedName == null)
+            if (distinguishedName is null)
                 throw new ArgumentNullException(nameof(distinguishedName));
 
             if (distinguishedName.Length == 0)
@@ -258,7 +258,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 partitionsEntry.Dispose();
             }
 
-            if (res == null)
+            if (res is null)
             {
                 // the specified application partition could not be found in the given forest
                 throw new ActiveDirectoryObjectNotFoundException(SR.AppNCNotFound, typeof(ApplicationPartition), distinguishedName);
@@ -375,7 +375,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             CheckIfDisposed();
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -429,7 +429,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             CheckIfDisposed();
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -480,7 +480,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -526,7 +526,7 @@ namespace System.DirectoryServices.ActiveDirectory
         {
             CheckIfDisposed();
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 throw new ArgumentNullException(nameof(siteName));
             }
@@ -695,9 +695,9 @@ namespace System.DirectoryServices.ActiveDirectory
                 _committed = true;
 
                 // commit the replica locations information or security reference domain if applicable
-                if ((_cachedDirectoryServers != null) || (_securityRefDomainModified))
+                if ((_cachedDirectoryServers is not null) || (_securityRefDomainModified))
                 {
-                    if (_cachedDirectoryServers != null)
+                    if (_cachedDirectoryServers is not null)
                     {
                         _crossRefEntry.Properties[PropertyManager.MsDSNCReplicaLocations].AddRange(_cachedDirectoryServers.GetMultiValuedProperty());
                     }
@@ -719,13 +719,13 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // just save the crossRef entry for teh directory servers and the
                 // security reference domain information
-                if ((_cachedDirectoryServers != null) || (_securityRefDomainModified))
+                if ((_cachedDirectoryServers is not null) || (_securityRefDomainModified))
                 {
                     try
                     {
                         // we should already have the crossRef entries as some attribute on it has already
                         // been modified
-                        Debug.Assert(_crossRefEntry != null, "ApplicationPartition::Save - crossRefEntry on already committed partition which is being modified is null.");
+                        Debug.Assert(_crossRefEntry is not null, "ApplicationPartition::Save - crossRefEntry on already committed partition which is being modified is null.");
                         _crossRefEntry.CommitChanges();
                     }
                     catch (COMException e)
@@ -761,7 +761,7 @@ namespace System.DirectoryServices.ActiveDirectory
             get
             {
                 CheckIfDisposed();
-                if (_cachedDirectoryServers == null)
+                if (_cachedDirectoryServers is null)
                 {
                     ReadOnlyDirectoryServerCollection servers = (_committed) ? FindAllDirectoryServers() : new ReadOnlyDirectoryServerCollection();
                     bool isADAM = (_appType == ApplicationPartitionType.ADAMApplicationPartition) ? true : false;
@@ -833,7 +833,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     GetCrossRefEntry();
                     // modify the security reference domain
                     // this will get committed when the crossRefEntry is committed
-                    if (value == null)
+                    if (value is null)
                     {
                         if (_crossRefEntry.Properties.Contains(PropertyManager.MsDSSDReferenceDomain))
                         {
@@ -849,7 +849,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    if (!((_securityRefDomain == null) && (value == null)))
+                    if (!((_securityRefDomain is null) && (value is null)))
                     {
                         _securityRefDomain = value;
                         _securityRefDomainModified = true;
@@ -863,19 +863,19 @@ namespace System.DirectoryServices.ActiveDirectory
         private void ValidateApplicationPartitionParameters(DirectoryContext context, string distinguishedName, string objectClass, bool objectClassSpecified)
         {
             // validate context
-            if (context == null)
+            if (context is null)
             {
                 throw new ArgumentNullException(nameof(context));
             }
 
             // contexttype should be DirectoryServer
-            if ((context.Name == null) || (!context.isServer()))
+            if ((context.Name is null) || (!context.isServer()))
             {
                 throw new ArgumentException(SR.TargetShouldBeServer, nameof(context));
             }
 
             // check that the distinguished name is not null or empty
-            if (distinguishedName == null)
+            if (distinguishedName is null)
             {
                 throw new ArgumentNullException(nameof(distinguishedName));
             }
@@ -913,7 +913,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 // ADAM case and objectClass is explicitly specified, so must be validated
 
-                if (objectClass == null)
+                if (objectClass is null)
                 {
                     throw new ArgumentNullException(nameof(objectClass));
                 }
@@ -982,12 +982,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 finally
                 {
                     // dispose all resources
-                    if (parent != null)
+                    if (parent is not null)
                     {
                         parent.Dispose();
                     }
 
-                    if (tempEntry != null)
+                    if (tempEntry is not null)
                     {
                         tempEntry.Dispose();
                     }
@@ -1029,12 +1029,12 @@ namespace System.DirectoryServices.ActiveDirectory
                     finally
                     {
                         // dispose all resources
-                        if (parent != null)
+                        if (parent is not null)
                         {
                             parent.Dispose();
                         }
 
-                        if (tempEntry != null)
+                        if (tempEntry is not null)
                         {
                             tempEntry.Dispose();
                         }
@@ -1049,7 +1049,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private void InitializeCrossRef(string distinguishedName)
         {
-            if (_crossRefEntry != null)
+            if (_crossRefEntry is not null)
                 // already initialized
                 return;
 
@@ -1088,7 +1088,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (partitionsEntry != null)
+                if (partitionsEntry is not null)
                 {
                     partitionsEntry.Dispose();
                 }
@@ -1135,7 +1135,7 @@ namespace System.DirectoryServices.ActiveDirectory
         // this is so that we do not encounter any replication delay related issues
         internal DirectoryEntry GetCrossRefEntry()
         {
-            if (_crossRefEntry != null)
+            if (_crossRefEntry is not null)
             {
                 return _crossRefEntry;
             }
@@ -1181,7 +1181,7 @@ namespace System.DirectoryServices.ActiveDirectory
             int errorCode = 0;
             DomainControllerInfo domainControllerInfo;
 
-            if (siteName != null && siteName.Length == 0)
+            if (siteName is not null && siteName.Length == 0)
             {
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
@@ -1223,7 +1223,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private ReadOnlyDirectoryServerCollection FindAllDirectoryServersInternal(string siteName)
         {
-            if (siteName != null && siteName.Length == 0)
+            if (siteName is not null && siteName.Length == 0)
             {
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }
@@ -1246,7 +1246,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         private ReadOnlyDirectoryServerCollection FindAllDiscoverableDirectoryServersInternal(string siteName)
         {
-            if (siteName != null && siteName.Length == 0)
+            if (siteName is not null && siteName.Length == 0)
             {
                 throw new ArgumentException(SR.EmptyStringParameter, nameof(siteName));
             }

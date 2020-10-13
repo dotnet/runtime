@@ -17,11 +17,11 @@ namespace System.Dynamic.Utils
                 return first;
             }
             var set = new HashSet<T>(cmp);
-            for (T t = first; t != null; t = parent(t))
+            for (T t = first; t is not null; t = parent(t))
             {
                 set.Add(t);
             }
-            for (T t = second; t != null; t = parent(t))
+            for (T t = second; t is not null; t = parent(t))
             {
                 if (set.Contains(t))
                 {

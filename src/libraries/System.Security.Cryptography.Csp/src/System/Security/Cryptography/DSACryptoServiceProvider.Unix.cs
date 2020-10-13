@@ -115,12 +115,12 @@ namespace System.Security.Cryptography
         public override void ImportParameters(DSAParameters parameters)
         {
             // Although _impl supports key sizes > 1024, limit here for compat.
-            if (parameters.Y != null && parameters.Y.Length > 1024 / 8)
+            if (parameters.Y is not null && parameters.Y.Length > 1024 / 8)
                 throw new CryptographicException(SR.Argument_InvalidValue);
 
             _impl.ImportParameters(parameters);
 
-            _publicOnly = (parameters.X == null);
+            _publicOnly = (parameters.X is null);
         }
 
         public override void ImportEncryptedPkcs8PrivateKey(
@@ -211,7 +211,7 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of DSACryptoServiceProvider")]
         public byte[] SignHash(byte[] rgbHash, string str)
         {
-            if (rgbHash == null)
+            if (rgbHash is null)
                 throw new ArgumentNullException(nameof(rgbHash));
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
@@ -219,7 +219,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Format(SR.Cryptography_InvalidHashSize, "SHA1", SHA1_HASHSIZE));
 
             // Only SHA1 allowed; the default value is SHA1
-            if (str != null && !string.Equals(str, "SHA1", StringComparison.OrdinalIgnoreCase))
+            if (str is not null && !string.Equals(str, "SHA1", StringComparison.OrdinalIgnoreCase))
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, str);
 
             return CreateSignature(rgbHash);
@@ -230,15 +230,15 @@ namespace System.Security.Cryptography
 
         public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature)
         {
-            if (rgbHash == null)
+            if (rgbHash is null)
                 throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
+            if (rgbSignature is null)
                 throw new ArgumentNullException(nameof(rgbSignature));
 
             // For compat with Windows, no check for rgbHash.Length != SHA1_HASHSIZE
 
             // Only SHA1 allowed; the default value is SHA1
-            if (str != null && !string.Equals(str, "SHA1", StringComparison.OrdinalIgnoreCase))
+            if (str is not null && !string.Equals(str, "SHA1", StringComparison.OrdinalIgnoreCase))
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, str);
 
             return _impl.VerifySignature(rgbHash, rgbSignature);
@@ -282,7 +282,7 @@ namespace System.Security.Cryptography
         /// </summary>
         private static bool IsPublic(byte[] keyBlob)
         {
-            if (keyBlob == null)
+            if (keyBlob is null)
                 throw new ArgumentNullException(nameof(keyBlob));
 
             // The CAPI DSS public key representation consists of the following sequence:

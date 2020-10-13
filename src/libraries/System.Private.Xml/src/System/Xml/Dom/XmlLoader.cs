@@ -33,12 +33,12 @@ namespace System.Xml
                 _reader = reader;
             }
             _preserveWhitespace = preserveWhitespace;
-            if (doc == null)
+            if (doc is null)
                 throw new ArgumentException(SR.Xdom_Load_NoDocument);
-            if (reader == null)
+            if (reader is null)
                 throw new ArgumentException(SR.Xdom_Load_NoReader);
             doc.SetBaseURI(reader.BaseURI!);
-            if (reader.Settings != null
+            if (reader.Settings is not null
                 && reader.Settings.ValidationType == ValidationType.Schema)
             {
                 doc.Schemas = reader.Settings.Schemas;
@@ -54,10 +54,10 @@ namespace System.Xml
         //The function will start loading the document from where current XmlReader is pointing at.
         private void LoadDocSequence(XmlDocument parentDoc)
         {
-            Debug.Assert(_reader != null);
-            Debug.Assert(parentDoc != null);
+            Debug.Assert(_reader is not null);
+            Debug.Assert(parentDoc is not null);
             XmlNode? node = null;
-            while ((node = LoadNode(true)) != null)
+            while ((node = LoadNode(true)) is not null)
             {
                 parentDoc.AppendChildForLoad(node, parentDoc);
                 if (!_reader.Read())
@@ -71,9 +71,9 @@ namespace System.Xml
             _reader = reader;
             // WS are optional only for loading (see XmlDocument.PreserveWhitespace)
             _preserveWhitespace = true;
-            if (doc == null)
+            if (doc is null)
                 throw new ArgumentException(SR.Xdom_Load_NoDocument);
-            if (reader == null)
+            if (reader is null)
                 throw new ArgumentException(SR.Xdom_Load_NoReader);
 
             if (reader.ReadState == ReadState.Initial)
@@ -125,7 +125,7 @@ namespace System.Xml
                         // recursively load all children.
                         if (!fEmptyElement)
                         {
-                            if (parent != null)
+                            if (parent is not null)
                             {
                                 parent.AppendChildForLoad(element, _doc);
                             }
@@ -135,7 +135,7 @@ namespace System.Xml
                         else
                         {
                             schemaInfo = r.SchemaInfo;
-                            if (schemaInfo != null)
+                            if (schemaInfo is not null)
                             {
                                 element.XmlName = _doc.AddXmlName(element.Prefix, element.LocalName, element.NamespaceURI, schemaInfo);
                             }
@@ -144,21 +144,21 @@ namespace System.Xml
                         }
 
                     case XmlNodeType.EndElement:
-                        if (parent == null)
+                        if (parent is null)
                         {
                             return null;
                         }
                         Debug.Assert(parent.NodeType == XmlNodeType.Element);
                         schemaInfo = r.SchemaInfo;
-                        if (schemaInfo != null)
+                        if (schemaInfo is not null)
                         {
                             element = parent as XmlElement;
-                            if (element != null)
+                            if (element is not null)
                             {
                                 element.XmlName = _doc!.AddXmlName(element.Prefix, element.LocalName, element.NamespaceURI, schemaInfo);
                             }
                         }
-                        if (parent.ParentNode == null)
+                        if (parent.ParentNode is null)
                         {
                             return parent;
                         }
@@ -170,7 +170,7 @@ namespace System.Xml
                         break;
 
                     case XmlNodeType.EndEntity:
-                        Debug.Assert(parent == null);
+                        Debug.Assert(parent is null);
                         return null;
 
                     case XmlNodeType.Attribute:
@@ -191,7 +191,7 @@ namespace System.Xml
                             node = _doc!.CreateWhitespace(r.Value);
                             break;
                         }
-                        else if (parent == null && !skipOverWhitespace)
+                        else if (parent is null && !skipOverWhitespace)
                         {
                             // if called from LoadEntityReferenceNode, just return null
                             return null;
@@ -225,8 +225,8 @@ namespace System.Xml
                         throw UnexpectedNodeType(r.NodeType);
                 }
 
-                Debug.Assert(node != null);
-                if (parent != null)
+                Debug.Assert(node is not null);
+                if (parent is not null)
                 {
                     parent.AppendChildForLoad(node, _doc!);
                 }
@@ -238,9 +238,9 @@ namespace System.Xml
             while (r.Read());
 
             // when the reader ended before full subtree is read, return whatever we have created so far
-            if (parent != null)
+            if (parent is not null)
             {
-                while (parent.ParentNode != null)
+                while (parent.ParentNode is not null)
                 {
                     parent = parent.ParentNode;
                 }
@@ -261,7 +261,7 @@ namespace System.Xml
 
             XmlAttribute attr = _doc!.CreateAttribute(r.Prefix, r.LocalName, r.NamespaceURI);
             IXmlSchemaInfo? schemaInfo = r.SchemaInfo;
-            if (schemaInfo != null)
+            if (schemaInfo is not null)
             {
                 attr.XmlName = _doc.AddAttrXmlName(attr.Prefix, attr.LocalName, attr.NamespaceURI, schemaInfo);
             }
@@ -282,7 +282,7 @@ namespace System.Xml
                             LoadAttributeValue(node, false);
                             // Code internally relies on the fact that an EntRef nodes has at least one child (even an empty text node). Ensure that this holds true,
                             // if the reader does not present any children for the ent-ref
-                            if (node.FirstChild == null)
+                            if (node.FirstChild is null)
                             {
                                 node.AppendChildForLoad(_doc.CreateTextNode(string.Empty), _doc);
                             }
@@ -292,7 +292,7 @@ namespace System.Xml
                         throw UnexpectedNodeType(r.NodeType);
                 }
 
-                Debug.Assert(node != null);
+                Debug.Assert(node is not null);
                 attr.AppendChildForLoad(node, _doc);
             }
 
@@ -306,7 +306,7 @@ namespace System.Xml
             XmlReader r = _reader;
             XmlAttribute attr = _doc!.CreateDefaultAttribute(r.Prefix, r.LocalName, r.NamespaceURI);
             IXmlSchemaInfo? schemaInfo = r.SchemaInfo;
-            if (schemaInfo != null)
+            if (schemaInfo is not null)
             {
                 attr.XmlName = _doc.AddAttrXmlName(attr.Prefix, attr.LocalName, attr.NamespaceURI, schemaInfo);
             }
@@ -315,7 +315,7 @@ namespace System.Xml
 
             XmlUnspecifiedAttribute? defAttr = attr as XmlUnspecifiedAttribute;
             // If user overrides CreateDefaultAttribute, then attr will NOT be a XmlUnspecifiedAttribute instance.
-            if (defAttr != null)
+            if (defAttr is not null)
                 defAttr.SetSpecified(false);
 
             return attr;
@@ -342,7 +342,7 @@ namespace System.Xml
                             LoadAttributeValue(node, direct);
                             // Code internally relies on the fact that an EntRef nodes has at least one child (even an empty text node). Ensure that this holds true,
                             // if the reader does not present any children for the ent-ref
-                            if (node.FirstChild == null)
+                            if (node.FirstChild is null)
                             {
                                 node.AppendChildForLoad(direct ? new XmlText(string.Empty) : _doc!.CreateTextNode(string.Empty), _doc!);
                             }
@@ -351,7 +351,7 @@ namespace System.Xml
                     default:
                         throw UnexpectedNodeType(r.NodeType);
                 }
-                Debug.Assert(node != null);
+                Debug.Assert(node is not null);
                 parent.AppendChildForLoad(node, _doc!);
             }
             return;
@@ -367,14 +367,14 @@ namespace System.Xml
                 while (_reader.Read() && _reader.NodeType != XmlNodeType.EndEntity)
                 {
                     XmlNode? node = direct ? LoadNodeDirect() : LoadNode(false);
-                    if (node != null)
+                    if (node is not null)
                     {
                         eref.AppendChildForLoad(node, _doc!);
                     }
                 }
                 // Code internally relies on the fact that an EntRef nodes has at least one child (even an empty text node). Ensure that this holds true,
                 // if the reader does not present any children for the ent-ref
-                if (eref.LastChild == null)
+                if (eref.LastChild is null)
                     eref.AppendChildForLoad(_doc!.CreateTextNode(string.Empty), _doc);
             }
             return eref;
@@ -412,7 +412,7 @@ namespace System.Xml
 
             // For readers that do not break xml decl into attributes, we must parse the xml decl ourselves. We use version attr, b/c xml decl MUST contain
             // at least version attr, so if the reader implements them as attr, then version must be present
-            if (version == null)
+            if (version is null)
                 ParseXmlDeclarationValue(_reader.Value, out version, out encoding, out standalone);
 
             return _doc!.CreateXmlDeclaration(version!, encoding, standalone);
@@ -442,7 +442,7 @@ namespace System.Xml
             XmlDocumentType dtNode = _doc!.CreateDocumentType(localName, publicId, systemId, internalSubset);
 
             IDtdInfo? dtdInfo = _reader.DtdInfo;
-            if (dtdInfo != null)
+            if (dtdInfo is not null)
                 LoadDocumentType(dtdInfo, dtNode);
             else
             {
@@ -496,7 +496,7 @@ namespace System.Xml
 
                     case XmlNodeType.EndElement:
                         Debug.Assert(parent!.NodeType == XmlNodeType.Element);
-                        if (parent.ParentNode == null)
+                        if (parent.ParentNode is null)
                         {
                             return parent;
                         }
@@ -550,8 +550,8 @@ namespace System.Xml
                         throw UnexpectedNodeType(_reader!.NodeType);
                 }
 
-                Debug.Assert(node != null);
-                if (parent != null)
+                Debug.Assert(node is not null);
+                if (parent is not null)
                 {
                     parent.AppendChildForLoad(node, _doc!);
                 }
@@ -615,19 +615,19 @@ namespace System.Xml
         private void LoadDocumentType(IDtdInfo dtdInfo, XmlDocumentType dtNode)
         {
             SchemaInfo? schInfo = dtdInfo as SchemaInfo;
-            if (schInfo == null)
+            if (schInfo is null)
             {
                 throw new XmlException(SR.Xml_InternalError, string.Empty);
             }
 
             dtNode.DtdSchemaInfo = schInfo;
-            if (schInfo != null)
+            if (schInfo is not null)
             {
                 //set the schema information into the document
                 _doc!.DtdSchemaInfo = schInfo;
 
                 // Notation hashtable
-                if (schInfo.Notations != null)
+                if (schInfo.Notations is not null)
                 {
                     foreach (SchemaNotation scNot in schInfo.Notations.Values)
                     {
@@ -636,7 +636,7 @@ namespace System.Xml
                 }
 
                 // Entity hashtables
-                if (schInfo.GeneralEntities != null)
+                if (schInfo.GeneralEntities is not null)
                 {
                     foreach (SchemaEntity scEnt in schInfo.GeneralEntities.Values)
                     {
@@ -646,7 +646,7 @@ namespace System.Xml
                     }
                 }
 
-                if (schInfo.ParameterEntities != null)
+                if (schInfo.ParameterEntities is not null)
                 {
                     foreach (SchemaEntity scEnt in schInfo.ParameterEntities.Values)
                     {
@@ -661,7 +661,7 @@ namespace System.Xml
                 foreach (KeyValuePair<XmlQualifiedName, SchemaElementDecl> elementDecls in schInfo.ElementDecls)
                 {
                     SchemaElementDecl elementDecl = elementDecls.Value;
-                    if (elementDecl.AttDefs != null)
+                    if (elementDecl.AttDefs is not null)
                     {
                         foreach (KeyValuePair<XmlQualifiedName, SchemaAttDef> attDefs in elementDecl.AttDefs)
                         {
@@ -694,10 +694,10 @@ namespace System.Xml
             bool bHasDefXmlnsAttr = false;
 
             // Process all xmlns, xmlns:prefix, xml:space and xml:lang attributes
-            while (node != null && node != _doc)
+            while (node is not null && node != _doc)
             {
                 XmlElement? element = node as XmlElement;
-                if (element != null && element.HasAttributes)
+                if (element is not null && element.HasAttributes)
                 {
                     mgr.PushScope();
                     foreach (XmlAttribute attr in element.Attributes)
@@ -722,7 +722,7 @@ namespace System.Xml
                             else if (attr.Value == "preserve")
                                 spaceMode = XmlSpace.Preserve;
                         }
-                        else if (lang == null && attr.Prefix == _doc.strXml && attr.LocalName == _doc.strLang)
+                        else if (lang is null && attr.Prefix == _doc.strXml && attr.LocalName == _doc.strLang)
                         {
                             // Save xml:lag context
                             lang = attr.Value;
@@ -735,10 +735,10 @@ namespace System.Xml
             return new XmlParserContext(
                 nt,
                 mgr,
-                (docType == null) ? null : docType.Name,
-                (docType == null) ? null : docType.PublicId,
-                (docType == null) ? null : docType.SystemId,
-                (docType == null) ? null : docType.InternalSubset,
+                (docType is null) ? null : docType.Name,
+                (docType is null) ? null : docType.PublicId,
+                (docType is null) ? null : docType.SystemId,
+                (docType is null) ? null : docType.InternalSubset,
                 baseURI,
                 lang,
                 spaceMode
@@ -752,7 +752,7 @@ namespace System.Xml
             //the function shouldn't be used to set innerxml for XmlDocument node
             Debug.Assert(parentNode.NodeType != XmlNodeType.Document);
             _doc = parentNode.OwnerDocument;
-            Debug.Assert(_doc != null);
+            Debug.Assert(_doc is not null);
             XmlParserContext pc = GetContext(parentNode);
             _reader = CreateInnerXmlReader(innerxmltext, nt, pc, _doc);
             try
@@ -764,7 +764,7 @@ namespace System.Xml
                 if (nt == XmlNodeType.Entity)
                 {
                     XmlNode? node = null;
-                    while (_reader.Read() && (node = LoadNodeDirect()) != null)
+                    while (_reader.Read() && (node = LoadNodeDirect()) is not null)
                     {
                         parentNode.AppendChildForLoad(node, _doc);
                     }
@@ -772,7 +772,7 @@ namespace System.Xml
                 else
                 {
                     XmlNode? node = null;
-                    while (_reader.Read() && (node = LoadNode(true)) != null)
+                    while (_reader.Read() && (node = LoadNode(true)) is not null)
                     {
                         parentNode.AppendChildForLoad(node, _doc);
                     }
@@ -817,7 +817,7 @@ namespace System.Xml
                     if (attr.Prefix == _doc!.strXmlns)
                     {
                         string? nsUri = mgr.LookupNamespace(attr.LocalName);
-                        if (nsUri != null)
+                        if (nsUri is not null)
                         {
                             if (attr.Value == nsUri)
                                 elem.Attributes.RemoveNodeAt(i);
@@ -834,7 +834,7 @@ namespace System.Xml
                     else if (attr.Prefix.Length == 0 && attr.LocalName == _doc.strXmlns)
                     {
                         string nsUri = mgr.DefaultNamespace;
-                        if (nsUri != null)
+                        if (nsUri is not null)
                         {
                             if (attr.Value == nsUri)
                                 elem.Attributes.RemoveNodeAt(i);
@@ -852,10 +852,10 @@ namespace System.Xml
             }
             //now recursively remove the duplicate attributes on the children
             XmlNode? child = elem.FirstChild;
-            while (child != null)
+            while (child is not null)
             {
                 XmlElement? childElem = child as XmlElement;
-                if (childElem != null)
+                if (childElem is not null)
                     RemoveDuplicateNamespace(childElem, mgr, true);
                 child = child.NextSibling;
             }
@@ -948,10 +948,10 @@ namespace System.Xml
             Debug.Assert(tr.EntityHandling == EntityHandling.ExpandCharEntities);
 
             XmlDocumentType? dtdNode = doc.DocumentType;
-            if (dtdNode != null)
+            if (dtdNode is not null)
             {
                 tr.Namespaces = dtdNode.ParseWithNamespaces;
-                if (dtdNode.DtdSchemaInfo != null)
+                if (dtdNode.DtdSchemaInfo is not null)
                 {
                     tr.SetDtdInfo(dtdNode.DtdSchemaInfo);
                 }

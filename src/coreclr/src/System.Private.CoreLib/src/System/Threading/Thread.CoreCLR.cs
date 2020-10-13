@@ -50,13 +50,13 @@ namespace System.Threading
 
         private void InitializeCulture()
         {
-            if (_startCulture != null)
+            if (_startCulture is not null)
             {
                 CultureInfo.CurrentCulture = _startCulture;
                 _startCulture = null;
             }
 
-            if (_startUICulture != null)
+            if (_startUICulture is not null)
             {
                 CultureInfo.CurrentUICulture = _startUICulture;
                 _startUICulture = null;
@@ -70,7 +70,7 @@ namespace System.Threading
             _startArg = obj;
 
             ExecutionContext? context = _executionContext;
-            if (context != null)
+            if (context is not null)
             {
                 ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
             }
@@ -87,7 +87,7 @@ namespace System.Threading
             Debug.Assert(_start is ThreadStart);
 
             ExecutionContext? context = _executionContext;
-            if (context != null)
+            if (context is not null)
             {
                 ExecutionContext.RunInternal(context, s_threadStartContextCallback, this);
             }
@@ -209,7 +209,7 @@ namespace System.Threading
             // Attach current thread's security principal object to the new
             // thread. Be careful not to bind the current thread to a principal
             // if it's not already bound.
-            if (_delegate != null)
+            if (_delegate is not null)
             {
                 // If we reach here with a null delegate, something is broken. But we'll let the StartInternal method take care of
                 // reporting an error. Just make sure we don't try to dereference a null delegate.
@@ -225,7 +225,7 @@ namespace System.Threading
 
         private void SetCultureOnUnstartedThreadNoCheck(CultureInfo value, bool uiCulture)
         {
-            Debug.Assert(_delegate != null);
+            Debug.Assert(_delegate is not null);
             Debug.Assert(_delegate.Target is ThreadHelper);
 
             var t = (ThreadHelper)(_delegate.Target);
@@ -295,7 +295,7 @@ namespace System.Threading
             }
         }
 
-        /// <summary>Sets the IThreadable interface for the thread. Assumes that start != null.</summary>
+        /// <summary>Sets the IThreadable interface for the thread. Assumes that start is not null.</summary>
         [MethodImpl(MethodImplOptions.InternalCall)]
         private extern void SetStart(Delegate start, int maxStackSize);
 

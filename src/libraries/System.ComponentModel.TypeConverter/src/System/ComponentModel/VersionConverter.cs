@@ -64,7 +64,7 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
@@ -74,7 +74,7 @@ namespace System.ComponentModel
                 if (destinationType == typeof(InstanceDescriptor))
                 {
                     ConstructorInfo ctor = typeof(Version).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(int), typeof(int), typeof(int), typeof(int) }, null);
-                    Debug.Assert(ctor != null, "Couldn't find constructor");
+                    Debug.Assert(ctor is not null, "Couldn't find constructor");
                     return new InstanceDescriptor(ctor, new object[] { version.Major, version.Minor, version.Build, version.Revision });
                 }
 

@@ -32,7 +32,7 @@ namespace System.Security.Cryptography.Xml
             get { return _uri; }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(SR.Cryptography_Xml_UriRequired);
                 _uri = value;
                 _cachedXml = null;
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                if (_transformChain == null)
+                if (_transformChain is null)
                     _transformChain = new TransformChain();
                 return _transformChain;
             }
@@ -73,7 +73,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                return (_cachedXml != null);
+                return (_cachedXml is not null);
             }
         }
 
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography.Xml
 
         internal XmlElement GetXml(XmlDocument document)
         {
-            if (ReferenceType == null)
+            if (ReferenceType is null)
                 throw new CryptographicException(SR.Cryptography_Xml_ReferenceTypeRequired);
 
             // Create the Reference
@@ -105,13 +105,13 @@ namespace System.Security.Cryptography.Xml
 
         public virtual void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             ReferenceType = value.LocalName;
 
             string uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
-            if (uri == null)
+            if (uri is null)
                 throw new ArgumentNullException(SR.Cryptography_Xml_UriRequired);
             Uri = uri;
 
@@ -119,7 +119,7 @@ namespace System.Security.Cryptography.Xml
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);
             XmlNode transformsNode = value.SelectSingleNode("ds:Transforms", nsm);
-            if (transformsNode != null)
+            if (transformsNode is not null)
                 TransformChain.LoadXml(transformsNode as XmlElement);
 
             // cache the Xml

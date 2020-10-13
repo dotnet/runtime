@@ -58,7 +58,7 @@ namespace System.Xml.Schema
             _reader = reader;
             _positionInfo = PositionInfo.GetPositionInfo(reader);
             _namespaceManager = reader.NamespaceManager;
-            if (_namespaceManager == null)
+            if (_namespaceManager is null)
             {
                 _namespaceManager = new XmlNamespaceManager(_nameTable);
                 _isProcessNamespaces = true;
@@ -205,7 +205,7 @@ namespace System.Xml.Schema
                     { //AppInfo and Documentation
                         _markupDepth = _reader.Depth;
                         _processMarkup = true;
-                        if (_annotationNSManager == null)
+                        if (_annotationNSManager is null)
                         {
                             _annotationNSManager = new XmlNamespaceManager(_nameTable);
                             _xmlns = _nameTable.Add("xmlns");
@@ -238,7 +238,7 @@ namespace System.Xml.Schema
                 {
                     if (_processMarkup)
                     {
-                        Debug.Assert(_parentNode != null);
+                        Debug.Assert(_parentNode is not null);
                         XmlNodeList list = _parentNode.ChildNodes;
                         XmlNode?[] markup = new XmlNode[list.Count];
                         for (int i = 0; i < list.Count; i++)
@@ -321,8 +321,8 @@ namespace System.Xml.Schema
                     break;
 
                 default: //other possible node types: Document/DocType/DocumentFrag/Entity/Notation/Xmldecl cannot appear as children of xs:appInfo or xs:doc
-                    Debug.Assert(currentNode != null);
-                    Debug.Assert(_parentNode != null);
+                    Debug.Assert(currentNode is not null);
+                    Debug.Assert(_parentNode is not null);
                     _parentNode.AppendChild(currentNode);
                     break;
             }
@@ -359,7 +359,7 @@ namespace System.Xml.Schema
                 }
                 r.MoveToElement();
                 string? ns = _annotationNSManager!.LookupNamespace(r.Prefix);
-                if (ns == null)
+                if (ns is null)
                 {
                     XmlAttribute attr = CreateXmlNsAttribute(r.Prefix, _namespaceManager!.LookupNamespace(r.Prefix)!);
                     attributes.Append(attr);
@@ -379,7 +379,7 @@ namespace System.Xml.Schema
                     if (r.Prefix.Length != 0)
                     {
                         string? attNS = _annotationNSManager.LookupNamespace(r.Prefix);
-                        if (attNS == null)
+                        if (attNS is null)
                         {
                             XmlAttribute attr = CreateXmlNsAttribute(r.Prefix, _namespaceManager!.LookupNamespace(r.Prefix)!);
                             attributes.Append(attr);

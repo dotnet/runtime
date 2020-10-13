@@ -23,7 +23,7 @@ namespace System.Net.Security
 
         internal SslApplicationProtocol(byte[] protocol, bool copy)
         {
-            Debug.Assert(protocol != null);
+            Debug.Assert(protocol is not null);
 
             // RFC 7301 states protocol size <= 255 bytes.
             if (protocol.Length == 0 || protocol.Length > 255)
@@ -56,7 +56,7 @@ namespace System.Net.Security
         public override int GetHashCode()
         {
             byte[] arr = _readOnlyProtocol;
-            if (arr == null)
+            if (arr is null)
             {
                 return 0;
             }

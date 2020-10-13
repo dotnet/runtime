@@ -119,17 +119,17 @@ namespace System.Net.Http
                 return;
             }
 
-            if (_clientControl != null)
+            if (_clientControl is not null)
             {
                 _clientControl.Dispose();
                 _clientControl = null;
             }
 
-            if (_connection != null)
+            if (_connection is not null)
             {
                 // Close the QuicConnection in the background.
 
-                if (_connectionClosedTask == null)
+                if (_connectionClosedTask is null)
                 {
                     _connectionClosedTask = _connection.CloseAsync((long)Http3ErrorCode.NoError).AsTask();
                 }
@@ -177,7 +177,7 @@ namespace System.Net.Http
                 }
             }
 
-            if (waitForAvailableStreamTcs != null)
+            if (waitForAvailableStreamTcs is not null)
             {
                 await waitForAvailableStreamTcs.WaitWithCancellationAsync(cancellationToken).ConfigureAwait(false);
             }
@@ -191,7 +191,7 @@ namespace System.Net.Http
             {
                 lock (SyncObj)
                 {
-                    if (_connection != null)
+                    if (_connection is not null)
                     {
                         quicStream = _connection.OpenBidirectionalStream();
                         requestStream = new Http3RequestStream(request, this, quicStream);
@@ -199,7 +199,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (quicStream == null)
+                if (quicStream is null)
                 {
                     throw new HttpRequestException(SR.net_http_request_aborted, null, RequestRetryType.RetryOnSameOrNextProxy);
                 }
@@ -311,7 +311,7 @@ namespace System.Net.Http
             // Only observe the first exception we get.
             Exception? firstException = Interlocked.CompareExchange(ref _abortException, abortException, null);
 
-            if (firstException != null)
+            if (firstException is not null)
             {
                 if (NetEventSource.Log.IsEnabled() && !ReferenceEquals(firstException, abortException))
                 {
@@ -337,7 +337,7 @@ namespace System.Net.Http
                 }
 
                 // Abort the connection. This will cause all of our streams to abort on their next I/O.
-                if (_connection != null && _connectionClosedTask == null)
+                if (_connection is not null && _connectionClosedTask is null)
                 {
                     _connectionClosedTask = _connection.CloseAsync((long)connectionResetErrorCode).AsTask();
                 }
@@ -619,7 +619,7 @@ namespace System.Net.Http
 
                 (Http3FrameType? frameType, long payloadLength) = await ReadFrameEnvelopeAsync().ConfigureAwait(false);
 
-                if (frameType == null)
+                if (frameType is null)
                 {
                     // Connection closed prematurely, expected SETTINGS frame.
                     throw new Http3ConnectionException(Http3ErrorCode.ClosedCriticalStream);

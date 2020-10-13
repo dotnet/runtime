@@ -35,7 +35,7 @@ namespace System.Collections
 
         public void CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
 
             if (array.Rank != 1)
@@ -62,7 +62,7 @@ namespace System.Collections
         {
             get
             {
-                if (key == null)
+                if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 }
@@ -70,7 +70,7 @@ namespace System.Collections
             }
             set
             {
-                if (key == null)
+                if (key is null)
                 {
                     throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
                 }
@@ -78,7 +78,7 @@ namespace System.Collections
                 if (!key.GetType().IsSerializable)
                     throw new ArgumentException(SR.Argument_NotSerializable, nameof(key));
 
-                if ((value != null) && (!value.GetType().IsSerializable))
+                if ((value is not null) && (!value.GetType().IsSerializable))
                     throw new ArgumentException(SR.Argument_NotSerializable, nameof(value));
 
                 throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);
@@ -96,7 +96,7 @@ namespace System.Collections
 
         public void Add(object key, object? value)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
             }
@@ -104,7 +104,7 @@ namespace System.Collections
             if (!key.GetType().IsSerializable)
                 throw new ArgumentException(SR.Argument_NotSerializable, nameof(key));
 
-            if ((value != null) && (!value.GetType().IsSerializable))
+            if ((value is not null) && (!value.GetType().IsSerializable))
                 throw new ArgumentException(SR.Argument_NotSerializable, nameof(value));
 
             throw new InvalidOperationException(SR.InvalidOperation_ReadOnly);

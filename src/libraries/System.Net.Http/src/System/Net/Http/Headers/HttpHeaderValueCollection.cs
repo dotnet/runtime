@@ -53,7 +53,7 @@ namespace System.Net.Http.Headers
             get
             {
                 // If this collection instance has a "special value", then check whether that value was already set.
-                if (_specialValue == null)
+                if (_specialValue is null)
                 {
                     return false;
                 }
@@ -80,8 +80,8 @@ namespace System.Net.Http.Headers
         internal HttpHeaderValueCollection(HeaderDescriptor descriptor, HttpHeaders store, T? specialValue,
             Action<HttpHeaderValueCollection<T>, T>? validator)
         {
-            Debug.Assert(descriptor.Name != null);
-            Debug.Assert(store != null);
+            Debug.Assert(descriptor.Name is not null);
+            Debug.Assert(store is not null);
 
             _store = store;
             _descriptor = descriptor;
@@ -118,7 +118,7 @@ namespace System.Net.Http.Headers
 
         public void CopyTo(T[] array, int arrayIndex)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -130,14 +130,14 @@ namespace System.Net.Http.Headers
 
             object? storeValue = _store.GetParsedValues(_descriptor);
 
-            if (storeValue == null)
+            if (storeValue is null)
             {
                 return;
             }
 
             List<object>? storeValues = storeValue as List<object>;
 
-            if (storeValues == null)
+            if (storeValues is null)
             {
                 // We only have 1 value: If it is the "special value" just return, otherwise add the value to the
                 // array and return.
@@ -166,14 +166,14 @@ namespace System.Net.Http.Headers
         {
             object? storeValue = _store.GetParsedValues(_descriptor);
 
-            if (storeValue == null)
+            if (storeValue is null)
             {
                 yield break;
             }
 
             List<object>? storeValues = storeValue as List<object>;
 
-            if (storeValues == null)
+            if (storeValues is null)
             {
                 Debug.Assert(storeValue is T);
                 yield return (T)storeValue;
@@ -207,7 +207,7 @@ namespace System.Net.Http.Headers
 
         internal void SetSpecialValue()
         {
-            Debug.Assert(_specialValue != null,
+            Debug.Assert(_specialValue is not null,
                 "This method can only be used if the collection has a 'special value' set.");
 
             if (!_store.ContainsParsedValue(_descriptor, _specialValue))
@@ -218,7 +218,7 @@ namespace System.Net.Http.Headers
 
         internal void RemoveSpecialValue()
         {
-            Debug.Assert(_specialValue != null,
+            Debug.Assert(_specialValue is not null,
                 "This method can only be used if the collection has a 'special value' set.");
 
             // We're not interested in the return value. It's OK if the "special value" wasn't in the store
@@ -228,13 +228,13 @@ namespace System.Net.Http.Headers
 
         private void CheckValue(T item)
         {
-            if (item == null)
+            if (item is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
 
             // If this instance has a custom validator for validating arguments, call it now.
-            if (_validator != null)
+            if (_validator is not null)
             {
                 _validator(this, item);
             }
@@ -246,14 +246,14 @@ namespace System.Net.Http.Headers
 
             object? storeValue = _store.GetParsedValues(_descriptor);
 
-            if (storeValue == null)
+            if (storeValue is null)
             {
                 return 0;
             }
 
             List<object>? storeValues = storeValue as List<object>;
 
-            if (storeValues == null)
+            if (storeValues is null)
             {
                 return 1;
             }

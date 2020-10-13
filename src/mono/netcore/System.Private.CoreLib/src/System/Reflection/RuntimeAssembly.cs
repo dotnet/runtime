@@ -128,7 +128,7 @@ namespace System.Reflection
 
         internal static AssemblyName? CreateAssemblyName(string assemblyString, out RuntimeAssembly? assemblyFromResolveEvent)
         {
-            if (assemblyString == null)
+            if (assemblyString is null)
                 throw new ArgumentNullException(nameof(assemblyString));
 
             if ((assemblyString.Length == 0) ||
@@ -143,7 +143,7 @@ namespace System.Reflection
             catch (Exception)
             {
                 assemblyFromResolveEvent = (RuntimeAssembly?)AssemblyLoadContext.DoAssemblyResolve(assemblyString);
-                if (assemblyFromResolveEvent == null)
+                if (assemblyFromResolveEvent is null)
                     throw new FileLoadException(assemblyString);
                 return null;
             }
@@ -203,7 +203,7 @@ namespace System.Reflection
 
         public override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
         {
-            if (resourceName == null)
+            if (resourceName is null)
                 throw new ArgumentNullException(nameof(resourceName));
             if (resourceName.Length == 0)
                 throw new ArgumentException("String cannot have zero length.");
@@ -217,7 +217,7 @@ namespace System.Reflection
 
         public override Stream? GetManifestResourceStream(string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
@@ -227,7 +227,7 @@ namespace System.Reflection
             unsafe
             {
                 byte* data = (byte*)GetManifestResourceInternal(name, out int length, out Module resourceModule);
-                if (data == null)
+                if (data is null)
                     return null;
 
                 // It cannot use SafeBuffer mode because not all methods are supported in this
@@ -238,12 +238,12 @@ namespace System.Reflection
 
         public override Stream? GetManifestResourceStream(Type type, string name)
         {
-            if (type == null && name == null)
+            if (type is null && name is null)
                 throw new ArgumentNullException(nameof(type));
 
             string? nameSpace = type?.Namespace;
 
-            string resourceName = nameSpace != null && name != null ?
+            string resourceName = nameSpace is not null && name is not null ?
                 nameSpace + Type.Delimiter + name :
                 nameSpace + name;
 
@@ -258,7 +258,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
@@ -289,7 +289,7 @@ namespace System.Reflection
 
         public override Module? GetModule(string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException("Name can't be empty");
@@ -372,7 +372,7 @@ namespace System.Reflection
 
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
-            if (culture == null)
+            if (culture is null)
                 throw new ArgumentNullException(nameof(culture));
 
             return InternalGetSatelliteAssembly(this, culture, version, true)!;
@@ -384,7 +384,7 @@ namespace System.Reflection
             AssemblyName aname = assembly.GetName();
 
             var an = new AssemblyName();
-            if (version == null)
+            if (version is null)
                 an.Version = aname.Version;
             else
                 an.Version = version;
@@ -404,14 +404,14 @@ namespace System.Reflection
 
             if (res == assembly)
                 res = null;
-            if (res == null && throwOnFileNotFound)
+            if (res is null && throwOnFileNotFound)
                 throw new FileNotFoundException(string.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
             return res;
         }
 
         public override FileStream? GetFile(string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name), SR.ArgumentNull_FileName);
             if (name.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName);
@@ -423,7 +423,7 @@ namespace System.Reflection
 
             RuntimeModule? m = (RuntimeModule?)GetModule(name);
 
-            if (m != null)
+            if (m is not null)
                 return new FileStream(m.FullyQualifiedName, FileMode.Open, FileAccess.Read);
             else
                 return null;
@@ -455,8 +455,8 @@ namespace System.Reflection
 
         internal static RuntimeAssembly InternalLoad(AssemblyName assemblyRef, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext)
         {
-            var assembly = (RuntimeAssembly)InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext != null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
-            if (assembly == null)
+            var assembly = (RuntimeAssembly)InternalLoad(assemblyRef.FullName, ref stackMark, assemblyLoadContext is not null ? assemblyLoadContext.NativeALC : IntPtr.Zero);
+            if (assembly is null)
                 throw new FileNotFoundException(null, assemblyRef.Name);
             return assembly;
         }

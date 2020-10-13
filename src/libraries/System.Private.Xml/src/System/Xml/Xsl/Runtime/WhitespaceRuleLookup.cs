@@ -36,7 +36,7 @@ namespace System.Xml.Xsl.Runtime
         {
             WhitespaceRule rule;
             InternalWhitespaceRule ruleInternal;
-            Debug.Assert(rules != null);
+            Debug.Assert(rules is not null);
 
             for (int i = rules.Count - 1; i >= 0; i--)
             {
@@ -44,7 +44,7 @@ namespace System.Xml.Xsl.Runtime
                 rule = rules[i];
                 ruleInternal = new InternalWhitespaceRule(rule.LocalName, rule.NamespaceName, rule.PreserveSpace, -i);
 
-                if (rule.LocalName == null || rule.NamespaceName == null)
+                if (rule.LocalName is null || rule.NamespaceName is null)
                 {
                     // Wildcard, so add to wildcards array
                     _wildcards.Add(ruleInternal);
@@ -86,9 +86,9 @@ namespace System.Xml.Xsl.Runtime
         public bool ShouldStripSpace(string localName, string namespaceName)
         {
             InternalWhitespaceRule qnameRule, wildcardRule;
-            Debug.Assert(_nameTable != null && _ruleTemp != null);
-            Debug.Assert(localName != null && (object)_nameTable.Get(localName) == (object)localName);
-            Debug.Assert(namespaceName != null && (object)_nameTable.Get(namespaceName) == (object)namespaceName);
+            Debug.Assert(_nameTable is not null && _ruleTemp is not null);
+            Debug.Assert(localName is not null && (object)_nameTable.Get(localName) == (object)localName);
+            Debug.Assert(namespaceName is not null && (object)_nameTable.Get(namespaceName) == (object)namespaceName);
 
             _ruleTemp.Init(localName, namespaceName, false, 0);
 
@@ -100,7 +100,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 wildcardRule = _wildcards[pos] as InternalWhitespaceRule;
 
-                if (qnameRule != null)
+                if (qnameRule is not null)
                 {
                     // If qname priority is greater than any subsequent wildcard's priority, then we're done
                     if (qnameRule.Priority > wildcardRule.Priority)
@@ -111,9 +111,9 @@ namespace System.Xml.Xsl.Runtime
                         continue;
                 }
 
-                if (wildcardRule.LocalName == null || (object)wildcardRule.LocalName == (object)localName)
+                if (wildcardRule.LocalName is null || (object)wildcardRule.LocalName == (object)localName)
                 {
-                    if (wildcardRule.NamespaceName == null || (object)wildcardRule.NamespaceName == (object)namespaceName)
+                    if (wildcardRule.NamespaceName is null || (object)wildcardRule.NamespaceName == (object)namespaceName)
                     {
                         // Found wildcard match, so we're done (since wildcards are in priority order)
                         return !wildcardRule.PreserveSpace;
@@ -121,7 +121,7 @@ namespace System.Xml.Xsl.Runtime
                 }
             }
 
-            return (qnameRule != null && !qnameRule.PreserveSpace);
+            return (qnameRule is not null && !qnameRule.PreserveSpace);
         }
 
         private class InternalWhitespaceRule : WhitespaceRule
@@ -143,7 +143,7 @@ namespace System.Xml.Xsl.Runtime
                 base.Init(localName, namespaceName, preserveSpace);
                 _priority = priority;
 
-                if (localName != null && namespaceName != null)
+                if (localName is not null && namespaceName is not null)
                 {
                     _hashCode = localName.GetHashCode();
                 }
@@ -151,10 +151,10 @@ namespace System.Xml.Xsl.Runtime
 
             public void Atomize(XmlNameTable nameTable)
             {
-                if (LocalName != null)
+                if (LocalName is not null)
                     LocalName = nameTable.Add(LocalName);
 
-                if (NamespaceName != null)
+                if (NamespaceName is not null)
                     NamespaceName = nameTable.Add(NamespaceName);
             }
 
@@ -173,8 +173,8 @@ namespace System.Xml.Xsl.Runtime
                 Debug.Assert(obj is InternalWhitespaceRule);
                 InternalWhitespaceRule that = obj as InternalWhitespaceRule;
 
-                Debug.Assert(LocalName != null && that.LocalName != null);
-                Debug.Assert(NamespaceName != null && that.NamespaceName != null);
+                Debug.Assert(LocalName is not null && that.LocalName is not null);
+                Debug.Assert(NamespaceName is not null && that.NamespaceName is not null);
 
                 // string == operator compares object references first and if they are not the same compares contents
                 // of the compared strings. As a result we do not have to cast strings to objects to force reference

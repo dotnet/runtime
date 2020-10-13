@@ -16,7 +16,7 @@ namespace System.Xml.Xsl.XsltOld
         internal TextOutput(Processor processor, Stream stream)
             : base(processor)
         {
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
@@ -28,7 +28,7 @@ namespace System.Xml.Xsl.XsltOld
         internal TextOutput(Processor processor, TextWriter writer)
             : base(processor)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }

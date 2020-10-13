@@ -213,17 +213,17 @@ namespace System.Text
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             // We'll allow null bytes as a count
-            //            Debug.Assert(bytes != null, "[GB18030Encoding.GetBytes]bytes is null");
+            //            Debug.Assert(bytes is not null, "[GB18030Encoding.GetBytes]bytes is null");
             Debug.Assert(byteCount >= 0, "[GB18030Encoding.GetBytes]byteCount is negative");
-            Debug.Assert(chars != null, "[GB18030Encoding.GetBytes]chars is null");
+            Debug.Assert(chars is not null, "[GB18030Encoding.GetBytes]chars is null");
             Debug.Assert(charCount >= 0, "[GB18030Encoding.GetBytes]charCount is negative");
 
             // Assert because we shouldn't be able to have a null encoder.
-            Debug.Assert(EncoderFallback != null, "[GB18030Encoding.GetBytes]Attempting to use null encoder fallback");
+            Debug.Assert(EncoderFallback is not null, "[GB18030Encoding.GetBytes]Attempting to use null encoder fallback");
 
             // Get any left over characters
             char charLeftOver = (char)0;
-            if (encoder != null)
+            if (encoder is not null)
                 charLeftOver = encoder.charLeftOver;
 
             // prepare our helpers
@@ -336,7 +336,7 @@ namespace System.Text
             }
 
             // Do we need to flush our charLeftOver?
-            if ((encoder == null || encoder.MustFlush) && (charLeftOver > 0))
+            if ((encoder is null || encoder.MustFlush) && (charLeftOver > 0))
             {
                 // Fall it back
                 buffer.Fallback(charLeftOver);
@@ -345,11 +345,11 @@ namespace System.Text
             }
 
             // Fallback stuck it in encoder if necessary, but we have to clear MustFlash cases
-            // (Check bytes != null, don't clear it if we're just counting)
-            if (encoder != null)
+            // (Check bytes is not null, don't clear it if we're just counting)
+            if (encoder is not null)
             {
                 // Remember our charLeftOver
-                if (bytes != null)
+                if (bytes is not null)
                     encoder.charLeftOver = charLeftOver;
 
                 encoder.m_charsUsed = buffer.CharsUsed;
@@ -399,9 +399,9 @@ namespace System.Text
         {
             // Just need to ASSERT, this is called by something else internal that checked parameters already
             // We'll allow null chars as a count
-            Debug.Assert(bytes != null, "[GB18030Encoding.GetChars]bytes is null");
+            Debug.Assert(bytes is not null, "[GB18030Encoding.GetChars]bytes is null");
             Debug.Assert(byteCount >= 0, "[GB18030Encoding.GetChars]byteCount is negative");
-            //            Debug.Assert(chars != null, "[GB18030Encoding.GetChars]chars is null");
+            //            Debug.Assert(chars is not null, "[GB18030Encoding.GetChars]chars is null");
             Debug.Assert(charCount >= 0, "[GB18030Encoding.GetChars]charCount is negative");
 
             // Fix our decoder
@@ -417,7 +417,7 @@ namespace System.Text
             short byte4 = -1;
 
             // See if there was anything to get out of the decoder
-            if (decoder != null && decoder.bLeftOver1 != -1)
+            if (decoder is not null && decoder.bLeftOver1 != -1)
             {
                 // Need temp bytes because we can't muss up decoder
                 byte1 = decoder.bLeftOver1;
@@ -463,7 +463,7 @@ namespace System.Text
                             if (!decoder.MustFlush)
                             {
                                 // Don't stick stuff in decoder when counting
-                                if (chars != null)
+                                if (chars is not null)
                                 {
                                     // Don't have to flush, won't have any chars
                                     // Decoder is correct, just return
@@ -659,10 +659,10 @@ namespace System.Text
                             {
                                 // No room for 4 bytes, have 2 already, may be one more
                                 // Lead byte but no place to stick it
-                                if (decoder != null && !decoder.MustFlush)
+                                if (decoder is not null && !decoder.MustFlush)
                                 {
                                     // (make sure not to set decoder if counting, so check chars)
-                                    if (chars != null)
+                                    if (chars is not null)
                                     {
                                         // We'll be able to stick the remainder in the decoder
                                         byte1 = ch;
@@ -695,11 +695,11 @@ namespace System.Text
                     {
                         // Lead byte but don't know about trail byte
                         // (make sure not to set decoder if counting, so check bytes)
-                        if (decoder != null && !decoder.MustFlush)
+                        if (decoder is not null && !decoder.MustFlush)
                         {
                             // We'll be able to stick it in the decoder
                             // (don't actually do it when counting though)
-                            if (chars != null)
+                            if (chars is not null)
                             {
                                 byte1 = ch;
                                 byte2 = -1;
@@ -723,9 +723,9 @@ namespace System.Text
 
             // Need to flush the decoder if necessary
             // (make sure not to set decoder if counting, so check bytes)
-            if (decoder != null)
+            if (decoder is not null)
             {
-                if (chars != null)
+                if (chars is not null)
                 {
                     decoder.bLeftOver1 = byte1;
                     decoder.bLeftOver2 = byte2;
@@ -801,7 +801,7 @@ namespace System.Text
                 bLeftOver2 = -1;
                 bLeftOver3 = -1;
                 bLeftOver4 = -1;
-                if (m_fallbackBuffer != null)
+                if (m_fallbackBuffer is not null)
                     m_fallbackBuffer.Reset();
             }
 

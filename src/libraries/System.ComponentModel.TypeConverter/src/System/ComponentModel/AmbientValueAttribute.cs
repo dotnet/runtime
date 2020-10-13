@@ -133,7 +133,7 @@ namespace System.ComponentModel
 
             if (obj is AmbientValueAttribute other)
             {
-                return Value != null ? Value.Equals(other.Value) : other.Value == null;
+                return Value is not null ? Value.Equals(other.Value) : other.Value is null;
             }
 
             return false;

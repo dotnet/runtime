@@ -41,7 +41,7 @@ namespace System.Reflection
         #region Module overrides
         private static RuntimeTypeHandle[]? ConvertToTypeHandleArray(Type[]? genericArguments)
         {
-            if (genericArguments == null)
+            if (genericArguments is null)
                 return null;
 
             int size = genericArguments.Length;
@@ -49,10 +49,10 @@ namespace System.Reflection
             for (int i = 0; i < size; i++)
             {
                 Type typeArg = genericArguments[i];
-                if (typeArg == null)
+                if (typeArg is null)
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
                 typeArg = typeArg.UnderlyingSystemType;
-                if (typeArg == null)
+                if (typeArg is null)
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
                 if (!(typeArg is RuntimeType))
                     throw new ArgumentException(SR.Argument_InvalidGenericInstArray);
@@ -245,7 +245,7 @@ namespace System.Reflection
             {
                 Type t = GetModuleHandleImpl().ResolveTypeHandle(metadataToken, typeArgs, methodArgs).GetRuntimeType();
 
-                if (t == null)
+                if (t is null)
                     throw new ArgumentException(SR.Format(SR.Argument_ResolveType, tk, this), nameof(metadataToken));
 
                 return t;
@@ -315,7 +315,7 @@ namespace System.Reflection
 
             string? str = MetadataImport.GetUserString(metadataToken);
 
-            if (str == null)
+            if (str is null)
                 throw new ArgumentException(
                     SR.Format(SR.Argument_ResolveString, metadataToken, this));
 
@@ -353,10 +353,10 @@ namespace System.Reflection
         internal MethodInfo? GetMethodInternal(string name, BindingFlags bindingAttr, Binder? binder,
             CallingConventions callConvention, Type[]? types, ParameterModifier[]? modifiers)
         {
-            if (RuntimeType == null)
+            if (RuntimeType is null)
                 return null;
 
-            if (types == null)
+            if (types is null)
             {
                 return RuntimeType.GetMethod(name, bindingAttr);
             }
@@ -387,12 +387,12 @@ namespace System.Reflection
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null)
+            if (attributeRuntimeType is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
@@ -400,12 +400,12 @@ namespace System.Reflection
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null)
+            if (attributeRuntimeType is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
@@ -427,7 +427,7 @@ namespace System.Reflection
         public override Type? GetType(string className, bool throwOnError, bool ignoreCase)
         {
             // throw on null strings regardless of the value of "throwOnError"
-            if (className == null)
+            if (className is null)
                 throw new ArgumentNullException(nameof(className));
 
             RuntimeType? retType = null;
@@ -477,7 +477,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo[] GetFields(BindingFlags bindingFlags)
         {
-            if (RuntimeType == null)
+            if (RuntimeType is null)
                 return Array.Empty<FieldInfo>();
 
             return RuntimeType.GetFields(bindingFlags);
@@ -486,10 +486,10 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Fields might be removed")]
         public override FieldInfo? GetField(string name, BindingFlags bindingAttr)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
-            if (RuntimeType == null)
+            if (RuntimeType is null)
                 return null;
 
             return RuntimeType.GetField(name, bindingAttr);
@@ -498,7 +498,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("Methods might be removed")]
         public override MethodInfo[] GetMethods(BindingFlags bindingFlags)
         {
-            if (RuntimeType == null)
+            if (RuntimeType is null)
                 return Array.Empty<MethodInfo>();
 
             return RuntimeType.GetMethods(bindingFlags);

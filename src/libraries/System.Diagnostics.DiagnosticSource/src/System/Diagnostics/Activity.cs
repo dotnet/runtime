@@ -159,7 +159,7 @@ namespace System.Diagnostics
             {
                 // if we represented it as a traceId-spanId, convert it to a string.
                 // We can do this concatenation with a stackalloced Span<char> if we actually used Id a lot.
-                if (_id == null && _spanId != null)
+                if (_id is null && _spanId is not null)
                 {
                     // Convert flags to binary.
                     Span<char> flagsChars = stackalloc char[2];
@@ -186,14 +186,14 @@ namespace System.Diagnostics
             get
             {
                 // if we represented it as a traceId-spanId, convert it to a string.
-                if (_parentId == null)
+                if (_parentId is null)
                 {
-                    if (_parentSpanId != null)
+                    if (_parentSpanId is not null)
                     {
                         string parentId = "00-" + _traceId + "-" + _parentSpanId + "-00";
                         Interlocked.CompareExchange(ref _parentId, parentId, null);
                     }
-                    else if (Parent != null)
+                    else if (Parent is not null)
                     {
                         Interlocked.CompareExchange(ref _parentId, Parent.Id, null);
                     }
@@ -216,19 +216,19 @@ namespace System.Diagnostics
                 //we expect RootId to be requested at any time after activity is created,
                 //possibly even before it was started for sampling or logging purposes
                 //Presumably, it will be called by logging systems for every log record, so we cache it.
-                if (_rootId == null)
+                if (_rootId is null)
                 {
                     string? rootId = null;
-                    if (Id != null)
+                    if (Id is not null)
                     {
                         rootId = GetRootId(Id);
                     }
-                    else if (ParentId != null)
+                    else if (ParentId is not null)
                     {
                         rootId = GetRootId(ParentId);
                     }
 
-                    if (rootId != null)
+                    if (rootId is not null)
                     {
                         Interlocked.CompareExchange(ref _rootId, rootId, null);
                     }
@@ -288,9 +288,9 @@ namespace System.Diagnostics
         {
             get
             {
-                for (Activity? activity = this; activity != null; activity = activity.Parent)
+                for (Activity? activity = this; activity is not null; activity = activity.Parent)
                 {
-                    if (activity._baggage != null)
+                    if (activity._baggage is not null)
                     {
                         return Iterate(activity);
                     }
@@ -300,19 +300,19 @@ namespace System.Diagnostics
 
                 static IEnumerable<KeyValuePair<string, string?>> Iterate(Activity? activity)
                 {
-                    Debug.Assert(activity != null);
+                    Debug.Assert(activity is not null);
                     do
                     {
-                        if (activity._baggage != null)
+                        if (activity._baggage is not null)
                         {
-                            for (LinkedListNode<KeyValuePair<string, string?>>? current = activity._baggage.First; current != null; current = current.Next)
+                            for (LinkedListNode<KeyValuePair<string, string?>>? current = activity._baggage.First; current is not null; current = current.Next)
                             {
                                 yield return current.Value;
                             }
                         }
 
                         activity = activity.Parent;
-                    } while (activity != null);
+                    } while (activity is not null);
                 }
             }
         }
@@ -372,7 +372,7 @@ namespace System.Diagnostics
         {
             KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
 
-            if (_tags != null || Interlocked.CompareExchange(ref _tags, new TagsLinkedList(kvp), null) != null)
+            if (_tags is not null || Interlocked.CompareExchange(ref _tags, new TagsLinkedList(kvp), null) is not null)
             {
                 _tags.Add(kvp);
             }
@@ -396,7 +396,7 @@ namespace System.Diagnostics
         {
             KeyValuePair<string, object?> kvp = new KeyValuePair<string, object?>(key, value);
 
-            if (_tags != null || Interlocked.CompareExchange(ref _tags, new TagsLinkedList(kvp, set: true), null) != null)
+            if (_tags is not null || Interlocked.CompareExchange(ref _tags, new TagsLinkedList(kvp, set: true), null) is not null)
             {
                 _tags.Set(kvp);
             }
@@ -411,7 +411,7 @@ namespace System.Diagnostics
         /// <returns>'this' for convenient chaining</returns>
         public Activity AddEvent(ActivityEvent e)
         {
-            if (_events != null || Interlocked.CompareExchange(ref _events, new LinkedList<ActivityEvent>(e), null) != null)
+            if (_events is not null || Interlocked.CompareExchange(ref _events, new LinkedList<ActivityEvent>(e), null) is not null)
             {
                 _events.Add(e);
             }
@@ -432,7 +432,7 @@ namespace System.Diagnostics
         {
             KeyValuePair<string, string?> kvp = new KeyValuePair<string, string?>(key, value);
 
-            if (_baggage != null || Interlocked.CompareExchange(ref _baggage, new LinkedList<KeyValuePair<string, string?>>(kvp), null) != null)
+            if (_baggage is not null || Interlocked.CompareExchange(ref _baggage, new LinkedList<KeyValuePair<string, string?>>(kvp), null) is not null)
             {
                 _baggage.AddFront(kvp);
             }
@@ -451,11 +451,11 @@ namespace System.Diagnostics
         /// <param name="parentId">The id of the parent operation.</param>
         public Activity SetParentId(string parentId)
         {
-            if (Parent != null)
+            if (Parent is not null)
             {
                 NotifyError(new InvalidOperationException(SR.SetParentIdOnActivityWithParent));
             }
-            else if (ParentId != null || _parentSpanId != null)
+            else if (ParentId is not null || _parentSpanId is not null)
             {
                 NotifyError(new InvalidOperationException(SR.ParentIdAlreadySet));
             }
@@ -476,11 +476,11 @@ namespace System.Diagnostics
         /// </summary>
         public Activity SetParentId(ActivityTraceId traceId, ActivitySpanId spanId, ActivityTraceFlags activityTraceFlags = ActivityTraceFlags.None)
         {
-            if (Parent != null)
+            if (Parent is not null)
             {
                 NotifyError(new InvalidOperationException(SR.SetParentIdOnActivityWithParent));
             }
-            else if (ParentId != null || _parentSpanId != null)
+            else if (ParentId is not null || _parentSpanId is not null)
             {
                 NotifyError(new InvalidOperationException(SR.ParentIdAlreadySet));
             }
@@ -554,16 +554,16 @@ namespace System.Diagnostics
         public Activity Start()
         {
             // Has the ID already been set (have we called Start()).
-            if (_id != null || _spanId != null)
+            if (_id is not null || _spanId is not null)
             {
                 NotifyError(new InvalidOperationException(SR.ActivityStartAlreadyStarted));
             }
             else
             {
-                if (_parentId == null && _parentSpanId is null)
+                if (_parentId is null && _parentSpanId is null)
                 {
                     Activity? parent = Current;
-                    if (parent != null)
+                    if (parent is not null)
                     {
                         // The parent change should not form a loop.   We are actually guaranteed this because
                         // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
@@ -580,9 +580,9 @@ namespace System.Diagnostics
                     // Figure out what format to use.
                     IdFormat =
                         ForceDefaultIdFormat ? DefaultIdFormat :
-                        Parent != null ? Parent.IdFormat :
-                        _parentSpanId != null ? ActivityIdFormat.W3C :
-                        _parentId == null ? DefaultIdFormat :
+                        Parent is not null ? Parent.IdFormat :
+                        _parentSpanId is not null ? ActivityIdFormat.W3C :
+                        _parentId is null ? DefaultIdFormat :
                         IsW3CId(_parentId) ? ActivityIdFormat.W3C :
                         ActivityIdFormat.Hierarchical;
                 }
@@ -609,7 +609,7 @@ namespace System.Diagnostics
         /// <seealso cref="SetEndTime(DateTime)"/>
         public void Stop()
         {
-            if (Id == null)
+            if (Id is null)
             {
                 NotifyError(new InvalidOperationException(SR.ActivityNotStarted));
                 return;
@@ -649,10 +649,10 @@ namespace System.Diagnostics
         {
             get
             {
-                for (Activity? activity = this; activity != null; activity = activity.Parent)
+                for (Activity? activity = this; activity is not null; activity = activity.Parent)
                 {
                     string? val = activity._traceState;
-                    if (val != null)
+                    if (val is not null)
                         return val;
                 }
                 return null;
@@ -676,7 +676,7 @@ namespace System.Diagnostics
             {
                 if (_spanId is null)
                 {
-                    if (_id != null && IdFormat == ActivityIdFormat.W3C)
+                    if (_id is not null && IdFormat == ActivityIdFormat.W3C)
                     {
                         ActivitySpanId activitySpanId = ActivitySpanId.CreateFromString(_id.AsSpan(36, 16));
                         string spanId = activitySpanId.ToHexString();
@@ -749,7 +749,7 @@ namespace System.Diagnostics
                 if (_parentSpanId is null)
                 {
                     string? parentSpanId = null;
-                    if (_parentId != null && IsW3CId(_parentId))
+                    if (_parentId is not null && IsW3CId(_parentId))
                     {
                         try
                         {
@@ -757,12 +757,12 @@ namespace System.Diagnostics
                         }
                         catch { }
                     }
-                    else if (Parent != null && Parent.IdFormat == ActivityIdFormat.W3C)
+                    else if (Parent is not null && Parent.IdFormat == ActivityIdFormat.W3C)
                     {
                         parentSpanId = Parent.SpanId.ToHexString();
                     }
 
-                    if (parentSpanId != null)
+                    if (parentSpanId is not null)
                     {
                         Interlocked.CompareExchange(ref _parentSpanId, parentSpanId, null);
                     }
@@ -805,7 +805,7 @@ namespace System.Diagnostics
         /// </summary>
         public Activity SetIdFormat(ActivityIdFormat format)
         {
-            if (_id != null || _spanId != null)
+            if (_id is not null || _spanId is not null)
             {
                 NotifyError(new InvalidOperationException(SR.SetFormatOnStartedActivity));
             }
@@ -892,14 +892,14 @@ namespace System.Diagnostics
         /// <param name="propertyValue">The object to attach and map to the property name.</param>
         public void SetCustomProperty(string propertyName, object? propertyValue)
         {
-            if (_customProperties == null)
+            if (_customProperties is null)
             {
                 Interlocked.CompareExchange(ref _customProperties, new Dictionary<string, object>(), null);
             }
 
             lock (_customProperties)
             {
-                if (propertyValue == null)
+                if (propertyValue is null)
                 {
                     _customProperties.Remove(propertyName);
                 }
@@ -919,7 +919,7 @@ namespace System.Diagnostics
         {
             // We don't check null name here as the dictionary is performing this check anyway.
 
-            if (_customProperties == null)
+            if (_customProperties is null)
             {
                 return null;
             }
@@ -942,7 +942,7 @@ namespace System.Diagnostics
             activity.Source = source;
             activity.Kind = kind;
 
-            if (parentId != null)
+            if (parentId is not null)
             {
                 activity._parentId = parentId;
             }
@@ -961,7 +961,7 @@ namespace System.Diagnostics
             else
             {
                 Activity? parent = Current;
-                if (parent != null)
+                if (parent is not null)
                 {
                     // The parent change should not form a loop. We are actually guaranteed this because
                     // 1. Un-started activities can't be 'Current' (thus can't be 'parent'), we throw if you try.
@@ -972,9 +972,9 @@ namespace System.Diagnostics
 
             activity.IdFormat =
                 ForceDefaultIdFormat ? DefaultIdFormat :
-                activity.Parent != null ? activity.Parent.IdFormat :
-                activity._parentSpanId != null ? ActivityIdFormat.W3C :
-                activity._parentId == null ? DefaultIdFormat :
+                activity.Parent is not null ? activity.Parent.IdFormat :
+                activity._parentSpanId is not null ? ActivityIdFormat.W3C :
+                activity._parentId is null ? DefaultIdFormat :
                 IsW3CId(activity._parentId) ? ActivityIdFormat.W3C :
                 ActivityIdFormat.Hierarchical;
 
@@ -983,7 +983,7 @@ namespace System.Diagnostics
             else
                 activity._id = activity.GenerateHierarchicalId();
 
-            if (links != null)
+            if (links is not null)
             {
                 using (IEnumerator<ActivityLink> enumerator = links.GetEnumerator())
                 {
@@ -994,7 +994,7 @@ namespace System.Diagnostics
                 }
             }
 
-            if (tags != null)
+            if (tags is not null)
             {
                 using (IEnumerator<KeyValuePair<string, object?>> enumerator = tags.GetEnumerator())
                 {
@@ -1005,9 +1005,9 @@ namespace System.Diagnostics
                 }
             }
 
-            if (samplerTags != null)
+            if (samplerTags is not null)
             {
-                if (activity._tags == null)
+                if (activity._tags is null)
                 {
                     activity._tags = new TagsLinkedList(samplerTags!);
                 }
@@ -1078,13 +1078,13 @@ namespace System.Diagnostics
         {
             // Called from .Start()
             string ret;
-            if (Parent != null)
+            if (Parent is not null)
             {
                 // Normal start within the process
                 Debug.Assert(!string.IsNullOrEmpty(Parent.Id));
                 ret = AppendSuffix(Parent.Id, Interlocked.Increment(ref Parent._currentChildId).ToString(), '.');
             }
-            else if (ParentId != null)
+            else if (ParentId is not null)
             {
                 // Start from outside the process (e.g. incoming HTTP)
                 Debug.Assert(ParentId.Length != 0);
@@ -1165,7 +1165,7 @@ namespace System.Diagnostics
 
         private static bool ValidateSetCurrent(Activity? activity)
         {
-            bool canSet = activity == null || (activity.Id != null && !activity.IsFinished);
+            bool canSet = activity is null || (activity.Id is not null && !activity.IsFinished);
             if (!canSet)
             {
                 NotifyError(new InvalidOperationException(SR.ActivityNotRunning));
@@ -1181,11 +1181,11 @@ namespace System.Diagnostics
         {
             Debug.Assert(_traceId is null);
 
-            if (Parent != null && Parent.IdFormat == ActivityIdFormat.W3C)
+            if (Parent is not null && Parent.IdFormat == ActivityIdFormat.W3C)
             {
                 _traceId = Parent.TraceId.ToHexString();
             }
-            else if (_parentId != null && IsW3CId(_parentId))
+            else if (_parentId is not null && IsW3CId(_parentId))
             {
                 try
                 {
@@ -1196,7 +1196,7 @@ namespace System.Diagnostics
                 }
             }
 
-            return _traceId != null;
+            return _traceId is not null;
         }
 
 #if ALLOW_PARTIALLY_TRUSTED_CALLERS
@@ -1208,11 +1208,11 @@ namespace System.Diagnostics
 
             if (!W3CIdFlagsSet)
             {
-                if (Parent != null)
+                if (Parent is not null)
                 {
                     ActivityTraceFlags = Parent.ActivityTraceFlags;
                 }
-                else if (_parentId != null && IsW3CId(_parentId))
+                else if (_parentId is not null && IsW3CId(_parentId))
                 {
                     if (HexConverter.IsHexLowerChar(_parentId[53]) && HexConverter.IsHexLowerChar(_parentId[54]))
                     {
@@ -1317,7 +1317,7 @@ namespace System.Diagnostics
             private LinkedListNode<KeyValuePair<string, object?>>? _first;
             private LinkedListNode<KeyValuePair<string, object?>>? _last;
 
-            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value == null) ? null : new LinkedListNode<KeyValuePair<string, object?>>(firstValue));
+            public TagsLinkedList(KeyValuePair<string, object?> firstValue, bool set = false) => _last = _first = ((set && firstValue.Value is null) ? null : new LinkedListNode<KeyValuePair<string, object?>>(firstValue));
 
             public TagsLinkedList(IEnumerator<KeyValuePair<string, object?>> e)
             {
@@ -1341,7 +1341,7 @@ namespace System.Diagnostics
                     return;
                 }
 
-                if (_first == null)
+                if (_first is null)
                 {
                     _last = _first = new LinkedListNode<KeyValuePair<string, object?>>(e.Current);
                 }
@@ -1364,13 +1364,13 @@ namespace System.Diagnostics
 
                 lock (this)
                 {
-                    if (_first == null)
+                    if (_first is null)
                     {
                         _first = _last = newNode;
                         return;
                     }
 
-                    Debug.Assert(_last != null);
+                    Debug.Assert(_last is not null);
 
                     _last!.Next = newNode;
                     _last = newNode;
@@ -1379,7 +1379,7 @@ namespace System.Diagnostics
 
             public void Remove(string key)
             {
-                if (_first == null)
+                if (_first is null)
                 {
                     return;
                 }
@@ -1394,7 +1394,7 @@ namespace System.Diagnostics
 
                     LinkedListNode<KeyValuePair<string, object?>> previous = _first;
 
-                    while (previous.Next != null)
+                    while (previous.Next is not null)
                     {
                         if (previous.Next.Value.Key == key)
                         {
@@ -1408,7 +1408,7 @@ namespace System.Diagnostics
 
             public void Set(KeyValuePair<string, object?> value)
             {
-                if (value.Value == null)
+                if (value.Value is null)
                 {
                     Remove(value.Key);
                     return;
@@ -1417,7 +1417,7 @@ namespace System.Diagnostics
                 lock (this)
                 {
                     LinkedListNode<KeyValuePair<string, object?>>? current = _first;
-                    while (current != null)
+                    while (current is not null)
                     {
                         if (current.Value.Key == value.Key)
                         {
@@ -1429,13 +1429,13 @@ namespace System.Diagnostics
                     }
 
                     LinkedListNode<KeyValuePair<string, object?>> newNode = new LinkedListNode<KeyValuePair<string, object?>>(value);
-                    if (_first == null)
+                    if (_first is null)
                     {
                         _first = _last = newNode;
                         return;
                     }
 
-                    Debug.Assert(_last != null);
+                    Debug.Assert(_last is not null);
 
                     _last!.Next = newNode;
                     _last = newNode;
@@ -1451,9 +1451,9 @@ namespace System.Diagnostics
             {
                 LinkedListNode<KeyValuePair<string, object?>>? current = _first;
 
-                while (current != null)
+                while (current is not null)
                 {
-                    if (current.Value.Value is string || current.Value.Value == null)
+                    if (current.Value.Value is string || current.Value.Value is null)
                     {
                         yield return new KeyValuePair<string, string?>(current.Value.Key, (string?)current.Value.Value);
                     }
@@ -1481,7 +1481,7 @@ namespace System.Diagnostics
 
             public bool MoveNext()
             {
-                if (_nextNode == null)
+                if (_nextNode is null)
                 {
                     _currentItem = default;
                     return false;

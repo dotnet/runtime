@@ -94,14 +94,14 @@ namespace Internal.Cryptography
                 ImportKeyAction? action = callback(label);
 
                 // Caller knows how to handle this PEM by label.
-                if (action != null)
+                if (action is not null)
                 {
                     // There was a previous PEM that could have been handled,
                     // which means this is ambiguous and contains multiple
                     // importable keys. Or, this contained an encrypted PEM.
                     // For purposes of encrypted PKCS8 with another actionable
                     // PEM, we will throw a duplicate exception.
-                    if (importAction != null || containsEncryptedPem)
+                    if (importAction is not null || containsEncryptedPem)
                     {
                         throw new ArgumentException(SR.Argument_PemImport_AmbiguousPem, nameof(input));
                     }
@@ -112,7 +112,7 @@ namespace Internal.Cryptography
                 }
                 else if (label.SequenceEqual(PemLabels.EncryptedPkcs8PrivateKey))
                 {
-                    if (importAction != null || containsEncryptedPem)
+                    if (importAction is not null || containsEncryptedPem)
                     {
                         throw new ArgumentException(SR.Argument_PemImport_AmbiguousPem, nameof(input));
                     }

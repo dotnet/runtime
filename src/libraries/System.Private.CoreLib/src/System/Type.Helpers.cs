@@ -31,7 +31,7 @@ namespace System
 
                         underlyingType = underlyingType.BaseType;
                     }
-                    while (underlyingType != null);
+                    while (underlyingType is not null);
                 }
 
                 return false;
@@ -116,7 +116,7 @@ namespace System
 
         public virtual Type[] FindInterfaces(TypeFilter filter, object? filterCriteria)
         {
-            if (filter == null)
+            if (filter is null)
                 throw new ArgumentNullException(nameof(filter));
 
             Type?[] c = GetInterfaces();
@@ -135,7 +135,7 @@ namespace System
             cnt = 0;
             for (int i = 0; i < c.Length; i++)
             {
-                if (c[i] != null)
+                if (c[i] is not null)
                     ret[cnt++] = c[i]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
             return ret;
@@ -159,7 +159,7 @@ namespace System
             if ((memberType & MemberTypes.Method) != 0)
             {
                 m = GetMethods(bindingAttr);
-                if (filter != null)
+                if (filter is not null)
                 {
                     for (i = 0; i < m.Length; i++)
                         if (!filter(m[i]!, filterCriteria))
@@ -177,7 +177,7 @@ namespace System
             if ((memberType & MemberTypes.Constructor) != 0)
             {
                 c = GetConstructors(bindingAttr);
-                if (filter != null)
+                if (filter is not null)
                 {
                     for (i = 0; i < c.Length; i++)
                         if (!filter(c[i]!, filterCriteria))
@@ -195,7 +195,7 @@ namespace System
             if ((memberType & MemberTypes.Field) != 0)
             {
                 f = GetFields(bindingAttr);
-                if (filter != null)
+                if (filter is not null)
                 {
                     for (i = 0; i < f.Length; i++)
                         if (!filter(f[i]!, filterCriteria))
@@ -213,7 +213,7 @@ namespace System
             if ((memberType & MemberTypes.Property) != 0)
             {
                 p = GetProperties(bindingAttr);
-                if (filter != null)
+                if (filter is not null)
                 {
                     for (i = 0; i < p.Length; i++)
                         if (!filter(p[i]!, filterCriteria))
@@ -231,7 +231,7 @@ namespace System
             if ((memberType & MemberTypes.Event) != 0)
             {
                 e = GetEvents(bindingAttr);
-                if (filter != null)
+                if (filter is not null)
                 {
                     for (i = 0; i < e.Length; i++)
                         if (!filter(e[i]!, filterCriteria))
@@ -249,7 +249,7 @@ namespace System
             if ((memberType & MemberTypes.NestedType) != 0)
             {
                 t = GetNestedTypes(bindingAttr);
-                if (filter != null)
+                if (filter is not null)
                 {
                     for (i = 0; i < t.Length; i++)
                         if (!filter(t[i]!, filterCriteria))
@@ -268,50 +268,50 @@ namespace System
 
             // Copy the Methods
             cnt = 0;
-            if (m != null)
+            if (m is not null)
             {
                 for (i = 0; i < m.Length; i++)
-                    if (m[i] != null)
+                    if (m[i] is not null)
                         ret[cnt++] = m[i]!;  // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
 
             // Copy the Constructors
-            if (c != null)
+            if (c is not null)
             {
                 for (i = 0; i < c.Length; i++)
-                    if (c[i] != null)
+                    if (c[i] is not null)
                         ret[cnt++] = c[i]!;  // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
 
             // Copy the Fields
-            if (f != null)
+            if (f is not null)
             {
                 for (i = 0; i < f.Length; i++)
-                    if (f[i] != null)
+                    if (f[i] is not null)
                         ret[cnt++] = f[i]!;  // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
 
             // Copy the Properties
-            if (p != null)
+            if (p is not null)
             {
                 for (i = 0; i < p.Length; i++)
-                    if (p[i] != null)
+                    if (p[i] is not null)
                         ret[cnt++] = p[i]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
 
             // Copy the Events
-            if (e != null)
+            if (e is not null)
             {
                 for (i = 0; i < e.Length; i++)
-                    if (e[i] != null)
+                    if (e[i] is not null)
                         ret[cnt++] = e[i]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
 
             // Copy the Types
-            if (t != null)
+            if (t is not null)
             {
                 for (i = 0; i < t.Length; i++)
-                    if (t[i] != null)
+                    if (t[i] is not null)
                         ret[cnt++] = t[i]!; // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
             }
 
@@ -323,7 +323,7 @@ namespace System
             Type? p = this;
             if (p == c)
                 return false;
-            while (p != null)
+            while (p is not null)
             {
                 if (p == c)
                     return true;
@@ -335,7 +335,7 @@ namespace System
         [Intrinsic]
         public virtual bool IsAssignableFrom([NotNullWhen(true)] Type? c)
         {
-            if (c == null)
+            if (c is null)
                 return false;
 
             if (this == c)
@@ -371,17 +371,17 @@ namespace System
         internal bool ImplementInterface(Type ifaceType)
         {
             Type? t = this;
-            while (t != null)
+            while (t is not null)
             {
                 Type[] interfaces = t.GetInterfaces();
-                if (interfaces != null)
+                if (interfaces is not null)
                 {
                     for (int i = 0; i < interfaces.Length; i++)
                     {
                         // Interfaces don't derive from other interfaces, they implement them.
                         // So instead of IsSubclassOf, we should use ImplementInterface instead.
                         if (interfaces[i] == ifaceType ||
-                            (interfaces[i] != null && interfaces[i].ImplementInterface(ifaceType)))
+                            (interfaces[i] is not null && interfaces[i].ImplementInterface(ifaceType)))
                             return true;
                     }
                 }
@@ -398,7 +398,7 @@ namespace System
         private static bool FilterAttributeImpl(MemberInfo m, object filterCriteria)
         {
             // Check that the criteria object is an Integer object
-            if (filterCriteria == null)
+            if (filterCriteria is null)
                 throw new InvalidFilterCriteriaException(SR.InvalidFilterCriteriaException_CritInt);
 
             switch (m.MemberType)

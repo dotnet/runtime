@@ -166,7 +166,7 @@ namespace System
 
         internal SZGenericArrayEnumerator(T[] array)
         {
-            Debug.Assert(array != null);
+            Debug.Assert(array is not null);
 
             _array = array;
             _index = -1;

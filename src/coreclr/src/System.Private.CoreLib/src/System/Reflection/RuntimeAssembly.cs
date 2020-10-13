@@ -48,7 +48,7 @@ namespace System.Reflection
         {
             get
             {
-                if (m_syncRoot == null)
+                if (m_syncRoot is null)
                 {
                     Interlocked.CompareExchange<object?>(ref m_syncRoot, new object(), null);
                 }
@@ -134,7 +134,7 @@ namespace System.Reflection
             get
             {
                 // If called by Object.ToString(), return val may be NULL.
-                if (m_fullname == null)
+                if (m_fullname is null)
                 {
                     string? s = null;
                     RuntimeAssembly runtimeAssembly = this;
@@ -157,7 +157,7 @@ namespace System.Reflection
                 RuntimeAssembly runtimeAssembly = this;
                 GetEntryPoint(new QCallAssembly(ref runtimeAssembly), ObjectHandleOnStack.Create(ref methodHandle));
 
-                if (methodHandle == null)
+                if (methodHandle is null)
                     return null;
 
                 return (MethodInfo?)RuntimeType.GetMethodBase(methodHandle);
@@ -177,7 +177,7 @@ namespace System.Reflection
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
             // throw on null strings regardless of the value of "throwOnError"
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             RuntimeType? type = null;
@@ -252,13 +252,13 @@ namespace System.Reflection
         // Load a resource based on the NameSpace of the type.
         public override Stream? GetManifestResourceStream(Type type, string name)
         {
-            if (type == null && name == null)
+            if (type is null && name is null)
                 throw new ArgumentNullException(nameof(type));
 
             string? nameSpace = type?.Namespace;
 
             char c = Type.Delimiter;
-            string resourceName = nameSpace != null && name != null ?
+            string resourceName = nameSpace is not null && name is not null ?
                 string.Concat(nameSpace, new ReadOnlySpan<char>(ref c, 1), name) :
                 string.Concat(nameSpace, name);
 
@@ -270,7 +270,7 @@ namespace System.Reflection
             RuntimeAssembly runtimeAssembly = this;
             byte* pbInMemoryResource = GetResource(new QCallAssembly(ref runtimeAssembly), name, out uint length);
 
-            if (pbInMemoryResource != null)
+            if (pbInMemoryResource is not null)
             {
                 return new ManifestResourceStream(this, pbInMemoryResource, length, length, FileAccess.Read);
             }
@@ -296,12 +296,12 @@ namespace System.Reflection
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null)
+            if (attributeRuntimeType is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
@@ -309,12 +309,12 @@ namespace System.Reflection
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null)
+            if (attributeRuntimeType is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
@@ -381,7 +381,7 @@ namespace System.Reflection
             }
 
             RuntimeModule? m = (RuntimeModule?)GetModule(name);
-            if (m == null)
+            if (m is null)
                 return null;
 
             return new FileStream(m.GetFullyQualifiedName(),
@@ -511,7 +511,7 @@ namespace System.Reflection
             RuntimeAssembly runtimeAssembly = this;
             GetLocale(new QCallAssembly(ref runtimeAssembly), new StringHandleOnStack(ref locale));
 
-            if (locale == null)
+            if (locale is null)
                 return CultureInfo.InvariantCulture;
 
             return CultureInfo.GetCultureInfo(locale);
@@ -570,7 +570,7 @@ namespace System.Reflection
         // Useful for binding to a very specific version of a satellite assembly
         public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
-            if (culture == null)
+            if (culture is null)
                 throw new ArgumentNullException(nameof(culture));
 
             return InternalGetSatelliteAssembly(culture, version, throwOnFileNotFound: true)!;
@@ -598,7 +598,7 @@ namespace System.Reflection
                 retAssembly = null;
             }
 
-            if (retAssembly == null && throwOnFileNotFound)
+            if (retAssembly is null && throwOnFileNotFound)
             {
                 throw new FileNotFoundException(SR.Format(culture, SR.IO_FileNotFound_FileName, an.Name));
             }
@@ -657,7 +657,7 @@ namespace System.Reflection
                 try
                 {
                     GetForwardedType(pAssembly, mdtExternalType, pType);
-                    if (type == null)
+                    if (type is null)
                         continue;  // mdtExternalType was not a forwarder entry.
                 }
                 catch (Exception e)
@@ -666,9 +666,9 @@ namespace System.Reflection
                     exception = e;
                 }
 
-                Debug.Assert((type != null) != (exception != null)); // Exactly one of these must be non-null.
+                Debug.Assert((type is not null) != (exception is not null)); // Exactly one of these must be non-null.
 
-                if (type != null)
+                if (type is not null)
                 {
                     types.Add(type);
                     AddPublicNestedTypes(type, types, exceptions);

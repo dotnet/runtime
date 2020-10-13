@@ -27,7 +27,7 @@ namespace System.Security.Cryptography
         /// <returns>The pseudo random key (prk).</returns>
         public static byte[] Extract(HashAlgorithmName hashAlgorithmName, byte[] ikm, byte[]? salt = null)
         {
-            if (ikm == null)
+            if (ikm is null)
                 throw new ArgumentNullException(nameof(ikm));
 
             int hashLength = HashLength(hashAlgorithmName);
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography
         /// <returns>The output keying material.</returns>
         public static byte[] Expand(HashAlgorithmName hashAlgorithmName, byte[] prk, int outputLength, byte[]? info = null)
         {
-            if (prk == null)
+            if (prk is null)
                 throw new ArgumentNullException(nameof(prk));
 
             int hashLength = HashLength(hashAlgorithmName);
@@ -176,7 +176,7 @@ namespace System.Security.Cryptography
         /// <returns>The output keying material.</returns>
         public static byte[] DeriveKey(HashAlgorithmName hashAlgorithmName, byte[] ikm, int outputLength, byte[]? salt = null, byte[]? info = null)
         {
-            if (ikm == null)
+            if (ikm is null)
                 throw new ArgumentNullException(nameof(ikm));
 
             int hashLength = HashLength(hashAlgorithmName);

@@ -85,7 +85,7 @@ namespace System.Threading.Tasks
             /// <param name="callback">Callback to invoke when the wrapped task completes.</param>
             internal TaskAsyncResult(Task task, object? state, AsyncCallback? callback)
             {
-                Debug.Assert(task != null);
+                Debug.Assert(task is not null);
                 _task = task;
                 AsyncState = state;
 
@@ -95,7 +95,7 @@ namespace System.Threading.Tasks
                     CompletedSynchronously = true;
                     callback?.Invoke(this);
                 }
-                else if (callback != null)
+                else if (callback is not null)
                 {
                     // Asynchronous completion, and we have a callback; schedule it. We use OnCompleted rather than ContinueWith in
                     // order to avoid running synchronously if the task has already completed by the time we get here but still run
@@ -111,7 +111,7 @@ namespace System.Threading.Tasks
             private void InvokeCallback()
             {
                 Debug.Assert(!CompletedSynchronously);
-                Debug.Assert(_callback != null);
+                Debug.Assert(_callback is not null);
                 _callback.Invoke(this);
             }
 

@@ -26,7 +26,7 @@ namespace System.Collections
 
         public CaseInsensitiveComparer(CultureInfo culture)
         {
-            if (culture == null)
+            if (culture is null)
             {
                 throw new ArgumentNullException(nameof(culture));
             }
@@ -45,7 +45,7 @@ namespace System.Collections
         {
             get
             {
-                if (s_InvariantCaseInsensitiveComparer == null)
+                if (s_InvariantCaseInsensitiveComparer is null)
                 {
                     s_InvariantCaseInsensitiveComparer = new CaseInsensitiveComparer(CultureInfo.InvariantCulture);
                 }
@@ -64,7 +64,7 @@ namespace System.Collections
         {
             string? sa = a as string;
             string? sb = b as string;
-            if (sa != null && sb != null)
+            if (sa is not null && sb is not null)
                 return _compareInfo.Compare(sa, sb, CompareOptions.IgnoreCase);
             else
                 return Comparer.Default.Compare(a, b);

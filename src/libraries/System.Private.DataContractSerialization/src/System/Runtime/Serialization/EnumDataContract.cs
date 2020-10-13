@@ -175,7 +175,7 @@ namespace System.Runtime.Serialization
                     if (_hasDataContract)
                     {
                         object[] memberAttributes = field.GetCustomAttributes(Globals.TypeOfEnumMemberAttribute, false).ToArray();
-                        if (memberAttributes != null && memberAttributes.Length > 0)
+                        if (memberAttributes is not null && memberAttributes.Length > 0)
                         {
                             if (memberAttributes.Length > 1)
                                 ThrowInvalidDataContractException(SR.Format(SR.TooManyEnumMembers, DataContract.GetClrTypeFullName(field.DeclaringType!), field.Name));
@@ -184,7 +184,7 @@ namespace System.Runtime.Serialization
                             DataMember memberContract = new DataMember(field);
                             if (memberAttribute.IsValueSetExplicitly)
                             {
-                                if (memberAttribute.Value == null || memberAttribute.Value.Length == 0)
+                                if (memberAttribute.Value is null || memberAttribute.Value.Length == 0)
                                     ThrowInvalidDataContractException(SR.Format(SR.InvalidEnumMemberValue, field.Name, DataContract.GetClrTypeFullName(type)));
                                 memberContract.Name = memberAttribute.Value;
                             }
@@ -195,7 +195,7 @@ namespace System.Runtime.Serialization
                         }
 
                         object[] dataMemberAttributes = field.GetCustomAttributes(Globals.TypeOfDataMemberAttribute, false).ToArray();
-                        if (dataMemberAttributes != null && dataMemberAttributes.Length > 0)
+                        if (dataMemberAttributes is not null && dataMemberAttributes.Length > 0)
                             ThrowInvalidDataContractException(SR.Format(SR.DataMemberOnEnumField, DataContract.GetClrTypeFullName(field.DeclaringType!), field.Name));
                     }
                     else
@@ -363,7 +363,7 @@ namespace System.Runtime.Serialization
         public override object ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             object obj = ReadEnumValue(xmlReader);
-            if (context != null)
+            if (context is not null)
                 context.AddNewObject(obj);
             return obj;
         }

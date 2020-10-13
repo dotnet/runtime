@@ -147,7 +147,7 @@ namespace System.Net.Sockets
                 StartConfiguring();
                 try
                 {
-                    if (value != null)
+                    if (value is not null)
                     {
                         if (!_buffer.Equals(default))
                         {
@@ -159,7 +159,7 @@ namespace System.Net.Sockets
                         // so that we are not affected by subsequent changes to the list.
                         // We reuse the existing list so that we can avoid reallocation when possible.
                         int bufferCount = value.Count;
-                        if (_bufferListInternal == null)
+                        if (_bufferListInternal is null)
                         {
                             _bufferListInternal = new List<ArraySegment<byte>>(bufferCount);
                         }
@@ -350,7 +350,7 @@ namespace System.Net.Sockets
             StartConfiguring();
             try
             {
-                if (buffer == null)
+                if (buffer is null)
                 {
                     // Clear out existing buffer.
                     _buffer = default;
@@ -361,7 +361,7 @@ namespace System.Net.Sockets
                 else
                 {
                     // Can't have both Buffer and BufferList.
-                    if (_bufferList != null)
+                    if (_bufferList is not null)
                     {
                         throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, nameof(BufferList)));
                     }
@@ -394,7 +394,7 @@ namespace System.Net.Sockets
             StartConfiguring();
             try
             {
-                if (buffer.Length != 0 && _bufferList != null)
+                if (buffer.Length != 0 && _bufferList is not null)
                 {
                     throw new ArgumentException(SR.Format(SR.net_ambiguousbuffers, nameof(BufferList)));
                 }
@@ -410,7 +410,7 @@ namespace System.Net.Sockets
             }
         }
 
-        internal bool HasMultipleBuffers => _bufferList != null;
+        internal bool HasMultipleBuffers => _bufferList is not null;
 
         internal void SetResults(SocketError socketError, int bytesTransferred, SocketFlags flags)
         {
@@ -426,14 +426,14 @@ namespace System.Net.Sockets
             _bytesTransferred = bytesTransferred;
             _socketFlags = flags;
 
-            if (exception == null)
+            if (exception is null)
             {
                 _socketError = SocketError.Success;
             }
             else
             {
                 SocketException? socketException = exception as SocketException;
-                if (socketException != null)
+                if (socketException is not null)
                 {
                     _socketError = socketException.SocketErrorCode;
                 }
@@ -571,7 +571,7 @@ namespace System.Net.Sockets
             {
                 // Caller didn't specify a buffer so use an internal one.
                 // See if current internal one is big enough, otherwise create a new one.
-                if (_acceptBuffer == null || _acceptBuffer.Length < _acceptAddressBufferCount)
+                if (_acceptBuffer is null || _acceptBuffer.Length < _acceptAddressBufferCount)
                 {
                     _acceptBuffer = new byte[_acceptAddressBufferCount];
                 }
@@ -590,7 +590,7 @@ namespace System.Net.Sockets
             if (_operating == InProgress && _completedOperation == SocketAsyncOperation.Connect)
             {
                 MultipleConnectAsync? multipleConnect = _multipleConnect;
-                if (multipleConnect != null)
+                if (multipleConnect is not null)
                 {
                     // If a multiple connect is in progress, abort it.
                     multipleConnect.Cancel();
@@ -612,7 +612,7 @@ namespace System.Net.Sockets
             // If we're doing a static ConnectAsync to an IPEndPoint, we need to dispose
             // of the socket, as we manufactured it and the caller has no opportunity to do so.
             Socket? currentSocket = _currentSocket;
-            if (currentSocket != null)
+            if (currentSocket is not null)
             {
                 currentSocket.UpdateStatusAfterSocketError(socketError);
                 if (_completedOperation == SocketAsyncOperation.Connect && !_userSocket)
@@ -650,7 +650,7 @@ namespace System.Net.Sockets
 
             FinishOperationSyncFailure(socketError, bytesTransferred, flags);
 
-            if (context == null)
+            if (context is null)
             {
                 OnCompletedInternal();
             }
@@ -666,7 +666,7 @@ namespace System.Net.Sockets
 
             FinishConnectByNameSyncFailure(exception, bytesTransferred, flags);
 
-            if (context == null)
+            if (context is null)
             {
                 OnCompletedInternal();
             }
@@ -694,7 +694,7 @@ namespace System.Net.Sockets
 
             FinishWrapperConnectSyncSuccess(connectSocket, bytesTransferred, flags);
 
-            if (context == null)
+            if (context is null)
             {
                 OnCompletedInternal();
             }
@@ -823,7 +823,7 @@ namespace System.Net.Sockets
             FinishOperationSyncSuccess(bytesTransferred, flags);
 
             // Raise completion event.
-            if (context == null)
+            if (context is null)
             {
                 OnCompletedInternal();
             }

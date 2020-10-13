@@ -261,12 +261,12 @@ namespace System.Data.Odbc
             string quoteSuffix = QuoteSuffix;
             if (string.IsNullOrEmpty(quotePrefix))
             {
-                if (connection == null)
+                if (connection is null)
                 {
                     // Use the adapter's connection if QuoteIdentifier was called from
                     // DbCommandBuilder instance (which does not have an overload that gets connection object)
                     connection = DataAdapter?.SelectCommand?.Connection;
-                    if (connection == null)
+                    if (connection is null)
                     {
                         throw ADP.QuotePrefixNotSet(ADP.QuoteIdentifier);
                     }
@@ -316,12 +316,12 @@ namespace System.Data.Odbc
             string quoteSuffix = QuoteSuffix;
             if (string.IsNullOrEmpty(quotePrefix))
             {
-                if (connection == null)
+                if (connection is null)
                 {
                     // Use the adapter's connection if UnquoteIdentifier was called from
                     // DbCommandBuilder instance (which does not have an overload that gets connection object)
                     connection = DataAdapter?.SelectCommand?.Connection;
-                    if (connection == null)
+                    if (connection is null)
                     {
                         throw ADP.QuotePrefixNotSet(ADP.UnquoteIdentifier);
                     }

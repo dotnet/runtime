@@ -12,7 +12,7 @@ namespace System
 
         internal static bool EqualsOrdinalAsciiIgnoreCase(string left, ReadOnlySpan<byte> right)
         {
-            Debug.Assert(left != null, "Expected non-null string");
+            Debug.Assert(left is not null, "Expected non-null string");
 
             if (left.Length != right.Length)
             {
@@ -41,7 +41,7 @@ namespace System
 
         internal static bool EqualsOrdinalAscii(string left, ReadOnlySpan<byte> right)
         {
-            Debug.Assert(left != null, "Expected non-null string");
+            Debug.Assert(left is not null, "Expected non-null string");
 
             if (left.Length != right.Length)
             {

@@ -19,7 +19,7 @@ namespace System.Diagnostics
 
                 using (RegistryKey? key = Registry.ClassesRoot.OpenSubKey(extension))
                 {
-                    if (key == null)
+                    if (key is null)
                         return Array.Empty<string>();
 
                     string? value = key.GetValue(string.Empty) as string;
@@ -28,7 +28,7 @@ namespace System.Diagnostics
 
                     using (RegistryKey? subKey = Registry.ClassesRoot.OpenSubKey(value + "\\shell"))
                     {
-                        if (subKey == null)
+                        if (subKey is null)
                             return Array.Empty<string>();
 
                         string[] names = subKey.GetSubKeyNames();

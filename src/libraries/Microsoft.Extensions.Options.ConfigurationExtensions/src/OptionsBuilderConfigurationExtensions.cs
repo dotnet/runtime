@@ -32,7 +32,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="OptionsBuilder{TOptions}"/> so that additional calls can be chained.</returns>
         public static OptionsBuilder<TOptions> Bind<TOptions>(this OptionsBuilder<TOptions> optionsBuilder, IConfiguration config, Action<BinderOptions> configureBinder) where TOptions : class
         {
-            if (optionsBuilder == null)
+            if (optionsBuilder is null)
             {
                 throw new ArgumentNullException(nameof(optionsBuilder));
             }

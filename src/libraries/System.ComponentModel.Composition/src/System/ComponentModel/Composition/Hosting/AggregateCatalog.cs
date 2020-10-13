@@ -133,14 +133,14 @@ namespace System.ComponentModel.Composition.Hosting
                 if (catalogExports != ComposablePartCatalog._EmptyExportsList)
                 {
                     // ideally this is the case we will always hit
-                    if (result == null)
+                    if (result is null)
                     {
                         result = catalogExports;
                     }
                     else
                     {
                         // sadly the result has already been assigned, which means we are in the aggregate case
-                        if (aggregateResult == null)
+                        if (aggregateResult is null)
                         {
                             aggregateResult = new List<Tuple<ComposablePartDefinition, ExportDefinition>>(result);
                             result = aggregateResult;
@@ -167,7 +167,7 @@ namespace System.ComponentModel.Composition.Hosting
             get
             {
                 ThrowIfDisposed();
-                Debug.Assert(_catalogs != null);
+                Debug.Assert(_catalogs is not null);
 
                 return _catalogs;
             }

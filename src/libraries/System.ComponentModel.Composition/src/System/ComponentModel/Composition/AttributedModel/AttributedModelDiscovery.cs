@@ -26,7 +26,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         public static ReflectionComposablePartDefinition CreatePartDefinition(Type type, PartCreationPolicyAttribute? partCreationPolicy, bool ignoreConstructorImports, ICompositionElement? origin)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -38,7 +38,7 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         public static ReflectionComposablePart CreatePart(object attributedPart)
         {
-            if (attributedPart == null)
+            if (attributedPart is null)
             {
                 throw new ArgumentNullException(nameof(attributedPart));
             }
@@ -51,12 +51,12 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         public static ReflectionComposablePart CreatePart(object attributedPart, ReflectionContext reflectionContext)
         {
-            if (attributedPart == null)
+            if (attributedPart is null)
             {
                 throw new ArgumentNullException(nameof(attributedPart));
             }
 
-            if (reflectionContext == null)
+            if (reflectionContext is null)
             {
                 throw new ArgumentNullException(nameof(reflectionContext));
             }
@@ -75,12 +75,12 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         public static ReflectionComposablePart CreatePart(ComposablePartDefinition partDefinition, object attributedPart)
         {
-            if (partDefinition == null)
+            if (partDefinition is null)
             {
                 throw new ArgumentNullException(nameof(partDefinition));
             }
 
-            if (attributedPart == null)
+            if (attributedPart is null)
             {
                 throw new ArgumentNullException(nameof(attributedPart));
             }

@@ -166,7 +166,7 @@ namespace System.Management
         public bool GenerateCode(CodeLanguage lang, string filePath, string netNamespace)
         {
             // check for proper arguments
-            if (filePath == null)
+            if (filePath is null)
             {
                 throw new ArgumentOutOfRangeException(SR.NullFilePathException);
             }
@@ -193,14 +193,14 @@ namespace System.Management
         /// </summary>
         private void CheckIfClassIsProperlyInitialized()
         {
-            if (classobj == null)
+            if (classobj is null)
             {
-                if (OriginalNamespace == null || (OriginalNamespace != null && OriginalNamespace.Length == 0))
+                if (OriginalNamespace is null || (OriginalNamespace is not null && OriginalNamespace.Length == 0))
                 {
                     throw new ArgumentOutOfRangeException(SR.NamespaceNotInitializedException);
                 }
 
-                if (OriginalClassName == null || (OriginalClassName != null && OriginalClassName.Length == 0))
+                if (OriginalClassName is null || (OriginalClassName is not null && OriginalClassName.Length == 0))
                 {
                     throw new ArgumentOutOfRangeException(SR.ClassNameNotInitializedException);
                 }
@@ -260,10 +260,10 @@ namespace System.Management
                         public string ManagementClassName {
                             get {
                                 string strRet = CreatedClassName;
-                                if (((PrivateLateBoundObject != null)
-                                            && (PrivateLateBoundObject.Path != null))) {
+                                if (((PrivateLateBoundObject is not null)
+                                            && (PrivateLateBoundObject.Path is not null))) {
                                     strRet = ((string)(PrivateLateBoundObject["__CLASS"]));
-                                    if (((strRet == null)
+                                    if (((strRet is null)
                                                 || (strRet.Length == 0))) {
                                         strRet = CreatedClassName;
                                     }
@@ -519,7 +519,7 @@ namespace System.Management
             // If it fails then no point in continuing
 
             // If object is not initialized by the constructor
-            if (classobj == null)
+            if (classobj is null)
             {
                 ManagementPath thePath;
                 if (OriginalPath.Length != 0)
@@ -681,7 +681,7 @@ namespace System.Management
         /// </summary>
         private void ProcessNamingCollisions()
         {
-            if (classobj.Properties != null)
+            if (classobj.Properties is not null)
             {
                 foreach (PropertyData prop in classobj.Properties)
                 {
@@ -689,7 +689,7 @@ namespace System.Management
                 }
             }
 
-            if (classobj.Methods != null)
+            if (classobj.Methods is not null)
             {
                 foreach (MethodData meth in classobj.Methods)
                 {
@@ -879,11 +879,11 @@ namespace System.Management
 
             // Try to get a type from any of the namespace which are used in the generated code and see if
             // it collides with any of the standard classes.
-            if (Type.GetType("System." + strClass) != null ||
-                Type.GetType("System.ComponentModel." + strClass) != null ||
-                Type.GetType("System.Management." + strClass) != null ||
-                Type.GetType("System.Collections." + strClass) != null ||
-                Type.GetType("System.Globalization." + strClass) != null)
+            if (Type.GetType("System." + strClass) is not null ||
+                Type.GetType("System.ComponentModel." + strClass) is not null ||
+                Type.GetType("System.Management." + strClass) is not null ||
+                Type.GetType("System.Collections." + strClass) is not null ||
+                Type.GetType("System.Globalization." + strClass) is not null)
             {
                 PublicNamesUsed.Add(strClass, strClass);
                 strClass = ResolveCollision(strClass, true);
@@ -957,7 +957,7 @@ namespace System.Management
                 cmp.GetStatements.Add(new CodeMethodReturnStatement(new CodePrimitiveExpression(propValue)));
             }
             cc.Members.Add(cmp);
-            if (Comment != null && Comment.Length != 0)
+            if (Comment is not null && Comment.Length != 0)
             {
                 cmp.Comments.Add(new CodeCommentStatement(Comment));
             }
@@ -1001,7 +1001,7 @@ namespace System.Management
                 new CodeSnippetExpression("value")));
             cc.Members.Add(cmp);
 
-            if (Comment != null && Comment.Length != 0)
+            if (Comment is not null && Comment.Length != 0)
             {
                 cmp.Comments.Add(new CodeCommentStatement(Comment));
             }
@@ -1284,7 +1284,7 @@ namespace System.Management
                                 [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
                                 public <Type> Is<PropertyName>Null {
                                     get {
-                                        if ((PrivateLateBoundObject[<PropertyName>] == null)) {
+                                        if ((PrivateLateBoundObject[<PropertyName>] is null)) {
                                             return true;
                                         }
                                         else {
@@ -1329,7 +1329,7 @@ namespace System.Management
                                 }
                                 else
                                 {
-                                    //if ((curObj["<PropertyName>"] == null))
+                                    //if ((curObj["<PropertyName>"] is null))
                                     //{
                                     // return ((<EnumName>)(System.Convert.ToInt32(0)));
                                     //}
@@ -1343,7 +1343,7 @@ namespace System.Management
                             }
                             else
                             {
-                                // if ((curObj["<PropertyName>"] == null))
+                                // if ((curObj["<PropertyName>"] is null))
                                 //{
                                 //     return System.Convert.<Type>(0);
                                 //}
@@ -1641,7 +1641,7 @@ namespace System.Management
                         //Now check whether the type of the property is int
                         if (isTypeInt(prop.Type) == true)
                         {
-                            if (q.Value != null)
+                            if (q.Value is not null)
                             {
                                 string[] strArray = (string[])q.Value;
                                 for (int i = 0; i < strArray.Length; i++)
@@ -1676,7 +1676,7 @@ namespace System.Management
                         Values.Clear();
                         if (isTypeInt(prop.Type) == true)
                         {
-                            if (q.Value != null)
+                            if (q.Value is not null)
                             {
                                 ArrayList arTemp = new ArrayList(5);
                                 string[] strArray = (string[])q.Value;
@@ -1709,7 +1709,7 @@ namespace System.Management
                         BitMap.Clear();
                         if (isTypeInt(prop.Type) == true)
                         {
-                            if (q.Value != null)
+                            if (q.Value is not null)
                             {
                                 string[] strArray = (string[])q.Value;
                                 for (int i = 0; i < strArray.Length; i++)
@@ -1738,7 +1738,7 @@ namespace System.Management
                         BitValues.Clear();
                         if (isTypeInt(prop.Type) == true)
                         {
-                            if (q.Value != null)
+                            if (q.Value is not null)
                             {
                                 ArrayList arTemp = new ArrayList(5);
                                 string[] strArray = (string[])q.Value;
@@ -2794,9 +2794,9 @@ namespace System.Management
                 bStatic = false;
                 MethodData meth = classobj.Methods[PublicMethods.GetKey(k).ToString()];
                 string strTemp = PrivateNamesUsed["LateBoundObject"].ToString();
-                if (meth.OutParameters != null)
+                if (meth.OutParameters is not null)
                 {
-                    if (meth.OutParameters.Properties != null)
+                    if (meth.OutParameters.Properties is not null)
                     {
                         //First Populate the out Params name so that we can find in/out parameters
                         foreach (PropertyData prop in meth.OutParameters.Properties)
@@ -2893,10 +2893,10 @@ namespace System.Management
                 }
 
                 //Do these things only when there is a valid InParameters
-                if (meth.InParameters != null)
+                if (meth.InParameters is not null)
                 {
                     //Now put the in parameters
-                    if (meth.InParameters.Properties != null)
+                    if (meth.InParameters.Properties is not null)
                     {
                         foreach (PropertyData prop in meth.InParameters.Properties)
                         {
@@ -2992,9 +2992,9 @@ namespace System.Management
                 CodeMethodInvokeExpression cmie2 = null;
 
                 //Do these only when the outParams is Valid
-                if (meth.OutParameters != null)
+                if (meth.OutParameters is not null)
                 {
-                    if (meth.OutParameters.Properties != null)
+                    if (meth.OutParameters.Properties is not null)
                     {
                         foreach (PropertyData prop in meth.OutParameters.Properties)
                         {
@@ -3394,7 +3394,7 @@ namespace System.Management
         ///    This is a static method. The output is like this
         ///    public static (ObjectCollection)GetInstances(System.Management.ManagementScope mgmtScope, System.Management.EnumerationOptions enumOptions)
         ///    {
-        ///        if ((mgmtScope == null))
+        ///        if ((mgmtScope is null))
         ///        {
         ///            mgmtScope = new System.Management.ManagementScope();
         ///            mgmtScope.Path.NamespacePath = "root\\CimV2";
@@ -3403,7 +3403,7 @@ namespace System.Management
         ///        pathObj.ClassName = "CIM_LogicalDisk";
         ///        pathObj.NamespacePath = "root\\CimV2";
         ///        System.Management.ManagementClass clsObject = new System.Management.ManagementClass(mgmtScope, pathObj, null);
-        ///        if ((enumOptions == null))
+        ///        if ((enumOptions is null))
         ///        {
         ///            enumOptions = new System.Management.EnumerationOptions();
         ///            enumOptions.EnsureLocatable = true;
@@ -3580,7 +3580,7 @@ namespace System.Management
         /// <summary>
         /// This function generates the code like
         ///     public static ServiceCollection GetInstances(ManagementScope scope,String Condition, String[] selectedProperties)    {
-        ///            if (scope == null)
+        ///            if (scope is null)
         ///            {
         ///                scope = new ManagementScope();
         ///                scope.Path.NamespacePath = WMINamespace;
@@ -3704,13 +3704,13 @@ namespace System.Management
                 cf.Attributes = cf.Attributes | MemberAttributes.Static;
             }
             cf.Type = new CodeTypeReference(MemberType);
-            if (initExpression != null && isStatic == true)
+            if (initExpression is not null && isStatic == true)
             {
                 cf.InitExpression = initExpression;
             }
             cc.Members.Add(cf);
 
-            if (Comment != null && Comment.Length != 0)
+            if (Comment is not null && Comment.Length != 0)
             {
                 cf.Comments.Add(new CodeCommentStatement(Comment));
             }
@@ -4012,7 +4012,7 @@ namespace System.Management
                 if ( baseType.BaseType == typeof(System.Enum) )
                 {
                     if (value.GetType() == destinationType) return value;
-                    if ((value == null) && (context != null)
+                    if ((value is null) && (context is not null)
                         && (context.PropertyDescriptor.ShouldSerializeValue(context.Instance) == false))
                     {
                         return "NULL_ENUM_VALUE";
@@ -4022,7 +4022,7 @@ namespace System.Management
 
                 if ( (baseType == typeof(System.Boolean)) && (baseType.BaseType == typeof(System.ValueType)) )
                 {
-                    if ((value == null) && (context != null)
+                    if ((value is null) && (context is not null)
                        && (context.PropertyDescriptor.ShouldSerializeValue(context.Instance) == false))
                     {
                         return "";
@@ -4030,7 +4030,7 @@ namespace System.Management
                     return baseConverter.ConvertTo(context, culture, value, destinationType);
                 }
 
-                if ((context != null) && (context.PropertyDescriptor.ShouldSerializeValue(context.Instance) == false))
+                if ((context is not null) && (context.PropertyDescriptor.ShouldSerializeValue(context.Instance) == false))
                 {
                     return "";
                 }
@@ -4077,7 +4077,7 @@ namespace System.Management
             // true statements:
             /*
                     if (value.GetType() == destinationType) return value;
-                    if ((value == null) && (context != null)
+                    if ((value is null) && (context is not null)
                         && (context.PropertyDescriptor.ShouldSerializeValue(context.Instance) == false))
                     {
                         return "NULL_ENUM_VALUE";
@@ -4151,7 +4151,7 @@ namespace System.Management
 
             /* true statements
 
-                    if ((value == null) && (context != null)
+                    if ((value is null) && (context is not null)
                        && (context.PropertyDescriptor.ShouldSerializeValue(context.Instance) == false))
                     {
                         return "";
@@ -4192,7 +4192,7 @@ namespace System.Management
             // add the condition statement to the method and work on the next condition section
             cmm.Statements.Add(cis);
             /*
-                if ((context != null) && (context.PropertyDescriptor.ShouldSerializeValue(context.Instance) == false))
+                if ((context is not null) && (context.PropertyDescriptor.ShouldSerializeValue(context.Instance) == false))
                 {
                     return "";
                 }
@@ -4856,10 +4856,10 @@ namespace System.Management
                         assemblyName.Version = curAssemblyName.Version;
                         asm = Assembly.Load(assemblyName);
                         //asm = Assembly.LoadWithPartialName("VJSharpCodeProvider");
-                        if (asm != null)
+                        if (asm is not null)
                         {
                             codeProvType = asm.GetType("Microsoft.VJSharp.VJSharpCodeProvider");
-                            if (codeProvType != null)
+                            if (codeProvType is not null)
                             {
                                 cp = (System.CodeDom.Compiler.CodeDomProvider)Activator.CreateInstance(codeProvType);
                                 bSucceeded = true;
@@ -4878,10 +4878,10 @@ namespace System.Management
                         assemblyName.Version = new Version(VSVERSION);
                         asm = Assembly.Load(assemblyName);
 
-                        if (asm != null)
+                        if (asm is not null)
                         {
                             codeProvType = asm.GetType("Microsoft.VisualC.CppCodeProvider");
-                            if (codeProvType != null)
+                            if (codeProvType is not null)
                             {
                                 cp = (System.CodeDom.Compiler.CodeDomProvider)Activator.CreateInstance(codeProvType);
                                 bSucceeded = true;
@@ -5609,7 +5609,7 @@ namespace System.Management
                     cmie = new CodeMethodInvokeExpression();
                     cmie.Method = cmre;
 
-                    if (varToAssign == null)
+                    if (varToAssign is null)
                     {
                         cis1.TrueStatements.Add(new CodeMethodReturnStatement(CreateObjectForProperty(strType, cmie)));
                         statColl.Add(cis1);
@@ -5637,7 +5637,7 @@ namespace System.Management
                         ce = new CodeCastExpression(new CodeTypeReference("System.String"), prop);
                     }
 
-                    if (varToAssign == null)
+                    if (varToAssign is null)
                     {
                         cis1.TrueStatements.Add(new CodeMethodReturnStatement(CreateObjectForProperty(strType, ce)));
                         cis1.FalseStatements.Add(new CodeMethodReturnStatement(CreateObjectForProperty(strType, null)));
@@ -5752,7 +5752,7 @@ namespace System.Management
                     new CodeVariableReferenceExpression(strnCtr)), CreateObjectForProperty(strType, cmie2)));
 
                 cis1.TrueStatements.Add(cfls);
-                if (varToAssign == null)
+                if (varToAssign is null)
                 {
                     cis1.TrueStatements.Add(new CodeMethodReturnStatement(new CodeVariableReferenceExpression(strArray)));
                     statColl.Add(cis1);
@@ -5775,7 +5775,7 @@ namespace System.Management
         /// </summary>
         private void AddPropertySet(CodeIndexerExpression prop, bool bArray, CodeStatementCollection statColl, string strType, CodeVariableReferenceExpression varValue)
         {
-            if (varValue == null)
+            if (varValue is null)
             {
                 varValue = new CodeVariableReferenceExpression("value");
             }
@@ -5879,7 +5879,7 @@ namespace System.Management
             switch (strType)
             {
                 case "System.DateTime":
-                    if (param == null)
+                    if (param is null)
                     {
                         return new CodeFieldReferenceExpression(new CodeTypeReferenceExpression("System.DateTime"), "MinValue");
                     }
@@ -5892,7 +5892,7 @@ namespace System.Management
                     }
 
                 case "System.TimeSpan":
-                    if (param == null)
+                    if (param is null)
                     {
                         coce = new CodeObjectCreateExpression();
                         coce.CreateType = new CodeTypeReference("System.TimeSpan");
@@ -7372,7 +7372,7 @@ namespace System.Management
             cmmts.Statements.Add(new CodeVariableDeclarationStatement(new CodeTypeReference("System.Int64"), ticks, new CodePrimitiveExpression(0)));
 
             /*
-                if (dmtfTimespan == null)
+                if (dmtfTimespan is null)
                 {
                     throw new System.ArgumentOutOfRangeException();
                 }

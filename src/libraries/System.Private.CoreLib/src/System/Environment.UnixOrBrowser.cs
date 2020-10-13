@@ -31,7 +31,7 @@ namespace System
                 {
                     string key = name.Substring(lastPos + 1, pos - lastPos - 1);
                     string? value = GetEnvironmentVariable(key);
-                    if (value != null)
+                    if (value is not null)
                     {
                         result.Append(value);
                         lastPos = pos + 1;

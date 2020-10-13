@@ -110,7 +110,7 @@ namespace System.Data.Odbc
                         if (retcode == ODBC32.RetCode.ERROR)
                         {
                             //don't throw an exception here, but trace it so it can be logged
-                            if (_connection != null)
+                            if (_connection is not null)
                             {
                                 Exception e = _connection.HandleErrorNoThrow(handle, retcode)!;
                                 ADP.TraceExceptionWithoutRethrow(e);
@@ -126,7 +126,7 @@ namespace System.Data.Odbc
                         }
                     }
                 }
-                if (_connection != null)
+                if (_connection is not null)
                 {
                     if (_connection.IsOpen)
                     {

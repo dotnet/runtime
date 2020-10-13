@@ -50,7 +50,7 @@ namespace System.Linq.Expressions
         protected Expression(ExpressionType nodeType, Type type)
         {
             // Can't enforce anything that V1 didn't
-            if (s_legacyCtorSupportTable == null)
+            if (s_legacyCtorSupportTable is null)
             {
                 Interlocked.CompareExchange(
                     ref s_legacyCtorSupportTable,
@@ -76,7 +76,7 @@ comparand: null
         {
             get
             {
-                if (s_legacyCtorSupportTable != null && s_legacyCtorSupportTable.TryGetValue(this, out ExtensionInfo? extInfo))
+                if (s_legacyCtorSupportTable is not null && s_legacyCtorSupportTable.TryGetValue(this, out ExtensionInfo? extInfo))
                 {
                     return extInfo.NodeType;
                 }
@@ -94,7 +94,7 @@ comparand: null
         {
             get
             {
-                if (s_legacyCtorSupportTable != null && s_legacyCtorSupportTable.TryGetValue(this, out ExtensionInfo? extInfo))
+                if (s_legacyCtorSupportTable is not null && s_legacyCtorSupportTable.TryGetValue(this, out ExtensionInfo? extInfo))
                 {
                     return extInfo.Type;
                 }
@@ -177,7 +177,7 @@ comparand: null
 
             // 1. Reduction must return a new, non-null node
             // 2. Reduction must return a new node whose result type can be assigned to the type of the original node
-            if (newNode == null || newNode == this) throw Error.MustReduceToDifferent();
+            if (newNode is null || newNode == this) throw Error.MustReduceToDifferent();
             if (!TypeUtils.AreReferenceAssignable(Type, newNode.Type)) throw Error.ReducedNotCompatible();
             return newNode;
         }
@@ -226,7 +226,7 @@ comparand: null
 
         private static void RequiresCanRead(IReadOnlyList<Expression> items, string paramName)
         {
-            Debug.Assert(items != null);
+            Debug.Assert(items is not null);
             // this is called a lot, avoid allocating an enumerator if we can...
             for (int i = 0, n = items.Count; i < n; i++)
             {
@@ -236,7 +236,7 @@ comparand: null
 
         private static void RequiresCanWrite(Expression expression, string paramName)
         {
-            if (expression == null)
+            if (expression is null)
             {
                 throw new ArgumentNullException(paramName);
             }
@@ -245,7 +245,7 @@ comparand: null
             {
                 case ExpressionType.Index:
                     PropertyInfo? indexer = ((IndexExpression)expression).Indexer;
-                    if (indexer == null || indexer.CanWrite)
+                    if (indexer is null || indexer.CanWrite)
                     {
                         return;
                     }

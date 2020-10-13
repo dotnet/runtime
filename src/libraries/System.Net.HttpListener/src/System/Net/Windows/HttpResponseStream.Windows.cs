@@ -239,7 +239,7 @@ namespace System.Net
         private void EndWriteCore(IAsyncResult asyncResult)
         {
             HttpResponseStreamAsyncResult? castedAsyncResult = asyncResult as HttpResponseStreamAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
+            if (castedAsyncResult is null || castedAsyncResult.AsyncObject != this)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }
@@ -252,7 +252,7 @@ namespace System.Net
             object? returnValue = castedAsyncResult.InternalWaitForCompletion();
 
             Exception? exception = returnValue as Exception;
-            if (exception != null)
+            if (exception is not null)
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(this, "Rethrowing exception:" + exception);
                 _closed = true;
@@ -328,7 +328,7 @@ namespace System.Net
                                 _httpContext.RequestQueueHandle,
                                 _httpContext.RequestId,
                                 (uint)flags,
-                                pDataChunk != null ? (ushort)1 : (ushort)0,
+                                pDataChunk is not null ? (ushort)1 : (ushort)0,
                                 pDataChunk,
                                 null,
                                 SafeLocalAllocHandle.Zero,
@@ -377,7 +377,7 @@ namespace System.Net
         internal void CancelLastWrite(SafeHandle requestQueueHandle)
         {
             HttpResponseStreamAsyncResult? asyncState = _lastWrite;
-            if (asyncState != null && !asyncState.IsCompleted)
+            if (asyncState is not null && !asyncState.IsCompleted)
             {
                 // It is safe to ignore the return value on a cancel operation because the connection is being closed
                 Interop.Kernel32.CancelIoEx(requestQueueHandle, asyncState._pOverlapped);

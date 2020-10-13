@@ -23,7 +23,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         public static MethodBodyBlock GetMethodBody(this PEReader peReader, int relativeVirtualAddress)
         {
-            if (peReader == null)
+            if (peReader is null)
             {
                 throw new ArgumentNullException(nameof(peReader));
             }
@@ -78,7 +78,7 @@ namespace System.Reflection.Metadata
         /// <exception cref="IOException">IO error while reading from the underlying stream.</exception>
         public static unsafe MetadataReader GetMetadataReader(this PEReader peReader, MetadataReaderOptions options, MetadataStringDecoder? utf8Decoder)
         {
-            if (peReader == null)
+            if (peReader is null)
             {
                 throw new ArgumentNullException(nameof(peReader));
             }

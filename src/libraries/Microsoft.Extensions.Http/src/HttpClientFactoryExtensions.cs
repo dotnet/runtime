@@ -17,7 +17,7 @@ namespace System.Net.Http
         /// <returns>An <see cref="HttpClient"/> configured using the default configuration.</returns>
         public static HttpClient CreateClient(this IHttpClientFactory factory)
         {
-            if (factory == null)
+            if (factory is null)
             {
                 throw new ArgumentNullException(nameof(factory));
             }

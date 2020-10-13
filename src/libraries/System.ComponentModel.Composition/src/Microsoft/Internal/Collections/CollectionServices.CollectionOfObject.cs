@@ -11,12 +11,12 @@ namespace Microsoft.Internal.Collections
     {
         public static ICollection<object> GetCollectionWrapper(Type itemType, object collectionObject)
         {
-            if (itemType == null)
+            if (itemType is null)
             {
                 throw new ArgumentNullException(nameof(itemType));
             }
 
-            if (collectionObject == null)
+            if (collectionObject is null)
             {
                 throw new ArgumentNullException(nameof(collectionObject));
             }

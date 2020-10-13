@@ -18,7 +18,7 @@ namespace System.Security.Cryptography
 
         internal EccSecurityTransforms(string disposedTypeName)
         {
-            Debug.Assert(disposedTypeName != null);
+            Debug.Assert(disposedTypeName is not null);
             _disposedName = disposedTypeName;
         }
 
@@ -92,7 +92,7 @@ namespace System.Security.Cryptography
 
             SecKeyPair? current = _keys;
 
-            if (current != null)
+            if (current is not null)
             {
                 return current;
             }
@@ -134,7 +134,7 @@ namespace System.Security.Cryptography
             const string ExportPassword = "DotnetExportPassphrase";
             SecKeyPair keys = GetOrGenerateKeys(keySizeInBits);
 
-            if (includePrivateParameters && keys.PrivateKey == null)
+            if (includePrivateParameters && keys.PrivateKey is null)
             {
                 throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }
@@ -175,8 +175,8 @@ namespace System.Security.Cryptography
             parameters.Validate();
             ThrowIfDisposed();
 
-            bool isPrivateKey = parameters.D != null;
-            bool hasPublicParameters = parameters.Q.X != null && parameters.Q.Y != null;
+            bool isPrivateKey = parameters.D is not null;
+            bool hasPublicParameters = parameters.Q.X is not null && parameters.Q.Y is not null;
             SecKeyPair newKeys;
 
             if (isPrivateKey)
@@ -236,7 +236,7 @@ namespace System.Security.Cryptography
             AsnWriter keyWriter;
             bool hasPrivateKey;
 
-            if (parameters.D != null)
+            if (parameters.D is not null)
             {
                 keyWriter = EccKeyFormatHelper.WriteECPrivateKey(parameters);
                 hasPrivateKey = true;

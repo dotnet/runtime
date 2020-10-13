@@ -22,10 +22,10 @@ namespace System.Net.Sockets
 
             int buffsNumber = 0;
 
-            if (preBuffer != null && preBuffer.Length > 0)
+            if (preBuffer is not null && preBuffer.Length > 0)
                 ++buffsNumber;
 
-            if (postBuffer != null && postBuffer.Length > 0)
+            if (postBuffer is not null && postBuffer.Length > 0)
                 ++buffsNumber;
 
             object[]? objectsToPin = null;
@@ -33,12 +33,12 @@ namespace System.Net.Sockets
             {
                 objectsToPin = new object[buffsNumber];
 
-                if (preBuffer != null && preBuffer.Length > 0)
+                if (preBuffer is not null && preBuffer.Length > 0)
                 {
                     objectsToPin[--buffsNumber] = preBuffer;
                 }
 
-                if (postBuffer != null && postBuffer.Length > 0)
+                if (postBuffer is not null && postBuffer.Length > 0)
                 {
                     objectsToPin[--buffsNumber] = postBuffer;
                 }
@@ -49,7 +49,7 @@ namespace System.Net.Sockets
 
         protected override void ForceReleaseUnmanagedStructures()
         {
-            if (_fileStream != null)
+            if (_fileStream is not null)
             {
                 _fileStream.Dispose();
                 _fileStream = null;

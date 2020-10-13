@@ -39,7 +39,7 @@ namespace System.Xml.Xsl.Xslt
         {
             _depth--;
             Debug.Assert(0 <= _depth && _depth <= 1, "this shouldn't happen");
-            if (result == null)
+            if (result is null)
             { // special door to clean builder state in exception handlers
                 return base.EndBuild(result);
             }
@@ -74,8 +74,8 @@ namespace System.Xml.Xsl.Xslt
             public QilNode ConvertReletive2Absolute(QilNode node, QilNode fixup)
             {
                 QilDepthChecker.Check(node);
-                Debug.Assert(node != null);
-                Debug.Assert(fixup != null);
+                Debug.Assert(node is not null);
+                Debug.Assert(fixup is not null);
                 _fixup = fixup;
                 return this.Visit(node);
             }

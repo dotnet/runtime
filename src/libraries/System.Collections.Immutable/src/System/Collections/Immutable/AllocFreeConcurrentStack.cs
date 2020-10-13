@@ -25,7 +25,7 @@ namespace System.Collections.Immutable
         public static bool TryTake([MaybeNullWhen(false)] out T item)
         {
             Stack<RefAsValueType<T>> localStack = ThreadLocalStack;
-            if (localStack != null && localStack.Count > 0)
+            if (localStack is not null && localStack.Count > 0)
             {
                 item = localStack.Pop().Value;
                 return true;
@@ -41,7 +41,7 @@ namespace System.Collections.Immutable
             {
                 // Ensure the [ThreadStatic] is initialized to a dictionary
                 Dictionary<Type, object>? typesToStacks = AllocFreeConcurrentStack.t_stacks;
-                if (typesToStacks == null)
+                if (typesToStacks is null)
                 {
                     AllocFreeConcurrentStack.t_stacks = typesToStacks = new Dictionary<Type, object>();
                 }

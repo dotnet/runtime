@@ -201,7 +201,7 @@ namespace System.Text
         private static Rune ChangeCaseCultureAware(Rune rune, TextInfo textInfo, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant, "This should've been checked by the caller.");
-            Debug.Assert(textInfo != null, "This should've been checked by the caller.");
+            Debug.Assert(textInfo is not null, "This should've been checked by the caller.");
 
             Span<char> original = stackalloc char[MaxUtf16CharsPerRune];
             Span<char> modified = stackalloc char[MaxUtf16CharsPerRune];
@@ -236,7 +236,7 @@ namespace System.Text
         private static Rune ChangeCaseCultureAware(Rune rune, CultureInfo culture, bool toUpper)
         {
             Debug.Assert(!GlobalizationMode.Invariant, "This should've been checked by the caller.");
-            Debug.Assert(culture != null, "This should've been checked by the caller.");
+            Debug.Assert(culture is not null, "This should've been checked by the caller.");
 
             Span<char> original = stackalloc char[MaxUtf16CharsPerRune]; // worst case scenario = 2 code units (for a surrogate pair)
             Span<char> modified = stackalloc char[MaxUtf16CharsPerRune]; // case change should preserve UTF-16 code unit count

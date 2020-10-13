@@ -29,7 +29,7 @@ namespace System.Data
         /// </summary>
         internal ConstraintCollection(DataTable table)
         {
-            Debug.Assert(table != null);
+            Debug.Assert(table is not null);
             _table = table;
         }
 
@@ -83,7 +83,7 @@ namespace System.Data
         // To add foreign key constraint without adding any unique constraint for internal use. Main purpose : Binary Remoting
         internal void Add(Constraint constraint, bool addUniqueWhenAddingForeign)
         {
-            if (constraint == null)
+            if (constraint is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(constraint));
             }
@@ -106,7 +106,7 @@ namespace System.Data
             {
                 if (((UniqueConstraint)constraint)._bPrimaryKey)
                 {
-                    if (Table._primaryKey != null)
+                    if (Table._primaryKey is not null)
                     {
                         throw ExceptionBuilder.AddPrimaryKeyConstraint();
                     }
@@ -119,7 +119,7 @@ namespace System.Data
                 if (addUniqueWhenAddingForeign)
                 {
                     UniqueConstraint? key = fk.RelatedTable.Constraints.FindKeyConstraint(fk.RelatedColumnsReference);
-                    if (key == null)
+                    if (key is null)
                     {
                         if (constraint.ConstraintName.Length == 0)
                             constraint.ConstraintName = AssignName();
@@ -205,11 +205,11 @@ namespace System.Data
                 return;
             }
 
-            if (constraints != null)
+            if (constraints is not null)
             {
                 foreach (Constraint constr in constraints)
                 {
-                    if (constr != null)
+                    if (constr is not null)
                     {
                         Add(constr);
                     }
@@ -282,7 +282,7 @@ namespace System.Data
         /// </summary>
         private void ArrayAdd(Constraint constraint)
         {
-            Debug.Assert(constraint != null, "Attempt to add null constraint to constraint array");
+            Debug.Assert(constraint is not null, "Attempt to add null constraint to constraint array");
             List.Add(constraint);
         }
 
@@ -310,7 +310,7 @@ namespace System.Data
         /// </summary>
         private void BaseAdd(Constraint constraint)
         {
-            if (constraint == null)
+            if (constraint is null)
                 throw ExceptionBuilder.ArgumentNull(nameof(constraint));
 
             if (constraint.ConstraintName.Length == 0)
@@ -370,7 +370,7 @@ namespace System.Data
         /// </summary>
         private void BaseRemove(Constraint constraint)
         {
-            if (constraint == null)
+            if (constraint is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(constraint));
             }
@@ -434,7 +434,7 @@ namespace System.Data
                 _table.ChildRelations[i].SetParentKeyConstraint(null);
             }
 
-            if (_table.fInitInProgress && _delayLoadingConstraints != null)
+            if (_table.fInitInProgress && _delayLoadingConstraints is not null)
             {
                 _delayLoadingConstraints = null;
                 _fLoadForeignKeyConstraintsOnly = false;
@@ -485,7 +485,7 @@ namespace System.Data
 
         public void CopyTo(Constraint[] array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw ExceptionBuilder.ArgumentNull(nameof(array));
             if (index < 0)
                 throw ExceptionBuilder.ArgumentOutOfRange(nameof(index));
@@ -562,7 +562,7 @@ namespace System.Data
 
         private static bool CompareArrays(DataColumn[] a1, DataColumn[] a2)
         {
-            Debug.Assert(a1 != null && a2 != null, "Invalid Arguments");
+            Debug.Assert(a1 is not null && a2 is not null, "Invalid Arguments");
             if (a1.Length != a2.Length)
                 return false;
 
@@ -666,7 +666,7 @@ namespace System.Data
         /// </summary>
         internal void RegisterName(string name)
         {
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
 
             int constraintCount = List.Count;
             for (int i = 0; i < constraintCount; i++)
@@ -687,7 +687,7 @@ namespace System.Data
         /// </summary>
         public void Remove(Constraint constraint)
         {
-            if (constraint == null)
+            if (constraint is null)
                 throw ExceptionBuilder.ArgumentNull(nameof(constraint));
 
             // this will throw an exception if it can't be removed, otherwise indicates
@@ -712,7 +712,7 @@ namespace System.Data
         public void RemoveAt(int index)
         {
             Constraint c = this[index];
-            if (c == null)
+            if (c is null)
                 throw ExceptionBuilder.ConstraintOutOfRange(index);
             Remove(c);
         }
@@ -723,7 +723,7 @@ namespace System.Data
         public void Remove(string name)
         {
             Constraint? c = this[name];
-            if (c == null)
+            if (c is null)
                 throw ExceptionBuilder.ConstraintNotInTheTable(name);
             Remove(c);
         }
@@ -747,7 +747,7 @@ namespace System.Data
 
         internal void FinishInitConstraints()
         {
-            if (_delayLoadingConstraints == null)
+            if (_delayLoadingConstraints is null)
                 return;
 
             int colCount;
@@ -760,7 +760,7 @@ namespace System.Data
                         continue;
 
                     UniqueConstraint constr = (UniqueConstraint)_delayLoadingConstraints[i];
-                    if (constr._columnNames == null)
+                    if (constr._columnNames is null)
                     {
                         Add(constr);
                         continue;
@@ -771,7 +771,7 @@ namespace System.Data
                         parents[j] = _table.Columns[constr._columnNames[j]]!;
                     if (constr._bPrimaryKey)
                     {
-                        if (_table._primaryKey != null)
+                        if (_table._primaryKey is not null)
                         {
                             throw ExceptionBuilder.AddPrimaryKeyConstraint();
                         }
@@ -782,21 +782,21 @@ namespace System.Data
                         continue;
                     }
                     UniqueConstraint newConstraint = new UniqueConstraint(constr._constraintName, parents);
-                    if (FindConstraint(newConstraint) == null)
+                    if (FindConstraint(newConstraint) is null)
                         Add(newConstraint);
                 }
                 else
                 {
                     ForeignKeyConstraint constr = (ForeignKeyConstraint)_delayLoadingConstraints[i];
-                    if (constr._parentColumnNames == null || constr._childColumnNames == null)
+                    if (constr._parentColumnNames is null || constr._childColumnNames is null)
                     {
                         Add(constr);
                         continue;
                     }
 
-                    Debug.Assert(constr._parentTableName != null);
+                    Debug.Assert(constr._parentTableName is not null);
 
-                    if (_table.DataSet == null)
+                    if (_table.DataSet is null)
                     {
                         _fLoadForeignKeyConstraintsOnly = true;
                         continue;
@@ -807,7 +807,7 @@ namespace System.Data
                     childs = new DataColumn[colCount];
                     for (int j = 0; j < colCount; j++)
                     {
-                        if (constr._parentTableNamespace == null)
+                        if (constr._parentTableNamespace is null)
                             parents[j] = _table.DataSet.Tables[constr._parentTableName]!.Columns[constr._parentColumnNames[j]]!;
                         else
                             parents[j] = _table.DataSet.Tables[constr._parentTableName, constr._parentTableNamespace]!.Columns[constr._parentColumnNames[j]]!;

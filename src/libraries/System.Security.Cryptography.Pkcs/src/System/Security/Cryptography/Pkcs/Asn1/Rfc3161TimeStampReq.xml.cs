@@ -45,7 +45,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             writer.WriteInteger(Version);
             MessageImprint.Encode(writer);
 
-            if (ReqPolicy != null)
+            if (ReqPolicy is not null)
             {
                 try
                 {
@@ -76,7 +76,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
 
 
-            if (Extensions != null)
+            if (Extensions is not null)
             {
 
                 writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 0));

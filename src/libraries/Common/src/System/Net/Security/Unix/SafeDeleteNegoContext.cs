@@ -64,7 +64,7 @@ namespace System.Net.Security
 
         public void SetGssContext(SafeGssContextHandle context)
         {
-            Debug.Assert(context != null && !context.IsInvalid, "Invalid context passed to SafeDeleteNegoContext");
+            Debug.Assert(context is not null && !context.IsInvalid, "Invalid context passed to SafeDeleteNegoContext");
             _context = context;
         }
 
@@ -83,13 +83,13 @@ namespace System.Net.Security
                     _context = null;
                 }
 
-                if (_targetName != null)
+                if (_targetName is not null)
                 {
                     _targetName.Dispose();
                     _targetName = null;
                 }
 
-                if (_acceptorCredential != null)
+                if (_acceptorCredential is not null)
                 {
                     _acceptorCredential.Dispose();
                     _acceptorCredential = null;

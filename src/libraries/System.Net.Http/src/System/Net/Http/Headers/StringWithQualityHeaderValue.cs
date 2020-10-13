@@ -44,7 +44,7 @@ namespace System.Net.Http.Headers
 
         private StringWithQualityHeaderValue(StringWithQualityHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _value = source._value;
             _quality = source._quality;
@@ -68,7 +68,7 @@ namespace System.Net.Http.Headers
         {
             StringWithQualityHeaderValue? other = obj as StringWithQualityHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }

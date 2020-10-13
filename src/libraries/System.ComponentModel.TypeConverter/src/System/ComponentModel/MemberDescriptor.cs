@@ -39,7 +39,7 @@ namespace System.ComponentModel
         /// </summary>
         protected MemberDescriptor(string name, Attribute[] attributes)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -52,7 +52,7 @@ namespace System.ComponentModel
             _displayName = name;
             _nameHash = name.GetHashCode();
 
-            if (attributes != null)
+            if (attributes is not null)
             {
                 _attributes = attributes;
                 _attributesFiltered = false;
@@ -66,7 +66,7 @@ namespace System.ComponentModel
         /// </summary>
         protected MemberDescriptor(MemberDescriptor descr)
         {
-            if (descr == null)
+            if (descr is null)
             {
                 throw new ArgumentNullException(nameof(descr));
             }
@@ -90,7 +90,7 @@ namespace System.ComponentModel
         /// </summary>
         protected MemberDescriptor(MemberDescriptor oldMemberDescriptor, Attribute[] newAttributes)
         {
-            if (oldMemberDescriptor == null)
+            if (oldMemberDescriptor is null)
             {
                 throw new ArgumentNullException(nameof(oldMemberDescriptor));
             }
@@ -109,7 +109,7 @@ namespace System.ComponentModel
                 }
             }
 
-            if (newAttributes != null)
+            if (newAttributes is not null)
             {
                 foreach (Attribute o in newAttributes)
                 {
@@ -156,7 +156,7 @@ namespace System.ComponentModel
             {
                 CheckAttributesValid();
                 AttributeCollection attrs = _attributeCollection;
-                if (attrs == null)
+                if (attrs is null)
                 {
                     lock (_lockCookie)
                     {
@@ -254,7 +254,7 @@ namespace System.ComponentModel
             {
                 return true;
             }
-            if (obj == null)
+            if (obj is null)
             {
                 return false;
             }
@@ -273,26 +273,26 @@ namespace System.ComponentModel
                 return false;
             }
 
-            if ((mdObj._category == null) != (_category == null) ||
-                (_category != null && !mdObj._category.Equals(_category)))
+            if ((mdObj._category is null) != (_category is null) ||
+                (_category is not null && !mdObj._category.Equals(_category)))
             {
                 return false;
             }
 
-            if ((mdObj._description == null) != (_description == null) ||
-                (_description != null && !mdObj._description.Equals(_description)))
+            if ((mdObj._description is null) != (_description is null) ||
+                (_description is not null && !mdObj._description.Equals(_description)))
             {
                 return false;
             }
 
-            if ((mdObj._attributes == null) != (_attributes == null))
+            if ((mdObj._attributes is null) != (_attributes is null))
             {
                 return false;
             }
 
             bool sameAttrs = true;
 
-            if (_attributes != null)
+            if (_attributes is not null)
             {
                 if (_attributes.Length != mdObj._attributes.Length)
                 {
@@ -317,12 +317,12 @@ namespace System.ComponentModel
         /// </summary>
         protected virtual void FillAttributes(IList attributeList)
         {
-            if (attributeList == null)
+            if (attributeList is null)
             {
                 throw new ArgumentNullException(nameof(attributeList));
             }
 
-            if (_originalAttributes != null)
+            if (_originalAttributes is not null)
             {
                 foreach (Attribute attr in _originalAttributes)
                 {
@@ -359,7 +359,7 @@ namespace System.ComponentModel
                 {
                     int savedIndex = -1;
                     object typeId = list[i]?.TypeId;
-                    if (typeId == null)
+                    if (typeId is null)
                     {
                         list.RemoveAt(i);
                     }
@@ -400,7 +400,7 @@ namespace System.ComponentModel
         /// </summary>
         protected static MethodInfo FindMethod(Type componentClass, string name, Type[] args, Type returnType, bool publicOnly)
         {
-            if (componentClass == null)
+            if (componentClass is null)
             {
                 throw new ArgumentNullException(nameof(componentClass));
             }
@@ -414,7 +414,7 @@ namespace System.ComponentModel
             {
                 result = componentClass.GetMethod(name, BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic, null, args, null);
             }
-            if (result != null && !result.ReturnType.IsEquivalentTo(returnType))
+            if (result is not null && !result.ReturnType.IsEquivalentTo(returnType))
             {
                 result = null;
             }
@@ -435,12 +435,12 @@ namespace System.ComponentModel
         /// </summary>
         protected virtual object GetInvocationTarget(Type type, object instance)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
 
-            if (instance == null)
+            if (instance is null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
@@ -457,12 +457,12 @@ namespace System.ComponentModel
         protected static object GetInvokee(Type componentClass, object component)
         {
 
-            if (componentClass == null)
+            if (componentClass is null)
             {
                 throw new ArgumentNullException(nameof(componentClass));
             }
 
-            if (component == null)
+            if (component is null)
             {
                 throw new ArgumentNullException(nameof(component));
             }

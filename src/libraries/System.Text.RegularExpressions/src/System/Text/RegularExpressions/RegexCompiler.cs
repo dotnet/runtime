@@ -203,10 +203,10 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private int AddBacktrackNote(int flags, Label l, int codepos)
         {
-            if (_notes == null || _notecount >= _notes.Length)
+            if (_notes is null || _notecount >= _notes.Length)
             {
-                var newnotes = new BacktrackNote[_notes == null ? 16 : _notes.Length * 2];
-                if (_notes != null)
+                var newnotes = new BacktrackNote[_notes is null ? 16 : _notes.Length * 2];
+                if (_notes is not null)
                 {
                     Array.Copy(_notes, newnotes, _notecount);
                 }
@@ -533,8 +533,8 @@ namespace System.Text.RegularExpressions
 
             public void Dispose()
             {
-                Debug.Assert(_pool != null);
-                Debug.Assert(_local != null);
+                Debug.Assert(_pool is not null);
+                Debug.Assert(_local is not null);
                 Debug.Assert(!_pool.Contains(_local));
                 _pool.Push(_local);
                 this = default;
@@ -798,14 +798,14 @@ namespace System.Text.RegularExpressions
         /// <summary>Sets the culture local to CultureInfo.CurrentCulture.</summary>
         private void InitLocalCultureInfo()
         {
-            Debug.Assert(_textInfoLocal != null);
+            Debug.Assert(_textInfoLocal is not null);
             Call(s_cultureInfoGetCurrentCultureMethod);
             Callvirt(s_cultureInfoGetTextInfoMethod);
             Stloc(_textInfoLocal);
         }
 
         /// <summary>Whether ToLower operations should be performed with the invariant culture as opposed to the one in <see cref="_textInfoLocal"/>.</summary>
-        private bool UseToLowerInvariant => _textInfoLocal == null || (_options & RegexOptions.CultureInvariant) != 0;
+        private bool UseToLowerInvariant => _textInfoLocal is null || (_options & RegexOptions.CultureInvariant) != 0;
 
         /// <summary>Invokes either char.ToLowerInvariant(c) or _textInfo.ToLower(c).</summary>
         private void CallToLower()
@@ -997,7 +997,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         protected void GenerateFindFirstChar()
         {
-            Debug.Assert(_code != null);
+            Debug.Assert(_code is not null);
             _int32LocalsPool?.Clear();
             _readOnlySpanCharLocalsPool?.Clear();
 
@@ -1012,7 +1012,7 @@ namespace System.Text.RegularExpressions
             if (!_options.HasFlag(RegexOptions.CultureInvariant))
             {
                 bool needsCulture = _options.HasFlag(RegexOptions.IgnoreCase) || _boyerMoorePrefix?.CaseInsensitive == true;
-                if (!needsCulture && _leadingCharClasses != null)
+                if (!needsCulture && _leadingCharClasses is not null)
                 {
                     for (int i = 0; i < _leadingCharClasses.Length; i++)
                     {
@@ -1265,7 +1265,7 @@ namespace System.Text.RegularExpressions
                 }
             }
 
-            if (_boyerMoorePrefix != null && _boyerMoorePrefix.NegativeUnicode == null)
+            if (_boyerMoorePrefix is not null && _boyerMoorePrefix.NegativeUnicode is null)
             {
                 // Compiled Boyer-Moore string matching
                 LocalBuilder limitLocal;
@@ -1560,7 +1560,7 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                Debug.Assert(_leadingCharClasses != null && _leadingCharClasses.Length > 0);
+                Debug.Assert(_leadingCharClasses is not null && _leadingCharClasses.Length > 0);
 
                 // If minRequiredLength > 0, we already output a more stringent check.  In the rare case
                 // where we were unable to get an accurate enough min required length to ensure it's larger
@@ -1939,12 +1939,12 @@ namespace System.Text.RegularExpressions
                         case RegexNode.Oneloop:
                         case RegexNode.Notoneloop:
                         case RegexNode.Setloop:
-                            Debug.Assert(node.Next == null || node.Next.Type != RegexNode.Atomic, "Loop should have been transformed into an atomic type.");
+                            Debug.Assert(node.Next is null || node.Next.Type != RegexNode.Atomic, "Loop should have been transformed into an atomic type.");
                             goto case RegexNode.Onelazy;
                         case RegexNode.Onelazy:
                         case RegexNode.Notonelazy:
                         case RegexNode.Setlazy:
-                            supported = node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic);
+                            supported = node.M == node.N || (node.Next is not null && node.Next.Type == RegexNode.Atomic);
                             break;
 
                         // {Lazy}Loop repeaters are the same, except their child also needs to be supported.
@@ -1952,7 +1952,7 @@ namespace System.Text.RegularExpressions
                         case RegexNode.Loop:
                         case RegexNode.Lazyloop:
                             supported =
-                                (node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic)) &&
+                                (node.M == node.N || (node.Next is not null && node.Next.Type == RegexNode.Atomic)) &&
                                 NodeSupportsNonBacktrackingImplementation(node.Child(0), maxDepth - 1);
                             break;
 
@@ -1971,7 +1971,7 @@ namespace System.Text.RegularExpressions
                         // effectively atomic, as nothing will try to backtrack into it as it's the last thing).
                         // Its children must all also be supported.
                         case RegexNode.Alternate:
-                            if (node.Next != null &&
+                            if (node.Next is not null &&
                                 (node.IsAtomicByParent() || // atomic alternate
                                 (node.Next.Type == RegexNode.Capture && node.Next.Next is null))) // root alternate
                             {
@@ -1999,7 +1999,7 @@ namespace System.Text.RegularExpressions
                             {
                                 // And we only support them in certain places in the tree.
                                 RegexNode? parent = node.Next;
-                                while (parent != null)
+                                while (parent is not null)
                                 {
                                     switch (parent.Type)
                                     {
@@ -2028,7 +2028,7 @@ namespace System.Text.RegularExpressions
                                     if (supported)
                                     {
                                         parent = node;
-                                        while (parent != null && ((parent.Options & HasCapturesFlag) == 0))
+                                        while (parent is not null && ((parent.Options & HasCapturesFlag) == 0))
                                         {
                                             parent.Options |= HasCapturesFlag;
                                             parent = parent.Next;
@@ -2066,7 +2066,7 @@ namespace System.Text.RegularExpressions
             // Emits the sum of a constant and a value from a local.
             void EmitSum(int constant, LocalBuilder? local)
             {
-                if (local == null)
+                if (local is null)
                 {
                     Ldc(constant);
                 }
@@ -2205,7 +2205,7 @@ namespace System.Text.RegularExpressions
                     Stloc(runtextposLocal);
                     LoadTextSpanLocal();
                     textSpanPos = startingTextSpanPos;
-                    if (startingCrawlpos != null)
+                    if (startingCrawlpos is not null)
                     {
                         EmitUncaptureUntil(startingCrawlpos);
                     }
@@ -2214,7 +2214,7 @@ namespace System.Text.RegularExpressions
                 // If the final branch fails, that's like any other failure, and we jump to
                 // done (unless we have captures we need to unwind first, in which case we uncapture
                 // them and then jump to done).
-                if (startingCrawlpos != null)
+                if (startingCrawlpos is not null)
                 {
                     Label uncapture = DefineLabel();
                     doneLabel = uncapture;
@@ -2253,7 +2253,7 @@ namespace System.Text.RegularExpressions
                 Debug.Assert(node.Type == RegexNode.Capture);
                 Debug.Assert(node.N == -1, "Currently only support capnum, not uncapnum");
                 int capnum = node.M;
-                if (capnum != -1 && _code!.Caps != null)
+                if (capnum != -1 && _code!.Caps is not null)
                 {
                     capnum = (int)_code.Caps[capnum]!;
                 }
@@ -2282,7 +2282,7 @@ namespace System.Text.RegularExpressions
             // Emits code to unwind the capture stack until the crawl position specified in the provided local.
             void EmitUncaptureUntil(LocalBuilder startingCrawlpos)
             {
-                Debug.Assert(startingCrawlpos != null);
+                Debug.Assert(startingCrawlpos is not null);
 
                 // while (Crawlpos() != startingCrawlpos) Uncapture();
                 Label condition = DefineLabel();
@@ -2393,7 +2393,7 @@ namespace System.Text.RegularExpressions
                         // An atomic lazy loop amounts to doing the minimum amount of work possible.
                         // That means iterating as little as is required, which means a repeater
                         // for the min, and if min is 0, doing nothing.
-                        Debug.Assert(node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic));
+                        Debug.Assert(node.M == node.N || (node.Next is not null && node.Next.Type == RegexNode.Atomic));
                         if (node.M > 0)
                         {
                             EmitNodeRepeater(node);
@@ -3177,7 +3177,7 @@ namespace System.Text.RegularExpressions
             void EmitAtomicNodeLoop(RegexNode node)
             {
                 Debug.Assert(node.Type == RegexNode.Loop);
-                Debug.Assert(node.M == node.N || (node.Next != null && node.Next.Type == RegexNode.Atomic));
+                Debug.Assert(node.M == node.N || (node.Next is not null && node.Next.Type == RegexNode.Atomic));
                 Debug.Assert(node.M < int.MaxValue);
 
                 // If this is actually a repeater, emit that instead.
@@ -3281,7 +3281,7 @@ namespace System.Text.RegularExpressions
         /// <summary>Generates the code for "RegexRunner.Go".</summary>
         protected void GenerateGo()
         {
-            Debug.Assert(_code != null);
+            Debug.Assert(_code is not null);
             _int32LocalsPool?.Clear();
             _readOnlySpanCharLocalsPool?.Clear();
 
@@ -5332,7 +5332,7 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            Debug.Assert(_loopTimeoutCounterLocal != null);
+            Debug.Assert(_loopTimeoutCounterLocal is not null);
 
             // Increment counter for each loop iteration.
             Ldloc(_loopTimeoutCounterLocal);

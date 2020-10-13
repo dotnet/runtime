@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
             // For keyed hash algorithms, we always want to zero out the key value
             if (disposing)
             {
-                if (KeyValue != null)
+                if (KeyValue is not null)
                 {
                     Array.Clear(KeyValue, 0, KeyValue.Length);
                 }

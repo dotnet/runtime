@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static void EmitLoadValueIndirect(this ILGenerator il, Type type)
         {
-            Debug.Assert(type != null);
+            Debug.Assert(type is not null);
 
             switch (type.GetTypeCode())
             {
@@ -110,7 +110,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static void EmitStoreValueIndirect(this ILGenerator il, Type type)
         {
-            Debug.Assert(type != null);
+            Debug.Assert(type is not null);
 
             switch (type.GetTypeCode())
             {
@@ -155,7 +155,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitLoadElement(this ILGenerator il, Type type)
         {
-            Debug.Assert(type != null);
+            Debug.Assert(type is not null);
 
             if (!type.IsValueType)
             {
@@ -207,7 +207,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static void EmitStoreElement(this ILGenerator il, Type type)
         {
-            Debug.Assert(type != null);
+            Debug.Assert(type is not null);
 
             switch (type.GetTypeCode())
             {
@@ -250,7 +250,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitType(this ILGenerator il, Type type)
         {
-            Debug.Assert(type != null);
+            Debug.Assert(type is not null);
 
             il.Emit(OpCodes.Ldtoken, type);
             il.Emit(OpCodes.Call, Type_GetTypeFromHandle);
@@ -262,28 +262,28 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitFieldAddress(this ILGenerator il, FieldInfo fi)
         {
-            Debug.Assert(fi != null);
+            Debug.Assert(fi is not null);
 
             il.Emit(fi.IsStatic ? OpCodes.Ldsflda : OpCodes.Ldflda, fi);
         }
 
         internal static void EmitFieldGet(this ILGenerator il, FieldInfo fi)
         {
-            Debug.Assert(fi != null);
+            Debug.Assert(fi is not null);
 
             il.Emit(fi.IsStatic ? OpCodes.Ldsfld : OpCodes.Ldfld, fi);
         }
 
         internal static void EmitFieldSet(this ILGenerator il, FieldInfo fi)
         {
-            Debug.Assert(fi != null);
+            Debug.Assert(fi is not null);
 
             il.Emit(fi.IsStatic ? OpCodes.Stsfld : OpCodes.Stfld, fi);
         }
 
         internal static void EmitNew(this ILGenerator il, ConstructorInfo ci)
         {
-            Debug.Assert(ci != null);
+            Debug.Assert(ci is not null);
             Debug.Assert(!ci.DeclaringType!.ContainsGenericParameters);
 
             il.Emit(OpCodes.Newobj, ci);
@@ -300,7 +300,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal static void EmitString(this ILGenerator il, string value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             il.Emit(OpCodes.Ldstr, value);
         }
@@ -355,7 +355,7 @@ namespace System.Linq.Expressions.Compiler
         // matches TryEmitConstant
         internal static bool CanEmitConstant(object? value, Type type)
         {
-            if (value == null || CanEmitILConstant(type))
+            if (value is null || CanEmitILConstant(type))
             {
                 return true;
             }
@@ -398,7 +398,7 @@ namespace System.Linq.Expressions.Compiler
         // Linq does
         internal static bool TryEmitConstant(this ILGenerator il, object? value, Type type, ILocalCache locals)
         {
-            if (value == null)
+            if (value is null)
             {
                 // Smarter than the Linq implementation which uses the initobj
                 // pattern for all value types (works, but requires a local and
@@ -434,7 +434,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 il.Emit(OpCodes.Ldtoken, mb);
                 Type? dt = mb.DeclaringType;
-                if (dt != null && dt.IsGenericType)
+                if (dt is not null && dt.IsGenericType)
                 {
                     il.Emit(OpCodes.Ldtoken, dt);
                     il.Emit(OpCodes.Call, MethodBase_GetMethodFromHandle_RuntimeMethodHandle_RuntimeTypeHandle);
@@ -471,12 +471,12 @@ namespace System.Linq.Expressions.Compiler
             }
 
             Type? dt = mb.DeclaringType;
-            return dt == null || ShouldLdtoken(dt);
+            return dt is null || ShouldLdtoken(dt);
         }
 
         private static bool TryEmitILConstant(this ILGenerator il, object value, Type type)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             if (type.IsNullableType())
             {
@@ -934,7 +934,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static void EmitArray<T>(this ILGenerator il, T[] items, ILocalCache locals)
         {
-            Debug.Assert(items != null);
+            Debug.Assert(items is not null);
 
             il.EmitPrimitive(items.Length);
             il.Emit(OpCodes.Newarr, typeof(T));
@@ -953,7 +953,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static void EmitArray(this ILGenerator il, Type elementType, int count)
         {
-            Debug.Assert(elementType != null);
+            Debug.Assert(elementType is not null);
             Debug.Assert(count >= 0);
 
             il.EmitPrimitive(count);
@@ -967,7 +967,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         internal static void EmitArray(this ILGenerator il, Type arrayType)
         {
-            Debug.Assert(arrayType != null);
+            Debug.Assert(arrayType is not null);
             Debug.Assert(arrayType.IsArray);
 
             if (arrayType.IsSZArray)
@@ -982,7 +982,7 @@ namespace System.Linq.Expressions.Compiler
                     types[i] = typeof(int);
                 }
                 ConstructorInfo? ci = arrayType.GetConstructor(types);
-                Debug.Assert(ci != null);
+                Debug.Assert(ci is not null);
                 il.EmitNew(ci);
             }
         }

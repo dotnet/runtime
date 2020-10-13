@@ -114,14 +114,14 @@ namespace System.Threading
                 ThrowIfDisposed();
 
                 // Return the handle if it was already allocated.
-                if (_kernelEvent != null)
+                if (_kernelEvent is not null)
                 {
                     return _kernelEvent;
                 }
 
                 // Lazily-initialize the handle.
                 var mre = new ManualResetEvent(false);
-                if (Interlocked.CompareExchange(ref _kernelEvent, mre, null) != null)
+                if (Interlocked.CompareExchange(ref _kernelEvent, mre, null) is not null)
                 {
                     mre.Dispose();
                 }
@@ -359,7 +359,7 @@ namespace System.Threading
             // Dispose() is not thread-safe and should not be called concurrently with CancelAfter().
 
             TimerQueueTimer? timer = _timer;
-            if (timer == null)
+            if (timer is null)
             {
                 // Lazily initialize the timer in a thread-safe fashion.
                 // Initially set to "never go off" because we don't want to take a
@@ -367,7 +367,7 @@ namespace System.Threading
                 // cancelling the token before it (the timer) can be disposed.
                 timer = new TimerQueueTimer(s_timerCallback, this, Timeout.UnsignedInfinite, Timeout.UnsignedInfinite, flowExecutionContext: false);
                 TimerQueueTimer? currentTimer = Interlocked.CompareExchange(ref _timer, timer, null);
-                if (currentTimer != null)
+                if (currentTimer is not null)
                 {
                     // We did not initialize the timer.  Dispose the new timer.
                     timer.Close();
@@ -430,7 +430,7 @@ namespace System.Threading
                 // happen at the same time the external entity is requesting cancellation).
 
                 TimerQueueTimer? timer = _timer;
-                if (timer != null)
+                if (timer is not null)
                 {
                     _timer = null;
                     timer.Close(); // TimerQueueTimer.Close is thread-safe
@@ -443,10 +443,10 @@ namespace System.Threading
                 // interlocked exchange it to be null, and then we check whether cancellation is currently
                 // in progress.  NotifyCancellation will only try to set the event if it exists after it's
                 // transitioned to and while it's in the NotifyingState.
-                if (_kernelEvent != null)
+                if (_kernelEvent is not null)
                 {
                     ManualResetEvent? mre = Interlocked.Exchange<ManualResetEvent?>(ref _kernelEvent!, null);
-                    if (mre != null && _state != NotifyingState)
+                    if (mre is not null && _state != NotifyingState)
                     {
                         mre.Dispose();
                     }
@@ -499,7 +499,7 @@ namespace System.Threading
 
                 // Get the partitions...
                 CallbackPartition?[]? partitions = _callbackPartitions;
-                if (partitions == null)
+                if (partitions is null)
                 {
                     partitions = new CallbackPartition[s_numPartitions];
                     partitions = Interlocked.CompareExchange(ref _callbackPartitions, partitions, null) ?? partitions;
@@ -509,7 +509,7 @@ namespace System.Threading
                 int partitionIndex = Environment.CurrentManagedThreadId & s_numPartitionsMask;
                 Debug.Assert(partitionIndex < partitions.Length, $"Expected {partitionIndex} to be less than {partitions.Length}");
                 CallbackPartition? partition = partitions[partitionIndex];
-                if (partition == null)
+                if (partition is null)
                 {
                     partition = new CallbackPartition(this);
                     partition = Interlocked.CompareExchange(ref partitions[partitionIndex], partition, null) ?? partition;
@@ -528,10 +528,10 @@ namespace System.Threading
 
                     // Get a node, from the free list if possible or else a new one.
                     node = partition.FreeNodeList;
-                    if (node != null)
+                    if (node is not null)
                     {
                         partition.FreeNodeList = node.Next;
-                        Debug.Assert(node.Prev == null, "Nodes in the free list should all have a null Prev");
+                        Debug.Assert(node.Prev is null, "Nodes in the free list should all have a null Prev");
                         // node.Next will be overwritten below so no need to set it here.
                     }
                     else
@@ -548,7 +548,7 @@ namespace System.Threading
 
                     // Add it to the callbacks list.
                     node.Next = partition.Callbacks;
-                    if (node.Next != null)
+                    if (node.Next is not null)
                     {
                         node.Next.Prev = node;
                     }
@@ -583,7 +583,7 @@ namespace System.Threading
             {
                 // Dispose of the timer, if any.  Dispose may be running concurrently here, but TimerQueueTimer.Close is thread-safe.
                 TimerQueueTimer? timer = _timer;
-                if (timer != null)
+                if (timer is not null)
                 {
                     _timer = null;
                     timer.Close();
@@ -616,7 +616,7 @@ namespace System.Threading
             // If there are no callbacks to run, we can safely exit.  Any race conditions to lazy initialize it
             // will see IsCancellationRequested and will then run the callback themselves.
             CallbackPartition?[]? partitions = Interlocked.Exchange(ref _callbackPartitions, null);
-            if (partitions == null)
+            if (partitions is null)
             {
                 Interlocked.Exchange(ref _state, NotifyingCompleteState);
                 return;
@@ -630,7 +630,7 @@ namespace System.Threading
                 // This is intended to help with nesting scenarios so that child enlisters cancel before their parents.
                 foreach (CallbackPartition? partition in partitions)
                 {
-                    if (partition == null)
+                    if (partition is null)
                     {
                         // Uninitialized partition. Nothing to do.
                         continue;
@@ -648,15 +648,15 @@ namespace System.Threading
                         {
                             // Pop the next registration from the callbacks list.
                             node = partition.Callbacks;
-                            if (node == null)
+                            if (node is null)
                             {
                                 // No more registrations to process.
                                 break;
                             }
                             else
                             {
-                                Debug.Assert(node.Prev == null);
-                                if (node.Next != null) node.Next.Prev = null;
+                                Debug.Assert(node.Prev is null);
+                                if (node.Next is not null) node.Next.Prev = null;
                                 partition.Callbacks = node.Next;
                             }
 
@@ -679,7 +679,7 @@ namespace System.Threading
                         // target sync context if there is one.
                         try
                         {
-                            if (node.SynchronizationContext != null)
+                            if (node.SynchronizationContext is not null)
                             {
                                 // Transition to the target syncContext and continue there.
                                 node.SynchronizationContext.Send(static s =>
@@ -716,7 +716,7 @@ namespace System.Threading
                 Interlocked.MemoryBarrier(); // for safety, prevent reorderings crossing this point and seeing inconsistent state.
             }
 
-            if (exceptionList != null)
+            if (exceptionList is not null)
             {
                 Debug.Assert(exceptionList.Count > 0, $"Expected {exceptionList.Count} > 0");
                 throw new AggregateException(exceptionList);
@@ -769,7 +769,7 @@ namespace System.Threading
         /// <exception cref="System.ArgumentNullException"><paramref name="tokens"/> is null.</exception>
         public static CancellationTokenSource CreateLinkedTokenSource(params CancellationToken[] tokens)
         {
-            if (tokens == null)
+            if (tokens is null)
             {
                 throw new ArgumentNullException(nameof(tokens));
             }
@@ -906,7 +906,7 @@ namespace System.Threading
                 }
 
                 CancellationTokenRegistration[]? linkingRegistrations = _linkingRegistrations;
-                if (linkingRegistrations != null)
+                if (linkingRegistrations is not null)
                 {
                     _linkingRegistrations = null; // release for GC once we're done enumerating
                     for (int i = 0; i < linkingRegistrations.Length; i++)
@@ -934,13 +934,13 @@ namespace System.Threading
 
             public CallbackPartition(CancellationTokenSource source)
             {
-                Debug.Assert(source != null, "Expected non-null source");
+                Debug.Assert(source is not null, "Expected non-null source");
                 Source = source;
             }
 
             internal bool Unregister(long id, CallbackNode node)
             {
-                Debug.Assert(node != null, "Expected non-null node");
+                Debug.Assert(node is not null, "Expected non-null node");
 
                 if (id == 0)
                 {
@@ -969,16 +969,16 @@ namespace System.Threading
                     // The registration must still be in the callbacks list.  Remove it.
                     if (Callbacks == node)
                     {
-                        Debug.Assert(node.Prev == null);
+                        Debug.Assert(node.Prev is null);
                         Callbacks = node.Next;
                     }
                     else
                     {
-                        Debug.Assert(node.Prev != null);
+                        Debug.Assert(node.Prev is not null);
                         node.Prev.Next = node.Next;
                     }
 
-                    if (node.Next != null)
+                    if (node.Next is not null)
                     {
                         node.Next.Prev = node.Prev;
                     }
@@ -1020,7 +1020,7 @@ namespace System.Threading
 
             public CallbackNode(CallbackPartition partition)
             {
-                Debug.Assert(partition != null, "Expected non-null partition");
+                Debug.Assert(partition is not null, "Expected non-null partition");
                 Partition = partition;
             }
 
@@ -1029,7 +1029,7 @@ namespace System.Threading
                 ExecutionContext? context = ExecutionContext;
                 if (context is null)
                 {
-                    Debug.Assert(Callback != null);
+                    Debug.Assert(Callback is not null);
                     Invoke(Callback, CallbackState, Partition.Source);
                 }
                 else
@@ -1037,7 +1037,7 @@ namespace System.Threading
                     ExecutionContext.RunInternal(context, static s =>
                     {
                         var node = (CallbackNode)s!;
-                        Debug.Assert(node.Callback != null);
+                        Debug.Assert(node.Callback is not null);
                         Invoke(node.Callback, node.CallbackState, node.Partition.Source);
                     }, this);
 

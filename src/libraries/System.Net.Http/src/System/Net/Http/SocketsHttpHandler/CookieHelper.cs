@@ -16,7 +16,7 @@ namespace System.Net.Http
                 // The header values are always a string[]
                 var valuesArray = (string[])values;
                 Debug.Assert(valuesArray.Length > 0, "No values for header??");
-                Debug.Assert(response.RequestMessage != null && response.RequestMessage.RequestUri != null);
+                Debug.Assert(response.RequestMessage is not null && response.RequestMessage.RequestUri is not null);
 
                 Uri requestUri = response.RequestMessage.RequestUri;
                 for (int i = 0; i < valuesArray.Length; i++)

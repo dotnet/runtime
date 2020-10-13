@@ -12,7 +12,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ActiveDirectoryRoleCollection(ArrayList values)
         {
-            if (values != null)
+            if (values is not null)
             {
                 InnerList.AddRange(values);
             }
@@ -70,7 +70,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal AdamRoleCollection(ArrayList values)
         {
-            if (values != null)
+            if (values is not null)
             {
                 InnerList.AddRange(values);
             }

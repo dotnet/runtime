@@ -86,7 +86,7 @@ namespace System.Net.WebSockets
         {
             string validStatesText = string.Empty;
 
-            if (validStates != null && validStates.Length > 0)
+            if (validStates is not null && validStates.Length > 0)
             {
                 foreach (WebSocketState currentState in validStates)
                 {
@@ -135,7 +135,7 @@ namespace System.Net.WebSockets
         /// <returns>The created <see cref="WebSocket"/>.</returns>
         public static WebSocket CreateFromStream(Stream stream, bool isServer, string? subProtocol, TimeSpan keepAliveInterval)
         {
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
@@ -145,7 +145,7 @@ namespace System.Net.WebSockets
                 throw new ArgumentException(!stream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(stream));
             }
 
-            if (subProtocol != null)
+            if (subProtocol is not null)
             {
                 WebSocketValidate.ValidateSubprotocol(subProtocol);
             }
@@ -177,7 +177,7 @@ namespace System.Net.WebSockets
             string? subProtocol, int receiveBufferSize, int sendBufferSize,
             TimeSpan keepAliveInterval, bool useZeroMaskingKey, ArraySegment<byte> internalBuffer)
         {
-            if (innerStream == null)
+            if (innerStream is null)
             {
                 throw new ArgumentNullException(nameof(innerStream));
             }
@@ -187,7 +187,7 @@ namespace System.Net.WebSockets
                 throw new ArgumentException(!innerStream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(innerStream));
             }
 
-            if (subProtocol != null)
+            if (subProtocol is not null)
             {
                 WebSocketValidate.ValidateSubprotocol(subProtocol);
             }

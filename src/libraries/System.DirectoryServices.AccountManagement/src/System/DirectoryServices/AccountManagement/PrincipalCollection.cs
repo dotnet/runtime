@@ -21,7 +21,7 @@ namespace System.DirectoryServices.AccountManagement
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
 
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
 
             if (array.Rank != 1)
@@ -77,7 +77,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
                 finally
                 {
-                    if (bookmark != null)
+                    if (bookmark is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "CopyTo: restoring from bookmark");
                         _resultSet.RestoreBookmark(bookmark);
@@ -195,7 +195,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                     finally
                     {
-                        if (bookmark != null)
+                        if (bookmark is not null)
                         {
                             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Count: restoring from bookmark");
                             _resultSet.Reset();
@@ -245,7 +245,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             CheckDisposed();
 
-            if (principal == null)
+            if (principal is null)
                 throw new ArgumentNullException(nameof(principal));
 
             if (Contains(principal))
@@ -289,15 +289,15 @@ namespace System.DirectoryServices.AccountManagement
         {
             CheckDisposed();
 
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
-            if (identityValue == null)
+            if (identityValue is null)
                 throw new ArgumentNullException(nameof(identityValue));
 
             Principal principal = Principal.FindByIdentity(context, identityType, identityValue);
 
-            if (principal != null)
+            if (principal is not null)
             {
                 Add(principal);
             }
@@ -322,14 +322,14 @@ namespace System.DirectoryServices.AccountManagement
             // reason it couldn't is if it's an AD group with one principals that are members of it
             // by virtue of their primaryGroupId.
             //
-            // If storeCtxToUse == null, then we must be unpersisted, in which case there clearly
+            // If storeCtxToUse is null, then we must be unpersisted, in which case there clearly
             // can't be any such primary group members pointing to this group on the store.
             StoreCtx storeCtxToUse = _owningGroup.GetStoreCtxToUse();
             string explanation;
 
-            Debug.Assert(storeCtxToUse != null || _owningGroup.unpersisted == true);
+            Debug.Assert(storeCtxToUse is not null || _owningGroup.unpersisted == true);
 
-            if ((storeCtxToUse != null) && (!storeCtxToUse.CanGroupBeCleared(_owningGroup, out explanation)))
+            if ((storeCtxToUse is not null) && (!storeCtxToUse.CanGroupBeCleared(_owningGroup, out explanation)))
                 throw new InvalidOperationException(explanation);
 
             MarkChange();
@@ -368,21 +368,21 @@ namespace System.DirectoryServices.AccountManagement
         {
             CheckDisposed();
 
-            if (principal == null)
+            if (principal is null)
                 throw new ArgumentNullException(nameof(principal));
 
             // Ask the StoreCtx to verify that this member can be removed.  Right now, the only
             // reason it couldn't is if it's actually a member by virtue of its primaryGroupId
             // pointing to this group.
             //
-            // If storeCtxToUse == null, then we must be unpersisted, in which case there clearly
+            // If storeCtxToUse is null, then we must be unpersisted, in which case there clearly
             // can't be any such primary group members pointing to this group on the store.
             StoreCtx storeCtxToUse = _owningGroup.GetStoreCtxToUse();
             string explanation;
 
-            Debug.Assert(storeCtxToUse != null || _owningGroup.unpersisted == true);
+            Debug.Assert(storeCtxToUse is not null || _owningGroup.unpersisted == true);
 
-            if ((storeCtxToUse != null) && (!storeCtxToUse.CanGroupMemberBeRemoved(_owningGroup, principal, out explanation)))
+            if ((storeCtxToUse is not null) && (!storeCtxToUse.CanGroupMemberBeRemoved(_owningGroup, principal, out explanation)))
                 throw new InvalidOperationException(explanation);
 
             bool removed = false;
@@ -436,15 +436,15 @@ namespace System.DirectoryServices.AccountManagement
         {
             CheckDisposed();
 
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
-            if (identityValue == null)
+            if (identityValue is null)
                 throw new ArgumentNullException(nameof(identityValue));
 
             Principal principal = Principal.FindByIdentity(context, identityType, identityValue);
 
-            if (principal == null)
+            if (principal is null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Warn, "PrincipalCollection", "Remove(urn/urn): no match");
                 throw new NoMatchingPrincipalException(SR.NoMatchingPrincipalExceptionText);
@@ -461,7 +461,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             CheckDisposed();
 
-            if (principal == null)
+            if (principal is null)
                 throw new ArgumentNullException(nameof(principal));
 
             // Yes, this is potentially quite expensive.  Contains is unfortunately
@@ -495,7 +495,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
                 finally
                 {
-                    if (bookmark != null)
+                    if (bookmark is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "ContainsEnumTest: restoring from bookmark");
                         _resultSet.RestoreBookmark(bookmark);
@@ -510,7 +510,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             CheckDisposed();
 
-            if (principal == null)
+            if (principal is null)
                 throw new ArgumentNullException(nameof(principal));
 
             // If they explicitly inserted it, then we certainly contain it
@@ -565,12 +565,12 @@ namespace System.DirectoryServices.AccountManagement
 
             // If the store has a shortcut for testing membership, use it.
             // Otherwise we enumerate all members and look for a match.
-            if ((storeCtxToUse != null) && (storeCtxToUse.SupportsNativeMembershipTest))
+            if ((storeCtxToUse is not null) && (storeCtxToUse.SupportsNativeMembershipTest))
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                         "PrincipalCollection",
                                         "Contains: using native test (store ctx is null = {0})",
-                                        (storeCtxToUse == null));
+                                        (storeCtxToUse is null));
 
                 return ContainsNativeTest(principal);
             }
@@ -585,17 +585,17 @@ namespace System.DirectoryServices.AccountManagement
         {
             CheckDisposed();
 
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
-            if (identityValue == null)
+            if (identityValue is null)
                 throw new ArgumentNullException(nameof(identityValue));
 
             bool found = false;
 
             Principal principal = Principal.FindByIdentity(context, identityType, identityValue);
 
-            if (principal != null)
+            if (principal is not null)
                 found = Contains(principal);
 
             return found;
@@ -611,7 +611,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Ctor");
 
-            Debug.Assert(results != null);
+            Debug.Assert(results is not null);
 
             _resultSet = results;
             _owningGroup = owningGroup;
@@ -632,7 +632,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 lock (_resultSet)
                 {
-                    if (_resultSet != null)
+                    if (_resultSet is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollection", "Dispose: disposing resultSet");
                         _resultSet.Dispose();

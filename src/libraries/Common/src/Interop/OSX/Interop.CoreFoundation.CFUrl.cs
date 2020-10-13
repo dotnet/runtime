@@ -19,7 +19,7 @@ internal static partial class Interop
 
         internal static SafeCreateHandle CFURLCreateWithString(string url)
         {
-            Debug.Assert(url != null);
+            Debug.Assert(url is not null);
             using (SafeCreateHandle stringHandle = CFStringCreateWithCString(url))
             {
                 return CFURLCreateWithString(IntPtr.Zero, stringHandle, IntPtr.Zero);

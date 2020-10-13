@@ -45,11 +45,11 @@ namespace System.Xml
         private XmlBoundElement? GetRowElement()
         {
             XmlBoundElement? rowElem;
-            if (_column != null)
+            if (_column is not null)
             {
                 rowElem = _node as XmlBoundElement;
-                Debug.Assert(rowElem != null);
-                Debug.Assert(rowElem.Row != null);
+                Debug.Assert(rowElem is not null);
+                Debug.Assert(rowElem.Row is not null);
                 return rowElem;
             }
 
@@ -62,18 +62,18 @@ namespace System.Xml
             get
             {
                 XmlBoundElement? rowElem = GetRowElement();
-                if (rowElem == null)
+                if (rowElem is null)
                 {
                     return null;
                 }
 
-                Debug.Assert(rowElem.Row != null);
+                Debug.Assert(rowElem.Row is not null);
                 return rowElem.Row;
             }
         }
 
         private static bool IsFoliated(XmlNode node) =>
-            node != null && node is XmlBoundElement ?
+            node is not null && node is XmlBoundElement ?
                 ((XmlBoundElement)node).IsFoliated : true;
 
         internal void MoveTo(DataPointer pointer)
@@ -120,7 +120,7 @@ namespace System.Xml
 
             DataTable table = row.Table;
             DataColumnCollection columns = table.Columns;
-            int iColumn = (col != null) ? col.Ordinal + 1 : 0;
+            int iColumn = (col is not null) ? col.Ordinal + 1 : 0;
             int cColumns = columns.Count;
             DataRowVersion rowVersion = (row.RowState == DataRowState.Detached) ? DataRowVersion.Proposed : DataRowVersion.Current;
 
@@ -139,7 +139,7 @@ namespace System.Xml
         private DataColumn? NthColumn(DataRow row, bool fAttribute, int iColumn, bool fNulls)
         {
             DataColumn? c = null;
-            while ((c = NextColumn(row, c, fAttribute, fNulls)) != null)
+            while ((c = NextColumn(row, c, fAttribute, fNulls)) is not null)
             {
                 if (iColumn == 0)
                 {
@@ -155,7 +155,7 @@ namespace System.Xml
         {
             DataColumn? c = null;
             int count = 0;
-            while ((c = NextColumn(row, c, fAttribute, fNulls)) != null)
+            while ((c = NextColumn(row, c, fAttribute, fNulls)) is not null)
             {
                 count++;
             }
@@ -166,12 +166,12 @@ namespace System.Xml
         {
             RealFoliate();
             AssertValid();
-            if (_node == null)
+            if (_node is null)
             {
                 return false;
             }
 
-            if (_column != null)
+            if (_column is not null)
             {
                 if (_fOnValue)
                 {
@@ -185,7 +185,7 @@ namespace System.Xml
             {
                 // find virtual column elements first
                 DataColumn? c = NextColumn(Row!, null, false, false);
-                if (c != null)
+                if (c is not null)
                 {
                     MoveTo(_node, c, _doc.IsTextOnly(c));
                     return true;
@@ -194,7 +194,7 @@ namespace System.Xml
 
             // look for anything
             XmlNode? n = _doc.SafeFirstChild(_node);
-            if (n != null)
+            if (n is not null)
             {
                 MoveTo(n);
                 return true;
@@ -207,9 +207,9 @@ namespace System.Xml
         {
             RealFoliate();
             AssertValid();
-            if (_node != null)
+            if (_node is not null)
             {
-                if (_column != null)
+                if (_column is not null)
                 {
                     if (_fOnValue && !_doc.IsTextOnly(_column))
                     {
@@ -217,14 +217,14 @@ namespace System.Xml
                     }
 
                     DataColumn? c = NextColumn(Row!, _column, false, false);
-                    if (c != null)
+                    if (c is not null)
                     {
                         MoveTo(_node, c, false);
                         return true;
                     }
 
                     XmlNode? n = _doc.SafeFirstChild(_node);
-                    if (n != null)
+                    if (n is not null)
                     {
                         MoveTo(n);
                         return true;
@@ -233,7 +233,7 @@ namespace System.Xml
                 else
                 {
                     XmlNode? n = _doc.SafeNextSibling(_node);
-                    if (n != null)
+                    if (n is not null)
                     {
                         MoveTo(n);
                         return true;
@@ -248,9 +248,9 @@ namespace System.Xml
         {
             RealFoliate();
             AssertValid();
-            if (_node != null)
+            if (_node is not null)
             {
-                if (_column != null)
+                if (_column is not null)
                 {
                     if (_fOnValue && !_doc.IsTextOnly(_column))
                     {
@@ -267,7 +267,7 @@ namespace System.Xml
                 else
                 {
                     XmlNode? n = _node.ParentNode;
-                    if (n != null)
+                    if (n is not null)
                     {
                         MoveTo(n);
                         return true;
@@ -281,9 +281,9 @@ namespace System.Xml
         {
             RealFoliate();
             AssertValid();
-            if (_node != null)
+            if (_node is not null)
             {
-                if (_column != null)
+                if (_column is not null)
                 {
                     if (_fOnValue || _doc.IsTextOnly(_column) || _column.ColumnMapping != MappingType.Attribute)
                     {
@@ -296,7 +296,7 @@ namespace System.Xml
                 else if (_node.NodeType == XmlNodeType.Attribute)
                 {
                     XmlNode? n = ((XmlAttribute)_node).OwnerElement;
-                    if (n != null)
+                    if (n is not null)
                     {
                         MoveTo(n, null, false);
                         return true;
@@ -314,9 +314,9 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node != null)
+                if (_node is not null)
                 {
-                    if (_column == null && _node.NodeType == XmlNodeType.Element)
+                    if (_column is null && _node.NodeType == XmlNodeType.Element)
                     {
                         if (!IsFoliated(_node))
                         {
@@ -341,14 +341,14 @@ namespace System.Xml
                 return false;
             }
 
-            if (_node != null)
+            if (_node is not null)
             {
-                if ((_column == null || _column.ColumnMapping == MappingType.Attribute) && _node.NodeType == XmlNodeType.Element)
+                if ((_column is null || _column.ColumnMapping == MappingType.Attribute) && _node.NodeType == XmlNodeType.Element)
                 {
                     if (!IsFoliated(_node))
                     {
                         DataColumn? c = NthColumn(Row!, true, i, false);
-                        if (c != null)
+                        if (c is not null)
                         {
                             MoveTo(_node, c, false);
                             return true;
@@ -357,7 +357,7 @@ namespace System.Xml
                     else
                     {
                         XmlNode? n = _node.Attributes!.Item(i);
-                        if (n != null)
+                        if (n is not null)
                         {
                             MoveTo(n, null, false);
                             return true;
@@ -374,11 +374,11 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                 {
                     return XmlNodeType.None;
                 }
-                else if (_column == null)
+                else if (_column is null)
                 {
                     return _node.NodeType;
                 }
@@ -403,14 +403,14 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                 {
                     return string.Empty;
                 }
-                else if (_column == null)
+                else if (_column is null)
                 {
                     string name = _node.LocalName;
-                    Debug.Assert(name != null);
+                    Debug.Assert(name is not null);
                     if (IsLocalNameEmpty(_node.NodeType))
                     {
                         return string.Empty;
@@ -435,11 +435,11 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                 {
                     return string.Empty;
                 }
-                else if (_column == null)
+                else if (_column is null)
                 {
                     return _node.NamespaceURI;
                 }
@@ -460,15 +460,15 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                 {
                     return string.Empty;
                 }
-                else if (_column == null)
+                else if (_column is null)
                 {
                     string name = _node.Name;
                     //Again it could be String.Empty at null position
-                    Debug.Assert(name != null);
+                    Debug.Assert(name is not null);
                     if (IsLocalNameEmpty(_node.NodeType))
                     {
                         return string.Empty;
@@ -479,9 +479,9 @@ namespace System.Xml
                 {
                     string prefix = Prefix;
                     string lname = LocalName;
-                    if (prefix != null && prefix.Length > 0)
+                    if (prefix is not null && prefix.Length > 0)
                     {
-                        if (lname != null && lname.Length > 0)
+                        if (lname is not null && lname.Length > 0)
                         {
                             return _doc.NameTable.Add(prefix + ":" + lname);
                         }
@@ -533,11 +533,11 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                 {
                     return string.Empty;
                 }
-                else if (_column == null)
+                else if (_column is null)
                 {
                     return _node.Prefix;
                 }
@@ -554,11 +554,11 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node == null)
+                if (_node is null)
                 {
                     return null;
                 }
-                else if (_column == null)
+                else if (_column is null)
                 {
                     return _node.Value;
                 }
@@ -601,7 +601,7 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node != null && _column == null)
+                if (_node is not null && _column is null)
                 {
                     if (_node.NodeType == XmlNodeType.Element)
                     {
@@ -618,7 +618,7 @@ namespace System.Xml
             {
                 RealFoliate();
                 AssertValid();
-                if (_node != null && _column == null && _node.NodeType == XmlNodeType.Attribute)
+                if (_node is not null && _column is null && _node.NodeType == XmlNodeType.Attribute)
                 {
                     return !((XmlAttribute)_node).Specified;
                 }
@@ -633,7 +633,7 @@ namespace System.Xml
             if (_node == foliatedNode)
             {
                 // if already on this node, nothing to do!
-                if (_column == null)
+                if (_column is null)
                 {
                     return;
                 }
@@ -662,20 +662,20 @@ namespace System.Xml
                 }
                 else
                 {
-                    for (n = _node.FirstChild; n != null; n = n.NextSibling)
+                    for (n = _node.FirstChild; n is not null; n = n.NextSibling)
                     {
                         if (n.LocalName == _column.EncodedColumnName && n.NamespaceURI == _column.Namespace)
                             break;
                     }
                 }
 
-                if (n != null && _fOnValue)
+                if (n is not null && _fOnValue)
                 {
                     n = n.FirstChild;
                 }
             }
 
-            if (n == null)
+            if (n is null)
             {
                 throw new InvalidOperationException(SR.DataDom_Foliation);
             }
@@ -689,7 +689,7 @@ namespace System.Xml
             _bNeedFoliate = false;
         }
 
-        //for the 6 properties below, only when the this.column == null that the nodetype could be XmlDeclaration node
+        //for the 6 properties below, only when the this.column is null that the nodetype could be XmlDeclaration node
         internal string? PublicId
         {
             get
@@ -699,17 +699,17 @@ namespace System.Xml
                 {
                     case XmlNodeType.DocumentType:
                         {
-                            Debug.Assert(_column == null);
+                            Debug.Assert(_column is null);
                             return ((XmlDocumentType)(_node)).PublicId;
                         }
                     case XmlNodeType.Entity:
                         {
-                            Debug.Assert(_column == null);
+                            Debug.Assert(_column is null);
                             return ((XmlEntity)(_node)).PublicId;
                         }
                     case XmlNodeType.Notation:
                         {
-                            Debug.Assert(_column == null);
+                            Debug.Assert(_column is null);
                             return ((XmlNotation)(_node)).PublicId;
                         }
                 }
@@ -726,17 +726,17 @@ namespace System.Xml
                 {
                     case XmlNodeType.DocumentType:
                         {
-                            Debug.Assert(_column == null);
+                            Debug.Assert(_column is null);
                             return ((XmlDocumentType)(_node)).SystemId;
                         }
                     case XmlNodeType.Entity:
                         {
-                            Debug.Assert(_column == null);
+                            Debug.Assert(_column is null);
                             return ((XmlEntity)(_node)).SystemId;
                         }
                     case XmlNodeType.Notation:
                         {
-                            Debug.Assert(_column == null);
+                            Debug.Assert(_column is null);
                             return ((XmlNotation)(_node)).SystemId;
                         }
                 }
@@ -750,7 +750,7 @@ namespace System.Xml
             {
                 if (NodeType == XmlNodeType.DocumentType)
                 {
-                    Debug.Assert(_column == null);
+                    Debug.Assert(_column is null);
                     return ((XmlDocumentType)(_node)).InternalSubset;
                 }
                 return null;
@@ -762,7 +762,7 @@ namespace System.Xml
             get
             {
                 XmlNode? child = _doc.SafeFirstChild(_doc);
-                if (child != null && child.NodeType == XmlNodeType.XmlDeclaration)
+                if (child is not null && child.NodeType == XmlNodeType.XmlDeclaration)
                     return (XmlDeclaration)child;
                 return null;
             }
@@ -774,13 +774,13 @@ namespace System.Xml
             {
                 if (NodeType == XmlNodeType.XmlDeclaration)
                 {
-                    Debug.Assert(_column == null);
+                    Debug.Assert(_column is null);
                     return ((XmlDeclaration)(_node)).Encoding;
                 }
                 else if (NodeType == XmlNodeType.Document)
                 {
                     XmlDeclaration? dec = Declaration;
-                    if (dec != null)
+                    if (dec is not null)
                     {
                         return dec.Encoding;
                     }
@@ -795,13 +795,13 @@ namespace System.Xml
             {
                 if (NodeType == XmlNodeType.XmlDeclaration)
                 {
-                    Debug.Assert(_column == null);
+                    Debug.Assert(_column is null);
                     return ((XmlDeclaration)(_node)).Standalone;
                 }
                 else if (NodeType == XmlNodeType.Document)
                 {
                     XmlDeclaration? dec = Declaration;
-                    if (dec != null)
+                    if (dec is not null)
                     {
                         return dec.Standalone;
                     }
@@ -816,13 +816,13 @@ namespace System.Xml
             {
                 if (NodeType == XmlNodeType.XmlDeclaration)
                 {
-                    Debug.Assert(_column == null);
+                    Debug.Assert(_column is null);
                     return ((XmlDeclaration)(_node)).Version;
                 }
                 else if (NodeType == XmlNodeType.Document)
                 {
                     XmlDeclaration? dec = Declaration;
-                    if (dec != null)
+                    if (dec is not null)
                         return dec.Version;
                 }
                 return null;
@@ -833,14 +833,14 @@ namespace System.Xml
         private void AssertValid()
         {
             // This pointer must be int the document list
-            if (_column != null)
+            if (_column is not null)
             {
                 // We must be on a de-foliated region
                 XmlBoundElement? rowElem = _node as XmlBoundElement;
-                Debug.Assert(rowElem != null);
+                Debug.Assert(rowElem is not null);
 
                 DataRow? row = rowElem.Row;
-                Debug.Assert(row != null);
+                Debug.Assert(row is not null);
 
                 ElementState state = rowElem.ElementState;
                 Debug.Assert(state == ElementState.Defoliated, "Region is accessed using column, but it's state is FOLIATED");

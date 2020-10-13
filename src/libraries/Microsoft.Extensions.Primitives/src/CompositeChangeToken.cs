@@ -53,7 +53,7 @@ namespace Microsoft.Extensions.Primitives
         {
             get
             {
-                if (_cancellationTokenSource != null && _cancellationTokenSource.Token.IsCancellationRequested)
+                if (_cancellationTokenSource is not null && _cancellationTokenSource.Token.IsCancellationRequested)
                 {
                     return true;
                 }
@@ -105,7 +105,7 @@ namespace Microsoft.Extensions.Primitives
         private static void OnChange(object state)
         {
             var compositeChangeTokenState = (CompositeChangeToken)state;
-            if (compositeChangeTokenState._cancellationTokenSource == null)
+            if (compositeChangeTokenState._cancellationTokenSource is null)
             {
                 return;
             }
@@ -122,7 +122,7 @@ namespace Microsoft.Extensions.Primitives
             }
 
             List<IDisposable> disposables = compositeChangeTokenState._disposables;
-            Debug.Assert(disposables != null);
+            Debug.Assert(disposables is not null);
             for (int i = 0; i < disposables.Count; i++)
             {
                 disposables[i].Dispose();

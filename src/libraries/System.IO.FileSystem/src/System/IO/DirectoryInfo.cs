@@ -57,7 +57,7 @@ namespace System.IO
                 // the parent of child, not the child. Trim off an ending directory separator if there is one,
                 // but don't mangle the root.
                 string? parentName = Path.GetDirectoryName(PathInternal.IsRoot(FullPath.AsSpan()) ? FullPath : Path.TrimEndingDirectorySeparator(FullPath));
-                return parentName != null ?
+                return parentName is not null ?
                     new DirectoryInfo(parentName, isNormalized: true) :
                     null;
             }
@@ -65,7 +65,7 @@ namespace System.IO
 
         public DirectoryInfo CreateSubdirectory(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
@@ -177,8 +177,8 @@ namespace System.IO
             SearchTarget searchTarget,
             EnumerationOptions options)
         {
-            Debug.Assert(path != null);
-            if (searchPattern == null)
+            Debug.Assert(path is not null);
+            if (searchPattern is null)
                 throw new ArgumentNullException(nameof(searchPattern));
 
             _isNormalized &= FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
@@ -196,7 +196,7 @@ namespace System.IO
 
         public void MoveTo(string destDirName)
         {
-            if (destDirName == null)
+            if (destDirName is null)
                 throw new ArgumentNullException(nameof(destDirName));
             if (destDirName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));

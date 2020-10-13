@@ -29,7 +29,7 @@ internal static partial class Interop
 
         internal static string CFStringToString(SafeCFStringHandle cfString)
         {
-            Debug.Assert(cfString != null);
+            Debug.Assert(cfString is not null);
             Debug.Assert(!cfString.IsInvalid);
             Debug.Assert(!cfString.IsClosed);
 

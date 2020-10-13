@@ -34,12 +34,12 @@ namespace System.ComponentModel.Composition
 
         public static CompositionError CreateImportCardinalityMismatch(ImportCardinalityMismatchException exception, ImportDefinition definition)
         {
-            if (exception == null)
+            if (exception is null)
             {
                 throw new ArgumentNullException(nameof(exception));
             }
 
-            if (definition == null)
+            if (definition is null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
@@ -53,12 +53,12 @@ namespace System.ComponentModel.Composition
 
         public static CompositionError CreatePartCannotActivate(ComposablePart part, Exception innerException)
         {
-            if (part == null)
+            if (part is null)
             {
                 throw new ArgumentNullException(nameof(part));
             }
 
-            if (innerException == null)
+            if (innerException is null)
             {
                 throw new ArgumentNullException(nameof(innerException));
             }
@@ -74,17 +74,17 @@ namespace System.ComponentModel.Composition
 
         public static CompositionError CreatePartCannotSetImport(ComposablePart part, ImportDefinition definition, Exception innerException)
         {
-            if (part == null)
+            if (part is null)
             {
                 throw new ArgumentNullException(nameof(part));
             }
 
-            if (definition == null)
+            if (definition is null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
 
-            if (innerException == null)
+            if (innerException is null)
             {
                 throw new ArgumentNullException(nameof(innerException));
             }
@@ -101,17 +101,17 @@ namespace System.ComponentModel.Composition
 
         public static CompositionError CreateCannotGetExportedValue(ComposablePart part, ExportDefinition definition, Exception innerException)
         {
-            if (part == null)
+            if (part is null)
             {
                 throw new ArgumentNullException(nameof(part));
             }
 
-            if (definition == null)
+            if (definition is null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
 
-            if (innerException == null)
+            if (innerException is null)
             {
                 throw new ArgumentNullException(nameof(innerException));
             }
@@ -128,7 +128,7 @@ namespace System.ComponentModel.Composition
 
         public static CompositionError CreatePartCycle(ComposablePart part)
         {
-            if (part == null)
+            if (part is null)
             {
                 throw new ArgumentNullException(nameof(part));
             }

@@ -43,7 +43,7 @@ namespace System.Configuration
         {
             get
             {
-                if (s_machineConfigFilePath == null)
+                if (s_machineConfigFilePath is null)
                 {
                     string directory = AppDomain.CurrentDomain.BaseDirectory;
                     s_machineConfigFilePath = Path.Combine(Path.Combine(directory, MachineConfigSubdirectory),
@@ -58,7 +58,7 @@ namespace System.Configuration
         {
             get
             {
-                if (_fileMap != null) return !string.IsNullOrEmpty(_fileMap.RoamingUserConfigFilename);
+                if (_fileMap is not null) return !string.IsNullOrEmpty(_fileMap.RoamingUserConfigFilename);
                 else return ConfigPaths.HasRoamingConfig;
             }
         }
@@ -67,7 +67,7 @@ namespace System.Configuration
         {
             get
             {
-                if (_fileMap != null) return !string.IsNullOrEmpty(_fileMap.LocalUserConfigFilename);
+                if (_fileMap is not null) return !string.IsNullOrEmpty(_fileMap.LocalUserConfigFilename);
                 else return ConfigPaths.HasLocalConfig;
             }
         }
@@ -114,7 +114,7 @@ namespace System.Configuration
         public override void RefreshConfigPaths()
         {
             // Refresh current config paths.
-            if ((_configPaths != null) && !_configPaths.HasEntryAssembly && (_exePath == null))
+            if ((_configPaths is not null) && !_configPaths.HasEntryAssembly && (_exePath is null))
             {
                 ClientConfigPaths.RefreshCurrent();
                 _configPaths = null;
@@ -141,20 +141,20 @@ namespace System.Configuration
                 // loading user.config files that may not be required.
                 _initComplete = configRoot.IsDesignTime;
 
-                if ((fileMap != null) && !string.IsNullOrEmpty(_exePath))
+                if ((fileMap is not null) && !string.IsNullOrEmpty(_exePath))
                     throw ExceptionUtil.UnexpectedError("ClientConfigurationHost::Init");
 
                 if (string.IsNullOrEmpty(_exePath)) _exePath = null;
 
                 // Initialize the fileMap, if provided.
-                if (fileMap != null)
+                if (fileMap is not null)
                 {
                     _fileMap = new ExeConfigurationFileMap();
                     if (!string.IsNullOrEmpty(fileMap.MachineConfigFilename))
                         _fileMap.MachineConfigFilename = Path.GetFullPath(fileMap.MachineConfigFilename);
 
                     ExeConfigurationFileMap exeFileMap = fileMap as ExeConfigurationFileMap;
-                    if (exeFileMap != null)
+                    if (exeFileMap is not null)
                     {
                         if (!string.IsNullOrEmpty(exeFileMap.ExeConfigFilename))
                             _fileMap.ExeConfigFilename = Path.GetFullPath(exeFileMap.ExeConfigFilename);
@@ -280,7 +280,7 @@ namespace System.Configuration
             // the streamName can either be a file name, or a URI
             if (IsFile(streamName)) return Host.OpenStreamForRead(streamName);
 
-            if (streamName == null) return null;
+            if (streamName is null) return null;
 
             // scheme is http
             WebClient client = new WebClient();
@@ -299,7 +299,7 @@ namespace System.Configuration
             }
             catch { }
 
-            if (fileData == null) return null;
+            if (fileData is null) return null;
 
             MemoryStream stream = new MemoryStream(fileData);
             return stream;
@@ -436,13 +436,13 @@ namespace System.Configuration
             }
 
             // validate fileMap arguments
-            if (fileMap != null)
+            if (fileMap is not null)
             {
                 if (string.IsNullOrEmpty(fileMap.MachineConfigFilename))
                     throw ExceptionUtil.ParameterNullOrEmpty(nameof(fileMap) + "." + nameof(fileMap.MachineConfigFilename));
 
                 ExeConfigurationFileMap exeFileMap = fileMap as ExeConfigurationFileMap;
-                if (exeFileMap != null)
+                if (exeFileMap is not null)
                 {
                     switch (userLevel)
                     {

@@ -13,7 +13,7 @@ namespace System.Data
 
         internal DataKey(DataColumn[] columns, bool copyColumns)
         {
-            if (columns == null)
+            if (columns is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(columns));
             }
@@ -30,7 +30,7 @@ namespace System.Data
 
             for (int i = 0; i < columns.Length; i++)
             {
-                if (columns[i] == null)
+                if (columns[i] is null)
                 {
                     throw ExceptionBuilder.ArgumentNull("column");
                 }
@@ -71,14 +71,14 @@ namespace System.Data
         {
             DataTable? table = _columns[0].Table;
 
-            if (table == null)
+            if (table is null)
             {
                 throw ExceptionBuilder.ColumnNotInAnyTable();
             }
 
             for (int i = 1; i < _columns.Length; i++)
             {
-                if (_columns[i].Table == null)
+                if (_columns[i].Table is null)
                 {
                     throw ExceptionBuilder.ColumnNotInAnyTable();
                 }
@@ -99,7 +99,7 @@ namespace System.Data
             {
                 return true;
             }
-            else if (column1 == null || column2 == null)
+            else if (column1 is null || column2 is null)
             {
                 return false;
             }
@@ -164,7 +164,7 @@ namespace System.Data
             {
                 return true;
             }
-            else if (column1 == null || column2 == null)
+            else if (column1 is null || column2 is null)
             {
                 return false;
             }

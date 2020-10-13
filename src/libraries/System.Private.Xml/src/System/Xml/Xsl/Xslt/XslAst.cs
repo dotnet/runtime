@@ -66,7 +66,7 @@ namespace System.Xml.Xsl.Xslt
 
         public NsDecl(NsDecl? prev, string? prefix, string? nsUri)
         {
-            Debug.Assert(nsUri != null || Prefix == null);
+            Debug.Assert(nsUri is not null || Prefix is null);
             this.Prev = prev;
             this.Prefix = prefix;
             this.NsUri = nsUri;
@@ -117,8 +117,8 @@ namespace System.Xml.Xsl.Xslt
 
         public void AddContent(XslNode node)
         {
-            Debug.Assert(node != null);
-            if (_content == null)
+            Debug.Assert(node is not null);
+            if (_content is null)
             {
                 _content = new List<XslNode>();
             }
@@ -127,7 +127,7 @@ namespace System.Xml.Xsl.Xslt
 
         public void InsertContent(IEnumerable<XslNode> collection)
         {
-            if (_content == null)
+            if (_content is null)
             {
                 _content = new List<XslNode>(collection);
             }
@@ -153,19 +153,19 @@ namespace System.Xml.Xsl.Xslt
                     _ => NodeType.ToString(),
                 };
                 sb.Append(nodeTypeName);
-                if (Name != null)
+                if (Name is not null)
                 {
                     sb.Append(' ');
                     sb.Append(Name.QualifiedName);
                 }
 
                 ISourceLineInfo? lineInfo = SourceLine;
-                if (lineInfo == null && NodeType == XslNodeType.AttributeSet)
+                if (lineInfo is null && NodeType == XslNodeType.AttributeSet)
                 {
                     lineInfo = Content[0].SourceLine;
-                    Debug.Assert(lineInfo != null);
+                    Debug.Assert(lineInfo is not null);
                 }
-                if (lineInfo != null)
+                if (lineInfo is not null)
                 {
                     string fileName = SourceLineInfo.GetFileName(lineInfo.Uri!);
                     int idx = fileName.LastIndexOf(System.IO.Path.DirectorySeparatorChar) + 1;
@@ -215,7 +215,7 @@ namespace System.Xml.Xsl.Xslt
 
         public new void AddContent(XslNode node)
         {
-            Debug.Assert(node != null && node.NodeType == XslNodeType.List);
+            Debug.Assert(node is not null && node.NodeType == XslNodeType.List);
             base.AddContent(node);
         }
 
@@ -245,13 +245,13 @@ namespace System.Xml.Xsl.Xslt
         {
             StringBuilder dbgName = new StringBuilder();
             dbgName.Append("<xsl:template");
-            if (Match != null)
+            if (Match is not null)
             {
                 dbgName.Append(" match=\"");
                 dbgName.Append(Match);
                 dbgName.Append('"');
             }
-            if (Name != null)
+            if (Name is not null)
             {
                 dbgName.Append(" name=\"");
                 dbgName.Append(Name.QualifiedName);
@@ -303,7 +303,7 @@ namespace System.Xml.Xsl.Xslt
     {
         protected override QilName GetKeyForItem(List<Key> list)
         {
-            Debug.Assert(list != null && list.Count > 0);
+            Debug.Assert(list is not null && list.Count > 0);
             return list[0].Name!;
         }
     }
@@ -318,7 +318,7 @@ namespace System.Xml.Xsl.Xslt
             : base(XslNodeType.Key, name, null, xslVer)
         {
             // match and use can be null in case of incorrect stylesheet
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
             this.Match = match;
             this.Use = use;
         }
@@ -330,13 +330,13 @@ namespace System.Xml.Xsl.Xslt
             dbgName.Append(Name!.QualifiedName);
             dbgName.Append('"');
 
-            if (Match != null)
+            if (Match is not null)
             {
                 dbgName.Append(" match=\"");
                 dbgName.Append(Match);
                 dbgName.Append('"');
             }
-            if (Use != null)
+            if (Use is not null)
             {
                 dbgName.Append(" use=\"");
                 dbgName.Append(Use);

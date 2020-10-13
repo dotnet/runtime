@@ -19,7 +19,7 @@ namespace System.ServiceModel.Syndication
         // Reader must be positioned at an element
         public XmlSyndicationContent(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -73,7 +73,7 @@ namespace System.ServiceModel.Syndication
 
         protected XmlSyndicationContent(XmlSyndicationContent source) : base(source)
         {
-            Debug.Assert(source != null, "The base constructor already checks if source is valid.");
+            Debug.Assert(source is not null, "The base constructor already checks if source is valid.");
             _contentBuffer = source._contentBuffer;
             Extension = source.Extension;
             _type = source._type;
@@ -95,17 +95,17 @@ namespace System.ServiceModel.Syndication
 
         public TContent ReadContent<TContent>(XmlObjectSerializer dataContractSerializer)
         {
-            if (dataContractSerializer == null)
+            if (dataContractSerializer is null)
             {
                 dataContractSerializer = new DataContractSerializer(typeof(TContent));
             }
-            if (Extension != null)
+            if (Extension is not null)
             {
                 return Extension.GetObject<TContent>(dataContractSerializer);
             }
             else
             {
-                Debug.Assert(_contentBuffer != null, "contentBuffer cannot be null");
+                Debug.Assert(_contentBuffer is not null, "contentBuffer cannot be null");
                 using (XmlDictionaryReader reader = _contentBuffer.GetReader(0))
                 {
                     // skip past the content element
@@ -117,17 +117,17 @@ namespace System.ServiceModel.Syndication
 
         public TContent ReadContent<TContent>(XmlSerializer serializer)
         {
-            if (serializer == null)
+            if (serializer is null)
             {
                 serializer = new XmlSerializer(typeof(TContent));
             }
-            if (Extension != null)
+            if (Extension is not null)
             {
                 return Extension.GetObject<TContent>(serializer);
             }
             else
             {
-                Debug.Assert(_contentBuffer != null, "contentBuffer cannot be null");
+                Debug.Assert(_contentBuffer is not null, "contentBuffer cannot be null");
                 using (XmlDictionaryReader reader = _contentBuffer.GetReader(0))
                 {
                     // skip past the content element
@@ -140,18 +140,18 @@ namespace System.ServiceModel.Syndication
         // does not write start element or type attribute, writes other attributes and rest of content
         protected override void WriteContentsTo(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            if (Extension != null)
+            if (Extension is not null)
             {
                 Extension.WriteTo(writer);
             }
             else
             {
-                Debug.Assert(_contentBuffer != null, "contentBuffer cannot be null");
+                Debug.Assert(_contentBuffer is not null, "contentBuffer cannot be null");
                 using (XmlDictionaryReader reader = _contentBuffer.GetReader(0))
                 {
                     reader.MoveToStartElement();
@@ -169,7 +169,7 @@ namespace System.ServiceModel.Syndication
 
         private void EnsureContentBuffer()
         {
-            if (_contentBuffer == null)
+            if (_contentBuffer is null)
             {
                 XmlBuffer tmp = new XmlBuffer(int.MaxValue);
                 using (XmlDictionaryWriter writer = tmp.OpenSection(XmlDictionaryReaderQuotas.Max))

@@ -100,7 +100,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing
         /// <returns>The match results.</returns>
         public static PatternMatchingResult Match(this Matcher matcher, string rootDir, IEnumerable<string> files)
         {
-            if (matcher == null)
+            if (matcher is null)
             {
                 throw new ArgumentNullException(nameof(matcher));
             }

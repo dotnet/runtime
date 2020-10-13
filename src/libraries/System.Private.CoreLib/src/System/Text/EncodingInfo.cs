@@ -15,9 +15,9 @@ namespace System.Text
         /// <returns></returns>
         public EncodingInfo(EncodingProvider provider, int codePage, string name, string displayName) : this(codePage, name, displayName)
         {
-            if (name == null || displayName == null || provider == null)
+            if (name is null || displayName is null || provider is null)
             {
-                throw new ArgumentNullException(name == null ? nameof(name) : (displayName == null ? nameof(displayName) : nameof(provider)));
+                throw new ArgumentNullException(name is null ? nameof(name) : (displayName is null ? nameof(displayName) : nameof(provider)));
             }
 
             Provider = provider;

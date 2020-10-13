@@ -74,14 +74,14 @@ namespace System.DirectoryServices.AccountManagement
                 return false;
             }
 
-            if (!_endReached && _currentEnumerator == null)
+            if (!_endReached && _currentEnumerator is null)
             {
                 // First time we're being called
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: first time");
 
                 _currentEnumerator = GetNextChunk();
 
-                if (_currentEnumerator == null)
+                if (_currentEnumerator is null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: got null enumerator for first time");
                     _endReached = true;
@@ -112,7 +112,7 @@ namespace System.DirectoryServices.AccountManagement
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: retrieving next range");
                     _currentEnumerator = GetNextChunk();
 
-                    if (_currentEnumerator == null)
+                    if (_currentEnumerator is null)
                     {
                         // No more chunks remain
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "MoveNext: end reached");
@@ -184,7 +184,7 @@ namespace System.DirectoryServices.AccountManagement
 
             PropertyValueCollection pvc = _de.Properties[_propertyName];
 
-            if (pvc == null || pvc.Count == 0)
+            if (pvc is null || pvc.Count == 0)
             {
                 // No results (the property may have been empty)
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "GetNextChunk: empty property?");
@@ -221,7 +221,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 // Technically, should throw an InvalidOperationException if the enumerator is positioned before
                 // the beginning or after the end, but this will only be used internally.
-                Debug.Assert(_currentResult != null && _endReached == false);
+                Debug.Assert(_currentResult is not null && _endReached == false);
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "RangeRetriever", "Current: currentResult={0}", _currentResult.ToString());
                 return _currentResult;
             }

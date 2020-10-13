@@ -96,12 +96,12 @@ namespace System.Security.Cryptography
 
                 public override byte[] SignHash(byte[] hash)
                 {
-                    if (hash == null)
+                    if (hash is null)
                         throw new ArgumentNullException(nameof(hash));
 
                     SecKeyPair keys = GetKeys();
 
-                    if (keys.PrivateKey == null)
+                    if (keys.PrivateKey is null)
                     {
                         throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
@@ -117,7 +117,7 @@ namespace System.Security.Cryptography
                 public override bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
                 {
                     SecKeyPair keys = GetKeys();
-                    if (keys.PrivateKey == null)
+                    if (keys.PrivateKey is null)
                     {
                         throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
@@ -142,9 +142,9 @@ namespace System.Security.Cryptography
 
                 public override bool VerifyHash(byte[] hash, byte[] signature)
                 {
-                    if (hash == null)
+                    if (hash is null)
                         throw new ArgumentNullException(nameof(hash));
-                    if (signature == null)
+                    if (signature is null)
                         throw new ArgumentNullException(nameof(signature));
 
                     return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);

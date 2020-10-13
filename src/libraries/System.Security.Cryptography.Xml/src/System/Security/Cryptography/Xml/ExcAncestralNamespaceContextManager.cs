@@ -37,7 +37,7 @@ namespace System.Security.Cryptography.Xml
             XmlAttribute local = (XmlAttribute)nsLocallyDeclared[nsPrefix];
             XmlAttribute rAncestral = GetNearestRenderedNamespaceWithMatchingPrefix(nsPrefix, out rDepth);
 
-            if (local != null)
+            if (local is not null)
             {
                 if (Utils.IsNonRedundantNamespaceDecl(local, rAncestral))
                 {
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Xml
             {
                 int uDepth;
                 XmlAttribute uAncestral = GetNearestUnrenderedNamespaceWithMatchingPrefix(nsPrefix, out uDepth);
-                if (uAncestral != null && uDepth > rDepth && Utils.IsNonRedundantNamespaceDecl(uAncestral, rAncestral))
+                if (uAncestral is not null && uDepth > rDepth && Utils.IsNonRedundantNamespaceDecl(uAncestral, rAncestral))
                 {
                     nsListToRender.Add(uAncestral, null);
                 }

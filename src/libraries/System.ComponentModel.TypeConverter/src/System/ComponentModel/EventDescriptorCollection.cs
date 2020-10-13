@@ -30,7 +30,7 @@ namespace System.ComponentModel
         /// </summary>
         public EventDescriptorCollection(EventDescriptor[] events)
         {
-            if (events == null)
+            if (events is null)
             {
                 _events = Array.Empty<EventDescriptor>();
             }
@@ -54,7 +54,7 @@ namespace System.ComponentModel
         private EventDescriptorCollection(EventDescriptor[] events, int eventCount, string[] namedSort, IComparer comparer)
         {
             _eventsOwned = false;
-            if (namedSort != null)
+            if (namedSort is not null)
             {
                 _namedSort = (string[])namedSort.Clone();
             }
@@ -125,7 +125,7 @@ namespace System.ComponentModel
             if (!_eventsOwned)
             {
                 _eventsOwned = true;
-                if (_events != null)
+                if (_events is not null)
                 {
                     EventDescriptor[] newEvents = new EventDescriptor[Count];
                     Array.Copy(_events, newEvents, Count);
@@ -309,7 +309,7 @@ namespace System.ComponentModel
 
             InternalSort(_comparer);
 
-            if (names != null && names.Length > 0)
+            if (names is not null && names.Length > 0)
             {
                 List<EventDescriptor> eventList = new List<EventDescriptor>(_events);
                 int foundCount = 0;
@@ -324,7 +324,7 @@ namespace System.ComponentModel
                         // Found a matching event. Here, we add it to our array. We also
                         // mark it as null in our array list so we don't add it twice later.
                         //
-                        if (currentEvent != null && currentEvent.Name.Equals(names[i]))
+                        if (currentEvent is not null && currentEvent.Name.Equals(names[i]))
                         {
                             _events[foundCount++] = currentEvent;
                             eventList[j] = null;
@@ -340,7 +340,7 @@ namespace System.ComponentModel
                 //
                 for (int i = 0; i < eventCount; i++)
                 {
-                    if (eventList[i] != null)
+                    if (eventList[i] is not null)
                     {
                         _events[foundCount++] = eventList[i];
                     }
@@ -355,7 +355,7 @@ namespace System.ComponentModel
         /// </summary>
         protected void InternalSort(IComparer sorter)
         {
-            if (sorter == null)
+            if (sorter is null)
             {
                 TypeDescriptor.SortDescriptorArray(this);
             }
@@ -418,8 +418,8 @@ namespace System.ComponentModel
 
             public ArraySubsetEnumerator(Array array, int count)
             {
-                Debug.Assert(count == 0 || array != null, "if array is null, count should be 0");
-                Debug.Assert(array == null || count <= array.Length, "Trying to enumerate more than the array contains");
+                Debug.Assert(count == 0 || array is not null, "if array is null, count should be 0");
+                Debug.Assert(array is null || count <= array.Length, "Trying to enumerate more than the array contains");
 
                 _array = array;
                 _total = count;

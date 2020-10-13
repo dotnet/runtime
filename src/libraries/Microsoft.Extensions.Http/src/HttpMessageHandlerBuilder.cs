@@ -66,12 +66,12 @@ namespace Microsoft.Extensions.Http
             // This is similar to https://github.com/aspnet/AspNetWebStack/blob/master/src/System.Net.Http.Formatting/HttpClientFactory.cs#L58
             // but we don't want to take that package as a dependency.
 
-            if (primaryHandler == null)
+            if (primaryHandler is null)
             {
                 throw new ArgumentNullException(nameof(primaryHandler));
             }
 
-            if (additionalHandlers == null)
+            if (additionalHandlers is null)
             {
                 throw new ArgumentNullException(nameof(additionalHandlers));
             }
@@ -82,7 +82,7 @@ namespace Microsoft.Extensions.Http
             for (int i = additionalHandlersList.Count - 1; i >= 0; i--)
             {
                 DelegatingHandler handler = additionalHandlersList[i];
-                if (handler == null)
+                if (handler is null)
                 {
                     string message = SR.Format(SR.HttpMessageHandlerBuilder_AdditionalHandlerIsNull, nameof(additionalHandlers));
                     throw new InvalidOperationException(message);
@@ -90,7 +90,7 @@ namespace Microsoft.Extensions.Http
 
                 // Checking for this allows us to catch cases where someone has tried to re-use a handler. That really won't
                 // work the way you want and it can be tricky for callers to figure out.
-                if (handler.InnerHandler != null)
+                if (handler.InnerHandler is not null)
                 {
                     string message = SR.Format(SR.HttpMessageHandlerBuilder_AdditionHandlerIsInvalid,
                         nameof(DelegatingHandler.InnerHandler),

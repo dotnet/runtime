@@ -54,12 +54,12 @@ namespace System.Net.NetworkInformation
         {
             List<GatewayIPAddressInformation> collection = new List<GatewayIPAddressInformation>();
 
-            if (systemProperties.IPv4Routes != null)
+            if (systemProperties.IPv4Routes is not null)
             {
                 StringParsingHelpers.ParseIPv4GatewayAddressesFromRouteFile(collection, systemProperties.IPv4Routes, _linuxNetworkInterface.Name);
             }
 
-            if (systemProperties.IPv6Routes != null)
+            if (systemProperties.IPv6Routes is not null)
             {
                 StringParsingHelpers.ParseIPv6GatewayAddressesFromRouteFile(collection, systemProperties.IPv6Routes, _linuxNetworkInterface.Name, _linuxNetworkInterface.Index);
             }

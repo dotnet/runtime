@@ -111,7 +111,7 @@ namespace System
         public static int GetGeneration(WeakReference wo)
         {
             object? obj = wo.Target;
-            if (obj == null)
+            if (obj is null)
                 throw new ArgumentException(null, nameof(wo));
             return GetGeneration(obj);
         }
@@ -132,7 +132,7 @@ namespace System
 
         public static void SuppressFinalize(object obj)
         {
-            if (obj == null)
+            if (obj is null)
                 throw new ArgumentNullException(nameof(obj));
             _SuppressFinalize(obj);
         }
@@ -142,7 +142,7 @@ namespace System
 
         public static void ReRegisterForFinalize(object obj)
         {
-            if (obj == null)
+            if (obj is null)
                 throw new ArgumentNullException(nameof(obj));
             _ReRegisterForFinalize(obj);
         }

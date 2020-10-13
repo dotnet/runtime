@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
 
         public RSAPKCS1KeyExchangeDeformatter(AsymmetricAlgorithm key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             _rsaKey = (RSA)key;
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography
 
         public override byte[] DecryptKeyExchange(byte[] rgbIn)
         {
-            if (_rsaKey == null)
+            if (_rsaKey is null)
                 throw new CryptographicUnexpectedOperationException(SR.Cryptography_MissingKey);
 
             return _rsaKey.Decrypt(rgbIn, RSAEncryptionPadding.Pkcs1);
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography
 
         public override void SetKey(AsymmetricAlgorithm key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             _rsaKey = (RSA)key;

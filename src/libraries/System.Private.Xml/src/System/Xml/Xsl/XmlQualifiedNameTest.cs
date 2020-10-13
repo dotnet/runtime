@@ -48,13 +48,13 @@ namespace System.Xml.Xsl
         /// </summary>
         public static XmlQualifiedNameTest New(string? name, string? ns)
         {
-            if (ns == null && name == null)
+            if (ns is null && name is null)
             {
                 return Wildcard;
             }
             else
             {
-                return new XmlQualifiedNameTest(name == null ? wildcard : name, ns == null ? wildcard : ns, false);
+                return new XmlQualifiedNameTest(name is null ? wildcard : name, ns is null ? wildcard : ns, false);
             }
         }
 
@@ -158,7 +158,7 @@ namespace System.Xml.Xsl
         /// Construct new "exclusion" name test
         /// </summary>
         public static XmlQualifiedNameTest New(string ns, bool exclude) {
-            Debug.Assert(ns != null);
+            Debug.Assert(ns is not null);
             return new XmlQualifiedNameTest(wildcard, ns, exclude);
         }
 
@@ -177,7 +177,7 @@ namespace System.Xml.Xsl
             if ((object)namespaceFrom == (object)nameFrom) {
                 return namespaceFrom;
             }
-            else if (namespaceFrom == null || nameFrom == null) {
+            else if (namespaceFrom is null || nameFrom is null) {
                 return null;
             }
             else {

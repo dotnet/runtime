@@ -14,7 +14,7 @@ namespace System.Diagnostics
         /// </summary>
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
-            if (processName == null)
+            if (processName is null)
             {
                 processName = string.Empty;
             }

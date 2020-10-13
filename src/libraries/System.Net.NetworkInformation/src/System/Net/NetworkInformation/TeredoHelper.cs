@@ -54,7 +54,7 @@ namespace System.Net.NetworkInformation
         // 'Unsafe' because it does not flow ExecutionContext to the callback.
         public static bool UnsafeNotifyStableUnicastIpAddressTable(Action<object> callback, object state)
         {
-            if (callback == null)
+            if (callback is null)
             {
                 NetEventSource.Fail(null, "UnsafeNotifyStableUnicastIpAddressTable called without specifying callback!");
             }
@@ -77,7 +77,7 @@ namespace System.Net.NetworkInformation
                 err = Interop.IpHlpApi.NotifyStableUnicastIpAddressTable(AddressFamily.Unspecified,
                     out table, helper._onStabilizedDelegate, IntPtr.Zero, out helper._cancelHandle);
 
-                if (table != null)
+                if (table is not null)
                 {
                     table.Dispose();
                 }
@@ -130,7 +130,7 @@ namespace System.Net.NetworkInformation
                 s_pendingNotifications.Remove(this);
 #endif
 
-                if ((_cancelHandle == null || _cancelHandle.IsInvalid))
+                if ((_cancelHandle is null || _cancelHandle.IsInvalid))
                 {
                     NetEventSource.Fail(null, "Invalid cancelHandle in RunCallback");
                 }

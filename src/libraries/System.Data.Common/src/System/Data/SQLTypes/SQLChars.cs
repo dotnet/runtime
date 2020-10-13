@@ -61,7 +61,7 @@ namespace System.Data.SqlTypes
         {
             _rgchBuf = buffer;
             _stream = null;
-            if (_rgchBuf == null)
+            if (_rgchBuf is null)
             {
                 _state = SqlBytesCharsState.Null;
                 _lCurLen = x_lNull;
@@ -88,7 +88,7 @@ namespace System.Data.SqlTypes
             _rgchBuf = null;
             _lCurLen = x_lNull;
             _stream = s;
-            _state = (s == null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Stream;
+            _state = (s is null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Stream;
 
             _rgchWorkBuf = null;
 
@@ -149,7 +149,7 @@ namespace System.Data.SqlTypes
                 return _state switch
                 {
                     SqlBytesCharsState.Stream => -1L,
-                    _ => (_rgchBuf == null) ? -1L : _rgchBuf.Length,
+                    _ => (_rgchBuf is null) ? -1L : _rgchBuf.Length,
                 };
             }
         }
@@ -195,7 +195,7 @@ namespace System.Data.SqlTypes
                 if (offset < 0 || offset >= Length)
                     throw new ArgumentOutOfRangeException(nameof(offset));
 
-                if (_rgchWorkBuf == null)
+                if (_rgchWorkBuf is null)
                     _rgchWorkBuf = new char[1];
 
                 Read(offset, _rgchWorkBuf, 0, 1);
@@ -203,7 +203,7 @@ namespace System.Data.SqlTypes
             }
             set
             {
-                if (_rgchWorkBuf == null)
+                if (_rgchWorkBuf is null)
                     _rgchWorkBuf = new char[1];
                 _rgchWorkBuf[0] = value;
                 Write(offset, _rgchWorkBuf, 0, 1);
@@ -220,7 +220,7 @@ namespace System.Data.SqlTypes
             {
                 _lCurLen = x_lNull;
                 _stream = value;
-                _state = (value == null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Stream;
+                _state = (value is null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Stream;
 
                 AssertValid();
             }
@@ -295,7 +295,7 @@ namespace System.Data.SqlTypes
                 throw new SqlNullValueException();
 
             // Validate the arguments
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
 
             if (offset > Length || offset < 0)
@@ -342,10 +342,10 @@ namespace System.Data.SqlTypes
             else
             {
                 // Validate the arguments
-                if (buffer == null)
+                if (buffer is null)
                     throw new ArgumentNullException(nameof(buffer));
 
-                if (_rgchBuf == null)
+                if (_rgchBuf is null)
                     throw new SqlTypeException(SR.SqlMisc_NoBufferMessage);
 
                 if (offset < 0)
@@ -435,10 +435,10 @@ namespace System.Data.SqlTypes
             else
             {
                 Debug.Assert((_lCurLen >= 0 && _lCurLen <= x_lMaxLen) || FStream());
-                Debug.Assert(FStream() || (_rgchBuf != null && _lCurLen <= _rgchBuf.Length));
+                Debug.Assert(FStream() || (_rgchBuf is not null && _lCurLen <= _rgchBuf.Length));
                 Debug.Assert(!FStream() || (_lCurLen == x_lNull));
             }
-            Debug.Assert(_rgchWorkBuf == null || _rgchWorkBuf.Length == 1);
+            Debug.Assert(_rgchWorkBuf is null || _rgchWorkBuf.Length == 1);
         }
 
         // whether the SqlChars contains a Stream
@@ -458,7 +458,7 @@ namespace System.Data.SqlTypes
             if (lStreamLen >= x_lMaxLen)
                 throw new SqlTypeException(SR.SqlMisc_BufferInsufficientMessage);
 
-            if (_rgchBuf == null || _rgchBuf.Length < lStreamLen)
+            if (_rgchBuf is null || _rgchBuf.Length < lStreamLen)
                 _rgchBuf = new char[lStreamLen];
 
             if (_stream.Position != 0)
@@ -475,9 +475,9 @@ namespace System.Data.SqlTypes
         private void SetBuffer(char[] buffer)
         {
             _rgchBuf = buffer;
-            _lCurLen = (_rgchBuf == null) ? x_lNull : _rgchBuf.Length;
+            _lCurLen = (_rgchBuf is null) ? x_lNull : _rgchBuf.Length;
             _stream = null;
-            _state = (_rgchBuf == null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Buffer;
+            _state = (_rgchBuf is null) ? SqlBytesCharsState.Null : SqlBytesCharsState.Buffer;
 
             AssertValid();
         }
@@ -498,7 +498,7 @@ namespace System.Data.SqlTypes
 
             string? isNull = r.GetAttribute("nil", XmlSchema.InstanceNamespace);
 
-            if (isNull != null && XmlConvert.ToBoolean(isNull))
+            if (isNull is not null && XmlConvert.ToBoolean(isNull))
             {
                 // Read the next value.
                 r.ReadElementString();
@@ -651,7 +651,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0 || offset > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -668,7 +668,7 @@ namespace System.Data.SqlTypes
         {
             CheckIfStreamClosed();
 
-            if (buffer == null)
+            if (buffer is null)
                 throw new ArgumentNullException(nameof(buffer));
             if (offset < 0 || offset > buffer.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -694,7 +694,7 @@ namespace System.Data.SqlTypes
 
         private bool FClosed()
         {
-            return _sqlchars == null;
+            return _sqlchars is null;
         }
 
         private void CheckIfStreamClosed([CallerMemberName] string methodname = "")

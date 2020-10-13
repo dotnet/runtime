@@ -45,7 +45,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // Since this class is only used internally, none of our code should be even calling this
                 // if MoveNext returned false, or before calling MoveNext.
-                Debug.Assert(_endReached == false && _current != null);
+                Debug.Assert(_endReached == false && _current is not null);
 
                 return SAMUtils.DirectoryEntryAsPrincipal(_current, _storeCtx);
             }
@@ -58,7 +58,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMQuerySet", "Entering MoveNext");
 
-            Debug.Assert(_enumerator != null);
+            Debug.Assert(_enumerator is not null);
 
             bool needToRetry = false;
             bool f;
@@ -158,13 +158,13 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMQuerySet", "Reset");
 
-            // if current == null, we're already at the beginning
-            if (_current != null)
+            // if current is null, we're already at the beginning
+            if (_current is not null)
             {
                 _endReached = false;
                 _current = null;
 
-                if (_enumerator != null)
+                if (_enumerator is not null)
                     _enumerator.Reset();
 
                 _resultsReturned = 0;
@@ -227,12 +227,12 @@ namespace System.DirectoryServices.AccountManagement
                 string winNTPropertyName = s_filterPropertiesTableRaw[i, 1] as string;
                 MatcherDelegate f = s_filterPropertiesTableRaw[i, 2] as MatcherDelegate;
 
-                Debug.Assert(qbeType != null);
-                Debug.Assert(winNTPropertyName != null);
-                Debug.Assert(f != null);
+                Debug.Assert(qbeType is not null);
+                Debug.Assert(winNTPropertyName is not null);
+                Debug.Assert(f is not null);
 
                 // There should only be one entry per QBE type
-                Debug.Assert(filterPropertiesTable[qbeType] == null);
+                Debug.Assert(filterPropertiesTable[qbeType] is null);
 
                 FilterPropertyTableEntry entry = new FilterPropertyTableEntry();
                 entry.winNTPropertyName = winNTPropertyName;
@@ -250,7 +250,7 @@ namespace System.DirectoryServices.AccountManagement
             // (In reg-SAM, computers don't have accounts and therefore don't have SIDs, but ADSI
             // creates fake Computer objects for them.  In LSAM, computers CAN have accounts, and thus
             // SIDs).
-            if (de.Properties["objectSid"] == null || de.Properties["objectSid"].Count == 0)
+            if (de.Properties["objectSid"] is null || de.Properties["objectSid"].Count == 0)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMQuerySet", "SamMatcher: Matches: skipping no-SID {0}", de.Path);
                 return false;
@@ -261,7 +261,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 FilterPropertyTableEntry entry = (FilterPropertyTableEntry)s_filterPropertiesTable[filter.GetType()];
 
-                if (entry == null)
+                if (entry is null)
                 {
                     // Must be a property we don't support
                     throw new NotSupportedException(
@@ -333,7 +333,7 @@ namespace System.DirectoryServices.AccountManagement
             // each time a query was performed.
 
             Regex regex = filter.Extra as Regex;
-            if (regex == null)
+            if (regex is null)
             {
                 regex = new Regex(SAMUtils.PAPIQueryToRegexString(wildcardFilter), RegexOptions.Singleline);
                 filter.Extra = regex;
@@ -354,14 +354,14 @@ namespace System.DirectoryServices.AccountManagement
             {
                 if ((de.Properties.Contains(winNTPropertyName) == false) ||
                      (de.Properties[winNTPropertyName].Count == 0) ||
-                     (de.Properties[winNTPropertyName].Value == null))
+                     (de.Properties[winNTPropertyName].Value is null))
                     return true;
             }
             else
             {
                 Debug.Assert(valueToMatch.Value is DateTime);
 
-                if (de.Properties.Contains(winNTPropertyName) && (de.Properties[winNTPropertyName].Value != null))
+                if (de.Properties.Contains(winNTPropertyName) && (de.Properties[winNTPropertyName].Value is not null))
                 {
                     DateTime value;
 
@@ -412,7 +412,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             string valueToMatch = (string)filter.Value;
 
-            if (valueToMatch == null)
+            if (valueToMatch is null)
             {
                 if ((de.Properties.Contains(winNTPropertyName) == false) ||
                      (de.Properties[winNTPropertyName].Count == 0) ||
@@ -425,7 +425,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     string value = (string)de.Properties[winNTPropertyName].Value;
 
-                    if (value != null)
+                    if (value is not null)
                     {
                         return WildcardStringMatch(filter, valueToMatch, value);
                     }
@@ -444,7 +444,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 if ((de.Properties.Contains(winNTPropertyName) == false) ||
                      (de.Properties[winNTPropertyName].Count == 0) ||
-                     (de.Properties[winNTPropertyName].Value == null))
+                     (de.Properties[winNTPropertyName].Value is null))
                     result = true;
             }
             else
@@ -482,7 +482,7 @@ namespace System.DirectoryServices.AccountManagement
             string samAccountName = (index != -1) ? samToMatch.Substring(index + 1) :    // +1 to skip the '/'
                                                      samToMatch;
 
-            if (de.Properties["Name"].Count > 0 && de.Properties["Name"].Value != null)
+            if (de.Properties["Name"].Count > 0 && de.Properties["Name"].Value is not null)
             {
                 return WildcardStringMatch(filter, samAccountName, (string)de.Properties["Name"].Value);
                 /*
@@ -500,10 +500,10 @@ namespace System.DirectoryServices.AccountManagement
         {
             byte[] sidToMatch = Utils.StringToByteArray((string)filter.Value);
 
-            if (sidToMatch == null)
+            if (sidToMatch is null)
                 throw new InvalidOperationException(SR.StoreCtxSecurityIdentityClaimBadFormat);
 
-            if (de.Properties["objectSid"].Count > 0 && de.Properties["objectSid"].Value != null)
+            if (de.Properties["objectSid"].Count > 0 && de.Properties["objectSid"].Value is not null)
             {
                 return Utils.AreBytesEqual(sidToMatch, (byte[])de.Properties["objectSid"].Value);
             }
@@ -570,7 +570,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             string valueToMatch = (string)filter.Value;
 
-            if (valueToMatch == null)
+            if (valueToMatch is null)
             {
                 if ((de.Properties.Contains(winNTPropertyName) == false) ||
                      (de.Properties[winNTPropertyName].Count == 0) ||
@@ -583,7 +583,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     foreach (string value in de.Properties[winNTPropertyName])
                     {
-                        if (value != null)
+                        if (value is not null)
                         {
                             return WildcardStringMatch(filter, valueToMatch, value);
                         }
@@ -598,11 +598,11 @@ namespace System.DirectoryServices.AccountManagement
         {
             byte[] valueToMatch = (byte[])filter.Value;
 
-            if (valueToMatch == null)
+            if (valueToMatch is null)
             {
                 if ((de.Properties.Contains(winNTPropertyName) == false) ||
                      (de.Properties[winNTPropertyName].Count == 0) ||
-                     (de.Properties[winNTPropertyName].Value == null))
+                     (de.Properties[winNTPropertyName].Value is null))
                     return true;
             }
             else
@@ -611,7 +611,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     byte[] value = (byte[])de.Properties[winNTPropertyName].Value;
 
-                    if ((value != null) && Utils.AreBytesEqual(value, valueToMatch))
+                    if ((value is not null) && Utils.AreBytesEqual(value, valueToMatch))
                         return true;
                 }
             }
@@ -630,12 +630,12 @@ namespace System.DirectoryServices.AccountManagement
             {
                 if ((de.Properties.Contains(winNTPropertyName) == false) ||
                      (de.Properties[winNTPropertyName].Count == 0) ||
-                     (de.Properties[winNTPropertyName].Value == null))
+                     (de.Properties[winNTPropertyName].Value is null))
                     return true;
             }
             else
             {
-                if (de.Properties.Contains(winNTPropertyName) && (de.Properties[winNTPropertyName].Value != null))
+                if (de.Properties.Contains(winNTPropertyName) && (de.Properties[winNTPropertyName].Value is not null))
                 {
                     DateTime value = (DateTime)de.Properties[winNTPropertyName].Value;
 
@@ -692,7 +692,7 @@ namespace System.DirectoryServices.AccountManagement
             // (In reg-SAM, computers don't have accounts and therefore don't have SIDs, but ADSI
             // creates fake Computer objects for them.  In LSAM, computers CAN have accounts, and thus
             // SIDs).
-            if (de.Properties["objectSid"] == null || de.Properties["objectSid"].Count == 0)
+            if (de.Properties["objectSid"] is null || de.Properties["objectSid"].Count == 0)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMQuerySet", "FindByDateMatcher: Matches: skipping no-SID {0}", de.Path);
                 return false;
@@ -810,7 +810,7 @@ namespace System.DirectoryServices.AccountManagement
 
         internal GroupMemberMatcher(byte[] memberSidToMatch)
         {
-            Debug.Assert(memberSidToMatch != null);
+            Debug.Assert(memberSidToMatch is not null);
             Debug.Assert(memberSidToMatch.Length != 0);
             _memberSidToMatch = memberSidToMatch;
         }
@@ -821,7 +821,7 @@ namespace System.DirectoryServices.AccountManagement
             // (In reg-SAM, computers don't have accounts and therefore don't have SIDs, but ADSI
             // creates fake Computer objects for them.  In LSAM, computers CAN have accounts, and thus
             // SIDs).
-            if (groupDE.Properties["objectSid"] == null || groupDE.Properties["objectSid"].Count == 0)
+            if (groupDE.Properties["objectSid"] is null || groupDE.Properties["objectSid"].Count == 0)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMQuerySet", "GroupMemberMatcher: Matches: skipping no-SID group={0}", groupDE.Path);
                 return false;
@@ -838,7 +838,7 @@ namespace System.DirectoryServices.AccountManagement
                 DirectoryEntry memberDE = new DirectoryEntry(nativeMember);
 
                 // No SID --> not interesting
-                if (memberDE.Properties["objectSid"] == null || memberDE.Properties["objectSid"].Count == 0)
+                if (memberDE.Properties["objectSid"] is null || memberDE.Properties["objectSid"].Count == 0)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMQuerySet", "GroupMemberMatcher: Matches: skipping member no-SID member={0}", memberDE.Path);
                     continue;

@@ -140,7 +140,7 @@ namespace System
 
         private static string? InternalFlagsFormat(RuntimeType enumType, EnumInfo enumInfo, ulong resultValue)
         {
-            Debug.Assert(enumType != null);
+            Debug.Assert(enumType is not null);
 
             string[] names = enumInfo.Names;
             ulong[] values = enumInfo.Values;
@@ -291,7 +291,7 @@ namespace System
 
         public static Type GetUnderlyingType(Type enumType)
         {
-            if (enumType == null)
+            if (enumType is null)
                 throw new ArgumentNullException(nameof(enumType));
 
             return enumType.GetEnumUnderlyingType();
@@ -379,7 +379,7 @@ namespace System
             {
                 if (throwOnFailure)
                 {
-                    throw value == null ?
+                    throw value is null ?
                         new ArgumentNullException(nameof(value)) :
                         new ArgumentException(SR.Arg_MustContainEnumInfo, nameof(value));
                 }
@@ -458,7 +458,7 @@ namespace System
             {
                 if (throwOnFailure)
                 {
-                    throw value == null ?
+                    throw value is null ?
                         new ArgumentNullException(nameof(value)) :
                         new ArgumentException(SR.Arg_MustContainEnumInfo, nameof(value));
                 }
@@ -805,7 +805,7 @@ namespace System
 
         public static object ToObject(Type enumType, object value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             // Delegate rest of error checking to the other functions
@@ -831,10 +831,10 @@ namespace System
         {
             RuntimeType rtType = ValidateRuntimeType(enumType);
 
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
-            if (format == null)
+            if (format is null)
                 throw new ArgumentNullException(nameof(format));
 
             // If the value is an Enum then we need to extract the underlying value from it
@@ -991,7 +991,7 @@ namespace System
             if (target == this)
                 return 0;
 
-            if (target == null)
+            if (target is null)
                 return 1; // all values are greater than null
 
             if (GetType() != target.GetType())
@@ -1225,7 +1225,7 @@ namespace System
 
         private static RuntimeType ValidateRuntimeType(Type enumType)
         {
-            if (enumType == null)
+            if (enumType is null)
                 throw new ArgumentNullException(nameof(enumType));
             if (!enumType.IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, nameof(enumType));

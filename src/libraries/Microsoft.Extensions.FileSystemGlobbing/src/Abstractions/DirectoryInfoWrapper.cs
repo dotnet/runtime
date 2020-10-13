@@ -38,7 +38,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Abstractions
                 foreach (FileSystemInfo fileSystemInfo in _directoryInfo.EnumerateFileSystemInfos("*", SearchOption.TopDirectoryOnly))
                 {
                     var directoryInfo = fileSystemInfo as DirectoryInfo;
-                    if (directoryInfo != null)
+                    if (directoryInfo is not null)
                     {
                         yield return new DirectoryInfoWrapper(directoryInfo);
                     }

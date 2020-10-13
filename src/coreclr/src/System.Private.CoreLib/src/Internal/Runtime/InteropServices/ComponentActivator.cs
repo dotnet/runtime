@@ -21,7 +21,7 @@ namespace Internal.Runtime.InteropServices
         private static string MarshalToString(IntPtr arg, string argName)
         {
             string? result = Marshal.PtrToStringAuto(arg);
-            if (result == null)
+            if (result is null)
             {
                 throw new ArgumentNullException(argName);
             }
@@ -173,12 +173,12 @@ namespace Internal.Runtime.InteropServices
             Type type = Type.GetType(typeName, resolver, null, throwOnError: true)!;
 
             IntPtr functionPtr;
-            if (delegateType == null)
+            if (delegateType is null)
             {
                 // Match search semantics of the CreateDelegate() function below.
                 BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
                 MethodInfo? methodInfo = type.GetMethod(methodName, bindingFlags);
-                if (methodInfo == null)
+                if (methodInfo is null)
                     throw new MissingMethodException(typeName, methodName);
 
                 // Verify the function is properly marked.

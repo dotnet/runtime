@@ -60,11 +60,11 @@ namespace System.ComponentModel.Composition.Hosting
         private void InitializeCompositionScopeDefinition(ComposablePartCatalog catalog, IEnumerable<CompositionScopeDefinition>? children, IEnumerable<ExportDefinition>? publicSurface)
         {
             _catalog = catalog;
-            if (children != null)
+            if (children is not null)
             {
                 _children = children.ToArray();
             }
-            if (publicSurface != null)
+            if (publicSurface is not null)
             {
                 _publicSurface = publicSurface;
             }
@@ -133,7 +133,7 @@ namespace System.ComponentModel.Composition.Hosting
             get
             {
                 ThrowIfDisposed();
-                if (_publicSurface == null)
+                if (_publicSurface is null)
                 {
                     return this.SelectMany((p) => p.ExportDefinitions);
                 }
@@ -148,7 +148,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <value>The children.</value>
         public override IEnumerator<ComposablePartDefinition> GetEnumerator()
         {
-            Debug.Assert(_catalog != null);
+            Debug.Assert(_catalog is not null);
             return _catalog.GetEnumerator();
         }
 
@@ -180,13 +180,13 @@ namespace System.ComponentModel.Composition.Hosting
         {
             ThrowIfDisposed();
 
-            Debug.Assert(_catalog != null);
+            Debug.Assert(_catalog is not null);
             return _catalog.GetExports(definition);
         }
 
         internal IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> GetExportsFromPublicSurface(ImportDefinition definition)
         {
-            if (definition == null)
+            if (definition is null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
@@ -227,7 +227,7 @@ namespace System.ComponentModel.Composition.Hosting
         protected virtual void OnChanged(ComposablePartCatalogChangeEventArgs e)
         {
             EventHandler<ComposablePartCatalogChangeEventArgs>? changedEvent = Changed;
-            if (changedEvent != null)
+            if (changedEvent is not null)
             {
                 changedEvent.Invoke(this, e);
             }
@@ -240,7 +240,7 @@ namespace System.ComponentModel.Composition.Hosting
         protected virtual void OnChanging(ComposablePartCatalogChangeEventArgs e)
         {
             EventHandler<ComposablePartCatalogChangeEventArgs>? changingEvent = Changing;
-            if (changingEvent != null)
+            if (changingEvent is not null)
             {
                 changingEvent.Invoke(this, e);
             }

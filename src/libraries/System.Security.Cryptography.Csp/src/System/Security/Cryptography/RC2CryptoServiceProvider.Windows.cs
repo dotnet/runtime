@@ -54,13 +54,13 @@ namespace System.Security.Cryptography
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of RC2")]
         public override ICryptoTransform CreateEncryptor(byte[] rgbKey, byte[]? rgbIV)
         {
-            return CreateTransform(rgbKey, rgbIV == null ? null : rgbIV.CloneByteArray(), encrypting: true);
+            return CreateTransform(rgbKey, rgbIV is null ? null : rgbIV.CloneByteArray(), encrypting: true);
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of RC2")]
         public override ICryptoTransform CreateDecryptor(byte[] rgbKey, byte[]? rgbIV)
         {
-            return CreateTransform(rgbKey, rgbIV == null ? null : rgbIV.CloneByteArray(), encrypting: false);
+            return CreateTransform(rgbKey, rgbIV is null ? null : rgbIV.CloneByteArray(), encrypting: false);
         }
 
         public override void GenerateKey()
@@ -83,7 +83,7 @@ namespace System.Security.Cryptography
             if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(this.LegalKeySizes))
                 throw new ArgumentException(SR.Cryptography_InvalidKeySize, nameof(rgbKey));
 
-            if (rgbIV == null)
+            if (rgbIV is null)
             {
                 if (Mode.UsesIv())
                 {

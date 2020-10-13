@@ -85,7 +85,7 @@ namespace System.Net.Http
             ServerCredentials = null;
             DefaultProxyCredentials = null;
 
-            if (RequestHandle != null)
+            if (RequestHandle is not null)
             {
                 RequestHandle.Dispose();
                 RequestHandle = null;
@@ -111,7 +111,7 @@ namespace System.Net.Http
             set
             {
 #if DEBUG
-                if (value != null)
+                if (value is not null)
                 {
                     s_dbg_requestHandle = value.DangerousGetHandle();
                 }

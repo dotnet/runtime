@@ -43,7 +43,7 @@ namespace System.IO.Compression
                 {
                     return false;
                 }
-                Debug.Assert(_buffer != null);
+                Debug.Assert(_buffer is not null);
                 // insert a byte to bitbuffer
                 _bitBuffer |= (uint)_buffer[_start++] << _bitsInBuffer;
                 _bitsInBuffer += 8;
@@ -72,7 +72,7 @@ namespace System.IO.Compression
         /// </summary>
         public uint TryLoad16Bits()
         {
-            Debug.Assert(_buffer != null);
+            Debug.Assert(_buffer is not null);
             if (_bitsInBuffer < 8)
             {
                 if (_start < _end)
@@ -125,7 +125,7 @@ namespace System.IO.Compression
         /// <returns>Returns the number of bytes copied, 0 if no byte is available.</returns>
         public int CopyTo(byte[] output, int offset, int length)
         {
-            Debug.Assert(output != null);
+            Debug.Assert(output is not null);
             Debug.Assert(offset >= 0);
             Debug.Assert(length >= 0);
             Debug.Assert(offset <= output.Length - length);
@@ -153,7 +153,7 @@ namespace System.IO.Compression
                 length = avail;
             }
 
-            Debug.Assert(_buffer != null);
+            Debug.Assert(_buffer is not null);
             Array.Copy(_buffer, _start, output, offset, length);
             _start += length;
             return bytesFromBitBuffer + length;
@@ -174,7 +174,7 @@ namespace System.IO.Compression
         /// </summary>
         public void SetInput(byte[] buffer, int offset, int length)
         {
-            Debug.Assert(buffer != null);
+            Debug.Assert(buffer is not null);
             Debug.Assert(offset >= 0);
             Debug.Assert(length >= 0);
             Debug.Assert(offset <= buffer.Length - length);

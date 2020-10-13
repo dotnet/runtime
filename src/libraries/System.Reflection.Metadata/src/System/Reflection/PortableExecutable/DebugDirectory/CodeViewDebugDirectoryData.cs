@@ -24,7 +24,7 @@ namespace System.Reflection.PortableExecutable
 
         internal CodeViewDebugDirectoryData(Guid guid, int age, string path)
         {
-            Debug.Assert(path != null);
+            Debug.Assert(path is not null);
 
             Path = path;
             Guid = guid;

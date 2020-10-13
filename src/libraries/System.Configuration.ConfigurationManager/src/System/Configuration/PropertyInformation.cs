@@ -39,21 +39,21 @@ namespace System.Configuration
         {
             get
             {
-                if (_thisElement.Values[Name] == null) return PropertyValueOrigin.Default;
+                if (_thisElement.Values[Name] is null) return PropertyValueOrigin.Default;
                 return _thisElement.Values.IsInherited(Name) ? PropertyValueOrigin.Inherited : PropertyValueOrigin.SetHere;
             }
         }
 
-        public bool IsModified => _thisElement.Values[Name] != null && _thisElement.Values.IsModified(Name);
+        public bool IsModified => _thisElement.Values[Name] is not null && _thisElement.Values.IsModified(Name);
 
         public bool IsKey => Prop.IsKey;
 
         public bool IsRequired => Prop.IsRequired;
 
         public bool IsLocked =>
-            ((_thisElement.LockedAllExceptAttributesList != null) &&
+            ((_thisElement.LockedAllExceptAttributesList is not null) &&
             !_thisElement.LockedAllExceptAttributesList.DefinedInParent(Name)) ||
-            ((_thisElement.LockedAttributesList != null) &&
+            ((_thisElement.LockedAttributesList is not null) &&
             (_thisElement.LockedAttributesList.DefinedInParent(Name) ||
             _thisElement.LockedAttributesList.DefinedInParent(LockAll))) ||
             (((_thisElement.ItemLocked & ConfigurationValueFlags.Locked) != 0) &&
@@ -66,7 +66,7 @@ namespace System.Configuration
             {
                 PropertySourceInfo psi = _thisElement.Values.GetSourceInfo(Name) ??
                     _thisElement.Values.GetSourceInfo(string.Empty);
-                return psi == null ? string.Empty : psi.FileName;
+                return psi is null ? string.Empty : psi.FileName;
             }
         }
 

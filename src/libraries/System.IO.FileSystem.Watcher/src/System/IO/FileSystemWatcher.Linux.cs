@@ -26,7 +26,7 @@ namespace System.IO
             }
 
             // If we already have a cancellation object, we're already running.
-            if (_cancellation != null)
+            if (_cancellation is not null)
             {
                 return;
             }
@@ -94,7 +94,7 @@ namespace System.IO
             // The cancellation token and the processing task respond to cancellation
             // to handle all other cleanup.
             var cts = _cancellation;
-            if (cts != null)
+            if (cts is not null)
             {
                 _cancellation = null;
                 cts.Cancel();
@@ -273,15 +273,15 @@ namespace System.IO
                 FileSystemWatcher watcher, SafeFileHandle inotifyHandle, string directoryPath,
                 bool includeSubdirectories, NotifyFilters notifyFilters, CancellationToken cancellationToken)
             {
-                Debug.Assert(watcher != null);
-                Debug.Assert(inotifyHandle != null && !inotifyHandle.IsInvalid && !inotifyHandle.IsClosed);
-                Debug.Assert(directoryPath != null);
+                Debug.Assert(watcher is not null);
+                Debug.Assert(inotifyHandle is not null && !inotifyHandle.IsInvalid && !inotifyHandle.IsClosed);
+                Debug.Assert(directoryPath is not null);
 
                 _weakWatcher = new WeakReference<FileSystemWatcher>(watcher);
                 _inotifyHandle = inotifyHandle;
                 _directoryPath = directoryPath;
                 _buffer = watcher.AllocateBuffer();
-                Debug.Assert(_buffer != null && _buffer.Length > (c_INotifyEventSize + NAME_MAX + 1));
+                Debug.Assert(_buffer is not null && _buffer.Length > (c_INotifyEventSize + NAME_MAX + 1));
                 _includeSubdirectories = includeSubdirectories;
                 _notifyFilters = notifyFilters;
                 _watchFilters = TranslateFilters(notifyFilters);
@@ -321,9 +321,9 @@ namespace System.IO
                     // against the handle, so we'd deadlock if we relied on that approach.  Instead, we want to follow
                     // the approach of removing all watches when we're done, which means we also don't want to
                     // add any new watches once the count hits zero.
-                    if (parent == null || _wdToPathMap.Count > 0)
+                    if (parent is null || _wdToPathMap.Count > 0)
                     {
-                        Debug.Assert(parent != null || _wdToPathMap.Count == 0);
+                        Debug.Assert(parent is not null || _wdToPathMap.Count == 0);
                         AddDirectoryWatchUnlocked(parent, directoryName);
                     }
                 }
@@ -334,7 +334,7 @@ namespace System.IO
             /// <param name="directoryName">The new directory path to monitor, relative to the root.</param>
             private void AddDirectoryWatchUnlocked(WatchedDirectory? parent, string directoryName)
             {
-                string fullPath = parent != null ? parent.GetPath(false, directoryName) : directoryName;
+                string fullPath = parent is not null ? parent.GetPath(false, directoryName) : directoryName;
 
                 // inotify_add_watch will fail if this is a symlink, so check that we didn't get a symlink
                 Interop.Sys.FileStatus status = default(Interop.Sys.FileStatus);
@@ -391,13 +391,13 @@ namespace System.IO
                     if (directoryEntry.Parent != parent)
                     {
                         // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
-                        if (directoryEntry.Parent != null)
+                        if (directoryEntry.Parent is not null)
                         {
                             directoryEntry.Parent.Children!.Remove(directoryEntry);
                         }
 
                         directoryEntry.Parent = parent;
-                        if (parent != null)
+                        if (parent is not null)
                         {
                             parent.InitializedChildren.Add (directoryEntry);
                         }
@@ -413,7 +413,7 @@ namespace System.IO
                         WatchDescriptor = wd,
                         Name = directoryName
                     };
-                    if (parent != null)
+                    if (parent is not null)
                     {
                         parent.InitializedChildren.Add (directoryEntry);
                     }
@@ -449,7 +449,7 @@ namespace System.IO
                 lock (SyncObj)
                 {
                     // Work around https://github.com/dotnet/csharplang/issues/3393 preventing Parent?.Children!. from behaving as expected
-                    if (directoryEntry.Parent != null)
+                    if (directoryEntry.Parent is not null)
                     {
                         directoryEntry.Parent.Children!.Remove(directoryEntry);
                     }
@@ -464,7 +464,7 @@ namespace System.IO
             private void RemoveWatchedDirectoryUnlocked(WatchedDirectory directoryEntry, bool removeInotify)
             {
                 // If the directory has children, recursively remove them (see comments on recursion in AddDirectoryWatch).
-                if (directoryEntry.Children != null)
+                if (directoryEntry.Children is not null)
                 {
                     foreach (WatchedDirectory child in directoryEntry.Children)
                     {
@@ -598,7 +598,7 @@ namespace System.IO
                             // should be considered a deletion to match Win32 behavior.
                             // But since we explicitly added watches on directories, if it's a directory it'll
                             // still be watched, so we need to explicitly remove the watch.
-                            if (previousEventParent != null && previousEventParent.Children != null)
+                            if (previousEventParent is not null && previousEventParent.Children is not null)
                             {
                                 // previousEventParent will be non-null iff the IN_MOVED_FROM
                                 // was for a directory, in which case previousEventParent is that directory's
@@ -744,7 +744,7 @@ namespace System.IO
             /// <returns><see langword="true"/> if event was read successfully, <see langword="false"/> otherwise.</returns>
             private bool TryReadEvent(out NotifyEvent notifyEvent)
             {
-                Debug.Assert(_buffer != null);
+                Debug.Assert(_buffer is not null);
                 Debug.Assert(_buffer.Length > 0);
                 Debug.Assert(_bufferAvailable >= 0 && _bufferAvailable <= _buffer.Length);
                 Debug.Assert(_bufferPos >= 0 && _bufferPos <= _bufferAvailable);
@@ -889,7 +889,7 @@ namespace System.IO
 
                     // Write the directory's path.  Then if an additional filename was supplied, append it
                     Write(builder, relativeToRoot);
-                    if (additionalName != null)
+                    if (additionalName is not null)
                     {
                         AppendSeparatorIfNeeded(builder);
                         builder.Append(additionalName);
@@ -913,7 +913,7 @@ namespace System.IO
                     // and max path limits.
 
                     // First append the parent's path
-                    if (Parent != null)
+                    if (Parent is not null)
                     {
                         Parent.Write(builder, relativeToRoot);
                         AppendSeparatorIfNeeded(builder);
@@ -922,7 +922,7 @@ namespace System.IO
                     // Then append ours.  In the case of the root directory
                     // being watched, we only append its name if the caller
                     // has asked for a full path.
-                    if (Parent != null || !relativeToRoot)
+                    if (Parent is not null || !relativeToRoot)
                     {
                         builder.Append(Name);
                     }

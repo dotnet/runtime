@@ -51,7 +51,7 @@ namespace System
 
         private static IntPtr[]? ptrs_from_handles(RuntimeTypeHandle[]? handles)
         {
-            if (handles == null)
+            if (handles is null)
                 return null;
 
             var res = new IntPtr[handles.Length];
@@ -114,7 +114,7 @@ namespace System
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || GetType() != obj.GetType())
+            if (obj is null || GetType() != obj.GetType())
                 return false;
 
             return value == ((ModuleHandle)obj).Value;

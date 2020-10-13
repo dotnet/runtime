@@ -140,7 +140,7 @@ namespace System.Net
         private static string CreateFqdnMyDomain()
         {
             string domain = HostInformation.DomainName;
-            return domain != null && domain.Length > 1 ?
+            return domain is not null && domain.Length > 1 ?
                 '.' + domain :
                 string.Empty;
         }
@@ -221,7 +221,7 @@ namespace System.Net
         // This method will construct a faked URI: the Domain property is required for param.
         public void Add(Cookie cookie)
         {
-            if (cookie == null)
+            if (cookie is null)
             {
                 throw new ArgumentNullException(nameof(cookie));
             }
@@ -252,7 +252,7 @@ namespace System.Net
 
 
             // Either keep Port as implicit or set it according to original cookie.
-            if (cookie.PortList != null)
+            if (cookie.PortList is not null)
             {
                 uriSb.Append(':').Append(cookie.PortList[0]);
             }
@@ -290,7 +290,7 @@ namespace System.Net
                 lock (m_domainTable.SyncRoot)
                 {
                     pathList = (PathList?)m_domainTable[cookie.DomainKey];
-                    if (pathList == null)
+                    if (pathList is null)
                     {
                         m_domainTable[cookie.DomainKey] = (pathList = new PathList());
                     }
@@ -302,7 +302,7 @@ namespace System.Net
                 {
                     cookies = (CookieCollection?)pathList[cookie.Path]!;
 
-                    if (cookies == null)
+                    if (cookies is null)
                     {
                         cookies = new CookieCollection();
                         pathList[cookie.Path] = cookies;
@@ -368,7 +368,7 @@ namespace System.Net
         // Also note that expired cookies are also removed during request preparation
         // (this.GetCookies method).
         //
-        // Param. 'domain' == null means to age in the whole container.
+        // Param. 'domain' is null means to age in the whole container.
         private bool AgeCookies(string? domain)
         {
             Debug.Assert(m_maxCookies != 0);
@@ -399,7 +399,7 @@ namespace System.Net
                 foreach (object item in m_domainTable)
                 {
                     DictionaryEntry entry = (DictionaryEntry)item;
-                    if (domain == null)
+                    if (domain is null)
                     {
                         tempDomain = (string)entry.Key;
                         pathList = (PathList)entry.Value!; // Aliasing to trick foreach
@@ -415,7 +415,7 @@ namespace System.Net
                     {
                         foreach (CookieCollection? cc in pathList.Values)
                         {
-                            Debug.Assert(cc != null);
+                            Debug.Assert(cc is not null);
                             itemp = ExpireCollection(cc);
                             removed += itemp;
                             m_count -= itemp; // Update this container's count
@@ -473,7 +473,7 @@ namespace System.Net
                             }
                         }
 
-                        if (domain_count > min_count && domain != null)
+                        if (domain_count > min_count && domain is not null)
                         {
                             // Cannot complete aging of explicit domain (no cookie adding allowed).
                             return false;
@@ -483,7 +483,7 @@ namespace System.Net
             }
 
             // We have completed aging of the specified domain.
-            if (domain != null)
+            if (domain is not null)
             {
                 return true;
             }
@@ -585,7 +585,7 @@ namespace System.Net
 
         public void Add(CookieCollection cookies)
         {
-            if (cookies == null)
+            if (cookies is null)
             {
                 throw new ArgumentNullException(nameof(cookies));
             }
@@ -596,7 +596,7 @@ namespace System.Net
         }
 
         // This will try (if needed) get the full domain name of the host given the Uri.
-        // NEVER call this function from internal methods with 'fqdnRemote' == null.
+        // NEVER call this function from internal methods with 'fqdnRemote' is null.
         // Since this method counts security issue for DNS and hence will slow
         // the performance.
         internal bool IsLocalDomain(string host)
@@ -623,7 +623,7 @@ namespace System.Net
 
             // Test for "127.###.###.###" without using regex.
             string[] ipParts = host.Split('.');
-            if (ipParts != null && ipParts.Length == 4 && ipParts[0] == "127")
+            if (ipParts is not null && ipParts.Length == 4 && ipParts[0] == "127")
             {
                 int i;
                 for (i = 1; i < ipParts.Length; i++)
@@ -665,11 +665,11 @@ namespace System.Net
 
         public void Add(Uri uri, Cookie cookie)
         {
-            if (uri == null)
+            if (uri is null)
             {
                 throw new ArgumentNullException(nameof(uri));
             }
-            if (cookie == null)
+            if (cookie is null)
             {
                 throw new ArgumentNullException(nameof(cookie));
             }
@@ -681,11 +681,11 @@ namespace System.Net
 
         public void Add(Uri uri, CookieCollection cookies)
         {
-            if (uri == null)
+            if (uri is null)
             {
                 throw new ArgumentNullException(nameof(uri));
             }
-            if (cookies == null)
+            if (cookies is null)
             {
                 throw new ArgumentNullException(nameof(cookies));
             }
@@ -705,7 +705,7 @@ namespace System.Net
 
             CookieCollection cookies = new CookieCollection();
             CookieVariant variant = CookieVariant.Unknown;
-            if (headerName == null)
+            if (headerName is null)
             {
                 variant = CookieVariant.Default;
             }
@@ -729,7 +729,7 @@ namespace System.Net
                     Cookie? cookie = parser.Get();
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"CookieParser returned cookie:{cookie}");
 
-                    if (cookie == null)
+                    if (cookie is null)
                     {
                         if (parser.EndofHeader())
                         {
@@ -783,7 +783,7 @@ namespace System.Net
 
         public CookieCollection GetCookies(Uri uri)
         {
-            if (uri == null)
+            if (uri is null)
             {
                 throw new ArgumentNullException(nameof(uri));
             }
@@ -817,7 +817,7 @@ namespace System.Net
                 // DNS.resolve may return short names even for other inet domains ;-(
                 // We _don't_ know what the exact domain is, so try also grab short hostname cookies.
                 // Grab long name from the local domain
-                if (m_fqdnMyDomain != null && m_fqdnMyDomain.Length != 0)
+                if (m_fqdnMyDomain is not null && m_fqdnMyDomain.Length != 0)
                 {
                     domainAttributeMatchAnyCookieVariant.Add(fqdnRemote + m_fqdnMyDomain);
                     // Grab the local domain itself
@@ -844,7 +844,7 @@ namespace System.Net
                     {
                         while ((dot < last) && (dot = fqdnRemote.IndexOf('.', dot + 1)) != -1)
                         {
-                            if (domainAttributeMatchOnlyCookieVariantPlain == null)
+                            if (domainAttributeMatchOnlyCookieVariantPlain is null)
                             {
                                 domainAttributeMatchOnlyCookieVariantPlain = new System.Collections.Generic.List<string>();
                             }
@@ -857,7 +857,7 @@ namespace System.Net
             }
 
             BuildCookieCollectionFromDomainMatches(uri, isSecure, port, ref cookies, domainAttributeMatchAnyCookieVariant, false);
-            if (domainAttributeMatchOnlyCookieVariantPlain != null)
+            if (domainAttributeMatchOnlyCookieVariantPlain is not null)
             {
                 BuildCookieCollectionFromDomainMatches(uri, isSecure, port, ref cookies, domainAttributeMatchOnlyCookieVariantPlain, true);
             }
@@ -873,7 +873,7 @@ namespace System.Net
                 lock (m_domainTable.SyncRoot)
                 {
                     pathList = (PathList)m_domainTable[domainAttribute[i]]!;
-                    if (pathList == null)
+                    if (pathList is null)
                     {
                         continue;
                     }
@@ -952,7 +952,7 @@ namespace System.Net
                         {
                             ; // Don't add
                         }
-                        else if (cookie.PortList != null)
+                        else if (cookie.PortList is not null)
                         {
                             foreach (int p in cookie.PortList)
                             {
@@ -980,7 +980,7 @@ namespace System.Net
                             // In 'source' are already ordered.
                             // If two same cookies come from different 'source' then they
                             // will follow (not replace) each other.
-                            if (destination == null)
+                            if (destination is null)
                             {
                                 destination = new CookieCollection();
                             }
@@ -993,7 +993,7 @@ namespace System.Net
 
         public string GetCookieHeader(Uri uri)
         {
-            if (uri == null)
+            if (uri is null)
             {
                 throw new ArgumentNullException(nameof(uri));
             }
@@ -1005,7 +1005,7 @@ namespace System.Net
         internal string GetCookieHeader(Uri uri, out string optCookie2)
         {
             CookieCollection? cookies = InternalGetCookies(uri);
-            if (cookies == null)
+            if (cookies is null)
             {
                 optCookie2 = string.Empty;
                 return string.Empty;
@@ -1033,11 +1033,11 @@ namespace System.Net
 
         public void SetCookies(Uri uri, string cookieHeader)
         {
-            if (uri == null)
+            if (uri is null)
             {
                 throw new ArgumentNullException(nameof(uri));
             }
-            if (cookieHeader == null)
+            if (cookieHeader is null)
             {
                 throw new ArgumentNullException(nameof(cookieHeader));
             }
@@ -1093,7 +1093,7 @@ namespace System.Net
             {
                 lock (SyncRoot)
                 {
-                    Debug.Assert(value != null);
+                    Debug.Assert(value is not null);
                     m_list[s] = value;
                 }
             }

@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
 
             internal ECDiffieHellmanCngPublicKey(byte[] keyBlob, string? curveName) : base(keyBlob)
             {
-                Debug.Assert(keyBlob != null);
+                Debug.Assert(keyBlob is not null);
 
                 _keyBlob = keyBlob;
                 _curveName = curveName;
@@ -48,7 +48,7 @@ namespace System.Security.Cryptography
             /// <returns>The key and explicit curve parameters used by the ECC object.</returns>
             public override ECParameters ExportExplicitParameters()
             {
-                if (_keyBlob == null)
+                if (_keyBlob is null)
                 {
                     throw new ObjectDisposedException(nameof(ECDiffieHellmanPublicKey));
                 }
@@ -69,7 +69,7 @@ namespace System.Security.Cryptography
             /// <returns>The key and named curve parameters used by the ECC object.</returns>
             public override ECParameters ExportParameters()
             {
-                if (_keyBlob == null)
+                if (_keyBlob is null)
                 {
                     throw new ObjectDisposedException(nameof(ECDiffieHellmanPublicKey));
                 }

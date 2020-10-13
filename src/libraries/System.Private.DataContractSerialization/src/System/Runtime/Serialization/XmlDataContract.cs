@@ -88,11 +88,11 @@ namespace System.Runtime.Serialization
                 // otherwise, we would create the delegate via reflection.
                 if (DataContractSerializer.Option == SerializationOption.CodeGenOnly || DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
                 {
-                    if (_helper.CreateXmlSerializableDelegate == null)
+                    if (_helper.CreateXmlSerializableDelegate is null)
                     {
                         lock (this)
                         {
-                            if (_helper.CreateXmlSerializableDelegate == null)
+                            if (_helper.CreateXmlSerializableDelegate is null)
                             {
                                 CreateXmlSerializableDelegate tempCreateXmlSerializable = GenerateCreateXmlSerializableDelegate();
                                 Interlocked.MemoryBarrier();
@@ -137,8 +137,8 @@ namespace System.Runtime.Serialization
                 XmlDictionary dictionary = new XmlDictionary();
                 this.Name = dictionary.Add(StableName.Name);
                 this.Namespace = dictionary.Add(StableName.Namespace);
-                object[]? xmlRootAttributes = (UnderlyingType == null) ? null : UnderlyingType.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
-                if (xmlRootAttributes == null || xmlRootAttributes.Length == 0)
+                object[]? xmlRootAttributes = (UnderlyingType is null) ? null : UnderlyingType.GetCustomAttributes(Globals.TypeOfXmlRootAttribute, false).ToArray();
+                if (xmlRootAttributes is null || xmlRootAttributes.Length == 0)
                 {
                     if (hasRoot)
                     {
@@ -154,9 +154,9 @@ namespace System.Runtime.Serialization
                         XmlRootAttribute xmlRootAttribute = (XmlRootAttribute)xmlRootAttributes[0];
                         _isTopLevelElementNullable = xmlRootAttribute.IsNullable;
                         string elementName = xmlRootAttribute.ElementName;
-                        _topLevelElementName = (elementName == null || elementName.Length == 0) ? Name : dictionary.Add(DataContract.EncodeLocalName(elementName));
+                        _topLevelElementName = (elementName is null || elementName.Length == 0) ? Name : dictionary.Add(DataContract.EncodeLocalName(elementName));
                         string? elementNs = xmlRootAttribute.Namespace;
-                        _topLevelElementNamespace = (elementNs == null || elementNs.Length == 0) ? DictionaryGlobals.EmptyString : dictionary.Add(elementNs);
+                        _topLevelElementNamespace = (elementNs is null || elementNs.Length == 0) ? DictionaryGlobals.EmptyString : dictionary.Add(elementNs);
                     }
                     else
                     {
@@ -169,7 +169,7 @@ namespace System.Runtime.Serialization
             {
                 get
                 {
-                    if (!_isKnownTypeAttributeChecked && UnderlyingType != null)
+                    if (!_isKnownTypeAttributeChecked && UnderlyingType is not null)
                     {
                         lock (this)
                         {
@@ -194,7 +194,7 @@ namespace System.Runtime.Serialization
                 set { _xsdType = value; }
             }
 
-            internal bool IsAnonymous => _xsdType != null;
+            internal bool IsAnonymous => _xsdType is not null;
 
             internal override bool HasRoot
             {
@@ -242,7 +242,7 @@ namespace System.Runtime.Serialization
                 return null;
 
             ConstructorInfo? ctor = type.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public, null, Array.Empty<Type>(), null);
-            if (ctor == null)
+            if (ctor is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.IXmlSerializableMustHaveDefaultConstructor, DataContract.GetClrTypeFullName(type))));
 
             return ctor;
@@ -283,7 +283,7 @@ namespace System.Runtime.Serialization
                 if (!ctor.IsPublic && type.FullName == "System.Xml.Linq.XElement")
                 {
                     Type? xName = type.Assembly.GetType("System.Xml.Linq.XName");
-                    if (xName != null)
+                    if (xName is not null)
                     {
                         MethodInfo? XName_op_Implicit = xName.GetMethod(
                             "op_Implicit",
@@ -298,7 +298,7 @@ namespace System.Runtime.Serialization
                             new Type[] { xName },
                             null
                             );
-                        if (XName_op_Implicit != null && XElement_ctor != null)
+                        if (XName_op_Implicit is not null && XElement_ctor is not null)
                         {
                             ilg.Ldstr("default");
                             ilg.Call(XName_op_Implicit);
@@ -322,7 +322,7 @@ namespace System.Runtime.Serialization
         {
             if (!IsTypeVisible(UnderlyingType))
             {
-                if (securityException != null)
+                if (securityException is not null)
                 {
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
                         new SecurityException(SR.Format(SR.PartialTrustIXmlSerializableTypeNotPublic, DataContract.GetClrTypeFullName(UnderlyingType)),
@@ -333,7 +333,7 @@ namespace System.Runtime.Serialization
 
             if (ConstructorRequiresMemberAccess(GetConstructor()))
             {
-                if (securityException != null)
+                if (securityException is not null)
                 {
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
                         new SecurityException(SR.Format(SR.PartialTrustIXmlSerialzableNoPublicConstructor, DataContract.GetClrTypeFullName(UnderlyingType)),
@@ -370,7 +370,7 @@ namespace System.Runtime.Serialization
 
         public override void WriteXmlValue(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext? context)
         {
-            if (context == null)
+            if (context is null)
                 XmlObjectSerializerWriteContext.WriteRootIXmlSerializable(xmlWriter, obj);
             else
                 context.WriteIXmlSerializable(xmlWriter, obj);
@@ -379,7 +379,7 @@ namespace System.Runtime.Serialization
         public override object? ReadXmlValue(XmlReaderDelegator xmlReader, XmlObjectSerializerReadContext? context)
         {
             object? o;
-            if (context == null)
+            if (context is null)
             {
                 o = XmlObjectSerializerReadContext.ReadRootIXmlSerializable(xmlReader, this, true /*isMemberType*/);
             }

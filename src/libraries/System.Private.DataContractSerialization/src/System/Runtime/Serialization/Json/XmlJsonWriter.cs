@@ -94,7 +94,7 @@ namespace System.Runtime.Serialization.Json
             _indent = indent;
             if (indent)
             {
-                if (indentChars == null)
+                if (indentChars is null)
                 {
                     throw new ArgumentNullException(nameof(indentChars));
                 }
@@ -173,7 +173,7 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (s_binHexEncoding == null)
+                if (s_binHexEncoding is null)
                 {
                     s_binHexEncoding = new BinHexEncoding();
                 }
@@ -233,7 +233,7 @@ namespace System.Runtime.Serialization.Json
 
         public override string? LookupPrefix(string ns)
         {
-            if (ns == null)
+            if (ns is null)
             {
                 throw new ArgumentNullException(nameof(ns));
             }
@@ -254,11 +254,11 @@ namespace System.Runtime.Serialization.Json
 
         public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
         {
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
-            if (encoding == null)
+            if (encoding is null)
             {
                 throw new ArgumentNullException(nameof(encoding));
             }
@@ -271,7 +271,7 @@ namespace System.Runtime.Serialization.Json
             {
                 tempEncoding = null;
             }
-            if (_nodeWriter == null)
+            if (_nodeWriter is null)
             {
                 _nodeWriter = new JsonNodeWriter();
             }
@@ -382,7 +382,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteBase64(byte[] buffer, int index, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -408,7 +408,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteBinHex(byte[] buffer, int index, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -444,7 +444,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteChars(char[] buffer, int index, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -633,7 +633,7 @@ namespace System.Runtime.Serialization.Json
             }
             else if (_nodeType == JsonNodeType.Element)
             {
-                if ((_dataType == JsonDataType.None) && (_serverTypeValue != null))
+                if ((_dataType == JsonDataType.None) && (_serverTypeValue is not null))
                 {
                     throw new XmlException(SR.Format(SR.JsonMustSpecifyDataType, JsonGlobals.typeString, JsonGlobals.objectString, JsonGlobals.serverTypeString));
                 }
@@ -726,7 +726,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteQualifiedName(string localName, string? ns)
         {
-            if (localName == null)
+            if (localName is null)
             {
                 throw new ArgumentNullException(nameof(localName));
             }
@@ -734,7 +734,7 @@ namespace System.Runtime.Serialization.Json
             {
                 throw new ArgumentException(SR.JsonInvalidLocalNameEmpty, nameof(localName));
             }
-            if (ns == null)
+            if (ns is null)
             {
                 ns = string.Empty;
             }
@@ -749,7 +749,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteRaw(char[] buffer, int index, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -782,7 +782,7 @@ namespace System.Runtime.Serialization.Json
             {
                 if (IsWritingNameWithMapping && prefix == JsonGlobals.xmlnsPrefix)
                 {
-                    if (ns != null && ns != xmlnsNamespace)
+                    if (ns is not null && ns != xmlnsNamespace)
                     {
                         throw new ArgumentException(SR.Format(SR.XmlPrefixBoundToNamespace, "xmlns", xmlnsNamespace, ns), nameof(ns));
                     }
@@ -815,7 +815,7 @@ namespace System.Runtime.Serialization.Json
                     throw new ArgumentException(SR.Format(SR.JsonNamespaceMustBeEmpty, ns), nameof(ns));
                 }
             }
-            if (localName == null)
+            if (localName is null)
             {
                 throw new ArgumentNullException(nameof(localName));
             }
@@ -846,7 +846,7 @@ namespace System.Runtime.Serialization.Json
             }
             else if (localName == JsonGlobals.serverTypeString)
             {
-                if (_serverTypeValue != null)
+                if (_serverTypeValue is not null)
                 {
                     throw new XmlException(SR.Format(SR.JsonAttributeAlreadyWritten, JsonGlobals.serverTypeString));
                 }
@@ -902,7 +902,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteStartElement(string? prefix, string localName, string? ns)
         {
-            if (localName == null)
+            if (localName is null)
             {
                 throw new ArgumentNullException(nameof(localName));
             }
@@ -1013,13 +1013,13 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteString(string? text)
         {
-            if (HasOpenAttribute && (text != null))
+            if (HasOpenAttribute && (text is not null))
             {
                 _attributeText += text;
             }
             else
             {
-                if (text == null)
+                if (text is null)
                 {
                     text = string.Empty;
                 }
@@ -1099,7 +1099,7 @@ namespace System.Runtime.Serialization.Json
 
         public override void WriteValue(UniqueId value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -1115,7 +1115,7 @@ namespace System.Runtime.Serialization.Json
                 ThrowClosed();
             }
 
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -1140,7 +1140,7 @@ namespace System.Runtime.Serialization.Json
             {
                 ThrowClosed();
             }
-            if (ws == null)
+            if (ws is null)
             {
                 throw new ArgumentNullException(nameof(ws));
             }
@@ -1219,7 +1219,7 @@ namespace System.Runtime.Serialization.Json
         private void EnterScope(JsonNodeType currentNodeType)
         {
             _depth++;
-            if (_scopes == null)
+            if (_scopes is null)
             {
                 _scopes = new JsonNodeType[4];
             }
@@ -1254,7 +1254,7 @@ namespace System.Runtime.Serialization.Json
             {
                 _depth = 0;
             }
-            if ((_scopes != null) && (_scopes.Length > JsonGlobals.maxScopeSize))
+            if ((_scopes is not null) && (_scopes.Length > JsonGlobals.maxScopeSize))
             {
                 _scopes = null;
             }
@@ -1282,7 +1282,7 @@ namespace System.Runtime.Serialization.Json
                 throw new InvalidOperationException(SR.JsonMustUseWriteStringForWritingAttributeValues);
             }
 
-            if ((_dataType == JsonDataType.None) && (_serverTypeValue != null))
+            if ((_dataType == JsonDataType.None) && (_serverTypeValue is not null))
             {
                 throw new XmlException(SR.Format(SR.JsonMustSpecifyDataType, JsonGlobals.typeString, JsonGlobals.objectString, JsonGlobals.serverTypeString));
             }
@@ -1318,7 +1318,7 @@ namespace System.Runtime.Serialization.Json
 
         private void ThrowIfServerTypeWritten(string dataTypeSpecified)
         {
-            if (_serverTypeValue != null)
+            if (_serverTypeValue is not null)
             {
                 throw new XmlException(SR.Format(SR.JsonInvalidDataTypeSpecifiedForServerType, JsonGlobals.typeString, dataTypeSpecified, JsonGlobals.serverTypeString, JsonGlobals.objectString));
             }
@@ -1375,7 +1375,7 @@ namespace System.Runtime.Serialization.Json
                         break;
                 }
 
-                if (_serverTypeValue != null)
+                if (_serverTypeValue is not null)
                 {
                     // dataType must be object because we throw in all other case.
                     WriteServerTypeAttribute();
@@ -1469,7 +1469,7 @@ namespace System.Runtime.Serialization.Json
                 ThrowClosed();
             }
 
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }

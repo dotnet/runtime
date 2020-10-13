@@ -29,20 +29,20 @@ namespace System.Xml.Xsl.XsltOld
 
         internal static ApplyTemplatesAction BuiltInRule()
         {
-            Debug.Assert(s_BuiltInRule != null);
+            Debug.Assert(s_BuiltInRule is not null);
             return s_BuiltInRule;
         }
 
         internal static ApplyTemplatesAction BuiltInRule(XmlQualifiedName? mode)
         {
-            return (mode == null || mode.IsEmpty) ? BuiltInRule() : new ApplyTemplatesAction(mode);
+            return (mode is null || mode.IsEmpty) ? BuiltInRule() : new ApplyTemplatesAction(mode);
         }
 
         internal ApplyTemplatesAction() { }
 
         private ApplyTemplatesAction(XmlQualifiedName mode)
         {
-            Debug.Assert(mode != null);
+            Debug.Assert(mode is not null);
             _mode = mode;
         }
 
@@ -62,7 +62,7 @@ namespace System.Xml.Xsl.XsltOld
             }
             else if (Ref.Equal(name, compiler.Atoms.Mode))
             {
-                Debug.Assert(_mode == null);
+                Debug.Assert(_mode is null);
                 if (compiler.AllowBuiltInMode && value == "*")
                 {
                     _mode = Compiler.BuiltInMode;
@@ -137,14 +137,14 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             switch (frame.State)
             {
                 case Initialized:
                     processor.ResetParams();
                     processor.InitSortArray();
-                    if (this.containedActions != null && this.containedActions.Count > 0)
+                    if (this.containedActions is not null && this.containedActions.Count > 0)
                     {
                         processor.PushActionFrame(frame);
                         frame.State = ProcessedChildren;
@@ -174,7 +174,7 @@ namespace System.Xml.Xsl.XsltOld
 
                 case ProcessNextNode:
                     Debug.Assert(frame.State == ProcessNextNode);
-                    Debug.Assert(frame.NewNodeSet != null);
+                    Debug.Assert(frame.NewNodeSet is not null);
 
                     if (frame.NewNextNode(processor))
                     {

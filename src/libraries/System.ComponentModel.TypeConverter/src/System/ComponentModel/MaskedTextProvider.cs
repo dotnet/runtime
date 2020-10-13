@@ -239,7 +239,7 @@ namespace System.ComponentModel
                 }
             }
 
-            if (culture == null)
+            if (culture is null)
             {
                 culture = CultureInfo.CurrentCulture;
             }
@@ -266,7 +266,7 @@ namespace System.ComponentModel
                 }
 
                 // Last resort use invariant culture.
-                if (Culture == null)
+                if (Culture is null)
                 {
                     Culture = CultureInfo.InvariantCulture;
                 }
@@ -888,7 +888,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Add(string input, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -1267,7 +1267,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool InsertAt(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -1294,7 +1294,7 @@ namespace System.ComponentModel
         /// </summary>
         private bool InsertAtInt(string input, int position, out int testPosition, out MaskedTextResultHint resultHint, bool testOnly)
         {
-            Debug.Assert(input != null && position >= 0 && position < _testString.Length, "input param out of range.");
+            Debug.Assert(input is not null && position >= 0 && position < _testString.Length, "input param out of range.");
 
             if (input.Length == 0) // nothing to insert.
             {
@@ -1836,7 +1836,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Replace(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -1875,7 +1875,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Replace(string input, int startPosition, int endPosition, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -2064,7 +2064,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Set(string input, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -2113,7 +2113,7 @@ namespace System.ComponentModel
         private void SetChar(char input, int position, CharDescriptor charDescriptor)
         {
             Debug.Assert(position >= 0 && position < _testString.Length, "Position out of range.");
-            Debug.Assert(charDescriptor != null, "Null character descriptor.");
+            Debug.Assert(charDescriptor is not null, "Null character descriptor.");
 
             // Get the character info from the char descriptor table.
             CharDescriptor charDex = _stringDescriptor[position];
@@ -2495,7 +2495,7 @@ namespace System.ComponentModel
         /// </summary>
         private bool TestString(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            Debug.Assert(input != null, "null input.");
+            Debug.Assert(input is not null, "null input.");
             Debug.Assert(position >= 0, "Position out of range.");
 
             resultHint = MaskedTextResultHint.Unknown;
@@ -2795,7 +2795,7 @@ namespace System.ComponentModel
         {
             testPosition = 0;
 
-            if (input == null || input.Length == 0) // nothing to verify.
+            if (input is null || input.Length == 0) // nothing to verify.
             {
                 resultHint = MaskedTextResultHint.NoEffect;
                 return true;

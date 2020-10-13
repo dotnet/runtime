@@ -332,12 +332,12 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableSortedDictionary<TKey, TValue> WithComparers(IComparer<TKey>? keyComparer, IEqualityComparer<TValue>? valueComparer)
         {
-            if (keyComparer == null)
+            if (keyComparer is null)
             {
                 keyComparer = Comparer<TKey>.Default;
             }
 
-            if (valueComparer == null)
+            if (valueComparer is null)
             {
                 valueComparer = EqualityComparer<TValue>.Default;
             }
@@ -772,7 +772,7 @@ namespace System.Collections.Immutable
         private static bool TryCastToImmutableMap(IEnumerable<KeyValuePair<TKey, TValue>> sequence, [NotNullWhen(true)] out ImmutableSortedDictionary<TKey, TValue>? other)
         {
             other = sequence as ImmutableSortedDictionary<TKey, TValue>;
-            if (other != null)
+            if (other is not null)
             {
                 return true;
             }

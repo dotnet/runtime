@@ -39,13 +39,13 @@ namespace System.ComponentModel.Composition.Hosting
             // NOTE : we optimize for the array case here, because the collection of providers is typically tiny
             // Arrays are much more compact to store and much faster to create and enumerate
             ExportProvider[]? copiedProviders = null;
-            if (providers != null)
+            if (providers is not null)
             {
                 copiedProviders = new ExportProvider[providers.Length];
                 for (int i = 0; i < providers.Length; i++)
                 {
                     ExportProvider provider = providers[i];
-                    if (provider == null)
+                    if (provider is null)
                     {
                         throw ExceptionBuilder.CreateContainsNullElement(nameof(providers));
                     }
@@ -80,7 +80,7 @@ namespace System.ComponentModel.Composition.Hosting
         ///     </para>
         /// </remarks>
         public AggregateExportProvider(IEnumerable<ExportProvider>? providers)
-            : this((providers != null) ? providers.AsArray() : null)
+            : this((providers is not null) ? providers.AsArray() : null)
         {
         }
 
@@ -127,7 +127,7 @@ namespace System.ComponentModel.Composition.Hosting
             get
             {
                 ThrowIfDisposed();
-                Debug.Assert(_readOnlyProviders != null);
+                Debug.Assert(_readOnlyProviders is not null);
 
                 return _readOnlyProviders;
             }
@@ -178,7 +178,7 @@ namespace System.ComponentModel.Composition.Hosting
                 foreach (ExportProvider provider in _providers)
                 {
                     bool cardinalityCheckResult = provider.TryGetExports(definition, atomicComposition, out IEnumerable<Export>? exports);
-                    Debug.Assert(exports != null);
+                    Debug.Assert(exports is not null);
                     bool anyExports = exports.Any();
                     if (cardinalityCheckResult && anyExports)
                     {
@@ -195,7 +195,7 @@ namespace System.ComponentModel.Composition.Hosting
                         // but no information is lost.
                         if (anyExports)
                         {
-                            allExports = (allExports != null) ? allExports.Concat(exports) : exports;
+                            allExports = (allExports is not null) ? allExports.Concat(exports) : exports;
                         }
                     }
                 }

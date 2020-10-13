@@ -121,7 +121,7 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public MemberInitExpression Update(NewExpression newExpression, IEnumerable<MemberBinding> bindings)
         {
-            if (newExpression == NewExpression && bindings != null)
+            if (newExpression == NewExpression && bindings is not null)
             {
                 if (ExpressionUtils.SameElements(ref bindings!, Bindings))
                 {

@@ -60,7 +60,7 @@ namespace System.Collections.Generic
         //
         public List(IEnumerable<T> collection)
         {
-            if (collection == null)
+            if (collection is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
 
             if (collection is ICollection<T> c)
@@ -167,7 +167,7 @@ namespace System.Collections.Generic
         {
             // Non-null values are fine.  Only accept nulls if T is a class or Nullable<U>.
             // Note that default(T) is not equal to null for value types except when T is Nullable<U>.
-            return (value is T) || (value == null && default(T) == null);
+            return (value is T) || (value is null && default(T) is null);
         }
 
         object? IList.this[int index]
@@ -331,7 +331,7 @@ namespace System.Collections.Generic
 
         public List<TOutput> ConvertAll<TOutput>(Converter<T, TOutput> converter)
         {
-            if (converter == null)
+            if (converter is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
             }
@@ -354,7 +354,7 @@ namespace System.Collections.Generic
         // compatible array type.
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
-            if ((array != null) && (array.Rank != 1))
+            if ((array is not null) && (array.Rank != 1))
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
             }
@@ -414,7 +414,7 @@ namespace System.Collections.Generic
 
         public T? Find(Predicate<T> match)
         {
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -431,7 +431,7 @@ namespace System.Collections.Generic
 
         public List<T> FindAll(Predicate<T> match)
         {
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -465,7 +465,7 @@ namespace System.Collections.Generic
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -480,7 +480,7 @@ namespace System.Collections.Generic
 
         public T? FindLast(Predicate<T> match)
         {
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -503,7 +503,7 @@ namespace System.Collections.Generic
 
         public int FindLastIndex(int startIndex, int count, Predicate<T> match)
         {
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -544,7 +544,7 @@ namespace System.Collections.Generic
 
         public void ForEach(Action<T> action)
         {
-            if (action == null)
+            if (action is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
             }
@@ -699,7 +699,7 @@ namespace System.Collections.Generic
         //
         public void InsertRange(int index, IEnumerable<T> collection)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
@@ -849,7 +849,7 @@ namespace System.Collections.Generic
         // The complexity is O(n).
         public int RemoveAll(Predicate<T> match)
         {
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -1009,7 +1009,7 @@ namespace System.Collections.Generic
 
         public void Sort(Comparison<T> comparison)
         {
-            if (comparison == null)
+            if (comparison is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             }
@@ -1055,7 +1055,7 @@ namespace System.Collections.Generic
 
         public bool TrueForAll(Predicate<T> match)
         {
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }

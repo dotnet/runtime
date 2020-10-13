@@ -71,12 +71,12 @@ namespace System.Collections.ObjectModel
 
         public bool Contains(TKey key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (dict != null)
+            if (dict is not null)
             {
                 return dict.ContainsKey(key);
             }
@@ -94,12 +94,12 @@ namespace System.Collections.ObjectModel
 
         public bool TryGetValue(TKey key, [MaybeNullWhen(false)] out TItem item)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (dict != null)
+            if (dict is not null)
             {
                 return dict.TryGetValue(key, out item!);
             }
@@ -107,7 +107,7 @@ namespace System.Collections.ObjectModel
             foreach (TItem itemInItems in Items)
             {
                 TKey keyInItems = GetKeyForItem(itemInItems);
-                if (keyInItems != null && comparer.Equals(key, keyInItems))
+                if (keyInItems is not null && comparer.Equals(key, keyInItems))
                 {
                     item = itemInItems;
                     return true;
@@ -121,7 +121,7 @@ namespace System.Collections.ObjectModel
         private bool ContainsItem(TItem item)
         {
             TKey key;
-            if ((dict == null) || ((key = GetKeyForItem(item)) == null))
+            if ((dict is null) || ((key = GetKeyForItem(item)) is null))
             {
                 return Items.Contains(item);
             }
@@ -137,12 +137,12 @@ namespace System.Collections.ObjectModel
 
         public bool Remove(TKey key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
 
-            if (dict != null)
+            if (dict is not null)
             {
                 TItem item;
                 return dict.TryGetValue(key, out item!) && Remove(item);
@@ -172,11 +172,11 @@ namespace System.Collections.ObjectModel
             TKey oldKey = GetKeyForItem(item);
             if (!comparer.Equals(oldKey, newKey))
             {
-                if (newKey != null)
+                if (newKey is not null)
                 {
                     AddKey(newKey, item);
                 }
-                if (oldKey != null)
+                if (oldKey is not null)
                 {
                     RemoveKey(oldKey);
                 }
@@ -195,7 +195,7 @@ namespace System.Collections.ObjectModel
         protected override void InsertItem(int index, TItem item)
         {
             TKey key = GetKeyForItem(item);
-            if (key != null)
+            if (key is not null)
             {
                 AddKey(key, item);
             }
@@ -206,7 +206,7 @@ namespace System.Collections.ObjectModel
         protected override void RemoveItem(int index)
         {
             TKey key = GetKeyForItem(Items[index]);
-            if (key != null)
+            if (key is not null)
             {
                 RemoveKey(key);
             }
@@ -221,19 +221,19 @@ namespace System.Collections.ObjectModel
 
             if (comparer.Equals(oldKey, newKey))
             {
-                if (newKey != null && dict != null)
+                if (newKey is not null && dict is not null)
                 {
                     dict[newKey] = item;
                 }
             }
             else
             {
-                if (newKey != null)
+                if (newKey is not null)
                 {
                     AddKey(newKey, item);
                 }
 
-                if (oldKey != null)
+                if (oldKey is not null)
                 {
                     RemoveKey(oldKey);
                 }
@@ -244,7 +244,7 @@ namespace System.Collections.ObjectModel
 
         private void AddKey(TKey key, TItem item)
         {
-            if (dict != null)
+            if (dict is not null)
             {
                 dict.Add(key, item);
             }
@@ -270,7 +270,7 @@ namespace System.Collections.ObjectModel
             foreach (TItem item in Items)
             {
                 TKey key = GetKeyForItem(item);
-                if (key != null)
+                if (key is not null)
                 {
                     dict.Add(key, item);
                 }
@@ -279,8 +279,8 @@ namespace System.Collections.ObjectModel
 
         private void RemoveKey(TKey key)
         {
-            Debug.Assert(key != null, "key shouldn't be null!");
-            if (dict != null)
+            Debug.Assert(key is not null, "key shouldn't be null!");
+            if (dict is not null)
             {
                 dict.Remove(key);
             }

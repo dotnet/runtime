@@ -178,7 +178,7 @@ namespace System.IO.Compression
         public void SetInput(byte[] inputBuffer, int startIndex, int count)
         {
             Debug.Assert(NeedsInput(), "We have something left in previous input!");
-            Debug.Assert(inputBuffer != null);
+            Debug.Assert(inputBuffer is not null);
             Debug.Assert(startIndex >= 0 && count >= 0 && count + startIndex <= inputBuffer.Length);
             Debug.Assert(!_inputBufferHandle.IsAllocated);
 

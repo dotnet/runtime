@@ -221,7 +221,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private U UnBoxValue<U>(object jsValue) where U : struct
         {
-            if (jsValue == null)
+            if (jsValue is null)
             {
                 throw new InvalidCastException($"Unable to cast null to type {typeof(U)}.");
             }

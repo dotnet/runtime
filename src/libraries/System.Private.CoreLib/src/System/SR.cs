@@ -57,7 +57,7 @@ namespace System
 
                 // Are we recursively looking up the same resource?  Note - our backout code will set
                 // the ResourceHelper's currentlyLoading stack to null if an exception occurs.
-                if (_currentlyLoading != null && _currentlyLoading.Count > 0 && _currentlyLoading.LastIndexOf(key) != -1)
+                if (_currentlyLoading is not null && _currentlyLoading.Count > 0 && _currentlyLoading.LastIndexOf(key) != -1)
                 {
                     // We can start infinitely recursing for one resource lookup,
                     // then during our failure reporting, start infinitely recursing again.
@@ -94,7 +94,7 @@ namespace System
                 string? s = ResourceManager.GetString(key, null);
                 _currentlyLoading.RemoveAt(_currentlyLoading.Count - 1); // Pop
 
-                Debug.Assert(s != null, "Managed resource string lookup failed.  Was your resource name misspelled?  Did you rebuild mscorlib after adding a resource to resources.txt?  Debug this w/ cordbg and bug whoever owns the code that called SR.GetResourceString.  Resource name was: \"" + key + "\"");
+                Debug.Assert(s is not null, "Managed resource string lookup failed.  Was your resource name misspelled?  Did you rebuild mscorlib after adding a resource to resources.txt?  Debug this w/ cordbg and bug whoever owns the code that called SR.GetResourceString.  Resource name was: \"" + key + "\"");
                 return s ?? key;
             }
             catch

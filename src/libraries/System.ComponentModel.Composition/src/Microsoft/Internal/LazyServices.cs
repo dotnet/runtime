@@ -11,13 +11,13 @@ namespace Microsoft.Internal
         public static T GetNotNullValue<T>(this Lazy<T> lazy, string argument)
             where T : class
         {
-            if (lazy == null)
+            if (lazy is null)
             {
                 throw new ArgumentNullException(nameof(lazy));
             }
 
             T value = lazy.Value;
-            if (value == null)
+            if (value is null)
             {
                 throw new InvalidOperationException(SR.Format(SR.LazyServices_LazyResolvesToNull, typeof(T), argument));
             }

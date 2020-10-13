@@ -40,7 +40,7 @@ namespace Microsoft.Extensions.Internal
                 }
 
                 // Workaround for https://github.com/dotnet/runtime/issues/18599
-                if (defaultValue == null && parameter.ParameterType.IsValueType)
+                if (defaultValue is null && parameter.ParameterType.IsValueType)
                 {
                     defaultValue = CreateValueType(parameter.ParameterType);
                 }
@@ -50,13 +50,13 @@ namespace Microsoft.Extensions.Internal
                 static object? CreateValueType(Type t) => Activator.CreateInstance(t);
 
                 // Handle nullable enums
-                if (defaultValue != null &&
+                if (defaultValue is not null &&
                     parameter.ParameterType.IsGenericType &&
                     parameter.ParameterType.GetGenericTypeDefinition() == _nullable
                     )
                 {
                     Type? underlyingType = Nullable.GetUnderlyingType(parameter.ParameterType);
-                    if (underlyingType != null && underlyingType.IsEnum)
+                    if (underlyingType is not null && underlyingType.IsEnum)
                     {
                         defaultValue = Enum.ToObject(underlyingType, defaultValue);
                     }

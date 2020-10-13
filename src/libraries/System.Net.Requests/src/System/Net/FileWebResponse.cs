@@ -114,7 +114,7 @@ namespace System.Net
                 _closed = true;
 
                 Stream? chkStream = _stream;
-                if (chkStream != null)
+                if (chkStream is not null)
                 {
                     chkStream.Close();
                     _stream = null!;

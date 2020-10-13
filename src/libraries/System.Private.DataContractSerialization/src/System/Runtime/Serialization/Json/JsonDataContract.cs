@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization.Json
         internal static JsonReadWriteDelegates GetReadWriteDelegatesFromGeneratedAssembly(DataContract c)
         {
             JsonReadWriteDelegates? result = GetGeneratedReadWriteDelegates(c);
-            if (result == null)
+            if (result is null)
             {
                 throw new InvalidDataContractException(SR.Format(SR.SerializationCodeIsMissingForType, c.UnderlyingType));
             }
@@ -111,18 +111,18 @@ namespace System.Runtime.Serialization.Json
 
         protected void PopKnownDataContracts(XmlObjectSerializerContext? context)
         {
-            if (KnownDataContracts != null)
+            if (KnownDataContracts is not null)
             {
-                Debug.Assert(context != null);
+                Debug.Assert(context is not null);
                 context.scopedKnownTypes.Pop();
             }
         }
 
         protected void PushKnownDataContracts(XmlObjectSerializerContext? context)
         {
-            if (KnownDataContracts != null)
+            if (KnownDataContracts is not null)
             {
-                Debug.Assert(context != null);
+                Debug.Assert(context is not null);
                 context.scopedKnownTypes.Push(KnownDataContracts);
             }
         }
@@ -158,7 +158,7 @@ namespace System.Runtime.Serialization.Json
             {
                 int id = JsonDataContractCriticalHelper.GetId(traditionalDataContract.UnderlyingType.TypeHandle);
                 JsonDataContract dataContract = s_dataContractCache[id];
-                if (dataContract == null)
+                if (dataContract is null)
                 {
                     dataContract = CreateJsonDataContract(id, traditionalDataContract);
                     s_dataContractCache[id] = dataContract;
@@ -204,7 +204,7 @@ namespace System.Runtime.Serialization.Json
                 lock (s_createDataContractLock)
                 {
                     JsonDataContract dataContract = s_dataContractCache[id];
-                    if (dataContract == null)
+                    if (dataContract is null)
                     {
                         Type traditionalDataContractType = traditionalDataContract.GetType();
                         if (traditionalDataContractType == typeof(ObjectDataContract))
@@ -264,15 +264,15 @@ namespace System.Runtime.Serialization.Json
 
             private void AddCollectionItemContractsToKnownDataContracts()
             {
-                if (_traditionalDataContract.KnownDataContracts != null)
+                if (_traditionalDataContract.KnownDataContracts is not null)
                 {
                     foreach (KeyValuePair<XmlQualifiedName, DataContract> knownDataContract in _traditionalDataContract.KnownDataContracts)
                     {
                         CollectionDataContract? collectionDataContract = knownDataContract.Value as CollectionDataContract;
-                        while (collectionDataContract != null)
+                        while (collectionDataContract is not null)
                         {
                             DataContract itemContract = collectionDataContract.ItemContract;
-                            if (_knownDataContracts == null)
+                            if (_knownDataContracts is null)
                             {
                                 _knownDataContracts = new Dictionary<XmlQualifiedName, DataContract>();
                             }

@@ -13,7 +13,7 @@ namespace System.Configuration
         {
             get
             {
-                if (s_instance == null)
+                if (s_instance is null)
                 {
                     s_instance = new ConfigurationManagerInternal();
                 }

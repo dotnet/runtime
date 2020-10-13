@@ -20,7 +20,7 @@ namespace System.IO
     {
         public static DirectoryInfo? GetParent(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             if (path.Length == 0)
@@ -29,14 +29,14 @@ namespace System.IO
             string fullPath = Path.GetFullPath(path);
 
             string? s = Path.GetDirectoryName(fullPath);
-            if (s == null)
+            if (s is null)
                 return null;
             return new DirectoryInfo(s);
         }
 
         public static DirectoryInfo CreateDirectory(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
@@ -53,7 +53,7 @@ namespace System.IO
         {
             try
             {
-                if (path == null)
+                if (path is null)
                     return false;
                 if (path.Length == 0)
                     return false;
@@ -171,9 +171,9 @@ namespace System.IO
             SearchTarget searchTarget,
             EnumerationOptions options)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (searchPattern == null)
+            if (searchPattern is null)
                 throw new ArgumentNullException(nameof(searchPattern));
 
             FileSystemEnumerableFactory.NormalizeInputs(ref path, ref searchPattern, options.MatchType);
@@ -222,7 +222,7 @@ namespace System.IO
 
         public static string GetDirectoryRoot(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             string fullPath = Path.GetFullPath(path);
@@ -235,7 +235,7 @@ namespace System.IO
 
         public static void SetCurrentDirectory(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
@@ -245,12 +245,12 @@ namespace System.IO
 
         public static void Move(string sourceDirName, string destDirName)
         {
-            if (sourceDirName == null)
+            if (sourceDirName is null)
                 throw new ArgumentNullException(nameof(sourceDirName));
             if (sourceDirName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(sourceDirName));
 
-            if (destDirName == null)
+            if (destDirName is null)
                 throw new ArgumentNullException(nameof(destDirName));
             if (destDirName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(destDirName));

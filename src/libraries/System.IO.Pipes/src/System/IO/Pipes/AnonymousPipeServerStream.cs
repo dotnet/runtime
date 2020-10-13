@@ -37,11 +37,11 @@ namespace System.IO.Pipes
             {
                 throw new NotSupportedException(SR.NotSupported_AnonymousPipeUnidirectional);
             }
-            if (serverSafePipeHandle == null)
+            if (serverSafePipeHandle is null)
             {
                 throw new ArgumentNullException(nameof(serverSafePipeHandle));
             }
-            if (clientSafePipeHandle == null)
+            if (clientSafePipeHandle is null)
             {
                 throw new ArgumentNullException(nameof(clientSafePipeHandle));
             }
@@ -116,7 +116,7 @@ namespace System.IO.Pipes
         // know the client has been passed the handle and so the connection is live.
         public void DisposeLocalCopyOfClientHandle()
         {
-            if (_clientHandle != null && !_clientHandle.IsClosed)
+            if (_clientHandle is not null && !_clientHandle.IsClosed)
             {
                 _clientHandle.Dispose();
             }
@@ -127,7 +127,7 @@ namespace System.IO.Pipes
             try
             {
                 // We should dispose of the client handle if it was not exposed.
-                if (!_clientHandleExposed && _clientHandle != null && !_clientHandle.IsClosed)
+                if (!_clientHandleExposed && _clientHandle is not null && !_clientHandle.IsClosed)
                 {
                     _clientHandle.Dispose();
                 }

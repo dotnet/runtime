@@ -34,7 +34,7 @@ namespace System.Net.Http.HPack
 
         public override string ToString()
         {
-            if (Name != null)
+            if (Name is not null)
             {
                 return Encoding.ASCII.GetString(Name) + ": " + Encoding.ASCII.GetString(Value);
             }

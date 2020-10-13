@@ -17,7 +17,7 @@ namespace System.Security.Cryptography.Xml
 
         public EncryptionProperty(XmlElement elementProperty)
         {
-            if (elementProperty == null)
+            if (elementProperty is null)
                 throw new ArgumentNullException(nameof(elementProperty));
             if (elementProperty.LocalName != "EncryptionProperty" || elementProperty.NamespaceURI != EncryptedXml.XmlEncNamespaceUrl)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidEncryptionProperty);
@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Xml
             get { return _elemProp; }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
                 if (value.LocalName != "EncryptionProperty" || value.NamespaceURI != EncryptedXml.XmlEncNamespaceUrl)
                     throw new CryptographicException(SR.Cryptography_Xml_InvalidEncryptionProperty);
@@ -55,7 +55,7 @@ namespace System.Security.Cryptography.Xml
         {
             get
             {
-                return (_cachedXml != null);
+                return (_cachedXml is not null);
             }
         }
 
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
             if (value.LocalName != "EncryptionProperty" || value.NamespaceURI != EncryptedXml.XmlEncNamespaceUrl)
                 throw new CryptographicException(SR.Cryptography_Xml_InvalidEncryptionProperty);

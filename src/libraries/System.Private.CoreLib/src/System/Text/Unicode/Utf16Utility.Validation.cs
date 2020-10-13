@@ -45,7 +45,7 @@ namespace System.Text.Unicode
         public static char* GetPointerToFirstInvalidChar(char* pInputBuffer, int inputLength, out long utf8CodeUnitCountAdjustment, out int scalarCountAdjustment)
         {
             Debug.Assert(inputLength >= 0, "Input length must not be negative.");
-            Debug.Assert(pInputBuffer != null || inputLength == 0, "Input length must be zero if input buffer pointer is null.");
+            Debug.Assert(pInputBuffer is not null || inputLength == 0, "Input length must be zero if input buffer pointer is null.");
 
             // First, we'll handle the common case of all-ASCII. If this is able to
             // consume the entire buffer, we'll skip the remainder of this method's logic.

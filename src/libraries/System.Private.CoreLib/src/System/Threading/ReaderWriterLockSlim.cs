@@ -197,12 +197,12 @@ namespace System.Threading
         {
             ReaderWriterCount? rwc = t_rwc;
             ReaderWriterCount? empty = null;
-            while (rwc != null)
+            while (rwc is not null)
             {
                 if (rwc.lockID == _lockID)
                     return rwc;
 
-                if (!dontAllocate && empty == null && IsRWEntryEmpty(rwc))
+                if (!dontAllocate && empty is null && IsRWEntryEmpty(rwc))
                     empty = rwc;
 
                 rwc = rwc.next;
@@ -211,7 +211,7 @@ namespace System.Threading
             if (dontAllocate)
                 return null;
 
-            if (empty == null)
+            if (empty is null)
             {
                 empty = new ReaderWriterCount();
                 empty.next = t_rwc;
@@ -398,7 +398,7 @@ namespace System.Threading
                 }
 
                 // Drat, we need to wait.  Mark that we have waiters and wait.
-                if (_readEvent == null)      // Create the needed event
+                if (_readEvent is null)      // Create the needed event
                 {
                     LazyCreateEvent(ref _readEvent, EnterLockType.Read);
                     if (IsRwHashEntryChanged(lrwc))
@@ -471,7 +471,7 @@ namespace System.Threading
                 lrwc = GetThreadRWCount(dontAllocate: true);
 
                 // Can't acquire write lock with reader lock held.
-                if (lrwc != null && lrwc.readercount > 0)
+                if (lrwc is not null && lrwc.readercount > 0)
                 {
                     _spinLock.Exit();
                     throw new LockRecursionException(SR.LockRecursionException_WriteAfterReadNotAllowed);
@@ -544,7 +544,7 @@ namespace System.Threading
                     }
                     else if (readercount == 2)
                     {
-                        if (lrwc != null)
+                        if (lrwc is not null)
                         {
                             if (IsRwHashEntryChanged(lrwc))
                                 lrwc = GetThreadRWCount(dontAllocate: false)!;
@@ -580,7 +580,7 @@ namespace System.Threading
 
                 if (upgradingToWrite)
                 {
-                    if (_waitUpgradeEvent == null)   // Create the needed event
+                    if (_waitUpgradeEvent is null)   // Create the needed event
                     {
                         LazyCreateEvent(ref _waitUpgradeEvent, EnterLockType.UpgradeToWrite);
                         continue;   // since we left the lock, start over.
@@ -597,7 +597,7 @@ namespace System.Threading
                 else
                 {
                     // Drat, we need to wait.  Mark that we have waiters and wait.
-                    if (_writeEvent == null)     // create the needed event.
+                    if (_writeEvent is null)     // create the needed event.
                     {
                         LazyCreateEvent(ref _writeEvent, EnterLockType.Write);
                         continue;   // since we left the lock, start over.
@@ -614,7 +614,7 @@ namespace System.Threading
 
             if (_fIsReentrant)
             {
-                Debug.Assert(lrwc != null, "Initialized based on _fIsReentrant earlier in the method");
+                Debug.Assert(lrwc is not null, "Initialized based on _fIsReentrant earlier in the method");
                 if (IsRwHashEntryChanged(lrwc))
                     lrwc = GetThreadRWCount(dontAllocate: false)!;
                 lrwc.writercount++;
@@ -671,7 +671,7 @@ namespace System.Threading
                 _spinLock.Enter(EnterSpinLockReason.EnterAnyRead);
                 lrwc = GetThreadRWCount(dontAllocate: true);
                 // Can't acquire upgrade lock with reader lock held.
-                if (lrwc != null && lrwc.readercount > 0)
+                if (lrwc is not null && lrwc.readercount > 0)
                 {
                     _spinLock.Exit();
                     throw new LockRecursionException(SR.LockRecursionException_UpgradeAfterReadNotAllowed);
@@ -741,7 +741,7 @@ namespace System.Threading
                 }
 
                 // Drat, we need to wait.  Mark that we have waiters and wait.
-                if (_upgradeEvent == null)   // Create the needed event
+                if (_upgradeEvent is null)   // Create the needed event
                 {
                     LazyCreateEvent(ref _upgradeEvent, EnterLockType.UpgradeableRead);
                     continue;   // since we left the lock, start over.
@@ -757,7 +757,7 @@ namespace System.Threading
             {
                 // The lock may have been dropped getting here, so make a quick check to see whether some other
                 // thread did not grab the entry.
-                Debug.Assert(lrwc != null, "Initialized based on _fIsReentrant earlier in the method");
+                Debug.Assert(lrwc is not null, "Initialized based on _fIsReentrant earlier in the method");
                 if (IsRwHashEntryChanged(lrwc))
                     lrwc = GetThreadRWCount(dontAllocate: false)!;
                 lrwc.upgradecount++;
@@ -774,7 +774,7 @@ namespace System.Threading
 
             ReaderWriterCount? lrwc = GetThreadRWCount(dontAllocate: true);
 
-            if (lrwc == null || lrwc.readercount < 1)
+            if (lrwc is null || lrwc.readercount < 1)
             {
                 // You have to be holding the read lock to make this call.
                 _spinLock.Exit();
@@ -823,7 +823,7 @@ namespace System.Threading
                 _spinLock.Enter(EnterSpinLockReason.ExitAnyWrite);
                 lrwc = GetThreadRWCount(dontAllocate: false)!;
 
-                if (lrwc == null)
+                if (lrwc is null)
                 {
                     _spinLock.Exit();
                     throw new SynchronizationLockException(SR.SynchronizationLockException_MisMatchedWrite);
@@ -870,7 +870,7 @@ namespace System.Threading
                 _spinLock.Enter(EnterSpinLockReason.ExitAnyRead);
                 lrwc = GetThreadRWCount(dontAllocate: true);
 
-                if (lrwc == null)
+                if (lrwc is null)
                 {
                     _spinLock.Exit();
                     throw new SynchronizationLockException(SR.SynchronizationLockException_MisMatchedUpgrade);
@@ -909,7 +909,7 @@ namespace System.Threading
         {
 #if DEBUG
             Debug.Assert(_spinLock.IsHeld);
-            Debug.Assert(waitEvent == null);
+            Debug.Assert(waitEvent is null);
 #endif
 
             _spinLock.Exit();
@@ -938,7 +938,7 @@ namespace System.Threading
             }
             _spinLock.Enter(enterMyLockReason);
 
-            if (waitEvent == null)          // maybe someone snuck in.
+            if (waitEvent is null)          // maybe someone snuck in.
                 waitEvent = newEvent;
             else
                 newEvent.Dispose();
@@ -1261,25 +1261,25 @@ namespace System.Threading
                 if (IsReadLockHeld || IsUpgradeableReadLockHeld || IsWriteLockHeld)
                     throw new SynchronizationLockException(SR.SynchronizationLockException_IncorrectDispose);
 
-                if (_writeEvent != null)
+                if (_writeEvent is not null)
                 {
                     _writeEvent.Dispose();
                     _writeEvent = null;
                 }
 
-                if (_readEvent != null)
+                if (_readEvent is not null)
                 {
                     _readEvent.Dispose();
                     _readEvent = null;
                 }
 
-                if (_upgradeEvent != null)
+                if (_upgradeEvent is not null)
                 {
                     _upgradeEvent.Dispose();
                     _upgradeEvent = null;
                 }
 
-                if (_waitUpgradeEvent != null)
+                if (_waitUpgradeEvent is not null)
                 {
                     _waitUpgradeEvent.Dispose();
                     _waitUpgradeEvent = null;
@@ -1357,7 +1357,7 @@ namespace System.Threading
             {
                 int count = 0;
                 ReaderWriterCount? lrwc = GetThreadRWCount(dontAllocate: true);
-                if (lrwc != null)
+                if (lrwc is not null)
                     count = lrwc.readercount;
 
                 return count;
@@ -1373,7 +1373,7 @@ namespace System.Threading
                     int count = 0;
 
                     ReaderWriterCount? lrwc = GetThreadRWCount(dontAllocate: true);
-                    if (lrwc != null)
+                    if (lrwc is not null)
                         count = lrwc.upgradecount;
 
                     return count;
@@ -1397,7 +1397,7 @@ namespace System.Threading
                     int count = 0;
 
                     ReaderWriterCount? lrwc = GetThreadRWCount(dontAllocate: true);
-                    if (lrwc != null)
+                    if (lrwc is not null)
                         count = lrwc.writercount;
 
                     return count;

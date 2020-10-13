@@ -98,7 +98,7 @@ namespace System.Net
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(formattableString);
-            if (IsEnabled) Log.Enter(IdOf(thisOrContextObject), memberName, formattableString != null ? Format(formattableString) : NoParameters);
+            if (IsEnabled) Log.Enter(IdOf(thisOrContextObject), memberName, formattableString is not null ? Format(formattableString) : NoParameters);
         }
 
         /// <summary>Logs entrance to a method.</summary>
@@ -158,7 +158,7 @@ namespace System.Net
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(formattableString);
-            if (IsEnabled) Log.Exit(IdOf(thisOrContextObject), memberName, formattableString != null ? Format(formattableString) : NoParameters);
+            if (IsEnabled) Log.Exit(IdOf(thisOrContextObject), memberName, formattableString is not null ? Format(formattableString) : NoParameters);
         }
 
         /// <summary>Logs exit from a method.</summary>
@@ -202,7 +202,7 @@ namespace System.Net
         {
             DebugValidateArg(thisOrContextObject);
             DebugValidateArg(formattableString);
-            if (IsEnabled) Log.Info(IdOf(thisOrContextObject), memberName, formattableString != null ? Format(formattableString) : NoParameters);
+            if (IsEnabled) Log.Info(IdOf(thisOrContextObject), memberName, formattableString is not null ? Format(formattableString) : NoParameters);
         }
 
         /// <summary>Logs an information message.</summary>
@@ -401,14 +401,14 @@ namespace System.Net
         [Conditional("DEBUG_NETEVENTSOURCE_MISUSE")]
         private static void DebugValidateArg(FormattableString? arg)
         {
-            Debug.Assert(IsEnabled || arg == null, $"Should not be formatting FormattableString \"{arg}\" if tracing isn't enabled");
+            Debug.Assert(IsEnabled || arg is null, $"Should not be formatting FormattableString \"{arg}\" if tracing isn't enabled");
         }
 
         public static new bool IsEnabled =>
             Log.IsEnabled();
 
         [NonEvent]
-        public static string IdOf(object? value) => value != null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;
+        public static string IdOf(object? value) => value is not null ? value.GetType().Name + "#" + GetHashCode(value) : NullInstance;
 
         [NonEvent]
         public static int GetHashCode(object value) => value?.GetHashCode() ?? 0;
@@ -417,7 +417,7 @@ namespace System.Net
         public static object Format(object? value)
         {
             // If it's null, return a known string for null values
-            if (value == null)
+            if (value is null)
             {
                 return NullInstance;
             }
@@ -425,7 +425,7 @@ namespace System.Net
             // Give another partial implementation a chance to provide its own string representation
             string? result = null;
             AdditionalCustomizedToString(value, ref result);
-            if (result != null)
+            if (result is not null)
             {
                 return result;
             }
@@ -457,7 +457,7 @@ namespace System.Net
             // If the string representation of the instance would just be its type name,
             // use its id instead.
             string? toString = value.ToString();
-            if (toString == null || toString == value.GetType().FullName)
+            if (toString is null || toString == value.GetType().FullName)
             {
                 return IdOf(value);
             }
@@ -496,10 +496,10 @@ namespace System.Net
         {
             if (IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
-                if (arg3 == null) arg3 = "";
-                if (arg4 == null) arg4 = "";
+                if (arg1 is null) arg1 = "";
+                if (arg2 is null) arg2 = "";
+                if (arg3 is null) arg3 = "";
+                if (arg4 is null) arg4 = "";
 
                 fixed (char* string1Bytes = arg1)
                 fixed (char* string2Bytes = arg2)
@@ -540,9 +540,9 @@ namespace System.Net
         {
             if (IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
-                if (arg3 == null) arg3 = Array.Empty<byte>();
+                if (arg1 is null) arg1 = "";
+                if (arg2 is null) arg2 = "";
+                if (arg3 is null) arg3 = Array.Empty<byte>();
 
                 fixed (char* arg1Ptr = arg1)
                 fixed (char* arg2Ptr = arg2)
@@ -583,7 +583,7 @@ namespace System.Net
         {
             if (IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
+                if (arg1 is null) arg1 = "";
 
                 fixed (char* arg1Ptr = arg1)
                 {
@@ -621,8 +621,8 @@ namespace System.Net
         {
             if (IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg3 == null) arg3 = "";
+                if (arg1 is null) arg1 = "";
+                if (arg3 is null) arg3 = "";
 
                 fixed (char* arg1Ptr = arg1)
                 fixed (char* arg3Ptr = arg3)
@@ -656,8 +656,8 @@ namespace System.Net
         {
             if (IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
+                if (arg1 is null) arg1 = "";
+                if (arg2 is null) arg2 = "";
 
                 fixed (char* arg1Ptr = arg1)
                 fixed (char* arg2Ptr = arg2)
@@ -691,9 +691,9 @@ namespace System.Net
         {
             if (IsEnabled())
             {
-                if (arg1 == null) arg1 = "";
-                if (arg2 == null) arg2 = "";
-                if (arg3 == null) arg3 = "";
+                if (arg1 is null) arg1 = "";
+                if (arg2 is null) arg2 = "";
+                if (arg3 is null) arg3 = "";
 
                 fixed (char* arg1Ptr = arg1)
                 fixed (char* arg2Ptr = arg2)

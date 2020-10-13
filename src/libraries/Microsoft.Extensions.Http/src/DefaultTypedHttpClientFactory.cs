@@ -17,12 +17,12 @@ namespace Microsoft.Extensions.Http
 
         public DefaultTypedHttpClientFactory(Cache cache, IServiceProvider services)
         {
-            if (cache == null)
+            if (cache is null)
             {
                 throw new ArgumentNullException(nameof(cache));
             }
 
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Http
 
         public TClient CreateClient(HttpClient httpClient)
         {
-            if (httpClient == null)
+            if (httpClient is null)
             {
                 throw new ArgumentNullException(nameof(httpClient));
             }

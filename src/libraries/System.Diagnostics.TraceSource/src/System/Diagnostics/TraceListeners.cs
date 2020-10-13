@@ -85,7 +85,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void AddRange(TraceListener[] value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -100,7 +100,7 @@ namespace System.Diagnostics
         /// </devdoc>
         public void AddRange(TraceListenerCollection value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -152,7 +152,7 @@ namespace System.Diagnostics
 
         internal void InitializeListener(TraceListener listener)
         {
-            if (listener == null)
+            if (listener is null)
                 throw new ArgumentNullException(nameof(listener));
 
             listener.IndentSize = TraceInternal.IndentSize;
@@ -196,7 +196,7 @@ namespace System.Diagnostics
         public void Remove(string name)
         {
             TraceListener? listener = this[name];
-            if (listener != null)
+            if (listener is not null)
                 ((IList)this).Remove(listener);
         }
 
@@ -222,7 +222,7 @@ namespace System.Diagnostics
             set
             {
                 TraceListener? listener = value as TraceListener;
-                if (listener == null)
+                if (listener is null)
                     throw new ArgumentException(SR.MustAddListener, nameof(value));
                 InitializeListener(listener);
                 _list[index] = listener;
@@ -251,7 +251,7 @@ namespace System.Diagnostics
         int IList.Add(object? value)
         {
             TraceListener? listener = value as TraceListener;
-            if (listener == null)
+            if (listener is null)
                 throw new ArgumentException(SR.MustAddListener, nameof(value));
 
             InitializeListener(listener);
@@ -278,7 +278,7 @@ namespace System.Diagnostics
         void IList.Insert(int index, object? value)
         {
             TraceListener? listener = value as TraceListener;
-            if (listener == null)
+            if (listener is null)
                 throw new ArgumentException(SR.MustAddListener, nameof(value));
 
             InitializeListener(listener);

@@ -20,7 +20,7 @@ namespace System.ComponentModel
         /// </summary>
         protected virtual bool IsKeyValid(string key, Type type)
         {
-            if (key != null)
+            if (key is not null)
             {
                 return key.StartsWith(GetKey(type));
             }
@@ -44,32 +44,32 @@ namespace System.ComponentModel
         {
             LicFileLicense lic = null;
 
-            Debug.Assert(context != null, "No context provided!");
-            if (context != null)
+            Debug.Assert(context is not null, "No context provided!");
+            if (context is not null)
             {
                 if (context.UsageMode == LicenseUsageMode.Runtime)
                 {
                     string key = context.GetSavedLicenseKey(type, null);
-                    if (key != null && IsKeyValid(key, type))
+                    if (key is not null && IsKeyValid(key, type))
                     {
                         lic = new LicFileLicense(this, key);
                     }
                 }
 
-                if (lic == null)
+                if (lic is null)
                 {
                     string modulePath = null;
 
-                    if (context != null)
+                    if (context is not null)
                     {
                         ITypeResolutionService resolver = (ITypeResolutionService)context.GetService(typeof(ITypeResolutionService));
-                        if (resolver != null)
+                        if (resolver is not null)
                         {
                             modulePath = resolver.GetPathOfAssembly(type.Assembly.GetName());
                         }
                     }
 
-                    if (modulePath == null)
+                    if (modulePath is null)
                     {
                         modulePath = type.Module.FullyQualifiedName;
                     }
@@ -90,7 +90,7 @@ namespace System.ComponentModel
                         }
                     }
 
-                    if (lic != null)
+                    if (lic is not null)
                     {
                         context.SetSavedLicenseKey(type, lic.LicenseKey);
                     }

@@ -34,16 +34,16 @@ namespace System.IO.MemoryMappedFiles
             FileStream? fileStream, string? mapName, HandleInheritability inheritability,
             MemoryMappedFileAccess access, MemoryMappedFileOptions options, long capacity)
         {
-            SafeFileHandle? fileHandle = fileStream != null ? fileStream.SafeFileHandle : null;
+            SafeFileHandle? fileHandle = fileStream is not null ? fileStream.SafeFileHandle : null;
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(inheritability);
 
 
-            if (fileStream != null)
+            if (fileStream is not null)
             {
                 VerifyMemoryMappedFileAccess(access, capacity, fileStream);
             }
 
-            SafeMemoryMappedFileHandle handle = fileHandle != null ?
+            SafeMemoryMappedFileHandle handle = fileHandle is not null ?
                 Interop.CreateFileMapping(fileHandle, ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName) :
                 Interop.CreateFileMapping(new IntPtr(-1), ref secAttrs, GetPageAccess(access) | (int)options, capacity, mapName);
 
@@ -167,7 +167,7 @@ namespace System.IO.MemoryMappedFiles
             }
 
             // finished retrying but couldn't create or open
-            if (handle == null || handle.IsInvalid)
+            if (handle is null || handle.IsInvalid)
             {
                 throw new InvalidOperationException(SR.InvalidOperation_CantCreateFileMapping);
             }

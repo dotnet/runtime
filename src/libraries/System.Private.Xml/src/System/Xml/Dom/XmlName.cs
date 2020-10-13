@@ -19,7 +19,7 @@ namespace System.Xml
 
         public static XmlName Create(string prefix, string localName, string ns, int hashCode, XmlDocument ownerDoc, XmlName next, IXmlSchemaInfo? schemaInfo)
         {
-            if (schemaInfo == null)
+            if (schemaInfo is null)
             {
                 return new XmlName(prefix, localName, ns, hashCode, ownerDoc, next);
             }
@@ -84,9 +84,9 @@ namespace System.Xml
         {
             get
             {
-                if (_name == null)
+                if (_name is null)
                 {
-                    Debug.Assert(_prefix != null);
+                    Debug.Assert(_prefix is not null);
                     if (_prefix.Length > 0)
                     {
                         if (_localName.Length > 0)
@@ -94,7 +94,7 @@ namespace System.Xml
                             string n = string.Concat(_prefix, ":", _localName);
                             lock (ownerDoc.NameTable)
                             {
-                                if (_name == null)
+                                if (_name is null)
                                 {
                                     _name = ownerDoc.NameTable.Add(n);
                                 }
@@ -173,13 +173,13 @@ namespace System.Xml
 
         public virtual bool Equals(IXmlSchemaInfo? schemaInfo)
         {
-            return schemaInfo == null;
+            return schemaInfo is null;
         }
 
         public static int GetHashCode(string name)
         {
             int hashCode = 0;
-            if (name != null)
+            if (name is not null)
             {
                 return string.GetHashCode(name.AsSpan(name.LastIndexOf(':') + 1));
             }
@@ -209,7 +209,7 @@ namespace System.Xml
             SetIsNil(schemaInfo.IsNil);
             _memberType = schemaInfo.MemberType;
             _schemaType = schemaInfo.SchemaType;
-            _decl = schemaInfo.SchemaElement != null
+            _decl = schemaInfo.SchemaElement is not null
                    ? (object)schemaInfo.SchemaElement
                    : (object?)schemaInfo.SchemaAttribute;
         }
@@ -289,7 +289,7 @@ namespace System.Xml
 
         public override bool Equals(IXmlSchemaInfo? schemaInfo)
         {
-            if (schemaInfo != null
+            if (schemaInfo is not null
                 && schemaInfo.Validity == (XmlSchemaValidity)(_flags & ValidityMask)
                 && schemaInfo.IsDefault == ((_flags & IsDefaultBit) != 0)
                 && schemaInfo.IsNil == ((_flags & IsNilBit) != 0)

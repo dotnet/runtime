@@ -221,7 +221,7 @@ namespace System.Configuration.Internal
             for (; nextIndex < parts.Length; nextIndex++)
             {
                 BaseConfigurationRecord childRecord = currentRecord.HlGetChild(parts[nextIndex]);
-                if (childRecord == null)
+                if (childRecord is null)
                     break;
 
                 currentRecord = childRecord;
@@ -246,7 +246,7 @@ namespace System.Configuration.Internal
                 HlFindConfigRecord(parts, out index, out currentRecord);
 
                 // Return if not found, or does not match the one we are trying to remove.
-                if ((index != parts.Length) || ((configRecord != null) && !ReferenceEquals(configRecord, currentRecord)))
+                if ((index != parts.Length) || ((configRecord is not null) && !ReferenceEquals(configRecord, currentRecord)))
                     return;
 
                 // Remove it from the hierarchy.

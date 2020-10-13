@@ -93,7 +93,7 @@ namespace System
                 return false;
             }
 
-            Debug.Assert(dtfi != null, "dtfi == null");
+            Debug.Assert(dtfi is not null, "dtfi is null");
 
             return DoStrictParse(s, format, style, dtfi, ref result);
         }
@@ -168,7 +168,7 @@ namespace System
         internal static bool TryParseExactMultiple(ReadOnlySpan<char> s, string?[]? formats,
                                                 DateTimeFormatInfo dtfi, DateTimeStyles style, ref DateTimeResult result)
         {
-            if (formats == null)
+            if (formats is null)
             {
                 result.SetFailure(ParseFailureKind.ArgumentNull, nameof(SR.ArgumentNull_String), null, nameof(formats));
                 return false;
@@ -186,7 +186,7 @@ namespace System
                 return false;
             }
 
-            Debug.Assert(dtfi != null, "dtfi == null");
+            Debug.Assert(dtfi is not null, "dtfi is null");
 
             //
             // Do a loop through the provided formats and see if we can parse successfully in
@@ -194,7 +194,7 @@ namespace System
             //
             for (int i = 0; i < formats.Length; i++)
             {
-                if (formats[i] == null || formats[i]!.Length == 0) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                if (formats[i] is null || formats[i]!.Length == 0) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                 {
                     result.SetBadFormatSpecifierFailure();
                     return false;
@@ -1971,7 +1971,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
             if (raw.timeMark == TM.NotSet)
             {
-                if (dtfi.AMDesignator != null && dtfi.PMDesignator != null)
+                if (dtfi.AMDesignator is not null && dtfi.PMDesignator is not null)
                 {
                     if (dtfi.AMDesignator.Length == 0 && dtfi.PMDesignator.Length != 0)
                     {
@@ -2482,7 +2482,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
                 return false;
             }
 
-            Debug.Assert(dtfi != null, "dtfi == null");
+            Debug.Assert(dtfi is not null, "dtfi is null");
 
 #if _LOGGING
             DTFITrace(dtfi);
@@ -3511,7 +3511,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
             {
                 int[] eras = dtfi.Calendar.Eras;
 
-                if (eras != null)
+                if (eras is not null)
                 {
                     for (int i = 0; i < eras.Length; i++)
                     {
@@ -5138,7 +5138,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
         // return a string in the form: "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"
         private static string Hex(string[] strs)
         {
-            if (strs == null || strs.Length == 0)
+            if (strs is null || strs.Length == 0)
                 return string.Empty;
             if (strs.Length == 1)
                 return Hex(strs[0]);
@@ -5256,7 +5256,7 @@ new DS[] { DS.ERROR,  DS.TX_NNN,  DS.TX_NNN,  DS.TX_NNN,  DS.ERROR,   DS.ERROR, 
 
         internal __DTString(ReadOnlySpan<char> str, DateTimeFormatInfo dtfi)
         {
-            Debug.Assert(dtfi != null, "Expected non-null DateTimeFormatInfo");
+            Debug.Assert(dtfi is not null, "Expected non-null DateTimeFormatInfo");
 
             Index = -1;
             Value = str;

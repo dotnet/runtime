@@ -26,10 +26,10 @@ namespace System.Xml
 
         private XmlElementList(XmlNode parent)
         {
-            Debug.Assert(parent != null);
+            Debug.Assert(parent is not null);
             Debug.Assert(parent.NodeType == XmlNodeType.Element || parent.NodeType == XmlNodeType.Document);
             _rootNode = parent;
-            Debug.Assert(parent.Document != null);
+            Debug.Assert(parent.Document is not null);
             _curInd = -1;
             _curElem = _rootNode;
             _changeCount = 0;
@@ -69,9 +69,9 @@ namespace System.Xml
 
         internal XmlElementList(XmlNode parent, string name) : this(parent)
         {
-            Debug.Assert(parent.Document != null);
+            Debug.Assert(parent.Document is not null);
             XmlNameTable nt = parent.Document.NameTable;
-            Debug.Assert(nt != null);
+            Debug.Assert(nt is not null);
             _asterisk = nt.Add("*");
             _name = nt.Add(name);
             _localName = null;
@@ -80,13 +80,13 @@ namespace System.Xml
 
         internal XmlElementList(XmlNode parent, string localName, string namespaceURI) : this(parent)
         {
-            Debug.Assert(parent.Document != null);
+            Debug.Assert(parent.Document is not null);
             XmlNameTable nt = parent.Document.NameTable;
-            Debug.Assert(nt != null);
+            Debug.Assert(nt is not null);
             _asterisk = nt.Add("*");
             _localName = nt.Get(localName);
             _namespaceURI = nt.Get(namespaceURI);
-            if ((_localName == null) || (_namespaceURI == null))
+            if ((_localName is null) || (_namespaceURI is null))
             {
                 _empty = true;
                 _atomized = false;
@@ -105,22 +105,22 @@ namespace System.Xml
         // return the next element node that is in PreOrder
         private XmlNode? NextElemInPreOrder(XmlNode curNode)
         {
-            Debug.Assert(curNode != null);
+            Debug.Assert(curNode is not null);
             //For preorder walking, first try its child
             XmlNode? retNode = curNode.FirstChild;
-            if (retNode == null)
+            if (retNode is null)
             {
                 //if no child, the next node forward will the be the NextSibling of the first ancestor which has NextSibling
                 //so, first while-loop find out such an ancestor (until no more ancestor or the ancestor is the rootNode
                 retNode = curNode;
-                while (retNode != null
+                while (retNode is not null
                         && retNode != _rootNode
-                        && retNode.NextSibling == null)
+                        && retNode.NextSibling is null)
                 {
                     retNode = retNode.ParentNode;
                 }
                 //then if such ancestor exists, set the retNode to its NextSibling
-                if (retNode != null && retNode != _rootNode)
+                if (retNode is not null && retNode != _rootNode)
                     retNode = retNode.NextSibling;
             }
             if (retNode == _rootNode)
@@ -132,18 +132,18 @@ namespace System.Xml
         // return the previous element node that is in PreOrder
         private XmlNode? PrevElemInPreOrder(XmlNode curNode)
         {
-            Debug.Assert(curNode != null);
+            Debug.Assert(curNode is not null);
             //For preorder walking, the previous node will be the right-most node in the tree of PreviousSibling of the curNode
             XmlNode? retNode = curNode.PreviousSibling;
             // so if the PreviousSibling is not null, going through the tree down to find the right-most node
-            while (retNode != null)
+            while (retNode is not null)
             {
-                if (retNode.LastChild == null)
+                if (retNode.LastChild is null)
                     break;
                 retNode = retNode.LastChild;
             }
             // if no PreviousSibling, the previous node will be the curNode's parentNode
-            if (retNode == null)
+            if (retNode is null)
                 retNode = curNode.ParentNode;
             // if the final retNode is rootNode, consider having walked through the tree and no more previous node
             if (retNode == _rootNode)
@@ -156,7 +156,7 @@ namespace System.Xml
         {
             if (curNode.NodeType == XmlNodeType.Element)
             {
-                if (_name != null)
+                if (_name is not null)
                 {
                     if (Ref.Equal(_name, _asterisk) || Ref.Equal(curNode.Name, _name))
                         return true;
@@ -177,7 +177,7 @@ namespace System.Xml
 
         private XmlNode? GetMatchingNode(XmlNode n, bool bNext)
         {
-            Debug.Assert(n != null);
+            Debug.Assert(n is not null);
             XmlNode? node = n;
             do
             {
@@ -185,18 +185,18 @@ namespace System.Xml
                     node = NextElemInPreOrder(node);
                 else
                     node = PrevElemInPreOrder(node);
-            } while (node != null && !IsMatch(node));
+            } while (node is not null && !IsMatch(node));
             return node;
         }
 
         private XmlNode? GetNthMatchingNode(XmlNode n, bool bNext, int nCount)
         {
-            Debug.Assert(n != null);
+            Debug.Assert(n is not null);
             XmlNode? node = n;
             for (int ind = 0; ind < nCount; ind++)
             {
                 node = GetMatchingNode(node, bNext);
-                if (node == null)
+                if (node is null)
                     return null;
             }
 
@@ -208,13 +208,13 @@ namespace System.Xml
         {
             if (_empty == true)
                 return null;
-            XmlNode node = (n == null) ? _rootNode : n;
+            XmlNode node = (n is null) ? _rootNode : n;
             return GetMatchingNode(node, true);
         }
 
         public override XmlNode? Item(int index)
         {
-            if (_rootNode == null || index < 0)
+            if (_rootNode is null || index < 0)
                 return null;
 
             if (_empty == true)
@@ -227,7 +227,7 @@ namespace System.Xml
                 nDiff = -nDiff;
 
             XmlNode? node;
-            if ((node = GetNthMatchingNode(_curElem, bForward, nDiff)) != null)
+            if ((node = GetNthMatchingNode(_curElem, bForward, nDiff)) is not null)
             {
                 _curInd = index;
                 _curElem = node;
@@ -282,10 +282,10 @@ namespace System.Xml
 
         protected virtual void Dispose(bool disposing)
         {
-            if (_listener != null)
+            if (_listener is not null)
             {
                 XmlElementListListener? listener = (XmlElementListListener?)_listener.Target;
-                if (listener != null)
+                if (listener is not null)
                 {
                     listener.Unregister();
                 }
@@ -319,7 +319,7 @@ namespace System.Xml
             {
                 _curElem = _list.GetNextNode(_curElem);
             }
-            return _curElem != null;
+            return _curElem is not null;
         }
 
         public void Reset()
@@ -375,7 +375,7 @@ namespace System.Xml
         {
             lock (this)
             {
-                if (_elemList != null)
+                if (_elemList is not null)
                 {
                     XmlElementList? el = (XmlElementList?)_elemList.Target;
                     if (null != el)
@@ -397,7 +397,7 @@ namespace System.Xml
         {
             lock (this)
             {
-                if (_elemList != null)
+                if (_elemList is not null)
                 {
                     _doc.NodeInserted -= _nodeChangeHandler;
                     _doc.NodeRemoved -= _nodeChangeHandler;

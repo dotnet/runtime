@@ -13,11 +13,11 @@ namespace System.Runtime.Serialization
 
         public virtual void AddSurrogate(Type type, StreamingContext context, ISerializationSurrogate surrogate)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
-            if (surrogate == null)
+            if (surrogate is null)
             {
                 throw new ArgumentNullException(nameof(surrogate));
             }
@@ -28,13 +28,13 @@ namespace System.Runtime.Serialization
 
         private static bool HasCycle(ISurrogateSelector selector)
         {
-            Debug.Assert(selector != null, "[HasCycle]selector!=null");
+            Debug.Assert(selector is not null, "[HasCycle]selector!=null");
 
             ISurrogateSelector? head = selector, tail = selector;
-            while (head != null)
+            while (head is not null)
             {
                 head = head.GetNextSelector();
-                if (head == null)
+                if (head is null)
                 {
                     return true;
                 }
@@ -58,7 +58,7 @@ namespace System.Runtime.Serialization
         // The logic is:"Add this onto the list as the first thing that you check after yourself."
         public virtual void ChainSelector(ISurrogateSelector selector)
         {
-            if (selector == null)
+            if (selector is null)
             {
                 throw new ArgumentNullException(nameof(selector));
             }
@@ -79,7 +79,7 @@ namespace System.Runtime.Serialization
             // insert for use later.
             ISurrogateSelector? tempCurr = selector.GetNextSelector();
             ISurrogateSelector tempEnd = selector;
-            while (tempCurr != null && tempCurr != this)
+            while (tempCurr is not null && tempCurr != this)
             {
                 tempEnd = tempCurr;
                 tempCurr = tempCurr.GetNextSelector();
@@ -92,7 +92,7 @@ namespace System.Runtime.Serialization
             // Check for a cycle later in the list which would be introduced by this insertion.
             tempCurr = selector;
             ISurrogateSelector? tempPrev = selector;
-            while (tempCurr != null)
+            while (tempCurr is not null)
             {
                 if (tempCurr == tempEnd)
                 {
@@ -102,7 +102,7 @@ namespace System.Runtime.Serialization
                 {
                     tempCurr = tempCurr.GetNextSelector();
                 }
-                if (tempCurr == null)
+                if (tempCurr is null)
                 {
                     break;
                 }
@@ -127,7 +127,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    Debug.Assert(tempPrev != null);
+                    Debug.Assert(tempPrev is not null);
                     tempPrev = tempPrev.GetNextSelector();
                 }
                 if (tempCurr == tempPrev)
@@ -139,7 +139,7 @@ namespace System.Runtime.Serialization
             // Add the new selector and it's entire chain of selectors as the next thing that we check.
             ISurrogateSelector? temp = _nextSelector;
             _nextSelector = selector;
-            if (temp != null)
+            if (temp is not null)
             {
                 tempEnd.ChainSelector(temp);
             }
@@ -152,7 +152,7 @@ namespace System.Runtime.Serialization
         // provide a surrogate, it checks with all of it's children before returning null.
         public virtual ISerializationSurrogate? GetSurrogate(Type type, StreamingContext context, out ISurrogateSelector selector)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -161,11 +161,11 @@ namespace System.Runtime.Serialization
 
             SurrogateKey key = new SurrogateKey(type, context);
             ISerializationSurrogate? temp = (ISerializationSurrogate?)_surrogates[key];
-            if (temp != null)
+            if (temp is not null)
             {
                 return temp;
             }
-            if (_nextSelector != null)
+            if (_nextSelector is not null)
             {
                 return _nextSelector.GetSurrogate(type, context, out selector);
             }
@@ -176,7 +176,7 @@ namespace System.Runtime.Serialization
         // check chained surrogates.
         public virtual void RemoveSurrogate(Type type, StreamingContext context)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -193,7 +193,7 @@ namespace System.Runtime.Serialization
 
         internal SurrogateKey(Type type, StreamingContext context)
         {
-            Debug.Assert(type != null);
+            Debug.Assert(type is not null);
             _type = type;
             _context = context;
         }

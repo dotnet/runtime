@@ -42,7 +42,7 @@ namespace System.Threading
 
             overlapped._completed = true;
 
-            if (overlapped._boundHandle == null)
+            if (overlapped._boundHandle is null)
                 throw new InvalidOperationException(SR.Argument_NativeOverlappedAlreadyFree);
 
             overlapped._userCallback(errorCode, numBytes, nativeOverlapped);

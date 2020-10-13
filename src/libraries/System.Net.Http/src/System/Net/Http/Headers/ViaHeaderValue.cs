@@ -72,7 +72,7 @@ namespace System.Net.Http.Headers
 
         private ViaHeaderValue(ViaHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _protocolName = source._protocolName;
             _protocolVersion = source._protocolVersion;
@@ -107,7 +107,7 @@ namespace System.Net.Http.Headers
         {
             ViaHeaderValue? other = obj as ViaHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -177,7 +177,7 @@ namespace System.Net.Http.Headers
             {
                 return 0;
             }
-            Debug.Assert(protocolVersion != null);
+            Debug.Assert(protocolVersion is not null);
 
             // Read <receivedBy> in '[<protocolName>/]<protocolVersion> <receivedBy> [<comment>]'
             int receivedByLength = HttpRuleParser.GetHostLength(input, current, true, out string? receivedBy);

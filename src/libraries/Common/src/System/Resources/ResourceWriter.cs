@@ -50,7 +50,7 @@ namespace System.Resources
         ResourceWriter(string fileName)
 #endif
         {
-            if (fileName == null)
+            if (fileName is null)
                 throw new ArgumentNullException(nameof(fileName));
 
             _output = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
@@ -65,7 +65,7 @@ namespace System.Resources
         ResourceWriter(Stream stream)
 #endif
         {
-            if (stream == null)
+            if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
             if (!stream.CanWrite)
                 throw new ArgumentException(SR.Argument_StreamNotWritable);
@@ -80,10 +80,10 @@ namespace System.Resources
         //
         public void AddResource(string name, string? value)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
-            if (_resourceList == null)
+            if (_resourceList is null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
 
             // Check for duplicate resources whose names vary only by case.
@@ -96,14 +96,14 @@ namespace System.Resources
         //
         public void AddResource(string name, object? value)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
-            if (_resourceList == null)
+            if (_resourceList is null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
 
             // needed for binary compat
-            if (value != null && value is Stream)
+            if (value is not null && value is Stream)
             {
                 AddResourceInternal(name, (Stream)value, false);
             }
@@ -121,10 +121,10 @@ namespace System.Resources
         //
         public void AddResource(string name, Stream? value, bool closeAfterWrite = false)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
-            if (_resourceList == null)
+            if (_resourceList is null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
 
             AddResourceInternal(name, value, closeAfterWrite);
@@ -132,9 +132,9 @@ namespace System.Resources
 
         private void AddResourceInternal(string name, Stream? value, bool closeAfterWrite)
         {
-            Debug.Assert(_resourceList != null);
+            Debug.Assert(_resourceList is not null);
 
-            if (value == null)
+            if (value is null)
             {
                 // Check for duplicate resources whose names vary only by case.
                 _caseInsensitiveDups.Add(name, null);
@@ -157,10 +157,10 @@ namespace System.Resources
         //
         public void AddResource(string name, byte[]? value)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
-            if (_resourceList == null)
+            if (_resourceList is null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
 
             // Check for duplicate resources whose names vary only by case.
@@ -170,12 +170,12 @@ namespace System.Resources
 
         private void AddResourceData(string name, string typeName, object data)
         {
-            if (_resourceList == null)
+            if (_resourceList is null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
 
             // Check for duplicate resources whose names vary only by case.
             _caseInsensitiveDups.Add(name, null);
-            if (_preserializedData == null)
+            if (_preserializedData is null)
                 _preserializedData = new Dictionary<string, PrecannedResource>(FastResourceComparer.Default);
 
             _preserializedData.Add(name, new PrecannedResource(typeName, data));
@@ -217,11 +217,11 @@ namespace System.Resources
         {
             if (disposing)
             {
-                if (_resourceList != null)
+                if (_resourceList is not null)
                 {
                     Generate();
                 }
-                if (_output != null)
+                if (_output is not null)
                 {
                     _output.Dispose();
                 }
@@ -243,7 +243,7 @@ namespace System.Resources
         // invalid.
         public void Generate()
         {
-            if (_resourceList == null)
+            if (_resourceList is null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
 
             BinaryWriter bw = new BinaryWriter(_output, Encoding.UTF8);
@@ -286,7 +286,7 @@ namespace System.Resources
 
             // number of resources
             int numResources = _resourceList.Count;
-            if (_preserializedData != null)
+            if (_preserializedData is not null)
                 numResources += _preserializedData.Count;
             bw.Write(numResources);
 
@@ -303,7 +303,7 @@ namespace System.Resources
             {
                 BinaryWriter data = new BinaryWriter(dataSection, Encoding.UTF8);
 
-                if (_preserializedData != null)
+                if (_preserializedData is not null)
                 {
                     foreach (KeyValuePair<string, PrecannedResource> entry in _preserializedData)
                     {
@@ -327,7 +327,7 @@ namespace System.Resources
                     data.Write7BitEncodedInt((int)typeCode);
 
                     var userProvidedResource = value as PrecannedResource;
-                    if (userProvidedResource != null)
+                    if (userProvidedResource is not null)
                     {
                         WriteData(data, userProvidedResource.Data);
                     }
@@ -420,7 +420,7 @@ namespace System.Resources
         // types list.
         private ResourceTypeCode FindTypeCode(object? value, List<string> types)
         {
-            if (value == null)
+            if (value is null)
                 return ResourceTypeCode.Null;
 
             Type type = value.GetType();
@@ -493,7 +493,7 @@ namespace System.Resources
 
         private void WriteValue(ResourceTypeCode typeCode, object? value, BinaryWriter writer)
         {
-            Debug.Assert(writer != null);
+            Debug.Assert(writer is not null);
 
             switch (typeCode)
             {

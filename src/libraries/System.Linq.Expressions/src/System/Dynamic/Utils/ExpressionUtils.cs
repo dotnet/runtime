@@ -112,7 +112,7 @@ namespace System.Dynamic.Utils
                 ParameterInfo pi = pis[i];
                 arg = ValidateOneArgument(method, nodeKind, arg, pi, methodParamName, nameof(arguments), i);
 
-                if (newArgs == null && arg != arguments[i])
+                if (newArgs is null && arg != arguments[i])
                 {
                     newArgs = new Expression[arguments.Count];
                     for (int j = 0; j < i; j++)
@@ -120,12 +120,12 @@ namespace System.Dynamic.Utils
                         newArgs[j] = arguments[j];
                     }
                 }
-                if (newArgs != null)
+                if (newArgs is not null)
                 {
                     newArgs[i] = arg;
                 }
             }
-            if (newArgs != null)
+            if (newArgs is not null)
             {
                 arguments = new TrueReadOnlyCollection<Expression>(newArgs);
             }
@@ -197,7 +197,7 @@ namespace System.Dynamic.Utils
             {
                 case ExpressionType.Index:
                     IndexExpression index = (IndexExpression)expression;
-                    if (index.Indexer != null && !index.Indexer.CanRead)
+                    if (index.Indexer is not null && !index.Indexer.CanRead)
                     {
                         throw Error.ExpressionMustBeReadable(paramName, idx);
                     }
@@ -245,13 +245,13 @@ namespace System.Dynamic.Utils
 
         internal static bool SameElements<T>(ICollection<T>? replacement, IReadOnlyList<T> current) where T : class
         {
-            Debug.Assert(current != null);
+            Debug.Assert(current is not null);
             if (replacement == current) // Relatively common case, so particularly useful to take the short-circuit.
             {
                 return true;
             }
 
-            if (replacement == null) // Treat null as empty.
+            if (replacement is null) // Treat null as empty.
             {
                 return current.Count == 0;
             }
@@ -261,13 +261,13 @@ namespace System.Dynamic.Utils
 
         internal static bool SameElements<T>(ref IEnumerable<T>? replacement, IReadOnlyList<T> current) where T : class
         {
-            Debug.Assert(current != null);
+            Debug.Assert(current is not null);
             if (replacement == current) // Relatively common case, so particularly useful to take the short-circuit.
             {
                 return true;
             }
 
-            if (replacement == null) // Treat null as empty.
+            if (replacement is null) // Treat null as empty.
             {
                 return current.Count == 0;
             }
@@ -276,7 +276,7 @@ namespace System.Dynamic.Utils
             // If we have to build a collection, build a TrueReadOnlyCollection<T>
             // so it won't be built a second time if used.
             ICollection<T>? replacementCol = replacement as ICollection<T>;
-            if (replacementCol == null)
+            if (replacementCol is null)
             {
                 replacement = replacementCol = replacement.ToReadOnly();
             }

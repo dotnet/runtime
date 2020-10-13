@@ -104,7 +104,7 @@ namespace System.Data.ProviderBase
                 //   connection is probably better than unnecessarily locking
                 if (txnFound)
                 {
-                    Debug.Assert(connections != null);
+                    Debug.Assert(connections is not null);
 
                     // synchronize multi-threaded access with PutTransactedObject (TransactionEnded should
                     //   not be a concern, see comments above)
@@ -137,7 +137,7 @@ namespace System.Data.ProviderBase
                     // Check if a transacted pool has been created for this transaction
                     if (txnFound = _transactedCxns.TryGetValue(transaction, out connections))
                     {
-                        Debug.Assert(connections != null);
+                        Debug.Assert(connections is not null);
 
                         // synchronize multi-threaded access with GetTransactedObject
                         lock (connections)
@@ -172,7 +172,7 @@ namespace System.Data.ProviderBase
                             //   transacted pool while threadA was processing the above instructions.
                             if (txnFound = _transactedCxns.TryGetValue(transaction, out connections))
                             {
-                                Debug.Assert(connections != null);
+                                Debug.Assert(connections is not null);
 
                                 // synchronize multi-threaded access with GetTransactedObject
                                 lock (connections)
@@ -196,7 +196,7 @@ namespace System.Data.ProviderBase
                     {
                         if (null != transactionClone)
                         {
-                            if (newConnections != null)
+                            if (newConnections is not null)
                             {
                                 // another thread created the transaction pool and thus the new
                                 //   TransactedConnectionList was not used, so dispose of it and
@@ -540,7 +540,7 @@ namespace System.Data.ProviderBase
 
                     if (_stackOld.TryPop(out obj))
                     {
-                        Debug.Assert(obj != null, "null connection is not expected");
+                        Debug.Assert(obj is not null, "null connection is not expected");
                         // If we obtained one from the old stack, destroy it.
                         PerformanceCounters.NumberOfFreeConnections.Decrement();
 
@@ -600,7 +600,7 @@ namespace System.Data.ProviderBase
                     if (!_stackNew.TryPop(out obj))
                         break;
 
-                    Debug.Assert(obj != null, "null connection is not expected");
+                    Debug.Assert(obj is not null, "null connection is not expected");
 
                     Debug.Assert(!obj.IsEmancipated, "pooled object not in pool");
                     Debug.Assert(obj.CanBePooled, "pooled object is not poolable");
@@ -637,13 +637,13 @@ namespace System.Data.ProviderBase
             // Second, dispose of all the free connections.
             while (_stackNew.TryPop(out obj))
             {
-                Debug.Assert(obj != null, "null connection is not expected");
+                Debug.Assert(obj is not null, "null connection is not expected");
                 PerformanceCounters.NumberOfFreeConnections.Decrement();
                 DestroyObject(obj);
             }
             while (_stackOld.TryPop(out obj))
             {
-                Debug.Assert(obj != null, "null connection is not expected");
+                Debug.Assert(obj is not null, "null connection is not expected");
                 PerformanceCounters.NumberOfFreeConnections.Decrement();
                 DestroyObject(obj);
             }
@@ -679,7 +679,7 @@ namespace System.Data.ProviderBase
 
                 lock (_objectList)
                 {
-                    if ((oldConnection != null) && (oldConnection.Pool == this))
+                    if ((oldConnection is not null) && (oldConnection.Pool == this))
                     {
                         _objectList.Remove(oldConnection);
                     }
@@ -689,10 +689,10 @@ namespace System.Data.ProviderBase
                 }
 
                 // If the old connection belonged to another pool, we need to remove it from that
-                if (oldConnection != null)
+                if (oldConnection is not null)
                 {
                     var oldConnectionPool = oldConnection.Pool;
-                    if (oldConnectionPool != null && oldConnectionPool != this)
+                    if (oldConnectionPool is not null && oldConnectionPool != this)
                     {
                         Debug.Assert(oldConnectionPool._state == State.ShuttingDown, "Old connections pool should be shutting down");
                         lock (oldConnectionPool._objectList)
@@ -829,7 +829,7 @@ namespace System.Data.ProviderBase
                                 //   Although perhaps not ideal, this is OK because the
                                 //   DelegatedTransactionEnded event will clean up the
                                 //   connection appropriately regardless of the pool state.
-                                Debug.Assert(_transactedConnectionPool != null, "Transacted connection pool was not expected to be null.");
+                                Debug.Assert(_transactedConnectionPool is not null, "Transacted connection pool was not expected to be null.");
                                 _transactedConnectionPool.PutTransactedObject(transaction, obj);
                                 rootTxn = true;
                             }
@@ -929,7 +929,7 @@ namespace System.Data.ProviderBase
             // the error state is cleaned, destroy the timer to avoid periodic invocation
             Timer? t = _errorTimer;
             _errorTimer = null;
-            if (t != null)
+            if (t is not null)
             {
                 t.Dispose(); // Cancel timer request.
             }
@@ -999,19 +999,19 @@ namespace System.Data.ProviderBase
                         }
                         catch (System.OutOfMemoryException)
                         {
-                            if (connection != null)
+                            if (connection is not null)
                             { connection.DoomThisConnection(); }
                             throw;
                         }
                         catch (System.StackOverflowException)
                         {
-                            if (connection != null)
+                            if (connection is not null)
                             { connection.DoomThisConnection(); }
                             throw;
                         }
                         catch (System.Threading.ThreadAbortException)
                         {
-                            if (connection != null)
+                            if (connection is not null)
                             { connection.DoomThisConnection(); }
                             throw;
                         }
@@ -1020,7 +1020,7 @@ namespace System.Data.ProviderBase
                             caughtException = e;
                         }
 
-                        if (caughtException != null)
+                        if (caughtException is not null)
                         {
                             next.Completion.TrySetException(caughtException);
                         }
@@ -1030,7 +1030,7 @@ namespace System.Data.ProviderBase
                         }
                         else
                         {
-                            Debug.Assert(connection != null, "connection should never be null in success case");
+                            Debug.Assert(connection is not null, "connection should never be null in success case");
                             if (!next.Completion.TrySetResult(connection))
                             {
                                 // if the completion was cancelled, lets try and get this connection back for the next try
@@ -1055,7 +1055,7 @@ namespace System.Data.ProviderBase
             uint waitForMultipleObjectsTimeout = 0;
             bool allowCreate = false;
 
-            if (retry == null)
+            if (retry is null)
             {
                 waitForMultipleObjectsTimeout = (uint)CreationTimeout;
 
@@ -1077,7 +1077,7 @@ namespace System.Data.ProviderBase
             {
                 return true;
             }
-            else if (retry == null)
+            else if (retry is null)
             {
                 // timed out on a sync call
                 return true;
@@ -1222,7 +1222,7 @@ namespace System.Data.ProviderBase
                                 Interlocked.Decrement(ref _waitCount);
                                 obj = GetFromGeneralPool();
 
-                                if ((obj != null) && (!obj.IsConnectionAlive()))
+                                if ((obj is not null) && (!obj.IsConnectionAlive()))
                                 {
                                     DestroyObject(obj);
                                     obj = null;     // Setting to null in case creating a new object fails
@@ -1333,7 +1333,7 @@ namespace System.Data.ProviderBase
 
             DbConnectionInternal? newConnection = UserCreateRequest(owningObject, userOptions, oldConnection);
 
-            if (newConnection != null)
+            if (newConnection is not null)
             {
                 PrepareConnection(owningObject, newConnection, oldConnection!.EnlistedTransaction);
                 oldConnection.PrepareForReplaceConnection();
@@ -1356,19 +1356,19 @@ namespace System.Data.ProviderBase
                 }
                 else
                 {
-                    Debug.Assert(obj != null, "null connection is not expected");
+                    Debug.Assert(obj is not null, "null connection is not expected");
                 }
             }
             else
             {
-                Debug.Assert(obj != null, "null connection is not expected");
+                Debug.Assert(obj is not null, "null connection is not expected");
             }
 
             // When another thread is clearing this pool,
             // it will remove all connections in this pool which causes the
             // following assert to fire, which really mucks up stress against
             //  checked bits.  The assert is benign, so we're commenting it out.
-            //Debug.Assert(obj != null, "GetFromGeneralPool called with nothing in the pool!");
+            //Debug.Assert(obj is not null, "GetFromGeneralPool called with nothing in the pool!");
 
             if (null != obj)
             {
@@ -1576,7 +1576,7 @@ namespace System.Data.ProviderBase
         internal void PutObjectFromTransactedPool(DbConnectionInternal obj)
         {
             Debug.Assert(null != obj, "null pooledObject?");
-            Debug.Assert(obj.EnlistedTransaction == null, "pooledObject is still enlisted?");
+            Debug.Assert(obj.EnlistedTransaction is null, "pooledObject is still enlisted?");
 
             // called by the transacted connection pool , once it's removed the
             // connection from it's list.  We put the connection back in general
@@ -1706,13 +1706,13 @@ namespace System.Data.ProviderBase
             }
             else
             {
-                if ((oldConnection != null) || (Count < MaxPoolSize) || (0 == MaxPoolSize))
+                if ((oldConnection is not null) || (Count < MaxPoolSize) || (0 == MaxPoolSize))
                 {
                     // If we have an odd number of total objects, reclaim any dead objects.
                     // If we did not find any objects to reclaim, create a new one.
 
                     // TODO: Consider implement a control knob here; why do we only check for dead objects ever other time?  why not every 10th time or every time?
-                    if ((oldConnection != null) || (Count & 0x1) == 0x1 || !ReclaimEmancipatedObjects())
+                    if ((oldConnection is not null) || (Count & 0x1) == 0x1 || !ReclaimEmancipatedObjects())
                         obj = CreateObject(owningObject, userOptions, oldConnection);
                 }
                 return obj;

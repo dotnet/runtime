@@ -13,11 +13,11 @@ namespace System.Reflection
                 throw new ArgumentException(SR.Argument_InvalidHandle);
 
             MethodBase? m = RuntimeMethodInfo.GetMethodFromHandleInternalType(handle.Value, IntPtr.Zero);
-            if (m == null)
+            if (m is null)
                 throw new ArgumentException(SR.Argument_InvalidHandle);
 
             Type? declaringType = m.DeclaringType;
-            if (declaringType != null && declaringType.IsGenericType)
+            if (declaringType is not null && declaringType.IsGenericType)
                 throw new ArgumentException(string.Format(SR.Argument_MethodDeclaringTypeGeneric,
                                                             m, declaringType.GetGenericTypeDefinition()));
 
@@ -29,7 +29,7 @@ namespace System.Reflection
             if (handle.IsNullHandle())
                 throw new ArgumentException(SR.Argument_InvalidHandle);
             MethodBase m = RuntimeMethodInfo.GetMethodFromHandleInternalType(handle.Value, declaringType.Value);
-            if (m == null)
+            if (m is null)
                 throw new ArgumentException(SR.Argument_InvalidHandle);
             return m;
         }

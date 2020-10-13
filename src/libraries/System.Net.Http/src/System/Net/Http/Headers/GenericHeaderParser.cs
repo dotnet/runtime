@@ -56,7 +56,7 @@ namespace System.Net.Http.Headers
             IEqualityComparer? comparer)
             : base(supportsMultipleValues)
         {
-            Debug.Assert(getParsedValueLength != null);
+            Debug.Assert(getParsedValueLength is not null);
 
             _getParsedValueLength = getParsedValueLength;
             _comparer = comparer;

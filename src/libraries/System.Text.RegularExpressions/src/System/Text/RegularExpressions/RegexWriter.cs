@@ -75,7 +75,7 @@ namespace System.Text.RegularExpressions
         {
             // Construct sparse capnum mapping if some numbers are unused.
             int capsize;
-            if (tree.CapNumList == null || tree.CapTop == tree.CapNumList.Length)
+            if (tree.CapNumList is null || tree.CapTop == tree.CapNumList.Length)
             {
                 capsize = tree.CapTop;
                 _caps = null;
@@ -149,7 +149,7 @@ namespace System.Text.RegularExpressions
             // If we didn't find a single leading substring, or if we found one but we won't be able to use it for a Boyer-Moore
             // search, try to compute the characters set that might begin the string.
             if (boyerMoorePrefix is null ||
-                (boyerMoorePrefix.NegativeUnicode != null && compiled)) // compilation won't use Boyer-Moore if it has a negative Unicode table
+                (boyerMoorePrefix.NegativeUnicode is not null && compiled)) // compilation won't use Boyer-Moore if it has a negative Unicode table
             {
                 boyerMoorePrefix = null;
 
@@ -254,7 +254,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         private int MapCapnum(int capnum) =>
             capnum == -1 ? -1 :
-            _caps != null ? (int)_caps[capnum]! :
+            _caps is not null ? (int)_caps[capnum]! :
             capnum;
 
         /// <summary>

@@ -57,7 +57,7 @@ namespace System.Linq.Expressions.Interpreter
             _continuationStackDepth = instructions.CurrentContinuationsDepth;
             _targetIndex = instructions.Count;
 
-            if (_forwardBranchFixups != null)
+            if (_forwardBranchFixups is not null)
             {
                 foreach (int branchIndex in _forwardBranchFixups)
                 {
@@ -74,7 +74,7 @@ namespace System.Linq.Expressions.Interpreter
 
             if (_targetIndex == UnknownIndex)
             {
-                if (_forwardBranchFixups == null)
+                if (_forwardBranchFixups is null)
                 {
                     _forwardBranchFixups = new List<int>();
                 }

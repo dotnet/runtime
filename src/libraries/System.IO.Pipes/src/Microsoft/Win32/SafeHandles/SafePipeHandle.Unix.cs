@@ -27,7 +27,7 @@ namespace Microsoft.Win32.SafeHandles
 
         internal SafePipeHandle(Socket namedPipeSocket) : base(ownsHandle: true)
         {
-            Debug.Assert(namedPipeSocket != null);
+            Debug.Assert(namedPipeSocket is not null);
             _namedPipeSocket = namedPipeSocket;
 
             _namedPipeSocketHandle = namedPipeSocket.SafeHandle;
@@ -43,7 +43,7 @@ namespace Microsoft.Win32.SafeHandles
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing); // must be called before trying to Dispose the socket
-            if (disposing && _namedPipeSocket != null)
+            if (disposing && _namedPipeSocket is not null)
             {
                 _namedPipeSocket.Dispose();
                 _namedPipeSocket = null;
@@ -55,7 +55,7 @@ namespace Microsoft.Win32.SafeHandles
             Debug.Assert(!IsInvalid);
 
             // Clean up resources for named handles
-            if (_namedPipeSocketHandle != null)
+            if (_namedPipeSocketHandle is not null)
             {
                 SetHandle(DefaultInvalidHandle);
                 _namedPipeSocketHandle.DangerousRelease();
@@ -71,7 +71,7 @@ namespace Microsoft.Win32.SafeHandles
 
         public override bool IsInvalid
         {
-            get { return (long)handle < 0 && _namedPipeSocket == null; }
+            get { return (long)handle < 0 && _namedPipeSocket is null; }
         }
     }
 }

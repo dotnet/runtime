@@ -15,7 +15,7 @@ namespace System.ComponentModel.Composition.Hosting
         public static ImportDefinition RemoveImportSource(this ImportDefinition definition)
         {
             var contractBasedDefinition = definition as ContractBasedImportDefinition;
-            if (contractBasedDefinition == null)
+            if (contractBasedDefinition is null)
             {
                 return definition;
             }
@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public NonImportSourceImportDefinition(ContractBasedImportDefinition sourceDefinition)
             {
-                if (sourceDefinition == null)
+                if (sourceDefinition is null)
                 {
                     throw new ArgumentNullException(nameof(sourceDefinition));
                 }
@@ -50,14 +50,14 @@ namespace System.ComponentModel.Composition.Hosting
                 get
                 {
                     var reply = _metadata;
-                    if (reply == null)
+                    if (reply is null)
                     {
                         reply = new Dictionary<string, object?>(_sourceDefinition.Metadata);
                         reply.Remove(CompositionConstants.ImportSourceMetadataName);
                         _metadata = reply;
                     }
 
-                    Debug.Assert(reply != null);
+                    Debug.Assert(reply is not null);
                     return reply;
                 }
             }

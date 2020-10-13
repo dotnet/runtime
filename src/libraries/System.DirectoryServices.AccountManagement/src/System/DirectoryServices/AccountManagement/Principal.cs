@@ -32,7 +32,7 @@ namespace System.DirectoryServices.AccountManagement
                 CheckDisposedOrDeleted();
 
                 // The only way we can't have a PrincipalContext is if we're unpersisted
-                Debug.Assert(_ctx != null || this.unpersisted == true);
+                Debug.Assert(_ctx is not null || this.unpersisted == true);
 
                 return _ctx;
             }
@@ -47,9 +47,9 @@ namespace System.DirectoryServices.AccountManagement
                 CheckDisposedOrDeleted();
 
                 // The only way we can't have a PrincipalContext is if we're unpersisted
-                Debug.Assert(_ctx != null || this.unpersisted == true);
+                Debug.Assert(_ctx is not null || this.unpersisted == true);
 
-                if (_ctx == null)
+                if (_ctx is null)
                     throw new InvalidOperationException(SR.PrincipalMustSetContextForProperty);
 
                 return _ctx.ContextType;
@@ -229,7 +229,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Context type could be  null for an unpersisted user.
                 // Default to the original domain behavior if a context is not set.
 
-                ContextType ct = (_ctx == null) ? ContextType.Domain : _ctx.ContextType;
+                ContextType ct = (_ctx is null) ? ContextType.Domain : _ctx.ContextType;
 
                 if (ct == ContextType.Machine)
                 {
@@ -248,7 +248,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (!GetStoreCtxToUse().IsValidProperty(this, PropertyNames.PrincipalName))
                     throw new InvalidOperationException(SR.InvalidPropertyForStore);
 
-                ContextType ct = (_ctx == null) ? ContextType.Domain : _ctx.ContextType;
+                ContextType ct = (_ctx is null) ? ContextType.Domain : _ctx.ContextType;
 
                 if (ct == ContextType.Machine)
                 {
@@ -301,7 +301,7 @@ namespace System.DirectoryServices.AccountManagement
 
             // We must have a PrincipalContext to save into.  This should always be the case, unless we're unpersisted
             // and they never set a PrincipalContext.
-            if (_ctx == null)
+            if (_ctx is null)
             {
                 Debug.Assert(this.unpersisted == true);
                 throw new InvalidOperationException(SR.PrincipalMustSetContextForSave);
@@ -309,7 +309,7 @@ namespace System.DirectoryServices.AccountManagement
 
             // Call the appropriate operation depending on whether this is an insert or update
             StoreCtx storeCtxToUse = GetStoreCtxToUse();
-            Debug.Assert(storeCtxToUse != null);    // since we know this.ctx isn't null
+            Debug.Assert(storeCtxToUse is not null);    // since we know this.ctx isn't null
 
             if (this.unpersisted)
             {
@@ -338,7 +338,7 @@ namespace System.DirectoryServices.AccountManagement
 
             // We must have a PrincipalContext to save into.  This should always be the case, unless we're unpersisted
             // and they never set a PrincipalContext.
-            if (context == null)
+            if (context is null)
             {
                 Debug.Assert(this.unpersisted == true);
                 throw new InvalidOperationException(SR.NullArguments);
@@ -371,8 +371,8 @@ namespace System.DirectoryServices.AccountManagement
             // Call the appropriate operation depending on whether this is an insert or update
             StoreCtx newStoreCtx = GetStoreCtxToUse();
 
-            Debug.Assert(newStoreCtx != null);    // since we know this.ctx isn't null
-            Debug.Assert(originalStoreCtx != null);    // since we know this.ctx isn't null
+            Debug.Assert(newStoreCtx is not null);    // since we know this.ctx isn't null
+            Debug.Assert(originalStoreCtx is not null);    // since we know this.ctx isn't null
 
             if (this.unpersisted)
             {
@@ -457,7 +457,7 @@ namespace System.DirectoryServices.AccountManagement
 
             // Since we're not unpersisted, we must have come back from a query, and the query logic would
             // have filled in a PrincipalContext on us.
-            Debug.Assert(_ctx != null);
+            Debug.Assert(_ctx is not null);
 
             _ctx.QueryCtx.Delete(this);
             _isDeleted = true;
@@ -467,13 +467,13 @@ namespace System.DirectoryServices.AccountManagement
         {
             Principal that = o as Principal;
 
-            if (that == null)
+            if (that is null)
                 return false;
 
             if (object.ReferenceEquals(this, that))
                 return true;
 
-            if ((_key != null) && (that._key != null) && (_key.Equals(that._key)))
+            if ((_key is not null) && (that._key is not null) && (_key.Equals(that._key)))
                 return true;
 
             return false;
@@ -492,7 +492,7 @@ namespace System.DirectoryServices.AccountManagement
             // Make sure we're not a fake principal
             CheckFakePrincipal();
 
-            if (this.UnderlyingObject == null)
+            if (this.UnderlyingObject is null)
             {
                 throw new InvalidOperationException(SR.PrincipalMustPersistFirst);
             }
@@ -511,7 +511,7 @@ namespace System.DirectoryServices.AccountManagement
             if (this.unpersisted)
             {
                 // If we're unpersisted, we can't determine the native type until our PrincipalContext has been set.
-                if (_ctx != null)
+                if (_ctx is not null)
                 {
                     return _ctx.ContextForType(this.GetType()).NativeType(this);
                 }
@@ -522,7 +522,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                Debug.Assert(_ctx != null);
+                Debug.Assert(_ctx is not null);
                 return _ctx.QueryCtx.NativeType(this);
             }
         }
@@ -534,7 +534,7 @@ namespace System.DirectoryServices.AccountManagement
 
         public PrincipalSearchResult<Principal> GetGroups(PrincipalContext contextToQuery)
         {
-            if (contextToQuery == null)
+            if (contextToQuery is null)
                 throw new ArgumentNullException(nameof(contextToQuery));
 
             return new PrincipalSearchResult<Principal>(GetGroupsHelper(contextToQuery));
@@ -545,7 +545,7 @@ namespace System.DirectoryServices.AccountManagement
             // Make sure we're not disposed or deleted.
             CheckDisposedOrDeleted();
 
-            if (group == null)
+            if (group is null)
                 throw new ArgumentNullException(nameof(group));
 
             return group.Members.Contains(this);
@@ -556,15 +556,15 @@ namespace System.DirectoryServices.AccountManagement
             // Make sure we're not disposed or deleted.
             CheckDisposedOrDeleted();
 
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
-            if (identityValue == null)
+            if (identityValue is null)
                 throw new ArgumentNullException(nameof(identityValue));
 
             GroupPrincipal g = GroupPrincipal.FindByIdentity(context, identityType, identityValue);
 
-            if (g != null)
+            if (g is not null)
             {
                 return IsMemberOf(g);
             }
@@ -584,13 +584,13 @@ namespace System.DirectoryServices.AccountManagement
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "Dispose: disposing");
 
-                if ((this.UnderlyingObject != null) && (this.UnderlyingObject is IDisposable))
+                if ((this.UnderlyingObject is not null) && (this.UnderlyingObject is IDisposable))
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "Dispose: disposing underlying object");
                     ((IDisposable)this.UnderlyingObject).Dispose();
                 }
 
-                if ((this.UnderlyingSearchObject != null) && (this.UnderlyingSearchObject is IDisposable))
+                if ((this.UnderlyingSearchObject is not null) && (this.UnderlyingSearchObject is IDisposable))
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "Dispose: disposing underlying search object");
                     ((IDisposable)this.UnderlyingSearchObject).Dispose();
@@ -676,7 +676,7 @@ namespace System.DirectoryServices.AccountManagement
             }
             else
             {
-                if (value != null && value is ICollection)
+                if (value is not null && value is ICollection)
                 {
                     ICollection collection = (ICollection)value;
                     if (collection.Count == 0)
@@ -766,7 +766,7 @@ namespace System.DirectoryServices.AccountManagement
             set
             {
                 // Verify that the passed context is not disposed.
-                if (value != null)
+                if (value is not null)
                     value.CheckDisposed();
                 _ctx = value;
             }
@@ -800,7 +800,7 @@ namespace System.DirectoryServices.AccountManagement
         // Returns null if no context has been set yet.
         internal StoreCtx GetStoreCtxToUse()
         {
-            if (_ctx == null)
+            if (_ctx is null)
             {
                 Debug.Assert(this.unpersisted == true);
                 return null;
@@ -825,7 +825,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (_underlyingObject != null)
+                if (_underlyingObject is not null)
                     return _underlyingObject;
 
                 return null;
@@ -846,7 +846,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (_underlyingSearchObject != null)
+                if (_underlyingSearchObject is not null)
                     return _underlyingSearchObject;
 
                 return null;
@@ -900,10 +900,10 @@ namespace System.DirectoryServices.AccountManagement
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected static Principal FindByIdentityWithType(PrincipalContext context, Type principalType, string identityValue)
         {
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
-            if (identityValue == null)
+            if (identityValue is null)
                 throw new ArgumentNullException(nameof(identityValue));
 
             return FindByIdentityWithTypeHelper(context, principalType, null, identityValue, DateTime.UtcNow);
@@ -912,10 +912,10 @@ namespace System.DirectoryServices.AccountManagement
         [System.ComponentModel.EditorBrowsable(System.ComponentModel.EditorBrowsableState.Advanced)]
         protected static Principal FindByIdentityWithType(PrincipalContext context, Type principalType, IdentityType identityType, string identityValue)
         {
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
-            if (identityValue == null)
+            if (identityValue is null)
                 throw new ArgumentNullException(nameof(identityValue));
 
             if ((identityType < IdentityType.SamAccountName) || (identityType > IdentityType.Guid))
@@ -927,10 +927,10 @@ namespace System.DirectoryServices.AccountManagement
         private static Principal FindByIdentityWithTypeHelper(PrincipalContext context, Type principalType, Nullable<IdentityType> identityType, string identityValue, DateTime refDate)
         {
             // Ask the store to find a Principal based on this IdentityReference info.
-            Principal p = context.QueryCtx.FindPrincipalByIdentRef(principalType, (identityType == null) ? null : (string)IdentMap.StringMap[(int)identityType, 1], identityValue, refDate);
+            Principal p = context.QueryCtx.FindPrincipalByIdentRef(principalType, (identityType is null) ? null : (string)IdentMap.StringMap[(int)identityType, 1], identityValue, refDate);
 
             // Did we find a match?
-            if (p != null)
+            if (p is not null)
             {
                 // Given the native object, ask the StoreCtx to construct a Principal object for us.
                 return p;
@@ -956,7 +956,7 @@ namespace System.DirectoryServices.AccountManagement
             }
 
             StoreCtx storeCtx = GetStoreCtxToUse();
-            Debug.Assert(storeCtx != null);
+            Debug.Assert(storeCtx is not null);
 
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "GetGroupsHelper: querying");
             ResultSet resultSet = storeCtx.GetGroupsMemberOf(this);
@@ -969,11 +969,11 @@ namespace System.DirectoryServices.AccountManagement
             // Make sure we're not disposed or deleted.
             CheckDisposedOrDeleted();
 
-            if (_ctx == null)
+            if (_ctx is null)
                 throw new InvalidOperationException(SR.UserMustSetContextForMethod);
 
             StoreCtx storeCtx = GetStoreCtxToUse();
-            Debug.Assert(storeCtx != null);
+            Debug.Assert(storeCtx is not null);
 
             return contextToQuery.QueryCtx.GetGroupsMemberOf(this, storeCtx);
         }
@@ -994,7 +994,7 @@ namespace System.DirectoryServices.AccountManagement
             else if (!this.unpersisted)
             {
                 // We came back from a query --> our PrincipalContext must be filled in
-                Debug.Assert(_ctx != null);
+                Debug.Assert(_ctx is not null);
 
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "LoadIfNeeded: loading");
 
@@ -1081,7 +1081,7 @@ namespace System.DirectoryServices.AccountManagement
         // ExtensionCache is never directly loaded by the store hence it does not exist in the switch
         internal virtual void LoadValueIntoProperty(string propertyName, object value)
         {
-            GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "LoadValueIntoProperty: name=" + propertyName + " value=" + (value == null ? "null" : value.ToString()));
+            GlobalDebug.WriteLineIf(GlobalDebug.Info, "Principal", "LoadValueIntoProperty: name=" + propertyName + " value=" + (value is null ? "null" : value.ToString()));
 
             switch (propertyName)
             {

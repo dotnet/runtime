@@ -88,7 +88,7 @@ namespace System.DirectoryServices.AccountManagement
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "QbeFilterDescription", "FilterFactory.CreateFilter: name=" + propertyName);
 
             Type type = (Type)s_subclasses[propertyName];
-            Debug.Assert(type != null);
+            Debug.Assert(type is not null);
 
             return System.Activator.CreateInstance(type);
         }

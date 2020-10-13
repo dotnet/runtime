@@ -51,7 +51,7 @@ namespace System.Composition.Debugging
 
         private void InitDiscovery()
         {
-            if (_discoveredParts != null)
+            if (_discoveredParts is not null)
                 return;
 
             var types = _configuration.DebugGetRegisteredTypes();

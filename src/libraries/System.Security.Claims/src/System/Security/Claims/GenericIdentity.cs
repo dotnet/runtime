@@ -13,7 +13,7 @@ namespace System.Security.Principal
 
         public GenericIdentity(string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             m_name = name;
@@ -24,9 +24,9 @@ namespace System.Security.Principal
 
         public GenericIdentity(string name, string type)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
             m_name = name;
@@ -84,7 +84,7 @@ namespace System.Security.Principal
 
         private void AddNameClaim()
         {
-            if (m_name != null)
+            if (m_name is not null)
             {
                 base.AddClaim(new Claim(base.NameClaimType, m_name, ClaimValueTypes.String, ClaimsIdentity.DefaultIssuer, ClaimsIdentity.DefaultIssuer, this));
             }

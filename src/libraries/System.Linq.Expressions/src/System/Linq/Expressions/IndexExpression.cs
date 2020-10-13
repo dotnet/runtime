@@ -24,9 +24,9 @@ namespace System.Linq.Expressions
             PropertyInfo? indexer,
             IReadOnlyList<Expression> arguments)
         {
-            if (indexer == null)
+            if (indexer is null)
             {
-                Debug.Assert(instance != null && instance.Type.IsArray);
+                Debug.Assert(instance is not null && instance.Type.IsArray);
                 Debug.Assert(instance.Type.GetArrayRank() == arguments.Count);
             }
 
@@ -49,7 +49,7 @@ namespace System.Linq.Expressions
         {
             get
             {
-                if (Indexer != null)
+                if (Indexer is not null)
                 {
                     return Indexer.PropertyType;
                 }
@@ -85,7 +85,7 @@ namespace System.Linq.Expressions
         /// <returns>This expression if no children changed, or an expression with the updated children.</returns>
         public IndexExpression Update(Expression @object, IEnumerable<Expression>? arguments)
         {
-            if (@object == Object && arguments != null)
+            if (@object == Object && arguments is not null)
             {
                 if (ExpressionUtils.SameElements(ref arguments, Arguments))
                 {
@@ -118,8 +118,8 @@ namespace System.Linq.Expressions
 
         internal Expression Rewrite(Expression instance, Expression[]? arguments)
         {
-            Debug.Assert(instance != null);
-            Debug.Assert(arguments == null || arguments.Length == _arguments.Count);
+            Debug.Assert(instance is not null);
+            Debug.Assert(arguments is null || arguments.Length == _arguments.Count);
 
             return Expression.MakeIndex(instance, Indexer, arguments ?? _arguments);
         }
@@ -136,7 +136,7 @@ namespace System.Linq.Expressions
         /// <returns>The created <see cref="IndexExpression"/>.</returns>
         public static IndexExpression MakeIndex(Expression instance, PropertyInfo? indexer, IEnumerable<Expression>? arguments)
         {
-            if (indexer != null)
+            if (indexer is not null)
             {
                 return Property(instance, indexer, arguments);
             }
@@ -227,14 +227,14 @@ namespace System.Linq.Expressions
             // bind to public names first
             BindingFlags flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy;
             PropertyInfo? pi = FindProperty(type, propertyName, arguments, flags);
-            if (pi == null)
+            if (pi is null)
             {
                 flags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.IgnoreCase | BindingFlags.FlattenHierarchy;
                 pi = FindProperty(type, propertyName, arguments, flags);
             }
-            if (pi == null)
+            if (pi is null)
             {
-                if (arguments == null || arguments.Length == 0)
+                if (arguments is null || arguments.Length == 0)
                 {
                     throw Error.InstancePropertyWithoutParameterNotDefinedForType(propertyName, type);
                 }
@@ -270,7 +270,7 @@ namespace System.Linq.Expressions
             {
                 if (pi.Name.Equals(propertyName, StringComparison.OrdinalIgnoreCase) && IsCompatible(pi, arguments))
                 {
-                    if (property == null)
+                    if (property is null)
                     {
                         property = pi;
                     }
@@ -288,14 +288,14 @@ namespace System.Linq.Expressions
         {
             MethodInfo? mi = pi.GetGetMethod(nonPublic: true);
             ParameterInfo[] parms;
-            if (mi != null)
+            if (mi is not null)
             {
                 parms = mi.GetParametersCached();
             }
             else
             {
                 mi = pi.GetSetMethod(nonPublic: true);
-                if (mi == null)
+                if (mi is null)
                 {
                     return false;
                 }
@@ -309,7 +309,7 @@ namespace System.Linq.Expressions
                 parms = parms.RemoveLast();
             }
 
-            if (args == null)
+            if (args is null)
             {
                 return parms.Length == 0;
             }
@@ -318,7 +318,7 @@ namespace System.Linq.Expressions
                 return false;
             for (int i = 0; i < args.Length; i++)
             {
-                if (args[i] == null) return false;
+                if (args[i] is null) return false;
                 if (!TypeUtils.AreReferenceAssignable(parms[i].ParameterType, args[i].Type))
                 {
                     return false;
@@ -381,7 +381,7 @@ namespace System.Linq.Expressions
 
             ParameterInfo[]? getParameters = null;
             MethodInfo? getter = indexer.GetGetMethod(nonPublic: true);
-            if (getter != null)
+            if (getter is not null)
             {
                 if (getter.ReturnType != indexer.PropertyType)
                 {
@@ -393,7 +393,7 @@ namespace System.Linq.Expressions
             }
 
             MethodInfo? setter = indexer.GetSetMethod(nonPublic: true);
-            if (setter != null)
+            if (setter is not null)
             {
                 ParameterInfo[] setParameters = setter.GetParametersCached();
                 if (setParameters.Length == 0)
@@ -416,7 +416,7 @@ namespace System.Linq.Expressions
                     throw Error.PropertyTypeMustMatchSetter(paramName);
                 }
 
-                if (getter != null)
+                if (getter is not null)
                 {
                     if (getter.IsStatic ^ setter.IsStatic)
                     {
@@ -440,7 +440,7 @@ namespace System.Linq.Expressions
                     ValidateAccessor(instance, setter, setParameters.RemoveLast(), ref argList, paramName);
                 }
             }
-            else if (getter == null)
+            else if (getter is null)
             {
                 throw Error.PropertyDoesNotHaveAccessor(indexer, paramName);
             }
@@ -458,14 +458,14 @@ namespace System.Linq.Expressions
 
             if (method.IsStatic)
             {
-                if (instance != null)
+                if (instance is not null)
                 {
                     throw Error.OnlyStaticPropertiesHaveNullInstance(nameof(instance));
                 }
             }
             else
             {
-                if (instance == null)
+                if (instance is null)
                 {
                     throw Error.OnlyStaticPropertiesHaveNullInstance(nameof(instance));
                 }
@@ -503,7 +503,7 @@ namespace System.Linq.Expressions
                             throw Error.ExpressionTypeDoesNotMatchMethodParameter(arg.Type, pType, method, nameof(arguments), i);
                         }
                     }
-                    if (newArgs == null && arg != arguments[i])
+                    if (newArgs is null && arg != arguments[i])
                     {
                         newArgs = new Expression[arguments.Count];
                         for (int j = 0; j < i; j++)
@@ -511,12 +511,12 @@ namespace System.Linq.Expressions
                             newArgs[j] = arguments[j];
                         }
                     }
-                    if (newArgs != null)
+                    if (newArgs is not null)
                     {
                         newArgs[i] = arg;
                     }
                 }
-                if (newArgs != null)
+                if (newArgs is not null)
                 {
                     arguments = new TrueReadOnlyCollection<Expression>(newArgs);
                 }

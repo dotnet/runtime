@@ -19,7 +19,7 @@ namespace System.Net.Http
 
         public CreditManager(IHttpTrace owner, string name, int initialCredit)
         {
-            Debug.Assert(owner != null);
+            Debug.Assert(owner is not null);
             Debug.Assert(!string.IsNullOrWhiteSpace(name));
 
             if (NetEventSource.Log.IsEnabled()) owner.Trace($"{name}. {nameof(initialCredit)}={initialCredit}");
@@ -98,11 +98,11 @@ namespace System.Net.Http
 
                 _current = checked(_current + amount);
 
-                while (_current > 0 && _waitersTail != null)
+                while (_current > 0 && _waitersTail is not null)
                 {
                     // Get the waiter from the head of the queue.
                     CreditWaiter? waiter = _waitersTail.Next;
-                    Debug.Assert(waiter != null);
+                    Debug.Assert(waiter is not null);
                     int granted = Math.Min(waiter.Amount, _current);
 
                     // Remove the waiter from the list.
@@ -140,7 +140,7 @@ namespace System.Net.Http
                 _disposed = true;
 
                 CreditWaiter? waiter = _waitersTail;
-                if (waiter != null)
+                if (waiter is not null)
                 {
                     do
                     {

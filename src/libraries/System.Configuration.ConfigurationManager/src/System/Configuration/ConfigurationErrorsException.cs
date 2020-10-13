@@ -161,7 +161,7 @@ namespace System.Configuration
         {
             get
             {
-                if (_errors != null) return _errors;
+                if (_errors is not null) return _errors;
 
                 ConfigurationErrorsException e = new ConfigurationErrorsException(BareMessage, InnerException,
                     _firstFilename, _firstLine);
@@ -203,7 +203,7 @@ namespace System.Configuration
             // (since first error duplicates this error, only worry if
             //  there is more than one)
             int subErrors = 0;
-            if ((_errors != null) && (_errors.Length > 1))
+            if ((_errors is not null) && (_errors.Length > 1))
             {
                 subErrors = _errors.Length;
 

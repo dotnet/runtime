@@ -23,7 +23,7 @@ namespace System.Runtime.Serialization
         internal void EndWrite()
         {
             if (_depth != 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.IXmlSerializableMissingEndElements, (_obj == null ? string.Empty : DataContract.GetClrTypeFullName(_obj.GetType())))));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.IXmlSerializableMissingEndElements, (_obj is null ? string.Empty : DataContract.GetClrTypeFullName(_obj.GetType())))));
             _obj = null;
         }
 
@@ -52,7 +52,7 @@ namespace System.Runtime.Serialization
         public override void WriteEndElement()
         {
             if (_depth == 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.IXmlSerializableWritePastSubTree, (_obj == null ? string.Empty : DataContract.GetClrTypeFullName(_obj.GetType())))));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.IXmlSerializableWritePastSubTree, (_obj is null ? string.Empty : DataContract.GetClrTypeFullName(_obj.GetType())))));
             _xmlWriter.WriteEndElement();
             _depth--;
         }
@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization
         public override void WriteFullEndElement()
         {
             if (_depth == 0)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.IXmlSerializableWritePastSubTree, (_obj == null ? string.Empty : DataContract.GetClrTypeFullName(_obj.GetType())))));
+                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(XmlObjectSerializer.CreateSerializationException(SR.Format(SR.IXmlSerializableWritePastSubTree, (_obj is null ? string.Empty : DataContract.GetClrTypeFullName(_obj.GetType())))));
             _xmlWriter.WriteFullEndElement();
             _depth--;
         }

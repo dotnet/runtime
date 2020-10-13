@@ -17,7 +17,7 @@ namespace System.Net.Http
 
         internal static bool IsHttpUri(Uri uri)
         {
-            Debug.Assert(uri != null);
+            Debug.Assert(uri is not null);
             return IsSupportedScheme(uri.Scheme);
         }
 

@@ -27,7 +27,7 @@ namespace System.Net.Http
         public DecompressionHandler(DecompressionMethods decompressionMethods, HttpMessageHandlerStage innerHandler)
         {
             Debug.Assert(decompressionMethods != DecompressionMethods.None);
-            Debug.Assert(innerHandler != null);
+            Debug.Assert(innerHandler is not null);
 
             _decompressionMethods = decompressionMethods;
             _innerHandler = innerHandler;
@@ -56,7 +56,7 @@ namespace System.Net.Http
 
             HttpResponseMessage response = await _innerHandler.SendAsync(request, async, cancellationToken).ConfigureAwait(false);
 
-            Debug.Assert(response.Content != null);
+            Debug.Assert(response.Content is not null);
             ICollection<string> contentEncodings = response.Content.Headers.ContentEncoding;
             if (contentEncodings.Count > 0)
             {
@@ -112,7 +112,7 @@ namespace System.Net.Http
                 string? prevEncoding = null;
                 foreach (string encoding in originalContent.Headers.ContentEncoding)
                 {
-                    if (prevEncoding != null)
+                    if (prevEncoding is not null)
                     {
                         Headers.ContentEncoding.Add(prevEncoding);
                     }

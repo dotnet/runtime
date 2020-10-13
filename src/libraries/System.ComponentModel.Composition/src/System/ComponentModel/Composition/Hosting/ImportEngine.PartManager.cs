@@ -60,12 +60,12 @@ namespace System.ComponentModel.Composition.Hosting
 
             public IEnumerable<string> GetImportedContractNames()
             {
-                if (Part == null)
+                if (Part is null)
                 {
                     return Enumerable.Empty<string>();
                 }
 
-                if (_importedContractNames == null)
+                if (_importedContractNames is null)
                 {
                     _importedContractNames = Part.ImportDefinitions.Select(import => import.ContractName ?? ImportDefinition.EmptyContractName).Distinct().ToArray();
                 }
@@ -96,7 +96,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public void SetSavedImport(ImportDefinition import, Export[]? exports, AtomicComposition? atomicComposition)
             {
-                if (atomicComposition != null)
+                if (atomicComposition is not null)
                 {
                     var savedExports = GetSavedImport(import);
 
@@ -106,7 +106,7 @@ namespace System.ComponentModel.Composition.Hosting
                         SetSavedImport(import, savedExports, null));
                 }
 
-                if (_importCache == null)
+                if (_importCache is null)
                 {
                     _importCache = new Dictionary<ImportDefinition, Export[]?>();
                 }
@@ -117,7 +117,7 @@ namespace System.ComponentModel.Composition.Hosting
             public Export[]? GetSavedImport(ImportDefinition import)
             {
                 Export[]? exports = null;
-                if (_importCache != null)
+                if (_importCache is not null)
                 {
                     // We don't care about the return value we just want the exports
                     // and if it isn't present we just return the initialized null value
@@ -154,7 +154,7 @@ namespace System.ComponentModel.Composition.Hosting
                 {
                     if (export is IDisposable disposableExport)
                     {
-                        if (disposableExports == null)
+                        if (disposableExports is null)
                         {
                             disposableExports = new List<IDisposable>();
                         }
@@ -164,13 +164,13 @@ namespace System.ComponentModel.Composition.Hosting
 
                 // Dispose any existing references previously set on this import
                 List<IDisposable>? oldDisposableExports = null;
-                if (_importedDisposableExports != null &&
+                if (_importedDisposableExports is not null &&
                     _importedDisposableExports.TryGetValue(import, out oldDisposableExports))
                 {
                     oldDisposableExports.ForEach(disposable => disposable.Dispose());
 
                     // If there aren't any replacements, get rid of the old storage
-                    if (disposableExports == null)
+                    if (disposableExports is null)
                     {
                         _importedDisposableExports.Remove(import);
                         if (!_importedDisposableExports.Any())
@@ -183,9 +183,9 @@ namespace System.ComponentModel.Composition.Hosting
                 }
 
                 // Record the new collection
-                if (disposableExports != null)
+                if (disposableExports is not null)
                 {
-                    if (_importedDisposableExports == null)
+                    if (_importedDisposableExports is null)
                     {
                         _importedDisposableExports = new Dictionary<ImportDefinition, List<IDisposable>>();
                     }
@@ -195,7 +195,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             public void DisposeAllDependencies()
             {
-                if (_importedDisposableExports != null)
+                if (_importedDisposableExports is not null)
                 {
                     IEnumerable<IDisposable> dependencies = _importedDisposableExports.Values
                         .SelectMany(exports => exports);

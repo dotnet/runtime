@@ -45,7 +45,7 @@ namespace System.Diagnostics
         {
             lock (s_lock)
             {
-                if (message == null)
+                if (message is null)
                 {
                     WriteCore(string.Empty);
                     return;
@@ -83,7 +83,7 @@ namespace System.Diagnostics
 
             private static string? Terminate(string? s)
             {
-                if (s == null)
+                if (s is null)
                     return s;
 
                 s = s.Trim();

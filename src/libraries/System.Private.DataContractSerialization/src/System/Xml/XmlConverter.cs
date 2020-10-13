@@ -39,7 +39,7 @@ namespace System.Xml
         {
             get
             {
-                if (s_base64Encoding == null)
+                if (s_base64Encoding is null)
                     s_base64Encoding = new Base64Encoding();
                 return s_base64Encoding;
             }
@@ -49,7 +49,7 @@ namespace System.Xml
         {
             get
             {
-                if (s_utf8Encoding == null)
+                if (s_utf8Encoding is null)
                     s_utf8Encoding = new UTF8Encoding(false, true);
                 return s_utf8Encoding;
             }
@@ -59,7 +59,7 @@ namespace System.Xml
         {
             get
             {
-                if (s_unicodeEncoding == null)
+                if (s_unicodeEncoding is null)
                     s_unicodeEncoding = new UnicodeEncoding(false, false, true);
                 return s_unicodeEncoding;
             }

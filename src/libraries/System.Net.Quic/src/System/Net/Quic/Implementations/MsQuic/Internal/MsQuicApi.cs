@@ -238,7 +238,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             try
             {
-                if (certFilePath != null && privateKeyFilePath != null)
+                if (certFilePath is not null && privateKeyFilePath is not null)
                 {
                     fileParams = new MsQuicNativeMethods.CertFileParams
                     {
@@ -257,7 +257,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                         IntPtr.Zero,
                         SecCfgCreateCallbackHandler);
                 }
-                else if (certificate != null)
+                else if (certificate is not null)
                 {
                     createConfigStatus = SecConfigCreateDelegate(
                         _registrationContext,

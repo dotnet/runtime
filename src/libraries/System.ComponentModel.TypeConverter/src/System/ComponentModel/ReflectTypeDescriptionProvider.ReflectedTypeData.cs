@@ -35,7 +35,7 @@ namespace System.ComponentModel
             /// This method returns true if the data cache in this reflection
             /// type descriptor has data in it.
             /// </summary>
-            internal bool IsPopulated => (_attributes != null) | (_events != null) | (_properties != null);
+            internal bool IsPopulated => (_attributes is not null) | (_events is not null) | (_properties is not null);
 
             /// <summary>
             /// Retrieves custom attributes.
@@ -45,7 +45,7 @@ namespace System.ComponentModel
                 // Worst case collision scenario:  we don't want the perf hit
                 // of taking a lock, so if we collide we will query for
                 // attributes twice. Not a big deal.
-                if (_attributes == null)
+                if (_attributes is null)
                 {
                     // Obtaining attributes follows a very critical order: we must take care that
                     // we merge attributes the right way. Consider this:
@@ -82,7 +82,7 @@ namespace System.ComponentModel
                     Attribute[] attrArray = ReflectGetAttributes(_type);
                     Type baseType = _type.BaseType;
 
-                    while (baseType != null && baseType != typeof(object))
+                    while (baseType is not null && baseType != typeof(object))
                     {
                         Attribute[] baseArray = ReflectGetAttributes(baseType);
                         Attribute[] temp = new Attribute[attrArray.Length + baseArray.Length];
@@ -160,7 +160,7 @@ namespace System.ComponentModel
             {
                 IComponent comp = instance as IComponent;
                 ISite site = comp?.Site;
-                if (site != null)
+                if (site is not null)
                 {
                     INestedSite nestedSite = site as INestedSite;
                     return (nestedSite?.FullName) ?? site.Name;
@@ -183,14 +183,14 @@ namespace System.ComponentModel
                 // we then search on the same attribute based on type. If the two don't match, then
                 // we cannot cache the value and must re-create every time. It is rare for a designer
                 // to override these attributes, so we want to be smart here.
-                if (instance != null)
+                if (instance is not null)
                 {
                     typeAttr = (TypeConverterAttribute)TypeDescriptor.GetAttributes(_type)[typeof(TypeConverterAttribute)];
                     TypeConverterAttribute instanceAttr = (TypeConverterAttribute)TypeDescriptor.GetAttributes(instance)[typeof(TypeConverterAttribute)];
                     if (typeAttr != instanceAttr)
                     {
                         Type converterType = GetTypeFromName(instanceAttr.ConverterTypeName);
-                        if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
+                        if (converterType is not null && typeof(TypeConverter).IsAssignableFrom(converterType))
                         {
                             return (TypeConverter)ReflectTypeDescriptionProvider.CreateInstance(converterType, _type);
                         }
@@ -198,28 +198,28 @@ namespace System.ComponentModel
                 }
 
                 // If we got here, we return our type-based converter.
-                if (_converter == null)
+                if (_converter is null)
                 {
-                    if (typeAttr == null)
+                    if (typeAttr is null)
                     {
                         typeAttr = (TypeConverterAttribute)TypeDescriptor.GetAttributes(_type)[typeof(TypeConverterAttribute)];
                     }
 
-                    if (typeAttr != null)
+                    if (typeAttr is not null)
                     {
                         Type converterType = GetTypeFromName(typeAttr.ConverterTypeName);
-                        if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
+                        if (converterType is not null && typeof(TypeConverter).IsAssignableFrom(converterType))
                         {
                             _converter = (TypeConverter)CreateInstance(converterType, _type);
                         }
                     }
 
-                    if (_converter == null)
+                    if (_converter is null)
                     {
                         // We did not get a converter. Traverse up the base class chain until
                         // we find one in the stock hashtable.
                         _converter = GetIntrinsicTypeConverter(_type);
-                        Debug.Assert(_converter != null, "There is no intrinsic setup in the hashtable for the Object type");
+                        Debug.Assert(_converter is not null, "There is no intrinsic setup in the hashtable for the Object type");
                     }
                 }
 
@@ -234,7 +234,7 @@ namespace System.ComponentModel
             {
                 AttributeCollection attributes;
 
-                if (instance != null)
+                if (instance is not null)
                 {
                     attributes = TypeDescriptor.GetAttributes(instance);
                 }
@@ -244,9 +244,9 @@ namespace System.ComponentModel
                 }
 
                 DefaultEventAttribute attr = (DefaultEventAttribute)attributes[typeof(DefaultEventAttribute)];
-                if (attr != null && attr.Name != null)
+                if (attr is not null && attr.Name is not null)
                 {
-                    if (instance != null)
+                    if (instance is not null)
                     {
                         return TypeDescriptor.GetEvents(instance)[attr.Name];
                     }
@@ -266,7 +266,7 @@ namespace System.ComponentModel
             {
                 AttributeCollection attributes;
 
-                if (instance != null)
+                if (instance is not null)
                 {
                     attributes = TypeDescriptor.GetAttributes(instance);
                 }
@@ -276,9 +276,9 @@ namespace System.ComponentModel
                 }
 
                 DefaultPropertyAttribute attr = (DefaultPropertyAttribute)attributes[typeof(DefaultPropertyAttribute)];
-                if (attr != null && attr.Name != null)
+                if (attr is not null && attr.Name is not null)
                 {
-                    if (instance != null)
+                    if (instance is not null)
                     {
                         return TypeDescriptor.GetProperties(instance)[attr.Name];
                     }
@@ -303,14 +303,14 @@ namespace System.ComponentModel
                 // we then search on the same attribute based on type. If the two don't match, then
                 // we cannot cache the value and must re-create every time. It is rare for a designer
                 // to override these attributes, so we want to be smart here.
-                if (instance != null)
+                if (instance is not null)
                 {
                     typeAttr = GetEditorAttribute(TypeDescriptor.GetAttributes(_type), editorBaseType);
                     EditorAttribute instanceAttr = GetEditorAttribute(TypeDescriptor.GetAttributes(instance), editorBaseType);
                     if (typeAttr != instanceAttr)
                     {
                         Type editorType = GetTypeFromName(instanceAttr.EditorTypeName);
-                        if (editorType != null && editorBaseType.IsAssignableFrom(editorType))
+                        if (editorType is not null && editorBaseType.IsAssignableFrom(editorType))
                         {
                             return CreateInstance(editorType, _type);
                         }
@@ -333,45 +333,45 @@ namespace System.ComponentModel
                 object editor = null;
 
                 typeAttr = GetEditorAttribute(TypeDescriptor.GetAttributes(_type), editorBaseType);
-                if (typeAttr != null)
+                if (typeAttr is not null)
                 {
                     Type editorType = GetTypeFromName(typeAttr.EditorTypeName);
-                    if (editorType != null && editorBaseType.IsAssignableFrom(editorType))
+                    if (editorType is not null && editorBaseType.IsAssignableFrom(editorType))
                     {
                         editor = CreateInstance(editorType, _type);
                     }
                 }
 
                 // Editor is not in the attributes. Search intrinsic tables.
-                if (editor == null)
+                if (editor is null)
                 {
                     Hashtable intrinsicEditors = GetEditorTable(editorBaseType);
-                    if (intrinsicEditors != null)
+                    if (intrinsicEditors is not null)
                     {
                         editor = GetIntrinsicTypeEditor(intrinsicEditors, _type);
                     }
 
                     // As a quick sanity check, check to see that the editor we got back is of
                     // the correct type.
-                    if (editor != null && !editorBaseType.IsInstanceOfType(editor))
+                    if (editor is not null && !editorBaseType.IsInstanceOfType(editor))
                     {
                         Debug.Fail($"Editor {editor.GetType().FullName} is not an instance of {editorBaseType.FullName} but it is in that base types table.");
                         editor = null;
                     }
                 }
 
-                if (editor != null)
+                if (editor is not null)
                 {
                     lock (this)
                     {
-                        if (_editorTypes == null || _editorTypes.Length == _editorCount)
+                        if (_editorTypes is null || _editorTypes.Length == _editorCount)
                         {
-                            int newLength = (_editorTypes == null ? 4 : _editorTypes.Length * 2);
+                            int newLength = (_editorTypes is null ? 4 : _editorTypes.Length * 2);
 
                             Type[] newTypes = new Type[newLength];
                             object[] newEditors = new object[newLength];
 
-                            if (_editorTypes != null)
+                            if (_editorTypes is not null)
                             {
                                 _editorTypes.CopyTo(newTypes, 0);
                                 _editors.CopyTo(newEditors, 0);
@@ -400,7 +400,7 @@ namespace System.ComponentModel
                     {
                         Type attrEditorBaseType = Type.GetType(edAttr.EditorBaseTypeName);
 
-                        if (attrEditorBaseType != null && attrEditorBaseType == editorBaseType)
+                        if (attrEditorBaseType is not null && attrEditorBaseType == editorBaseType)
                         {
                             return edAttr;
                         }
@@ -419,7 +419,7 @@ namespace System.ComponentModel
                 // of taking a lock, so if we collide we will query for
                 // events twice. Not a big deal.
                 //
-                if (_events == null)
+                if (_events is null)
                 {
                     EventDescriptor[] eventArray;
                     Dictionary<string, EventDescriptor> eventList = new Dictionary<string, EventDescriptor>(16);
@@ -435,7 +435,7 @@ namespace System.ComponentModel
                         }
                         baseType = baseType.BaseType;
                     }
-                    while (baseType != null && baseType != objType);
+                    while (baseType is not null && baseType != objType);
 
                     eventArray = new EventDescriptor[eventList.Count];
                     eventList.Values.CopyTo(eventArray, 0);
@@ -453,7 +453,7 @@ namespace System.ComponentModel
                 // Worst case collision scenario:  we don't want the perf hit
                 // of taking a lock, so if we collide we will query for
                 // properties twice. Not a big deal.
-                if (_properties == null)
+                if (_properties is null)
                 {
                     PropertyDescriptor[] propertyArray;
                     Dictionary<string, PropertyDescriptor> propertyList = new Dictionary<string, PropertyDescriptor>(10);
@@ -469,7 +469,7 @@ namespace System.ComponentModel
                         }
                         baseType = baseType.BaseType;
                     }
-                    while (baseType != null && baseType != objType);
+                    while (baseType is not null && baseType != objType);
 
                     propertyArray = new PropertyDescriptor[propertyList.Count];
                     propertyList.Values.CopyTo(propertyArray, 0);
@@ -499,12 +499,12 @@ namespace System.ComponentModel
                     t = _type.Assembly.GetType(typeName);
                 }
 
-                if (t == null)
+                if (t is null)
                 {
                     t = Type.GetType(typeName);
                 }
 
-                if (t == null && commaIndex != -1)
+                if (t is null && commaIndex != -1)
                 {
                     // At design time, it's possible for us to reuse
                     // an assembly but add new types. The app domain

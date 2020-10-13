@@ -57,12 +57,12 @@ namespace System.Net
 
         private bool IsIPv4
         {
-            get { return _numbers == null; }
+            get { return _numbers is null; }
         }
 
         private bool IsIPv6
         {
-            get { return _numbers != null; }
+            get { return _numbers is not null; }
         }
 
         private uint PrivateAddress
@@ -149,7 +149,6 @@ namespace System.Net
 
         internal IPAddress(ReadOnlySpan<ushort> numbers, uint scopeid)
         {
-            Debug.Assert(numbers != null);
             Debug.Assert(numbers.Length == NumberOfLabels);
 
             var arr = new ushort[NumberOfLabels];
@@ -164,7 +163,7 @@ namespace System.Net
 
         private IPAddress(ushort[] numbers, uint scopeid)
         {
-            Debug.Assert(numbers != null);
+            Debug.Assert(numbers is not null);
             Debug.Assert(numbers.Length == NumberOfLabels);
 
             _numbers = numbers;
@@ -216,25 +215,25 @@ namespace System.Net
         /// </devdoc>
         public static bool TryParse([NotNullWhen(true)] string? ipString, [NotNullWhen(true)] out IPAddress? address)
         {
-            if (ipString == null)
+            if (ipString is null)
             {
                 address = null;
                 return false;
             }
 
             address = IPAddressParser.Parse(ipString.AsSpan(), tryParse: true);
-            return (address != null);
+            return (address is not null);
         }
 
         public static bool TryParse(ReadOnlySpan<char> ipSpan, [NotNullWhen(true)] out IPAddress? address)
         {
             address = IPAddressParser.Parse(ipSpan, tryParse: true);
-            return (address != null);
+            return (address is not null);
         }
 
         public static IPAddress Parse(string ipString)
         {
-            if (ipString == null)
+            if (ipString is null)
             {
                 throw new ArgumentNullException(nameof(ipString));
             }
@@ -278,7 +277,7 @@ namespace System.Net
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void WriteIPv6Bytes(Span<byte> destination)
         {
-            Debug.Assert(_numbers != null && _numbers.Length == NumberOfLabels);
+            Debug.Assert(_numbers is not null && _numbers.Length == NumberOfLabels);
             int j = 0;
             for (int i = 0; i < NumberOfLabels; i++)
             {
@@ -306,7 +305,7 @@ namespace System.Net
         {
             if (IsIPv6)
             {
-                Debug.Assert(_numbers != null && _numbers.Length == NumberOfLabels);
+                Debug.Assert(_numbers is not null && _numbers.Length == NumberOfLabels);
                 byte[] bytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
                 WriteIPv6Bytes(bytes);
                 return bytes;
@@ -371,7 +370,7 @@ namespace System.Net
         /// </devdoc>
         public override string ToString()
         {
-            if (_toString == null)
+            if (_toString is null)
             {
                 _toString = IsIPv4 ?
                     IPAddressParser.IPv4AddressToString(PrivateAddress) :
@@ -420,7 +419,7 @@ namespace System.Net
 
         public static bool IsLoopback(IPAddress address)
         {
-            if (address == null)
+            if (address is null)
             {
                 ThrowAddressNullException();
             }
@@ -553,7 +552,7 @@ namespace System.Net
 
         internal bool Equals(IPAddress comparand)
         {
-            Debug.Assert(comparand != null);
+            Debug.Assert(comparand is not null);
 
             // Compare families before address representations
             if (AddressFamily != comparand.AddressFamily)

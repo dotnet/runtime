@@ -172,7 +172,7 @@ namespace System.Globalization
                     // The match may be affected by special character. Verify that the following character is regular ASCII.
                     if (sourceIndex < source.Length && *(a + sourceIndex) >= 0x80)
                         goto InteropCall;
-                    if (matchLengthPtr != null)
+                    if (matchLengthPtr is not null)
                         *matchLengthPtr = target.Length;
                     return i;
 
@@ -265,7 +265,7 @@ namespace System.Globalization
                     // The match may be affected by special character. Verify that the following character is regular ASCII.
                     if (sourceIndex < source.Length && *(a + sourceIndex) >= 0x80)
                         goto InteropCall;
-                    if (matchLengthPtr != null)
+                    if (matchLengthPtr is not null)
                         *matchLengthPtr = target.Length;
                     return i;
 
@@ -372,7 +372,7 @@ namespace System.Globalization
                         goto InteropCall;
                 }
 
-                if (matchLengthPtr != null)
+                if (matchLengthPtr is not null)
                 {
                     *matchLengthPtr = prefix.Length; // non-linguistic match doesn't change UTF-16 length
                 }
@@ -436,7 +436,7 @@ namespace System.Globalization
                         goto InteropCall;
                 }
 
-                if (matchLengthPtr != null)
+                if (matchLengthPtr is not null)
                 {
                     *matchLengthPtr = prefix.Length; // non-linguistic match doesn't change UTF-16 length
                 }
@@ -537,7 +537,7 @@ namespace System.Globalization
                         goto InteropCall;
                 }
 
-                if (matchLengthPtr != null)
+                if (matchLengthPtr is not null)
                 {
                     *matchLengthPtr = suffix.Length; // non-linguistic match doesn't change UTF-16 length
                 }
@@ -601,7 +601,7 @@ namespace System.Globalization
                         goto InteropCall;
                 }
 
-                if (matchLengthPtr != null)
+                if (matchLengthPtr is not null)
                 {
                     *matchLengthPtr = suffix.Length; // non-linguistic match doesn't change UTF-16 length
                 }
@@ -739,7 +739,7 @@ namespace System.Globalization
 
                 if (sortKeyLength > sortKey.Length) // slow path for big strings
                 {
-                    if (borrowedArray != null)
+                    if (borrowedArray is not null)
                     {
                         ArrayPool<byte>.Shared.Return(borrowedArray);
                     }
@@ -760,7 +760,7 @@ namespace System.Globalization
 
             int hash = Marvin.ComputeHash32(sortKey.Slice(0, sortKeyLength), Marvin.DefaultSeed);
 
-            if (borrowedArray != null)
+            if (borrowedArray is not null)
             {
                 ArrayPool<byte>.Shared.Return(borrowedArray);
             }

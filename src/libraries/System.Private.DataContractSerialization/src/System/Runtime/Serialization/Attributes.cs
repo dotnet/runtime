@@ -133,14 +133,14 @@ namespace System.Runtime.Serialization
         private void ReadXsiType(XmlReaderDelegator reader)
         {
             string xsiTypeString = reader.Value;
-            if (xsiTypeString != null && xsiTypeString.Length > 0)
+            if (xsiTypeString is not null && xsiTypeString.Length > 0)
                 XmlObjectSerializerReadContext.ParseQualifiedName(xsiTypeString, reader, out XsiTypeName, out XsiTypeNamespace, out XsiTypePrefix);
         }
 
         private void ReadFactoryType(XmlReaderDelegator reader)
         {
             string factoryTypeString = reader.Value;
-            if (factoryTypeString != null && factoryTypeString.Length > 0)
+            if (factoryTypeString is not null && factoryTypeString.Length > 0)
                 XmlObjectSerializerReadContext.ParseQualifiedName(factoryTypeString, reader, out FactoryTypeName, out FactoryTypeNamespace, out FactoryTypePrefix);
         }
     }

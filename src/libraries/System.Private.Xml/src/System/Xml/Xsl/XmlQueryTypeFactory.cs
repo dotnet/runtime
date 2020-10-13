@@ -501,8 +501,8 @@ namespace System.Xml.Xsl
             /// </summary>
             private ItemType(XmlTypeCode code, XmlQualifiedNameTest nameTest, XmlSchemaType schemaType, bool isNillable, bool isStrict, bool isNotRtf)
             {
-                Debug.Assert(nameTest != null, "nameTest cannot be null");
-                Debug.Assert(schemaType != null, "schemaType cannot be null");
+                Debug.Assert(nameTest is not null, "nameTest cannot be null");
+                Debug.Assert(schemaType is not null, "schemaType cannot be null");
                 _code = code;
                 _nameTest = nameTest;
                 _schemaType = schemaType;
@@ -735,7 +735,7 @@ namespace System.Xml.Xsl
             /// </summary>
             private ChoiceType(List<XmlQueryType> members)
             {
-                Debug.Assert(members != null && members.Count != 1, "ChoiceType must contain a list with 0 or >1 types.");
+                Debug.Assert(members is not null && members.Count != 1, "ChoiceType must contain a list with 0 or >1 types.");
 
                 _members = members;
 
@@ -965,7 +965,7 @@ namespace System.Xml.Xsl
             /// </summary>
             public static XmlQueryType Create(XmlQueryType prime, XmlQueryCardinality card)
             {
-                Debug.Assert(prime != null, "SequenceType can only modify the cardinality of a non-null XmlQueryType.");
+                Debug.Assert(prime is not null, "SequenceType can only modify the cardinality of a non-null XmlQueryType.");
                 Debug.Assert(prime.IsSingleton, "Prime type must have cardinality one.");
 
                 if (prime.TypeCode == XmlTypeCode.None)
@@ -1340,7 +1340,7 @@ namespace System.Xml.Xsl
                         card = XmlQueryCardinality.ZeroOrMore;
                     }
                     else {
-                        if (sourceSchemaType.Datatype == null) {
+                        if (sourceSchemaType.Datatype is null) {
                             // Complex content adds anyAtomicType* if mixed
                             XmlSchemaComplexType complexType = (XmlSchemaComplexType)sourceItem.SchemaType;
                             if (complexType.ContentType == XmlSchemaContentType.Mixed) {
@@ -1434,7 +1434,7 @@ namespace System.Xml.Xsl
                         itemCard = (AddFilteredPrime(list, UntypedElement, filter) * XmlQueryCardinality.ZeroOrMore);
                         itemCard += AddFilteredPrime(list, Text, filter);
                     }
-                    else if (sourceSchemaType.Datatype != null) {
+                    else if (sourceSchemaType.Datatype is not null) {
                         // Text is the only child node simple type can have
                         itemCard = AddFilteredPrime(list, Text, filter, true) * XmlQueryCardinality.ZeroOrOne;
                     }
@@ -1491,7 +1491,7 @@ namespace System.Xml.Xsl
                     else {
                         // Only complex type can have attributes
                         XmlSchemaComplexType type = sourceSchemaType as XmlSchemaComplexType;
-                        if (type != null) {
+                        if (type is not null) {
                             card |= AddAttributes(list, type.AttributeUses, type.AttributeWildcard, filter);
                         }
                     }
@@ -1533,7 +1533,7 @@ namespace System.Xml.Xsl
                 case XmlTypeCode.Comment:
                 case XmlTypeCode.Text:
                 case XmlTypeCode.Element:
-                    if (schemaSet == null) {
+                    if (schemaSet is null) {
                         card |= AddFilteredPrime(list, UntypedDocument, filter) * XmlQueryCardinality.ZeroOrOne;
                         card |= AddFilteredPrime(list, UntypedElement, filter) * XmlQueryCardinality.ZeroOrOne;
                     }
@@ -1545,7 +1545,7 @@ namespace System.Xml.Xsl
 
                 case XmlTypeCode.Namespace:
                 case XmlTypeCode.Attribute:
-                    if (schemaSet == null) {
+                    if (schemaSet is null) {
                         card |= (AddFilteredPrime(list, UntypedElement, filter) * XmlQueryCardinality.ZeroOrOne);
                     }
                     else {
@@ -1586,7 +1586,7 @@ namespace System.Xml.Xsl
                     if ((filter.NodeKinds & (XmlNodeKindFlags.Element | XmlNodeKindFlags.Text)) != 0) {
                         Dictionary<XmlQualifiedName, XmlQueryCardinality> allTypes = new Dictionary<XmlQualifiedName, XmlQueryCardinality>();
                         XmlSchemaType sourceSchemaType = sourceItem.SchemaType;
-                        if (sourceSchemaType == null) {
+                        if (sourceSchemaType is null) {
                             Debug.Assert(sourceItem.TypeCode == XmlTypeCode.Node);
                             sourceSchemaType = XmlSchemaComplexType.AnyType;
                         }
@@ -1634,7 +1634,7 @@ namespace System.Xml.Xsl
                 case XmlTypeCode.Element:
                 case XmlTypeCode.Namespace:
                 case XmlTypeCode.Attribute:
-                    if (schemaSet == null) {
+                    if (schemaSet is null) {
                         card |= (AddFilteredPrime(list, UntypedDocument, filter) * XmlQueryCardinality.ZeroOrOne)
                                 + (AddFilteredPrime(list, UntypedElement, filter) * XmlQueryCardinality.ZeroOrMore);
                     }
@@ -1659,7 +1659,7 @@ namespace System.Xml.Xsl
 
         private XmlQueryCardinality AddAttributes(List<XmlQueryType> list, XmlSchemaObjectTable attributeUses, XmlSchemaAnyAttribute attributeWildcard, XmlQueryType filter) {
             XmlQueryCardinality card = XmlQueryCardinality.Zero;
-            if (attributeWildcard != null) {
+            if (attributeWildcard is not null) {
                 XmlSchemaType attributeSchemaType = attributeWildcard.ProcessContentsCorrect == XmlSchemaContentProcessing.Skip ? DatatypeImplementation.UntypedAtomicType : DatatypeImplementation.AnySimpleType;
 
                 // wildcard will match more then one attribute
@@ -1701,7 +1701,7 @@ namespace System.Xml.Xsl
         private XmlQueryCardinality AddDescendantParticle(List<XmlQueryType> list, Dictionary<XmlQualifiedName, XmlQueryCardinality> allTypes, XmlSchemaParticle particle, XmlQueryType filter) {
             XmlQueryCardinality card = XmlQueryCardinality.None;
             XmlSchemaElement element = particle as XmlSchemaElement;
-            if (element != null) {
+            if (element is not null) {
                 // Single element
                 XmlQueryType elementType = CreateElementType(element);
 
@@ -1713,7 +1713,7 @@ namespace System.Xml.Xsl
             }
             else {
                 XmlSchemaAny any = particle as XmlSchemaAny;
-                if (any != null) {
+                if (any is not null) {
                     // Descendants of any
                     card = AddFilteredPrime(list, Element, filter);
                 }
@@ -1743,7 +1743,7 @@ namespace System.Xml.Xsl
                 card = AddFilteredPrime(list, UntypedElement, filter) * XmlQueryCardinality.ZeroOrMore;
                 card += AddFilteredPrime(list, Text, filter);
             }
-            else if (sourceSchemaType.Datatype != null) {
+            else if (sourceSchemaType.Datatype is not null) {
                 // Text is the only child node simple content of complext type
                 card = AddFilteredPrime(list, Text, filter, true) * XmlQueryCardinality.ZeroOrOne;
             }
@@ -1782,14 +1782,14 @@ namespace System.Xml.Xsl
         private XmlQueryCardinality AddChildParticle(List<XmlQueryType> list, XmlSchemaParticle particle, XmlQueryType filter) {
             XmlQueryCardinality card = XmlQueryCardinality.None;
             XmlSchemaElement element = particle as XmlSchemaElement;
-            if (element != null) {
+            if (element is not null) {
                 // Single element
                 card = AddFilteredPrime(list, CreateElementType(element), filter);
             }
             else {
                 // XmlSchemaAny matches more then one element
                 XmlSchemaAny any = particle as XmlSchemaAny;
-                if (any != null) {
+                if (any is not null) {
                     XmlSchemaType elementSchemaType = any.ProcessContentsCorrect == XmlSchemaContentProcessing.Skip ? XmlSchemaComplexType.UntypedAnyType : XmlSchemaComplexType.AnyType;
                     switch (any.NamespaceList.Type) {
                     case NamespaceList.ListType.Set:
@@ -1904,7 +1904,7 @@ namespace System.Xml.Xsl
                     // right is a subtype of left return right
                     return right;
                 }
-                else if (nameTest != null && type != null) {
+                else if (nameTest is not null && type is not null) {
                     // create a new type
                     return ItemType.Create(left.TypeCode, nameTest, type, isNillable);
                 }

@@ -53,12 +53,12 @@ namespace System.ComponentModel
         [UnsupportedOSPlatform("browser")]
         public virtual object CreateInstance(IServiceProvider provider, Type objectType, Type[] argTypes, object[] args)
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.CreateInstance(provider, objectType, argTypes, args);
             }
 
-            if (objectType == null)
+            if (objectType is null)
             {
                 throw new ArgumentNullException(nameof(objectType));
             }
@@ -95,7 +95,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual ICustomTypeDescriptor GetExtendedTypeDescriptor(object instance)
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.GetExtendedTypeDescriptor(instance);
             }
@@ -105,12 +105,12 @@ namespace System.ComponentModel
 
         protected internal virtual IExtenderProvider[] GetExtenderProviders(object instance)
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.GetExtenderProviders(instance);
             }
 
-            if (instance == null)
+            if (instance is null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
@@ -129,7 +129,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual string GetFullComponentName(object component)
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.GetFullComponentName(component);
             }
@@ -155,7 +155,7 @@ namespace System.ComponentModel
         /// </summary>
         public Type GetReflectionType(object instance)
         {
-            if (instance == null)
+            if (instance is null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
@@ -174,7 +174,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual Type GetReflectionType(Type objectType, object instance)
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.GetReflectionType(objectType, instance);
             }
@@ -190,12 +190,12 @@ namespace System.ComponentModel
         /// </summary>
         public virtual Type GetRuntimeType(Type reflectionType)
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.GetRuntimeType(reflectionType);
             }
 
-            if (reflectionType == null)
+            if (reflectionType is null)
             {
                 throw new ArgumentNullException(nameof(reflectionType));
             }
@@ -231,7 +231,7 @@ namespace System.ComponentModel
         /// </summary>
         public ICustomTypeDescriptor GetTypeDescriptor(object instance)
         {
-            if (instance == null)
+            if (instance is null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
@@ -255,7 +255,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
         {
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.GetTypeDescriptor(objectType, instance);
             }
@@ -269,12 +269,12 @@ namespace System.ComponentModel
         /// </summary>
         public virtual bool IsSupportedType(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
 
-            if (_parent != null)
+            if (_parent is not null)
             {
                 return _parent.IsSupportedType(type);
             }

@@ -132,7 +132,7 @@ namespace System.Security.Cryptography
 
         internal static CngKey Create(ECCurve curve, Func<string?, CngAlgorithm> algorithmResolver)
         {
-            System.Diagnostics.Debug.Assert(algorithmResolver != null);
+            System.Diagnostics.Debug.Assert(algorithmResolver is not null);
 
             curve.Validate();
 

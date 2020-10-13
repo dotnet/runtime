@@ -19,9 +19,9 @@ namespace System
 
         public static TypedReference MakeTypedReference(object target, FieldInfo[] flds)
         {
-            if (target == null)
+            if (target is null)
                 throw new ArgumentNullException(nameof(target));
-            if (flds == null)
+            if (flds is null)
                 throw new ArgumentNullException(nameof(flds));
             if (flds.Length == 0)
                 throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(flds));
@@ -31,7 +31,7 @@ namespace System
             for (int i = 0; i < flds.Length; i++)
             {
                 var field = flds[i] as RuntimeFieldInfo;
-                if (field == null)
+                if (field is null)
                     throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo);
                 if (field.IsStatic)
                     throw new ArgumentException(SR.Argument_TypedReferenceInvalidField);

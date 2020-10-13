@@ -147,7 +147,7 @@ namespace System.Reflection.PortableExecutable
             }
             finally
             {
-                if (candidate == null)
+                if (candidate is null)
                 {
                     candidate?.Dispose();
                 }

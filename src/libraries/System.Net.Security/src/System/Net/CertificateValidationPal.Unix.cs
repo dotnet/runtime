@@ -33,7 +33,7 @@ namespace System.Net
             SafeDeleteContext? securityContext,
             out X509Certificate2Collection? remoteCertificateStore)
         {
-            if (securityContext == null)
+            if (securityContext is null)
             {
                 remoteCertificateStore = null;
                 return null;
@@ -47,7 +47,7 @@ namespace System.Net
         {
             bool gotReference = false;
 
-            if (securityContext == null)
+            if (securityContext is null)
             {
                 return null;
             }
@@ -58,13 +58,13 @@ namespace System.Net
             {
                 QueryContextRemoteCertificate(securityContext, out remoteContext);
 
-                if (remoteContext != null && !remoteContext.IsInvalid)
+                if (remoteContext is not null && !remoteContext.IsInvalid)
                 {
                     remoteContext.DangerousAddRef(ref gotReference);
                     result = new X509Certificate2(remoteContext.DangerousGetHandle());
                 }
 
-                if (remoteCertificateStore != null)
+                if (remoteCertificateStore is not null)
                 {
                     using (SafeSharedX509StackHandle chainStack =
                         Interop.OpenSsl.GetPeerCertificateChain(((SafeDeleteSslContext)securityContext).SslContext))
@@ -95,7 +95,7 @@ namespace System.Net
             }
             finally
             {
-                if (remoteContext != null)
+                if (remoteContext is not null)
                 {
                     if (gotReference)
                     {

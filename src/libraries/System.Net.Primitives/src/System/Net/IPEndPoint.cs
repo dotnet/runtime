@@ -47,7 +47,7 @@ namespace System.Net
         /// </summary>
         public IPEndPoint(IPAddress address, int port)
         {
-            if (address == null)
+            if (address is null)
             {
                 throw new ArgumentNullException(nameof(address));
             }
@@ -128,7 +128,7 @@ namespace System.Net
 
         public static IPEndPoint Parse(string s)
         {
-            if (s == null)
+            if (s is null)
             {
                 throw new ArgumentNullException(nameof(s));
             }
@@ -156,7 +156,7 @@ namespace System.Net
 
         public override EndPoint Create(SocketAddress socketAddress)
         {
-            if (socketAddress == null)
+            if (socketAddress is null)
             {
                 throw new ArgumentNullException(nameof(socketAddress));
             }

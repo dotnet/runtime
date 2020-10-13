@@ -63,19 +63,19 @@ namespace System.ComponentModel
                 // changes it will invalidate our type converter cache.
                 AttributeCollection attrs = Attributes;
 
-                if (_converter == null)
+                if (_converter is null)
                 {
                     TypeConverterAttribute attr = (TypeConverterAttribute)attrs[typeof(TypeConverterAttribute)];
-                    if (attr.ConverterTypeName != null && attr.ConverterTypeName.Length > 0)
+                    if (attr.ConverterTypeName is not null && attr.ConverterTypeName.Length > 0)
                     {
                         Type converterType = GetTypeFromName(attr.ConverterTypeName);
-                        if (converterType != null && typeof(TypeConverter).IsAssignableFrom(converterType))
+                        if (converterType is not null && typeof(TypeConverter).IsAssignableFrom(converterType))
                         {
                             _converter = (TypeConverter)CreateInstance(converterType);
                         }
                     }
 
-                    if (_converter == null)
+                    if (_converter is null)
                     {
                         _converter = TypeDescriptor.GetConverter(PropertyType);
                     }
@@ -120,16 +120,16 @@ namespace System.ComponentModel
         /// </summary>
         public virtual void AddValueChanged(object component, EventHandler handler)
         {
-            if (component == null)
+            if (component is null)
             {
                 throw new ArgumentNullException(nameof(component));
             }
-            if (handler == null)
+            if (handler is null)
             {
                 throw new ArgumentNullException(nameof(handler));
             }
 
-            if (_valueChangedHandlers == null)
+            if (_valueChangedHandlers is null)
             {
                 _valueChangedHandlers = new Hashtable();
             }
@@ -159,7 +159,7 @@ namespace System.ComponentModel
                     return true;
                 }
 
-                if (obj == null)
+                if (obj is null)
                 {
                     return false;
                 }
@@ -187,7 +187,7 @@ namespace System.ComponentModel
         {
             Type[] typeArgs = new Type[] { typeof(Type) };
             ConstructorInfo ctor = type.GetConstructor(typeArgs);
-            if (ctor != null)
+            if (ctor is not null)
             {
                 return TypeDescriptor.CreateInstance(null, type, typeArgs, new object[] { PropertyType });
             }
@@ -223,7 +223,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual PropertyDescriptorCollection GetChildProperties(object instance, Attribute[] filter)
         {
-            if (instance == null)
+            if (instance is null)
             {
                 return TypeDescriptor.GetProperties(PropertyType, filter);
             }
@@ -246,7 +246,7 @@ namespace System.ComponentModel
             AttributeCollection attrs = Attributes;
 
             // Check the editors we've already created for this type.
-            if (_editorTypes != null)
+            if (_editorTypes is not null)
             {
                 for (int i = 0; i < _editorCount; i++)
                 {
@@ -258,7 +258,7 @@ namespace System.ComponentModel
             }
 
             // If one wasn't found, then we must go through the attributes.
-            if (editor == null)
+            if (editor is null)
             {
                 for (int i = 0; i < attrs.Count; i++)
                 {
@@ -272,7 +272,7 @@ namespace System.ComponentModel
                     if (editorBaseType == editorType)
                     {
                         Type type = GetTypeFromName(attr.EditorTypeName);
-                        if (type != null)
+                        if (type is not null)
                         {
                             editor = CreateInstance(type);
                             break;
@@ -282,13 +282,13 @@ namespace System.ComponentModel
 
                 // Now, if we failed to find it in our own attributes, go to the
                 // component descriptor.
-                if (editor == null)
+                if (editor is null)
                 {
                     editor = TypeDescriptor.GetEditor(PropertyType, editorBaseType);
                 }
 
                 // Now, another slot in our editor cache for next time
-                if (_editorTypes == null)
+                if (_editorTypes is null)
                 {
                     _editorTypes = new Type[5];
                     _editors = new object[5];
@@ -339,7 +339,7 @@ namespace System.ComponentModel
         /// </summary>
         protected Type GetTypeFromName(string typeName)
         {
-            if (typeName == null || typeName.Length == 0)
+            if (typeName is null || typeName.Length == 0)
             {
                 return null;
             }
@@ -351,9 +351,9 @@ namespace System.ComponentModel
             // in is the same as our Component's assembly, use or Component's assembly instead. This is
             // because the CLR may have cached an older version if the assembly's version number didn't change
             Type typeFromComponent = null;
-            if (ComponentType != null)
+            if (ComponentType is not null)
             {
-                if ((typeFromGetType == null) ||
+                if ((typeFromGetType is null) ||
                     (ComponentType.Assembly.FullName.Equals(typeFromGetType.Assembly.FullName)))
                 {
                     int comma = typeName.IndexOf(',');
@@ -379,7 +379,7 @@ namespace System.ComponentModel
         /// </summary>
         protected virtual void OnValueChanged(object component, EventArgs e)
         {
-            if (component != null)
+            if (component is not null)
             {
                 ((EventHandler)_valueChangedHandlers?[component])?.Invoke(component, e);
             }
@@ -390,20 +390,20 @@ namespace System.ComponentModel
         /// </summary>
         public virtual void RemoveValueChanged(object component, EventHandler handler)
         {
-            if (component == null)
+            if (component is null)
             {
                 throw new ArgumentNullException(nameof(component));
             }
-            if (handler == null)
+            if (handler is null)
             {
                 throw new ArgumentNullException(nameof(handler));
             }
 
-            if (_valueChangedHandlers != null)
+            if (_valueChangedHandlers is not null)
             {
                 EventHandler h = (EventHandler)_valueChangedHandlers[component];
                 h = (EventHandler)Delegate.Remove(h, handler);
-                if (h != null)
+                if (h is not null)
                 {
                     _valueChangedHandlers[component] = h;
                 }
@@ -421,7 +421,7 @@ namespace System.ComponentModel
         /// </summary>
         protected internal EventHandler GetValueChangedHandler(object component)
         {
-            if (component != null && _valueChangedHandlers != null)
+            if (component is not null && _valueChangedHandlers is not null)
             {
                 return (EventHandler)_valueChangedHandlers[component];
             }

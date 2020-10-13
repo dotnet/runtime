@@ -24,7 +24,7 @@ namespace System.Xml
         {
             get
             {
-                if (s_empty == null)
+                if (s_empty is null)
                     s_empty = new EmptyDictionary();
                 return s_empty;
             }
@@ -49,7 +49,7 @@ namespace System.Xml
             XmlDictionaryString? str;
             if (!_lookup.TryGetValue(value, out str))
             {
-                if (_strings == null)
+                if (_strings is null)
                 {
                     _strings = new XmlDictionaryString[4];
                 }
@@ -86,7 +86,7 @@ namespace System.Xml
 
         public virtual bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
-            if (value == null)
+            if (value is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
             if (value.Dictionary != this)
             {

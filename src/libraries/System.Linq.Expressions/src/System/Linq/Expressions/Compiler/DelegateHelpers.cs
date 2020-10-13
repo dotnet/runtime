@@ -37,7 +37,7 @@ namespace System.Linq.Expressions.Compiler
                 curTypeInfo = NextTypeInfo(returnType, curTypeInfo);
 
                 // see if we have the delegate already
-                if (curTypeInfo.DelegateType == null)
+                if (curTypeInfo.DelegateType is null)
                 {
                     curTypeInfo.MakeDelegateType(returnType, types);
                 }
@@ -77,7 +77,7 @@ namespace System.Linq.Expressions.Compiler
                 curTypeInfo = NextTypeInfo(returnType, curTypeInfo);
 
                 // see if we have the delegate already
-                if (curTypeInfo.DelegateType == null)
+                if (curTypeInfo.DelegateType is null)
                 {
                     // nope, go ahead and create it and spend the
                     // cost of creating the array.

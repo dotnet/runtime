@@ -9,7 +9,7 @@ namespace System.Net.Http
         // so we don't have to modify the shared source.
         internal static string Format(string resourceFormat, params object[] args)
         {
-            if (args != null)
+            if (args is not null)
             {
                 return string.Format(resourceFormat, args);
             }

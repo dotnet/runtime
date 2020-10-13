@@ -36,7 +36,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         public override PropertyDescriptorCollection GetProperties(Attribute[] attributes)
         {
             PropertyDescriptorCollection properties = new PropertyDescriptorCollection(null);
-            if (attributes == null)
+            if (attributes is null)
             {
                 if (typeof(T) == typeof(XElement))
                 {
@@ -88,12 +88,12 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         public override void AddValueChanged(object component, EventHandler handler)
         {
-            bool hasValueChangedHandler = GetValueChangedHandler(component) != null;
+            bool hasValueChangedHandler = GetValueChangedHandler(component) is not null;
             base.AddValueChanged(component, handler);
             if (hasValueChangedHandler)
                 return;
             T c = component as T;
-            if (c != null && GetValueChangedHandler(component) != null)
+            if (c is not null && GetValueChangedHandler(component) is not null)
             {
                 c.Changing += new EventHandler<XObjectChangeEventArgs>(OnChanging);
                 c.Changed += new EventHandler<XObjectChangeEventArgs>(OnChanged);
@@ -109,7 +109,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
             base.RemoveValueChanged(component, handler);
             T c = component as T;
-            if (c != null && GetValueChangedHandler(component) == null)
+            if (c is not null && GetValueChangedHandler(component) is null)
             {
                 c.Changing -= new EventHandler<XObjectChangeEventArgs>(OnChanging);
                 c.Changed -= new EventHandler<XObjectChangeEventArgs>(OnChanged);
@@ -154,20 +154,20 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         protected override void OnChanged(object sender, XObjectChangeEventArgs args)
         {
-            if (_value == null)
+            if (_value is null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Add:
                     XAttribute a = sender as XAttribute;
-                    if (a != null && _value.element == a.Parent && _value.name == a.Name)
+                    if (a is not null && _value.element == a.Parent && _value.name == a.Name)
                     {
                         OnValueChanged(_value.element, EventArgs.Empty);
                     }
                     break;
                 case XObjectChange.Remove:
                     a = sender as XAttribute;
-                    if (a != null && _changeState == a)
+                    if (a is not null && _changeState == a)
                     {
                         _changeState = null;
                         OnValueChanged(_value.element, EventArgs.Empty);
@@ -178,13 +178,13 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         protected override void OnChanging(object sender, XObjectChangeEventArgs args)
         {
-            if (_value == null)
+            if (_value is null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Remove:
                     XAttribute a = sender as XAttribute;
-                    _changeState = a != null && _value.element == a.Parent && _value.name == a.Name ? a : null;
+                    _changeState = a is not null && _value.element == a.Parent && _value.name == a.Name ? a : null;
                     break;
             }
         }
@@ -201,26 +201,26 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         public override object GetValue(object component)
         {
-            return _value = new XDeferredAxis<XElement>((e, n) => n != null ? e.Descendants(n) : e.Descendants(), component as XElement, null);
+            return _value = new XDeferredAxis<XElement>((e, n) => n is not null ? e.Descendants(n) : e.Descendants(), component as XElement, null);
         }
 
         protected override void OnChanged(object sender, XObjectChangeEventArgs args)
         {
-            if (_value == null)
+            if (_value is null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Add:
                 case XObjectChange.Remove:
                     XElement e = sender as XElement;
-                    if (e != null && (_value.name == e.Name || _value.name == null))
+                    if (e is not null && (_value.name == e.Name || _value.name is null))
                     {
                         OnValueChanged(_value.element, EventArgs.Empty);
                     }
                     break;
                 case XObjectChange.Name:
                     e = sender as XElement;
-                    if (e != null && _value.element != e && _value.name != null && (_value.name == e.Name || _value.name == _changeState))
+                    if (e is not null && _value.element != e && _value.name is not null && (_value.name == e.Name || _value.name == _changeState))
                     {
                         _changeState = null;
                         OnValueChanged(_value.element, EventArgs.Empty);
@@ -231,13 +231,13 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         protected override void OnChanging(object sender, XObjectChangeEventArgs args)
         {
-            if (_value == null)
+            if (_value is null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Name:
                     XElement e = sender as XElement;
-                    _changeState = e != null ? e.Name : null;
+                    _changeState = e is not null ? e.Name : null;
                     break;
             }
         }
@@ -259,20 +259,20 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         protected override void OnChanged(object sender, XObjectChangeEventArgs args)
         {
-            if (_value == null)
+            if (_value is null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Add:
                     XElement e = sender as XElement;
-                    if (e != null && _value.element == e.Parent && _value.name == e.Name && _value.element.Element(_value.name) == e)
+                    if (e is not null && _value.element == e.Parent && _value.name == e.Name && _value.element.Element(_value.name) == e)
                     {
                         OnValueChanged(_value.element, EventArgs.Empty);
                     }
                     break;
                 case XObjectChange.Remove:
                     e = sender as XElement;
-                    if (e != null && _changeState == e)
+                    if (e is not null && _changeState == e)
                     {
                         _changeState = null;
                         OnValueChanged(_value.element, EventArgs.Empty);
@@ -280,7 +280,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
                     break;
                 case XObjectChange.Name:
                     e = sender as XElement;
-                    if (e != null)
+                    if (e is not null)
                     {
                         if (_value.element == e.Parent && _value.name == e.Name && _value.element.Element(_value.name) == e)
                         {
@@ -298,14 +298,14 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         protected override void OnChanging(object sender, XObjectChangeEventArgs args)
         {
-            if (_value == null)
+            if (_value is null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Remove:
                 case XObjectChange.Name:
                     XElement e = sender as XElement;
-                    _changeState = e != null && _value.element == e.Parent && _value.name == e.Name && _value.element.Element(_value.name) == e ? e : null;
+                    _changeState = e is not null && _value.element == e.Parent && _value.name == e.Name && _value.element.Element(_value.name) == e ? e : null;
                     break;
             }
         }
@@ -322,25 +322,25 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         public override object GetValue(object component)
         {
-            return _value = new XDeferredAxis<XElement>((e, n) => n != null ? e.Elements(n) : e.Elements(), component as XElement, null);
+            return _value = new XDeferredAxis<XElement>((e, n) => n is not null ? e.Elements(n) : e.Elements(), component as XElement, null);
         }
 
         protected override void OnChanged(object sender, XObjectChangeEventArgs args)
         {
-            if (_value == null)
+            if (_value is null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Add:
                     XElement e = sender as XElement;
-                    if (e != null && _value.element == e.Parent && (_value.name == e.Name || _value.name == null))
+                    if (e is not null && _value.element == e.Parent && (_value.name == e.Name || _value.name is null))
                     {
                         OnValueChanged(_value.element, EventArgs.Empty);
                     }
                     break;
                 case XObjectChange.Remove:
                     e = sender as XElement;
-                    if (e != null && _value.element == (_changeState as XContainer) && (_value.name == e.Name || _value.name == null))
+                    if (e is not null && _value.element == (_changeState as XContainer) && (_value.name == e.Name || _value.name is null))
                     {
                         _changeState = null;
                         OnValueChanged(_value.element, EventArgs.Empty);
@@ -348,7 +348,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
                     break;
                 case XObjectChange.Name:
                     e = sender as XElement;
-                    if (e != null && _value.element == e.Parent && _value.name != null && (_value.name == e.Name || _value.name == (_changeState as XName)))
+                    if (e is not null && _value.element == e.Parent && _value.name is not null && (_value.name == e.Name || _value.name == (_changeState as XName)))
                     {
                         _changeState = null;
                         OnValueChanged(_value.element, EventArgs.Empty);
@@ -359,17 +359,17 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         protected override void OnChanging(object sender, XObjectChangeEventArgs args)
         {
-            if (_value == null)
+            if (_value is null)
                 return;
             switch (args.ObjectChange)
             {
                 case XObjectChange.Remove:
                     XElement e = sender as XElement;
-                    _changeState = e != null ? e.Parent : null;
+                    _changeState = e is not null ? e.Parent : null;
                     break;
                 case XObjectChange.Name:
                     e = sender as XElement;
-                    _changeState = e != null ? e.Name : null;
+                    _changeState = e is not null ? e.Name : null;
                     break;
             }
         }
@@ -391,7 +391,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         public override object GetValue(object component)
         {
             _element = component as XElement;
-            if (_element == null)
+            if (_element is null)
                 return string.Empty;
             return _element.Value;
         }
@@ -399,14 +399,14 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         public override void SetValue(object component, object value)
         {
             _element = component as XElement;
-            if (_element == null)
+            if (_element is null)
                 return;
             _element.Value = value as string;
         }
 
         protected override void OnChanged(object sender, XObjectChangeEventArgs args)
         {
-            if (_element == null)
+            if (_element is null)
                 return;
             switch (args.ObjectChange)
             {
@@ -438,14 +438,14 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         public override object GetValue(object component)
         {
             _element = component as XElement;
-            if (_element == null)
+            if (_element is null)
                 return string.Empty;
             return _element.ToString(SaveOptions.DisableFormatting);
         }
 
         protected override void OnChanged(object sender, XObjectChangeEventArgs args)
         {
-            if (_element == null)
+            if (_element is null)
                 return;
             OnValueChanged(_element, EventArgs.Empty);
         }
@@ -467,7 +467,7 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         public override object GetValue(object component)
         {
             _attribute = component as XAttribute;
-            if (_attribute == null)
+            if (_attribute is null)
                 return string.Empty;
             return _attribute.Value;
         }
@@ -475,14 +475,14 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         public override void SetValue(object component, object value)
         {
             _attribute = component as XAttribute;
-            if (_attribute == null)
+            if (_attribute is null)
                 return;
             _attribute.Value = value as string;
         }
 
         protected override void OnChanged(object sender, XObjectChangeEventArgs args)
         {
-            if (_attribute == null)
+            if (_attribute is null)
                 return;
             if (args.ObjectChange == XObjectChange.Value)
             {
@@ -499,9 +499,9 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         public XDeferredAxis(Func<XElement, XName, IEnumerable<T>> func, XElement element, XName name)
         {
-            if (func == null)
+            if (func is null)
                 throw new ArgumentNullException(nameof(func));
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
             _func = func;
             this.element = element;
@@ -522,9 +522,9 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
             get
             {
-                if (expandedName == null)
+                if (expandedName is null)
                     throw new ArgumentNullException(nameof(expandedName));
-                if (name == null)
+                if (name is null)
                 {
                     name = expandedName;
                 }
@@ -545,9 +545,9 @@ namespace MS.Internal.Xml.Linq.ComponentModel
 
         public XDeferredSingleton(Func<XElement, XName, T> func, XElement element, XName name)
         {
-            if (func == null)
+            if (func is null)
                 throw new ArgumentNullException(nameof(func));
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
             _func = func;
             this.element = element;
@@ -558,9 +558,9 @@ namespace MS.Internal.Xml.Linq.ComponentModel
         {
             get
             {
-                if (expandedName == null)
+                if (expandedName is null)
                     throw new ArgumentNullException(nameof(expandedName));
-                if (name == null)
+                if (name is null)
                 {
                     name = expandedName;
                 }

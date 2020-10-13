@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Xml
         /// </exception>
         public override void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -110,7 +110,7 @@ namespace System.Security.Cryptography.Xml
             xmlNamespaceManager.AddNamespace(xmlDsigNamespacePrefix, SignedXml.XmlDsigNamespaceUrl);
 
             XmlNode rsaKeyValueElement = value.SelectSingleNode($"{xmlDsigNamespacePrefix}:{RSAKeyValueElementName}", xmlNamespaceManager);
-            if (rsaKeyValueElement == null)
+            if (rsaKeyValueElement is null)
             {
                 throw new CryptographicException($"{KeyValueElementName} must contain child element {RSAKeyValueElementName}");
             }

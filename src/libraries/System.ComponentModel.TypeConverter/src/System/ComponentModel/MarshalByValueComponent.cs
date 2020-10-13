@@ -86,7 +86,7 @@ namespace System.ComponentModel
         ///
         /// protected virtual void Dispose(bool disposing) {
         /// if (disposing) {
-        ///   if (myobject != null) {
+        ///   if (myobject is not null) {
         ///       myobject.Dispose();
         ///       myobject = null;
         ///   }
@@ -109,7 +109,7 @@ namespace System.ComponentModel
         /// <code>
         /// protected override void Dispose(bool disposing) {
         /// if (disposing) {
-        ///   if (myobject != null) {
+        ///   if (myobject is not null) {
         ///       myobject.Dispose();
         ///       myobject = null;
         ///   }
@@ -160,7 +160,7 @@ namespace System.ComponentModel
         {
             ISite s = _site;
 
-            if (s != null)
+            if (s is not null)
                 return s.Name + " [" + GetType().FullName + "]";
             else
                 return GetType().FullName;

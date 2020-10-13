@@ -10,7 +10,7 @@ namespace System.Text
         internal static Encoding? GetEncodingFromCharset()
         {
             string? charset = GetCharset();
-            if (charset != null)
+            if (charset is not null)
             {
                 try { return Encoding.GetEncoding(charset); }
                 catch { }
@@ -43,7 +43,7 @@ namespace System.Text
             // If we found one, try to parse it.
             // The locale string is expected to be of a form that matches the
             // X/Open Portability Guide syntax: language[_territory][.charset][@modifier]
-            if (locale != null)
+            if (locale is not null)
             {
                 // Does it contain the optional charset?
                 int dotPos = locale.IndexOf('.');

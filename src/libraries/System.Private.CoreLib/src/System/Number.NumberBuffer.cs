@@ -30,7 +30,7 @@ namespace System
 
             public NumberBuffer(NumberBufferKind kind, byte* digits, int digitsLength)
             {
-                Debug.Assert(digits != null);
+                Debug.Assert(digits is not null);
                 Debug.Assert(digitsLength > 0);
 
                 DigitsCount = 0;

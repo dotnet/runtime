@@ -13,12 +13,12 @@ namespace System.Runtime.ExceptionServices
         [Conditional("DEBUG")]
         public static void AddCurrentStack(Exception exception)
         {
-            Debug.Assert(exception != null, "Expected non-null Exception");
+            Debug.Assert(exception is not null, "Expected non-null Exception");
 
             const string ExceptionRemoteStackTraceStringName = "_remoteStackTraceString";
             FieldInfo? fi = typeof(Exception).GetField(ExceptionRemoteStackTraceStringName, BindingFlags.NonPublic | BindingFlags.Instance);
 
-            if (fi != null)
+            if (fi is not null)
             {
                 string text =
                     (string?)fi.GetValue(exception) +

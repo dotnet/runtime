@@ -57,7 +57,7 @@ namespace System.ComponentModel.Composition.Primitives
 
             _contractName = contractName;
 
-            if (metadata != null)
+            if (metadata is not null)
             {
                 _metadata = metadata.AsReadOnly();
             }
@@ -83,7 +83,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get
             {
-                if (_contractName != null)
+                if (_contractName is not null)
                 {
                     return _contractName;
                 }
@@ -116,7 +116,7 @@ namespace System.ComponentModel.Composition.Primitives
         {
             get
             {
-                Debug.Assert(_metadata != null);
+                Debug.Assert(_metadata is not null);
 
                 return _metadata;
             }

@@ -73,7 +73,7 @@ namespace System.Globalization
 
                     if (attempt == 0)
                     {
-                        if (toReturn != null)
+                        if (toReturn is not null)
                         {
                             // Clear toReturn first to ensure we don't return the same buffer twice
                             char[] temp = toReturn;
@@ -89,7 +89,7 @@ namespace System.Globalization
             }
             finally
             {
-                if (toReturn != null)
+                if (toReturn is not null)
                 {
                     ArrayPool<char>.Shared.Return(toReturn);
                 }
@@ -98,7 +98,7 @@ namespace System.Globalization
 
         private static void ValidateArguments(string strInput, NormalizationForm normalizationForm)
         {
-            Debug.Assert(strInput != null);
+            Debug.Assert(strInput is not null);
 
 
             if (OperatingSystem.IsBrowser() && (normalizationForm == NormalizationForm.FormKC || normalizationForm == NormalizationForm.FormKD))

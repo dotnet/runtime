@@ -28,7 +28,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(platform), platform, SR.Format(SR.Arg_EnumIllegalVal, platform));
             }
 
-            if (version == null)
+            if (version is null)
             {
                 throw new ArgumentNullException(nameof(version));
             }
@@ -57,7 +57,7 @@ namespace System
         {
             get
             {
-                if (_versionString == null)
+                if (_versionString is null)
                 {
                     string os;
                     switch (_platform)
@@ -90,7 +90,7 @@ namespace System
         /// <param name="platform">Case-insensitive platform name. Examples: Browser, Linux, FreeBSD, Android, iOS, macOS, tvOS, watchOS, Windows.</param>
         public static bool IsOSPlatform(string platform)
         {
-            if (platform == null)
+            if (platform is null)
             {
                 throw new ArgumentNullException(nameof(platform));
             }

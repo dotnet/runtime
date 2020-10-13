@@ -19,7 +19,7 @@ namespace System.Xml
         public static PositionInfo GetPositionInfo(object o)
         {
             IXmlLineInfo? li = o as IXmlLineInfo;
-            if (li != null)
+            if (li is not null)
             {
                 return new ReaderPositionInfo(li);
             }

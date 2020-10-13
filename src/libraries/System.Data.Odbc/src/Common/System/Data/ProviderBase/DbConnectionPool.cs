@@ -298,7 +298,7 @@ namespace System.Data.ProviderBase
 
                     if (_stackOld.TryPop(out obj))
                     {
-                        Debug.Assert(obj != null, "null connection is not expected");
+                        Debug.Assert(obj is not null, "null connection is not expected");
                         // If we obtained one from the old stack, destroy it.
 
                         DestroyObject(obj);
@@ -328,7 +328,7 @@ namespace System.Data.ProviderBase
                     if (!_stackNew.TryPop(out obj))
                         break;
 
-                    Debug.Assert(obj != null, "null connection is not expected");
+                    Debug.Assert(obj is not null, "null connection is not expected");
 
 
                     Debug.Assert(!obj.IsEmancipated, "pooled object not in pool");
@@ -366,12 +366,12 @@ namespace System.Data.ProviderBase
             // Second, dispose of all the free connections.
             while (_stackNew.TryPop(out obj))
             {
-                Debug.Assert(obj != null, "null connection is not expected");
+                Debug.Assert(obj is not null, "null connection is not expected");
                 DestroyObject(obj);
             }
             while (_stackOld.TryPop(out obj))
             {
-                Debug.Assert(obj != null, "null connection is not expected");
+                Debug.Assert(obj is not null, "null connection is not expected");
                 DestroyObject(obj);
             }
 
@@ -406,7 +406,7 @@ namespace System.Data.ProviderBase
 
                 lock (_objectList)
                 {
-                    if ((oldConnection != null) && (oldConnection.Pool == this))
+                    if ((oldConnection is not null) && (oldConnection.Pool == this))
                     {
                         _objectList.Remove(oldConnection);
                     }
@@ -415,10 +415,10 @@ namespace System.Data.ProviderBase
                 }
 
                 // If the old connection belonged to another pool, we need to remove it from that
-                if (oldConnection != null)
+                if (oldConnection is not null)
                 {
                     var oldConnectionPool = oldConnection.Pool;
-                    if (oldConnectionPool != null && oldConnectionPool != this)
+                    if (oldConnectionPool is not null && oldConnectionPool != this)
                     {
                         Debug.Assert(oldConnectionPool._state == State.ShuttingDown, "Old connections pool should be shutting down");
                         lock (oldConnectionPool._objectList)
@@ -579,7 +579,7 @@ namespace System.Data.ProviderBase
             // the error state is cleaned, destroy the timer to avoid periodic invocation
             Timer? t = _errorTimer;
             _errorTimer = null;
-            if (t != null)
+            if (t is not null)
             {
                 t.Dispose(); // Cancel timer request.
             }
@@ -646,7 +646,7 @@ namespace System.Data.ProviderBase
                             caughtException = e;
                         }
 
-                        if (caughtException != null)
+                        if (caughtException is not null)
                         {
                             next.Completion.TrySetException(caughtException);
                         }
@@ -656,7 +656,7 @@ namespace System.Data.ProviderBase
                         }
                         else
                         {
-                            Debug.Assert(connection != null, "connection should never be null in success case");
+                            Debug.Assert(connection is not null, "connection should never be null in success case");
                             if (!next.Completion.TrySetResult(connection))
                             {
                                 // if the completion was cancelled, lets try and get this connection back for the next try
@@ -680,7 +680,7 @@ namespace System.Data.ProviderBase
             uint waitForMultipleObjectsTimeout = 0;
             bool allowCreate = false;
 
-            if (retry == null)
+            if (retry is null)
             {
                 waitForMultipleObjectsTimeout = (uint)CreationTimeout;
 
@@ -702,7 +702,7 @@ namespace System.Data.ProviderBase
             {
                 return true;
             }
-            else if (retry == null)
+            else if (retry is null)
             {
                 // timed out on a sync call
                 return true;
@@ -815,7 +815,7 @@ namespace System.Data.ProviderBase
                                 Interlocked.Decrement(ref _waitCount);
                                 obj = GetFromGeneralPool();
 
-                                if ((obj != null) && (!obj.IsConnectionAlive()))
+                                if ((obj is not null) && (!obj.IsConnectionAlive()))
                                 {
                                     DestroyObject(obj);
                                     obj = null;     // Setting to null in case creating a new object fails
@@ -896,7 +896,7 @@ namespace System.Data.ProviderBase
         {
             DbConnectionInternal? newConnection = UserCreateRequest(owningObject, userOptions, oldConnection);
 
-            if (newConnection != null)
+            if (newConnection is not null)
             {
                 PrepareConnection(owningObject, newConnection);
                 oldConnection.PrepareForReplaceConnection();
@@ -919,12 +919,12 @@ namespace System.Data.ProviderBase
                 }
                 else
                 {
-                    Debug.Assert(obj != null, "null connection is not expected");
+                    Debug.Assert(obj is not null, "null connection is not expected");
                 }
             }
             else
             {
-                Debug.Assert(obj != null, "null connection is not expected");
+                Debug.Assert(obj is not null, "null connection is not expected");
             }
 
             // When another thread is clearing this pool,
@@ -1168,11 +1168,11 @@ namespace System.Data.ProviderBase
             }
             else
             {
-                if ((oldConnection != null) || (Count < MaxPoolSize) || (0 == MaxPoolSize))
+                if ((oldConnection is not null) || (Count < MaxPoolSize) || (0 == MaxPoolSize))
                 {
                     // If we have an odd number of total objects, reclaim any dead objects.
                     // If we did not find any objects to reclaim, create a new one.
-                    if ((oldConnection != null) || (Count & 0x1) == 0x1 || !ReclaimEmancipatedObjects())
+                    if ((oldConnection is not null) || (Count & 0x1) == 0x1 || !ReclaimEmancipatedObjects())
                         obj = CreateObject(owningObject, userOptions, oldConnection);
                 }
                 return obj;

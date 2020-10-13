@@ -58,7 +58,7 @@ namespace System.Linq.Expressions.Compiler
 
         internal HoistedLocals(HoistedLocals? parent, ReadOnlyCollection<ParameterExpression> vars)
         {
-            if (parent != null)
+            if (parent is not null)
             {
                 // Add the parent locals array as the 0th element in the array
                 vars = vars.AddFirst(parent.SelfVariable);

@@ -33,7 +33,7 @@ namespace System.Drawing
                 }
 
                 // Parse 2 integer values.
-                if (culture == null)
+                if (culture is null)
                 {
                     culture = CultureInfo.CurrentCulture;
                 }
@@ -63,7 +63,7 @@ namespace System.Drawing
 
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
@@ -72,7 +72,7 @@ namespace System.Drawing
             {
                 if (destinationType == typeof(string))
                 {
-                    if (culture == null)
+                    if (culture is null)
                     {
                         culture = CultureInfo.CurrentCulture;
                     }
@@ -91,7 +91,7 @@ namespace System.Drawing
                 else if (destinationType == typeof(InstanceDescriptor))
                 {
                     ConstructorInfo ctor = typeof(Point).GetConstructor(new Type[] { typeof(int), typeof(int) });
-                    if (ctor != null)
+                    if (ctor is not null)
                     {
                         return new InstanceDescriptor(ctor, new object[] { pt.X, pt.Y });
                     }
@@ -103,7 +103,7 @@ namespace System.Drawing
 
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
         {
-            if (propertyValues == null)
+            if (propertyValues is null)
             {
                 throw new ArgumentNullException(nameof(propertyValues));
             }
@@ -111,7 +111,7 @@ namespace System.Drawing
             object x = propertyValues["X"];
             object y = propertyValues["Y"];
 
-            if (x == null || y == null || !(x is int) || !(y is int))
+            if (x is null || y is null || !(x is int) || !(y is int))
             {
                 throw new ArgumentException(SR.PropertyValueInvalidEntry);
             }

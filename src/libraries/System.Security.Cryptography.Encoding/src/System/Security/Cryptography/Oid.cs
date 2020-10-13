@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
         {
             // If we were passed the friendly name, retrieve the value String.
             string? oidValue = OidLookup.ToOid(oid, OidGroup.All, fallBackToAllGroups: false);
-            if (oidValue == null)
+            if (oidValue is null)
             {
                 oidValue = oid;
             }
@@ -29,12 +29,12 @@ namespace System.Security.Cryptography
         {
             _value = value;
             _friendlyName = friendlyName;
-            _hasInitializedFriendlyName = friendlyName != null;
+            _hasInitializedFriendlyName = friendlyName is not null;
         }
 
         public Oid(Oid oid)
         {
-            if (oid == null)
+            if (oid is null)
                 throw new ArgumentNullException(nameof(oid));
             _value = oid._value;
             _friendlyName = oid._friendlyName;
@@ -44,13 +44,13 @@ namespace System.Security.Cryptography
 
         public static Oid FromFriendlyName(string friendlyName, OidGroup group)
         {
-            if (friendlyName == null)
+            if (friendlyName is null)
             {
                 throw new ArgumentNullException(nameof(friendlyName));
             }
 
             string? oidValue = OidLookup.ToOid(friendlyName, group, fallBackToAllGroups: false);
-            if (oidValue == null)
+            if (oidValue is null)
                 throw new CryptographicException(SR.Cryptography_Oid_InvalidName);
 
             return new Oid(oidValue, friendlyName, group);
@@ -58,11 +58,11 @@ namespace System.Security.Cryptography
 
         public static Oid FromOidValue(string oidValue, OidGroup group)
         {
-            if (oidValue == null)
+            if (oidValue is null)
                 throw new ArgumentNullException(nameof(oidValue));
 
             string? friendlyName = OidLookup.ToFriendlyName(oidValue, group, fallBackToAllGroups: false);
-            if (friendlyName == null)
+            if (friendlyName is null)
                 throw new CryptographicException(SR.Cryptography_Oid_InvalidValue);
 
             return new Oid(oidValue, friendlyName, group);
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography
             {
                 // If _value has not been set, permit it to be set once, or to
                 // the same value for "initialize once" behavior.
-                if (_value != null && !_value.Equals(value, StringComparison.Ordinal))
+                if (_value is not null && !_value.Equals(value, StringComparison.Ordinal))
                 {
                     throw new PlatformNotSupportedException(SR.Cryptography_Oid_SetOnceValue);
                 }
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (!_hasInitializedFriendlyName && _value != null)
+                if (!_hasInitializedFriendlyName && _value is not null)
                 {
                     _friendlyName = OidLookup.ToFriendlyName(_value, _group, fallBackToAllGroups: true);
                     _hasInitializedFriendlyName = true;
@@ -102,8 +102,8 @@ namespace System.Security.Cryptography
                 // the same value for "initialize once" behavior.
                 if (_hasInitializedFriendlyName)
                 {
-                    if ((_friendlyName != null && !_friendlyName.Equals(value, StringComparison.Ordinal)) ||
-                        (_friendlyName is null && value != null))
+                    if ((_friendlyName is not null && !_friendlyName.Equals(value, StringComparison.Ordinal)) ||
+                        (_friendlyName is null && value is not null))
                     {
                         throw new PlatformNotSupportedException(SR.Cryptography_Oid_SetOnceFriendlyName);
                     }
@@ -113,16 +113,16 @@ namespace System.Security.Cryptography
                 }
 
                 // If we can find the matching OID value, then update it as well
-                if (value != null)
+                if (value is not null)
                 {
                     // If FindOidInfo fails, we return a null String
                     string? oidValue = OidLookup.ToOid(value, _group, fallBackToAllGroups: true);
 
-                    if (oidValue != null)
+                    if (oidValue is not null)
                     {
                         // If the OID value has not been initialized, set it
                         // to the lookup value.
-                        if (_value == null)
+                        if (_value is null)
                         {
                             _value = oidValue;
                         }
@@ -146,8 +146,8 @@ namespace System.Security.Cryptography
 
         private Oid(string value, string friendlyName, OidGroup group)
         {
-            Debug.Assert(value != null);
-            Debug.Assert(friendlyName != null);
+            Debug.Assert(value is not null);
+            Debug.Assert(friendlyName is not null);
 
             _value = value;
             _friendlyName = friendlyName;

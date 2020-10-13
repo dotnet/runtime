@@ -128,7 +128,7 @@ internal static partial class Interop
 
         private static IEnumerable<ParsedMapsModule> ParseMapsModulesCore(IEnumerable<string> lines)
         {
-            Debug.Assert(lines != null);
+            Debug.Assert(lines is not null);
 
             // Parse each line from the maps file into a ParsedMapsModule result
             foreach (string line in lines)

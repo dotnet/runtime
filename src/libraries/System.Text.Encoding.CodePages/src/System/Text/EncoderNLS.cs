@@ -52,7 +52,7 @@ namespace System.Text
         {
             get
             {
-                return m_fallbackBuffer != null;
+                return m_fallbackBuffer is not null;
             }
         }
 
@@ -60,9 +60,9 @@ namespace System.Text
         {
             get
             {
-                if (m_fallbackBuffer == null)
+                if (m_fallbackBuffer is null)
                 {
-                    if (m_fallback != null)
+                    if (m_fallback is not null)
                         m_fallbackBuffer = m_fallback.CreateFallbackBuffer();
                     else
                         m_fallbackBuffer = EncoderFallback.ReplacementFallback.CreateFallbackBuffer();
@@ -75,14 +75,14 @@ namespace System.Text
         public override void Reset()
         {
             charLeftOver = (char)0;
-            if (m_fallbackBuffer != null)
+            if (m_fallbackBuffer is not null)
                 m_fallbackBuffer.Reset();
         }
 
         public override unsafe int GetByteCount(char[] chars, int index, int count, bool flush)
         {
             // Validate input parameters
-            if (chars == null)
+            if (chars is null)
                 throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
 
             if (index < 0 || count < 0)
@@ -107,7 +107,7 @@ namespace System.Text
         public override unsafe int GetByteCount(char* chars, int count, bool flush)
         {
             // Validate input parameters
-            if (chars == null)
+            if (chars is null)
                 throw new ArgumentNullException(nameof(chars), SR.ArgumentNull_Array);
 
             if (count < 0)
@@ -122,8 +122,8 @@ namespace System.Text
                                               byte[] bytes, int byteIndex, bool flush)
         {
             // Validate parameters
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException((chars == null ? nameof(chars) : nameof(bytes)), SR.ArgumentNull_Array);
+            if (chars is null || bytes is null)
+                throw new ArgumentNullException((chars is null ? nameof(chars) : nameof(bytes)), SR.ArgumentNull_Array);
 
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -151,8 +151,8 @@ namespace System.Text
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush)
         {
             // Validate parameters
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException((chars == null ? nameof(chars) : nameof(bytes)), SR.ArgumentNull_Array);
+            if (chars is null || bytes is null)
+                throw new ArgumentNullException((chars is null ? nameof(chars) : nameof(bytes)), SR.ArgumentNull_Array);
 
             if (byteCount < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((byteCount < 0 ? nameof(byteCount) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -169,8 +169,8 @@ namespace System.Text
                                               out int charsUsed, out int bytesUsed, out bool completed)
         {
             // Validate parameters
-            if (chars == null || bytes == null)
-                throw new ArgumentNullException((chars == null ? nameof(chars) : nameof(bytes)), SR.ArgumentNull_Array);
+            if (chars is null || bytes is null)
+                throw new ArgumentNullException((chars is null ? nameof(chars) : nameof(bytes)), SR.ArgumentNull_Array);
 
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException((charIndex < 0 ? nameof(charIndex) : nameof(charCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -208,8 +208,8 @@ namespace System.Text
                                               out int charsUsed, out int bytesUsed, out bool completed)
         {
             // Validate input parameters
-            if (bytes == null || chars == null)
-                throw new ArgumentNullException(bytes == null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
+            if (bytes is null || chars is null)
+                throw new ArgumentNullException(bytes is null ? nameof(bytes) : nameof(chars), SR.ArgumentNull_Array);
 
             if (charCount < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException((charCount < 0 ? nameof(charCount) : nameof(byteCount)), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -225,7 +225,7 @@ namespace System.Text
 
             // Its completed if they've used what they wanted AND if they didn't want flush or if we are flushed
             completed = (charsUsed == charCount) && (!flush || !HasState) &&
-                (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0);
+                (m_fallbackBuffer is null || m_fallbackBuffer.Remaining == 0);
             // Our data thingies are now full, we can return
         }
 

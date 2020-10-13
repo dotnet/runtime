@@ -24,7 +24,7 @@ namespace System.DirectoryServices.Design
 
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            if (value != null && value is string)
+            if (value is not null && value is string)
             {
                 string text = ((string)value).Trim();
 
@@ -34,11 +34,11 @@ namespace System.DirectoryServices.Design
                 if (text.CompareTo(SR.DSNotSet) != 0)
                 {
                     DirectoryEntry newEntry = GetFromCache(text);
-                    if (newEntry == null)
+                    if (newEntry is null)
                     {
                         newEntry = new DirectoryEntry(text);
                         s_componentsCreated[text] = newEntry;
-                        if (context != null)
+                        if (context is not null)
                             context.Container.Add(newEntry);
 
                         return newEntry;
@@ -51,9 +51,9 @@ namespace System.DirectoryServices.Design
 
         public override object ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType != null && destinationType == typeof(string))
+            if (destinationType is not null && destinationType == typeof(string))
             {
-                if (value != null)
+                if (value is not null)
                     return ((DirectoryEntry)value).Path;
                 else
                     return SR.DSNotSet;
@@ -64,7 +64,7 @@ namespace System.DirectoryServices.Design
 
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
-            if (s_values == null)
+            if (s_values is null)
             {
                 s_values = new StandardValuesCollection(new object[] { null });
             }
@@ -76,7 +76,7 @@ namespace System.DirectoryServices.Design
             if (s_componentsCreated.ContainsKey(path))
             {
                 DirectoryEntry existingComponent = (DirectoryEntry)s_componentsCreated[path];
-                if (existingComponent.Site == null)
+                if (existingComponent.Site is null)
                     s_componentsCreated.Remove(path);
                 else
                 {

@@ -201,7 +201,7 @@ namespace System.Data.OleDb
             // server, we don't want to lock here, we'll handle the race conditions
             // elsewhere.
             SysTx.Transaction? enlistedTransaction = innerConnection.EnlistedTransaction;
-            if (enlistedTransaction != null)
+            if (enlistedTransaction is not null)
             {
                 // Allow calling enlist if already enlisted (no-op)
                 if (enlistedTransaction.Equals(transaction))

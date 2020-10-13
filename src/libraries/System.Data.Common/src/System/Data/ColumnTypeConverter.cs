@@ -67,17 +67,17 @@ namespace System.Data
         /// </summary>
         public override object? ConvertTo(ITypeDescriptorContext context, CultureInfo culture, object? value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
             if (destinationType == typeof(string))
             {
-                return value != null ? value.ToString() : string.Empty;
+                return value is not null ? value.ToString() : string.Empty;
             }
 
-            if (value != null && destinationType == typeof(InstanceDescriptor))
+            if (value is not null && destinationType == typeof(InstanceDescriptor))
             {
                 object newValue = value;
                 if (value is string)
@@ -94,7 +94,7 @@ namespace System.Data
                 if (value is Type || value is string)
                 {
                     MethodInfo method = typeof(Type).GetMethod("GetType", new Type[] { typeof(string) })!;
-                    if (method != null)
+                    if (method is not null)
                     {
                         return new InstanceDescriptor(method, new object[] { ((Type)newValue).AssemblyQualifiedName! });
                     }
@@ -110,7 +110,7 @@ namespace System.Data
 
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            if (value != null && value.GetType() == typeof(string))
+            if (value is not null && value.GetType() == typeof(string))
             {
                 for (int i = 0; i < s_types.Length; i++)
                 {
@@ -131,11 +131,11 @@ namespace System.Data
         /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
-            if (_values == null)
+            if (_values is null)
             {
                 object[]? objTypes;
 
-                if (s_types != null)
+                if (s_types is not null)
                 {
                     objTypes = new object[s_types.Length];
                     Array.Copy(s_types, objTypes, s_types.Length);

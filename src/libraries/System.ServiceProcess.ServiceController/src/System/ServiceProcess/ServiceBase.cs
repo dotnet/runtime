@@ -241,7 +241,7 @@ namespace System.ServiceProcess
         {
             get
             {
-                if (_eventLog == null)
+                if (_eventLog is null)
                 {
                     _eventLog = new EventLog("Application");
                     _eventLog.Source = ServiceName;
@@ -285,7 +285,7 @@ namespace System.ServiceProcess
 
         internal static bool ValidServiceName(string serviceName)
         {
-            if (serviceName == null)
+            if (serviceName is null)
                 return false;
 
             // not too long and check for empty name as well.
@@ -591,7 +591,7 @@ namespace System.ServiceProcess
         /// </devdoc>
         public static unsafe void Run(ServiceBase[] services)
         {
-            if (services == null || services.Length == 0)
+            if (services is null || services.Length == 0)
                 throw new ArgumentException(SR.NoServices);
 
             IntPtr entriesPointer = Marshal.AllocHGlobal(checked((services.Length + 1) * sizeof(SERVICE_TABLE_ENTRY)));
@@ -619,7 +619,7 @@ namespace System.ServiceProcess
 
                 foreach (ServiceBase service in services)
                 {
-                    if (service._startFailedException != null)
+                    if (service._startFailedException is not null)
                     {
                         // Propagate exceptions throw during OnStart.
                         // Note that this same exception is also thrown from ServiceMainCallback
@@ -666,7 +666,7 @@ namespace System.ServiceProcess
         /// </devdoc>
         public static void Run(ServiceBase service)
         {
-            if (service == null)
+            if (service is null)
                 throw new ArgumentException(SR.NoServices);
 
             Run(new ServiceBase[] { service });
@@ -930,7 +930,7 @@ namespace System.ServiceProcess
                 ThreadPool.QueueUserWorkItem(new WaitCallback(this.ServiceQueuedMainCallback!), args);
                 _startCompletedSignal.WaitOne();
 
-                if (_startFailedException != null)
+                if (_startFailedException is not null)
                 {
                     // Inform SCM that the service could not be started successfully.
                     // (Unless the service has already provided another failure exit code)

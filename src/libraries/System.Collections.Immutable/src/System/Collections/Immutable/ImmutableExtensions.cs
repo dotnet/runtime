@@ -19,7 +19,7 @@ namespace System.Collections.Immutable
 #if NETCOREAPP
             return typeof(T).IsValueType;
 #else
-            if (default(T) != null)
+            if (default(T) is not null)
             {
                 return true;
             }
@@ -46,13 +46,13 @@ namespace System.Collections.Immutable
             Requires.NotNull(sequence, nameof(sequence));
 
             var orderedCollection = sequence as IOrderedCollection<T>;
-            if (orderedCollection != null)
+            if (orderedCollection is not null)
             {
                 return orderedCollection;
             }
 
             var listOfT = sequence as IList<T>;
-            if (listOfT != null)
+            if (listOfT is not null)
             {
                 return new ListOfTWrapper<T>(listOfT);
             }
@@ -92,7 +92,7 @@ namespace System.Collections.Immutable
             Requires.NotNull(enumerable, nameof(enumerable));
 
             var strongEnumerable = enumerable as IStrongEnumerable<T, TEnumerator>;
-            if (strongEnumerable != null)
+            if (strongEnumerable is not null)
             {
                 return new DisposableEnumeratorAdapter<T, TEnumerator>(strongEnumerable.GetEnumerator());
             }
@@ -197,7 +197,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (_collection == null)
+                    if (_collection is null)
                     {
                         int count;
                         if (_sequence.TryGetCount(out count))
@@ -219,7 +219,7 @@ namespace System.Collections.Immutable
             {
                 get
                 {
-                    if (_collection == null)
+                    if (_collection is null)
                     {
                         _collection = _sequence.ToArray();
                     }

@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
         public RSAOAEPKeyExchangeFormatter() { }
         public RSAOAEPKeyExchangeFormatter(AsymmetricAlgorithm key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             _rsaKey = (RSA)key;
@@ -25,7 +25,7 @@ namespace System.Security.Cryptography
         {
             get
             {
-                if (ParameterValue != null)
+                if (ParameterValue is not null)
                 {
                     return (byte[])ParameterValue.Clone();
                 }
@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
             }
             set
             {
-                if (value != null)
+                if (value is not null)
                 {
                     ParameterValue = (byte[])value.Clone();
                 }
@@ -58,7 +58,7 @@ namespace System.Security.Cryptography
 
         public override void SetKey(AsymmetricAlgorithm key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             _rsaKey = (RSA)key;
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography
 
         public override byte[] CreateKeyExchange(byte[] rgbData)
         {
-            if (_rsaKey == null)
+            if (_rsaKey is null)
                 throw new CryptographicUnexpectedOperationException(SR.Cryptography_MissingKey);
 
             return _rsaKey.Encrypt(rgbData, RSAEncryptionPadding.OaepSHA1);

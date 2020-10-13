@@ -391,7 +391,7 @@ namespace System.Globalization
 
             internal void Init(DateTimeFormatInfo dtfi)
             {
-                Debug.Assert(dtfi != null);
+                Debug.Assert(dtfi is not null);
 
                 _lastSeenTTT = TTT.None;
                 _tokenCount = 0;
@@ -527,7 +527,7 @@ namespace System.Globalization
                     return false;
                 }
 
-                Debug.Assert(argumentName != null);
+                Debug.Assert(argumentName is not null);
                 throw new ArgumentNullException(argumentName, SR.ArgumentNull_String);
             }
 
@@ -1658,7 +1658,7 @@ namespace System.Globalization
         /// <summary>Common private ParseExactMultiple method called by both ParseExactMultiple and TryParseExactMultiple.</summary>
         private static bool TryParseExactMultipleTimeSpan(ReadOnlySpan<char> input, string?[]? formats, IFormatProvider? formatProvider, TimeSpanStyles styles, ref TimeSpanResult result)
         {
-            if (formats == null)
+            if (formats is null)
             {
                 return result.SetArgumentNullFailure(nameof(formats));
             }

@@ -81,7 +81,7 @@ namespace System.Globalization
                 // If we had a user override, check to make sure this differs
                 if (context.userOverride != calendarInfo)
                 {
-                    Debug.Assert(context.strings != null);
+                    Debug.Assert(context.strings is not null);
                     context.strings.Add(calendarInfo);
                 }
 

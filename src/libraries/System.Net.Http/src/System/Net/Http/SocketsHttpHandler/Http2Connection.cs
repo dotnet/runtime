@@ -428,7 +428,7 @@ namespace System.Net.Http
             Http2Stream? http2Stream = GetStream(streamId);
 
             IHttpHeadersHandler headersHandler;
-            if (http2Stream != null)
+            if (http2Stream is not null)
             {
                 http2Stream.OnHeadersStart();
                 headersHandler = http2Stream;
@@ -557,7 +557,7 @@ namespace System.Net.Http
 
             ReadOnlySpan<byte> frameData = GetFrameData(_incomingBuffer.ActiveSpan.Slice(0, frameHeader.PayloadLength), hasPad: frameHeader.PaddedFlag, hasPriority: false);
 
-            if (http2Stream != null)
+            if (http2Stream is not null)
             {
                 bool endStream = frameHeader.EndStreamFlag;
 
@@ -767,7 +767,7 @@ namespace System.Net.Http
             else
             {
                 Http2Stream? http2Stream = GetStream(frameHeader.StreamId);
-                if (http2Stream == null)
+                if (http2Stream is null)
                 {
                     // Ignore invalid stream ID, as per RFC
                     return;
@@ -792,7 +792,7 @@ namespace System.Net.Http
             }
 
             Http2Stream? http2Stream = GetStream(frameHeader.StreamId);
-            if (http2Stream == null)
+            if (http2Stream is null)
             {
                 // Ignore invalid stream ID, as per RFC
                 _incomingBuffer.Discard(frameHeader.PayloadLength);
@@ -1135,7 +1135,7 @@ namespace System.Net.Http
                 Encoding? valueEncoding = encodingSelector?.Invoke(header.Key.Name, request);
 
                 KnownHeader? knownHeader = header.Key.KnownHeader;
-                if (knownHeader != null)
+                if (knownHeader is not null)
                 {
                     // The Host header is not sent for HTTP2 because we send the ":authority" pseudo-header instead
                     // (see pseudo-header handling below in WriteHeaders).
@@ -1163,7 +1163,7 @@ namespace System.Net.Http
                         if (headerValues.Length > 1)
                         {
                             HttpHeaderParser? parser = header.Key.Parser;
-                            if (parser != null && parser.SupportsMultipleValues)
+                            if (parser is not null && parser.SupportsMultipleValues)
                             {
                                 separator = parser.Separator;
                             }
@@ -1212,7 +1212,7 @@ namespace System.Net.Http
 
             WriteIndexedHeader(_stream is SslStream ? H2StaticTable.SchemeHttps : H2StaticTable.SchemeHttp, ref headerBuffer);
 
-            if (request.HasHeaders && request.Headers.Host != null)
+            if (request.HasHeaders && request.Headers.Host is not null)
             {
                 WriteIndexedHeader(H2StaticTable.Authority, request.Headers.Host, ref headerBuffer);
             }
@@ -1221,7 +1221,7 @@ namespace System.Net.Http
                 WriteBytes(_pool._http2EncodedAuthorityHostHeader, ref headerBuffer);
             }
 
-            Debug.Assert(request.RequestUri != null);
+            Debug.Assert(request.RequestUri is not null);
             string pathAndQuery = request.RequestUri.PathAndQuery;
             if (pathAndQuery == "/")
             {
@@ -1250,7 +1250,7 @@ namespace System.Net.Http
                 }
             }
 
-            if (request.Content == null)
+            if (request.Content is null)
             {
                 // Write out Content-Length: 0 header to indicate no body,
                 // unless this is a method that never has a body.
@@ -1276,7 +1276,7 @@ namespace System.Net.Http
             // actually retry the request, so we must give a useful exception here for these cases.
 
             Exception innerException;
-            if (_abortException != null)
+            if (_abortException is not null)
             {
                 innerException = _abortException;
             }
@@ -1369,7 +1369,7 @@ namespace System.Net.Http
                 // Start the write.  This serializes access to write to the connection, and ensures that HEADERS
                 // and CONTINUATION frames stay together, as they must do. We use the lock as well to ensure new
                 // streams are created and started in order.
-                await PerformWriteAsync(totalSize, (thisRef: this, http2Stream, headerBytes, endStream: (request.Content == null), mustFlush), static (s, writeBuffer) =>
+                await PerformWriteAsync(totalSize, (thisRef: this, http2Stream, headerBytes, endStream: (request.Content is null), mustFlush), static (s, writeBuffer) =>
                 {
                     if (NetEventSource.Log.IsEnabled()) s.thisRef.Trace(s.http2Stream.StreamId, $"Started writing. Total header bytes={s.headerBytes.Length}");
 
@@ -1840,10 +1840,10 @@ namespace System.Net.Http
             try
             {
                 // Send request headers
-                bool shouldExpectContinue = request.Content != null && request.HasHeaders && request.Headers.ExpectContinue == true;
+                bool shouldExpectContinue = request.Content is not null && request.HasHeaders && request.Headers.ExpectContinue == true;
                 Http2Stream http2Stream = await SendHeadersAsync(request, cancellationToken, mustFlush: shouldExpectContinue).ConfigureAwait(false);
 
-                bool duplex = request.Content != null && request.Content.AllowDuplex;
+                bool duplex = request.Content is not null && request.Content.AllowDuplex;
 
                 // If we have duplex content, then don't propagate the cancellation to the request body task.
                 // If cancellation occurs before we receive the response headers, then we will cancel the request body anyway.
@@ -1916,7 +1916,7 @@ namespace System.Net.Http
         private void RemoveStream(Http2Stream http2Stream)
         {
             if (NetEventSource.Log.IsEnabled()) Trace(http2Stream.StreamId, "");
-            Debug.Assert(http2Stream != null);
+            Debug.Assert(http2Stream is not null);
 
             lock (SyncObject)
             {

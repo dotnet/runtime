@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
     {
         public override byte[] DeriveKeyMaterial(ECDiffieHellmanPublicKey otherPartyPublicKey)
         {
-            if (otherPartyPublicKey == null)
+            if (otherPartyPublicKey is null)
                 throw new ArgumentNullException(nameof(otherPartyPublicKey));
 
             if (otherPartyPublicKey is ECDiffieHellmanCngPublicKey otherKey)
@@ -42,7 +42,7 @@ namespace System.Security.Cryptography
 
         public byte[] DeriveKeyMaterial(CngKey otherPartyPublicKey)
         {
-            if (otherPartyPublicKey == null)
+            if (otherPartyPublicKey is null)
                 throw new ArgumentNullException(nameof(otherPartyPublicKey));
             if (otherPartyPublicKey.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
                 throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(otherPartyPublicKey));
@@ -75,7 +75,7 @@ namespace System.Security.Cryptography
                             _secretAppend,
                             flags);
                     case ECDiffieHellmanKeyDerivationFunction.Tls:
-                        if (_label == null || _seed == null)
+                        if (_label is null || _seed is null)
                         {
                             throw new InvalidOperationException(SR.Cryptography_TlsRequiresLabelAndSeed);
                         }
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public SafeNCryptSecretHandle DeriveSecretAgreementHandle(ECDiffieHellmanPublicKey otherPartyPublicKey)
         {
-            if (otherPartyPublicKey == null)
+            if (otherPartyPublicKey is null)
                 throw new ArgumentNullException(nameof(otherPartyPublicKey));
 
             if (otherPartyPublicKey is ECDiffieHellmanCngPublicKey otherKey)
@@ -128,7 +128,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public SafeNCryptSecretHandle DeriveSecretAgreementHandle(CngKey otherPartyPublicKey)
         {
-            if (otherPartyPublicKey == null)
+            if (otherPartyPublicKey is null)
                 throw new ArgumentNullException(nameof(otherPartyPublicKey));
             if (otherPartyPublicKey.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
                 throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(otherPartyPublicKey));

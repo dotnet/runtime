@@ -61,7 +61,7 @@ namespace System.Reflection.Emit
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
             ModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             if (name.Length == 0)
@@ -70,14 +70,14 @@ namespace System.Reflection.Emit
             if (name[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
 
-            if (mod == null)
+            if (mod is null)
                 throw new ArgumentNullException(nameof(mod));
 
-            if (parameterTypes != null)
+            if (parameterTypes is not null)
             {
                 foreach (Type t in parameterTypes)
                 {
-                    if (t == null)
+                    if (t is null)
                         throw new ArgumentNullException(nameof(parameterTypes));
                 }
             }
@@ -100,7 +100,7 @@ namespace System.Reflection.Emit
 
             m_callingConvention = callingConvention;
 
-            if (parameterTypes != null)
+            if (parameterTypes is not null)
             {
                 m_parameterTypes = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, m_parameterTypes, parameterTypes.Length);
@@ -139,7 +139,7 @@ namespace System.Reflection.Emit
         {
             // Sets the IL of the method.  An ILGenerator is passed as an argument and the method
             // queries this instance to get all of the information which it needs.
-            if (il == null)
+            if (il is null)
             {
                 throw new ArgumentNullException(nameof(il));
             }
@@ -162,7 +162,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_MethodHasBody);
             }
 
-            if (il.m_methodBuilder != this && il.m_methodBuilder != null)
+            if (il.m_methodBuilder != this && il.m_methodBuilder is not null)
             {
                 // you don't need to call DefineBody when you get your ILGenerator
                 // through MethodBuilder::GetILGenerator.
@@ -204,7 +204,7 @@ namespace System.Reflection.Emit
                     for (int j = 0; j < numCatch; j++)
                     {
                         int tkExceptionClass = 0;
-                        if (catchClass[j] != null)
+                        if (catchClass[j] is not null)
                         {
                             tkExceptionClass = dynMod.GetTypeTokenInternal(catchClass[j]);
                         }
@@ -227,7 +227,7 @@ namespace System.Reflection.Emit
 
             m_bIsBaked = true;
 
-            if (dynMod.GetSymWriter() != null)
+            if (dynMod.GetSymWriter() is not null)
             {
                 // set the debugging information such as scope and line number
                 // if it is in a debug module
@@ -243,7 +243,7 @@ namespace System.Reflection.Emit
                 //
                 symWriter.OpenScope(0);
 
-                if (m_localSymInfo != null)
+                if (m_localSymInfo is not null)
                     m_localSymInfo.EmitLocalSymInfo(symWriter);
                 il.m_ScopeTree.EmitScopeTree(symWriter);
                 il.m_LineNumberInfo.EmitLineNumberInfo(symWriter);
@@ -308,7 +308,7 @@ namespace System.Reflection.Emit
         {
             m_parameterTypes ??= Array.Empty<Type>();
 
-            m_signature = SignatureHelper.GetMethodSigHelper(m_module, m_callingConvention, m_inst != null ? m_inst.Length : 0,
+            m_signature = SignatureHelper.GetMethodSigHelper(m_module, m_callingConvention, m_inst is not null ? m_inst.Length : 0,
                 m_returnType, m_returnTypeRequiredCustomModifiers, m_returnTypeOptionalCustomModifiers,
                 m_parameterTypes, m_parameterTypeRequiredCustomModifiers, m_parameterTypeOptionalCustomModifiers);
 
@@ -318,13 +318,13 @@ namespace System.Reflection.Emit
         // Returns a buffer whose initial signatureLength bytes contain encoded local signature.
         internal byte[] GetLocalSignature(out int signatureLength)
         {
-            if (m_localSignature != null)
+            if (m_localSignature is not null)
             {
                 signatureLength = m_localSignature.Length;
                 return m_localSignature;
             }
 
-            if (m_ilGenerator != null)
+            if (m_ilGenerator is not null)
             {
                 if (m_ilGenerator.m_localCount != 0)
                 {
@@ -338,7 +338,7 @@ namespace System.Reflection.Emit
 
         internal int GetMaxStack()
         {
-            if (m_ilGenerator != null)
+            if (m_ilGenerator is not null)
             {
                 return m_ilGenerator.GetMaxStackSize() + ExceptionHandlerCount;
             }
@@ -354,13 +354,13 @@ namespace System.Reflection.Emit
             return m_exceptions;
         }
 
-        internal int ExceptionHandlerCount => m_exceptions != null ? m_exceptions.Length : 0;
+        internal int ExceptionHandlerCount => m_exceptions is not null ? m_exceptions.Length : 0;
 
         internal static int CalculateNumberOfExceptions(__ExceptionInfo[]? excp)
         {
             int num = 0;
 
-            if (excp == null)
+            if (excp is null)
             {
                 return 0;
             }
@@ -375,7 +375,7 @@ namespace System.Reflection.Emit
 
         internal bool IsTypeCreated()
         {
-            return m_containingType != null && m_containingType.IsCreated();
+            return m_containingType is not null && m_containingType.IsCreated();
         }
 
         [return: DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
@@ -489,7 +489,7 @@ namespace System.Reflection.Emit
 
         public override ParameterInfo[] GetParameters()
         {
-            if (!m_bIsBaked || m_containingType == null || m_containingType.BakedRuntimeType == null)
+            if (!m_bIsBaked || m_containingType is null || m_containingType.BakedRuntimeType is null)
                 throw new NotSupportedException(SR.InvalidOperation_TypeNotCreated);
 
             MethodInfo rmi = m_containingType.GetMethod(m_strName, m_parameterTypes!)!;
@@ -501,7 +501,7 @@ namespace System.Reflection.Emit
         {
             get
             {
-                if (!m_bIsBaked || m_containingType == null || m_containingType.BakedRuntimeType == null)
+                if (!m_bIsBaked || m_containingType is null || m_containingType.BakedRuntimeType is null)
                     throw new InvalidOperationException(SR.InvalidOperation_TypeNotCreated);
 
                 MethodInfo rmi = m_containingType.GetMethod(m_strName, m_parameterTypes!)!;
@@ -536,7 +536,7 @@ namespace System.Reflection.Emit
 
         public override MethodInfo GetGenericMethodDefinition() { if (!IsGenericMethod) throw new InvalidOperationException(); return this; }
 
-        public override bool IsGenericMethod => m_inst != null;
+        public override bool IsGenericMethod => m_inst is not null;
 
         public override Type[] GetGenericArguments() => m_inst ?? Array.Empty<Type>();
 
@@ -547,17 +547,17 @@ namespace System.Reflection.Emit
 
         public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
-            if (names == null)
+            if (names is null)
                 throw new ArgumentNullException(nameof(names));
 
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
-            if (m_inst != null)
+            if (m_inst is not null)
                 throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
 
             for (int i = 0; i < names.Length; i++)
-                if (names[i] == null)
+                if (names[i] is null)
                     throw new ArgumentNullException(nameof(names));
 
             if (m_token != 0)
@@ -636,7 +636,7 @@ namespace System.Reflection.Emit
             int token = TypeBuilder.DefineMethod(new QCallModule(ref module), m_containingType.MetadataToken, m_strName, sigBytes, sigLength, Attributes);
             m_token = token;
 
-            if (m_inst != null)
+            if (m_inst is not null)
                 foreach (GenericTypeParameterBuilder tb in m_inst)
                     if (!tb.m_type.IsCreated()) tb.m_type.CreateType();
 
@@ -675,12 +675,12 @@ namespace System.Reflection.Emit
 
             ThrowIfGeneric();
 
-            if (returnType != null)
+            if (returnType is not null)
             {
                 m_returnType = returnType;
             }
 
-            if (parameterTypes != null)
+            if (parameterTypes is not null)
             {
                 m_parameterTypes = new Type[parameterTypes.Length];
                 Array.Copy(parameterTypes, m_parameterTypes, parameterTypes.Length);
@@ -700,7 +700,7 @@ namespace System.Reflection.Emit
             ThrowIfGeneric();
             m_containingType.ThrowIfCreated();
 
-            if (position > 0 && (m_parameterTypes == null || position > m_parameterTypes.Length))
+            if (position > 0 && (m_parameterTypes is null || position > m_parameterTypes.Length))
                 throw new ArgumentOutOfRangeException(SR.ArgumentOutOfRange_ParamSequence);
 
             attributes &= ~ParameterAttributes.ReservedMask;
@@ -784,7 +784,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
             ThrowIfGeneric();

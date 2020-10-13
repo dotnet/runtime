@@ -84,9 +84,9 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (_knownTypeCollection == null)
+                if (_knownTypeCollection is null)
                 {
-                    if (knownTypeList != null)
+                    if (knownTypeList is not null)
                     {
                         _knownTypeCollection = new ReadOnlyCollection<Type>(knownTypeList);
                     }
@@ -103,7 +103,7 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (this.knownDataContracts == null && this.knownTypeList != null)
+                if (this.knownDataContracts is null && this.knownTypeList is not null)
                 {
                     // This assignment may be performed concurrently and thus is a race condition.
                     // It's safe, however, because at worse a new (and identical) dictionary of
@@ -210,16 +210,16 @@ namespace System.Runtime.Serialization.Json
         private List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext context, IList<Type>? serializerKnownTypeList)
         {
             List<Type> knownTypesList = new List<Type>();
-            if (context != null)
+            if (context is not null)
             {
                 List<XmlQualifiedName> stableNames = new List<XmlQualifiedName>();
                 Dictionary<XmlQualifiedName, DataContract>[] entries = context.scopedKnownTypes.dataContractDictionaries;
-                if (entries != null)
+                if (entries is not null)
                 {
                     for (int i = 0; i < entries.Length; i++)
                     {
                         Dictionary<XmlQualifiedName, DataContract> entry = entries[i];
-                        if (entry != null)
+                        if (entry is not null)
                         {
                             foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in entry)
                             {
@@ -232,7 +232,7 @@ namespace System.Runtime.Serialization.Json
                         }
                     }
                 }
-                if (serializerKnownTypeList != null)
+                if (serializerKnownTypeList is not null)
                 {
                     knownTypesList.AddRange(serializerKnownTypeList);
                 }
@@ -244,9 +244,9 @@ namespace System.Runtime.Serialization.Json
         {
             if (contract is ClassDataContract classContract)
             {
-                if (classContract.BaseContract != null)
+                if (classContract.BaseContract is not null)
                     InvokeOnSerializing(value, classContract.BaseContract, context);
-                if (classContract.OnSerializing != null)
+                if (classContract.OnSerializing is not null)
                 {
                     bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
                     try
@@ -266,7 +266,7 @@ namespace System.Runtime.Serialization.Json
                     }
                     catch (TargetInvocationException targetInvocationException)
                     {
-                        if (targetInvocationException.InnerException == null)
+                        if (targetInvocationException.InnerException is null)
                             throw;
                         //We are catching the TIE here and throws the inner exception only,
                         //this is needed to have a consistent exception story in all serializers
@@ -280,9 +280,9 @@ namespace System.Runtime.Serialization.Json
         {
             if (contract is ClassDataContract classContract)
             {
-                if (classContract.BaseContract != null)
+                if (classContract.BaseContract is not null)
                     InvokeOnSerialized(value, classContract.BaseContract, context);
-                if (classContract.OnSerialized != null)
+                if (classContract.OnSerialized is not null)
                 {
                     bool memberAccessFlag = classContract.RequiresMemberAccessForWrite(null);
                     try
@@ -302,7 +302,7 @@ namespace System.Runtime.Serialization.Json
                     }
                     catch (TargetInvocationException targetInvocationException)
                     {
-                        if (targetInvocationException.InnerException == null)
+                        if (targetInvocationException.InnerException is null)
                             throw;
                         //We are catching the TIE here and throws the inner exception only,
                         //this is needed to have a consistent exception story in all serializers
@@ -316,9 +316,9 @@ namespace System.Runtime.Serialization.Json
         {
             if (contract is ClassDataContract classContract)
             {
-                if (classContract.BaseContract != null)
+                if (classContract.BaseContract is not null)
                     InvokeOnDeserializing(value, classContract.BaseContract, context);
-                if (classContract.OnDeserializing != null)
+                if (classContract.OnDeserializing is not null)
                 {
                     bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null);
                     try
@@ -338,7 +338,7 @@ namespace System.Runtime.Serialization.Json
                     }
                     catch (TargetInvocationException targetInvocationException)
                     {
-                        if (targetInvocationException.InnerException == null)
+                        if (targetInvocationException.InnerException is null)
                             throw;
                         //We are catching the TIE here and throws the inner exception only,
                         //this is needed to have a consistent exception story in all serializers
@@ -352,9 +352,9 @@ namespace System.Runtime.Serialization.Json
         {
             if (contract is ClassDataContract classContract)
             {
-                if (classContract.BaseContract != null)
+                if (classContract.BaseContract is not null)
                     InvokeOnDeserialized(value, classContract.BaseContract, context);
-                if (classContract.OnDeserialized != null)
+                if (classContract.OnDeserialized is not null)
                 {
                     bool memberAccessFlag = classContract.RequiresMemberAccessForRead(null);
                     try
@@ -374,7 +374,7 @@ namespace System.Runtime.Serialization.Json
                     }
                     catch (TargetInvocationException targetInvocationException)
                     {
-                        if (targetInvocationException.InnerException == null)
+                        if (targetInvocationException.InnerException is null)
                             throw;
                         //We are catching the TIE here and throws the inner exception only,
                         //this is needed to have a consistent exception story in all serializers
@@ -392,7 +392,7 @@ namespace System.Runtime.Serialization.Json
 
         internal static bool CheckIfJsonNameRequiresMapping(string jsonName)
         {
-            if (jsonName != null)
+            if (jsonName is not null)
             {
                 if (!DataContract.IsValidNCName(jsonName))
                 {
@@ -412,7 +412,7 @@ namespace System.Runtime.Serialization.Json
 
         internal static bool CheckIfJsonNameRequiresMapping(XmlDictionaryString jsonName)
         {
-            return (jsonName == null) ? false : CheckIfJsonNameRequiresMapping(jsonName.Value);
+            return (jsonName is null) ? false : CheckIfJsonNameRequiresMapping(jsonName.Value);
         }
 
         internal static string ConvertXmlNameToJsonName(string xmlName)
@@ -422,7 +422,7 @@ namespace System.Runtime.Serialization.Json
 
         internal static XmlDictionaryString? ConvertXmlNameToJsonName(XmlDictionaryString? xmlName)
         {
-            return (xmlName == null) ? null : new XmlDictionary().Add(ConvertXmlNameToJsonName(xmlName.Value));
+            return (xmlName is null) ? null : new XmlDictionary().Add(ConvertXmlNameToJsonName(xmlName.Value));
         }
 
         internal static object? ReadJsonValue(DataContract contract, XmlReaderDelegator reader, XmlObjectSerializerReadContextComplexJson context)
@@ -525,12 +525,12 @@ namespace System.Runtime.Serialization.Json
 
         public DataContractJsonSerializerImpl(Type type, DataContractJsonSerializerSettings? settings)
         {
-            if (settings == null)
+            if (settings is null)
             {
                 settings = new DataContractJsonSerializerSettings();
             }
 
-            XmlDictionaryString? rootName = (settings.RootName == null) ? null : new XmlDictionary(1).Add(settings.RootName);
+            XmlDictionaryString? rootName = (settings.RootName is null) ? null : new XmlDictionary(1).Add(settings.RootName);
             Initialize(type, rootName, settings.KnownTypes, settings.MaxItemsInObjectGraph, settings.IgnoreExtensionDataObject,
                 settings.EmitTypeInformation, settings.SerializeReadOnlyTypes, settings.DateTimeFormat, settings.UseSimpleDictionaryFormat);
         }
@@ -539,9 +539,9 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (_knownTypeCollection == null)
+                if (_knownTypeCollection is null)
                 {
-                    if (knownTypeList != null)
+                    if (knownTypeList is not null)
                     {
                         _knownTypeCollection = new ReadOnlyCollection<Type>(knownTypeList);
                     }
@@ -558,7 +558,7 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (this.knownDataContracts == null && this.knownTypeList != null)
+                if (this.knownDataContracts is null && this.knownTypeList is not null)
                 {
                     // This assignment may be performed concurrently and thus is a race condition.
                     // It's safe, however, because at worse a new (and identical) dictionary of
@@ -619,7 +619,7 @@ namespace System.Runtime.Serialization.Json
         {
             get
             {
-                if (_rootContract == null)
+                if (_rootContract is null)
                 {
                     _rootContract = DataContract.GetDataContract(_rootType);
                     CheckIfTypeIsReference(_rootContract);
@@ -729,7 +729,7 @@ namespace System.Runtime.Serialization.Json
 
         internal static bool CheckIfJsonNameRequiresMapping(string? jsonName)
         {
-            if (jsonName != null)
+            if (jsonName is not null)
             {
                 if (!DataContract.IsValidNCName(jsonName))
                 {
@@ -749,17 +749,17 @@ namespace System.Runtime.Serialization.Json
 
         internal static bool CheckIfJsonNameRequiresMapping(XmlDictionaryString? jsonName)
         {
-            return (jsonName == null) ? false : CheckIfJsonNameRequiresMapping(jsonName.Value);
+            return (jsonName is null) ? false : CheckIfJsonNameRequiresMapping(jsonName.Value);
         }
 
         internal static bool CheckIfXmlNameRequiresMapping(string xmlName)
         {
-            return (xmlName == null) ? false : CheckIfJsonNameRequiresMapping(ConvertXmlNameToJsonName(xmlName));
+            return (xmlName is null) ? false : CheckIfJsonNameRequiresMapping(ConvertXmlNameToJsonName(xmlName));
         }
 
         internal static bool CheckIfXmlNameRequiresMapping(XmlDictionaryString xmlName)
         {
-            return (xmlName == null) ? false : CheckIfXmlNameRequiresMapping(xmlName.Value);
+            return (xmlName is null) ? false : CheckIfXmlNameRequiresMapping(xmlName.Value);
         }
 
         internal static string ConvertXmlNameToJsonName(string xmlName)
@@ -770,7 +770,7 @@ namespace System.Runtime.Serialization.Json
         [return: NotNullIfNotNull("xmlName")]
         internal static XmlDictionaryString? ConvertXmlNameToJsonName(XmlDictionaryString? xmlName)
         {
-            return (xmlName == null) ? null : new XmlDictionary().Add(ConvertXmlNameToJsonName(xmlName.Value));
+            return (xmlName is null) ? null : new XmlDictionary().Add(ConvertXmlNameToJsonName(xmlName.Value));
         }
 
         internal static bool IsJsonLocalName(XmlReaderDelegator reader, string elementName)
@@ -805,7 +805,7 @@ namespace System.Runtime.Serialization.Json
 
         internal override Type? GetSerializeType(object? graph)
         {
-            return (graph == null) ? _rootType : graph.GetType();
+            return (graph is null) ? _rootType : graph.GetType();
         }
 
         internal override bool InternalIsStartObject(XmlReaderDelegator reader)
@@ -868,14 +868,14 @@ namespace System.Runtime.Serialization.Json
 
             DataContract contract = RootContract;
             Type declaredType = contract.UnderlyingType;
-            Type graphType = (graph == null) ? declaredType : graph.GetType();
+            Type graphType = (graph is null) ? declaredType : graph.GetType();
 
-            //if (dataContractSurrogate != null)
+            //if (dataContractSurrogate is not null)
             //{
             //    graph = DataContractSerializer.SurrogateToDataContractType(dataContractSurrogate, graph, declaredType, ref graphType);
             //}
 
-            if (graph == null)
+            if (graph is null)
             {
                 WriteJsonNull(writer);
             }
@@ -952,13 +952,13 @@ namespace System.Runtime.Serialization.Json
             CheckNull(type, nameof(type));
             _rootType = type;
 
-            if (knownTypes != null)
+            if (knownTypes is not null)
             {
                 this.knownTypeList = new List<Type>();
                 foreach (Type knownType in knownTypes)
                 {
                     this.knownTypeList.Add(knownType);
-                    if (knownType != null)
+                    if (knownType is not null)
                     {
                         AddCollectionItemTypeToKnownTypes(knownType);
                     }

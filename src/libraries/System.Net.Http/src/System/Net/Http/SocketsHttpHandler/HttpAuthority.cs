@@ -16,7 +16,7 @@ namespace System.Net.Http
 
         public HttpAuthority(string host, int port)
         {
-            Debug.Assert(host != null);
+            Debug.Assert(host is not null);
 
             // This is very rarely called, but could be optimized to avoid the URI-specific stuff by bringing in DomainNameHelpers from System.Private.Uri.
             var builder = new UriBuilder(Uri.UriSchemeHttp, host, port);
@@ -31,7 +31,7 @@ namespace System.Net.Http
 
         public bool Equals(HttpAuthority? other)
         {
-            return other != null && string.Equals(IdnHost, other.IdnHost) && Port == other.Port;
+            return other is not null && string.Equals(IdnHost, other.IdnHost) && Port == other.Port;
         }
 
         public override bool Equals(object? obj)
@@ -47,7 +47,7 @@ namespace System.Net.Http
         // For diagnostics
         public override string ToString()
         {
-            return IdnHost != null ? $"{IdnHost}:{Port}" : "<empty>";
+            return IdnHost is not null ? $"{IdnHost}:{Port}" : "<empty>";
         }
     }
 }

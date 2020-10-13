@@ -19,10 +19,10 @@ namespace System.Xml
             get
             {
                 XmlNode? parent = ParentNode;
-                if (parent != null)
+                if (parent is not null)
                 {
                     XmlNode? node = parent.FirstChild;
-                    while (node != null)
+                    while (node is not null)
                     {
                         XmlNode? nextSibling = node.NextSibling;
                         if (nextSibling == this)
@@ -46,7 +46,7 @@ namespace System.Xml
             get
             {
                 XmlNode? parent = ParentNode;
-                if (parent != null)
+                if (parent is not null)
                 {
                     if (next != parent.FirstChild)
                         return next;

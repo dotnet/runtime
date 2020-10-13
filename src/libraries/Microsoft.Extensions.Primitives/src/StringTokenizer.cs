@@ -22,12 +22,12 @@ namespace Microsoft.Extensions.Primitives
         /// <param name="separators">The characters to tokenize by.</param>
         public StringTokenizer(string value, char[] separators)
         {
-            if (value == null)
+            if (value is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
-            if (separators == null)
+            if (separators is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.separators);
             }
@@ -48,7 +48,7 @@ namespace Microsoft.Extensions.Primitives
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
-            if (separators == null)
+            if (separators is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.separators);
             }

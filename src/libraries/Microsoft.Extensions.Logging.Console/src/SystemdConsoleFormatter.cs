@@ -35,7 +35,7 @@ namespace Microsoft.Extensions.Logging.Console
         public override void Write<TState>(in LogEntry<TState> logEntry, IExternalScopeProvider scopeProvider, TextWriter textWriter)
         {
             string message = logEntry.Formatter(logEntry.State, logEntry.Exception);
-            if (logEntry.Exception == null && message == null)
+            if (logEntry.Exception is null && message is null)
             {
                 return;
             }
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.Logging.Console
 
             // timestamp
             string timestampFormat = FormatterOptions.TimestampFormat;
-            if (timestampFormat != null)
+            if (timestampFormat is not null)
             {
                 DateTimeOffset dateTimeOffset = GetCurrentDateTime();
                 textWriter.Write(dateTimeOffset.ToString(timestampFormat));
@@ -80,7 +80,7 @@ namespace Microsoft.Extensions.Logging.Console
 
             // exception
             // System.InvalidOperationException at Namespace.Class.Function() in File:line X
-            if (exception != null)
+            if (exception is not null)
             {
                 textWriter.Write(' ');
                 WriteReplacingNewLine(textWriter, exception.ToString());
@@ -118,7 +118,7 @@ namespace Microsoft.Extensions.Logging.Console
 
         private void WriteScopeInformation(TextWriter textWriter, IExternalScopeProvider scopeProvider)
         {
-            if (FormatterOptions.IncludeScopes && scopeProvider != null)
+            if (FormatterOptions.IncludeScopes && scopeProvider is not null)
             {
                 scopeProvider.ForEachScope((scope, state) =>
                 {

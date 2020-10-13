@@ -32,7 +32,7 @@ namespace System.Net.Sockets
                 ThrowSocketDisposedException();
             }
 
-            if (_iocpBoundHandle != null)
+            if (_iocpBoundHandle is not null)
             {
                 return _iocpBoundHandle;
             }
@@ -41,7 +41,7 @@ namespace System.Net.Sockets
             {
                 ThreadPoolBoundHandle? boundHandle = _iocpBoundHandle;
 
-                if (boundHandle == null)
+                if (boundHandle is null)
                 {
                     // Bind the socket native _handle to the ThreadPool.
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "calling ThreadPool.BindHandle()");
@@ -94,7 +94,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                Debug.Assert(_iocpBoundHandle != null);
+                Debug.Assert(_iocpBoundHandle is not null);
                 return _skipCompletionPortOnSuccess;
             }
         }
@@ -104,7 +104,7 @@ namespace System.Net.Sockets
         {
             // Keep m_IocpBoundHandle around after disposing it to allow freeing NativeOverlapped.
             // ThreadPoolBoundHandle allows FreeNativeOverlapped even after it has been disposed.
-            if (_iocpBoundHandle != null)
+            if (_iocpBoundHandle is not null)
             {
                 Debug.Assert(OperatingSystem.IsWindows());
                 _iocpBoundHandle.Dispose();

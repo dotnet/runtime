@@ -34,12 +34,12 @@ namespace System.ComponentModel.Design
         /// </summary>
         protected DesignerOptionCollection CreateOptionCollection(DesignerOptionCollection parent, string name, object value)
         {
-            if (parent == null)
+            if (parent is null)
             {
                 throw new ArgumentNullException(nameof(parent));
             }
 
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -58,12 +58,12 @@ namespace System.ComponentModel.Design
         /// </summary>
         private PropertyDescriptor GetOptionProperty(string pageName, string valueName)
         {
-            if (pageName == null)
+            if (pageName is null)
             {
                 throw new ArgumentNullException(nameof(pageName));
             }
 
-            if (valueName == null)
+            if (valueName is null)
             {
                 throw new ArgumentNullException(nameof(valueName));
             }
@@ -74,7 +74,7 @@ namespace System.ComponentModel.Design
             foreach (string optionName in optionNames)
             {
                 options = options[optionName];
-                if (options == null)
+                if (options is null)
                 {
                     return null;
                 }
@@ -140,10 +140,10 @@ namespace System.ComponentModel.Design
                 Name = name;
                 _value = value;
 
-                if (Parent != null)
+                if (Parent is not null)
                 {
                     parent._properties = null;
-                    if (Parent._children == null)
+                    if (Parent._children is null)
                     {
                         Parent._children = new ArrayList(1);
                     }
@@ -187,11 +187,11 @@ namespace System.ComponentModel.Design
             {
                 get
                 {
-                    if (_properties == null)
+                    if (_properties is null)
                     {
                         ArrayList propList;
 
-                        if (_value != null)
+                        if (_value is not null)
                         {
                             PropertyDescriptorCollection props = TypeDescriptor.GetProperties(_value);
                             propList = new ArrayList(props.Count);
@@ -269,10 +269,10 @@ namespace System.ComponentModel.Design
             /// </summary>
             private void EnsurePopulated()
             {
-                if (_children == null)
+                if (_children is null)
                 {
                     _service.PopulateOptionCollection(this);
-                    if (_children == null)
+                    if (_children is null)
                     {
                         _children = new ArrayList(1);
                     }
@@ -302,7 +302,7 @@ namespace System.ComponentModel.Design
             /// </summary>
             private static object RecurseFindValue(DesignerOptionCollection options)
             {
-                if (options._value != null)
+                if (options._value is not null)
                 {
                     return options._value;
                 }
@@ -310,7 +310,7 @@ namespace System.ComponentModel.Design
                 foreach (DesignerOptionCollection child in options)
                 {
                     object value = RecurseFindValue(child);
-                    if (value != null)
+                    if (value is not null)
                     {
                         return value;
                     }
@@ -327,7 +327,7 @@ namespace System.ComponentModel.Design
             {
                 object value = RecurseFindValue(this);
 
-                if (value == null)
+                if (value is null)
                 {
                     return false;
                 }

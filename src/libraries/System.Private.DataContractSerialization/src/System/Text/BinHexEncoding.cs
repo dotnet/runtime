@@ -24,7 +24,7 @@ namespace System.Text
 
         public unsafe override int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
-            if (chars == null)
+            if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
             if (charIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ValueMustBeNonNegative);
@@ -34,7 +34,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(charCount), SR.ValueMustBeNonNegative);
             if (charCount > chars.Length - charIndex)
                 throw new ArgumentOutOfRangeException(nameof(charCount), SR.Format(SR.SizeExceedsRemainingBufferSpace, chars.Length - charIndex));
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
             if (byteIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ValueMustBeNonNegative);
@@ -68,7 +68,7 @@ namespace System.Text
 
         public unsafe override int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
             if (byteIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ValueMustBeNonNegative);
@@ -79,7 +79,7 @@ namespace System.Text
             if (byteCount > bytes.Length - byteIndex)
                 throw new ArgumentOutOfRangeException(nameof(byteCount), SR.Format(SR.SizeExceedsRemainingBufferSpace, bytes.Length - byteIndex));
             int charCount = GetCharCount(bytes, byteIndex, byteCount);
-            if (chars == null)
+            if (chars is null)
                 throw new ArgumentNullException(nameof(chars));
             if (charIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ValueMustBeNonNegative);

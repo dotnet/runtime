@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.Configuration.Xml
             // is the same one that EncryptedXml would have performed.
             var namespaceManager = new XmlNamespaceManager(document.NameTable);
             namespaceManager.AddNamespace("enc", "http://www.w3.org/2001/04/xmlenc#");
-            return (document.SelectSingleNode("//enc:EncryptedData", namespaceManager) != null);
+            return (document.SelectSingleNode("//enc:EncryptedData", namespaceManager) is not null);
         }
 
         /// <summary>

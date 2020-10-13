@@ -20,7 +20,7 @@ namespace System.Data.Common
                 {
                     using (DbDataAdapter? adapter = CreateDataAdapter())
                     {
-                        _canCreateDataAdapter = adapter != null;
+                        _canCreateDataAdapter = adapter is not null;
                     }
                 }
 
@@ -36,7 +36,7 @@ namespace System.Data.Common
                 {
                     using (DbCommandBuilder? builder = CreateCommandBuilder())
                     {
-                        _canCreateCommandBuilder = builder != null;
+                        _canCreateCommandBuilder = builder is not null;
                     }
                 }
 

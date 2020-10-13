@@ -29,7 +29,7 @@ namespace System.Runtime.Serialization
 
             // Traverse the hierarchy to find all methods with the particular attribute
             Type? baseType = t;
-            while (baseType != null && baseType != typeof(object))
+            while (baseType is not null && baseType != typeof(object))
             {
                 // Get all methods which are declared on this type, instance and public or nonpublic
                 MethodInfo[] mis = baseType.GetMethods(BindingFlags.DeclaredOnly | BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public);
@@ -38,7 +38,7 @@ namespace System.Runtime.Serialization
                     // For each method find if attribute is present, the return type is void and the method is not virtual
                     if (m.IsDefined(attribute, false))
                     {
-                        if (mi == null) mi = new List<MethodInfo>();
+                        if (mi is null) mi = new List<MethodInfo>();
                         mi.Add(m);
                     }
                 }
@@ -50,7 +50,7 @@ namespace System.Runtime.Serialization
         }
 
         internal bool HasOnSerializingEvents =>
-            _onSerializingMethods != null || _onSerializedMethods != null;
+            _onSerializingMethods is not null || _onSerializedMethods is not null;
 
         internal void InvokeOnSerializing(object obj, StreamingContext context) =>
             InvokeOnDelegate(obj, context, _onSerializingMethods);
@@ -70,14 +70,14 @@ namespace System.Runtime.Serialization
         /// <summary>Invoke all methods.</summary>
         private static void InvokeOnDelegate(object obj, StreamingContext context, List<MethodInfo>? methods)
         {
-            Debug.Assert(obj != null, "object should have been initialized");
+            Debug.Assert(obj is not null, "object should have been initialized");
             AddOnDelegate(obj, null, methods)?.Invoke(context);
         }
 
         /// <summary>Add all methods to a delegate.</summary>
         private static SerializationEventHandler? AddOnDelegate(object obj, SerializationEventHandler? handler, List<MethodInfo>? methods)
         {
-            if (methods != null)
+            if (methods is not null)
             {
                 foreach (MethodInfo m in methods)
                 {

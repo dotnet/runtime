@@ -22,8 +22,8 @@ namespace System.ComponentModel
         public ExtendedPropertyDescriptor(ReflectPropertyDescriptor extenderInfo, Type receiverType, IExtenderProvider provider, Attribute[] attributes)
             : base(extenderInfo, attributes)
         {
-            Debug.Assert(extenderInfo != null, "ExtendedPropertyDescriptor must have extenderInfo");
-            Debug.Assert(provider != null, "ExtendedPropertyDescriptor must have provider");
+            Debug.Assert(extenderInfo is not null, "ExtendedPropertyDescriptor must have extenderInfo");
+            Debug.Assert(provider is not null, "ExtendedPropertyDescriptor must have provider");
 
             List<Attribute> attrList = new List<Attribute>(AttributeArray)
             {
@@ -44,16 +44,16 @@ namespace System.ComponentModel
 
         public ExtendedPropertyDescriptor(PropertyDescriptor extender, Attribute[] attributes) : base(extender, attributes)
         {
-            Debug.Assert(extender != null, "The original PropertyDescriptor must be non-null");
+            Debug.Assert(extender is not null, "The original PropertyDescriptor must be non-null");
 
             ExtenderProvidedPropertyAttribute attr = extender.Attributes[typeof(ExtenderProvidedPropertyAttribute)] as ExtenderProvidedPropertyAttribute;
 
-            Debug.Assert(attr != null, "The original PropertyDescriptor does not have an ExtenderProvidedPropertyAttribute");
+            Debug.Assert(attr is not null, "The original PropertyDescriptor does not have an ExtenderProvidedPropertyAttribute");
 
 
             ReflectPropertyDescriptor reflectDesc = attr.ExtenderProperty as ReflectPropertyDescriptor;
 
-            Debug.Assert(reflectDesc != null, "The original PropertyDescriptor has an invalid ExtenderProperty");
+            Debug.Assert(reflectDesc is not null, "The original PropertyDescriptor has an invalid ExtenderProperty");
 
             _extenderInfo = reflectDesc;
             _provider = attr.Provider;
@@ -97,7 +97,7 @@ namespace System.ComponentModel
                 {
                     ISite site = GetSite(_provider);
                     string providerName = site?.Name;
-                    if (providerName != null && providerName.Length > 0)
+                    if (providerName is not null && providerName.Length > 0)
                     {
                         name = SR.Format(SR.MetaExtenderName, name, providerName);
                     }

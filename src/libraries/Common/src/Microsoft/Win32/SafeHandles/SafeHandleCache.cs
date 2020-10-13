@@ -23,11 +23,11 @@ namespace Microsoft.Win32.SafeHandles
         internal static T GetInvalidHandle(Func<T> invalidHandleFactory)
         {
             T? currentHandle = Volatile.Read(ref s_invalidHandle);
-            if (currentHandle == null)
+            if (currentHandle is null)
             {
                 T newHandle = invalidHandleFactory();
                 currentHandle = Interlocked.CompareExchange(ref s_invalidHandle, newHandle, null);
-                if (currentHandle == null)
+                if (currentHandle is null)
                 {
                     GC.SuppressFinalize(newHandle);
                     currentHandle = newHandle;
@@ -46,7 +46,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <returns>true if <paramref name="handle"/> is invalid handle; otherwise, false.</returns>
         internal static bool IsCachedInvalidHandle(SafeHandle handle)
         {
-            Debug.Assert(handle != null);
+            Debug.Assert(handle is not null);
             bool isCachedInvalidHandle = ReferenceEquals(handle, Volatile.Read(ref s_invalidHandle));
             Debug.Assert(!isCachedInvalidHandle || handle.IsInvalid, "The cached invalid handle must still be invalid.");
             return isCachedInvalidHandle;

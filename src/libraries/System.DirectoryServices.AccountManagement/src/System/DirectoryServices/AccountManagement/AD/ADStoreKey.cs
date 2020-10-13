@@ -33,8 +33,8 @@ namespace System.DirectoryServices.AccountManagement
 
         public ADStoreKey(string domainName, byte[] sid)
         {
-            Debug.Assert(domainName != null && domainName.Length > 0);
-            Debug.Assert(sid != null && sid.Length != 0);
+            Debug.Assert(domainName is not null && domainName.Length > 0);
+            Debug.Assert(sid is not null && sid.Length != 0);
 
             // Make a copy of the SID, since a byte[] is mutable
             _sid = new byte[sid.Length];

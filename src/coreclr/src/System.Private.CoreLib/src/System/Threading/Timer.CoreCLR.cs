@@ -38,7 +38,7 @@ namespace System.Threading
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private bool SetTimer(uint actualDuration)
         {
-            if (m_appDomainTimer == null || m_appDomainTimer.IsInvalid)
+            if (m_appDomainTimer is null || m_appDomainTimer.IsInvalid)
             {
                 Debug.Assert(!_isTimerScheduled);
                 Debug.Assert(_id >= 0 && _id < Instances.Length && this == Instances[_id]);

@@ -112,12 +112,12 @@ namespace System.Net
                 else
                 {
                     Interop.HttpApi.HTTP_SSL_CLIENT_CERT_INFO* pClientCertInfo = asyncResult._memoryBlob;
-                    if (pClientCertInfo != null)
+                    if (pClientCertInfo is not null)
                     {
                         if (NetEventSource.Log.IsEnabled())
                             NetEventSource.Info(null,
   $"pClientCertInfo:{(IntPtr)pClientCertInfo} pClientCertInfo->CertFlags: {pClientCertInfo->CertFlags} pClientCertInfo->CertEncodedSize: {pClientCertInfo->CertEncodedSize} pClientCertInfo->pCertEncoded: {(IntPtr)pClientCertInfo->pCertEncoded} pClientCertInfo->Token: {(IntPtr)pClientCertInfo->Token} pClientCertInfo->CertDeniedByMapper: {pClientCertInfo->CertDeniedByMapper}");
-                        if (pClientCertInfo->pCertEncoded != null)
+                        if (pClientCertInfo->pCertEncoded is not null)
                         {
                             try
                             {
@@ -170,7 +170,7 @@ namespace System.Net
         // Will be called from the base class upon InvokeCallback()
         protected override void Cleanup()
         {
-            if (_pOverlapped != null)
+            if (_pOverlapped is not null)
             {
                 _memoryBlob = null;
                 _boundHandle!.FreeNativeOverlapped(_pOverlapped);
@@ -183,7 +183,7 @@ namespace System.Net
 
         ~ListenerClientCertAsyncResult()
         {
-            if (_pOverlapped != null && !Environment.HasShutdownStarted)
+            if (_pOverlapped is not null && !Environment.HasShutdownStarted)
             {
                 _boundHandle!.FreeNativeOverlapped(_pOverlapped);
                 _pOverlapped = null;  // Must do this in case application calls GC.ReRegisterForFinalize().

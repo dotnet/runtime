@@ -33,11 +33,11 @@ namespace System.Net.Http.Headers
 
         public string Name => _headerName;
         public HttpHeaderParser? Parser => _knownHeader?.Parser;
-        public HttpHeaderType HeaderType => _knownHeader == null ? HttpHeaderType.Custom : _knownHeader.HeaderType;
+        public HttpHeaderType HeaderType => _knownHeader is null ? HttpHeaderType.Custom : _knownHeader.HeaderType;
         public KnownHeader? KnownHeader => _knownHeader;
 
         public bool Equals(HeaderDescriptor other) =>
-            _knownHeader == null ?
+            _knownHeader is null ?
                 string.Equals(_headerName, other._headerName, StringComparison.OrdinalIgnoreCase) :
                 _knownHeader == other._knownHeader;
         public override int GetHashCode() => _knownHeader?.GetHashCode() ?? StringComparer.OrdinalIgnoreCase.GetHashCode(_headerName);
@@ -49,7 +49,7 @@ namespace System.Net.Http.Headers
             Debug.Assert(!string.IsNullOrEmpty(headerName));
 
             KnownHeader? knownHeader = KnownHeaders.TryGetKnownHeader(headerName);
-            if (knownHeader != null)
+            if (knownHeader is not null)
             {
                 descriptor = new HeaderDescriptor(knownHeader);
                 return true;
@@ -71,7 +71,7 @@ namespace System.Net.Http.Headers
             Debug.Assert(headerName.Length > 0);
 
             KnownHeader? knownHeader = KnownHeaders.TryGetKnownHeader(headerName);
-            if (knownHeader != null)
+            if (knownHeader is not null)
             {
                 descriptor = new HeaderDescriptor(knownHeader);
                 return true;
@@ -112,7 +112,7 @@ namespace System.Net.Http.Headers
 
         public HeaderDescriptor AsCustomHeader()
         {
-            Debug.Assert(_knownHeader != null);
+            Debug.Assert(_knownHeader is not null);
             Debug.Assert(_knownHeader.HeaderType != HttpHeaderType.Custom);
             return new HeaderDescriptor(_knownHeader.Name);
         }
@@ -125,10 +125,10 @@ namespace System.Net.Http.Headers
             }
 
             // If it's a known header value, use the known value instead of allocating a new string.
-            if (_knownHeader != null)
+            if (_knownHeader is not null)
             {
                 string[]? knownValues = _knownHeader.KnownValues;
-                if (knownValues != null)
+                if (knownValues is not null)
                 {
                     for (int i = 0; i < knownValues.Length; i++)
                     {
@@ -142,7 +142,7 @@ namespace System.Net.Http.Headers
                 if (_knownHeader == KnownHeaders.ContentType)
                 {
                     string? contentType = GetKnownContentType(headerValue);
-                    if (contentType != null)
+                    if (contentType is not null)
                     {
                         return contentType;
                     }
@@ -239,7 +239,7 @@ namespace System.Net.Http.Headers
 
             Debug.Assert(candidate is null || candidate.Length == contentTypeValue.Length);
 
-            return candidate != null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate, contentTypeValue) ?
+            return candidate is not null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate, contentTypeValue) ?
                 candidate :
                 null;
         }

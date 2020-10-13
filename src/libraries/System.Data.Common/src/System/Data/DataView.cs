@@ -97,7 +97,7 @@ namespace System.Data
         internal DataView(DataTable? table, bool locked)
         {
             GC.SuppressFinalize(this);
-            DataCommonEventSource.Log.Trace("<ds.DataView.DataView|INFO> {0}, table={1}, locked={2}", ObjectID, (table != null) ? table.ObjectID : 0, locked);
+            DataCommonEventSource.Log.Trace("<ds.DataView.DataView|INFO> {0}, table={1}, locked={2}", ObjectID, (table is not null) ? table.ObjectID : 0, locked);
 
             _dvListener = new DataViewListener(this);
             _locked = locked;
@@ -130,9 +130,9 @@ namespace System.Data
         {
             GC.SuppressFinalize(this);
             DataCommonEventSource.Log.Trace("<ds.DataView.DataView|API> {0}, table={1}, RowFilter='{2}', Sort='{3}', RowState={4}",
-                ObjectID, (table != null) ? table.ObjectID : 0, RowFilter, Sort, RowState);
+                ObjectID, (table is not null) ? table.ObjectID : 0, RowFilter, Sort, RowState);
 
-            if (table == null)
+            if (table is null)
             {
                 throw ExceptionBuilder.CanNotUse();
             }
@@ -152,12 +152,12 @@ namespace System.Data
                 throw ExceptionBuilder.SetRowStateFilter();
             }
 
-            if (Sort == null)
+            if (Sort is null)
             {
                 Sort = string.Empty;
             }
 
-            if (RowFilter == null)
+            if (RowFilter is null)
             {
                 RowFilter = string.Empty;
             }
@@ -170,9 +170,9 @@ namespace System.Data
         {
             GC.SuppressFinalize(this);
             DataCommonEventSource.Log.Trace("<ds.DataView.DataView|API> %d#, table=%d, RowState=%d{ds.DataViewRowState}\n",
-                           ObjectID, (table != null) ? table.ObjectID : 0, (int)RowState);
+                           ObjectID, (table is not null) ? table.ObjectID : 0, (int)RowState);
 
-            if (table == null)
+            if (table is null)
             {
                 throw ExceptionBuilder.CanNotUse();
             }
@@ -312,11 +312,11 @@ namespace System.Data
             get
             {
                 DataExpression? expression = (_rowFilter as DataExpression);
-                return (expression == null ? "" : expression.Expression); // CONSIDER: return optimized expression here
+                return (expression is null ? "" : expression.Expression); // CONSIDER: return optimized expression here
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     value = string.Empty;
                 }
@@ -328,7 +328,7 @@ namespace System.Data
                     return;
                 }
 
-                CultureInfo locale = (_table != null ? _table.Locale : CultureInfo.CurrentCulture);
+                CultureInfo locale = (_table is not null ? _table.Locale : CultureInfo.CurrentCulture);
                 if (null == _rowFilter || (string.Compare(RowFilter, value, false, locale) != 0))
                 {
                     DataExpression newFilter = new DataExpression(_table, value);
@@ -421,7 +421,7 @@ namespace System.Data
         {
             get
             {
-                if (_sort.Length == 0 && _applyDefaultSort && _table != null && _table._primaryIndex.Length > 0)
+                if (_sort.Length == 0 && _applyDefaultSort && _table is not null && _table._primaryIndex.Length > 0)
                 {
                     return _table.FormatSortString(_table._primaryIndex);
                 }
@@ -432,7 +432,7 @@ namespace System.Data
             }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     value = string.Empty;
                 }
@@ -444,7 +444,7 @@ namespace System.Data
                     return;
                 }
 
-                CultureInfo locale = (_table != null ? _table.Locale : CultureInfo.CurrentCulture);
+                CultureInfo locale = (_table is not null ? _table.Locale : CultureInfo.CurrentCulture);
                 if (string.Compare(_sort, value, false, locale) != 0 || (null != _comparison))
                 {
                     CheckSort(value);
@@ -483,8 +483,8 @@ namespace System.Data
             get { return _table; }
             set
             {
-                DataCommonEventSource.Log.Trace("<ds.DataView.set_Table|API> {0}, {1}", ObjectID, (value != null) ? value.ObjectID : 0);
-                if (_fInitInProgress && value != null)
+                DataCommonEventSource.Log.Trace("<ds.DataView.set_Table|API> {0}, {1}", ObjectID, (value is not null) ? value.ObjectID : 0);
+                if (_fInitInProgress && value is not null)
                 {
                     _delayedTable = value;
                     return;
@@ -494,11 +494,11 @@ namespace System.Data
                 {
                     throw ExceptionBuilder.SetTable();
                 }
-                if (_dataViewManager != null)
+                if (_dataViewManager is not null)
                 {
                     throw ExceptionBuilder.CanNotSetTable();
                 }
-                if (value != null && value.TableName.Length == 0)
+                if (value is not null && value.TableName.Length == 0)
                 {
                     throw ExceptionBuilder.CanNotBindTable();
                 }
@@ -507,13 +507,13 @@ namespace System.Data
                 {
                     _dvListener.UnregisterMetaDataEvents();
                     _table = value;
-                    if (_table != null)
+                    if (_table is not null)
                     {
                         _dvListener.RegisterMetaDataEvents(_table);
                     }
 
                     SetIndex2("", DataViewRowState.CurrentRows, null, false);
-                    if (_table != null)
+                    if (_table is not null)
                     {
                         OnListChanged(new ListChangedEventArgs(ListChangedType.PropertyDescriptorChanged, new DataTablePropertyDescriptor(_table)));
                     }
@@ -552,7 +552,7 @@ namespace System.Data
                 {
                     throw ExceptionBuilder.AddNewNotAllowNull();
                 }
-                if (_addNewRow != null)
+                if (_addNewRow is not null)
                 {
                     _rowViewCache[_addNewRow].EndEdit();
                 }
@@ -579,7 +579,7 @@ namespace System.Data
 
         public void EndInit()
         {
-            if (_delayedTable != null && _delayedTable.fInitInProgress)
+            if (_delayedTable is not null && _delayedTable.fInitInProgress)
             {
                 _delayedTable._delayedViews.Add(this);
                 return;
@@ -587,17 +587,17 @@ namespace System.Data
 
             _fInitInProgress = false;
             _fEndInitInProgress = true;
-            if (_delayedTable != null)
+            if (_delayedTable is not null)
             {
                 Table = _delayedTable;
                 _delayedTable = null;
             }
-            if (_delayedSort != null)
+            if (_delayedSort is not null)
             {
                 Sort = _delayedSort;
                 _delayedSort = null;
             }
-            if (_delayedRowFilter != null)
+            if (_delayedRowFilter is not null)
             {
                 RowFilter = _delayedRowFilter;
                 _delayedRowFilter = null;
@@ -620,7 +620,7 @@ namespace System.Data
 
         private void CheckSort(string sort)
         {
-            if (_table == null)
+            if (_table is null)
             {
                 throw ExceptionBuilder.CanNotUse();
             }
@@ -846,7 +846,7 @@ namespace System.Data
 
         int IList.Add(object? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 // null is default value, so we AddNew.
                 AddNew();
@@ -917,7 +917,7 @@ namespace System.Data
 
         internal Index? GetFindIndex(string column, bool keepIndex)
         {
-            if (_findIndexes == null)
+            if (_findIndexes is null)
             {
                 _findIndexes = new Dictionary<string, Index>();
             }
@@ -965,7 +965,7 @@ namespace System.Data
 
         internal PropertyDescriptor GetSortProperty()
         {
-            if (_table != null && _index != null && _index._indexFields.Length == 1)
+            if (_table is not null && _index is not null && _index._indexFields.Length == 1)
             {
                 return new DataColumnPropertyDescriptor(_index._indexFields[0].Column);
             }
@@ -1013,7 +1013,7 @@ namespace System.Data
         int IBindingList.Find(PropertyDescriptor property, object key)
         {
             // NOTE: this function had keepIndex previosely
-            if (property != null)
+            if (property is not null)
             {
                 bool created = false;
                 Index? findIndex = null;
@@ -1067,7 +1067,7 @@ namespace System.Data
 
         void IBindingListView.ApplySort(ListSortDescriptionCollection sorts)
         {
-            if (sorts == null)
+            if (sorts is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(sorts));
             }
@@ -1076,13 +1076,13 @@ namespace System.Data
             bool addCommaToString = false;
             foreach (ListSortDescription sort in sorts)
             {
-                if (sort == null)
+                if (sort is null)
                 {
                     throw ExceptionBuilder.ArgumentContainsNull(nameof(sorts));
                 }
                 PropertyDescriptor property = sort.PropertyDescriptor;
 
-                if (property == null)
+                if (property is null)
                 {
                     throw ExceptionBuilder.ArgumentNull(nameof(PropertyDescriptor));
                 }
@@ -1110,7 +1110,7 @@ namespace System.Data
 
         private string CreateSortString(PropertyDescriptor property, ListSortDirection direction)
         {
-            Debug.Assert(property != null, "property is null");
+            Debug.Assert(property is not null, "property is null");
             StringBuilder resultString = new StringBuilder();
             resultString.Append('[');
             resultString.Append(property.Name);
@@ -1143,7 +1143,7 @@ namespace System.Data
         internal ListSortDescriptionCollection GetSortDescriptions()
         {
             ListSortDescription[] sortDescArray = Array.Empty<ListSortDescription>();
-            if (_table != null && _index != null && _index._indexFields.Length > 0)
+            if (_table is not null && _index is not null && _index._indexFields.Length > 0)
             {
                 sortDescArray = new ListSortDescription[_index._indexFields.Length];
                 for (int i = 0; i < _index._indexFields.Length; i++)
@@ -1173,19 +1173,19 @@ namespace System.Data
 
         string System.ComponentModel.ITypedList.GetListName(PropertyDescriptor[] listAccessors)
         {
-            if (_table != null)
+            if (_table is not null)
             {
-                if (listAccessors == null || listAccessors.Length == 0)
+                if (listAccessors is null || listAccessors.Length == 0)
                 {
                     return _table.TableName;
                 }
                 else
                 {
                     DataSet? dataSet = _table.DataSet;
-                    if (dataSet != null)
+                    if (dataSet is not null)
                     {
                         DataTable? foundTable = dataSet.FindTable(_table, listAccessors, 0);
-                        if (foundTable != null)
+                        if (foundTable is not null)
                         {
                             return foundTable.TableName;
                         }
@@ -1197,22 +1197,22 @@ namespace System.Data
 
         PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[] listAccessors)
         {
-            if (_table != null)
+            if (_table is not null)
             {
-                if (listAccessors == null || listAccessors.Length == 0)
+                if (listAccessors is null || listAccessors.Length == 0)
                 {
                     return _table.GetPropertyDescriptorCollection(null);
                 }
                 else
                 {
                     DataSet? dataSet = _table.DataSet;
-                    if (dataSet == null)
+                    if (dataSet is null)
                     {
                         return new PropertyDescriptorCollection(null);
                     }
 
                     DataTable? foundTable = dataSet.FindTable(_table, listAccessors, 0);
-                    if (foundTable != null)
+                    if (foundTable is not null)
                     {
                         return foundTable.GetPropertyDescriptorCollection(null);
                     }
@@ -1248,7 +1248,7 @@ namespace System.Data
             {
                 throw ExceptionBuilder.GetElementIndex(index);
             }
-            if ((index == (count - 1)) && (_addNewRow != null))
+            if ((index == (count - 1)) && (_addNewRow is not null))
             {
                 // if we could rely on tempRecord being registered with recordManager
                 // then this special case code would go away
@@ -1268,7 +1268,7 @@ namespace System.Data
                 OnListChanged(e);
             }
 
-            if (_addNewRow != null && _index!.RecordCount == 0)
+            if (_addNewRow is not null && _index!.RecordCount == 0)
             {
                 FinishAddNew(false);
             }
@@ -1419,9 +1419,9 @@ namespace System.Data
                         break;
                 }
 
-                if (_onListChanged != null)
+                if (_onListChanged is not null)
                 {
-                    if ((col != null) && (e.NewIndex == e.OldIndex))
+                    if ((col is not null) && (e.NewIndex == e.OldIndex))
                     {
                         ListChangedEventArgs newEventArg = new ListChangedEventArgs(e.ListChangedType, e.NewIndex, new DataColumnPropertyDescriptor(col));
                         _onListChanged(this, newEventArg);
@@ -1497,18 +1497,18 @@ namespace System.Data
 
         internal void SetDataViewManager(DataViewManager? dataViewManager)
         {
-            if (_table == null)
+            if (_table is null)
                 throw ExceptionBuilder.CanNotUse();
 
             if (_dataViewManager != dataViewManager)
             {
-                if (dataViewManager != null)
+                if (dataViewManager is not null)
                 {
                     dataViewManager._nViews--;
                 }
 
                 _dataViewManager = dataViewManager;
-                if (dataViewManager != null)
+                if (dataViewManager is not null)
                 {
                     dataViewManager._nViews++;
                     DataViewSetting dataViewSetting = dataViewManager.DataViewSettings[_table];
@@ -1592,7 +1592,7 @@ namespace System.Data
                     Index? newIndex = null;
                     if (_open)
                     {
-                        if (_table != null)
+                        if (_table is not null)
                         {
                             if (null != SortComparison)
                             {
@@ -1615,14 +1615,14 @@ namespace System.Data
                         return;
                     }
 
-                    if (_index != null)
+                    if (_index is not null)
                     {
                         _dvListener.UnregisterListChangedEvent();
                     }
 
                     _index = newIndex;
 
-                    if (_index != null)
+                    if (_index is not null)
                     {
                         _dvListener.RegisterListChangedEvent(_index);
                     }
@@ -1690,7 +1690,7 @@ namespace System.Data
         {
             DataCommonEventSource.Log.Trace("<ds.DataView.ToTable|API> {0}, TableName='{1}', distinct={2}", ObjectID, tableName, distinct);
 
-            if (columnNames == null)
+            if (columnNames is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(columnNames));
             }
@@ -1718,7 +1718,7 @@ namespace System.Data
             for (int i = 0; i < columnNames.Length; i++)
             {
                 DataColumn? dc = Table!.Columns[columnNames[i]];
-                if (dc == null)
+                if (dc is null)
                 {
                     throw ExceptionBuilder.ColumnNotInTheUnderlyingTable(columnNames[i], Table.TableName);
                 }

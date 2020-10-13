@@ -46,7 +46,7 @@ namespace System.Reflection.Internal
         private static bool TryLoadType(string typeName, string modernAssembly, string classicAssembly, out Type type)
         {
             type = LightUpHelper.GetType(typeName, modernAssembly, classicAssembly);
-            return type != null;
+            return type is not null;
         }
 
         private static bool TryLoadTypes()
@@ -57,7 +57,7 @@ namespace System.Reflection.Internal
 
             TryLoadType("System.IO.MemoryMappedFiles.MemoryMappedFileSecurity", systemIOMemoryMappedFiles, systemCore, out s_lazyMemoryMappedFileSecurityType);
 
-            return FileStreamReadLightUp.FileStreamType.Value != null
+            return FileStreamReadLightUp.FileStreamType.Value is not null
                 && TryLoadType("System.IO.MemoryMappedFiles.MemoryMappedFile", systemIOMemoryMappedFiles, systemCore, out s_lazyMemoryMappedFileType)
                 && TryLoadType("System.IO.MemoryMappedFiles.MemoryMappedViewAccessor", systemIOMemoryMappedFiles, systemCore, out s_lazyMemoryMappedViewAccessorType)
                 && TryLoadType("System.IO.MemoryMappedFiles.MemoryMappedFileAccess", systemIOMemoryMappedFiles, systemCore, out s_lazyMemoryMappedFileAccessType)
@@ -80,9 +80,9 @@ namespace System.Reflection.Internal
                 );
 
             // .NET < 4.6
-            if (s_lazyCreateFromFile == null)
+            if (s_lazyCreateFromFile is null)
             {
-                if (s_lazyMemoryMappedFileSecurityType != null)
+                if (s_lazyMemoryMappedFileSecurityType is not null)
                 {
                     s_lazyCreateFromFileClassic = LightUpHelper.GetMethod(
                         s_lazyMemoryMappedFileType,
@@ -96,7 +96,7 @@ namespace System.Reflection.Internal
                         typeof(bool));
                 }
 
-                if (s_lazyCreateFromFileClassic == null)
+                if (s_lazyCreateFromFileClassic is null)
                 {
                     return false;
                 }
@@ -109,13 +109,13 @@ namespace System.Reflection.Internal
                 typeof(long),
                 s_lazyMemoryMappedFileAccessType);
 
-            if (s_lazyCreateViewAccessor == null)
+            if (s_lazyCreateViewAccessor is null)
             {
                 return false;
             }
 
             s_lazySafeMemoryMappedViewHandle = s_lazyMemoryMappedViewAccessorType.GetTypeInfo().GetDeclaredProperty("SafeMemoryMappedViewHandle");
-            if (s_lazySafeMemoryMappedViewHandle == null)
+            if (s_lazySafeMemoryMappedViewHandle is null)
             {
                 return false;
             }
@@ -124,16 +124,16 @@ namespace System.Reflection.Internal
             s_lazyPointerOffset = s_lazyMemoryMappedViewAccessorType.GetTypeInfo().GetDeclaredProperty("PointerOffset");
 
             // .NET < 4.5.1
-            if (s_lazyPointerOffset == null)
+            if (s_lazyPointerOffset is null)
             {
                 s_lazyInternalViewField = s_lazyMemoryMappedViewAccessorType.GetTypeInfo().GetDeclaredField("m_view");
-                if (s_lazyInternalViewField == null)
+                if (s_lazyInternalViewField is null)
                 {
                     return false;
                 }
 
                 s_lazyInternalPointerOffset = s_lazyInternalViewField.FieldType.GetTypeInfo().GetDeclaredProperty("PointerOffset");
-                if (s_lazyInternalPointerOffset == null)
+                if (s_lazyInternalPointerOffset is null)
                 {
                     return false;
                 }
@@ -148,7 +148,7 @@ namespace System.Reflection.Internal
 
             try
             {
-                if (s_lazyCreateFromFile != null)
+                if (s_lazyCreateFromFile is not null)
                 {
                     return (IDisposable)s_lazyCreateFromFile.Invoke(null, new object[6]
                     {
@@ -162,7 +162,7 @@ namespace System.Reflection.Internal
                 }
                 else
                 {
-                    Debug.Assert(s_lazyCreateFromFileClassic != null);
+                    Debug.Assert(s_lazyCreateFromFileClassic is not null);
                     return (IDisposable)s_lazyCreateFromFileClassic.Invoke(null, new object[7]
                     {
                         stream,                        // fileStream
@@ -235,7 +235,7 @@ namespace System.Reflection.Internal
 
             try
             {
-                if (s_lazyPointerOffset != null)
+                if (s_lazyPointerOffset is not null)
                 {
                     offset = (long)s_lazyPointerOffset.GetValue(accessor);
                 }

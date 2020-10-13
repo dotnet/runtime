@@ -22,11 +22,11 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="source">The source configuration.</param>
         public ChainedConfigurationProvider(ChainedConfigurationSource source)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
-            if (source.Configuration == null)
+            if (source.Configuration is null)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidNullArgument, "source.Configuration"), nameof(source));
             }
@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.Configuration
             IEnumerable<string> earlierKeys,
             string parentPath)
         {
-            IConfiguration section = parentPath == null ? _config : _config.GetSection(parentPath);
+            IConfiguration section = parentPath is null ? _config : _config.GetSection(parentPath);
             IEnumerable<IConfigurationSection> children = section.GetChildren();
             var keys = new List<string>();
             keys.AddRange(children.Select(c => c.Key));

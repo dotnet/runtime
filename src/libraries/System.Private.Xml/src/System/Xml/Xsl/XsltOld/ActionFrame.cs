@@ -60,7 +60,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             get
             {
-                if (_nodeSet != null)
+                if (_nodeSet is not null)
                 {
                     return _nodeSet.Current;
                 }
@@ -97,19 +97,19 @@ namespace System.Xml.Xsl.XsltOld
 
         internal object GetVariable(int index)
         {
-            Debug.Assert(_variables != null && index < _variables.Length);
+            Debug.Assert(_variables is not null && index < _variables.Length);
             return _variables[index];
         }
 
         internal void SetVariable(int index, object value)
         {
-            Debug.Assert(_variables != null && index < _variables.Length);
+            Debug.Assert(_variables is not null && index < _variables.Length);
             _variables[index] = value;
         }
 
         internal void SetParameter(XmlQualifiedName name, object value)
         {
-            if (_withParams == null)
+            if (_withParams is null)
             {
                 _withParams = new Hashtable();
             }
@@ -119,13 +119,13 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void ResetParams()
         {
-            if (_withParams != null)
+            if (_withParams is not null)
                 _withParams.Clear();
         }
 
         internal object? GetParameter(XmlQualifiedName name)
         {
-            if (_withParams != null)
+            if (_withParams is not null)
             {
                 return _withParams[name];
             }
@@ -134,14 +134,14 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void InitNodeSet(XPathNodeIterator nodeSet)
         {
-            Debug.Assert(nodeSet != null);
+            Debug.Assert(nodeSet is not null);
             _nodeSet = nodeSet;
         }
 
         [MemberNotNull(nameof(_newNodeSet))]
         internal void InitNewNodeSet(XPathNodeIterator nodeSet)
         {
-            Debug.Assert(nodeSet != null);
+            Debug.Assert(nodeSet is not null);
             _newNodeSet = nodeSet;
         }
 
@@ -189,7 +189,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void Inherit(ActionFrame parent)
         {
-            Debug.Assert(parent != null);
+            Debug.Assert(parent is not null);
             _variables = parent._variables;
         }
 
@@ -243,7 +243,7 @@ namespace System.Xml.Xsl.XsltOld
         [MemberNotNullWhen(false, nameof(_action))]
         internal bool Execute(Processor processor)
         {
-            if (_action == null)
+            if (_action is null)
             {
                 return true;
             }
@@ -255,7 +255,7 @@ namespace System.Xml.Xsl.XsltOld
             if (State == Action.Finished)
             {
                 // Advanced to next action
-                if (_container != null)
+                if (_container is not null)
                 {
                     _currentAction++;
                     _action = _container.GetAction(_currentAction);
@@ -265,7 +265,7 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     _action = null;
                 }
-                return _action == null;
+                return _action is null;
             }
 
             return false;                       // Do not pop, unless specified otherwise

@@ -20,14 +20,14 @@ namespace Microsoft.Extensions.Configuration.Memory
         /// <param name="source">The source settings.</param>
         public MemoryConfigurationProvider(MemoryConfigurationSource source)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
 
             _source = source;
 
-            if (_source.InitialData != null)
+            if (_source.InitialData is not null)
             {
                 foreach (KeyValuePair<string, string> pair in _source.InitialData)
                 {

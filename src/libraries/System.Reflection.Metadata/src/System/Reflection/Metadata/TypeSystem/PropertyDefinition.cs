@@ -16,7 +16,7 @@ namespace System.Reflection.Metadata
 
         internal PropertyDefinition(MetadataReader reader, PropertyDefinitionHandle handle)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(!handle.IsNil);
 
             _reader = reader;
@@ -91,7 +91,7 @@ namespace System.Reflection.Metadata
                         break;
 
                     case MethodSemanticsAttributes.Other:
-                        if (other == null)
+                        if (other is null)
                             other = ImmutableArray.CreateBuilder<MethodDefinitionHandle>();
 
                         other.Add(_reader.MethodSemanticsTable.GetMethod(rowId));

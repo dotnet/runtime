@@ -220,7 +220,7 @@ namespace System.Drawing
             Color c = Color.Empty;
 
             // empty color
-            if ((htmlColor == null) || (htmlColor.Length == 0))
+            if ((htmlColor is null) || (htmlColor.Length == 0))
                 return c;
 
             // #RRGGBB or #RGB
@@ -254,7 +254,7 @@ namespace System.Drawing
             // System color
             if (c.IsEmpty)
             {
-                if (s_htmlSysColorTable == null)
+                if (s_htmlSysColorTable is null)
                 {
                     InitializeHtmlSysColorTable();
                 }

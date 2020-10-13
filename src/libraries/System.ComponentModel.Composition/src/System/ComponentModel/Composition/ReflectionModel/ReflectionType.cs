@@ -11,7 +11,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionType(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }

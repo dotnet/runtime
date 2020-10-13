@@ -23,7 +23,7 @@ namespace System.Threading
             _waitThreadLock.Acquire();
             try
             {
-                if (_waitThreadsHead == null) // Lazily create the first wait thread.
+                if (_waitThreadsHead is null) // Lazily create the first wait thread.
                 {
                     _waitThreadsHead = new WaitThreadNode
                     {
@@ -42,7 +42,7 @@ namespace System.Threading
                     }
                     prev = current;
                     current = current.Next;
-                } while (current != null);
+                } while (current is not null);
 
                 // If all wait threads are full, create a new one.
                 prev.Next = new WaitThreadNode
@@ -100,11 +100,11 @@ namespace System.Threading
             {
                 prev = current;
                 current = current.Next;
-            } while (current != null && current.Thread != thread);
+            } while (current is not null && current.Thread != thread);
 
-            Debug.Assert(current != null, "The wait thread to remove was not found in the list of thread pool wait threads.");
+            Debug.Assert(current is not null, "The wait thread to remove was not found in the list of thread pool wait threads.");
 
-            if (current != null)
+            if (current is not null)
             {
                 prev.Next = current.Next;
             }
@@ -229,7 +229,7 @@ namespace System.Threading
 
                     RegisteredWaitHandle? signaledHandle = signaledHandleIndex != WaitHandle.WaitTimeout ? _registeredWaits[signaledHandleIndex - 1] : null;
 
-                    if (signaledHandle != null)
+                    if (signaledHandle is not null)
                     {
                         QueueWaitCompletion(signaledHandle, false);
                     }
@@ -296,7 +296,7 @@ namespace System.Threading
                                 break;
                             }
                         }
-                        Debug.Assert(_pendingRemoves[i] == null);
+                        Debug.Assert(_pendingRemoves[i] is null);
                     }
                     _numPendingRemoves = 0;
 

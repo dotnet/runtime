@@ -60,7 +60,7 @@ namespace System.Net
 
         internal void Complete(Exception exc)
         {
-            if (_forward != null)
+            if (_forward is not null)
             {
                 _forward.Complete(exc);
                 return;
@@ -71,10 +71,10 @@ namespace System.Net
             lock (_locker)
             {
                 _completed = true;
-                if (_handle != null)
+                if (_handle is not null)
                     _handle.Set();
 
-                if (_cb != null)
+                if (_cb is not null)
                     ThreadPool.UnsafeQueueUserWorkItem(s_invokeCB, this);
             }
         }
@@ -83,7 +83,7 @@ namespace System.Net
         private static void InvokeCallback(object o)
         {
             ListenerAsyncResult ares = (ListenerAsyncResult)o!;
-            if (ares._forward != null)
+            if (ares._forward is not null)
             {
                 InvokeCallback(ares._forward);
                 return;
@@ -104,7 +104,7 @@ namespace System.Net
 
         internal void Complete(HttpListenerContext context, bool synch)
         {
-            if (_forward != null)
+            if (_forward is not null)
             {
                 _forward.Complete(context, synch);
                 return;
@@ -140,7 +140,7 @@ namespace System.Net
                 {
                     HttpStatusCode errorCode = HttpStatusCode.Unauthorized;
                     string? authHeader = context.Request.Headers["Authorization"];
-                    if (authHeader == null ||
+                    if (authHeader is null ||
                         !HttpListenerContext.IsBasicHeader(authHeader) ||
                         authHeader.Length < AuthenticationTypes.Basic.Length + 2 ||
                         !HttpListenerContext.TryParseBasicAuth(authHeader.Substring(AuthenticationTypes.Basic.Length + 1), out errorCode, out _, out _))
@@ -161,11 +161,11 @@ namespace System.Net
                     _forward = (ListenerAsyncResult)ares;
                     lock (_forward._locker)
                     {
-                        if (_handle != null)
+                        if (_handle is not null)
                             _forward._handle = _handle;
                     }
                     ListenerAsyncResult next = _forward;
-                    for (int i = 0; next._forward != null; i++)
+                    for (int i = 0; next._forward is not null; i++)
                     {
                         if (i > 20)
                             Complete(new HttpListenerException((int)HttpStatusCode.Unauthorized, SR.net_listener_auth_errors));
@@ -177,10 +177,10 @@ namespace System.Net
                     _completed = true;
                     _synch = false;
 
-                    if (_handle != null)
+                    if (_handle is not null)
                         _handle.Set();
 
-                    if (_cb != null)
+                    if (_cb is not null)
                         ThreadPool.UnsafeQueueUserWorkItem(s_invokeCB, this);
                 }
             }
@@ -188,12 +188,12 @@ namespace System.Net
 
         internal HttpListenerContext? GetContext()
         {
-            if (_forward != null)
+            if (_forward is not null)
             {
                 return _forward.GetContext();
             }
 
-            if (_exception != null)
+            if (_exception is not null)
             {
                 ExceptionDispatchInfo.Throw(_exception);
             }
@@ -205,7 +205,7 @@ namespace System.Net
         {
             get
             {
-                if (_forward != null)
+                if (_forward is not null)
                     return _forward.AsyncState;
                 return _state;
             }
@@ -215,12 +215,12 @@ namespace System.Net
         {
             get
             {
-                if (_forward != null)
+                if (_forward is not null)
                     return _forward.AsyncWaitHandle;
 
                 lock (_locker)
                 {
-                    if (_handle == null)
+                    if (_handle is null)
                         _handle = new ManualResetEvent(_completed);
                 }
 
@@ -232,7 +232,7 @@ namespace System.Net
         {
             get
             {
-                if (_forward != null)
+                if (_forward is not null)
                     return _forward.CompletedSynchronously;
                 return _synch;
             }
@@ -242,7 +242,7 @@ namespace System.Net
         {
             get
             {
-                if (_forward != null)
+                if (_forward is not null)
                     return _forward.IsCompleted;
 
                 lock (_locker)

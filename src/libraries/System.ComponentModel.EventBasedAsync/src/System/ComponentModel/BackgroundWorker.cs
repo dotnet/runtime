@@ -99,7 +99,7 @@ namespace System.ComponentModel
 
             ProgressChangedEventArgs args = new ProgressChangedEventArgs(percentProgress, userState);
 
-            if (_asyncOperation != null)
+            if (_asyncOperation is not null)
             {
                 _asyncOperation.Post(_progressReporter, args);
             }
@@ -164,7 +164,7 @@ namespace System.ComponentModel
 
         private void WorkerThreadStart(object? argument)
         {
-            Debug.Assert(_asyncOperation != null, "_asyncOperation not initialized");
+            Debug.Assert(_asyncOperation is not null, "_asyncOperation not initialized");
 
             object? workerResult = null;
             Exception? error = null;

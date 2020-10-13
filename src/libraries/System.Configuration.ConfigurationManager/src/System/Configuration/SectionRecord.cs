@@ -103,18 +103,18 @@ namespace System.Configuration
             set { _flags[FlagAddUpdate] = value; }
         }
 
-        internal bool HasLocationInputs => (LocationInputs != null) && (LocationInputs.Count > 0);
+        internal bool HasLocationInputs => (LocationInputs is not null) && (LocationInputs.Count > 0);
 
         internal List<SectionInput> LocationInputs { get; private set; }
 
         internal SectionInput LastLocationInput => HasLocationInputs ? LocationInputs[LocationInputs.Count - 1] : null;
 
-        internal bool HasFileInput => FileInput != null;
+        internal bool HasFileInput => FileInput is not null;
 
         internal SectionInput FileInput { get; private set; }
 
         internal bool HasIndirectLocationInputs
-            => (IndirectLocationInputs != null) && (IndirectLocationInputs.Count > 0);
+            => (IndirectLocationInputs is not null) && (IndirectLocationInputs.Count > 0);
 
         internal List<SectionInput> IndirectLocationInputs { get; private set; }
 
@@ -165,7 +165,7 @@ namespace System.Configuration
         // AddFileInput
         internal void AddFileInput(SectionInput sectionInput)
         {
-            Debug.Assert(sectionInput != null);
+            Debug.Assert(sectionInput is not null);
 
             FileInput = sectionInput;
 
@@ -188,7 +188,7 @@ namespace System.Configuration
 
         internal void RemoveFileInput()
         {
-            if (FileInput != null)
+            if (FileInput is not null)
             {
                 FileInput = null;
 
@@ -215,7 +215,7 @@ namespace System.Configuration
                 ? FlagIndirectLocationInputLockApplied
                 : FlagLocationInputLockApplied;
 
-            if (inputs == null)
+            if (inputs is null)
             {
                 inputs = new List<SectionInput>(1);
 
@@ -265,7 +265,7 @@ namespace System.Configuration
         {
             FileInput?.ClearResult();
 
-            if (LocationInputs != null) foreach (SectionInput input in LocationInputs) input.ClearResult();
+            if (LocationInputs is not null) foreach (SectionInput input in LocationInputs) input.ClearResult();
 
             Result = s_unevaluated;
             ResultRuntimeObject = s_unevaluated;

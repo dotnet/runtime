@@ -37,7 +37,7 @@ namespace System.Diagnostics.Tracing
         {
             get
             {
-                if (key == null)
+                if (key is null)
                     throw new System.ArgumentNullException(nameof(key));
 
                 int position = 0;
@@ -77,7 +77,7 @@ namespace System.Diagnostics.Tracing
 
         public bool ContainsKey(string key)
         {
-            if (key == null)
+            if (key is null)
                 throw new System.ArgumentNullException(nameof(key));
 
             foreach (string item in m_names)
@@ -123,7 +123,7 @@ namespace System.Diagnostics.Tracing
 
         public bool TryGetValue(string key, [MaybeNullWhen(false)] out object? value)
         {
-            if (key == null)
+            if (key is null)
                 throw new System.ArgumentNullException(nameof(key));
 
             int position = 0;

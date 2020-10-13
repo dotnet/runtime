@@ -61,7 +61,7 @@ namespace System.Xml.Schema
                     this.rootDepth = this.curDepth = -1;
                     return;
                 }
-                else if (this.curNode.Input != null)
+                else if (this.curNode.Input is not null)
                 {      // else cur-depth --, cur-node change
                     this.curNode = (DoubleLinkAxis)(this.curNode.Input);
                     this.curDepth--;
@@ -187,9 +187,9 @@ namespace System.Xml.Schema
         internal static bool Equal(string thisname, string? thisURN, string name, string? URN)
         {
             // which means "b" in xpath, no namespace should be specified
-            if (thisURN == null)
+            if (thisURN is null)
             {
-                if (!((URN == null) || (URN.Length == 0)))
+                if (!((URN is null) || (URN.Length == 0)))
                 {
                     return false;
                 }
@@ -265,7 +265,7 @@ namespace System.Xml.Schema
             bool result = false;
 
             // no stack element for single attribute, so dealing with it separately
-            if (_subtree.TopNode.Input == null)
+            if (_subtree.TopNode.Input is null)
             {
                 return (_subtree.IsDss || (depth == 1));
             }
@@ -421,7 +421,7 @@ namespace System.Xml.Schema
             this.next = null;
             this.Urn = axis.Urn;
             this.abbrAxis = axis.AbbrAxis;
-            if (inputaxis != null)
+            if (inputaxis is not null)
             {
                 inputaxis.Next = this;
             }
@@ -431,7 +431,7 @@ namespace System.Xml.Schema
         [return: NotNullIfNotNull("axis")]
         internal static DoubleLinkAxis? ConvertTree(Axis? axis)
         {
-            if (axis == null)
+            if (axis is null)
             {
                 return null;
             }
@@ -487,7 +487,7 @@ namespace System.Xml.Schema
             _isAttribute = Asttree.IsAttribute(axis);
             _topNode = axis;
             _rootNode = axis;
-            while (_rootNode.Input != null)
+            while (_rootNode.Input is not null)
             {
                 _rootNode = (DoubleLinkAxis)(_rootNode.Input);
             }
@@ -547,7 +547,7 @@ namespace System.Xml.Schema
         // for whitespace thing, i will directly trim the tree built here...
         public void CompileXPath(string xPath, bool isField, XmlNamespaceManager nsmgr)
         {
-            if ((xPath == null) || (xPath.Length == 0))
+            if ((xPath is null) || (xPath.Length == 0))
             {
                 throw new XmlSchemaException(SR.Sch_EmptyXPath, string.Empty);
             }
@@ -582,7 +582,7 @@ namespace System.Xml.Schema
                 // field can have an attribute:
 
                 // throw exceptions during casting
-                if ((stepAst = ast) == null)
+                if ((stepAst = ast) is null)
                 {
                     throw new XmlSchemaException(SR.Sch_ICXpathError, xPath);
                 }
@@ -612,7 +612,7 @@ namespace System.Xml.Schema
                 }
 
                 // field or selector
-                while ((stepAst != null) && (IsNameTest(stepAst) || IsSelf(stepAst)))
+                while ((stepAst is not null) && (IsNameTest(stepAst) || IsSelf(stepAst)))
                 {
                     // trim tree "." node, if it's not the top one
                     if (IsSelf(stepAst) && (ast != stepAst))
@@ -641,9 +641,9 @@ namespace System.Xml.Schema
                 // the rest part can only be .// or null
                 // trim the rest part, but need compile the rest part first
                 top.Input = null;
-                if (stepAst == null)
+                if (stepAst is null)
                 {      // top "." and has other element beneath, trim this "." node too
-                    if (IsSelf(ast) && (ast.Input != null))
+                    if (IsSelf(ast) && (ast.Input is not null))
                     {
                         _fAxisArray.Add(new ForwardAxis(DoubleLinkAxis.ConvertTree((Axis)(ast.Input)), false));
                     }
@@ -665,13 +665,13 @@ namespace System.Xml.Schema
                 {
                     throw new XmlSchemaException(SR.Sch_ICXpathError, xPath);
                 }
-                if ((stepAst == null) || (!IsSelf(stepAst)) || (stepAst.Input != null))
+                if ((stepAst is null) || (!IsSelf(stepAst)) || (stepAst.Input is not null))
                 {
                     throw new XmlSchemaException(SR.Sch_ICXpathError, xPath);
                 }
 
                 // trim top "." if it's not the only node
-                if (IsSelf(ast) && (ast.Input != null))
+                if (IsSelf(ast) && (ast.Input is not null))
                 {
                     _fAxisArray.Add(new ForwardAxis(DoubleLinkAxis.ConvertTree((Axis)(ast.Input)), true));
                 }
@@ -696,7 +696,7 @@ namespace System.Xml.Schema
             {      // (1) (4)
                 axis.Urn = nsmgr.LookupNamespace(axis.Prefix);
 
-                if (axis.Urn == null)
+                if (axis.Urn is null)
                 {
                     throw new XmlSchemaException(SR.Sch_UnresolvedPrefix, axis.Prefix);
                 }

@@ -70,7 +70,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override int GetHashCode()
         {
-            if (Parameter == null)
+            if (Parameter is null)
             {
                 return 0;
             }
@@ -94,7 +94,7 @@ namespace System.Linq.Expressions.Interpreter
             if (_variables.TryGetValue(variable, out existing))
             {
                 newScope = new VariableScope(result, start, existing);
-                if (existing.ChildScopes == null)
+                if (existing.ChildScopes is null)
                 {
                     existing.ChildScopes = new List<VariableScope>();
                 }
@@ -113,7 +113,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             VariableScope scope = _variables[definition.Parameter];
             scope.Stop = end;
-            if (scope.Parent != null)
+            if (scope.Parent is not null)
             {
                 _variables[definition.Parameter] = scope.Parent;
             }
@@ -136,7 +136,7 @@ namespace System.Linq.Expressions.Interpreter
             int curChild = 0;
             for (int i = scope.Start; i < scope.Stop && i < instructions.Count; i++)
             {
-                if (scope.ChildScopes != null && scope.ChildScopes[curChild].Start == i)
+                if (scope.ChildScopes is not null && scope.ChildScopes[curChild].Start == i)
                 {
                     // skip boxing in the child scope
                     VariableScope child = scope.ChildScopes[curChild];
@@ -159,7 +159,7 @@ namespace System.Linq.Expressions.Interpreter
                 local = scope.Variable;
                 return true;
             }
-            if (_closureVariables != null && _closureVariables.TryGetValue(var, out local))
+            if (_closureVariables is not null && _closureVariables.TryGetValue(var, out local))
             {
                 return true;
             }
@@ -175,7 +175,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal LocalVariable AddClosureVariable(ParameterExpression variable)
         {
-            if (_closureVariables == null)
+            if (_closureVariables is null)
             {
                 _closureVariables = new Dictionary<ParameterExpression, LocalVariable>();
             }

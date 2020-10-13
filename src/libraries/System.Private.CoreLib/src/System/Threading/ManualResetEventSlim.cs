@@ -77,11 +77,11 @@ namespace System.Threading
             get
             {
                 ThrowIfDisposed();
-                if (m_eventObj == null)
+                if (m_eventObj is null)
                 {
                     // Lazily initialize the event object if needed.
                     LazyInitializeEvent();
-                    Debug.Assert(m_eventObj != null);
+                    Debug.Assert(m_eventObj is not null);
                 }
 
                 return m_eventObj;
@@ -209,7 +209,7 @@ namespace System.Threading
         /// </summary>
         private void EnsureLockObjectCreated()
         {
-            if (m_lock != null)
+            if (m_lock is not null)
                 return;
 
             object newObj = new object();
@@ -229,7 +229,7 @@ namespace System.Threading
 
             // We have to CAS this in case we are racing with another thread. We must
             // guarantee only one event is actually stored in this field.
-            if (Interlocked.CompareExchange(ref m_eventObj, newEventObj, null) != null)
+            if (Interlocked.CompareExchange(ref m_eventObj, newEventObj, null) is not null)
             {
                 // Someone else set the value due to a race condition. Destroy the garbage event.
                 newEventObj.Dispose();
@@ -284,7 +284,7 @@ namespace System.Threading
             // If there are waiting threads, we need to pulse them.
             if (Waiters > 0)
             {
-                Debug.Assert(m_lock != null); // if waiters>0, then m_lock has already been created.
+                Debug.Assert(m_lock is not null); // if waiters>0, then m_lock has already been created.
                 lock (m_lock)
                 {
                     Monitor.PulseAll(m_lock);
@@ -296,7 +296,7 @@ namespace System.Threading
             // Design-decision: do not set the event if we are in cancellation -> better to deadlock than to wake up waiters incorrectly
             // It would be preferable to wake up the event and have it throw OCE. This requires MRE to implement cancellation logic
 
-            if (eventObj != null && !duringCancellation)
+            if (eventObj is not null && !duringCancellation)
             {
                 // We must surround this call to Set in a lock.  The reason is fairly subtle.
                 // Sometimes a thread will issue a Wait and wake up after we have set m_state,
@@ -311,7 +311,7 @@ namespace System.Threading
 
                 lock (eventObj)
                 {
-                    if (m_eventObj != null)
+                    if (m_eventObj is not null)
                     {
                         // If somebody is waiting, we must set the event.
                         m_eventObj.Set();
@@ -331,7 +331,7 @@ namespace System.Threading
         {
             ThrowIfDisposed();
             // If there's an event, reset it.
-            if (m_eventObj != null)
+            if (m_eventObj is not null)
             {
                 m_eventObj.Reset();
             }
@@ -623,7 +623,7 @@ namespace System.Threading
                 // We will dispose of the event object.  We do this under a lock to protect
                 // against the race condition outlined in the Set method above.
                 ManualResetEvent? eventObj = m_eventObj;
-                if (eventObj != null)
+                if (eventObj is not null)
                 {
                     lock (eventObj)
                     {
@@ -651,7 +651,7 @@ namespace System.Threading
         {
             Debug.Assert(obj is ManualResetEventSlim, "Expected a ManualResetEventSlim");
             ManualResetEventSlim mre = (ManualResetEventSlim)obj;
-            Debug.Assert(mre.m_lock != null); // the lock should have been created before this callback is registered for use.
+            Debug.Assert(mre.m_lock is not null); // the lock should have been created before this callback is registered for use.
             lock (mre.m_lock)
             {
                 Monitor.PulseAll(mre.m_lock); // awaken all waiters

@@ -54,7 +54,7 @@ namespace System
 #endif
         string Ctor(char[]? value)
         {
-            if (value == null || value.Length == 0)
+            if (value is null || value.Length == 0)
                 return Empty;
 
             string result = FastAllocateString(value.Length);
@@ -77,7 +77,7 @@ namespace System
 #endif
         string Ctor(char[] value, int startIndex, int length)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             if (startIndex < 0)
@@ -113,7 +113,7 @@ namespace System
 #endif
         unsafe string Ctor(char* ptr)
         {
-            if (ptr == null)
+            if (ptr is null)
                 return Empty;
 
             int count = wcslen(ptr);
@@ -156,7 +156,7 @@ namespace System
             if (length == 0)
                 return Empty;
 
-            if (ptr == null)
+            if (ptr is null)
                 throw new ArgumentOutOfRangeException(nameof(ptr), SR.ArgumentOutOfRange_PartialWCHAR);
 
             string result = FastAllocateString(length);
@@ -181,7 +181,7 @@ namespace System
         unsafe string Ctor(sbyte* value)
         {
             byte* pb = (byte*)value;
-            if (pb == null)
+            if (pb is null)
                 return Empty;
 
             int numBytes = strlen((byte*)value);
@@ -206,7 +206,7 @@ namespace System
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NegativeLength);
 
-            if (value == null)
+            if (value is null)
             {
                 if (length == 0)
                     return Empty;
@@ -261,7 +261,7 @@ namespace System
 #endif
         unsafe string Ctor(sbyte* value, int startIndex, int length, Encoding? enc)
         {
-            if (enc == null)
+            if (enc is null)
                 return new string(value, startIndex, length);
 
             if (length < 0)
@@ -270,7 +270,7 @@ namespace System
             if (startIndex < 0)
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
 
-            if (value == null)
+            if (value is null)
             {
                 if (length == 0)
                     return Empty;
@@ -358,7 +358,7 @@ namespace System
 
         public static string Create<TState>(int length, TState state, SpanAction<char, TState> action)
         {
-            if (action == null)
+            if (action is null)
                 throw new ArgumentNullException(nameof(action));
 
             if (length <= 0)
@@ -375,7 +375,7 @@ namespace System
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static implicit operator ReadOnlySpan<char>(string? value) =>
-            value != null ? new ReadOnlySpan<char>(ref value.GetRawStringData(), value.Length) : default;
+            value is not null ? new ReadOnlySpan<char>(ref value.GetRawStringData(), value.Length) : default;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal bool TryGetSpan(int startIndex, int count, out ReadOnlySpan<char> slice)
@@ -406,7 +406,7 @@ namespace System
 
         public static unsafe string Copy(string str)
         {
-            if (str == null)
+            if (str is null)
                 throw new ArgumentNullException(nameof(str));
 
             string result = FastAllocateString(str.Length);
@@ -426,7 +426,7 @@ namespace System
         //
         public unsafe void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
         {
-            if (destination == null)
+            if (destination is null)
                 throw new ArgumentNullException(nameof(destination));
             if (count < 0)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NegativeCount);
@@ -489,12 +489,12 @@ namespace System
         {
             // Ternary operator returning true/false prevents redundant asm generation:
             // https://github.com/dotnet/runtime/issues/4207
-            return (value == null || 0 == value.Length) ? true : false;
+            return (value is null || 0 == value.Length) ? true : false;
         }
 
         public static bool IsNullOrWhiteSpace([NotNullWhen(false)] string? value)
         {
-            if (value == null) return true;
+            if (value is null) return true;
 
             for (int i = 0; i < value.Length; i++)
             {
@@ -518,7 +518,7 @@ namespace System
         internal static unsafe string CreateStringFromEncoding(
             byte* bytes, int byteLength, Encoding encoding)
         {
-            Debug.Assert(bytes != null);
+            Debug.Assert(bytes is not null);
             Debug.Assert(byteLength >= 0);
 
             // Get our string length

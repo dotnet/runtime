@@ -92,7 +92,7 @@ namespace System.Globalization
                 return c;
             }
 
-            if (casingTable == null)
+            if (casingTable is null)
             {
                 casingTable = InitOrdinalCasingPage(pageNumber);
             }

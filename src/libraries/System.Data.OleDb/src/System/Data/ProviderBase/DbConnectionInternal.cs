@@ -144,7 +144,7 @@ namespace System.Data.ProviderBase
             // of the original reference.
             // _enlistedTransaction can be changed by another thread (TX end event)
             SysTx.Transaction? enlistedTransaction = Interlocked.Exchange(ref _enlistedTransaction, null);
-            if (enlistedTransaction != null)
+            if (enlistedTransaction is not null)
             {
                 enlistedTransaction.Dispose();
             }

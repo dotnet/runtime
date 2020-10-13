@@ -17,7 +17,7 @@ namespace System.Security.Cryptography
 
         protected ECDiffieHellmanPublicKey(byte[] keyBlob)
         {
-            if (keyBlob == null)
+            if (keyBlob is null)
             {
                 throw new ArgumentNullException(nameof(keyBlob));
             }

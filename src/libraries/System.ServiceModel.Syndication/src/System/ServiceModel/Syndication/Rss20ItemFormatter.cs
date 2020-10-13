@@ -22,7 +22,7 @@ namespace System.ServiceModel.Syndication
 
         public Rss20ItemFormatter(Type itemTypeToCreate) : base()
         {
-            if (itemTypeToCreate == null)
+            if (itemTypeToCreate is null)
             {
                 throw new ArgumentNullException(nameof(itemTypeToCreate));
             }
@@ -87,7 +87,7 @@ namespace System.ServiceModel.Syndication
 
         public override bool CanRead(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -99,7 +99,7 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -109,7 +109,7 @@ namespace System.ServiceModel.Syndication
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -129,7 +129,7 @@ namespace System.ServiceModel.Syndication
 
         public override void WriteTo(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -149,7 +149,7 @@ namespace System.ServiceModel.Syndication
 
         private void WriteItem(XmlWriter writer)
         {
-            if (Item == null)
+            if (Item is null)
             {
                 throw new InvalidOperationException(SR.ItemFormatterDoesNotHaveItem);
             }

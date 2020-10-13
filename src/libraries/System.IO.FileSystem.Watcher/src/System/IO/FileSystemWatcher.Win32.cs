@@ -126,7 +126,7 @@ namespace System.IO
 
         private static bool IsHandleInvalid([NotNullWhen(false)] SafeFileHandle? handle)
         {
-            return handle == null || handle.IsInvalid || handle.IsClosed;
+            return handle is null || handle.IsInvalid || handle.IsClosed;
         }
 
         /// <summary>
@@ -136,7 +136,7 @@ namespace System.IO
         /// </summary>
         private unsafe void Monitor(AsyncReadState state)
         {
-            Debug.Assert(state.PreAllocatedOverlapped != null);
+            Debug.Assert(state.PreAllocatedOverlapped is not null);
 
             // This method should only ever access the directory handle via the state object passed in, and not access it
             // via _directoryHandle.  While this function is executing asynchronously, another thread could set
@@ -183,7 +183,7 @@ namespace System.IO
                 if (!continueExecuting)
                 {
                     // Clean up the overlapped pointer created for this iteration
-                    if (overlappedPointer != null)
+                    if (overlappedPointer is not null)
                     {
                         state.ThreadPoolBinding.FreeNativeOverlapped(overlappedPointer);
                     }
@@ -372,10 +372,10 @@ namespace System.IO
         {
             internal AsyncReadState(int session, byte[] buffer, SafeFileHandle handle, ThreadPoolBoundHandle binding, FileSystemWatcher parent)
             {
-                Debug.Assert(buffer != null);
+                Debug.Assert(buffer is not null);
                 Debug.Assert(buffer.Length > 0);
-                Debug.Assert(handle != null);
-                Debug.Assert(binding != null);
+                Debug.Assert(handle is not null);
+                Debug.Assert(binding is not null);
 
                 Session = session;
                 Buffer = buffer;

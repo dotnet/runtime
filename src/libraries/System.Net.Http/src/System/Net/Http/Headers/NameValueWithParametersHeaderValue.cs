@@ -36,7 +36,7 @@ namespace System.Net.Http.Headers
         protected NameValueWithParametersHeaderValue(NameValueWithParametersHeaderValue source)
             : base(source)
         {
-            if (source._parameters != null)
+            if (source._parameters is not null)
             {
                 foreach (var parameter in source._parameters)
                 {
@@ -53,7 +53,7 @@ namespace System.Net.Http.Headers
             {
                 NameValueWithParametersHeaderValue? other = obj as NameValueWithParametersHeaderValue;
 
-                if (other == null)
+                if (other is null)
                 {
                     return false;
                 }
@@ -100,7 +100,7 @@ namespace System.Net.Http.Headers
 
         internal static int GetNameValueWithParametersLength(string? input, int startIndex, out object? parsedValue)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
             Debug.Assert(startIndex >= 0);
 
             parsedValue = null;
@@ -122,7 +122,7 @@ namespace System.Net.Http.Headers
             current = current + HttpRuleParser.GetWhitespaceLength(input, current);
             NameValueWithParametersHeaderValue? nameValueWithParameters =
                 nameValue as NameValueWithParametersHeaderValue;
-            Debug.Assert(nameValueWithParameters != null);
+            Debug.Assert(nameValueWithParameters is not null);
 
             // So far we have a valid name/value pair. Check if we have also parameters for the name/value pair. If
             // yes, parse parameters. E.g. something like "name=value; param1=value1; param2=value2".

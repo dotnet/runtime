@@ -216,7 +216,7 @@ namespace System.Net.Sockets
 
         partial void WildcardBindForConnectIfNecessary(AddressFamily addressFamily)
         {
-            if (_rightEndPoint != null)
+            if (_rightEndPoint is not null)
             {
                 return;
             }
@@ -281,7 +281,7 @@ namespace System.Net.Sockets
         internal static void SocketListToFileDescriptorSet(IList? socketList, Span<IntPtr> fileDescriptorSet, ref int refsAdded)
         {
             int count;
-            if (socketList == null || (count = socketList.Count) == 0)
+            if (socketList is null || (count = socketList.Count) == 0)
             {
                 return;
             }
@@ -313,7 +313,7 @@ namespace System.Net.Sockets
             // when the socket is removed, advancing occurs automatically as the
             // other elements are shifted down.
             int count;
-            if (socketList == null || (count = socketList.Count) == 0)
+            if (socketList is null || (count = socketList.Count) == 0)
             {
                 return;
             }
@@ -336,7 +336,7 @@ namespace System.Net.Sockets
                 for (int currentSocket = 0; currentSocket < count; currentSocket++)
                 {
                     Socket? socket = socketList[currentSocket] as Socket;
-                    Debug.Assert(socket != null);
+                    Debug.Assert(socket is not null);
 
                     // Look for the file descriptor in the array.
                     int currentFileDescriptor;
@@ -363,11 +363,11 @@ namespace System.Net.Sockets
         private Socket GetOrCreateAcceptSocket(Socket? acceptSocket, bool checkDisconnected, string propertyName, out SafeSocketHandle handle)
         {
             // If an acceptSocket isn't specified, then we need to create one.
-            if (acceptSocket == null)
+            if (acceptSocket is null)
             {
                 acceptSocket = new Socket(_addressFamily, _socketType, _protocolType);
             }
-            else if (acceptSocket._rightEndPoint != null && (!checkDisconnected || !acceptSocket._isDisconnected))
+            else if (acceptSocket._rightEndPoint is not null && (!checkDisconnected || !acceptSocket._isDisconnected))
             {
                 throw new InvalidOperationException(SR.Format(SR.net_sockets_namedmustnotbebound, propertyName));
             }
@@ -430,7 +430,7 @@ namespace System.Net.Sockets
         private void EndSendFileInternal(IAsyncResult asyncResult)
         {
             TransmitFileAsyncResult? castedAsyncResult = asyncResult as TransmitFileAsyncResult;
-            if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
+            if (castedAsyncResult is null || castedAsyncResult.AsyncObject != this)
             {
                 throw new ArgumentException(SR.net_io_invalidasyncresult, nameof(asyncResult));
             }

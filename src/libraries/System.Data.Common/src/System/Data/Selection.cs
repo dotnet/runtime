@@ -15,7 +15,7 @@ namespace System.Data
 
         internal IndexField(DataColumn column, bool isDescending)
         {
-            Debug.Assert(column != null, "null column");
+            Debug.Assert(column is not null, "null column");
 
             Column = column;
             IsDescending = isDescending;
@@ -108,8 +108,8 @@ namespace System.Data
         private Index(DataTable table, IndexField[] indexFields, System.Comparison<DataRow>? comparison, DataViewRowState recordStates, IFilter? rowFilter)
         {
             DataCommonEventSource.Log.Trace("<ds.Index.Index|API> {0}, table={1}, recordStates={2}",
-                            ObjectID, (table != null) ? table.ObjectID : 0, recordStates);
-            Debug.Assert(indexFields != null);
+                            ObjectID, (table is not null) ? table.ObjectID : 0, recordStates);
+            Debug.Assert(indexFields is not null);
             Debug.Assert(null != table, "null table");
             if ((recordStates &
                  (~(DataViewRowState.CurrentRows | DataViewRowState.OriginalRows))) != 0)
@@ -123,7 +123,7 @@ namespace System.Data
             _recordStates = recordStates;
             _comparison = comparison;
 
-            _isSharable = (rowFilter == null) && (comparison == null); // a filter or comparison make an index unsharable
+            _isSharable = (rowFilter is null) && (comparison is null); // a filter or comparison make an index unsharable
             if (null != rowFilter)
             {
                 _rowFilter = new WeakReference(rowFilter);
@@ -186,14 +186,14 @@ namespace System.Data
         private bool AcceptRecord(int record, IFilter? filter)
         {
             DataCommonEventSource.Log.Trace("<ds.Index.AcceptRecord|API> {0}, record={1}", ObjectID, record);
-            if (filter == null)
+            if (filter is null)
             {
                 return true;
             }
 
             DataRow? row = _table._recordManager[record];
 
-            if (row == null)
+            if (row is null)
             {
                 return true;
             }
@@ -491,7 +491,7 @@ namespace System.Data
 
         public object[] GetUniqueKeyValues()
         {
-            if (_indexFields == null || _indexFields.Length == 0)
+            if (_indexFields is null || _indexFields.Length == 0)
             {
                 return Array.Empty<object>();
             }

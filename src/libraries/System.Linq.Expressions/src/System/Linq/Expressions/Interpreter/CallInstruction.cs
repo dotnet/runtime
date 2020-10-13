@@ -42,7 +42,7 @@ namespace System.Linq.Expressions.Interpreter
 
             // A workaround for CLR behavior (Unable to create delegates for Array.Get/Set):
             // T[]::Address - not supported by ETs due to T& return value
-            if (info.DeclaringType != null && info.DeclaringType.IsArray && (info.Name == "Get" || info.Name == "Set"))
+            if (info.DeclaringType is not null && info.DeclaringType.IsArray && (info.Name == "Get" || info.Name == "Set"))
             {
                 return GetArrayAccessor(info, argumentCount);
             }
@@ -267,7 +267,7 @@ namespace System.Linq.Expressions.Interpreter
                 if (thunk is not null)
                 {
                     lightLambda = thunk.Target as LightLambda;
-                    if (lightLambda != null)
+                    if (lightLambda is not null)
                     {
                         return true;
                     }
@@ -459,7 +459,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             finally
             {
-                if (args != null)
+                if (args is not null)
                 {
                     foreach (ByRefUpdater arg in _byrefArgs)
                     {

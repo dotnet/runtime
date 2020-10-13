@@ -21,7 +21,7 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationElementExtension(XmlReader xmlReader)
         {
-            if (xmlReader == null)
+            if (xmlReader is null)
             {
                 throw new ArgumentNullException(nameof(xmlReader));
             }
@@ -57,7 +57,7 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationElementExtension(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
-            if (dataContractExtension == null)
+            if (dataContractExtension is null)
             {
                 throw new ArgumentNullException(nameof(dataContractExtension));
             }
@@ -66,7 +66,7 @@ namespace System.ServiceModel.Syndication
                 throw new ArgumentException(SR.OuterNameOfElementExtensionEmpty, nameof(outerName));
             }
 
-            if (dataContractSerializer == null)
+            if (dataContractSerializer is null)
             {
                 dataContractSerializer = new DataContractSerializer(dataContractExtension.GetType());
             }
@@ -78,12 +78,12 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationElementExtension(object xmlSerializerExtension, XmlSerializer serializer)
         {
-            if (xmlSerializerExtension == null)
+            if (xmlSerializerExtension is null)
             {
                 throw new ArgumentNullException(nameof(xmlSerializerExtension));
             }
 
-            if (serializer == null)
+            if (serializer is null)
             {
                 serializer = new XmlSerializer(xmlSerializerExtension.GetType());
             }
@@ -103,7 +103,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                if (_outerName == null)
+                if (_outerName is null)
                 {
                     EnsureOuterNameAndNs();
                 }
@@ -116,7 +116,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                if (_outerName == null)
+                if (_outerName is null)
                 {
                     EnsureOuterNameAndNs();
                 }
@@ -129,12 +129,12 @@ namespace System.ServiceModel.Syndication
 
         public TExtension GetObject<TExtension>(XmlObjectSerializer serializer)
         {
-            if (serializer == null)
+            if (serializer is null)
             {
                 throw new ArgumentNullException(nameof(serializer));
             }
 
-            if (_extensionData != null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
+            if (_extensionData is not null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
             {
                 return (TExtension)_extensionData;
             }
@@ -146,12 +146,12 @@ namespace System.ServiceModel.Syndication
 
         public TExtension GetObject<TExtension>(XmlSerializer serializer)
         {
-            if (serializer == null)
+            if (serializer is null)
             {
                 throw new ArgumentNullException(nameof(serializer));
             }
 
-            if (_extensionData != null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
+            if (_extensionData is not null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
             {
                 return (TExtension)_extensionData;
             }
@@ -181,12 +181,12 @@ namespace System.ServiceModel.Syndication
 
         public void WriteTo(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            if (_extensionDataWriter != null)
+            if (_extensionDataWriter is not null)
             {
                 _extensionDataWriter.WriteTo(writer);
             }
@@ -201,7 +201,7 @@ namespace System.ServiceModel.Syndication
 
         private void EnsureBuffer()
         {
-            if (_buffer == null)
+            if (_buffer is null)
             {
                 _buffer = new XmlBuffer(int.MaxValue);
                 using (XmlDictionaryWriter writer = _buffer.OpenSection(XmlDictionaryReaderQuotas.Max))
@@ -218,7 +218,7 @@ namespace System.ServiceModel.Syndication
 
         private void EnsureOuterNameAndNs()
         {
-            Debug.Assert(_extensionDataWriter != null, "outer name is null only for datacontract and xmlserializer cases");
+            Debug.Assert(_extensionDataWriter is not null, "outer name is null only for datacontract and xmlserializer cases");
             _extensionDataWriter.ComputeOuterNameAndNs(out _outerName, out _outerNamespace);
         }
 
@@ -233,7 +233,7 @@ namespace System.ServiceModel.Syndication
 
             public ExtensionDataWriter(object extensionData, XmlObjectSerializer dataContractSerializer, string outerName, string outerNamespace)
             {
-                Debug.Assert(extensionData != null && dataContractSerializer != null, "null check");
+                Debug.Assert(extensionData is not null && dataContractSerializer is not null, "null check");
                 _dataContractSerializer = dataContractSerializer;
                 _extensionData = extensionData;
                 _outerName = outerName;
@@ -242,22 +242,22 @@ namespace System.ServiceModel.Syndication
 
             public ExtensionDataWriter(object extensionData, XmlSerializer serializer)
             {
-                Debug.Assert(extensionData != null && serializer != null, "null check");
+                Debug.Assert(extensionData is not null && serializer is not null, "null check");
                 _xmlSerializer = serializer;
                 _extensionData = extensionData;
             }
 
             public void WriteTo(XmlWriter writer)
             {
-                if (_xmlSerializer != null)
+                if (_xmlSerializer is not null)
                 {
-                    Debug.Assert((_dataContractSerializer == null && _outerName == null && _outerNamespace == null), "Xml serializer cannot have outer name, ns");
+                    Debug.Assert((_dataContractSerializer is null && _outerName is null && _outerNamespace is null), "Xml serializer cannot have outer name, ns");
                     _xmlSerializer.Serialize(writer, _extensionData);
                 }
                 else
                 {
-                    Debug.Assert(_xmlSerializer == null, "Xml serializer cannot be configured");
-                    if (_outerName != null)
+                    Debug.Assert(_xmlSerializer is null, "Xml serializer cannot be configured");
+                    if (_outerName is not null)
                     {
                         writer.WriteStartElement(_outerName, _outerNamespace);
                         _dataContractSerializer.WriteObjectContent(writer, _extensionData);
@@ -272,13 +272,13 @@ namespace System.ServiceModel.Syndication
 
             internal void ComputeOuterNameAndNs(out string name, out string ns)
             {
-                Debug.Assert(_outerName == null, "All callers of this function should already check for a null outer name.");
-                if (_dataContractSerializer != null)
+                Debug.Assert(_outerName is null, "All callers of this function should already check for a null outer name.");
+                if (_dataContractSerializer is not null)
                 {
-                    Debug.Assert(_xmlSerializer == null, "only one of xmlserializer or datacontract serializer can be present");
+                    Debug.Assert(_xmlSerializer is null, "only one of xmlserializer or datacontract serializer can be present");
                     XsdDataContractExporter dcExporter = new XsdDataContractExporter();
                     XmlQualifiedName qName = dcExporter.GetRootElementName(_extensionData.GetType());
-                    if (qName != null)
+                    if (qName is not null)
                     {
                         name = qName.Name;
                         ns = qName.Namespace;
@@ -291,10 +291,10 @@ namespace System.ServiceModel.Syndication
                 }
                 else
                 {
-                    Debug.Assert(_dataContractSerializer == null, "only one of xmlserializer or datacontract serializer can be present");
+                    Debug.Assert(_dataContractSerializer is null, "only one of xmlserializer or datacontract serializer can be present");
                     XmlReflectionImporter importer = new XmlReflectionImporter();
                     XmlTypeMapping typeMapping = importer.ImportTypeMapping(_extensionData.GetType());
-                    if (typeMapping != null && !string.IsNullOrEmpty(typeMapping.ElementName))
+                    if (typeMapping is not null && !string.IsNullOrEmpty(typeMapping.ElementName))
                     {
                         name = typeMapping.ElementName;
                         ns = typeMapping.Namespace;

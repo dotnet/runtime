@@ -17,7 +17,7 @@ namespace System.Buffers
             object? positionObject = position.GetObject();
             next = default;
 
-            if (positionObject == null)
+            if (positionObject is null)
             {
                 memory = default;
                 return false;
@@ -38,7 +38,7 @@ namespace System.Buffers
                 {
                     ReadOnlySequenceSegment<T>? nextSegment = startSegment.Next;
 
-                    if (nextSegment == null)
+                    if (nextSegment is null)
                         ThrowHelper.ThrowInvalidOperationException_EndPositionNotReached();
 
                     next = new SequencePosition(nextSegment, 0);
@@ -83,7 +83,7 @@ namespace System.Buffers
         {
             object? startObject = _startObject;
 
-            if (startObject == null)
+            if (startObject is null)
                 return default;
 
             int startIndex = _startInteger;
@@ -159,7 +159,7 @@ namespace System.Buffers
         {
             object? startObject = _startObject;
 
-            if (startObject == null)
+            if (startObject is null)
                 return default;
 
             int startIndex = _startInteger;
@@ -242,7 +242,7 @@ namespace System.Buffers
 
             if (startObject != endObject)
             {
-                Debug.Assert(startObject != null);
+                Debug.Assert(startObject is not null);
                 var startSegment = (ReadOnlySequenceSegment<T>)startObject;
 
                 int currentLength = startSegment.Memory.Length - startIndex;
@@ -278,7 +278,7 @@ namespace System.Buffers
 
             if (startObject != endObject)
             {
-                Debug.Assert(startObject != null);
+                Debug.Assert(startObject is not null);
                 var startSegment = (ReadOnlySequenceSegment<T>)startObject;
 
                 int currentLength = startSegment.Memory.Length - startIndex;
@@ -307,10 +307,10 @@ namespace System.Buffers
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static SequencePosition SeekMultiSegment(ReadOnlySequenceSegment<T>? currentSegment, object endObject, int endIndex, long offset, ExceptionArgument argument)
         {
-            Debug.Assert(currentSegment != null); // currentSegment parameter is marked as nullable as the parameter is reused/reassigned in the body
+            Debug.Assert(currentSegment is not null); // currentSegment parameter is marked as nullable as the parameter is reused/reassigned in the body
             Debug.Assert(offset >= 0);
 
-            while (currentSegment != null && currentSegment != endObject)
+            while (currentSegment is not null && currentSegment != endObject)
             {
                 int memoryLength = currentSegment.Memory.Length;
 
@@ -324,7 +324,7 @@ namespace System.Buffers
             }
 
             // Hit the end of the segments but didn't reach the count
-            if (currentSegment == null || endIndex < offset)
+            if (currentSegment is null || endIndex < offset)
                 ThrowHelper.ThrowArgumentOutOfRangeException(argument);
 
         FoundSegment:
@@ -357,7 +357,7 @@ namespace System.Buffers
                 long runningIndex = 0;
                 if (positionIsNotNull)
                 {
-                    Debug.Assert(position.GetObject() != null);
+                    Debug.Assert(position.GetObject() is not null);
                     runningIndex = ((ReadOnlySequenceSegment<T>)position.GetObject()!).RunningIndex;
                 }
 
@@ -400,12 +400,12 @@ namespace System.Buffers
                 ulong sliceStartRange = sliceStartIndex;
                 ulong sliceEndRange = sliceEndIndex;
 
-                if (sliceStartObject != null)
+                if (sliceStartObject is not null)
                 {
                     sliceStartRange += (ulong)((ReadOnlySequenceSegment<T>)sliceStartObject).RunningIndex;
                 }
 
-                if (sliceEndObject != null)
+                if (sliceEndObject is not null)
                 {
                     sliceEndRange += (ulong)((ReadOnlySequenceSegment<T>)sliceEndObject).RunningIndex;
                 }
@@ -522,7 +522,7 @@ namespace System.Buffers
             object? startObject = _startObject;
 
             // Default or not MultiSegment
-            if (startObject == null || GetSequenceType() != SequenceType.MultiSegment)
+            if (startObject is null || GetSequenceType() != SequenceType.MultiSegment)
             {
                 startSegment = null;
                 startIndex = 0;
@@ -531,7 +531,7 @@ namespace System.Buffers
                 return false;
             }
 
-            Debug.Assert(_endObject != null);
+            Debug.Assert(_endObject is not null);
 
             startSegment = (ReadOnlySequenceSegment<T>)startObject;
             startIndex = GetIndex(_startInteger);
@@ -548,7 +548,7 @@ namespace System.Buffers
                 return false;
             }
 
-            Debug.Assert(_startObject != null);
+            Debug.Assert(_startObject is not null);
 
             int startIndex = GetIndex(_startInteger);
             segment = new ArraySegment<T>((T[])_startObject, startIndex, GetIndex(_endInteger) - startIndex);
@@ -565,7 +565,7 @@ namespace System.Buffers
                 return false;
             }
 
-            Debug.Assert(_startObject != null);
+            Debug.Assert(_startObject is not null);
 
             start = GetIndex(_startInteger);
             length = GetIndex(_endInteger) - start;
@@ -638,7 +638,7 @@ namespace System.Buffers
             object? startObject = _startObject;
             int startIndex = _startInteger;
 
-            if (startObject != null)
+            if (startObject is not null)
             {
                 bool hasMultipleSegments = startObject != _endObject;
                 int endIndex = _endInteger;

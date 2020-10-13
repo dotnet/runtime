@@ -44,10 +44,10 @@ namespace System.Runtime.Serialization
             bool originValueIsNullableOfT = (memberType.IsGenericType && memberType.GetGenericTypeDefinition() == Globals.TypeOfNullable);
             if (memberType.IsValueType && !originValueIsNullableOfT)
             {
-                Debug.Assert(memberValue != null);
+                Debug.Assert(memberValue is not null);
 
                 PrimitiveDataContract? primitiveContract = primitiveContractForParamType;
-                if (primitiveContract != null && !writeXsiType)
+                if (primitiveContract is not null && !writeXsiType)
                 {
                     primitiveContract.WriteXmlValue(xmlWriter, memberValue, context);
                 }
@@ -60,7 +60,7 @@ namespace System.Runtime.Serialization
             {
                 if (originValueIsNullableOfT)
                 {
-                    if (memberValue == null)
+                    if (memberValue is null)
                     {
                         memberType = Nullable.GetUnderlyingType(memberType)!;
                     }
@@ -72,20 +72,20 @@ namespace System.Runtime.Serialization
                     }
                 }
 
-                if (memberValue == null)
+                if (memberValue is null)
                 {
                     context.WriteNull(xmlWriter, memberType, DataContract.IsTypeSerializable(memberType));
                 }
                 else
                 {
                     PrimitiveDataContract? primitiveContract = originValueIsNullableOfT ? PrimitiveDataContract.GetPrimitiveDataContract(memberType) : primitiveContractForParamType;
-                    if (primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject && !writeXsiType)
+                    if (primitiveContract is not null && primitiveContract.UnderlyingType != Globals.TypeOfObject && !writeXsiType)
                     {
                         primitiveContract.WriteXmlValue(xmlWriter, memberValue, context);
                     }
                     else
                     {
-                        if (memberValue == null &&
+                        if (memberValue is null &&
                             (memberType == Globals.TypeOfObject
                             || (originValueIsNullableOfT && memberType.IsValueType)))
                         {
@@ -109,7 +109,7 @@ namespace System.Runtime.Serialization
 
         protected bool ReflectionTryWritePrimitive(XmlWriterDelegator xmlWriter, XmlObjectSerializerWriteContext context, Type type, object? value, XmlDictionaryString name, XmlDictionaryString? ns, PrimitiveDataContract? primitiveContract)
         {
-            if (primitiveContract == null || primitiveContract.UnderlyingType == Globals.TypeOfObject)
+            if (primitiveContract is null || primitiveContract.UnderlyingType == Globals.TypeOfObject)
                 return false;
 
             primitiveContract.WriteXmlElement(xmlWriter, value, context, name, ns);
@@ -119,9 +119,9 @@ namespace System.Runtime.Serialization
 
         private void InvokeOnSerializing(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
-            if (classContract.BaseContract != null)
+            if (classContract.BaseContract is not null)
                 InvokeOnSerializing(obj, context, classContract.BaseContract);
-            if (classContract.OnSerializing != null)
+            if (classContract.OnSerializing is not null)
             {
                 var contextArg = context.GetStreamingContext();
                 classContract.OnSerializing.Invoke(obj, new object[] { contextArg });
@@ -130,9 +130,9 @@ namespace System.Runtime.Serialization
 
         private void InvokeOnSerialized(object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract)
         {
-            if (classContract.BaseContract != null)
+            if (classContract.BaseContract is not null)
                 InvokeOnSerialized(obj, context, classContract.BaseContract);
-            if (classContract.OnSerialized != null)
+            if (classContract.OnSerialized is not null)
             {
                 var contextArg = context.GetStreamingContext();
                 classContract.OnSerialized.Invoke(obj, new object[] { contextArg });

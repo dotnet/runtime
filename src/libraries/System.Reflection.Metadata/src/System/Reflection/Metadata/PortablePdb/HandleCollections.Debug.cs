@@ -17,7 +17,7 @@ namespace System.Reflection.Metadata
 
         internal DocumentHandleCollection(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
 
             _firstRowId = 1;
@@ -116,7 +116,7 @@ namespace System.Reflection.Metadata
 
         internal MethodDebugInformationHandleCollection(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
 
             _firstRowId = 1;
@@ -215,7 +215,7 @@ namespace System.Reflection.Metadata
 
         internal LocalScopeHandleCollection(MetadataReader reader, int methodDefinitionRowId)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
 
             if (methodDefinitionRowId == 0)
@@ -423,7 +423,7 @@ namespace System.Reflection.Metadata
 
         internal LocalVariableHandleCollection(MetadataReader reader, LocalScopeHandle scope)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
 
             if (scope.IsNil)
@@ -529,7 +529,7 @@ namespace System.Reflection.Metadata
 
         internal LocalConstantHandleCollection(MetadataReader reader, LocalScopeHandle scope)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
 
             if (scope.IsNil)
@@ -635,7 +635,7 @@ namespace System.Reflection.Metadata
 
         internal ImportScopeCollection(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
 
             _firstRowId = 1;
@@ -734,7 +734,7 @@ namespace System.Reflection.Metadata
 
         internal CustomDebugInformationHandleCollection(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
 
             _firstRowId = 1;
@@ -743,7 +743,7 @@ namespace System.Reflection.Metadata
 
         internal CustomDebugInformationHandleCollection(MetadataReader reader, EntityHandle handle)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
 
             _reader = reader;
             reader.CustomDebugInformationTable.GetRange(handle, out _firstRowId, out _lastRowId);

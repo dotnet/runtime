@@ -73,7 +73,7 @@ namespace System.Security.Cryptography
 
                         ThrowIfDisposed();
 
-                        if (_keys != null)
+                        if (_keys is not null)
                         {
                             _keys.Dispose();
                             _keys = null;
@@ -88,7 +88,7 @@ namespace System.Security.Cryptography
                     const string ExportPassword = "DotnetExportPassphrase";
                     SecKeyPair keys = GetKeys();
 
-                    if (includePrivateParameters && keys.PrivateKey == null)
+                    if (includePrivateParameters && keys.PrivateKey is null)
                     {
                         throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
                     }
@@ -128,18 +128,18 @@ namespace System.Security.Cryptography
 
                 public override void ImportParameters(DSAParameters parameters)
                 {
-                    if (parameters.P == null || parameters.Q == null || parameters.G == null || parameters.Y == null)
+                    if (parameters.P is null || parameters.Q is null || parameters.G is null || parameters.Y is null)
                         throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MissingFields);
 
                     // J is not required and is not even used on CNG blobs.
                     // It should, however, be less than P (J == (P-1) / Q).
                     // This validation check is just to maintain parity with DSACng and DSACryptoServiceProvider,
                     // which also perform this check.
-                    if (parameters.J != null && parameters.J.Length >= parameters.P.Length)
+                    if (parameters.J is not null && parameters.J.Length >= parameters.P.Length)
                         throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedPJ);
 
                     int keySize = parameters.P.Length;
-                    bool hasPrivateKey = parameters.X != null;
+                    bool hasPrivateKey = parameters.X is not null;
 
                     if (parameters.G.Length != keySize || parameters.Y.Length != keySize)
                         throw new ArgumentException(SR.Cryptography_InvalidDsaParameters_MismatchedPGY);
@@ -205,7 +205,7 @@ namespace System.Security.Cryptography
                     AsnWriter keyWriter;
                     bool hasPrivateKey;
 
-                    if (parameters.X != null)
+                    if (parameters.X is not null)
                     {
                         // DSAPrivateKey ::= SEQUENCE(
                         //   version INTEGER,
@@ -282,12 +282,12 @@ namespace System.Security.Cryptography
 
                 public override byte[] CreateSignature(byte[] rgbHash)
                 {
-                    if (rgbHash == null)
+                    if (rgbHash is null)
                         throw new ArgumentNullException(nameof(rgbHash));
 
                     SecKeyPair keys = GetKeys();
 
-                    if (keys.PrivateKey == null)
+                    if (keys.PrivateKey is null)
                     {
                         throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
                     }
@@ -305,9 +305,9 @@ namespace System.Security.Cryptography
 
                 public override bool VerifySignature(byte[] hash, byte[] signature)
                 {
-                    if (hash == null)
+                    if (hash is null)
                         throw new ArgumentNullException(nameof(hash));
-                    if (signature == null)
+                    if (signature is null)
                         throw new ArgumentNullException(nameof(signature));
 
                     return VerifySignature((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
@@ -344,7 +344,7 @@ namespace System.Security.Cryptography
                 {
                     if (disposing)
                     {
-                        if (_keys != null)
+                        if (_keys is not null)
                         {
                             _keys.Dispose();
                             _keys = null;
@@ -358,7 +358,7 @@ namespace System.Security.Cryptography
 
                 private void ThrowIfDisposed()
                 {
-                    // The other SecurityTransforms types use _keys.PublicKey == null,
+                    // The other SecurityTransforms types use _keys.PublicKey is null,
                     // but since Apple doesn't provide DSA key generation we can't easily tell
                     // if a failed attempt to generate a key happened, or we're in a pristine state.
                     //
@@ -375,7 +375,7 @@ namespace System.Security.Cryptography
 
                     SecKeyPair? current = _keys;
 
-                    if (current != null)
+                    if (current is not null)
                     {
                         return current;
                     }
@@ -396,7 +396,7 @@ namespace System.Security.Cryptography
                     _keys = newKeyPair;
                     current?.Dispose();
 
-                    if (newKeyPair != null)
+                    if (newKeyPair is not null)
                     {
                         int size = Interop.AppleCrypto.GetSimpleKeySizeInBits(newKeyPair.PublicKey);
                         KeySizeValue = size;

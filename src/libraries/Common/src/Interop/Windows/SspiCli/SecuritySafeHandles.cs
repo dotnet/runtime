@@ -90,7 +90,7 @@ namespace System.Net.Security
                 phContext.DangerousRelease();
             }
 
-            if (status == 0 && refHandle != null)
+            if (status == 0 && refHandle is not null)
             {
                 if (refHandle is SafeFreeContextBuffer)
                 {
@@ -400,7 +400,7 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-            if (inCredentials == null)
+            if (inCredentials is null)
             {
                 throw new ArgumentNullException(nameof(inCredentials));
             }
@@ -415,7 +415,7 @@ namespace System.Net.Security
             int errorCode = -1;
 
             bool isContextAbsent = true;
-            if (refContext != null)
+            if (refContext is not null)
             {
                 isContextAbsent = refContext._handle.IsZero;
             }
@@ -437,7 +437,7 @@ namespace System.Net.Security
                     if (inSecBuffers.Count > 2)
                     {
                         inUnmanagedBuffer[2].BufferType = inSecBuffers._item2.Type;
-                        if (inSecBuffers._item2.UnmanagedToken != null)
+                        if (inSecBuffers._item2.UnmanagedToken is not null)
                         {
                             Debug.Assert(inSecBuffers._item2.Type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
                             inUnmanagedBuffer[2].pvBuffer = (IntPtr)inSecBuffers._item2.UnmanagedToken.DangerousGetHandle();
@@ -454,7 +454,7 @@ namespace System.Net.Security
                     if (inSecBuffers.Count > 1)
                     {
                         inUnmanagedBuffer[1].BufferType = inSecBuffers._item1.Type;
-                        if (inSecBuffers._item1.UnmanagedToken != null)
+                        if (inSecBuffers._item1.UnmanagedToken is not null)
                         {
                             Debug.Assert(inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
                             inUnmanagedBuffer[1].pvBuffer = (IntPtr)inSecBuffers._item1.UnmanagedToken.DangerousGetHandle();
@@ -470,7 +470,7 @@ namespace System.Net.Security
                     if (inSecBuffers.Count > 0)
                     {
                         inUnmanagedBuffer[0].BufferType = inSecBuffers._item0.Type;
-                        if (inSecBuffers._item0.UnmanagedToken != null)
+                        if (inSecBuffers._item0.UnmanagedToken is not null)
                         {
                             Debug.Assert(inSecBuffers._item0.Type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
                             inUnmanagedBuffer[0].pvBuffer = (IntPtr)inSecBuffers._item0.UnmanagedToken.DangerousGetHandle();
@@ -490,7 +490,7 @@ namespace System.Net.Security
                         outSecurityBufferDescriptor.pBuffers = &outUnmanagedBuffer;
                         outUnmanagedBuffer.cbBuffer = outSecBuffer.size;
                         outUnmanagedBuffer.BufferType = outSecBuffer.type;
-                        outUnmanagedBuffer.pvBuffer = outSecBuffer.token == null || outSecBuffer.token.Length == 0 ?
+                        outUnmanagedBuffer.pvBuffer = outSecBuffer.token is null || outSecBuffer.token.Length == 0 ?
                             IntPtr.Zero :
                             (IntPtr)(pinnedOutBytes + outSecBuffer.offset);
 
@@ -499,7 +499,7 @@ namespace System.Net.Security
                             outFreeContextBuffer = SafeFreeContextBuffer.CreateEmptyHandle();
                         }
 
-                        if (refContext == null || refContext.IsInvalid)
+                        if (refContext is null || refContext.IsInvalid)
                         {
                             // Previous versions unconditionally built a new "refContext" here, but would pass
                             // incorrect arguments to InitializeSecurityContextW in cases where an "contextHandle" was
@@ -508,7 +508,7 @@ namespace System.Net.Security
                                 refContext = new SafeDeleteSslContext();
                         }
 
-                        if (targetName == null || targetName.Length == 0)
+                        if (targetName is null || targetName.Length == 0)
                         {
                             targetName = dummyStr;
                         }
@@ -584,7 +584,7 @@ namespace System.Net.Security
 
                 // The "isContextAbsent" supplied by the caller is generally correct but was computed without proper
                 // synchronization. Rewrite the indicator now that the final "inContext" is known, update if necessary.
-                isContextAbsent = (inContextPtr == null);
+                isContextAbsent = (inContextPtr is null);
 
                 errorCode = Interop.SspiCli.InitializeSecurityContextW(
                                 ref credentialHandle,
@@ -622,7 +622,7 @@ namespace System.Net.Security
             }
 
             // The idea is that SSPI has allocated a block and filled up outUnmanagedBuffer+8 slot with the pointer.
-            if (handleTemplate != null)
+            if (handleTemplate is not null)
             {
                 //ATTN: on 64 BIT that is still +8 cause of 2* c++ unsigned long == 8 bytes
                 handleTemplate.Set(((Interop.SspiCli.SecBuffer*)outputBuffer.pBuffers)->pvBuffer);
@@ -651,7 +651,7 @@ namespace System.Net.Security
             ref SecurityBuffer outSecBuffer,
             ref Interop.SspiCli.ContextFlags outFlags)
         {
-            if (inCredentials == null)
+            if (inCredentials is null)
             {
                 throw new ArgumentNullException(nameof(inCredentials));
             }
@@ -666,7 +666,7 @@ namespace System.Net.Security
             int errorCode = -1;
 
             bool isContextAbsent = true;
-            if (refContext != null)
+            if (refContext is not null)
             {
                 isContextAbsent = refContext._handle.IsZero;
             }
@@ -691,7 +691,7 @@ namespace System.Net.Security
                     if (inSecBuffers.Count > 2)
                     {
                         inUnmanagedBuffer[2].BufferType = inSecBuffers._item2.Type;
-                        if (inSecBuffers._item2.UnmanagedToken != null)
+                        if (inSecBuffers._item2.UnmanagedToken is not null)
                         {
                             Debug.Assert(inSecBuffers._item2.Type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
                             inUnmanagedBuffer[2].pvBuffer = (IntPtr)inSecBuffers._item2.UnmanagedToken.DangerousGetHandle();
@@ -708,7 +708,7 @@ namespace System.Net.Security
                     if (inSecBuffers.Count > 1)
                     {
                         inUnmanagedBuffer[1].BufferType = inSecBuffers._item1.Type;
-                        if (inSecBuffers._item1.UnmanagedToken != null)
+                        if (inSecBuffers._item1.UnmanagedToken is not null)
                         {
                             Debug.Assert(inSecBuffers._item1.Type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
                             inUnmanagedBuffer[1].pvBuffer = (IntPtr)inSecBuffers._item1.UnmanagedToken.DangerousGetHandle();
@@ -724,7 +724,7 @@ namespace System.Net.Security
                     if (inSecBuffers.Count > 0)
                     {
                         inUnmanagedBuffer[0].BufferType = inSecBuffers._item0.Type;
-                        if (inSecBuffers._item0.UnmanagedToken != null)
+                        if (inSecBuffers._item0.UnmanagedToken is not null)
                         {
                             Debug.Assert(inSecBuffers._item0.Type == SecurityBufferType.SECBUFFER_CHANNEL_BINDINGS);
                             inUnmanagedBuffer[0].pvBuffer = (IntPtr)inSecBuffers._item0.UnmanagedToken.DangerousGetHandle();
@@ -745,7 +745,7 @@ namespace System.Net.Security
                         // Copy the SecurityBuffer content into unmanaged place holder.
                         outUnmanagedBuffer[0].cbBuffer = outSecBuffer.size;
                         outUnmanagedBuffer[0].BufferType = outSecBuffer.type;
-                        outUnmanagedBuffer[0].pvBuffer = outSecBuffer.token == null || outSecBuffer.token.Length == 0 ?
+                        outUnmanagedBuffer[0].pvBuffer = outSecBuffer.token is null || outSecBuffer.token.Length == 0 ?
                             IntPtr.Zero :
                             (IntPtr)(pinnedOutBytes + outSecBuffer.offset);
 
@@ -757,7 +757,7 @@ namespace System.Net.Security
                             outFreeContextBuffer = SafeFreeContextBuffer.CreateEmptyHandle();
                         }
 
-                        if (refContext == null || refContext.IsInvalid)
+                        if (refContext is null || refContext.IsInvalid)
                         {
                             // Previous versions unconditionally built a new "refContext" here, but would pass
                             // incorrect arguments to AcceptSecurityContext in cases where an "contextHandle" was
@@ -845,7 +845,7 @@ namespace System.Net.Security
 
                 // The "isContextAbsent" supplied by the caller is generally correct but was computed without proper
                 // synchronization. Rewrite the indicator now that the final "inContext" is known, update if necessary.
-                isContextAbsent = (inContextPtr == null);
+                isContextAbsent = (inContextPtr is null);
 
                 errorCode = Interop.SspiCli.AcceptSecurityContext(
                                 ref credentialHandle,
@@ -880,7 +880,7 @@ namespace System.Net.Security
             }
 
             // The idea is that SSPI has allocated a block and filled up outUnmanagedBuffer+8 slot with the pointer.
-            if (handleTemplate != null)
+            if (handleTemplate is not null)
             {
                 //ATTN: on 64 BIT that is still +8 cause of 2* c++ unsigned long == 8 bytes.
                 handleTemplate.Set(((Interop.SspiCli.SecBuffer*)outputBuffer.pBuffers)->pvBuffer);
@@ -917,12 +917,12 @@ namespace System.Net.Security
 
                 // Use the unmanaged token if it's not null; otherwise use the managed buffer.
                 inUnmanagedBuffer.pvBuffer =
-                    inSecBuffer.unmanagedToken != null ? inSecBuffer.unmanagedToken.DangerousGetHandle() :
-                    inSecBuffer.token == null || inSecBuffer.token.Length == 0 ? IntPtr.Zero :
+                    inSecBuffer.unmanagedToken is not null ? inSecBuffer.unmanagedToken.DangerousGetHandle() :
+                    inSecBuffer.token is null || inSecBuffer.token.Length == 0 ? IntPtr.Zero :
                     (IntPtr)(pinnedToken + inSecBuffer.offset);
 
-                Interop.SspiCli.CredHandle contextHandle = refContext != null ? refContext._handle : default;
-                if (refContext == null || refContext.IsInvalid)
+                Interop.SspiCli.CredHandle contextHandle = refContext is not null ? refContext._handle : default;
+                if (refContext is null || refContext.IsInvalid)
                 {
                     // Previous versions unconditionally built a new "refContext" here, but would pass
                     // incorrect arguments to CompleteAuthToken in cases where a nonzero "contextHandle" was
@@ -972,13 +972,13 @@ namespace System.Net.Security
 
                 // Use the unmanaged token if it's not null; otherwise use the managed buffer.
                 inUnmanagedBuffer.pvBuffer =
-                    inSecBuffer.unmanagedToken != null ? inSecBuffer.unmanagedToken.DangerousGetHandle() :
-                    inSecBuffer.token == null || inSecBuffer.token.Length == 0 ? IntPtr.Zero :
+                    inSecBuffer.unmanagedToken is not null ? inSecBuffer.unmanagedToken.DangerousGetHandle() :
+                    inSecBuffer.token is null || inSecBuffer.token.Length == 0 ? IntPtr.Zero :
                     (IntPtr)(pinnedInSecBufferToken + inSecBuffer.offset);
 
-                Interop.SspiCli.CredHandle contextHandle = refContext != null ? refContext._handle : default;
+                Interop.SspiCli.CredHandle contextHandle = refContext is not null ? refContext._handle : default;
 
-                if (refContext == null || refContext.IsInvalid)
+                if (refContext is null || refContext.IsInvalid)
                 {
                     // Previous versions unconditionally built a new "refContext" here, but would pass
                     // incorrect arguments to ApplyControlToken in cases where a nonzero "contextHandle" was
@@ -1069,7 +1069,7 @@ namespace System.Net.Security
                 phContext.DangerousRelease();
             }
 
-            if (status == 0 && refHandle != null)
+            if (status == 0 && refHandle is not null)
             {
                 refHandle.Set((*buffer).Bindings);
                 refHandle._size = (*buffer).BindingsLength;

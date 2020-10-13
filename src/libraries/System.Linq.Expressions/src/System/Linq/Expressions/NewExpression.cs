@@ -86,7 +86,7 @@ namespace System.Linq.Expressions
                 return this;
             }
 
-            return Members != null ? New(Constructor!, arguments, Members) : New(Constructor!, arguments);
+            return Members is not null ? New(Constructor!, arguments, Members) : New(Constructor!, arguments);
         }
     }
 
@@ -190,7 +190,7 @@ namespace System.Linq.Expressions
             if (!type.IsValueType)
             {
                 ConstructorInfo? ci = type.GetConstructors(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SingleOrDefault(c => c.GetParametersCached().Length == 0);
-                if (ci == null)
+                if (ci is null)
                 {
                     throw Error.TypeMissingDefaultConstructor(type, nameof(type));
                 }
@@ -246,7 +246,7 @@ namespace System.Linq.Expressions
                             throw Error.ExpressionTypeDoesNotMatchConstructorParameter(arg.Type, pType, nameof(arguments), i);
                         }
                     }
-                    if (newArguments == null && arg != arguments[i])
+                    if (newArguments is null && arg != arguments[i])
                     {
                         newArguments = new Expression[arguments.Count];
                         for (int j = 0; j < i; j++)
@@ -254,12 +254,12 @@ namespace System.Linq.Expressions
                             newArguments[j] = arguments[j];
                         }
                     }
-                    if (newArguments != null)
+                    if (newArguments is not null)
                     {
                         newArguments[i] = arg;
                     }
 
-                    if (newMembers == null && member != members[i])
+                    if (newMembers is null && member != members[i])
                     {
                         newMembers = new MemberInfo[members.Count];
                         for (int j = 0; j < i; j++)
@@ -267,25 +267,25 @@ namespace System.Linq.Expressions
                             newMembers[j] = members[j];
                         }
                     }
-                    if (newMembers != null)
+                    if (newMembers is not null)
                     {
                         newMembers[i] = member;
                     }
                 }
-                if (newArguments != null)
+                if (newArguments is not null)
                 {
                     arguments = new TrueReadOnlyCollection<Expression>(newArguments);
                 }
-                if (newMembers != null)
+                if (newMembers is not null)
                 {
                     members = new TrueReadOnlyCollection<MemberInfo>(newMembers);
                 }
             }
-            else if (arguments != null && arguments.Count > 0)
+            else if (arguments is not null && arguments.Count > 0)
             {
                 throw Error.IncorrectNumberOfConstructorArguments();
             }
-            else if (members != null && members.Count > 0)
+            else if (members is not null && members.Count > 0)
             {
                 throw Error.IncorrectNumberOfMembersForGivenConstructor();
             }

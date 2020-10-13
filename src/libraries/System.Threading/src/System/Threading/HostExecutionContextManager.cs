@@ -21,7 +21,7 @@ namespace System.Threading
 
         public virtual object SetHostExecutionContext(HostExecutionContext hostExecutionContext)
         {
-            if (hostExecutionContext == null)
+            if (hostExecutionContext is null)
             {
                 throw new InvalidOperationException(SR.HostExecutionContextManager_InvalidOperation_NotNewCaptureContext);
             }
@@ -34,13 +34,13 @@ namespace System.Threading
         public virtual void Revert(object previousState)
         {
             var switcher = previousState as HostExecutionContextSwitcher;
-            if (switcher == null)
+            if (switcher is null)
             {
                 throw new InvalidOperationException(
                     SR.HostExecutionContextManager_InvalidOperation_CannotOverrideSetWithoutRevert);
             }
 
-            if (t_currentContext != switcher._currentContext || switcher._asyncLocal == null || !switcher._asyncLocal.Value)
+            if (t_currentContext != switcher._currentContext || switcher._asyncLocal is null || !switcher._asyncLocal.Value)
             {
                 throw new InvalidOperationException(
                     SR.HostExecutionContextManager_InvalidOperation_CannotUseSwitcherOtherThread);

@@ -60,7 +60,7 @@ namespace System.Xml.Xsl.Xslt
             public IEnumerable<V> GetAdjList(V v)
             {
                 List<V>? adjList;
-                if (TryGetValue(v, out adjList) && adjList != null)
+                if (TryGetValue(v, out adjList) && adjList is not null)
                 {
                     return adjList;
                 }
@@ -76,7 +76,7 @@ namespace System.Xml.Xsl.Xslt
                 }
 
                 List<V>? adjList;
-                if (!TryGetValue(v1, out adjList) || adjList == null)
+                if (!TryGetValue(v1, out adjList) || adjList is null)
                 {
                     adjList = this[v1] = new List<V>();
                 }
@@ -284,7 +284,7 @@ namespace System.Xml.Xsl.Xslt
             // 2. Add ModeFlags of my templates to my parent
             foreach (Template tmpl in sheet.Templates)
             {
-                Debug.Assert(tmpl.Match != null);
+                Debug.Assert(tmpl.Match is not null);
                 XslFlags templateFlags = tmpl.Flags & (XslFlags.FocusFilter | XslFlags.SideEffects);
                 if (templateFlags != 0)
                 {
@@ -305,7 +305,7 @@ namespace System.Xml.Xsl.Xslt
             _scope.ExitScope();
 
             // Local variables and parameters must be added to the outer scope
-            if (_currentTemplate != null && (node.NodeType == XslNodeType.Variable || node.NodeType == XslNodeType.Param))
+            if (_currentTemplate is not null && (node.NodeType == XslNodeType.Variable || node.NodeType == XslNodeType.Param))
             {
                 _scope.AddVariable(node.Name!, (VarPar)node);
             }
@@ -354,7 +354,7 @@ namespace System.Xml.Xsl.Xslt
 
         protected override XslFlags VisitApplyTemplates(XslNode node)
         {
-            Debug.Assert(node.Select != null, "Absent @select should be replaced with 'node()' in XsltLoader");
+            Debug.Assert(node.Select is not null, "Absent @select should be replaced with 'node()' in XsltLoader");
             XslFlags result = ProcessExpr(node.Select);
 
             foreach (XslNode instr in node.Content)
@@ -370,7 +370,7 @@ namespace System.Xml.Xsl.Xslt
                         modePar = _applyTemplatesParams[mn] = AstFactory.WithParam(instr.Name!);
                     }
 
-                    if (_typeDonor != null)
+                    if (_typeDonor is not null)
                     {
                         _dataFlow!.AddEdge(_typeDonor, modePar);
                     }
@@ -381,7 +381,7 @@ namespace System.Xml.Xsl.Xslt
                 }
             }
 
-            if (_currentTemplate != null)
+            if (_currentTemplate is not null)
             {
                 AddApplyTemplatesEdge(/*mode:*/node.Name!, _currentTemplate);
             }
@@ -406,8 +406,8 @@ namespace System.Xml.Xsl.Xslt
 
             if (_compiler!.NamedTemplates.TryGetValue(node.Name!, out target))
             {
-                Debug.Assert(target != null);
-                if (_currentTemplate != null)
+                Debug.Assert(target is not null);
+                if (_currentTemplate is not null)
                 {
                     if (_forEachDepth == 0)
                     {
@@ -437,7 +437,7 @@ namespace System.Xml.Xsl.Xslt
             //   b) if value of xsl:with-param is a VarPar reference, add an edge connecting it with xsl:param
             //      to the data flow graph.
 
-            if (target != null)
+            if (target is not null)
             {
                 foreach (XslNode instr in target.Content)
                 {
@@ -466,10 +466,10 @@ namespace System.Xml.Xsl.Xslt
                         idx++;
                     }
 
-                    if (found != null)
+                    if (found is not null)
                     {
                         // Found corresponding xsl:with-param, check its type
-                        if (_typeDonor != null)
+                        if (_typeDonor is not null)
                         {
                             // add an edge from its type donor to xsl:param
                             _dataFlow!.AddEdge(_typeDonor, par);
@@ -588,7 +588,7 @@ namespace System.Xml.Xsl.Xslt
                 XslFlags.Rtf |
                 ProcessPattern(node.Count) |
                 ProcessPattern(node.From) |
-                (node.Value != null ? ProcessExpr(node.Value) : XslFlags.Current) |
+                (node.Value is not null ? ProcessExpr(node.Value) : XslFlags.Current) |
                 ProcessAvt(node.Format) |
                 ProcessAvt(node.Lang) |
                 ProcessAvt(node.LetterValue) |
@@ -628,7 +628,7 @@ namespace System.Xml.Xsl.Xslt
 
         protected override XslFlags VisitUseAttributeSet(XslNode node)
         {
-            if (_compiler!.AttributeSets.TryGetValue(node.Name!, out AttributeSet? attSet) && _currentTemplate != null)
+            if (_compiler!.AttributeSets.TryGetValue(node.Name!, out AttributeSet? attSet) && _currentTemplate is not null)
             {
                 if (_forEachDepth == 0)
                 {
@@ -658,7 +658,7 @@ namespace System.Xml.Xsl.Xslt
         protected override XslFlags VisitParam(VarPar node)
         {
             Template? tmpl = _currentTemplate as Template;
-            if (tmpl != null && tmpl.Match != null)
+            if (tmpl is not null && tmpl.Match is not null)
             {
                 // This template has 'match' attribute and might be called from built-in template rules,
                 // all xsl:param's will be defaulted in that case
@@ -699,7 +699,7 @@ namespace System.Xml.Xsl.Xslt
             }
 #endif
 
-            if (node.Select != null)
+            if (node.Select is not null)
             {
                 if (node.Content.Count != 0)
                 {
@@ -712,7 +712,7 @@ namespace System.Xml.Xsl.Xslt
                 {
                     result = _xpathAnalyzer!.Analyze(node.Select);
                     _typeDonor = _xpathAnalyzer.TypeDonor;
-                    if (_typeDonor != null && node.NodeType != XslNodeType.WithParam)
+                    if (_typeDonor is not null && node.NodeType != XslNodeType.WithParam)
                     {
                         _dataFlow!.AddEdge(_typeDonor, node);
                     }
@@ -826,7 +826,7 @@ namespace System.Xml.Xsl.Xslt
             }
             Template? template = t as Template;
             if (
-                template != null &&                                     // This ProteTemplate is Template
+                template is not null &&                                     // This ProteTemplate is Template
                 _revApplyTemplatesGraph!.TryGetValue(template.Mode, out list)      // list - ProtoTemplates that have apply-templatess mode="{template.Mode}"
             )
             {
@@ -878,7 +878,7 @@ namespace System.Xml.Xsl.Xslt
             public XslFlags Analyze(string? xpathExpr)
             {
                 _typeDonor = null;
-                if (xpathExpr == null)
+                if (xpathExpr is null)
                 {
                     return XslFlags.None;
                 }
@@ -903,7 +903,7 @@ namespace System.Xml.Xsl.Xslt
             public XslFlags AnalyzeAvt(string? source)
             {
                 _typeDonor = null;
-                if (source == null)
+                if (source is null)
                 {
                     return XslFlags.None;
                 }
@@ -948,7 +948,7 @@ namespace System.Xml.Xsl.Xslt
             private VarPar? ResolveVariable(string prefix, string name)
             {
                 string? ns = ResolvePrefix(prefix);
-                if (ns == null)
+                if (ns is null)
                 {
                     return null;
                 }
@@ -1020,7 +1020,7 @@ namespace System.Xml.Xsl.Xslt
             public virtual XslFlags Axis(XPathAxis xpathAxis, XPathNodeType nodeType, string? prefix, string? name)
             {
                 _typeDonor = null;
-                if (xpathAxis == XPathAxis.Self && nodeType == XPathNodeType.All && prefix == null && name == null)
+                if (xpathAxis == XPathAxis.Self && nodeType == XPathNodeType.All && prefix is null && name is null)
                 {
                     return XslFlags.Current | XslFlags.Node;
                 }
@@ -1047,7 +1047,7 @@ namespace System.Xml.Xsl.Xslt
             public virtual XslFlags Variable(string prefix, string name)
             {
                 _typeDonor = ResolveVariable(prefix, name);
-                if (_typeDonor == null)
+                if (_typeDonor is null)
                 {
                     return XslFlags.AnyType;
                 }
@@ -1132,10 +1132,10 @@ namespace System.Xml.Xsl.Xslt
                     {
                         // Unknown function. Can be script function or extension function
                         funcFlags = XslFlags.AnyType;
-                        if (_compiler.Settings.EnableScript && ns != null)
+                        if (_compiler.Settings.EnableScript && ns is not null)
                         {
                             XmlExtensionFunction? scrFunc = _compiler.Scripts.ResolveFunction(name, ns, args.Count, default(NullErrorHelper));
-                            if (scrFunc != null)
+                            if (scrFunc is not null)
                             {
                                 XmlQueryType xt = scrFunc.XmlReturnType;
                                 if (xt == TypeFactory.StringX)
@@ -1269,7 +1269,7 @@ namespace System.Xml.Xsl.Xslt
         private static int NodeCostForXPath(string? xpath)
         {
             int cost = 0;
-            if (xpath != null)
+            if (xpath is not null)
             {
                 // Every XPath expression needs at least one iterator
                 cost = IteratorNodeCost;
@@ -1431,7 +1431,7 @@ namespace System.Xml.Xsl.Xslt
                 if (!scoperecord.IsVariable)
                 {
                     // The scope record is either a namespace declaration or an exclusion namespace
-                    Debug.Assert(scoperecord.IsNamespace || scoperecord.ncName == null);
+                    Debug.Assert(scoperecord.IsNamespace || scoperecord.ncName is null);
                     Debug.Assert(!_compiler.IsPhantomNamespace(scoperecord.nsUri!));
                     newtemplate.Namespaces = new NsDecl(newtemplate.Namespaces, scoperecord.ncName, scoperecord.nsUri);
                 }

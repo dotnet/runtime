@@ -12,7 +12,7 @@ namespace System.Net.Sockets
             Debug.Assert(!(endpoint is DnsEndPoint));
 
             var ipEndPoint = endpoint as IPEndPoint;
-            if (ipEndPoint != null)
+            if (ipEndPoint is not null)
             {
                 return new Internals.SocketAddress(ipEndPoint.Address, ipEndPoint.Port);
             }

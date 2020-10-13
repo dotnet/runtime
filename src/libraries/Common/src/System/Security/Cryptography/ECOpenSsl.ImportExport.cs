@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
                     SR.Format(SR.Cryptography_CurveNotSupported, parameters.Curve.CurveType.ToString()));
             }
 
-            if (key == null || key.IsInvalid)
+            if (key is null || key.IsInvalid)
             {
                 throw Interop.Crypto.CreateOpenSslCryptographicException();
             }
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography
 
             ECParameters parameters = Interop.Crypto.GetECKeyParameters(key, includePrivateParameters);
 
-            bool hasPrivateKey = (parameters.D != null);
+            bool hasPrivateKey = (parameters.D is not null);
 
             if (hasPrivateKey != includePrivateParameters)
             {
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography
 
             ECParameters parameters = Interop.Crypto.GetECCurveParameters(key, includePrivateParameters);
 
-            bool hasPrivateKey = (parameters.D != null);
+            bool hasPrivateKey = (parameters.D is not null);
             if (hasPrivateKey != includePrivateParameters)
             {
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
@@ -115,7 +115,7 @@ namespace System.Security.Cryptography
                 oid,
                 parameters.Q.X, parameters.Q.X?.Length ?? 0,
                 parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
-                parameters.D, parameters.D == null ? 0 : parameters.D.Length);
+                parameters.D, parameters.D is null ? 0 : parameters.D.Length);
 
             return key;
         }
@@ -127,7 +127,7 @@ namespace System.Security.Cryptography
                 parameters.Curve.CurveType,
                 parameters.Q.X, parameters.Q.X?.Length ?? 0,
                 parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
-                parameters.D, parameters.D == null ? 0 : parameters.D.Length,
+                parameters.D, parameters.D is null ? 0 : parameters.D.Length,
                 parameters.Curve.Prime!, parameters.Curve.Prime!.Length,
                 parameters.Curve.A!, parameters.Curve.A!.Length,
                 parameters.Curve.B!, parameters.Curve.B!.Length,
@@ -135,7 +135,7 @@ namespace System.Security.Cryptography
                 parameters.Curve.G.Y!, parameters.Curve.G.Y!.Length,
                 parameters.Curve.Order!, parameters.Curve.Order!.Length,
                 parameters.Curve.Cofactor, parameters.Curve.Cofactor!.Length,
-                parameters.Curve.Seed, parameters.Curve.Seed == null ? 0 : parameters.Curve.Seed.Length);
+                parameters.Curve.Seed, parameters.Curve.Seed is null ? 0 : parameters.Curve.Seed.Length);
 
             return key;
         }
@@ -147,7 +147,7 @@ namespace System.Security.Cryptography
                 parameters.Curve.CurveType,
                 parameters.Q.X, parameters.Q.X?.Length ?? 0,
                 parameters.Q.Y, parameters.Q.Y?.Length ?? 0,
-                parameters.D, parameters.D == null ? 0 : parameters.D.Length,
+                parameters.D, parameters.D is null ? 0 : parameters.D.Length,
                 parameters.Curve.Polynomial!, parameters.Curve.Polynomial!.Length,
                 parameters.Curve.A!, parameters.Curve.A!.Length,
                 parameters.Curve.B!, parameters.Curve.B!.Length,
@@ -155,14 +155,14 @@ namespace System.Security.Cryptography
                 parameters.Curve.G.Y!, parameters.Curve.G.Y!.Length,
                 parameters.Curve.Order!, parameters.Curve.Order!.Length,
                 parameters.Curve.Cofactor, parameters.Curve.Cofactor!.Length,
-                parameters.Curve.Seed, parameters.Curve.Seed == null ? 0 : parameters.Curve.Seed.Length);
+                parameters.Curve.Seed, parameters.Curve.Seed is null ? 0 : parameters.Curve.Seed.Length);
 
             return key;
         }
 
         private static void CheckInvalidKey(SafeEcKeyHandle key)
         {
-            if (key == null || key.IsInvalid)
+            if (key is null || key.IsInvalid)
             {
                 throw new CryptographicException(SR.Cryptography_OpenInvalidHandle);
             }
@@ -183,7 +183,7 @@ namespace System.Security.Cryptography
 
             SafeEcKeyHandle? key = Interop.Crypto.EcKeyCreateByOid(oid);
 
-            if (key == null || key.IsInvalid)
+            if (key is null || key.IsInvalid)
                 throw new PlatformNotSupportedException(SR.Format(SR.Cryptography_CurveNotSupported, oid));
 
             if (!Interop.Crypto.EcKeyGenerateKey(key))

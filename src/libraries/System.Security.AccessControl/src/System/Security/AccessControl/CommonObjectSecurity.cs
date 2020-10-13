@@ -84,7 +84,7 @@ namespace System.Security.AccessControl
                     }
                 }
 
-                if (acl == null)
+                if (acl is null)
                 {
                     //
                     // The required ACL was not present; return an empty collection.
@@ -183,7 +183,7 @@ namespace System.Security.AccessControl
 
         private bool AceNeedsTranslation([NotNullWhen(true)] CommonAce? ace, bool isAccessAce, bool includeExplicit, bool includeInherited)
         {
-            if (ace == null)
+            if (ace is null)
             {
                 //
                 // Only consider common ACEs
@@ -224,7 +224,7 @@ namespace System.Security.AccessControl
         //
         protected override bool ModifyAccess(AccessControlModification modification, AccessRule rule, out bool modified)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -234,7 +234,7 @@ namespace System.Security.AccessControl
             {
                 bool result = true;
 
-                if (_securityDescriptor.DiscretionaryAcl == null)
+                if (_securityDescriptor.DiscretionaryAcl is null)
                 {
                     if (modification == AccessControlModification.Remove ||
                         modification == AccessControlModification.RemoveAll ||
@@ -354,7 +354,7 @@ namespace System.Security.AccessControl
 
         protected override bool ModifyAudit(AccessControlModification modification, AuditRule rule, out bool modified)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -364,7 +364,7 @@ namespace System.Security.AccessControl
             {
                 bool result = true;
 
-                if (_securityDescriptor.SystemAcl == null)
+                if (_securityDescriptor.SystemAcl is null)
                 {
                     if (modification == AccessControlModification.Remove ||
                         modification == AccessControlModification.RemoveAll ||
@@ -437,7 +437,7 @@ namespace System.Security.AccessControl
 
         protected void AddAccessRule(AccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -457,7 +457,7 @@ namespace System.Security.AccessControl
 
         protected void SetAccessRule(AccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -477,7 +477,7 @@ namespace System.Security.AccessControl
 
         protected void ResetAccessRule(AccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -499,7 +499,7 @@ namespace System.Security.AccessControl
 
         protected bool RemoveAccessRule(AccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -508,7 +508,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                if (_securityDescriptor == null)
+                if (_securityDescriptor is null)
                 {
                     return true;
                 }
@@ -524,7 +524,7 @@ namespace System.Security.AccessControl
 
         protected void RemoveAccessRuleAll(AccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -533,7 +533,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                if (_securityDescriptor == null)
+                if (_securityDescriptor is null)
                 {
                     return;
                 }
@@ -551,7 +551,7 @@ namespace System.Security.AccessControl
 
         protected void RemoveAccessRuleSpecific(AccessRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -560,7 +560,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                if (_securityDescriptor == null)
+                if (_securityDescriptor is null)
                 {
                     return;
                 }
@@ -576,7 +576,7 @@ namespace System.Security.AccessControl
 
         protected void AddAuditRule(AuditRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -596,7 +596,7 @@ namespace System.Security.AccessControl
 
         protected void SetAuditRule(AuditRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -616,7 +616,7 @@ namespace System.Security.AccessControl
 
         protected bool RemoveAuditRule(AuditRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -636,7 +636,7 @@ namespace System.Security.AccessControl
 
         protected void RemoveAuditRuleAll(AuditRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }
@@ -656,7 +656,7 @@ namespace System.Security.AccessControl
 
         protected void RemoveAuditRuleSpecific(AuditRule rule)
         {
-            if (rule == null)
+            if (rule is null)
             {
                 throw new ArgumentNullException(nameof(rule));
             }

@@ -92,7 +92,7 @@ namespace System.Security.Cryptography
                 throw errorCode.ToCryptographicException();
             }
 
-            Debug.Assert(keyHandle != null);
+            Debug.Assert(keyHandle is not null);
 
             SetExportable(keyHandle);
             return keyHandle;
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
 
             keyHandle = ECCng.ImportKeyBlob(blobType, keyBlob, curveName, s_microsoftSoftwareProviderHandle);
 
-            Debug.Assert(keyHandle != null);
+            Debug.Assert(keyHandle is not null);
 
             SetExportable(keyHandle);
             return keyHandle;
@@ -602,7 +602,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(!ncryptHandle.IsInvalid);
             byte[]? value = GetProperty(ncryptHandle, propertyName, options);
-            if (value == null)
+            if (value is null)
                 return null;   // .NET Framework compat: return null if key not present.
             if (value.Length == 0)
                 return string.Empty; // .NET Framework compat: return empty if property value is 0-length.

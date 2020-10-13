@@ -40,7 +40,7 @@ namespace System.ComponentModel.Composition.Registration
 
         public ExportBuilder AddMetadata(string name, object value)
         {
-            if (_metadataItems == null)
+            if (_metadataItems is null)
             {
                 _metadataItems = new List<Tuple<string, object>>();
             }
@@ -51,7 +51,7 @@ namespace System.ComponentModel.Composition.Registration
 
         public ExportBuilder AddMetadata(string name, Func<Type, object> itemFunc)
         {
-            if (_metadataItemFuncs == null)
+            if (_metadataItemFuncs is null)
             {
                 _metadataItemFuncs = new List<Tuple<string, Func<Type, object>>>();
             }
@@ -62,7 +62,7 @@ namespace System.ComponentModel.Composition.Registration
 
         internal void BuildAttributes(Type type, ref List<Attribute> attributes)
         {
-            if (attributes == null)
+            if (attributes is null)
             {
                 attributes = new List<Attribute>();
             }
@@ -79,7 +79,7 @@ namespace System.ComponentModel.Composition.Registration
             }
 
             //Add metadata attributes from direct specification
-            if (_metadataItems != null)
+            if (_metadataItems is not null)
             {
                 foreach (Tuple<string, object> item in _metadataItems)
                 {
@@ -88,12 +88,12 @@ namespace System.ComponentModel.Composition.Registration
             }
 
             //Add metadata attributes from func specification
-            if (_metadataItemFuncs != null)
+            if (_metadataItemFuncs is not null)
             {
                 foreach (Tuple<string, Func<Type, object>> item in _metadataItemFuncs)
                 {
                     string name = item.Item1;
-                    object value = (item.Item2 != null) ? item.Item2(type.UnderlyingSystemType) : null;
+                    object value = (item.Item2 is not null) ? item.Item2(type.UnderlyingSystemType) : null;
                     attributes.Add(new ExportMetadataAttribute(name, value));
                 }
             }

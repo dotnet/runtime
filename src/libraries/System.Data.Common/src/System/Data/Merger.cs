@@ -41,7 +41,7 @@ namespace System.Data
 
         internal void MergeDataSet(DataSet source)
         {
-            Debug.Assert(_dataSet != null);
+            Debug.Assert(_dataSet is not null);
 
             if (source == _dataSet) return;  //somebody is doing an 'automerge'
             bool fEnforce = _dataSet.EnforceConstraints;
@@ -134,11 +134,11 @@ namespace System.Data
                 _dataTable!.SuspendEnforceConstraints = true;
             }
 
-            if (_dataSet != null)
+            if (_dataSet is not null)
             {
                 // this is ds.Merge
                 // if source does not have a DS, or if NS of both DS does not match, ignore the NS
-                if (src.DataSet == null || src.DataSet._namespaceURI != _dataSet._namespaceURI)
+                if (src.DataSet is null || src.DataSet._namespaceURI != _dataSet._namespaceURI)
                 {
                     _IgnoreNSforTableLookup = true;
                 }
@@ -146,7 +146,7 @@ namespace System.Data
             else
             {
                 // this is dt.Merge
-                if (_dataTable!.DataSet == null || src.DataSet == null || src.DataSet._namespaceURI != _dataTable.DataSet._namespaceURI)
+                if (_dataTable!.DataSet is null || src.DataSet is null || src.DataSet._namespaceURI != _dataTable.DataSet._namespaceURI)
                 {
                     _IgnoreNSforTableLookup = true;
                 }
@@ -155,14 +155,14 @@ namespace System.Data
             MergeTableData(src);
 
             DataTable? dt = _dataTable;
-            if (dt == null && _dataSet != null)
+            if (dt is null && _dataSet is not null)
             {
                 dt = _IgnoreNSforTableLookup ?
                     _dataSet.Tables[src.TableName] :
                     _dataSet.Tables[src.TableName, src.Namespace];
             }
 
-            if (dt != null)
+            if (dt is not null)
             {
                 dt.EvaluateExpressions();
             }
@@ -183,7 +183,7 @@ namespace System.Data
                 }
                 catch (ConstraintException)
                 {
-                    if (_dataTable.DataSet != null)
+                    if (_dataTable.DataSet is not null)
                     {
                         _dataTable.DataSet.EnforceConstraints = false;
                     }
@@ -203,7 +203,7 @@ namespace System.Data
                 dst.SuspendIndexEvents();
                 try
                 {
-                    if (!wasEmpty && dst._primaryKey != null)
+                    if (!wasEmpty && dst._primaryKey is not null)
                     {
                         key = GetSrcKey(src, dst);
                         if (key.HasValue)
@@ -216,7 +216,7 @@ namespace System.Data
                     foreach (DataRow sourceRow in src.Rows)
                     {
                         DataRow? targetRow = null;
-                        if (ndxSearch != null)
+                        if (ndxSearch is not null)
                         {
                             targetRow = dst.FindMergeTarget(sourceRow, key, ndxSearch);
                         }
@@ -233,7 +233,7 @@ namespace System.Data
 
         internal void MergeRows(DataRow[] rows)
         {
-            Debug.Assert(_dataSet != null);
+            Debug.Assert(_dataSet is not null);
 
             DataTable? src = null;
             DataTable? dst = null;
@@ -247,11 +247,11 @@ namespace System.Data
             {
                 DataRow row = rows[i];
 
-                if (row == null)
+                if (row is null)
                 {
                     throw ExceptionBuilder.ArgumentNull($"{nameof(rows)}[{i}]");
                 }
-                if (row.Table == null)
+                if (row.Table is null)
                 {
                     throw ExceptionBuilder.ArgumentNull($"{nameof(rows)}[{i}].{nameof(DataRow.Table)}");
                 }
@@ -266,13 +266,13 @@ namespace System.Data
                 {                     // row.Table changed from prev. row.
                     src = row.Table;
                     dst = MergeSchema(row.Table);
-                    if (dst == null)
+                    if (dst is null)
                     {
                         Debug.Assert(MissingSchemaAction.Ignore == _missingSchemaAction, "MergeSchema failed");
                         _dataSet.EnforceConstraints = fEnforce;
                         return;
                     }
-                    if (dst._primaryKey != null)
+                    if (dst._primaryKey is not null)
                     {
                         key = GetSrcKey(src, dst);
                     }
@@ -298,14 +298,14 @@ namespace System.Data
                 }
 
                 DataRow? targetRow = null;
-                if (0 < dst!.Rows.Count && ndxSearch != null)
+                if (0 < dst!.Rows.Count && ndxSearch is not null)
                 {
                     targetRow = dst.FindMergeTarget(row, key, ndxSearch);
                 }
 
                 targetRow = dst.MergeRow(row, targetRow, _preserveChanges, ndxSearch);
 
-                if (targetRow.Table._dependentColumns != null && targetRow.Table._dependentColumns.Count > 0)
+                if (targetRow.Table._dependentColumns is not null && targetRow.Table._dependentColumns.Count > 0)
                 {
                     targetRow.Table.EvaluateExpressions(targetRow, DataRowAction.Change, null);
                 }
@@ -341,7 +341,7 @@ namespace System.Data
                 targetTable = _dataTable;
             }
 
-            if (targetTable == null)
+            if (targetTable is null)
             {
                 // in case of standalone table, we make sure that targetTable is not null, so if this check passes, it will be when it is called via detaset
                 if (MissingSchemaAction.Add == _missingSchemaAction)
@@ -366,7 +366,7 @@ namespace System.Data
                     {
                         DataColumn src = table.Columns[i];
                         DataColumn? dest = (targetTable.Columns.Contains(src.ColumnName, true)) ? targetTable.Columns[src.ColumnName] : null;
-                        if (dest == null)
+                        if (dest is null)
                         {
                             if (MissingSchemaAction.Add == _missingSchemaAction)
                             {
@@ -453,7 +453,7 @@ namespace System.Data
         private void MergeTableData(DataTable src)
         {
             DataTable? dest = MergeSchema(src);
-            if (dest == null) return;
+            if (dest is null) return;
 
             dest.MergingData = true;
             try
@@ -476,7 +476,7 @@ namespace System.Data
 
         private void MergeConstraints(DataTable table)
         {
-            Debug.Assert(_dataSet != null);
+            Debug.Assert(_dataSet is not null);
 
             // Merge constraints
             for (int i = 0; i < table.Constraints.Count; i++)
@@ -484,7 +484,7 @@ namespace System.Data
                 Constraint src = table.Constraints[i];
                 Constraint? dest = src.Clone(_dataSet, _IgnoreNSforTableLookup);
 
-                if (dest == null)
+                if (dest is null)
                 {
                     _dataSet.RaiseMergeFailed(table,
                         SR.Format(SR.DataMerge_MissingConstraint, src.GetType().FullName, src.ConstraintName),
@@ -494,7 +494,7 @@ namespace System.Data
                 else
                 {
                     Constraint? cons = dest.Table!.Constraints.FindConstraint(dest);
-                    if (cons == null)
+                    if (cons is null)
                     {
                         if (MissingSchemaAction.Add == _missingSchemaAction)
                         {
@@ -528,7 +528,7 @@ namespace System.Data
 
         private void MergeRelation(DataRelation relation)
         {
-            Debug.Assert(_dataSet != null);
+            Debug.Assert(_dataSet is not null);
             Debug.Assert(MissingSchemaAction.Error == _missingSchemaAction ||
                          MissingSchemaAction.Add == _missingSchemaAction,
                          "Unexpected value of MissingSchemaAction parameter : " + _missingSchemaAction.ToString());
@@ -626,7 +626,7 @@ namespace System.Data
             IDictionaryEnumerator srcDE = src.GetEnumerator();
             while (srcDE.MoveNext())
             {
-                if (!_preserveChanges || dst[srcDE.Key] == null)
+                if (!_preserveChanges || dst[srcDE.Key] is null)
                 {
                     dst[srcDE.Key] = srcDE.Value;
                 }
@@ -635,13 +635,13 @@ namespace System.Data
 
         private DataKey GetSrcKey(DataTable src, DataTable dst)
         {
-            if (src._primaryKey != null)
+            if (src._primaryKey is not null)
             {
                 return src._primaryKey.Key;
             }
 
             DataKey key = default(DataKey);
-            if (dst._primaryKey != null)
+            if (dst._primaryKey is not null)
             {
                 DataColumn[] dstColumns = dst._primaryKey.Key.ColumnsReference;
                 DataColumn[] srcColumns = new DataColumn[dstColumns.Length];

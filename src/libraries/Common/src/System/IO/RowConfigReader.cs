@@ -64,7 +64,7 @@ namespace System.IO
         /// </summary>
         public bool TryGetNextValue(string key, [NotNullWhen(true)] out string? value)
         {
-            Debug.Assert(_buffer != null);
+            Debug.Assert(_buffer is not null);
             if (_currentIndex >= _buffer.Length)
             {
                 value = null;

@@ -67,7 +67,7 @@ namespace System.Xml.Xsl.Xslt
 
         public Compiler(XsltSettings settings, bool debug, string? scriptAssemblyPath)
         {
-            Debug.Assert(CompilerErrorColl == null, "Compiler cannot be reused");
+            Debug.Assert(CompilerErrorColl is null, "Compiler cannot be reused");
 
             Settings = settings;
             IsDebug = settings.IncludeDebugInformation | debug;
@@ -79,8 +79,8 @@ namespace System.Xml.Xsl.Xslt
 
         public CompilerErrorCollection Compile(object stylesheet, XmlResolver? xmlResolver, out QilExpression qil)
         {
-            Debug.Assert(stylesheet != null);
-            Debug.Assert(Root == null, "Compiler cannot be reused");
+            Debug.Assert(stylesheet is not null);
+            Debug.Assert(Root is null, "Compiler cannot be reused");
 
             new XsltLoader().Load(this, stylesheet, xmlResolver);
             qil = QilGenerator.CompileStylesheet(this);
@@ -132,7 +132,7 @@ namespace System.Xml.Xsl.Xslt
                 // Recover by choosing the declaration that occurs later in the stylesheet
             }
             NsAliases[ssheetNsUri] = new NsAlias(resultNsUri, resultPrefix, importPrecedence);
-            return oldNsAlias != null;
+            return oldNsAlias is not null;
         }
 
         private void MergeWhitespaceRules(Stylesheet sheet)
@@ -205,7 +205,7 @@ namespace System.Xml.Xsl.Xslt
 
         public bool ParseQName(string qname, out string prefix, out string localName, IErrorHelper errorHelper)
         {
-            Debug.Assert(qname != null);
+            Debug.Assert(qname is not null);
             try
             {
                 ValidateNames.ParseQNameThrow(qname, out prefix, out localName);
@@ -222,7 +222,7 @@ namespace System.Xml.Xsl.Xslt
 
         public bool ParseNameTest(string nameTest, out string? prefix, out string? localName, IErrorHelper errorHelper)
         {
-            Debug.Assert(nameTest != null);
+            Debug.Assert(nameTest is not null);
             try
             {
                 ValidateNames.ParseNameTestThrow(nameTest, out prefix, out localName);
@@ -239,7 +239,7 @@ namespace System.Xml.Xsl.Xslt
 
         public void ValidatePiName(string name, IErrorHelper errorHelper)
         {
-            Debug.Assert(name != null);
+            Debug.Assert(name is not null);
             try
             {
                 ValidateNames.ValidateNameThrow(
@@ -376,10 +376,10 @@ namespace System.Xml.Xsl.Xslt
                 if ((object?)x == (object?)y)
                     return 0;
 
-                if (x == null)
+                if (x is null)
                     return -1;
 
-                if (y == null)
+                if (y is null)
                     return 1;
 
                 int result = _moduleOrder[x.FileName].CompareTo(_moduleOrder[y.FileName]);

@@ -28,7 +28,7 @@ namespace System
             System.Diagnostics.Tracing.RuntimeEventSource.Initialize();
 
             string? startupHooksVariable = AppContext.GetData("STARTUP_HOOKS") as string;
-            if (startupHooksVariable == null)
+            if (startupHooksVariable is null)
             {
                 return;
             }
@@ -101,14 +101,14 @@ namespace System
             Assembly assembly;
             try
             {
-                if (startupHook.Path != null)
+                if (startupHook.Path is not null)
                 {
                     Debug.Assert(Path.IsPathFullyQualified(startupHook.Path));
                     assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(startupHook.Path);
                 }
-                else if (startupHook.AssemblyName != null)
+                else if (startupHook.AssemblyName is not null)
                 {
-                    Debug.Assert(startupHook.AssemblyName != null);
+                    Debug.Assert(startupHook.AssemblyName is not null);
                     assembly = AssemblyLoadContext.Default.LoadFromAssemblyName(startupHook.AssemblyName);
                 }
                 else
@@ -124,7 +124,7 @@ namespace System
                     assemblyLoadException);
             }
 
-            Debug.Assert(assembly != null);
+            Debug.Assert(assembly is not null);
             Type type = assembly.GetType(StartupHookTypeName, throwOnError: true)!;
 
             // Look for a static method without any parameters
@@ -135,7 +135,7 @@ namespace System
                                                          null); // no parameter modifiers
 
             bool wrongSignature = false;
-            if (initializeMethod == null)
+            if (initializeMethod is null)
             {
                 // There weren't any static methods without
                 // parameters. Look for any methods with the correct
@@ -151,10 +151,10 @@ namespace System
                 catch (AmbiguousMatchException)
                 {
                     // Found multiple. Will throw below due to initializeMethod being null.
-                    Debug.Assert(initializeMethod == null);
+                    Debug.Assert(initializeMethod is null);
                 }
 
-                if (initializeMethod != null)
+                if (initializeMethod is not null)
                 {
                     // Found one
                     wrongSignature = true;
@@ -177,7 +177,7 @@ namespace System
                                                       startupHook.Path ?? startupHook.AssemblyName.ToString()));
             }
 
-            Debug.Assert(initializeMethod != null &&
+            Debug.Assert(initializeMethod is not null &&
                          initializeMethod.IsStatic &&
                          initializeMethod.ReturnType == typeof(void) &&
                          initializeMethod.GetParameters().Length == 0);

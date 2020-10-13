@@ -20,7 +20,7 @@ namespace System.ServiceModel.Syndication
 
         public InlineCategoriesDocument(IEnumerable<SyndicationCategory> categories, bool isFixed, string scheme)
         {
-            if (categories != null)
+            if (categories is not null)
             {
                 _categories = new NullNotAllowedCollection<SyndicationCategory>();
                 foreach (SyndicationCategory category in categories)

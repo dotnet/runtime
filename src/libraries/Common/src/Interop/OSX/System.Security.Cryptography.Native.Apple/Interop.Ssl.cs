@@ -340,7 +340,7 @@ internal static partial class Interop
             }
             finally
             {
-                if (cfProtocolsArrayRef != null)
+                if (cfProtocolsArrayRef is not null)
                 {
                     for (int i = 0; i < cfProtocolsArrayRef.Length; i++)
                     {
@@ -356,7 +356,7 @@ internal static partial class Interop
         {
             SafeCFDataHandle protocol;
 
-            if (SslGetAlpnSelected(ssl, out protocol) != 1 || protocol == null)
+            if (SslGetAlpnSelected(ssl, out protocol) != 1 || protocol is null)
             {
                 return null;
             }

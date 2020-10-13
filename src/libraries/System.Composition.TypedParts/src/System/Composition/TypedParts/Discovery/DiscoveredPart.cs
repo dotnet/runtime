@@ -74,7 +74,7 @@ namespace System.Composition.TypedParts.Discovery
             return GetPartActivatorDependencies(definitionAccessor)
                 .Concat(_activationFeatures
                     .SelectMany(feature => feature.GetDependencies(_partType, definitionAccessor)))
-                .Where(a => a != null)
+                .Where(a => a is not null)
                 .ToArray();
         }
 
@@ -82,13 +82,13 @@ namespace System.Composition.TypedParts.Discovery
         {
             var partTypeAsType = _partType.AsType();
 
-            if (_constructor == null)
+            if (_constructor is null)
             {
                 foreach (var c in _partType.DeclaredConstructors.Where(ci => ci.IsPublic && !(ci.IsStatic)))
                 {
-                    if (_attributeContext.GetDeclaredAttribute<ImportingConstructorAttribute>(partTypeAsType, c) != null)
+                    if (_attributeContext.GetDeclaredAttribute<ImportingConstructorAttribute>(partTypeAsType, c) is not null)
                     {
-                        if (_constructor != null)
+                        if (_constructor is not null)
                         {
                             string message = SR.Format(SR.DiscoveredPart_MultipleImportingConstructorsFound, _partType);
                             throw new CompositionFailedException(message);
@@ -98,11 +98,11 @@ namespace System.Composition.TypedParts.Discovery
                     }
                 }
 
-                if (_constructor == null)
+                if (_constructor is null)
                     _constructor = _partType.DeclaredConstructors
                         .FirstOrDefault(ci => ci.IsPublic && !(ci.IsStatic || ci.GetParameters().Any()));
 
-                if (_constructor == null)
+                if (_constructor is null)
                 {
                     string message = SR.Format(SR.DiscoveredPart_NoImportingConstructorsFound, _partType);
                     throw new CompositionFailedException(message);
@@ -132,7 +132,7 @@ namespace System.Composition.TypedParts.Discovery
 
         public CompositeActivator GetActivator(DependencyAccessor definitionAccessor, IEnumerable<CompositionDependency> dependencies)
         {
-            if (_partActivator != null) return _partActivator;
+            if (_partActivator is not null) return _partActivator;
 
             var contextParam = Expression.Parameter(typeof(LifetimeContext), "cc");
             var operationParm = Expression.Parameter(typeof(CompositionOperation), "op");
@@ -247,7 +247,7 @@ namespace System.Composition.TypedParts.Discovery
                     return true;
                 }
 
-                if (x == null || y == null)
+                if (x is null || y is null)
                 {
                     return false;
                 }

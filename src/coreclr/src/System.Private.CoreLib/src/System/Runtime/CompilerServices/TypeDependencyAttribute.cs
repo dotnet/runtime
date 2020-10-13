@@ -12,7 +12,7 @@ namespace System.Runtime.CompilerServices
 
         public TypeDependencyAttribute(string typeName)
         {
-            if (typeName == null) throw new ArgumentNullException(nameof(typeName));
+            if (typeName is null) throw new ArgumentNullException(nameof(typeName));
             this.typeName = typeName;
         }
     }

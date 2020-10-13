@@ -432,7 +432,7 @@ namespace Microsoft.VisualBasic
                     Output.Write(prefix);
                 }
 
-                if (current.AttributeType != null)
+                if (current.AttributeType is not null)
                 {
                     Output.Write(GetTypeOutput(current.AttributeType));
                 }
@@ -648,12 +648,12 @@ namespace Microsoft.VisualBasic
             }
 
             // "o <> nothing" should be "not o is nothing"
-            if (e.Right is CodePrimitiveExpression && ((CodePrimitiveExpression)e.Right).Value == null)
+            if (e.Right is CodePrimitiveExpression && ((CodePrimitiveExpression)e.Right).Value is null)
             {
                 GenerateNotIsNullExpression(e.Left);
                 return;
             }
-            if (e.Left is CodePrimitiveExpression && ((CodePrimitiveExpression)e.Left).Value == null)
+            if (e.Left is CodePrimitiveExpression && ((CodePrimitiveExpression)e.Left).Value is null)
             {
                 GenerateNotIsNullExpression(e.Right);
                 return;
@@ -768,7 +768,7 @@ namespace Microsoft.VisualBasic
         private string GetArrayPostfix(CodeTypeReference typeRef)
         {
             string s = "";
-            if (typeRef.ArrayElementType != null)
+            if (typeRef.ArrayElementType is not null)
             {
                 // Recurse up
                 s = GetArrayPostfix(typeRef.ArrayElementType);
@@ -846,7 +846,7 @@ namespace Microsoft.VisualBasic
         protected override void GenerateThrowExceptionStatement(CodeThrowExceptionStatement e)
         {
             Output.Write("Throw");
-            if (e.ToThrow != null)
+            if (e.ToThrow is not null)
             {
                 Output.Write(' ');
                 GenerateExpression(e.ToThrow);
@@ -892,7 +892,7 @@ namespace Microsoft.VisualBasic
                 }
 
                 // The tricky thing is we need to declare the size - 1
-                if (e.SizeExpression != null)
+                if (e.SizeExpression is not null)
                 {
                     Output.Write('(');
                     GenerateExpression(e.SizeExpression);
@@ -941,7 +941,7 @@ namespace Microsoft.VisualBasic
 
         protected override void GenerateFieldReferenceExpression(CodeFieldReferenceExpression e)
         {
-            if (e.TargetObject != null)
+            if (e.TargetObject is not null)
             {
                 GenerateExpression(e.TargetObject);
                 Output.Write('.');
@@ -1075,7 +1075,7 @@ namespace Microsoft.VisualBasic
 
         protected override void GenerateMethodReferenceExpression(CodeMethodReferenceExpression e)
         {
-            if (e.TargetObject != null)
+            if (e.TargetObject is not null)
             {
                 GenerateExpression(e.TargetObject);
                 Output.Write('.');
@@ -1094,7 +1094,7 @@ namespace Microsoft.VisualBasic
 
         protected override void GenerateEventReferenceExpression(CodeEventReferenceExpression e)
         {
-            if (e.TargetObject != null)
+            if (e.TargetObject is not null)
             {
                 bool localReference = (e.TargetObject is CodeThisReferenceExpression);
                 GenerateExpression(e.TargetObject);
@@ -1116,7 +1116,7 @@ namespace Microsoft.VisualBasic
 
         private void GenerateFormalEventReferenceExpression(CodeEventReferenceExpression e)
         {
-            if (e.TargetObject != null)
+            if (e.TargetObject is not null)
             {
                 // Visual Basic Compiler does not like the me reference like this.
                 if (!(e.TargetObject is CodeThisReferenceExpression))
@@ -1130,7 +1130,7 @@ namespace Microsoft.VisualBasic
 
         protected override void GenerateDelegateInvokeExpression(CodeDelegateInvokeExpression e)
         {
-            if (e.TargetObject != null)
+            if (e.TargetObject is not null)
             {
                 if (e.TargetObject is CodeEventReferenceExpression)
                 {
@@ -1190,7 +1190,7 @@ namespace Microsoft.VisualBasic
 
         private bool IsDocComment(CodeCommentStatement comment)
         {
-            return ((comment != null) && (comment.Comment != null) && comment.Comment.DocComment);
+            return ((comment is not null) && (comment.Comment is not null) && comment.Comment.DocComment);
         }
 
         protected override void GenerateCommentStatements(CodeCommentStatementCollection e)
@@ -1250,7 +1250,7 @@ namespace Microsoft.VisualBasic
 
         protected override void GenerateMethodReturnStatement(CodeMethodReturnStatement e)
         {
-            if (e.Expression != null)
+            if (e.Expression is not null)
             {
                 Output.Write("Return ");
                 GenerateExpression(e.Expression);
@@ -1354,7 +1354,7 @@ namespace Microsoft.VisualBasic
             Output.Write(e.Label);
             Output.WriteLine(':');
             Indent++;
-            if (e.Statement != null)
+            if (e.Statement is not null)
             {
                 GenerateStatement(e.Statement);
             }
@@ -1367,16 +1367,16 @@ namespace Microsoft.VisualBasic
             Output.Write("Dim ");
 
             CodeTypeReference typeRef = e.Type;
-            if (typeRef.ArrayRank == 1 && e.InitExpression != null)
+            if (typeRef.ArrayRank == 1 && e.InitExpression is not null)
             {
                 CodeArrayCreateExpression eAsArrayCreate = e.InitExpression as CodeArrayCreateExpression;
-                if (eAsArrayCreate != null && eAsArrayCreate.Initializers.Count == 0)
+                if (eAsArrayCreate is not null && eAsArrayCreate.Initializers.Count == 0)
                 {
                     doInit = false;
                     OutputIdentifier(e.Name);
                     Output.Write('(');
 
-                    if (eAsArrayCreate.SizeExpression != null)
+                    if (eAsArrayCreate.SizeExpression is not null)
                     {
                         Output.Write('(');
                         GenerateExpression(eAsArrayCreate.SizeExpression);
@@ -1389,7 +1389,7 @@ namespace Microsoft.VisualBasic
 
                     Output.Write(')');
 
-                    if (typeRef.ArrayElementType != null)
+                    if (typeRef.ArrayElementType is not null)
                         OutputArrayPostfix(typeRef.ArrayElementType);
 
                     Output.Write(" As ");
@@ -1401,7 +1401,7 @@ namespace Microsoft.VisualBasic
             else
                 OutputTypeNamePair(e.Type, e.Name);
 
-            if (doInit && e.InitExpression != null)
+            if (doInit && e.InitExpression is not null)
             {
                 Output.Write(" = ");
                 GenerateExpression(e.InitExpression);
@@ -1435,7 +1435,7 @@ namespace Microsoft.VisualBasic
             }
 
             string eventName = e.Name;
-            if (e.PrivateImplementationType != null)
+            if (e.PrivateImplementationType is not null)
             {
                 string impl = GetBaseTypeOutput(e.PrivateImplementationType, preferBuiltInTypes: false);
                 impl = impl.Replace('.', '_');
@@ -1465,7 +1465,7 @@ namespace Microsoft.VisualBasic
                     OutputIdentifier(eventName);
                 }
             }
-            else if (e.PrivateImplementationType != null)
+            else if (e.PrivateImplementationType is not null)
             {
                 Output.Write(" Implements ");
                 OutputType(e.PrivateImplementationType);
@@ -1488,7 +1488,7 @@ namespace Microsoft.VisualBasic
                 }
 
                 OutputIdentifier(e.Name);
-                if (e.InitExpression != null)
+                if (e.InitExpression is not null)
                 {
                     Output.Write(" = ");
                     GenerateExpression(e.InitExpression);
@@ -1512,7 +1512,7 @@ namespace Microsoft.VisualBasic
                 }
 
                 OutputTypeNamePair(e.Type, e.Name);
-                if (e.InitExpression != null)
+                if (e.InitExpression is not null)
                 {
                     Output.Write(" = ");
                     GenerateExpression(e.InitExpression);
@@ -1536,7 +1536,7 @@ namespace Microsoft.VisualBasic
                 if (!(current is CodeTypeConstructor) && !(current is CodeConstructor)
                     && meth != e
                     && meth.Name.Equals(e.Name, StringComparison.OrdinalIgnoreCase)
-                    && meth.PrivateImplementationType == null)
+                    && meth.PrivateImplementationType is null)
                 {
                     return true;
                 }
@@ -1562,7 +1562,7 @@ namespace Microsoft.VisualBasic
             // need to change the implements name before doing overloads resolution
             //
             string methodName = e.Name;
-            if (e.PrivateImplementationType != null)
+            if (e.PrivateImplementationType is not null)
             {
                 string impl = GetBaseTypeOutput(e.PrivateImplementationType, preferBuiltInTypes: false);
                 impl = impl.Replace('.', '_');
@@ -1571,7 +1571,7 @@ namespace Microsoft.VisualBasic
 
             if (!IsCurrentInterface)
             {
-                if (e.PrivateImplementationType == null)
+                if (e.PrivateImplementationType is null)
                 {
                     OutputMemberAccessModifier(e.Attributes);
                     if (MethodIsOverloaded(e, c))
@@ -1638,7 +1638,7 @@ namespace Microsoft.VisualBasic
                     OutputIdentifier(methodName);
                 }
             }
-            else if (e.PrivateImplementationType != null)
+            else if (e.PrivateImplementationType is not null)
             {
                 Output.Write(" Implements ");
                 OutputType(e.PrivateImplementationType);
@@ -1696,7 +1696,7 @@ namespace Microsoft.VisualBasic
                 CodeMemberProperty prop = (CodeMemberProperty)current;
                 if (prop != e
                     && prop.Name.Equals(e.Name, StringComparison.OrdinalIgnoreCase)
-                    && prop.PrivateImplementationType == null)
+                    && prop.PrivateImplementationType is null)
                 {
                     return true;
                 }
@@ -1715,7 +1715,7 @@ namespace Microsoft.VisualBasic
             }
 
             string propName = e.Name;
-            if (e.PrivateImplementationType != null)
+            if (e.PrivateImplementationType is not null)
             {
                 string impl = GetBaseTypeOutput(e.PrivateImplementationType, preferBuiltInTypes: false);
                 impl = impl.Replace('.', '_');
@@ -1723,7 +1723,7 @@ namespace Microsoft.VisualBasic
             }
             if (!IsCurrentInterface)
             {
-                if (e.PrivateImplementationType == null)
+                if (e.PrivateImplementationType is null)
                 {
                     OutputMemberAccessModifier(e.Attributes);
                     if (PropertyIsOverloaded(e, c))
@@ -1785,7 +1785,7 @@ namespace Microsoft.VisualBasic
                     OutputIdentifier(propName);
                 }
             }
-            else if (e.PrivateImplementationType != null)
+            else if (e.PrivateImplementationType is not null)
             {
                 Output.Write(" Implements ");
                 OutputType(e.PrivateImplementationType);
@@ -1833,7 +1833,7 @@ namespace Microsoft.VisualBasic
 
         protected override void GeneratePropertyReferenceExpression(CodePropertyReferenceExpression e)
         {
-            if (e.TargetObject != null)
+            if (e.TargetObject is not null)
             {
                 GenerateExpression(e.TargetObject);
                 Output.Write('.');
@@ -2144,7 +2144,7 @@ namespace Microsoft.VisualBasic
         private bool AllowLateBound(CodeCompileUnit e)
         {
             object o = e.UserData["AllowLateBound"];
-            if (o != null && o is bool)
+            if (o is not null && o is bool)
             {
                 return (bool)o;
             }
@@ -2156,7 +2156,7 @@ namespace Microsoft.VisualBasic
         private bool RequireVariableDeclaration(CodeCompileUnit e)
         {
             object o = e.UserData["RequireVariableDeclaration"];
-            if (o != null && o is bool)
+            if (o is not null && o is bool)
             {
                 return (bool)o;
             }
@@ -2166,7 +2166,7 @@ namespace Microsoft.VisualBasic
         private bool GetUserData(CodeObject e, string property, bool defaultValue)
         {
             object o = e.UserData[property];
-            if (o != null && o is bool)
+            if (o is not null && o is bool)
             {
                 return (bool)o;
             }
@@ -2265,7 +2265,7 @@ namespace Microsoft.VisualBasic
             Output.Write("\",\"");
             Output.Write(checksumPragma.ChecksumAlgorithmId.ToString("B", CultureInfo.InvariantCulture));
             Output.Write("\",\"");
-            if (checksumPragma.ChecksumData != null)
+            if (checksumPragma.ChecksumData is not null)
             {
                 foreach (byte b in checksumPragma.ChecksumData)
                 {
@@ -2507,7 +2507,7 @@ namespace Microsoft.VisualBasic
         {
             StringBuilder sb = new StringBuilder();
 
-            while (typeRef.ArrayElementType != null)
+            while (typeRef.ArrayElementType is not null)
             {
                 typeRef = typeRef.ArrayElementType;
             }

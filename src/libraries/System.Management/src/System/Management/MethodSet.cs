@@ -86,7 +86,7 @@ namespace System.Management
                         if (status >= 0)
                         {
                             methodName = "";    // Condition primer to branch into the while loop.
-                            while (methodName != null && status >= 0 && status != (int)tag_WBEMSTATUS.WBEM_S_NO_MORE_DATA)
+                            while (methodName is not null && status >= 0 && status != (int)tag_WBEMSTATUS.WBEM_S_NO_MORE_DATA)
                             {
                                 methodName = null; inParameters = null; outParameters = null;
                                 status = parent.wbemObject.NextMethod_(0, out methodName, out inParameters, out outParameters);
@@ -264,7 +264,7 @@ namespace System.Management
                         if (status >= 0)
                         {
                             tempMethodName = "";    // Condition primer to branch into the while loop.
-                            while (tempMethodName != null && status >= 0 && status != (int)tag_WBEMSTATUS.WBEM_S_NO_MORE_DATA)
+                            while (tempMethodName is not null && status >= 0 && status != (int)tag_WBEMSTATUS.WBEM_S_NO_MORE_DATA)
                             {
                                 tempMethodName = null;
                                 status = parent.wbemObject.NextMethod_(0, out tempMethodName, out inP, out outP);
@@ -425,9 +425,9 @@ namespace System.Management
             if (parent.GetType() == typeof(ManagementObject)) //can't add methods to instance
                 throw new InvalidOperationException();
 
-            if (inParameters != null)
+            if (inParameters is not null)
                 wbemIn = inParameters.wbemObject;
-            if (outParameters != null)
+            if (outParameters is not null)
                 wbemOut = outParameters.wbemObject;
 
             int status = (int)ManagementStatus.Failed;

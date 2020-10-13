@@ -115,7 +115,7 @@ namespace System.Xml.Schema
         public XmlQualifiedName RefName
         {
             get { return _refName; }
-            set { _refName = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _refName = (value is null ? XmlQualifiedName.Empty : value); }
         }
 
         [XmlAttribute("substitutionGroup")]
@@ -123,7 +123,7 @@ namespace System.Xml.Schema
         public XmlQualifiedName SubstitutionGroup
         {
             get { return _substitutionGroup; }
-            set { _substitutionGroup = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _substitutionGroup = (value is null ? XmlQualifiedName.Empty : value); }
         }
 
         [XmlAttribute("type")]
@@ -131,7 +131,7 @@ namespace System.Xml.Schema
         public XmlQualifiedName SchemaTypeName
         {
             get { return _typeName; }
-            set { _typeName = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _typeName = (value is null ? XmlQualifiedName.Empty : value); }
         }
 
         [XmlElement("complexType", typeof(XmlSchemaComplexType)),
@@ -149,7 +149,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_constraints == null)
+                if (_constraints is null)
                 {
                     _constraints = new XmlSchemaObjectCollection();
                 }
@@ -169,7 +169,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_elementType == null)
+                if (_elementType is null)
                     return null;
 
                 if (_elementType.QualifiedName.Namespace == XmlReservedNs.NsXs)
@@ -201,7 +201,7 @@ namespace System.Xml.Schema
         [return: NotNullIfNotNull("schemaSet")]
         internal XmlReader? Validate(XmlReader reader, XmlResolver? resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
-            if (schemaSet != null)
+            if (schemaSet is not null)
             {
                 XmlReaderSettings readerSettings = new XmlReaderSettings();
                 readerSettings.ValidationType = ValidationType.Schema;
@@ -235,12 +235,12 @@ namespace System.Xml.Schema
         [XmlIgnore]
         internal bool HasDefault
         {
-            get { return _defaultValue != null && _defaultValue.Length > 0; }
+            get { return _defaultValue is not null && _defaultValue.Length > 0; }
         }
 
         internal bool HasConstraints
         {
-            get { return _constraints != null && _constraints.Count > 0; }
+            get { return _constraints is not null && _constraints.Count > 0; }
         }
 
         internal bool IsLocalTypeDerivationChecked
@@ -296,7 +296,7 @@ namespace System.Xml.Schema
             //  it needs to be cloned as well, since it may contain named elements and such. And these names
             //  will need to be cloned since they may change their namespace on chameleon includes
             XmlSchemaComplexType? complexType = _type as XmlSchemaComplexType;
-            if (complexType != null && complexType.QualifiedName.IsEmpty)
+            if (complexType is not null && complexType.QualifiedName.IsEmpty)
             {
                 newElem._type = (XmlSchemaType)complexType.Clone(parentSchema);
             }

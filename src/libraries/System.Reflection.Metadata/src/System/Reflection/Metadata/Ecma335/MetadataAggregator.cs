@@ -51,9 +51,9 @@ namespace System.Reflection.Metadata.Ecma335
             IReadOnlyList<int>? baseHeapSizes,
             IReadOnlyList<MetadataReader>? deltaReaders)
         {
-            if (baseTableRowCounts == null)
+            if (baseTableRowCounts is null)
             {
-                if (baseReader == null)
+                if (baseReader is null)
                 {
                     throw new ArgumentNullException(nameof(baseReader));
                 }
@@ -64,7 +64,7 @@ namespace System.Reflection.Metadata.Ecma335
                 }
 
                 CalculateBaseCounts(baseReader, out baseTableRowCounts, out baseHeapSizes);
-                Debug.Assert(baseTableRowCounts != null);
+                Debug.Assert(baseTableRowCounts is not null);
             }
             else
             {
@@ -73,7 +73,7 @@ namespace System.Reflection.Metadata.Ecma335
                     throw new ArgumentException(SR.Format(SR.ExpectedListOfSize, MetadataTokens.TableCount), nameof(baseTableRowCounts));
                 }
 
-                if (baseHeapSizes == null)
+                if (baseHeapSizes is null)
                 {
                     throw new ArgumentNullException(nameof(baseHeapSizes));
                 }
@@ -84,7 +84,7 @@ namespace System.Reflection.Metadata.Ecma335
                 }
             }
 
-            if (deltaReaders == null || deltaReaders.Count == 0)
+            if (deltaReaders is null || deltaReaders.Count == 0)
             {
                 throw new ArgumentException(SR.ExpectedNonEmptyList, nameof(deltaReaders));
             }

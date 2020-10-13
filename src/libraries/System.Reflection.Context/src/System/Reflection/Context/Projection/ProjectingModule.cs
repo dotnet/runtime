@@ -111,7 +111,7 @@ namespace System.Reflection.Context.Projection
         {
             var other = o as ProjectingModule;
 
-            return other != null &&
+            return other is not null &&
                    Projector == other.Projector &&
                    UnderlyingModule.Equals(other.UnderlyingModule);
         }

@@ -89,7 +89,7 @@ namespace System.Xml.Schema
         public XmlQualifiedName Refer
         {
             get { return _refer; }
-            set { _refer = (value == null ? XmlQualifiedName.Empty : value); }
+            set { _refer = (value is null ? XmlQualifiedName.Empty : value); }
         }
     }
 }

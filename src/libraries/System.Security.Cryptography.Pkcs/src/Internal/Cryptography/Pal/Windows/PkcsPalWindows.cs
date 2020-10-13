@@ -32,7 +32,7 @@ namespace Internal.Cryptography.Pal.Windows
         {
             using (SafeCryptMsgHandle hCryptMsg = Interop.Crypt32.CryptMsgOpenToDecode(MsgEncodingType.All, 0, 0, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero))
             {
-                if (hCryptMsg == null || hCryptMsg.IsInvalid)
+                if (hCryptMsg is null || hCryptMsg.IsInvalid)
                     throw Marshal.GetLastWin32Error().ToCryptographicException();
 
                 if (!Interop.Crypt32.CryptMsgUpdate(hCryptMsg, ref MemoryMarshal.GetReference(encodedMessage), encodedMessage.Length, fFinal: true))
@@ -117,9 +117,9 @@ namespace Internal.Cryptography.Pal.Windows
 
             using (handle)
             {
-                if (handle == null || handle.IsInvalid)
+                if (handle is null || handle.IsInvalid)
                 {
-                    if (exception != null)
+                    if (exception is not null)
                     {
                         throw exception;
                     }

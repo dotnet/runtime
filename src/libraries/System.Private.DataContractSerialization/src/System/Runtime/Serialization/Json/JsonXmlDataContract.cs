@@ -20,12 +20,12 @@ namespace System.Runtime.Serialization.Json
             string xmlContent = jsonReader.ReadElementContentAsString();
 
             DataContractSerializer dataContractSerializer = new DataContractSerializer(TraditionalDataContract.UnderlyingType,
-                GetKnownTypesFromContext(context, (context == null) ? null : context.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
+                GetKnownTypesFromContext(context, (context is null) ? null : context.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
 
             MemoryStream memoryStream = new MemoryStream(Encoding.UTF8.GetBytes(xmlContent));
             object? xmlValue;
             XmlDictionaryReaderQuotas? quotas = ((JsonReaderDelegator)jsonReader).ReaderQuotas;
-            if (quotas == null)
+            if (quotas is null)
             {
                 xmlValue = dataContractSerializer.ReadObject(memoryStream);
             }
@@ -33,7 +33,7 @@ namespace System.Runtime.Serialization.Json
             {
                 xmlValue = dataContractSerializer.ReadObject(XmlDictionaryReader.CreateTextReader(memoryStream, quotas));
             }
-            if (context != null)
+            if (context is not null)
             {
                 context.AddNewObject(xmlValue);
             }
@@ -43,7 +43,7 @@ namespace System.Runtime.Serialization.Json
         public override void WriteJsonValueCore(XmlWriterDelegator jsonWriter, object obj, XmlObjectSerializerWriteContextComplexJson? context, RuntimeTypeHandle declaredTypeHandle)
         {
             DataContractSerializer dataContractSerializer = new DataContractSerializer(Type.GetTypeFromHandle(declaredTypeHandle),
-                GetKnownTypesFromContext(context, (context == null) ? null : context.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
+                GetKnownTypesFromContext(context, (context is null) ? null : context.SerializerKnownTypeList), 1, false, false); //  maxItemsInObjectGraph //  ignoreExtensionDataObject //  preserveObjectReferences
 
             MemoryStream memoryStream = new MemoryStream();
             dataContractSerializer.WriteObject(memoryStream, obj);
@@ -55,16 +55,16 @@ namespace System.Runtime.Serialization.Json
         private List<Type> GetKnownTypesFromContext(XmlObjectSerializerContext? context, IList<Type>? serializerKnownTypeList)
         {
             List<Type> knownTypesList = new List<Type>();
-            if (context != null)
+            if (context is not null)
             {
                 List<XmlQualifiedName> stableNames = new List<XmlQualifiedName>();
                 Dictionary<XmlQualifiedName, DataContract>[] entries = context.scopedKnownTypes.dataContractDictionaries;
-                if (entries != null)
+                if (entries is not null)
                 {
                     for (int i = 0; i < entries.Length; i++)
                     {
                         Dictionary<XmlQualifiedName, DataContract> entry = entries[i];
-                        if (entry != null)
+                        if (entry is not null)
                         {
                             foreach (KeyValuePair<XmlQualifiedName, DataContract> pair in entry)
                             {
@@ -77,7 +77,7 @@ namespace System.Runtime.Serialization.Json
                         }
                     }
                 }
-                if (serializerKnownTypeList != null)
+                if (serializerKnownTypeList is not null)
                 {
                     knownTypesList.AddRange(serializerKnownTypeList);
                 }

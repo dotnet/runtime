@@ -53,13 +53,13 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentException"><paramref name="metadataVersion"/> is too long (the number of bytes when UTF8-encoded must be less than 255).</exception>
         public MetadataRootBuilder(MetadataBuilder tablesAndHeaps, string? metadataVersion = null, bool suppressValidation = false)
         {
-            if (tablesAndHeaps == null)
+            if (tablesAndHeaps is null)
             {
                 Throw.ArgumentNull(nameof(tablesAndHeaps));
             }
 
             Debug.Assert(BlobUtilities.GetUTF8ByteCount(DefaultMetadataVersionString) == DefaultMetadataVersionString.Length);
-            int metadataVersionByteCount = metadataVersion != null ? BlobUtilities.GetUTF8ByteCount(metadataVersion) : DefaultMetadataVersionString.Length;
+            int metadataVersionByteCount = metadataVersion is not null ? BlobUtilities.GetUTF8ByteCount(metadataVersion) : DefaultMetadataVersionString.Length;
 
             if (metadataVersionByteCount > MetadataSizes.MaxMetadataVersionByteCount)
             {
@@ -96,7 +96,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// </exception>
         public void Serialize(BlobBuilder builder, int methodBodyStreamRva, int mappedFieldDataStreamRva)
         {
-            if (builder == null)
+            if (builder is null)
             {
                 Throw.ArgumentNull(nameof(builder));
             }

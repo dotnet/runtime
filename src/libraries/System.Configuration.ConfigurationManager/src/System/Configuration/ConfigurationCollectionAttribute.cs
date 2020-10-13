@@ -16,7 +16,7 @@ namespace System.Configuration
 
         public ConfigurationCollectionAttribute(Type itemType)
         {
-            if (itemType == null) throw new ArgumentNullException(nameof(itemType));
+            if (itemType is null) throw new ArgumentNullException(nameof(itemType));
 
             ItemType = itemType;
         }

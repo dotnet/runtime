@@ -172,7 +172,7 @@ namespace System.Dynamic
 
             // Notify property changed outside the lock
             PropertyChangedEventHandler? propertyChanged = _propertyChanged;
-            if (propertyChanged != null && value != oldValue)
+            if (propertyChanged is not null && value != oldValue)
             {
                 propertyChanged(this, new PropertyChangedEventArgs(data.Class.Keys[index]));
             }
@@ -688,7 +688,7 @@ namespace System.Dynamic
 
             // Notify property changed for all properties.
             var propertyChanged = _propertyChanged;
-            if (propertyChanged != null)
+            if (propertyChanged is not null)
             {
                 for (int i = 0, n = data.Class.Keys.Length; i < n; i++)
                 {
@@ -800,7 +800,7 @@ namespace System.Dynamic
                 );
 
                 var result = new DynamicMetaObject(value, BindingRestrictions.Empty);
-                if (fallbackInvoke != null)
+                if (fallbackInvoke is not null)
                 {
                     result = fallbackInvoke(result);
                 }
@@ -921,7 +921,7 @@ namespace System.Dynamic
             private DynamicMetaObject AddDynamicTestAndDefer(DynamicMetaObjectBinder binder, ExpandoClass klass, ExpandoClass? originalClass, DynamicMetaObject succeeds)
             {
                 Expression ifTestSucceeds = succeeds.Expression;
-                if (originalClass != null)
+                if (originalClass is not null)
                 {
                     // we are accessing a member which has not yet been defined on this class.
                     // We force a class promotion after the type check.  If the class changes the

@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization
 
         private static FieldInfo[] InternalGetSerializableMembers(Type type)
         {
-            Debug.Assert(type != null);
+            Debug.Assert(type is not null);
 
             if (type.IsInterface)
             {
@@ -37,7 +37,7 @@ namespace System.Runtime.Serialization
             // get all of the private and assembly-access fields (e.g. all fields that aren't
             // virtual) and include them in the list of things to be serialized.
             Type? parentType = type.BaseType;
-            if (parentType != null && parentType != typeof(object))
+            if (parentType is not null && parentType != typeof(object))
             {
                 bool classNamesUnique = GetParentTypes(parentType, out Type[]? parentTypes, out int parentTypeCount);
 
@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization
 
                     // If we actually found any new MemberInfo's, we need to create a new MemberInfo array and
                     // copy all of the members which we've found so far into that.
-                    if (allMembers != null && allMembers.Count > 0)
+                    if (allMembers is not null && allMembers.Count > 0)
                     {
                         var membersTemp = new FieldInfo[allMembers.Count + typeMembers.Length];
                         Array.Copy(typeMembers, membersTemp, typeMembers.Length);
@@ -145,7 +145,7 @@ namespace System.Runtime.Serialization
                 }
 
                 // expand array if needed
-                if (parentTypes == null || parentTypeCount == parentTypes.Length)
+                if (parentTypes is null || parentTypeCount == parentTypes.Length)
                 {
                     Array.Resize(ref parentTypes, Math.Max(parentTypeCount * 2, 12));
                 }
@@ -163,7 +163,7 @@ namespace System.Runtime.Serialization
 
         public static MemberInfo[] GetSerializableMembers(Type type, StreamingContext context)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -193,7 +193,7 @@ namespace System.Runtime.Serialization
 
         internal static void SerializationSetValue(MemberInfo fi, object? target, object? value)
         {
-            Debug.Assert(fi != null);
+            Debug.Assert(fi is not null);
 
             if (fi is FieldInfo serField)
             {
@@ -206,15 +206,15 @@ namespace System.Runtime.Serialization
 
         public static object PopulateObjectMembers(object obj, MemberInfo[] members, object?[] data)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
-            if (members == null)
+            if (members is null)
             {
                 throw new ArgumentNullException(nameof(members));
             }
-            if (data == null)
+            if (data is null)
             {
                 throw new ArgumentNullException(nameof(data));
             }
@@ -226,7 +226,7 @@ namespace System.Runtime.Serialization
             for (int i = 0; i < members.Length; i++)
             {
                 MemberInfo member = members[i];
-                if (member == null)
+                if (member is null)
                 {
                     throw new ArgumentNullException(nameof(members), SR.Format(SR.ArgumentNull_NullMember, i));
                 }
@@ -235,7 +235,7 @@ namespace System.Runtime.Serialization
                 // This is either a forward reference or a null.  In either case, this may break some of the
                 // invariants mantained by the setter, so we'll do nothing with it for right now.
                 object? value = data[i];
-                if (value == null)
+                if (value is null)
                 {
                     continue;
                 }
@@ -256,11 +256,11 @@ namespace System.Runtime.Serialization
 
         public static object?[] GetObjectData(object obj, MemberInfo[] members)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
-            if (members == null)
+            if (members is null)
             {
                 throw new ArgumentNullException(nameof(members));
             }
@@ -269,13 +269,13 @@ namespace System.Runtime.Serialization
             for (int i = 0; i < members.Length; i++)
             {
                 MemberInfo member = members[i];
-                if (member == null)
+                if (member is null)
                 {
                     throw new ArgumentNullException(nameof(members), SR.Format(SR.ArgumentNull_NullMember, i));
                 }
 
                 FieldInfo? field = member as FieldInfo;
-                if (field == null)
+                if (field is null)
                 {
                     throw new SerializationException(SR.Serialization_UnknownMemberInfo);
                 }
@@ -287,7 +287,7 @@ namespace System.Runtime.Serialization
 
         public static ISerializationSurrogate GetSurrogateForCyclicalReference(ISerializationSurrogate innerSurrogate)
         {
-            if (innerSurrogate == null)
+            if (innerSurrogate is null)
             {
                 throw new ArgumentNullException(nameof(innerSurrogate));
             }
@@ -296,7 +296,7 @@ namespace System.Runtime.Serialization
 
         public static Type? GetTypeFromAssembly(Assembly assem, string name)
         {
-            if (assem == null)
+            if (assem is null)
             {
                 throw new ArgumentNullException(nameof(assem));
             }
@@ -320,7 +320,7 @@ namespace System.Runtime.Serialization
 
         internal static string GetClrAssemblyName(Type type, out bool hasTypeForwardedFrom)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -386,7 +386,7 @@ namespace System.Runtime.Serialization
 
         internal SurrogateForCyclicalReference(ISerializationSurrogate innerSurrogate)
         {
-            Debug.Assert(innerSurrogate != null);
+            Debug.Assert(innerSurrogate is not null);
             _innerSurrogate = innerSurrogate;
         }
 

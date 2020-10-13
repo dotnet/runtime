@@ -15,7 +15,7 @@ namespace System.Xml
 
         internal TreeIterator(XmlNode nodeTop) : base(((XmlDataDocument)(nodeTop.OwnerDocument!)).Mapper)
         {
-            Debug.Assert(nodeTop != null);
+            Debug.Assert(nodeTop is not null);
             _nodeTop = nodeTop;
             _currentNode = nodeTop;
         }
@@ -30,7 +30,7 @@ namespace System.Xml
             nextNode = _currentNode.FirstChild;
 
             // No children, try next sibling
-            if (nextNode != null)
+            if (nextNode is not null)
             {
                 _currentNode = nextNode;
                 return true;
@@ -50,7 +50,7 @@ namespace System.Xml
 
             XmlNode? nextNode = _currentNode.NextSibling;
 
-            if (nextNode != null)
+            if (nextNode is not null)
             {
                 _currentNode = nextNode;
                 return true;
@@ -58,7 +58,7 @@ namespace System.Xml
 
             // No next sibling, try the first sibling of from the parent chain
             nextNode = _currentNode;
-            while (nextNode != _nodeTop && nextNode!.NextSibling == null)
+            while (nextNode != _nodeTop && nextNode!.NextSibling is null)
             {
                 nextNode = nextNode.ParentNode;
             }
@@ -69,7 +69,7 @@ namespace System.Xml
                 return false;
             }
 
-            Debug.Assert(nextNode.NextSibling != null);
+            Debug.Assert(nextNode.NextSibling is not null);
             _currentNode = nextNode.NextSibling;
             return true;
         }

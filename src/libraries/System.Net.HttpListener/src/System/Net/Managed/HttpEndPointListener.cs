@@ -108,10 +108,10 @@ namespace System.Net
             Socket? accepted = args.SocketError == SocketError.Success ? args.AcceptSocket : null;
             epl.Accept(args);
 
-            if (accepted == null)
+            if (accepted is null)
                 return;
 
-            if (epl._secure && epl._cert == null)
+            if (epl._secure && epl._cert is null)
             {
                 accepted.Close();
                 return;
@@ -153,7 +153,7 @@ namespace System.Net
             HttpListenerRequest req = context.Request;
             ListenerPrefix? prefix;
             HttpListener? listener = SearchListener(req.Url, out prefix);
-            if (listener == null)
+            if (listener is null)
                 return false;
 
             context._listener = listener;
@@ -163,7 +163,7 @@ namespace System.Net
 
         public void UnbindContext(HttpListenerContext context)
         {
-            if (context == null || context.Request == null)
+            if (context is null || context.Request is null)
                 return;
 
             context._listener!.UnregisterContext(context);
@@ -172,7 +172,7 @@ namespace System.Net
         private HttpListener? SearchListener(Uri? uri, out ListenerPrefix? prefix)
         {
             prefix = null;
-            if (uri == null)
+            if (uri is null)
                 return null;
 
             string host = uri.Host;
@@ -183,7 +183,7 @@ namespace System.Net
             HttpListener? bestMatch = null;
             int bestLength = -1;
 
-            if (host != null && host != "")
+            if (host is not null && host != "")
             {
                 Dictionary<ListenerPrefix, HttpListener> localPrefixes = _prefixes;
                 foreach (ListenerPrefix p in localPrefixes.Keys)
@@ -209,19 +209,19 @@ namespace System.Net
             List<ListenerPrefix>? list = _unhandledPrefixes;
             bestMatch = MatchFromList(host, path, list, out prefix);
 
-            if (path != pathSlash && bestMatch == null)
+            if (path != pathSlash && bestMatch is null)
                 bestMatch = MatchFromList(host, pathSlash, list, out prefix);
 
-            if (bestMatch != null)
+            if (bestMatch is not null)
                 return bestMatch;
 
             list = _allPrefixes;
             bestMatch = MatchFromList(host, path, list, out prefix);
 
-            if (path != pathSlash && bestMatch == null)
+            if (path != pathSlash && bestMatch is null)
                 bestMatch = MatchFromList(host, pathSlash, list, out prefix);
 
-            if (bestMatch != null)
+            if (bestMatch is not null)
                 return bestMatch;
 
             return null;
@@ -230,7 +230,7 @@ namespace System.Net
         private HttpListener? MatchFromList(string? host, string path, List<ListenerPrefix>? list, out ListenerPrefix? prefix)
         {
             prefix = null;
-            if (list == null)
+            if (list is null)
                 return null;
 
             HttpListener? bestMatch = null;
@@ -255,7 +255,7 @@ namespace System.Net
 
         private void AddSpecial(List<ListenerPrefix> list, ListenerPrefix prefix)
         {
-            if (list == null)
+            if (list is null)
                 return;
 
             foreach (ListenerPrefix p in list)
@@ -268,7 +268,7 @@ namespace System.Net
 
         private bool RemoveSpecial(List<ListenerPrefix> list, ListenerPrefix prefix)
         {
-            if (list == null)
+            if (list is null)
                 return false;
 
             int c = list.Count;
@@ -290,11 +290,11 @@ namespace System.Net
                 return;
 
             List<ListenerPrefix>? list = _unhandledPrefixes;
-            if (list != null && list.Count > 0)
+            if (list is not null && list.Count > 0)
                 return;
 
             list = _allPrefixes;
-            if (list != null && list.Count > 0)
+            if (list is not null && list.Count > 0)
                 return;
 
             HttpEndPointManager.RemoveEndPoint(this, _endpoint);
@@ -323,7 +323,7 @@ namespace System.Net
                 do
                 {
                     current = _unhandledPrefixes;
-                    future = current != null ? new List<ListenerPrefix>(current) : new List<ListenerPrefix>();
+                    future = current is not null ? new List<ListenerPrefix>(current) : new List<ListenerPrefix>();
                     prefix._listener = listener;
                     AddSpecial(future, prefix);
                 } while (Interlocked.CompareExchange(ref _unhandledPrefixes, future, current) != current);
@@ -335,7 +335,7 @@ namespace System.Net
                 do
                 {
                     current = _allPrefixes;
-                    future = current != null ? new List<ListenerPrefix>(current) : new List<ListenerPrefix>();
+                    future = current is not null ? new List<ListenerPrefix>(current) : new List<ListenerPrefix>();
                     prefix._listener = listener;
                     AddSpecial(future, prefix);
                 } while (Interlocked.CompareExchange(ref _allPrefixes, future, current) != current);
@@ -364,7 +364,7 @@ namespace System.Net
                 do
                 {
                     current = _unhandledPrefixes;
-                    future = current != null ? new List<ListenerPrefix>(current) : new List<ListenerPrefix>();
+                    future = current is not null ? new List<ListenerPrefix>(current) : new List<ListenerPrefix>();
                     if (!RemoveSpecial(future, prefix))
                         break; // Prefix not found
                 } while (Interlocked.CompareExchange(ref _unhandledPrefixes, future, current) != current);
@@ -378,7 +378,7 @@ namespace System.Net
                 do
                 {
                     current = _allPrefixes;
-                    future = current != null ? new List<ListenerPrefix>(current) : new List<ListenerPrefix>();
+                    future = current is not null ? new List<ListenerPrefix>(current) : new List<ListenerPrefix>();
                     if (!RemoveSpecial(future, prefix))
                         break; // Prefix not found
                 } while (Interlocked.CompareExchange(ref _allPrefixes, future, current) != current);

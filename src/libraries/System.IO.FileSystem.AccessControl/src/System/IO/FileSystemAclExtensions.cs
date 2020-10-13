@@ -12,7 +12,7 @@ namespace System.IO
     {
         public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo)
         {
-            if (directoryInfo == null)
+            if (directoryInfo is null)
             {
                 throw new ArgumentNullException(nameof(directoryInfo));
             }
@@ -22,7 +22,7 @@ namespace System.IO
 
         public static DirectorySecurity GetAccessControl(this DirectoryInfo directoryInfo, AccessControlSections includeSections)
         {
-            if (directoryInfo == null)
+            if (directoryInfo is null)
             {
                 throw new ArgumentNullException(nameof(directoryInfo));
             }
@@ -32,7 +32,7 @@ namespace System.IO
 
         public static void SetAccessControl(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
         {
-            if (directorySecurity == null)
+            if (directorySecurity is null)
             {
                 throw new ArgumentNullException(nameof(directorySecurity));
             }
@@ -43,7 +43,7 @@ namespace System.IO
 
         public static FileSecurity GetAccessControl(this FileInfo fileInfo)
         {
-            if (fileInfo == null)
+            if (fileInfo is null)
             {
                 throw new ArgumentNullException(nameof(fileInfo));
             }
@@ -53,7 +53,7 @@ namespace System.IO
 
         public static FileSecurity GetAccessControl(this FileInfo fileInfo, AccessControlSections includeSections)
         {
-            if (fileInfo == null)
+            if (fileInfo is null)
             {
                 throw new ArgumentNullException(nameof(fileInfo));
             }
@@ -63,12 +63,12 @@ namespace System.IO
 
         public static void SetAccessControl(this FileInfo fileInfo, FileSecurity fileSecurity)
         {
-            if (fileInfo == null)
+            if (fileInfo is null)
             {
                 throw new ArgumentNullException(nameof(fileInfo));
             }
 
-            if (fileSecurity == null)
+            if (fileSecurity is null)
             {
                 throw new ArgumentNullException(nameof(fileSecurity));
             }
@@ -86,7 +86,7 @@ namespace System.IO
         /// <exception cref="ObjectDisposedException">The file stream is closed.</exception>
         public static FileSecurity GetAccessControl(this FileStream fileStream)
         {
-            if (fileStream == null)
+            if (fileStream is null)
             {
                 throw new ArgumentNullException(nameof(fileStream));
             }
@@ -109,12 +109,12 @@ namespace System.IO
         /// <exception cref="ObjectDisposedException">The file stream is closed.</exception>
         public static void SetAccessControl(this FileStream fileStream, FileSecurity fileSecurity)
         {
-            if (fileStream == null)
+            if (fileStream is null)
             {
                 throw new ArgumentNullException(nameof(fileStream));
             }
 
-            if (fileSecurity == null)
+            if (fileSecurity is null)
             {
                 throw new ArgumentNullException(nameof(fileSecurity));
             }
@@ -137,12 +137,12 @@ namespace System.IO
         /// <remarks>This extension method was added to .NET Core to bring the functionality that was provided by the `System.IO.DirectoryInfo.Create(System.Security.AccessControl.DirectorySecurity)` .NET Framework method.</remarks>
         public static void Create(this DirectoryInfo directoryInfo, DirectorySecurity directorySecurity)
         {
-            if (directoryInfo == null)
+            if (directoryInfo is null)
             {
                 throw new ArgumentNullException(nameof(directoryInfo));
             }
 
-            if (directorySecurity == null)
+            if (directorySecurity is null)
             {
                 throw new ArgumentNullException(nameof(directorySecurity));
             }
@@ -172,12 +172,12 @@ namespace System.IO
         /// <remarks>This extension method was added to .NET Core to bring the functionality that was provided by the `System.IO.FileStream.#ctor(System.String,System.IO.FileMode,System.Security.AccessControl.FileSystemRights,System.IO.FileShare,System.Int32,System.IO.FileOptions,System.Security.AccessControl.FileSecurity)` .NET Framework constructor.</remarks>
         public static FileStream Create(this FileInfo fileInfo, FileMode mode, FileSystemRights rights, FileShare share, int bufferSize, FileOptions options, FileSecurity fileSecurity)
         {
-            if (fileInfo == null)
+            if (fileInfo is null)
             {
                 throw new ArgumentNullException(nameof(fileInfo));
             }
 
-            if (fileSecurity == null)
+            if (fileSecurity is null)
             {
                 throw new ArgumentNullException(nameof(fileSecurity));
             }
@@ -234,12 +234,12 @@ namespace System.IO
         /// <remarks>This extension method was added to .NET Core to bring the functionality that was provided by the `System.IO.Directory.CreateDirectory(System.String,System.Security.AccessControl.DirectorySecurity)` .NET Framework method.</remarks>
         public static DirectoryInfo CreateDirectory(this DirectorySecurity directorySecurity, string path)
         {
-            if (directorySecurity == null)
+            if (directorySecurity is null)
             {
                 throw new ArgumentNullException(nameof(directorySecurity));
             }
 
-            if (path == null)
+            if (path is null)
             {
                 throw new ArgumentNullException(nameof(path));
             }
@@ -276,7 +276,7 @@ namespace System.IO
 
         private static unsafe SafeFileHandle CreateFileHandle(string fullPath, FileMode mode, FileSystemRights rights, FileShare share, FileOptions options, FileSecurity security)
         {
-            Debug.Assert(fullPath != null);
+            Debug.Assert(fullPath is not null);
 
             // Must use a valid Win32 constant
             if (mode == FileMode.Append)

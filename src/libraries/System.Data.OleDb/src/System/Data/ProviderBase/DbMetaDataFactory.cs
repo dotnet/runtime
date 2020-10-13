@@ -79,7 +79,7 @@ namespace System.Data.ProviderBase
 
             sourceTable = _metaDataCollectionsDataSet.Tables[collectionName];
 
-            if ((sourceTable == null) || (collectionName != sourceTable.TableName))
+            if ((sourceTable is null) || (collectionName != sourceTable.TableName))
             {
                 throw ADP.DataTableDoesNotExist(collectionName);
             }
@@ -134,12 +134,12 @@ namespace System.Data.ProviderBase
             DbCommand? command = null;
             DataTable? schemaTable = null;
 
-            Debug.Assert(requestedCollectionRow != null);
+            Debug.Assert(requestedCollectionRow is not null);
             string sqlCommand = (requestedCollectionRow[populationStringColumn, DataRowVersion.Current] as string)!;
             int numberOfRestrictions = (int)requestedCollectionRow[numberOfRestrictionsColumn, DataRowVersion.Current];
             string collectionName = (requestedCollectionRow[collectionNameColumn, DataRowVersion.Current] as string)!;
 
-            if ((restrictions != null) && (restrictions.Length > numberOfRestrictions))
+            if ((restrictions is not null) && (restrictions.Length > numberOfRestrictions))
             {
                 throw ADP.TooManyRestrictions(collectionName);
             }
@@ -152,7 +152,7 @@ namespace System.Data.ProviderBase
             {
                 DbParameter restrictionParameter = command.CreateParameter();
 
-                if ((restrictions != null) && (restrictions.Length > i) && (restrictions[i] != null))
+                if ((restrictions is not null) && (restrictions.Length > i) && (restrictions[i] is not null))
                 {
                     restrictionParameter.Value = restrictions[i];
                 }
@@ -204,7 +204,7 @@ namespace System.Data.ProviderBase
             }
             finally
             {
-                if (reader != null)
+                if (reader is not null)
                 {
                     reader.Dispose();
                     reader = null;
@@ -257,7 +257,7 @@ namespace System.Data.ProviderBase
             string? candidateCollectionName;
 
             DataTable? metaDataCollectionsTable = _metaDataCollectionsDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections];
-            if (metaDataCollectionsTable == null)
+            if (metaDataCollectionsTable is null)
             {
                 throw ADP.InvalidXml();
             }
@@ -306,7 +306,7 @@ namespace System.Data.ProviderBase
                         else
                         {
                             // have an inexact match - ok only if it is the only one
-                            if (exactCollectionName != null)
+                            if (exactCollectionName is not null)
                             {
                                 // can't fail here becasue we may still find an exact match
                                 haveMultipleInexactMatches = true;
@@ -318,7 +318,7 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            if (requestedCollectionRow == null)
+            if (requestedCollectionRow is null)
             {
                 if (versionFailure == false)
                 {
@@ -345,7 +345,7 @@ namespace System.Data.ProviderBase
             DataColumn? versionColumn = dataSourceInfoTable.Columns[_dataSourceProductVersion];
             DataColumn? normalizedVersionColumn = dataSourceInfoTable.Columns[_dataSourceProductVersionNormalized];
 
-            if ((versionColumn == null) || (normalizedVersionColumn == null))
+            if ((versionColumn is null) || (normalizedVersionColumn is null))
             {
                 throw ADP.MissingDataSourceInformationColumn();
             }
@@ -374,10 +374,10 @@ namespace System.Data.ProviderBase
             string? result = null;
 
             restrictionsTable = _metaDataCollectionsDataSet.Tables[DbMetaDataCollectionNames.Restrictions];
-            if (restrictionsTable != null)
+            if (restrictionsTable is not null)
             {
                 restrictionColumns = restrictionsTable.Columns;
-                if (restrictionColumns != null)
+                if (restrictionColumns is not null)
                 {
                     collectionName = restrictionColumns[_collectionName];
                     parameterName = restrictionColumns[_parameterName];
@@ -386,7 +386,7 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            if ((parameterName == null) || (collectionName == null) || (restrictionName == null) || (restrictionNumber == null))
+            if ((parameterName is null) || (collectionName is null) || (restrictionName is null) || (restrictionNumber is null))
             {
                 throw ADP.MissingRestrictionColumn();
             }
@@ -402,7 +402,7 @@ namespace System.Data.ProviderBase
                 }
             }
 
-            if (result == null)
+            if (result is null)
             {
                 throw ADP.MissingRestrictionRow();
             }
@@ -413,7 +413,7 @@ namespace System.Data.ProviderBase
 
         public virtual DataTable GetSchema(DbConnection connection, string collectionName, string?[]? restrictions)
         {
-            Debug.Assert(_metaDataCollectionsDataSet != null);
+            Debug.Assert(_metaDataCollectionsDataSet is not null);
 
             DataTable metaDataCollectionsTable = _metaDataCollectionsDataSet.Tables[DbMetaDataCollectionNames.MetaDataCollections]!;
             DataColumn populationMechanismColumn = metaDataCollectionsTable.Columns[_populationMechanism]!;
@@ -499,7 +499,7 @@ namespace System.Data.ProviderBase
                     break;
 
                 default:
-                    if (hiddenColumnNames == null)
+                    if (hiddenColumnNames is null)
                     {
                         break;
                     }
@@ -531,10 +531,10 @@ namespace System.Data.ProviderBase
 
             // check the minimum version first
             versionColumn = tableColumns[_minimumVersion];
-            if (versionColumn != null)
+            if (versionColumn is not null)
             {
                 version = requestedCollectionRow[versionColumn];
-                if (version != null)
+                if (version is not null)
                 {
                     if (version != DBNull.Value)
                     {
@@ -550,10 +550,10 @@ namespace System.Data.ProviderBase
             if (result == true)
             {
                 versionColumn = tableColumns[_maximumVersion];
-                if (versionColumn != null)
+                if (versionColumn is not null)
                 {
                     version = requestedCollectionRow[versionColumn];
-                    if (version != null)
+                    if (version is not null)
                     {
                         if (version != DBNull.Value)
                         {

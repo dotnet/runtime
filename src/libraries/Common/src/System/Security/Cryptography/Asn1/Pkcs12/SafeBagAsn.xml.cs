@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Asn1.Pkcs12
             }
             writer.PopSequence(new Asn1Tag(TagClass.ContextSpecific, 0));
 
-            if (BagAttributes != null)
+            if (BagAttributes is not null)
             {
 
                 writer.PushSetOf();

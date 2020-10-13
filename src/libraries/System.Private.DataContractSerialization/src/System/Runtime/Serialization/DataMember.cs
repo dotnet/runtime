@@ -124,7 +124,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_getter == null)
+                if (_getter is null)
                 {
                     _getter = FastInvokerBuilder.CreateGetter(MemberInfo);
                 }
@@ -138,7 +138,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_setter == null)
+                if (_setter is null)
                 {
                     _setter = FastInvokerBuilder.CreateSetter(MemberInfo);
                 }
@@ -213,10 +213,10 @@ namespace System.Runtime.Serialization
             {
                 get
                 {
-                    if (_memberType == null)
+                    if (_memberType is null)
                     {
                         FieldInfo? field = MemberInfo as FieldInfo;
-                        if (field != null)
+                        if (field is not null)
                             _memberType = field.FieldType;
                         else
                             _memberType = ((PropertyInfo)MemberInfo).PropertyType;
@@ -230,7 +230,7 @@ namespace System.Runtime.Serialization
             {
                 get
                 {
-                    if (_memberTypeContract == null)
+                    if (_memberTypeContract is null)
                     {
                         if (this.IsGetOnlyCollection)
                         {
@@ -287,7 +287,7 @@ namespace System.Runtime.Serialization
         {
             MemberInfo memberInfo = MemberInfo;
             FieldInfo? field = memberInfo as FieldInfo;
-            if (field != null)
+            if (field is not null)
             {
                 return DataContract.FieldRequiresMemberAccess(field);
             }
@@ -295,7 +295,7 @@ namespace System.Runtime.Serialization
             {
                 PropertyInfo property = (PropertyInfo)memberInfo;
                 MethodInfo? getMethod = property.GetMethod;
-                if (getMethod != null)
+                if (getMethod is not null)
                 {
                     return DataContract.MethodRequiresMemberAccess(getMethod) || !DataContract.IsTypeVisible(property.PropertyType);
                 }
@@ -312,7 +312,7 @@ namespace System.Runtime.Serialization
         {
             MemberInfo memberInfo = MemberInfo;
             FieldInfo? field = memberInfo as FieldInfo;
-            if (field != null)
+            if (field is not null)
             {
                 return DataContract.FieldRequiresMemberAccess(field);
             }
@@ -320,7 +320,7 @@ namespace System.Runtime.Serialization
             {
                 PropertyInfo property = (PropertyInfo)memberInfo;
                 MethodInfo? setMethod = property.SetMethod;
-                if (setMethod != null)
+                if (setMethod is not null)
                 {
                     return DataContract.MethodRequiresMemberAccess(setMethod) || !DataContract.IsTypeVisible(property.PropertyType);
                 }

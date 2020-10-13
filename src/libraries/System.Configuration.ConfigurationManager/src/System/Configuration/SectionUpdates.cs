@@ -43,7 +43,7 @@ namespace System.Configuration
                 foreach (string groupPart in groups)
                 {
                     SectionUpdates sectionUpdatesChild = (SectionUpdates)sectionUpdates._groups[groupPart];
-                    if (sectionUpdatesChild == null)
+                    if (sectionUpdatesChild is null)
                     {
                         sectionUpdatesChild = new SectionUpdates(groupPart);
                         sectionUpdates._groups[groupPart] = sectionUpdatesChild;
@@ -91,7 +91,7 @@ namespace System.Configuration
         private Update GetUpdate(string configKey)
         {
             Update update = (Update)_sections[configKey];
-            if (update != null)
+            if (update is not null)
             {
                 if (update.Retrieved) update = null;
                 else
@@ -107,7 +107,7 @@ namespace System.Configuration
 
         internal DeclarationUpdate GetSectionGroupUpdate()
         {
-            if ((_sectionGroupUpdate != null) && !_sectionGroupUpdate.Retrieved)
+            if ((_sectionGroupUpdate is not null) && !_sectionGroupUpdate.Retrieved)
             {
                 _sectionGroupUpdate.Retrieved = true;
                 return (DeclarationUpdate)_sectionGroupUpdate;
@@ -134,7 +134,7 @@ namespace System.Configuration
         // Return true if this section group or any of its children have unretrieved sections.
         internal bool HasUnretrievedSections()
         {
-            if ((_cUnretrieved > 0) || ((_sectionGroupUpdate != null) && !_sectionGroupUpdate.Retrieved)) return true;
+            if ((_cUnretrieved > 0) || ((_sectionGroupUpdate is not null) && !_sectionGroupUpdate.Retrieved)) return true;
 
             foreach (SectionUpdates sectionUpdates in _groups.Values)
                 if (sectionUpdates.HasUnretrievedSections()) return true;
@@ -146,7 +146,7 @@ namespace System.Configuration
         {
             _cUnretrieved = 0;
             foreach (SectionUpdates sectionUpdates in _groups.Values) sectionUpdates.MarkAsRetrieved();
-            if (_sectionGroupUpdate != null) _sectionGroupUpdate.Retrieved = true;
+            if (_sectionGroupUpdate is not null) _sectionGroupUpdate.Retrieved = true;
         }
 
         internal void MarkGroupAsRetrieved(string groupName)

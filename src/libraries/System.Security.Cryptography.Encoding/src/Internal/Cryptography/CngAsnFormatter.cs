@@ -17,7 +17,7 @@ namespace Internal.Cryptography
             // If OID is not present, then we can force CryptFormatObject
             // to use hex formatting by providing an empty OID string.
             string oidValue = string.Empty;
-            if (oid != null && oid.Value != null)
+            if (oid is not null && oid.Value is not null)
             {
                 oidValue = oid.Value;
             }
@@ -49,7 +49,7 @@ namespace Internal.Cryptography
                 finally
                 {
                     Marshal.FreeHGlobal(oidValuePtr);
-                    if (pooledarray != null)
+                    if (pooledarray is not null)
                     {
                         ArrayPool<char>.Shared.Return(pooledarray);
                     }

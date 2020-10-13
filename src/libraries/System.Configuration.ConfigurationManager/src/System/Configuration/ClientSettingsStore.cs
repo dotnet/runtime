@@ -37,11 +37,11 @@ namespace System.Configuration
             string fullSectionName = UserSettingsGroupPrefix + sectionName;
             ClientSettingsSection section = null;
 
-            if (config != null)
+            if (config is not null)
             {
                 section = config.GetSection(fullSectionName) as ClientSettingsSection;
 
-                if (section == null && declare)
+                if (section is null && declare)
                 {
                     // Looks like the section isn't declared - let's declare it and try again.
                     DeclareSection(config, sectionName);
@@ -58,7 +58,7 @@ namespace System.Configuration
         {
             ConfigurationSectionGroup settingsGroup = config.GetSectionGroup(UserSettingsGroupName);
 
-            if (settingsGroup == null)
+            if (settingsGroup is null)
             {
                 //Declare settings group
                 ConfigurationSectionGroup group = new UserSettingsGroup();
@@ -67,12 +67,12 @@ namespace System.Configuration
 
             settingsGroup = config.GetSectionGroup(UserSettingsGroupName);
 
-            Debug.Assert(settingsGroup != null, "Failed to declare settings group");
+            Debug.Assert(settingsGroup is not null, "Failed to declare settings group");
 
-            if (settingsGroup != null)
+            if (settingsGroup is not null)
             {
                 ConfigurationSection section = settingsGroup.Sections[sectionName];
-                if (section == null)
+                if (section is null)
                 {
                     section = new ClientSettingsSection();
                     section.SectionInformation.AllowExeDefinition = ConfigurationAllowExeDefinition.MachineToLocalUser;
@@ -95,7 +95,7 @@ namespace System.Configuration
             ConfigurationManager.RefreshSection(prefix + sectionName);
             ClientSettingsSection section = ConfigurationManager.GetSection(prefix + sectionName) as ClientSettingsSection;
 
-            if (section != null)
+            if (section is not null)
             {
                 foreach (SettingElement setting in section.Settings)
                 {
@@ -135,7 +135,7 @@ namespace System.Configuration
             Configuration config = ConfigurationManager.OpenMappedExeConfiguration(fileMap, userLevel);
             ClientSettingsSection section = config.GetSection(prefix + sectionName) as ClientSettingsSection;
 
-            if (section != null)
+            if (section is not null)
             {
                 foreach (SettingElement setting in section.Settings)
                 {
@@ -162,7 +162,7 @@ namespace System.Configuration
             ClientSettingsSection section = GetConfigSection(config, sectionName, false);
 
             // If the section is null, there is nothing to revert.
-            if (section != null)
+            if (section is not null)
             {
                 section.SectionInformation.RevertToParent();
                 config.Save();
@@ -179,14 +179,14 @@ namespace System.Configuration
             Configuration config = GetUserConfig(isRoaming);
             ClientSettingsSection section = GetConfigSection(config, sectionName, true);
 
-            if (section != null)
+            if (section is not null)
             {
                 SettingElementCollection sec = section.Settings;
                 foreach (DictionaryEntry entry in newSettings)
                 {
                     SettingElement se = sec.Get((string)entry.Key);
 
-                    if (se == null)
+                    if (se is null)
                     {
                         se = new SettingElement();
                         se.Name = (string)entry.Key;
@@ -240,7 +240,7 @@ namespace System.Configuration
             {
                 get
                 {
-                    if (s_configFactory == null)
+                    if (s_configFactory is null)
                     {
                         s_configFactory = TypeUtil.CreateInstance<IInternalConfigConfigurationFactory>(InternalConfigConfigurationFactoryTypeName);
                     }

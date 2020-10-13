@@ -43,7 +43,7 @@ namespace System.Security.Cryptography.Asn1
         {
             bool wroteValue = false;
 
-            if (TeletexString != null)
+            if (TeletexString is not null)
             {
                 if (wroteValue)
                     throw new CryptographicException();
@@ -52,7 +52,7 @@ namespace System.Security.Cryptography.Asn1
                 wroteValue = true;
             }
 
-            if (PrintableString != null)
+            if (PrintableString is not null)
             {
                 if (wroteValue)
                     throw new CryptographicException();
@@ -86,7 +86,7 @@ namespace System.Security.Cryptography.Asn1
                 wroteValue = true;
             }
 
-            if (Utf8String != null)
+            if (Utf8String is not null)
             {
                 if (wroteValue)
                     throw new CryptographicException();
@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Asn1
                 wroteValue = true;
             }
 
-            if (BmpString != null)
+            if (BmpString is not null)
             {
                 if (wroteValue)
                     throw new CryptographicException();

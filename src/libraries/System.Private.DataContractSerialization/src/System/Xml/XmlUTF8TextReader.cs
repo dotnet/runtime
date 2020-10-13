@@ -555,7 +555,7 @@ namespace System.Xml
 
         public void SetInput(byte[] buffer, int offset, int count, Encoding? encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose)
         {
-            if (buffer == null)
+            if (buffer is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(buffer)));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
@@ -573,7 +573,7 @@ namespace System.Xml
 
         public void SetInput(Stream stream, Encoding? encoding, XmlDictionaryReaderQuotas quotas, OnXmlDictionaryReaderClose? onClose)
         {
-            if (stream == null)
+            if (stream is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(stream));
             MoveToInitial(quotas, onClose);
             stream = new EncodingStreamWrapper(stream, encoding);
@@ -594,7 +594,7 @@ namespace System.Xml
             base.Close();
             OnXmlDictionaryReaderClose? onClose = _onClose;
             _onClose = null;
-            if (onClose != null)
+            if (onClose is not null)
             {
                 try
                 {
@@ -1429,7 +1429,7 @@ namespace System.Xml
 
         private void GetPosition(out int row, out int column)
         {
-            if (_rowOffsets == null)
+            if (_rowOffsets is null)
             {
                 _rowOffsets = BufferReader.GetRows();
             }

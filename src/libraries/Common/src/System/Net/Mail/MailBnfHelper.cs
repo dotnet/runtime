@@ -200,7 +200,7 @@ namespace System.Net.Mime
                 ++offset;
             }
             int start = offset;
-            StringBuilder localBuilder = (builder != null ? builder : new StringBuilder());
+            StringBuilder localBuilder = (builder is not null ? builder : new StringBuilder());
             for (; offset < data.Length; offset++)
             {
                 if (data[offset] == '\\')
@@ -212,7 +212,7 @@ namespace System.Net.Mime
                 {
                     localBuilder.Append(data, start, offset - start);
                     offset++;
-                    return (builder != null ? null : localBuilder.ToString());
+                    return (builder is not null ? null : localBuilder.ToString());
                 }
                 else if (data[offset] == '=' &&
                     data.Length > offset + 3 &&
@@ -239,7 +239,7 @@ namespace System.Net.Mime
             if (doesntRequireQuotes)
             {
                 localBuilder.Append(data, start, offset - start);
-                return (builder != null ? null : localBuilder.ToString());
+                return (builder is not null ? null : localBuilder.ToString());
             }
             throw new FormatException(SR.MailHeaderFieldMalformedHeader);
         }
@@ -279,7 +279,7 @@ namespace System.Net.Mime
 
         internal static string? GetDateTimeString(DateTime value, StringBuilder? builder)
         {
-            StringBuilder localBuilder = (builder != null ? builder : new StringBuilder());
+            StringBuilder localBuilder = (builder is not null ? builder : new StringBuilder());
             localBuilder.Append(value.Day);
             localBuilder.Append(' ');
             localBuilder.Append(s_months[value.Month]);
@@ -317,7 +317,7 @@ namespace System.Net.Mime
             string[] offsetFields = offset.Split(':');
             localBuilder.Append(offsetFields[0]);
             localBuilder.Append(offsetFields[1]);
-            return (builder != null ? null : localBuilder.ToString());
+            return (builder is not null ? null : localBuilder.ToString());
         }
 
         internal static void GetTokenOrQuotedString(string data, StringBuilder builder, bool allowUnicode)

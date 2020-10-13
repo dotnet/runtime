@@ -24,7 +24,7 @@ internal static partial class Interop
             out SafeLsaPolicyHandle PolicyHandle)
         {
             UNICODE_STRING systemNameUnicode = default;
-            if (SystemName != null)
+            if (SystemName is not null)
             {
                 fixed (char* c = SystemName)
                 {

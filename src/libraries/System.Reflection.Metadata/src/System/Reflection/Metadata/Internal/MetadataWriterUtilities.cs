@@ -10,7 +10,7 @@ namespace System.Reflection.Metadata.Ecma335
     {
         public static SignatureTypeCode GetConstantTypeCode(object? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 // The encoding of Type for the nullref value for FieldInit is ELEMENT_TYPE_CLASS with a Value of a zero.
                 return (SignatureTypeCode)0x12; // TODO

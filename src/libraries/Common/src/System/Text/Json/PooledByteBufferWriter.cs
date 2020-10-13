@@ -30,7 +30,7 @@ namespace System.Text.Json
         {
             get
             {
-                Debug.Assert(_rentedBuffer != null);
+                Debug.Assert(_rentedBuffer is not null);
                 Debug.Assert(_index <= _rentedBuffer.Length);
                 return _rentedBuffer.AsMemory(0, _index);
             }
@@ -40,7 +40,7 @@ namespace System.Text.Json
         {
             get
             {
-                Debug.Assert(_rentedBuffer != null);
+                Debug.Assert(_rentedBuffer is not null);
                 return _index;
             }
         }
@@ -49,7 +49,7 @@ namespace System.Text.Json
         {
             get
             {
-                Debug.Assert(_rentedBuffer != null);
+                Debug.Assert(_rentedBuffer is not null);
                 return _rentedBuffer.Length;
             }
         }
@@ -58,7 +58,7 @@ namespace System.Text.Json
         {
             get
             {
-                Debug.Assert(_rentedBuffer != null);
+                Debug.Assert(_rentedBuffer is not null);
                 return _rentedBuffer.Length - _index;
             }
         }
@@ -70,7 +70,7 @@ namespace System.Text.Json
 
         private void ClearHelper()
         {
-            Debug.Assert(_rentedBuffer != null);
+            Debug.Assert(_rentedBuffer is not null);
             Debug.Assert(_index <= _rentedBuffer.Length);
 
             _rentedBuffer.AsSpan(0, _index).Clear();
@@ -80,7 +80,7 @@ namespace System.Text.Json
         // Returns the rented buffer back to the pool
         public void Dispose()
         {
-            if (_rentedBuffer == null)
+            if (_rentedBuffer is null)
             {
                 return;
             }
@@ -92,7 +92,7 @@ namespace System.Text.Json
 
         public void Advance(int count)
         {
-            Debug.Assert(_rentedBuffer != null);
+            Debug.Assert(_rentedBuffer is not null);
             Debug.Assert(count >= 0);
             Debug.Assert(_index <= _rentedBuffer.Length - count);
 
@@ -125,7 +125,7 @@ namespace System.Text.Json
 
         private void CheckAndResizeBuffer(int sizeHint)
         {
-            Debug.Assert(_rentedBuffer != null);
+            Debug.Assert(_rentedBuffer is not null);
             Debug.Assert(sizeHint >= 0);
 
             if (sizeHint == 0)

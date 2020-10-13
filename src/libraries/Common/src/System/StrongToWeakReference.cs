@@ -14,7 +14,7 @@ namespace System
         /// <param name="obj">The object to wrap.</param>
         public StrongToWeakReference(T obj) : base(obj)
         {
-            Debug.Assert(obj != null, "Expected non-null obj");
+            Debug.Assert(obj is not null, "Expected non-null obj");
             _strongRef = obj;
         }
 
@@ -25,7 +25,7 @@ namespace System
         public void MakeStrong()
         {
             _strongRef = WeakTarget;
-            Debug.Assert(_strongRef != null, $"Expected non-null {nameof(_strongRef)} after setting");
+            Debug.Assert(_strongRef is not null, $"Expected non-null {nameof(_strongRef)} after setting");
         }
 
         /// <summary>Gets the wrapped object.</summary>

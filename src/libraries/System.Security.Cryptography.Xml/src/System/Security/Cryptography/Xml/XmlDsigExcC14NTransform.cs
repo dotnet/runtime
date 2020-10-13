@@ -45,12 +45,12 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadInnerXml(XmlNodeList nodeList)
         {
-            if (nodeList != null)
+            if (nodeList is not null)
             {
                 foreach (XmlNode n in nodeList)
                 {
                     XmlElement e = n as XmlElement;
-                    if (e != null)
+                    if (e is not null)
                     {
                         if (e.LocalName.Equals("InclusiveNamespaces")
                         && e.NamespaceURI.Equals(SignedXml.XmlDsigExcC14NTransformUrl) &&
@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.Xml
 
         protected override XmlNodeList GetInnerXml()
         {
-            if (InclusiveNamespacesPrefixList == null)
+            if (InclusiveNamespacesPrefixList is null)
                 return null;
             XmlDocument document = new XmlDocument();
             XmlElement element = document.CreateElement("Transform", SignedXml.XmlDsigNamespaceUrl);

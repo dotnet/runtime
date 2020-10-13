@@ -49,7 +49,7 @@ namespace System.Net.Http
         /// <param name="secure">If true, return proxies suitable for use with a secure connection. If false, return proxies suitable for an insecure connection.</param>
         public static MultiProxy Parse(FailedProxyCache failedProxyCache, string? proxyConfig, bool secure)
         {
-            Debug.Assert(failedProxyCache != null);
+            Debug.Assert(failedProxyCache is not null);
 
             Uri[] uris = Array.Empty<Uri>();
 
@@ -78,7 +78,7 @@ namespace System.Net.Http
         /// <param name="secure">If true, return proxies suitable for use with a secure connection. If false, return proxies suitable for an insecure connection.</param>
         public static MultiProxy CreateLazy(FailedProxyCache failedProxyCache, string proxyConfig, bool secure)
         {
-            Debug.Assert(failedProxyCache != null);
+            Debug.Assert(failedProxyCache is not null);
 
             return string.IsNullOrEmpty(proxyConfig) == false ?
                 new MultiProxy(failedProxyCache, proxyConfig, secure) :
@@ -94,9 +94,9 @@ namespace System.Net.Http
         public bool ReadNext([NotNullWhen(true)] out Uri? uri, out bool isFinalProxy)
         {
             // Enumerating indicates the previous proxy has failed; mark it as such.
-            if (_currentUri != null)
+            if (_currentUri is not null)
             {
-                Debug.Assert(_failedProxyCache != null);
+                Debug.Assert(_failedProxyCache is not null);
                 _failedProxyCache.SetProxyFailed(_currentUri);
             }
 
@@ -113,7 +113,7 @@ namespace System.Net.Http
 
             do
             {
-                Debug.Assert(_failedProxyCache != null);
+                Debug.Assert(_failedProxyCache is not null);
                 long renewTicks = _failedProxyCache.GetProxyRenewTicks(uri);
 
                 // Proxy hasn't failed recently, return for use.
@@ -132,14 +132,14 @@ namespace System.Net.Http
             while (ReadNextHelper(out uri, out isFinalProxy));
 
             // All the proxies in the config have failed; in this case, return the proxy that is closest to renewal.
-            if (_currentUri == null)
+            if (_currentUri is null)
             {
                 uri = oldestFailedProxyUri;
                 _currentUri = oldestFailedProxyUri;
 
-                if (oldestFailedProxyUri != null)
+                if (oldestFailedProxyUri is not null)
                 {
-                    Debug.Assert(uri != null);
+                    Debug.Assert(uri is not null);
                     _failedProxyCache.TryRenewProxy(uri, oldestFailedProxyTicks);
                     return true;
                 }
@@ -153,9 +153,9 @@ namespace System.Net.Http
         /// </summary>
         private bool ReadNextHelper([NotNullWhen(true)] out Uri? uri, out bool isFinalProxy)
         {
-            Debug.Assert(_uris != null || _proxyConfig != null, $"{nameof(ReadNext)} must not be called on a default-initialized {nameof(MultiProxy)}.");
+            Debug.Assert(_uris is not null || _proxyConfig is not null, $"{nameof(ReadNext)} must not be called on a default-initialized {nameof(MultiProxy)}.");
 
-            if (_uris != null)
+            if (_uris is not null)
             {
                 if (_currentIndex == _uris.Length)
                 {
@@ -169,7 +169,7 @@ namespace System.Net.Http
                 return true;
             }
 
-            Debug.Assert(_proxyConfig != null);
+            Debug.Assert(_proxyConfig is not null);
             if (_currentIndex < _proxyConfig.Length)
             {
                 bool hasProxy = TryParseProxyConfigPart(_proxyConfig.AsSpan(_currentIndex), _secure, out uri!, out int charactersConsumed);

@@ -41,7 +41,7 @@ namespace System.Runtime.Serialization
 
         private XmlSchemaSet GetSchemaSet()
         {
-            if (_schemas == null)
+            if (_schemas is null)
             {
                 _schemas = new XmlSchemaSet();
                 _schemas.XmlResolver = null;
@@ -74,17 +74,17 @@ namespace System.Runtime.Serialization
 
         public void Export(ICollection<Assembly> assemblies)
         {
-            if (assemblies == null)
+            if (assemblies is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(assemblies)));
 
             TraceExportBegin();
 
-            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet is null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 foreach (Assembly assembly in assemblies)
                 {
-                    if (assembly == null)
+                    if (assembly is null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.CannotExportNullAssembly, nameof(assemblies))));
 
                     Type[] types = assembly.GetTypes();
@@ -105,17 +105,17 @@ namespace System.Runtime.Serialization
 
         public void Export(ICollection<Type> types)
         {
-            if (types == null)
+            if (types is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(types)));
 
             TraceExportBegin();
 
-            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet is null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 foreach (Type type in types)
                 {
-                    if (type == null)
+                    if (type is null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.CannotExportNullType, nameof(types))));
                     AddType(type);
                 }
@@ -133,12 +133,12 @@ namespace System.Runtime.Serialization
 
         public void Export(Type type)
         {
-            if (type == null)
+            if (type is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
 
             TraceExportBegin();
 
-            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet is null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 AddType(type);
@@ -155,33 +155,33 @@ namespace System.Runtime.Serialization
 
         public XmlQualifiedName GetSchemaTypeName(Type type)
         {
-            if (type == null)
+            if (type is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
             type = GetSurrogatedType(type);
             DataContract dataContract = DataContract.GetDataContract(type);
             DataContractSet.EnsureTypeNotGeneric(dataContract.UnderlyingType);
             XmlDataContract? xmlDataContract = dataContract as XmlDataContract;
-            if (xmlDataContract != null && xmlDataContract.IsAnonymous)
+            if (xmlDataContract is not null && xmlDataContract.IsAnonymous)
                 return XmlQualifiedName.Empty;
             return dataContract.StableName;
         }
 
         public XmlSchemaType? GetSchemaType(Type type)
         {
-            if (type == null)
+            if (type is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
             type = GetSurrogatedType(type);
             DataContract dataContract = DataContract.GetDataContract(type);
             DataContractSet.EnsureTypeNotGeneric(dataContract.UnderlyingType);
             XmlDataContract? xmlDataContract = dataContract as XmlDataContract;
-            if (xmlDataContract != null && xmlDataContract.IsAnonymous)
+            if (xmlDataContract is not null && xmlDataContract.IsAnonymous)
                 return xmlDataContract.XsdType;
             return null;
         }
 
         public XmlQualifiedName? GetRootElementName(Type type)
         {
-            if (type == null)
+            if (type is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
             type = GetSurrogatedType(type);
             DataContract dataContract = DataContract.GetDataContract(type);
@@ -200,7 +200,7 @@ namespace System.Runtime.Serialization
         {
 #if SUPPORT_SURROGATE
             IDataContractSurrogate dataContractSurrogate;
-            if (options != null && (dataContractSurrogate = Options.GetSurrogate()) != null)
+            if (options is not null && (dataContractSurrogate = Options.GetSurrogate()) is not null)
                 type = DataContractSurrogateCaller.GetDataContractType(dataContractSurrogate, type);
 #endif
             return type;
@@ -227,16 +227,16 @@ namespace System.Runtime.Serialization
 
         private void AddKnownTypes()
         {
-            if (Options != null)
+            if (Options is not null)
             {
                 Collection<Type> knownTypes = Options.KnownTypes;
 
-                if (knownTypes != null)
+                if (knownTypes is not null)
                 {
                     for (int i = 0; i < knownTypes.Count; i++)
                     {
                         Type type = knownTypes[i];
-                        if (type == null)
+                        if (type is null)
                             throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.CannotExportNullKnownType));
                         AddType(type);
                     }
@@ -246,15 +246,15 @@ namespace System.Runtime.Serialization
 
         public bool CanExport(ICollection<Assembly> assemblies)
         {
-            if (assemblies == null)
+            if (assemblies is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(assemblies)));
 
-            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet is null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 foreach (Assembly assembly in assemblies)
                 {
-                    if (assembly == null)
+                    if (assembly is null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.CannotExportNullAssembly, nameof(assemblies))));
 
                     Type[] types = assembly.GetTypes();
@@ -279,15 +279,15 @@ namespace System.Runtime.Serialization
 
         public bool CanExport(ICollection<Type> types)
         {
-            if (types == null)
+            if (types is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(types)));
 
-            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet is null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 foreach (Type type in types)
                 {
-                    if (type == null)
+                    if (type is null)
                         throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.Format(SR.CannotExportNullType, nameof(types))));
                     AddType(type);
                 }
@@ -309,10 +309,10 @@ namespace System.Runtime.Serialization
 
         public bool CanExport(Type type)
         {
-            if (type == null)
+            if (type is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(type)));
 
-            DataContractSet? oldValue = (_dataContractSet == null) ? null : new DataContractSet(_dataContractSet);
+            DataContractSet? oldValue = (_dataContractSet is null) ? null : new DataContractSet(_dataContractSet);
             try
             {
                 AddType(type);

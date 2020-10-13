@@ -86,7 +86,7 @@ namespace System.Data
         public DataRelation(string? relationName, DataColumn parentColumn, DataColumn childColumn, bool createConstraints)
         {
             DataCommonEventSource.Log.Trace("<ds.DataRelation.DataRelation|API> {0}, relationName='{1}', parentColumn={2}, childColumn={3}, createConstraints={4}",
-                            ObjectID, relationName, (parentColumn != null) ? parentColumn.ObjectID : 0, (childColumn != null) ? childColumn.ObjectID : 0,
+                            ObjectID, relationName, (parentColumn is not null) ? parentColumn.ObjectID : 0, (childColumn is not null) ? childColumn.ObjectID : 0,
                             createConstraints);
 
             DataColumn[] parentColumns = new DataColumn[1];
@@ -359,15 +359,15 @@ namespace System.Data
                 long logScopeId = DataCommonEventSource.Log.EnterScope("<ds.DataRelation.set_RelationName|API> {0}, '{1}'", ObjectID, value);
                 try
                 {
-                    if (value == null)
+                    if (value is null)
                     {
                         value = string.Empty;
                     }
 
-                    CultureInfo locale = (_dataSet != null ? _dataSet.Locale : CultureInfo.CurrentCulture);
+                    CultureInfo locale = (_dataSet is not null ? _dataSet.Locale : CultureInfo.CurrentCulture);
                     if (string.Compare(_relationName, value, true, locale) != 0)
                     {
-                        if (_dataSet != null)
+                        if (_dataSet is not null)
                         {
                             if (value.Length == 0)
                             {
@@ -415,7 +415,7 @@ namespace System.Data
         {
             DataCommonEventSource.Log.Trace("<ds.DataRelation.CheckNestedRelations|INFO> {0}", ObjectID);
 
-            Debug.Assert(DataSet == null || !_nested, "this relation supposed to be not in dataset or not nested");
+            Debug.Assert(DataSet is null || !_nested, "this relation supposed to be not in dataset or not nested");
             // 1. There is no other relation (R) that has this.ChildTable as R.ChildTable
             //  This is not valid for Whidbey anymore so the code has been removed
 
@@ -477,7 +477,7 @@ namespace System.Data
                 {
                     if (_nested != value)
                     {
-                        if (_dataSet != null)
+                        if (_dataSet is not null)
                         {
                             if (value)
                             {
@@ -485,9 +485,9 @@ namespace System.Data
                                 { // if not added to collection, don't do this check
                                     CheckNamespaceValidityForNestedRelations(ParentTable.Namespace);
                                 }
-                                Debug.Assert(ChildTable != null, "On a DataSet, but not on Table. Bad state");
+                                Debug.Assert(ChildTable is not null, "On a DataSet, but not on Table. Bad state");
                                 ForeignKeyConstraint? constraint = ChildTable.Constraints.FindForeignKeyConstraint(ChildKey.ColumnsReference, ParentKey.ColumnsReference);
-                                if (constraint != null)
+                                if (constraint is not null)
                                 {
                                     constraint.CheckConstraint();
                                 }
@@ -512,7 +512,7 @@ namespace System.Data
                         if (value)
                         {
                             CheckNestedRelations();
-                            if (DataSet != null)
+                            if (DataSet is not null)
                                 if (ParentTable == ChildTable)
                                 {
                                     foreach (DataRow row in ChildTable.Rows)
@@ -520,7 +520,7 @@ namespace System.Data
                                         row.CheckForLoops(this);
                                     }
 
-                                    if (ChildTable.DataSet != null && (string.Compare(ChildTable.TableName, ChildTable.DataSet.DataSetName, true, ChildTable.DataSet.Locale) == 0))
+                                    if (ChildTable.DataSet is not null && (string.Compare(ChildTable.TableName, ChildTable.DataSet.DataSetName, true, ChildTable.DataSet.Locale) == 0))
                                     {
                                         throw ExceptionBuilder.DatasetConflictingName(DataSet.DataSetName);
                                     }
@@ -568,7 +568,7 @@ namespace System.Data
                                     }
                                 }
                                 // if not already in memory , form == unqualified
-                                if (CheckMultipleNested && ChildTable._tableNamespace != null && ChildTable._tableNamespace.Length == 0)
+                                if (CheckMultipleNested && ChildTable._tableNamespace is not null && ChildTable._tableNamespace.Length == 0)
                                 {
                                     throw ExceptionBuilder.TableCantBeNestedInTwoTables(ChildTable.TableName);
                                 }
@@ -598,7 +598,7 @@ namespace System.Data
 
         internal void SetParentKeyConstraint(UniqueConstraint? value)
         {
-            Debug.Assert(_parentKeyConstraint == null || value == null, "ParentKeyConstraint should not have been set already.");
+            Debug.Assert(_parentKeyConstraint is null || value is null, "ParentKeyConstraint should not have been set already.");
             _parentKeyConstraint = value;
         }
 
@@ -629,7 +629,7 @@ namespace System.Data
 
         internal void SetChildKeyConstraint(ForeignKeyConstraint? value)
         {
-            Debug.Assert(_childKeyConstraint == null || value == null, "ChildKeyConstraint should not have been set already.");
+            Debug.Assert(_childKeyConstraint is null || value is null, "ChildKeyConstraint should not have been set already.");
             _childKeyConstraint = value;
         }
 
@@ -639,7 +639,7 @@ namespace System.Data
         // still a good relation object.
         internal void CheckState()
         {
-            if (_dataSet == null)
+            if (_dataSet is null)
             {
                 _parentKey.CheckState();
                 _childKey.CheckState();
@@ -699,7 +699,7 @@ namespace System.Data
 
                 for (int i = 0; i < parentColumns.Length; i++)
                 {
-                    if ((parentColumns[i].Table!.DataSet == null) || (childColumns[i].Table!.DataSet == null))
+                    if ((parentColumns[i].Table!.DataSet is null) || (childColumns[i].Table!.DataSet is null))
                     {
                         throw ExceptionBuilder.ParentOrChildColumnsDoNotHaveDataSet();
                     }
@@ -707,7 +707,7 @@ namespace System.Data
 
                 CheckState();
 
-                _relationName = (relationName == null ? "" : relationName);
+                _relationName = (relationName is null ? "" : relationName);
                 _createConstraints = createConstraints;
             }
             finally
@@ -718,8 +718,8 @@ namespace System.Data
 
         internal DataRelation Clone(DataSet destination)
         {
-            DataCommonEventSource.Log.Trace("<ds.DataRelation.Clone|INFO> {0}, destination={1}", ObjectID, (destination != null) ? destination.ObjectID : 0);
-            Debug.Assert(destination != null);
+            DataCommonEventSource.Log.Trace("<ds.DataRelation.Clone|INFO> {0}, destination={1}", ObjectID, (destination is not null) ? destination.ObjectID : 0);
+            Debug.Assert(destination is not null);
 
             DataTable parent = destination.Tables[ParentTable.TableName, ParentTable.Namespace]!;
             DataTable child = destination.Tables[ChildTable.TableName, ChildTable.Namespace]!;
@@ -741,7 +741,7 @@ namespace System.Data
             clone.CheckMultipleNested = true; // enable the check
 
             // ...Extended Properties
-            if (_extendedProperties != null)
+            if (_extendedProperties is not null)
             {
                 foreach (object key in _extendedProperties.Keys)
                 {
@@ -753,7 +753,7 @@ namespace System.Data
 
         protected internal void OnPropertyChanging(PropertyChangedEventArgs pcevent)
         {
-            if (PropertyChanging != null)
+            if (PropertyChanging is not null)
             {
                 DataCommonEventSource.Log.Trace("<ds.DataRelation.OnPropertyChanging|INFO> {0}", ObjectID);
                 PropertyChanging(this, pcevent);

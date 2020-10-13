@@ -66,7 +66,7 @@ namespace Microsoft.XmlSerializer.Generator
                     else if (ArgumentMatch(arg, "out") || ShortNameArgumentMatch(arg, "o"))
                     {
                         i++;
-                        if (i >= args.Length || codePath != null)
+                        if (i >= args.Length || codePath is not null)
                         {
                             errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
                         }
@@ -94,7 +94,7 @@ namespace Microsoft.XmlSerializer.Generator
                     else if (ArgumentMatch(arg, "assembly") || ShortNameArgumentMatch(arg, "a"))
                     {
                         i++;
-                        if (i >= args.Length || assembly != null)
+                        if (i >= args.Length || assembly is not null)
                         {
                             errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
                         }
@@ -140,7 +140,7 @@ namespace Microsoft.XmlSerializer.Generator
                     {
                         if (arg.EndsWith(".dll", StringComparison.InvariantCultureIgnoreCase) || arg.EndsWith(".exe", StringComparison.InvariantCultureIgnoreCase))
                         {
-                            if (assembly != null)
+                            if (assembly is not null)
                             {
                                 errs.Add(SR.Format(SR.ErrInvalidArgument, arg));
                             }
@@ -167,9 +167,9 @@ namespace Microsoft.XmlSerializer.Generator
                     }
                 }
 
-                if (args.Length == 0 || assembly == null)
+                if (args.Length == 0 || assembly is null)
                 {
-                    if (assembly == null)
+                    if (assembly is null)
                     {
                         Console.Error.WriteLine(FormatMessage(parsableErrors, false, SR.Format(SR.ErrMissingRequiredArgument, SR.Format(SR.ErrAssembly, "assembly"))));
                     }
@@ -211,7 +211,7 @@ namespace Microsoft.XmlSerializer.Generator
             Assembly assembly = LoadAssembly(assemblyName, true);
             Type[] types;
 
-            if (typeNames == null || typeNames.Count == 0)
+            if (typeNames is null || typeNames.Count == 0)
             {
                 try
                 {
@@ -222,7 +222,7 @@ namespace Microsoft.XmlSerializer.Generator
                     List<Type> loadedTypes = new List<Type>();
                     foreach (Type type in typeException.Types)
                     {
-                        if (type != null)
+                        if (type is not null)
                         {
                             loadedTypes.Add(type);
                         }
@@ -238,7 +238,7 @@ namespace Microsoft.XmlSerializer.Generator
                 foreach (string typeName in typeNames)
                 {
                     Type type = assembly.GetType(typeName);
-                    if (type == null)
+                    if (type is null)
                     {
                         Console.Error.WriteLine(FormatMessage(parsableerrors, false, SR.Format(SR.ErrorDetails, SR.Format(SR.ErrLoadType, typeName, assemblyName))));
                     }
@@ -257,7 +257,7 @@ namespace Microsoft.XmlSerializer.Generator
 
                 try
                 {
-                    if (type != null)
+                    if (type is not null)
                     {
                         bool isObsolete = false;
                         object[] obsoleteAttributes = type.GetCustomAttributes(typeof(ObsoleteAttribute), false);
@@ -300,7 +300,7 @@ namespace Microsoft.XmlSerializer.Generator
                 var allMappings = (XmlMapping[])mappings.ToArray(typeof(XmlMapping));
 
                 bool gac = assembly.GlobalAssemblyCache;
-                outputDirectory = outputDirectory == null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
+                outputDirectory = outputDirectory is null ? (gac ? Environment.CurrentDirectory : Path.GetDirectoryName(assembly.Location)) : outputDirectory;
 
                 if (!Directory.Exists(outputDirectory))
                 {
@@ -341,7 +341,7 @@ namespace Microsoft.XmlSerializer.Generator
                     using (FileStream fs = File.Create(codePath))
                     {
                         MethodInfo method = typeof(System.Xml.Serialization.XmlSerializer).GetMethod("GenerateSerializer", BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic);
-                        if (method == null)
+                        if (method is null)
                         {
                             Console.Error.WriteLine(FormatMessage(parsableerrors: false, warning: false, message: SR.GenerateSerializerNotFound));
                         }
@@ -429,7 +429,7 @@ namespace Microsoft.XmlSerializer.Generator
 
                 return;
             }
-            if (xmlTypeMapping != null)
+            if (xmlTypeMapping is not null)
             {
                 xmlTypeMapping = importer.ImportTypeMapping(type);
                 mappings.Add(xmlTypeMapping);
@@ -442,7 +442,7 @@ namespace Microsoft.XmlSerializer.Generator
             Assembly assembly = null;
             string path = Path.IsPathRooted(assemblyName) ? assemblyName : Path.GetFullPath(assemblyName);
             assembly = Assembly.LoadFile(path);
-            if (assembly == null)
+            if (assembly is null)
             {
                 throw new InvalidOperationException(SR.Format(SR.ErrLoadAssembly, assemblyName));
             }
@@ -489,7 +489,7 @@ namespace Microsoft.XmlSerializer.Generator
         private static void WriteError(Exception e, bool parsableerrors)
         {
             Console.Error.WriteLine(FormatMessage(parsableerrors, false, e.Message));
-            if (e.InnerException != null)
+            if (e.InnerException is not null)
             {
                 WriteError(e.InnerException, parsableerrors);
             }
@@ -498,7 +498,7 @@ namespace Microsoft.XmlSerializer.Generator
         private static void WriteWarning(Exception e, bool parsableerrors)
         {
             Console.Out.WriteLine(FormatMessage(parsableerrors, true, e.Message));
-            if (e.InnerException != null)
+            if (e.InnerException is not null)
             {
                 WriteWarning(e.InnerException, parsableerrors);
             }
@@ -511,7 +511,7 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static string GetXmlSerializerAssemblyName(Type type, string defaultNamespace)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -520,7 +520,7 @@ namespace Microsoft.XmlSerializer.Generator
 
         private static string GetTempAssemblyName(AssemblyName parent, string ns)
         {
-            return parent.Name + ".XmlSerializers" + (ns == null || ns.Length == 0 ? "" : "." + ns.GetHashCode());
+            return parent.Name + ".XmlSerializers" + (ns is null || ns.Length == 0 ? "" : "." + ns.GetHashCode());
         }
 
         private static void ParseReferences()
@@ -586,7 +586,7 @@ namespace Microsoft.XmlSerializer.Generator
                         }
                         catch { }
 
-                        if (match != null && match.Success)
+                        if (match is not null && match.Success)
                         {
                             int index = match.Index + 1;
                             StringBuilder sb = new StringBuilder(reference);

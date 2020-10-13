@@ -82,7 +82,7 @@ namespace System.Globalization
 
         internal static void Append(StringBuilder outputBuffer, int Number)
         {
-            Debug.Assert(outputBuffer != null);
+            Debug.Assert(outputBuffer is not null);
             int outputBufferStartingLength = outputBuffer.Length;
 
             char cTens = '\x0';

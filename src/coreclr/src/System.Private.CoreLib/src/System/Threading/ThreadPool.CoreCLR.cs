@@ -47,7 +47,7 @@ namespace System.Threading
         internal void SetWaitObject(WaitHandle waitObject)
         {
             m_internalWaitObject = waitObject;
-            if (waitObject != null)
+            if (waitObject is not null)
             {
                 m_internalWaitObject.SafeWaitHandle.DangerousAddRef(ref bReleaseNeeded);
             }
@@ -76,7 +76,7 @@ namespace System.Threading
                             {
                                 if (bReleaseNeeded)
                                 {
-                                    Debug.Assert(m_internalWaitObject != null, "Must be non-null for bReleaseNeeded to be true");
+                                    Debug.Assert(m_internalWaitObject is not null, "Must be non-null for bReleaseNeeded to be true");
                                     m_internalWaitObject.SafeWaitHandle.DangerousRelease();
                                     bReleaseNeeded = false;
                                 }
@@ -138,7 +138,7 @@ namespace System.Threading
                         WaitHandleCleanupNative(registeredWaitHandle);
                         if (bReleaseNeeded)
                         {
-                            Debug.Assert(m_internalWaitObject != null, "Must be non-null for bReleaseNeeded to be true");
+                            Debug.Assert(m_internalWaitObject is not null, "Must be non-null for bReleaseNeeded to be true");
                             m_internalWaitObject.SafeWaitHandle.DangerousRelease();
                             bReleaseNeeded = false;
                         }
@@ -274,7 +274,7 @@ namespace System.Threading
         {
             RegisteredWaitHandle registeredWaitHandle = new RegisteredWaitHandle();
 
-            if (callBack != null)
+            if (callBack is not null)
             {
                 _ThreadPoolWaitOrTimerCallback callBackHelper = new _ThreadPoolWaitOrTimerCallback(callBack, state, compressStack);
                 state = (object)callBackHelper;
@@ -357,7 +357,7 @@ namespace System.Threading
         [SupportedOSPlatform("windows")]
         public static bool BindHandle(SafeHandle osHandle)
         {
-            if (osHandle == null)
+            if (osHandle is null)
                 throw new ArgumentNullException(nameof(osHandle));
 
             bool ret = false;

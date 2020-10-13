@@ -69,7 +69,7 @@ namespace System.Net.Http.Json
 
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -151,7 +151,7 @@ namespace System.Net.Http.Json
             Debug.Assert(readBuffer.Count < overflowBytes);
             _overflowBuffer.Array.AsSpan(0, readBuffer.Count).CopyTo(readBuffer);
 
-            Debug.Assert(_overflowBuffer.Array != null);
+            Debug.Assert(_overflowBuffer.Array is not null);
 
             _overflowBuffer = new ArraySegment<byte>(_overflowBuffer.Array, readBuffer.Count, overflowBytes - readBuffer.Count);
 
@@ -164,7 +164,7 @@ namespace System.Net.Http.Json
         {
             // If we had left-over bytes from a previous read, move it to the start of the buffer and read content into
             // the segment that follows.
-            Debug.Assert(_byteBuffer.Array != null);
+            Debug.Assert(_byteBuffer.Array is not null);
             Buffer.BlockCopy(_byteBuffer.Array, _byteBuffer.Offset, _byteBuffer.Array, 0, _byteBuffer.Count);
 
             int offset = _byteBuffer.Count;
@@ -174,8 +174,8 @@ namespace System.Net.Http.Json
 
             _byteBuffer = new ArraySegment<byte>(_byteBuffer.Array, 0, offset + bytesRead);
 
-            Debug.Assert(_byteBuffer.Array != null);
-            Debug.Assert(_charBuffer.Array != null);
+            Debug.Assert(_byteBuffer.Array is not null);
+            Debug.Assert(_charBuffer.Array is not null);
             Debug.Assert(_charBuffer.Count == 0, "We should only expect to read more input chars once all buffered content is read");
 
             _decoder.Convert(_byteBuffer.Array, _byteBuffer.Offset, _byteBuffer.Count, _charBuffer.Array, charIndex: 0, _charBuffer.Array.Length,
@@ -208,15 +208,15 @@ namespace System.Net.Http.Json
             {
                 _disposed = true;
 
-                Debug.Assert(_charBuffer.Array != null);
+                Debug.Assert(_charBuffer.Array is not null);
                 ArrayPool<char>.Shared.Return(_charBuffer.Array);
                 _charBuffer = default;
 
-                Debug.Assert(_byteBuffer.Array != null);
+                Debug.Assert(_byteBuffer.Array is not null);
                 ArrayPool<byte>.Shared.Return(_byteBuffer.Array);
                 _byteBuffer = default;
 
-                Debug.Assert(_overflowBuffer.Array != null);
+                Debug.Assert(_overflowBuffer.Array is not null);
                 ArrayPool<byte>.Shared.Return(_overflowBuffer.Array);
                 _overflowBuffer = default;
 

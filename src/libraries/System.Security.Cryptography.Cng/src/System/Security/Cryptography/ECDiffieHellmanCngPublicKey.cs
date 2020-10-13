@@ -58,9 +58,9 @@ namespace System.Security.Cryptography
         /// </summary>
         public static ECDiffieHellmanPublicKey FromByteArray(byte[] publicKeyBlob, CngKeyBlobFormat format)
         {
-            if (publicKeyBlob == null)
+            if (publicKeyBlob is null)
                 throw new ArgumentNullException(nameof(publicKeyBlob));
-            if (format == null)
+            if (format is null)
                 throw new ArgumentNullException(nameof(format));
 
             // Verify that the key can import successfully, because we did in the past.

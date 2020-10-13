@@ -120,7 +120,7 @@ namespace System.Runtime.Serialization
                     }
 
                     InvokeOnDeserialized(classContract);
-                    if (objectId == null)
+                    if (objectId is null)
                     {
                         _ilg.Load(_objectLocal);
 
@@ -266,12 +266,12 @@ namespace System.Runtime.Serialization
 
             private void InvokeOnDeserializing(ClassDataContract classContract)
             {
-                Debug.Assert(_objectLocal != null);
-                Debug.Assert(_objectType != null);
+                Debug.Assert(_objectLocal is not null);
+                Debug.Assert(_objectType is not null);
 
-                if (classContract.BaseContract != null)
+                if (classContract.BaseContract is not null)
                     InvokeOnDeserializing(classContract.BaseContract);
-                if (classContract.OnDeserializing != null)
+                if (classContract.OnDeserializing is not null)
                 {
                     _ilg.LoadAddress(_objectLocal);
                     _ilg.ConvertAddress(_objectLocal.LocalType, _objectType);
@@ -283,12 +283,12 @@ namespace System.Runtime.Serialization
 
             private void InvokeOnDeserialized(ClassDataContract classContract)
             {
-                Debug.Assert(_objectLocal != null);
-                Debug.Assert(_objectType != null);
+                Debug.Assert(_objectLocal is not null);
+                Debug.Assert(_objectType is not null);
 
-                if (classContract.BaseContract != null)
+                if (classContract.BaseContract is not null)
                     InvokeOnDeserialized(classContract.BaseContract);
-                if (classContract.OnDeserialized != null)
+                if (classContract.OnDeserialized is not null)
                 {
                     _ilg.LoadAddress(_objectLocal);
                     _ilg.ConvertAddress(_objectLocal.LocalType, _objectType);
@@ -305,7 +305,7 @@ namespace System.Runtime.Serialization
 
             private bool InvokeFactoryMethod(ClassDataContract classContract, LocalBuilder? objectId)
             {
-                Debug.Assert(_objectLocal != null);
+                Debug.Assert(_objectLocal is not null);
 
                 if (HasFactoryMethod(classContract))
                 {
@@ -331,10 +331,10 @@ namespace System.Runtime.Serialization
                     ReadMembers(classContract, extensionDataLocal);
 
                     ClassDataContract? currentContract = classContract;
-                    while (currentContract != null)
+                    while (currentContract is not null)
                     {
                         MethodInfo? extensionDataSetMethod = currentContract.ExtensionDataSetMethod;
-                        if (extensionDataSetMethod != null)
+                        if (extensionDataSetMethod is not null)
                             _ilg.Call(_objectLocal, extensionDataSetMethod, extensionDataLocal);
                         currentContract = currentContract.BaseContract;
                     }
@@ -378,10 +378,10 @@ namespace System.Runtime.Serialization
 
             private int ReadMembers(ClassDataContract classContract, bool[] requiredMembers, Label[] memberLabels, LocalBuilder memberIndexLocal, LocalBuilder? requiredIndexLocal)
             {
-                Debug.Assert(_objectLocal != null);
-                Debug.Assert(_objectType != null);
+                Debug.Assert(_objectLocal is not null);
+                Debug.Assert(_objectType is not null);
 
-                int memberCount = (classContract.BaseContract == null) ? 0 : ReadMembers(classContract.BaseContract, requiredMembers,
+                int memberCount = (classContract.BaseContract is null) ? 0 : ReadMembers(classContract.BaseContract, requiredMembers,
                     memberLabels, memberIndexLocal, requiredIndexLocal);
 
                 for (int i = 0; i < classContract.Members!.Count; i++, memberCount++)
@@ -439,7 +439,7 @@ namespace System.Runtime.Serialization
 
             private int GetRequiredMembers(ClassDataContract contract, bool[] requiredMembers)
             {
-                int memberCount = (contract.BaseContract == null) ? 0 : GetRequiredMembers(contract.BaseContract, requiredMembers);
+                int memberCount = (contract.BaseContract is null) ? 0 : GetRequiredMembers(contract.BaseContract, requiredMembers);
                 List<DataMember> members = contract.Members!;
                 for (int i = 0; i < members.Count; i++, memberCount++)
                 {
@@ -450,8 +450,8 @@ namespace System.Runtime.Serialization
 
             private void ReadISerializable(ClassDataContract classContract)
             {
-                Debug.Assert(_objectLocal != null);
-                Debug.Assert(_objectType != null);
+                Debug.Assert(_objectLocal is not null);
+                Debug.Assert(_objectType is not null);
 
                 ConstructorInfo ctor = classContract.GetISerializableConstructor()!;
                 _ilg.LoadAddress(_objectLocal);
@@ -474,7 +474,7 @@ namespace System.Runtime.Serialization
                 }
 
                 PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(type);
-                if ((primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.IsValueType)
+                if ((primitiveContract is not null && primitiveContract.UnderlyingType != Globals.TypeOfObject) || nullables != 0 || type.IsValueType)
                 {
                     LocalBuilder objectId = _ilg.DeclareLocal(Globals.TypeOfString, "objectIdRead");
                     _ilg.Call(_contextArg, XmlFormatGeneratorStatics.ReadAttributesMethod, _xmlReaderArg);
@@ -513,7 +513,7 @@ namespace System.Runtime.Serialization
                         value = _ilg.DeclareLocal(type, "innerValueRead");
                     }
 
-                    if (primitiveContract != null && primitiveContract.UnderlyingType != Globals.TypeOfObject)
+                    if (primitiveContract is not null && primitiveContract.UnderlyingType != Globals.TypeOfObject)
                     {
                         _ilg.Call(_xmlReaderArg, primitiveContract.XmlFormatReaderMethod);
                         _ilg.Stloc(value);
@@ -536,7 +536,7 @@ namespace System.Runtime.Serialization
                     }
                     _ilg.EndIf();
 
-                    if (nullableValue != null)
+                    if (nullableValue is not null)
                     {
                         _ilg.If(objectId, Cmp.NotEqualTo, Globals.NullObjectId);
                         WrapNullableObject(value, nullableValue, nullables);
@@ -664,7 +664,7 @@ namespace System.Runtime.Serialization
                 LocalBuilder value = ReadCollectionItem(collectionContract, itemType, itemName, itemNs);
                 if (isArray)
                 {
-                    Debug.Assert(growingCollection != null);
+                    Debug.Assert(growingCollection is not null);
                     MethodInfo ensureArraySizeMethod = XmlFormatGeneratorStatics.EnsureArraySizeMethod.MakeGenericMethod(itemType);
                     _ilg.Call(null, ensureArraySizeMethod, growingCollection, i);
                     _ilg.Stloc(growingCollection);
@@ -786,10 +786,10 @@ namespace System.Runtime.Serialization
 
             private bool TryReadPrimitiveArray(Type type, Type itemType, LocalBuilder size)
             {
-                Debug.Assert(_objectLocal != null);
+                Debug.Assert(_objectLocal is not null);
 
                 PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
-                if (primitiveContract == null)
+                if (primitiveContract is null)
                     return false;
 
                 string? readArrayMethod = null;
@@ -819,7 +819,7 @@ namespace System.Runtime.Serialization
                     default:
                         break;
                 }
-                if (readArrayMethod != null)
+                if (readArrayMethod is not null)
                 {
                     _ilg.Load(_xmlReaderArg);
                     _ilg.Load(_contextArg);
@@ -856,12 +856,12 @@ namespace System.Runtime.Serialization
 
             private void StoreCollectionValue(LocalBuilder collection, LocalBuilder value, CollectionDataContract collectionContract)
             {
-                Debug.Assert(collectionContract.AddMethod != null);
+                Debug.Assert(collectionContract.AddMethod is not null);
 
                 if (collectionContract.Kind == CollectionKind.GenericDictionary || collectionContract.Kind == CollectionKind.Dictionary)
                 {
                     ClassDataContract? keyValuePairContract = DataContract.GetDataContract(value.LocalType) as ClassDataContract;
-                    if (keyValuePairContract == null)
+                    if (keyValuePairContract is null)
                     {
                         DiagnosticUtility.DebugAssert("Failed to create contract for KeyValuePair type");
                     }

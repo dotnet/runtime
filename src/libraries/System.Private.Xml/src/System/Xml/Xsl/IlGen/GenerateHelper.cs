@@ -65,7 +65,7 @@ namespace System.Xml.Xsl.IlGen
             {
                 string aggTypeName = "System.Xml.Xsl.Runtime." + storageType.Name + "Aggregator";
                 Type? aggType = Type.GetType(aggTypeName);
-                Debug.Assert(aggType != null, $"Could not find type `{aggTypeName}`");
+                Debug.Assert(aggType is not null, $"Could not find type `{aggTypeName}`");
                 AggAvg = XmlILMethods.GetMethod(aggType, "Average");
                 AggAvgResult = XmlILMethods.GetMethod(aggType, "get_AverageResult");
                 AggCreate = XmlILMethods.GetMethod(aggType, "Create");
@@ -96,7 +96,7 @@ namespace System.Xml.Xsl.IlGen
             }
 
             FieldInfo? seqEmpty = SeqType.GetField("Empty");
-            Debug.Assert(seqEmpty != null, "Field `Empty` could not be found");
+            Debug.Assert(seqEmpty is not null, "Field `Empty` could not be found");
             SeqEmpty = seqEmpty;
             SeqReuse = XmlILMethods.GetMethod(SeqType, "CreateOrReuse", SeqType);
             SeqReuseSgl = XmlILMethods.GetMethod(SeqType, "CreateOrReuse", SeqType, storageType);
@@ -146,14 +146,14 @@ namespace System.Xml.Xsl.IlGen
         private static ConstructorInfo GetConstructor(Type className)
         {
             ConstructorInfo constrInfo = className.GetConstructor(Array.Empty<Type>())!;
-            Debug.Assert(constrInfo != null, "Constructor " + className + " cannot be null.");
+            Debug.Assert(constrInfo is not null, "Constructor " + className + " cannot be null.");
             return constrInfo;
         }
 
         private static ConstructorInfo GetConstructor(Type className, params Type[] args)
         {
             ConstructorInfo constrInfo = className.GetConstructor(args)!;
-            Debug.Assert(constrInfo != null, "Constructor " + className + " cannot be null.");
+            Debug.Assert(constrInfo is not null, "Constructor " + className + " cannot be null.");
             return constrInfo;
         }
     }
@@ -421,14 +421,14 @@ namespace System.Xml.Xsl.IlGen
         public static MethodInfo GetMethod(Type className, string methName)
         {
             MethodInfo? methInfo = className.GetMethod(methName);
-            Debug.Assert(methInfo != null, "Method " + className.Name + "." + methName + " cannot be null.");
+            Debug.Assert(methInfo is not null, "Method " + className.Name + "." + methName + " cannot be null.");
             return methInfo;
         }
 
         public static MethodInfo GetMethod(Type className, string methName, params Type[] args)
         {
             MethodInfo? methInfo = className.GetMethod(methName, args);
-            Debug.Assert(methInfo != null, "Method " + methName + " cannot be null.");
+            Debug.Assert(methInfo is not null, "Method " + methName + " cannot be null.");
             return methInfo;
         }
     }
@@ -520,7 +520,7 @@ namespace System.Xml.Xsl.IlGen
                 DebugStartScope();
 
                 // DebugInfo: Sequence point just before generating code for this function
-                if (sourceInfo != null)
+                if (sourceInfo is not null)
                 {
                     // Don't call DebugSequencePoint, as it puts Nop *before* the sequence point.  That is
                     // wrong in this case, because we need source line information to be emitted before any
@@ -535,7 +535,7 @@ namespace System.Xml.Xsl.IlGen
             else if (_module.EmitSymbols)
             {
                 // For a retail build, put source information on methods only
-                if (sourceInfo != null)
+                if (sourceInfo is not null)
                 {
                     MarkSequencePoint(sourceInfo);
                     // Set this.lastSourceInfo back to null to prevent generating additional sequence points
@@ -585,7 +585,7 @@ namespace System.Xml.Xsl.IlGen
         public void CallSyncToNavigator()
         {
             // Get helper method from module
-            if (_methSyncToNav == null)
+            if (_methSyncToNav is null)
                 _methSyncToNav = _module.FindMethod("SyncToNavigator");
 
             Call(_methSyncToNav!);
@@ -818,7 +818,7 @@ namespace System.Xml.Xsl.IlGen
             TraceCall(opcode, meth);
             _ilgen!.Emit(opcode, meth);
 
-            if (_lastSourceInfo != null)
+            if (_lastSourceInfo is not null)
             {
                 // Emit a "no source" sequence point, otherwise the debugger would return to the wrong line
                 // once the call has finished.  We are guaranteed not to emit adjacent sequence points because
@@ -1107,7 +1107,7 @@ namespace System.Xml.Xsl.IlGen
                 _initWriters = true;
             }
 
-            Debug.Assert(_locXOut != null);
+            Debug.Assert(_locXOut is not null);
         }
 
 
@@ -1352,7 +1352,7 @@ namespace System.Xml.Xsl.IlGen
             MethodInfo? meth;
 
             meth = XmlILMethods.StorageMethods[clrType].ValueAs;
-            if (meth == null)
+            if (meth is null)
             {
                 // Call (Type) item.ValueAs(Type, null)
                 LoadType(clrType);
@@ -1378,7 +1378,7 @@ namespace System.Xml.Xsl.IlGen
         {
             MethodInfo? meth = null;
 
-            if (keyType == null)
+            if (keyType is null)
             {
                 meth = XmlILMethods.SortKeyEmpty;
             }
@@ -1441,8 +1441,8 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public void DebugSequencePoint(ISourceLineInfo sourceInfo)
         {
-            Debug.Assert(_isDebug && _lastSourceInfo != null);
-            Debug.Assert(sourceInfo != null);
+            Debug.Assert(_isDebug && _lastSourceInfo is not null);
+            Debug.Assert(sourceInfo is not null);
 
             // When emitting sequence points, be careful to always follow two rules:
             // 1. Never emit adjacent sequence points, as this messes up the debugger.  We guarantee this by
@@ -1477,7 +1477,7 @@ namespace System.Xml.Xsl.IlGen
             Debug.Assert(_module.EmitSymbols);
 
             // Do not emit adjacent 0xfeefee sequence points, as that slows down stepping in the debugger
-            if (sourceInfo.IsNoSource && _lastSourceInfo != null && _lastSourceInfo.IsNoSource)
+            if (sourceInfo.IsNoSource && _lastSourceInfo is not null && _lastSourceInfo.IsNoSource)
             {
                 return;
             }
@@ -1524,7 +1524,7 @@ namespace System.Xml.Xsl.IlGen
 
         public void MarkLabel(Label lbl)
         {
-            if (_lastSourceInfo != null && !_lastSourceInfo.IsNoSource)
+            if (_lastSourceInfo is not null && !_lastSourceInfo.IsNoSource)
             {
                 // Emit a "no source" sequence point, otherwise the debugger would show
                 // a wrong line if we jumped to this label from another place
@@ -1718,7 +1718,7 @@ namespace System.Xml.Xsl.IlGen
 #endif
             _ilgen!.Emit(opcode, lblTarget);
 
-            if (_lastSourceInfo != null && (opcode.Equals(OpCodes.Br) || opcode.Equals(OpCodes.Br_S)))
+            if (_lastSourceInfo is not null && (opcode.Equals(OpCodes.Br) || opcode.Equals(OpCodes.Br_S)))
             {
                 // Emit a "no source" sequence point, otherwise the following label will be preceded
                 // with a dead Nop operation, which may lead to unverifiable code (SQLBUDT 423393).

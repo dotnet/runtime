@@ -25,13 +25,13 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="source">The source settings.</param>
         public FileConfigurationProvider(FileConfigurationSource source)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
             Source = source;
 
-            if (Source.ReloadOnChange && Source.FileProvider != null)
+            if (Source.ReloadOnChange && Source.FileProvider is not null)
             {
                 _changeTokenRegistration = ChangeToken.OnChange(
                     () => Source.FileProvider.Watch(Source.Path),
@@ -58,7 +58,7 @@ namespace Microsoft.Extensions.Configuration
         private void Load(bool reload)
         {
             IFileInfo file = Source.FileProvider?.GetFileInfo(Source.Path);
-            if (file == null || !file.Exists)
+            if (file is null || !file.Exists)
             {
                 if (Source.Optional || reload) // Always optional on reload
                 {
@@ -84,7 +84,7 @@ namespace Microsoft.Extensions.Configuration
 
                 static Stream OpenRead(IFileInfo fileInfo)
                 {
-                    if (fileInfo.PhysicalPath != null)
+                    if (fileInfo.PhysicalPath is not null)
                     {
                         // The default physical file info assumes asynchronous IO which results in unnecessary overhead
                         // especally since the configuration system is synchronous. This uses the same settings
@@ -134,7 +134,7 @@ namespace Microsoft.Extensions.Configuration
         private void HandleException(ExceptionDispatchInfo info)
         {
             bool ignoreException = false;
-            if (Source.OnLoadException != null)
+            if (Source.OnLoadException is not null)
             {
                 var exceptionContext = new FileLoadExceptionContext
                 {

@@ -61,7 +61,7 @@ namespace System.Collections
         //
         public ArrayList(ICollection c)
         {
-            if (c == null)
+            if (c is null)
                 throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
 
             int count = c.Count;
@@ -153,7 +153,7 @@ namespace System.Collections
         //
         public static ArrayList Adapter(IList list)
         {
-            if (list == null)
+            if (list is null)
                 throw new ArgumentNullException(nameof(list));
             return new IListWrapper(list);
         }
@@ -252,17 +252,17 @@ namespace System.Collections
         //
         public virtual bool Contains(object? item)
         {
-            if (item == null)
+            if (item is null)
             {
                 for (int i = 0; i < _size; i++)
-                    if (_items[i] == null)
+                    if (_items[i] is null)
                         return true;
                 return false;
             }
             else
             {
                 for (int i = 0; i < _size; i++)
-                    if ((_items[i] != null) && (_items[i]!.Equals(item))) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                    if ((_items[i] is not null) && (_items[i]!.Equals(item))) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                         return true;
                 return false;
             }
@@ -281,7 +281,7 @@ namespace System.Collections
         //
         public virtual void CopyTo(Array array, int arrayIndex)
         {
-            if ((array != null) && (array.Rank != 1))
+            if ((array is not null) && (array.Rank != 1))
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
 
             // Delegate rest of error checking to Array.Copy.
@@ -296,7 +296,7 @@ namespace System.Collections
         {
             if (_size - index < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            if ((array != null) && (array.Rank != 1))
+            if ((array is not null) && (array.Rank != 1))
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
 
             // Delegate rest of error checking to Array.Copy.
@@ -325,7 +325,7 @@ namespace System.Collections
         //
         public static IList FixedSize(IList list)
         {
-            if (list == null)
+            if (list is null)
                 throw new ArgumentNullException(nameof(list));
             return new FixedSizeList(list);
         }
@@ -335,7 +335,7 @@ namespace System.Collections
         //
         public static ArrayList FixedSize(ArrayList list)
         {
-            if (list == null)
+            if (list is null)
                 throw new ArgumentNullException(nameof(list));
             return new FixedSizeArrayList(list);
         }
@@ -438,7 +438,7 @@ namespace System.Collections
         //
         public virtual void InsertRange(int index, ICollection c)
         {
-            if (c == null)
+            if (c is null)
                 throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
             if (index < 0 || index > _size) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
 
@@ -516,7 +516,7 @@ namespace System.Collections
         //
         public static IList ReadOnly(IList list)
         {
-            if (list == null)
+            if (list is null)
                 throw new ArgumentNullException(nameof(list));
             return new ReadOnlyList(list);
         }
@@ -525,7 +525,7 @@ namespace System.Collections
         //
         public static ArrayList ReadOnly(ArrayList list)
         {
-            if (list == null)
+            if (list is null)
                 throw new ArgumentNullException(nameof(list));
             return new ReadOnlyArrayList(list);
         }
@@ -625,7 +625,7 @@ namespace System.Collections
         //
         public virtual void SetRange(int index, ICollection c)
         {
-            if (c == null) throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
+            if (c is null) throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
 
             int count = c.Count;
             if (index < 0 || index > _size - count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
@@ -685,7 +685,7 @@ namespace System.Collections
         //
         public static IList Synchronized(IList list)
         {
-            if (list == null)
+            if (list is null)
                 throw new ArgumentNullException(nameof(list));
             return new SyncIList(list);
         }
@@ -694,7 +694,7 @@ namespace System.Collections
         //
         public static ArrayList Synchronized(ArrayList list)
         {
-            if (list == null)
+            if (list is null)
                 throw new ArgumentNullException(nameof(list));
             return new SyncArrayList(list);
         }
@@ -718,7 +718,7 @@ namespace System.Collections
         //
         public virtual Array ToArray(Type type)
         {
-            if (type == null)
+            if (type is null)
                 throw new ArgumentNullException(nameof(type));
 
             Array array = Array.CreateInstance(type, _size);
@@ -856,7 +856,7 @@ namespace System.Collections
 
             public override void CopyTo(int index, Array array, int arrayIndex, int count)
             {
-                if (array == null)
+                if (array is null)
                     throw new ArgumentNullException(nameof(array));
                 if (index < 0 || arrayIndex < 0)
                     throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(arrayIndex), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -906,17 +906,17 @@ namespace System.Collections
                 if (count < 0 || startIndex > Count - count) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
                 int endIndex = startIndex + count;
-                if (value == null)
+                if (value is null)
                 {
                     for (int i = startIndex; i < endIndex; i++)
-                        if (_list[i] == null)
+                        if (_list[i] is null)
                             return i;
                     return -1;
                 }
                 else
                 {
                     for (int i = startIndex; i < endIndex; i++)
-                        if (_list[i] != null && _list[i]!.Equals(value)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        if (_list[i] is not null && _list[i]!.Equals(value)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                             return i;
                     return -1;
                 }
@@ -930,7 +930,7 @@ namespace System.Collections
 
             public override void InsertRange(int index, ICollection c)
             {
-                if (c == null)
+                if (c is null)
                     throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
                 if (index < 0 || index > Count) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
 
@@ -974,17 +974,17 @@ namespace System.Collections
                 if (count < 0 || count > startIndex + 1) throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
                 int endIndex = startIndex - count + 1;
-                if (value == null)
+                if (value is null)
                 {
                     for (int i = startIndex; i >= endIndex; i--)
-                        if (_list[i] == null)
+                        if (_list[i] is null)
                             return i;
                     return -1;
                 }
                 else
                 {
                     for (int i = startIndex; i >= endIndex; i--)
-                        if (_list[i] != null && _list[i]!.Equals(value)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        if (_list[i] is not null && _list[i]!.Equals(value)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                             return i;
                     return -1;
                 }
@@ -1042,7 +1042,7 @@ namespace System.Collections
 
             public override void SetRange(int index, ICollection c)
             {
-                if (c == null)
+                if (c is null)
                 {
                     throw new ArgumentNullException(nameof(c), SR.ArgumentNull_Collection);
                 }
@@ -1101,7 +1101,7 @@ namespace System.Collections
 
             public override Array ToArray(Type type)
             {
-                if (type == null)
+                if (type is null)
                     throw new ArgumentNullException(nameof(type));
 
                 Array array = Array.CreateInstance(type, _list.Count);
@@ -2239,7 +2239,7 @@ namespace System.Collections
 
             public override void AddRange(ICollection c)
             {
-                if (c == null)
+                if (c is null)
                 {
                     throw new ArgumentNullException(nameof(c));
                 }
@@ -2301,17 +2301,17 @@ namespace System.Collections
             public override bool Contains(object? item)
             {
                 InternalUpdateRange();
-                if (item == null)
+                if (item is null)
                 {
                     for (int i = 0; i < _baseSize; i++)
-                        if (_baseList[_baseIndex + i] == null)
+                        if (_baseList[_baseIndex + i] is null)
                             return true;
                     return false;
                 }
                 else
                 {
                     for (int i = 0; i < _baseSize; i++)
-                        if (_baseList[_baseIndex + i] != null && _baseList[_baseIndex + i]!.Equals(item)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
+                        if (_baseList[_baseIndex + i] is not null && _baseList[_baseIndex + i]!.Equals(item)) // TODO-NULLABLE: Indexer nullability tracked (https://github.com/dotnet/roslyn/issues/34644)
                             return true;
                     return false;
                 }
@@ -2319,7 +2319,7 @@ namespace System.Collections
 
             public override void CopyTo(Array array, int index)
             {
-                if (array == null)
+                if (array is null)
                     throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -2334,7 +2334,7 @@ namespace System.Collections
 
             public override void CopyTo(int index, Array array, int arrayIndex, int count)
             {
-                if (array == null)
+                if (array is null)
                     throw new ArgumentNullException(nameof(array));
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -2442,7 +2442,7 @@ namespace System.Collections
             public override void InsertRange(int index, ICollection c)
             {
                 if (index < 0 || index > _baseSize) throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
-                if (c == null)
+                if (c is null)
                 {
                     throw new ArgumentNullException(nameof(c));
                 }
@@ -2580,7 +2580,7 @@ namespace System.Collections
 
             public override Array ToArray(Type type)
             {
-                if (type == null)
+                if (type is null)
                     throw new ArgumentNullException(nameof(type));
 
                 InternalUpdateRange();
@@ -2692,7 +2692,7 @@ namespace System.Collections
 
             public ArrayListDebugView(ArrayList arrayList)
             {
-                if (arrayList == null)
+                if (arrayList is null)
                     throw new ArgumentNullException(nameof(arrayList));
 
                 _arrayList = arrayList;

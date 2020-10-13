@@ -14,7 +14,7 @@ namespace System.Xml
 
         internal async Task EncodeAsync(byte[] buffer, int index, int count)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }
@@ -58,7 +58,7 @@ namespace System.Xml
             if (_leftOverBytesCount > 0)
             {
                 count -= _leftOverBytesCount;
-                if (_leftOverBytes == null)
+                if (_leftOverBytes is null)
                 {
                     _leftOverBytes = new byte[3];
                 }

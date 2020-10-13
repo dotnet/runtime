@@ -24,7 +24,7 @@ namespace System.IO.Pipes
             {
                 throw new NotSupportedException(SR.NotSupported_AnonymousPipeUnidirectional);
             }
-            if (pipeHandleAsString == null)
+            if (pipeHandleAsString is null)
             {
                 throw new ArgumentNullException(nameof(pipeHandleAsString));
             }
@@ -54,7 +54,7 @@ namespace System.IO.Pipes
             {
                 throw new NotSupportedException(SR.NotSupported_AnonymousPipeUnidirectional);
             }
-            if (safePipeHandle == null)
+            if (safePipeHandle is null)
             {
                 throw new ArgumentNullException(nameof(safePipeHandle));
             }
@@ -69,7 +69,7 @@ namespace System.IO.Pipes
         private void Init(PipeDirection direction, SafePipeHandle safePipeHandle)
         {
             Debug.Assert(direction != PipeDirection.InOut, "anonymous pipes are unidirectional, caller should have verified before calling Init");
-            Debug.Assert(safePipeHandle != null && !safePipeHandle.IsInvalid, "safePipeHandle must be valid");
+            Debug.Assert(safePipeHandle is not null && !safePipeHandle.IsInvalid, "safePipeHandle must be valid");
             ValidateHandleIsPipe(safePipeHandle);
 
             InitializeHandle(safePipeHandle, true, false);

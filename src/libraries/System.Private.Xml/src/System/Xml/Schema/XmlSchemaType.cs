@@ -31,7 +31,7 @@ namespace System.Xml.Schema
         /// </devdoc>
         public static XmlSchemaSimpleType? GetBuiltInSimpleType(XmlQualifiedName qualifiedName)
         {
-            if (qualifiedName == null)
+            if (qualifiedName is null)
             {
                 throw new ArgumentNullException(nameof(qualifiedName));
             }
@@ -65,7 +65,7 @@ namespace System.Xml.Schema
         /// </devdoc>
         public static XmlSchemaComplexType? GetBuiltInComplexType(XmlQualifiedName qualifiedName)
         {
-            if (qualifiedName == null)
+            if (qualifiedName is null)
             {
                 throw new ArgumentNullException(nameof(qualifiedName));
             }
@@ -130,7 +130,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_baseSchemaType == null)
+                if (_baseSchemaType is null)
                     return null;
 
                 if (_baseSchemaType.QualifiedName.Namespace == XmlReservedNs.NsXs)
@@ -188,7 +188,7 @@ namespace System.Xml.Schema
                 {
                     return XmlTypeCode.Item;
                 }
-                if (_datatype == null)
+                if (_datatype is null)
                 {
                     return XmlTypeCode.None;
                 }
@@ -201,7 +201,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_datatype == null)
+                if (_datatype is null)
                 { //Default converter
                     return XmlUntypedConverter.Untyped;
                 }
@@ -212,7 +212,7 @@ namespace System.Xml.Schema
         [return: NotNullIfNotNull("schemaSet")]
         internal XmlReader? Validate(XmlReader reader, XmlResolver? resolver, XmlSchemaSet schemaSet, ValidationEventHandler valEventHandler)
         {
-            if (schemaSet != null)
+            if (schemaSet is not null)
             {
                 XmlReaderSettings readerSettings = new XmlReaderSettings();
                 readerSettings.ValidationType = ValidationType.Schema;
@@ -282,7 +282,7 @@ namespace System.Xml.Schema
 
         public static bool IsDerivedFrom(XmlSchemaType? derivedType, XmlSchemaType? baseType, XmlSchemaDerivationMethod except)
         {
-            if (derivedType == null || baseType == null)
+            if (derivedType is null || baseType is null)
             {
                 return false;
             }
@@ -301,7 +301,7 @@ namespace System.Xml.Schema
             {
                 XmlSchemaSimpleType? dt = derivedType as XmlSchemaSimpleType;
                 XmlSchemaSimpleType? bt = baseType as XmlSchemaSimpleType;
-                if (bt != null && dt != null)
+                if (bt is not null && dt is not null)
                 { //SimpleTypes
                     if (bt == DatatypeImplementation.AnySimpleType)
                     { //Not checking block=restriction
@@ -327,7 +327,7 @@ namespace System.Xml.Schema
                         return true;
                     }
                 }
-            } while (derivedType != null);
+            } while (derivedType is not null);
 
             return false;
         }

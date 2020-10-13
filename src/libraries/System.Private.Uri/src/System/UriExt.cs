@@ -34,7 +34,7 @@ namespace System
             ParsingError err = ParseScheme(_string, ref _flags, ref _syntax!);
 
             InitializeUri(err, uriKind, out UriFormatException? e);
-            if (e != null)
+            if (e is not null)
                 throw e;
         }
 
@@ -93,7 +93,7 @@ namespace System
                 _originalUnicodeString = _string; // original string location changed
             }
 
-            if (_syntax != null)
+            if (_syntax is not null)
             {
                 if (_syntax.IsSimple)
                 {
@@ -144,7 +144,7 @@ namespace System
                     // Ask a registered type to validate this uri
                     _syntax.InternalValidate(this, out e);
 
-                    if (e != null)
+                    if (e is not null)
                     {
                         // Can we still take it as a relative Uri?
                         if (uriKind != UriKind.Absolute && err != ParsingError.None
@@ -155,7 +155,7 @@ namespace System
                             _flags &= Flags.UserEscaped; // the only flag that makes sense for a relative uri
                         }
                     }
-                    else // e == null
+                    else // e is null
                     {
                         if (err != ParsingError.None || InFact(Flags.ErrorOrParsingRecursion))
                         {
@@ -256,7 +256,7 @@ namespace System
             UriFormatException? e = null;
             result = CreateHelper(uriString, false, uriKind, ref e);
             result?.DebugSetLeftCtor();
-            return e is null && result != null;
+            return e is null && result is not null;
         }
 
         public static bool TryCreate(Uri? baseUri, string? relativeUri, [NotNullWhen(true)] out Uri? result)
@@ -297,7 +297,7 @@ namespace System
                 dontEscape = false;
                 newUriString = baseUri.Syntax.InternalResolve(baseUri, relativeUri, out e);
 
-                if (e != null)
+                if (e is not null)
                     return false;
             }
 
@@ -305,7 +305,7 @@ namespace System
                 result = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e);
 
             result?.DebugSetLeftCtor();
-            return e is null && result != null && result.IsAbsoluteUri;
+            return e is null && result is not null && result.IsAbsoluteUri;
         }
 
         public string GetComponents(UriComponents components, UriFormat format)
@@ -617,7 +617,7 @@ namespace System
             }
 
             // Cannot be relative Uri if came here
-            Debug.Assert(syntax != null);
+            Debug.Assert(syntax is not null);
             Uri result = new Uri(flags, syntax, uriString);
 
             // Validate instance using ether built in or a user Parser
@@ -625,7 +625,7 @@ namespace System
             {
                 result.InitializeUri(err, uriKind, out e);
 
-                if (e == null)
+                if (e is null)
                 {
                     result.DebugSetLeftCtor();
                     return result;
@@ -645,7 +645,7 @@ namespace System
         //
         // Resolves into either baseUri or relativeUri according to conditions OR if not possible it uses newUriString
         // to  return combined URI strings from both Uris
-        // otherwise if e != null on output the operation has failed
+        // otherwise if e is not null on output the operation has failed
         //
         internal static Uri? ResolveHelper(Uri baseUri, Uri? relativeUri, ref string? newUriString, ref bool userEscaped)
         {
@@ -856,7 +856,7 @@ namespace System
 
                     uriLink = CreateHelper(newUriString!, dontEscape, UriKind.Absolute, ref e)!;
 
-                    if (e != null)
+                    if (e is not null)
                         return false;
                 }
             }

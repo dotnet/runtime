@@ -114,7 +114,7 @@ namespace System.Xml.Xsl.XsltOld
             get
             {
                 ActionFrame? frame = (ActionFrame?)_actionStack.Peek();
-                return frame != null ? frame.Node : null;
+                return frame is not null ? frame.Node : null;
             }
         }
 
@@ -138,7 +138,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             get
             {
-                Debug.Assert(_resolver != null, "Constructor should create it if null passed");
+                Debug.Assert(_resolver is not null, "Constructor should create it if null passed");
                 return _resolver;
             }
         }
@@ -147,7 +147,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             get
             {
-                Debug.Assert(_sortArray != null, "InitSortArray() wasn't called");
+                Debug.Assert(_sortArray is not null, "InitSortArray() wasn't called");
                 return _sortArray;
             }
         }
@@ -160,10 +160,10 @@ namespace System.Xml.Xsl.XsltOld
         internal XPathNavigator GetNavigator(Uri ruri)
         {
             XPathNavigator? result = null;
-            if (_documentCache != null)
+            if (_documentCache is not null)
             {
                 result = _documentCache[ruri] as XPathNavigator;
-                if (result != null)
+                if (result is not null)
                 {
                     return result.Clone();
                 }
@@ -198,13 +198,13 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void AddSort(Sort sortinfo)
         {
-            Debug.Assert(_sortArray != null, "InitSortArray() wasn't called");
+            Debug.Assert(_sortArray is not null, "InitSortArray() wasn't called");
             _sortArray.Add(sortinfo);
         }
 
         internal void InitSortArray()
         {
-            if (_sortArray == null)
+            if (_sortArray is null)
             {
                 _sortArray = new ArrayList();
             }
@@ -217,7 +217,7 @@ namespace System.Xml.Xsl.XsltOld
         internal object? GetGlobalParameter(XmlQualifiedName qname)
         {
             object? parameter = _args.GetParam(qname.Name, qname.Namespace);
-            if (parameter == null)
+            if (parameter is null)
             {
                 return null;
             }
@@ -276,7 +276,7 @@ namespace System.Xml.Xsl.XsltOld
 #if DEBUG
             Debug.Assert(!_stringBuilderLocked);
 #endif
-            if (_sharedStringBuilder == null)
+            if (_sharedStringBuilder is null)
             {
                 _sharedStringBuilder = new StringBuilder();
             }
@@ -302,7 +302,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             get
             {
-                if (_numberList == null)
+                if (_numberList is null)
                 {
                     _numberList = new ArrayList();
                 }
@@ -353,14 +353,14 @@ namespace System.Xml.Xsl.XsltOld
             _resolver = resolver ?? XmlNullResolver.Singleton;
             _args = args ?? new XsltArgumentList();
             _debugger = debugger;
-            if (_debugger != null)
+            if (_debugger is not null)
             {
                 _debuggerStack = new HWStack(StackIncrement, /*limit:*/1000);
                 _templateLookup = new TemplateLookupActionDbg();
             }
 
             // Clone the compile-time KeyList
-            if (_rootAction.KeyList != null)
+            if (_rootAction.KeyList is not null)
             {
                 _keyList = new Key[_rootAction.KeyList.Count];
                 for (int i = 0; i < _keyList.Length; i++)
@@ -374,7 +374,7 @@ namespace System.Xml.Xsl.XsltOld
                 foreach (DictionaryEntry entry in _stylesheet.ScriptObjectTypes)
                 {
                     string namespaceUri = (string)entry.Key;
-                    if (GetExtensionObject(namespaceUri) != null)
+                    if (GetExtensionObject(namespaceUri) is not null)
                     {
                         throw XsltException.Create(SR.Xslt_ScriptDub, namespaceUri);
                     }
@@ -444,15 +444,15 @@ namespace System.Xml.Xsl.XsltOld
         //
         internal void Execute()
         {
-            Debug.Assert(_actionStack != null);
+            Debug.Assert(_actionStack is not null);
 
             while (_execResult == ExecResult.Continue)
             {
                 ActionFrame? frame = (ActionFrame?)_actionStack.Peek();
 
-                if (frame == null)
+                if (frame is null)
                 {
-                    Debug.Assert(_builder != null);
+                    Debug.Assert(_builder is not null);
                     _builder.TheEnd();
                     ExecutionResult = ExecResult.Done;
                     break;
@@ -479,14 +479,14 @@ namespace System.Xml.Xsl.XsltOld
         {
             ActionFrame? prent = (ActionFrame?)_actionStack.Peek();
             ActionFrame frame = (ActionFrame)_actionStack.Push();
-            if (frame == null)
+            if (frame is null)
             {
                 frame = new ActionFrame();
                 _actionStack.AddToTop(frame);
             }
-            Debug.Assert(frame != null);
+            Debug.Assert(frame is not null);
 
-            if (prent != null)
+            if (prent is not null)
             {
                 frame.Inherit(prent);
             }
@@ -513,7 +513,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void PushTemplateLookup(XPathNodeIterator? nodeSet, XmlQualifiedName? mode, Stylesheet? importsOf)
         {
-            Debug.Assert(_templateLookup != null);
+            Debug.Assert(_templateLookup is not null);
             _templateLookup.Initialize(mode, importsOf);
             PushActionFrame(_templateLookup, nodeSet);
         }
@@ -546,7 +546,7 @@ namespace System.Xml.Xsl.XsltOld
             theQuery.CompiledQuery.CheckErrors();
             Query expr = _queryList[key];
 
-            if (context == null)
+            if (context is null)
             {
                 context = new XsltCompileContext(theQuery._ScopeManager, this);
             }
@@ -561,7 +561,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private XsltCompileContext GetValueOfContext()
         {
-            if (_valueOfContext == null)
+            if (_valueOfContext is null)
             {
                 _valueOfContext = new XsltCompileContext();
             }
@@ -571,7 +571,7 @@ namespace System.Xml.Xsl.XsltOld
         [Conditional("DEBUG")]
         private void RecycleValueOfContext()
         {
-            if (_valueOfContext != null)
+            if (_valueOfContext is not null)
             {
                 _valueOfContext.Recycle();
             }
@@ -579,7 +579,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private XsltCompileContext GetMatchesContext()
         {
-            if (_matchesContext == null)
+            if (_matchesContext is null)
             {
                 _matchesContext = new XsltCompileContext();
             }
@@ -589,7 +589,7 @@ namespace System.Xml.Xsl.XsltOld
         [Conditional("DEBUG")]
         private void RecycleMatchesContext()
         {
-            if (_matchesContext != null)
+            if (_matchesContext is not null)
             {
                 _matchesContext.Recycle();
             }
@@ -604,7 +604,7 @@ namespace System.Xml.Xsl.XsltOld
             if (value is XPathNodeIterator)
             {
                 XPathNavigator? n = query.Advance();
-                result = n != null ? ValueOf(n) : string.Empty;
+                result = n is not null ? ValueOf(n) : string.Empty;
             }
             else
             {
@@ -677,7 +677,7 @@ namespace System.Xml.Xsl.XsltOld
             Query query = GetCompiledQuery(key);
             object value = query.Evaluate(context.NodeSet!);
             XPathNodeIterator? it = value as XPathNodeIterator;
-            if (it != null)
+            if (it is not null)
             {
                 return new XPathArrayIterator(it);
             }
@@ -689,9 +689,9 @@ namespace System.Xml.Xsl.XsltOld
         {
             object objValue = Evaluate(context, key);
             string? value = null;
-            if (objValue != null)
+            if (objValue is not null)
                 value = XmlConvert.ToXPathString(objValue);
-            if (value == null)
+            if (value is null)
                 value = string.Empty;
             return value;
         }
@@ -700,10 +700,10 @@ namespace System.Xml.Xsl.XsltOld
         {
             object objValue = Evaluate(context, key);
 
-            if (objValue != null)
+            if (objValue is not null)
             {
                 XPathNavigator? nav = objValue as XPathNavigator;
-                return nav != null ? Convert.ToBoolean(nav.Value, CultureInfo.InvariantCulture) : Convert.ToBoolean(objValue, CultureInfo.InvariantCulture);
+                return nav is not null ? Convert.ToBoolean(nav.Value, CultureInfo.InvariantCulture) : Convert.ToBoolean(objValue, CultureInfo.InvariantCulture);
             }
             else
             {
@@ -718,7 +718,7 @@ namespace System.Xml.Xsl.XsltOld
 
             try
             {
-                bool result = query.MatchNode(context) != null;
+                bool result = query.MatchNode(context) is not null;
 
                 RecycleMatchesContext();
                 return result;
@@ -750,7 +750,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void ResetOutput()
         {
-            Debug.Assert(_builder != null);
+            Debug.Assert(_builder is not null);
             _builder.Reset();
         }
         internal bool BeginEvent(XPathNodeType nodeType, string? prefix, string? name, string? nspace, bool empty)
@@ -760,7 +760,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool BeginEvent(XPathNodeType nodeType, string? prefix, string? name, string? nspace, bool empty, object? htmlProps, bool search)
         {
-            Debug.Assert(_xsm != null);
+            Debug.Assert(_xsm is not null);
 
             int stateOutlook = _xsm.BeginOutlook(nodeType);
 
@@ -803,7 +803,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool TextEvent(string? text, bool disableOutputEscaping)
         {
-            Debug.Assert(_xsm != null);
+            Debug.Assert(_xsm is not null);
 
             if (_ignoreLevel > 0)
             {
@@ -838,7 +838,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool EndEvent(XPathNodeType nodeType)
         {
-            Debug.Assert(_xsm != null);
+            Debug.Assert(_xsm is not null);
 
             if (_ignoreLevel > 0)
             {
@@ -962,7 +962,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal static bool IsRoot(XPathNavigator navigator)
         {
-            Debug.Assert(navigator != null);
+            Debug.Assert(navigator is not null);
 
             if (navigator.NodeType == XPathNodeType.Root)
             {
@@ -985,7 +985,7 @@ namespace System.Xml.Xsl.XsltOld
         //
         internal void PushOutput(IRecordOutput output)
         {
-            Debug.Assert(output != null);
+            Debug.Assert(output is not null);
             _builder!.OutputState = _xsm.State;
             RecordBuilder lastBuilder = _builder;
             _builder = new RecordBuilder(output, _nameTable);
@@ -996,7 +996,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal IRecordOutput PopOutput()
         {
-            Debug.Assert(_builder != null);
+            Debug.Assert(_builder is not null);
 
             RecordBuilder topBuilder = _builder;
             _builder = topBuilder.Next!;
@@ -1028,7 +1028,7 @@ namespace System.Xml.Xsl.XsltOld
                 {
                     throw XsltException.Create(SR.Xslt_CircularReference, variable.NameStr);
                 }
-                if (result != null)
+                if (result is not null)
                 {
                     return result;
                 }
@@ -1047,7 +1047,7 @@ namespace System.Xml.Xsl.XsltOld
                 } while (saveStackSize < _actionStack.Length);
                 Debug.Assert(saveStackSize == _actionStack.Length);
                 result = rootFrame.GetVariable(variablekey);
-                Debug.Assert(result != null, "Variable was just calculated and result can't be null");
+                Debug.Assert(result is not null, "Variable was just calculated and result can't be null");
                 return result;
             }
             else
@@ -1086,9 +1086,9 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void PushDebuggerStack()
         {
-            Debug.Assert(this.Debugger != null, "We don't generate calls this function if ! debugger");
+            Debug.Assert(this.Debugger is not null, "We don't generate calls this function if ! debugger");
             DebuggerFrame dbgFrame = (DebuggerFrame)_debuggerStack!.Push();
-            if (dbgFrame == null)
+            if (dbgFrame is null)
             {
                 dbgFrame = new DebuggerFrame();
                 _debuggerStack.AddToTop(dbgFrame);
@@ -1098,29 +1098,29 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void PopDebuggerStack()
         {
-            Debug.Assert(this.Debugger != null, "We don't generate calls this function if ! debugger");
+            Debug.Assert(this.Debugger is not null, "We don't generate calls this function if ! debugger");
             _debuggerStack!.Pop();
         }
 
         internal void OnInstructionExecute()
         {
-            Debug.Assert(this.Debugger != null, "We don't generate calls this function if ! debugger");
+            Debug.Assert(this.Debugger is not null, "We don't generate calls this function if ! debugger");
             DebuggerFrame? dbgFrame = (DebuggerFrame?)_debuggerStack!.Peek();
-            Debug.Assert(dbgFrame != null, "PushDebuggerStack() wasn't ever called");
+            Debug.Assert(dbgFrame is not null, "PushDebuggerStack() wasn't ever called");
             dbgFrame.actionFrame = (ActionFrame?)_actionStack.Peek();
             this.Debugger.OnInstructionExecute((IXsltProcessor)this);
         }
 
         internal XmlQualifiedName? GetPreviousMode()
         {
-            Debug.Assert(this.Debugger != null, "We don't generate calls this function if ! debugger");
+            Debug.Assert(this.Debugger is not null, "We don't generate calls this function if ! debugger");
             Debug.Assert(2 <= _debuggerStack!.Length);
             return ((DebuggerFrame)_debuggerStack[_debuggerStack.Length - 2]!).currentMode;
         }
 
         internal void SetCurrentMode(XmlQualifiedName? mode)
         {
-            Debug.Assert(this.Debugger != null, "We don't generate calls this function if ! debugger");
+            Debug.Assert(this.Debugger is not null, "We don't generate calls this function if ! debugger");
             ((DebuggerFrame)_debuggerStack![_debuggerStack.Length - 1]).currentMode = mode;
         }
     }

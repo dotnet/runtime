@@ -14,7 +14,7 @@ namespace System
 
         public static bool IsNormalized(this string strInput, NormalizationForm normalizationForm)
         {
-            if (strInput == null)
+            if (strInput is null)
             {
                 throw new ArgumentNullException(nameof(strInput));
             }
@@ -30,7 +30,7 @@ namespace System
 
         public static string Normalize(this string strInput, NormalizationForm normalizationForm)
         {
-            if (strInput == null)
+            if (strInput is null)
             {
                 throw new ArgumentNullException(nameof(strInput));
             }

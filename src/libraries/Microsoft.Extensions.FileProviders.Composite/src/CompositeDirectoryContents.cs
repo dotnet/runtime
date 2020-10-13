@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.FileProviders.Composite
         /// <param name="subpath">The path.</param>
         public CompositeDirectoryContents(IList<IFileProvider> fileProviders, string subpath)
         {
-            if (fileProviders == null)
+            if (fileProviders is null)
             {
                 throw new ArgumentNullException(nameof(fileProviders));
             }
@@ -37,13 +37,13 @@ namespace Microsoft.Extensions.FileProviders.Composite
 
         private void EnsureDirectoriesAreInitialized()
         {
-            if (_directories == null)
+            if (_directories is null)
             {
                 _directories = new List<IDirectoryContents>();
                 foreach (IFileProvider fileProvider in _fileProviders)
                 {
                     IDirectoryContents directoryContents = fileProvider.GetDirectoryContents(_subPath);
-                    if (directoryContents != null && directoryContents.Exists)
+                    if (directoryContents is not null && directoryContents.Exists)
                     {
                         _exists = true;
                         _directories.Add(directoryContents);
@@ -55,7 +55,7 @@ namespace Microsoft.Extensions.FileProviders.Composite
         private void EnsureFilesAreInitialized()
         {
             EnsureDirectoriesAreInitialized();
-            if (_files == null)
+            if (_files is null)
             {
                 _files = new List<IFileInfo>();
                 var names = new HashSet<string>();

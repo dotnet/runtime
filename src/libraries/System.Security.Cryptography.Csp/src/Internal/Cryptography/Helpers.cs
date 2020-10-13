@@ -17,7 +17,7 @@ namespace Internal.Cryptography
         {
             if (cipherMode.UsesIv())
             {
-                if (iv == null)
+                if (iv is null)
                 {
                     throw new CryptographicException(SR.Cryptography_MissingIV);
                 }

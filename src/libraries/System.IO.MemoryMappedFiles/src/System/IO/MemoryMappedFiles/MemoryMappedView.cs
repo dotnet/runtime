@@ -16,7 +16,7 @@ namespace System.IO.MemoryMappedFiles
         private unsafe MemoryMappedView(SafeMemoryMappedViewHandle viewHandle, long pointerOffset,
                                         long size, MemoryMappedFileAccess access)
         {
-            Debug.Assert(viewHandle != null);
+            Debug.Assert(viewHandle is not null);
 
             _viewHandle = viewHandle;
             _pointerOffset = pointerOffset;

@@ -30,7 +30,7 @@ namespace System.Xml.Xsl.Runtime
         {
             XmlExtensionFunction func;
 
-            if (_funcCached == null)
+            if (_funcCached is null)
                 _funcCached = new XmlExtensionFunction();
 
             // If the extension function already exists in the table, then binding has already been performed
@@ -192,14 +192,14 @@ namespace System.Xml.Xsl.Runtime
             {
                 if (methSearch.Name.Equals(_name, comparison) && (_numArgs == -1 || methSearch.GetParameters().Length == _numArgs))
                 {
-                    if (methMatch != null)
+                    if (methMatch is not null)
                         throw new XslTransformException(/*[XT_037]*/SR.XmlIl_AmbiguousExtensionMethod, _namespaceUri, _name, _numArgs.ToString(CultureInfo.InvariantCulture));
 
                     methMatch = methSearch;
                 }
             }
 
-            if (methMatch == null)
+            if (methMatch is null)
             {
                 methods = _objectType.GetMethods(_flags | BindingFlags.NonPublic);
                 foreach (MethodInfo methSearch in methods)
@@ -273,7 +273,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public object Invoke(object extObj, object[] args)
         {
-            Debug.Assert(_meth != null, "Must call Bind() before calling Invoke.");
+            Debug.Assert(_meth is not null, "Must call Bind() before calling Invoke.");
             Debug.Assert(args.Length == _argClrTypes.Length, "Mismatched number of actual and formal arguments.");
 
             try
@@ -300,7 +300,7 @@ namespace System.Xml.Xsl.Runtime
         public override bool Equals(object other)
         {
             XmlExtensionFunction that = other as XmlExtensionFunction;
-            Debug.Assert(that != null);
+            Debug.Assert(that is not null);
 
             // Compare name, argument count, object type, and binding flags
             return (_hashCode == that._hashCode && _name == that._name && _namespaceUri == that._namespaceUri &&

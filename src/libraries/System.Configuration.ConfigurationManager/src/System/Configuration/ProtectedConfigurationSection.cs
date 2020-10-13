@@ -47,7 +47,7 @@ namespace System.Configuration
         {
             ProviderSettings ps = Providers[providerName];
 
-            if (ps == null)
+            if (ps is null)
                 throw new ArgumentException(SR.Format(SR.ProtectedConfigurationProvider_not_found, providerName), nameof(providerName));
 
             return InstantiateProvider(ps);

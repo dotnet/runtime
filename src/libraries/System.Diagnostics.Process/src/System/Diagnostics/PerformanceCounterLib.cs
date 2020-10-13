@@ -42,11 +42,11 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_nameTable == null)
+                if (_nameTable is null)
                 {
                     lock (_nameTableLock)
                     {
-                        if (_nameTable == null)
+                        if (_nameTable is null)
                             _nameTable = GetStringTable(false);
                     }
                 }
@@ -76,11 +76,11 @@ namespace System.Diagnostics
 
         internal byte[]? GetPerformanceData(string item)
         {
-            if (_performanceMonitor == null)
+            if (_performanceMonitor is null)
             {
                 lock (LazyInitializer.EnsureInitialized(ref s_internalSyncObject))
                 {
-                    if (_performanceMonitor == null)
+                    if (_performanceMonitor is null)
                         _performanceMonitor = new PerformanceMonitor(_machineName);
                 }
             }
@@ -117,7 +117,7 @@ namespace System.Diagnostics
                         else
                             names = (string[]?)libraryKey.GetValue("Explain " + _perfLcid);
 
-                        if ((names == null) || (names.Length == 0))
+                        if ((names is null) || (names.Length == 0))
                         {
                             --waitRetries;
                             if (waitSleep == 0)
@@ -147,7 +147,7 @@ namespace System.Diagnostics
                     }
                 }
 
-                if (names == null)
+                if (names is null)
                     stringTable = new Dictionary<int, string>();
                 else
                 {
@@ -156,7 +156,7 @@ namespace System.Diagnostics
                     for (int index = 0; index < (names.Length / 2); ++index)
                     {
                         string nameString = names[(index * 2) + 1];
-                        if (nameString == null)
+                        if (nameString is null)
                             nameString = string.Empty;
 
                         int key;

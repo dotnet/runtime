@@ -123,7 +123,7 @@ namespace System.Collections.Immutable
             [NonVersionable]
             get
             {
-                // We intentionally do not check this.array != null, and throw NullReferenceException
+                // We intentionally do not check this.array is not null, and throw NullReferenceException
                 // if this is called while uninitialized.
                 // The reason for this is perf.
                 // Length and the indexer must be absolutely trivially implemented for the JIT optimization
@@ -140,7 +140,7 @@ namespace System.Collections.Immutable
         /// <returns>A read-only reference to the element at the specified index in the read-only list.</returns>
         public ref readonly T ItemRef(int index)
         {
-            // We intentionally do not check this.array != null, and throw NullReferenceException
+            // We intentionally do not check this.array is not null, and throw NullReferenceException
             // if this is called while uninitialized.
             // The reason for this is perf.
             // Length and the indexer must be absolutely trivially implemented for the JIT optimization
@@ -168,7 +168,7 @@ namespace System.Collections.Immutable
             [NonVersionable]
             get
             {
-                // We intentionally do not check this.array != null, and throw NullReferenceException
+                // We intentionally do not check this.array is not null, and throw NullReferenceException
                 // if this is called while uninitialized.
                 // The reason for this is perf.
                 // Length and the indexer must be absolutely trivially implemented for the JIT optimization
@@ -183,7 +183,7 @@ namespace System.Collections.Immutable
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
         public bool IsDefault
         {
-            get { return this.array == null; }
+            get { return this.array is null; }
         }
 
         /// <summary>
@@ -195,7 +195,7 @@ namespace System.Collections.Immutable
             get
             {
                 var self = this;
-                return self.array == null || self.array.Length == 0;
+                return self.array is null || self.array.Length == 0;
             }
         }
 
@@ -296,7 +296,7 @@ namespace System.Collections.Immutable
         public override int GetHashCode()
         {
             var self = this;
-            return self.array == null ? 0 : self.array.GetHashCode();
+            return self.array is null ? 0 : self.array.GetHashCode();
         }
 
         /// <summary>

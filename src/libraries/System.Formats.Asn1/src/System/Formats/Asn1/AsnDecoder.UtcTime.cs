@@ -94,7 +94,7 @@ namespace System.Formats.Asn1
 
             DateTimeOffset value = ParseUtcTime(contents, ruleSet, twoDigitYearMax);
 
-            if (rented != null)
+            if (rented is not null)
             {
                 Debug.Fail($"UtcTime did not fit in tmpSpace ({contents.Length} total)");
                 CryptoPool.Return(rented, contents.Length);

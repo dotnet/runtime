@@ -74,8 +74,8 @@ namespace System.Net.Http
             Stream stream,
             TransportContext? transportContext)
         {
-            Debug.Assert(pool != null);
-            Debug.Assert(stream != null);
+            Debug.Assert(pool is not null);
+            Debug.Assert(stream is not null);
 
             _pool = pool;
             _stream = stream;
@@ -129,7 +129,7 @@ namespace System.Net.Http
                     // Eat any exceptions from the read-ahead task.  We don't need to log, as we expect
                     // failures from this task due to closing the connection while a read is in progress.
                     ValueTask<int>? readAheadTask = ConsumeReadAheadTask();
-                    if (readAheadTask != null)
+                    if (readAheadTask is not null)
                     {
                         IgnoreExceptions(readAheadTask.GetValueOrDefault());
                     }
@@ -141,7 +141,7 @@ namespace System.Net.Http
         /// <remarks>If we don't have direct access to the underlying socket, we instead use a read-ahead task.</remarks>
         public bool PollRead()
         {
-            if (_socket != null) // may be null if we don't have direct access to the socket
+            if (_socket is not null) // may be null if we don't have direct access to the socket
             {
                 try
                 {
@@ -168,8 +168,8 @@ namespace System.Net.Http
         {
             try
             {
-                Debug.Assert(_readAheadTask == null || _socket == null, "Should only already have a read-ahead task if we don't have a socket to poll");
-                if (_readAheadTask == null)
+                Debug.Assert(_readAheadTask is null || _socket is null, "Should only already have a read-ahead task if we don't have a socket to poll");
+                if (_readAheadTask is null)
                 {
 #pragma warning disable CA2012 // we're very careful to ensure the ValueTask is only consumed once, even though it's stored into a field
                     _readAheadTask = _stream.ReadAsync(new Memory<byte>(_readBuffer));
@@ -218,13 +218,13 @@ namespace System.Net.Http
 
         private async ValueTask WriteHeadersAsync(HttpHeaders headers, string? cookiesFromContainer, bool async)
         {
-            Debug.Assert(_currentRequest != null);
+            Debug.Assert(_currentRequest is not null);
 
-            if (headers.HeaderStore != null)
+            if (headers.HeaderStore is not null)
             {
                 foreach (KeyValuePair<HeaderDescriptor, object> header in headers.HeaderStore)
                 {
-                    if (header.Key.KnownHeader != null)
+                    if (header.Key.KnownHeader is not null)
                     {
                         await WriteBytesAsync(header.Key.KnownHeader.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
                     }
@@ -242,7 +242,7 @@ namespace System.Net.Http
 
                         await WriteStringAsync(_headerValues[0], async, valueEncoding).ConfigureAwait(false);
 
-                        if (cookiesFromContainer != null && header.Key.KnownHeader == KnownHeaders.Cookie)
+                        if (cookiesFromContainer is not null && header.Key.KnownHeader == KnownHeaders.Cookie)
                         {
                             await WriteTwoBytesAsync((byte)';', (byte)' ', async).ConfigureAwait(false);
                             await WriteStringAsync(cookiesFromContainer, async, valueEncoding).ConfigureAwait(false);
@@ -255,7 +255,7 @@ namespace System.Net.Http
                         {
                             HttpHeaderParser? parser = header.Key.Parser;
                             string separator = HttpHeaderParser.DefaultSeparator;
-                            if (parser != null && parser.SupportsMultipleValues)
+                            if (parser is not null && parser.SupportsMultipleValues)
                             {
                                 separator = parser.Separator!;
                             }
@@ -272,7 +272,7 @@ namespace System.Net.Http
                 }
             }
 
-            if (cookiesFromContainer != null)
+            if (cookiesFromContainer is not null)
             {
                 await WriteAsciiStringAsync(HttpKnownHeaderNames.Cookie, async).ConfigureAwait(false);
                 await WriteTwoBytesAsync((byte)':', (byte)' ', async).ConfigureAwait(false);
@@ -288,7 +288,7 @@ namespace System.Net.Http
         {
             await WriteBytesAsync(KnownHeaders.Host.AsciiBytesWithColonSpace, async).ConfigureAwait(false);
 
-            if (_pool.HostHeaderValueBytes != null)
+            if (_pool.HostHeaderValueBytes is not null)
             {
                 Debug.Assert(Kind != HttpConnectionKind.Proxy);
                 await WriteBytesAsync(_pool.HostHeaderValueBytes, async).ConfigureAwait(false);
@@ -351,7 +351,7 @@ namespace System.Net.Http
         {
             TaskCompletionSource<bool>? allowExpect100ToContinue = null;
             Task? sendRequestContentTask = null;
-            Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
+            Debug.Assert(_currentRequest is null, $"Expected null {nameof(_currentRequest)}.");
             Debug.Assert(RemainingBuffer.Length == 0, "Unexpected data in read buffer");
 
             _currentRequest = request;
@@ -367,7 +367,7 @@ namespace System.Net.Http
             {
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStart();
 
-                Debug.Assert(request.RequestUri != null);
+                Debug.Assert(request.RequestUri is not null);
                 // Write request line
                 await WriteStringAsync(normalizedMethod.Method, async).ConfigureAwait(false);
                 await WriteByteAsync((byte)' ', async).ConfigureAwait(false);
@@ -376,7 +376,7 @@ namespace System.Net.Http
                 {
                     // RFC 7231 #section-4.3.6.
                     // Write only CONNECT foo.com:345 HTTP/1.1
-                    if (!request.HasHeaders || request.Headers.Host == null)
+                    if (!request.HasHeaders || request.Headers.Host is null)
                     {
                         throw new HttpRequestException(SR.net_http_request_no_host);
                     }
@@ -431,18 +431,18 @@ namespace System.Net.Http
 
                 // Write special additional headers.  If a host isn't in the headers list, then a Host header
                 // wasn't sent, so as it's required by HTTP 1.1 spec, send one based on the Request Uri.
-                if (!request.HasHeaders || request.Headers.Host == null)
+                if (!request.HasHeaders || request.Headers.Host is null)
                 {
                     await WriteHostHeaderAsync(request.RequestUri, async).ConfigureAwait(false);
                 }
 
                 // Write request headers
-                if (request.HasHeaders || cookiesFromContainer != null)
+                if (request.HasHeaders || cookiesFromContainer is not null)
                 {
                     await WriteHeadersAsync(request.Headers, cookiesFromContainer, async).ConfigureAwait(false);
                 }
 
-                if (request.Content == null)
+                if (request.Content is null)
                 {
                     // Write out Content-Length: 0 header to indicate no body,
                     // unless this is a method that never has a body.
@@ -462,7 +462,7 @@ namespace System.Net.Http
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.RequestHeadersStop();
 
-                if (request.Content == null)
+                if (request.Content is null)
                 {
                     // We have nothing more to send, so flush out any headers we haven't yet sent.
                     await FlushAsync(async).ConfigureAwait(false);
@@ -508,7 +508,7 @@ namespace System.Net.Http
                 // When the connection was taken out of the pool, a pre-emptive read was performed
                 // into the read buffer. We need to consume that read prior to issuing another read.
                 ValueTask<int>? t = ConsumeReadAheadTask();
-                if (t != null)
+                if (t is not null)
                 {
                     // Handle the pre-emptive read.  For the async==false case, hopefully the read has
                     // already completed and this will be a nop, but if it hasn't, we're forced to block
@@ -551,7 +551,7 @@ namespace System.Net.Http
                 {
                     // If other 1xx responses come before an expected 100 continue, we will wait for the 100 response before
                     // sending request body (if any).
-                    if (allowExpect100ToContinue != null && response.StatusCode == HttpStatusCode.Continue)
+                    if (allowExpect100ToContinue is not null && response.StatusCode == HttpStatusCode.Continue)
                     {
                         allowExpect100ToContinue.TrySetResult(true);
                         allowExpect100ToContinue = null;
@@ -591,13 +591,13 @@ namespace System.Net.Http
 
                 if (HttpTelemetry.Log.IsEnabled()) HttpTelemetry.Log.ResponseHeadersStop();
 
-                if (allowExpect100ToContinue != null)
+                if (allowExpect100ToContinue is not null)
                 {
                     // If we sent an Expect: 100-continue header, and didn't receive a 100-continue. Handle the final response accordingly.
                     // Note that the developer may have added an Expect: 100-continue header even if there is no Content.
                     if ((int)response.StatusCode >= 300 &&
-                        request.Content != null &&
-                        (request.Content.Headers.ContentLength == null || request.Content.Headers.ContentLength.GetValueOrDefault() > Expect100ErrorSendThreshold) &&
+                        request.Content is not null &&
+                        (request.Content.Headers.ContentLength is null || request.Content.Headers.ContentLength.GetValueOrDefault() > Expect100ErrorSendThreshold) &&
                         !AuthenticationHelper.IsSessionAuthenticationChallenge(response))
                     {
                         // For error final status codes, try to avoid sending the payload if its size is unknown or if it's known to be "big".
@@ -631,7 +631,7 @@ namespace System.Net.Http
                 // Now that we've received our final status line, wait for the request content to fully send.
                 // In most common scenarios, the server won't send back a response until all of the request
                 // content has been received, so this task should generally already be complete.
-                if (sendRequestContentTask != null)
+                if (sendRequestContentTask is not null)
                 {
                     Task sendTask = sendRequestContentTask;
                     sendRequestContentTask = null;
@@ -676,7 +676,7 @@ namespace System.Net.Http
                 {
                     responseStream = new RawConnectionStream(this);
                 }
-                else if (response.Content.Headers.ContentLength != null)
+                else if (response.Content.Headers.ContentLength is not null)
                 {
                     long contentLength = response.Content.Headers.ContentLength.GetValueOrDefault();
                     if (contentLength <= 0)
@@ -726,7 +726,7 @@ namespace System.Net.Http
                 // (we're about to Dispose for the connection). In such cases, we don't want any
                 // exception in that sending task to become unobserved and raise alarm bells, so we
                 // hook up a continuation that will log it.
-                if (sendRequestContentTask != null && !sendRequestContentTask.IsCompletedSuccessfully)
+                if (sendRequestContentTask is not null && !sendRequestContentTask.IsCompletedSuccessfully)
                 {
                     // In case the connection is disposed, it's most probable that
                     // expect100Continue timer expired and request content sending failed.
@@ -951,7 +951,7 @@ namespace System.Net.Http
             {
                 ReadOnlySpan<byte> reasonBytes = line.Slice(MinStatusLineLength + 1);
                 string? knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
-                if (knownReasonPhrase != null && EqualsOrdinal(knownReasonPhrase, reasonBytes))
+                if (knownReasonPhrase is not null && EqualsOrdinal(knownReasonPhrase, reasonBytes))
                 {
                     response.SetReasonPhraseWithoutValidation(knownReasonPhrase);
                 }
@@ -1000,7 +1000,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.Format(SR.net_http_invalid_response_header_name, Encoding.ASCII.GetString(line.Slice(0, pos))));
             }
 
-            if (isFromTrailer && descriptor.KnownHeader != null && (descriptor.KnownHeader.HeaderType & HttpHeaderType.NonTrailing) == HttpHeaderType.NonTrailing)
+            if (isFromTrailer && descriptor.KnownHeader is not null && (descriptor.KnownHeader.HeaderType & HttpHeaderType.NonTrailing) == HttpHeaderType.NonTrailing)
             {
                 // Disallowed trailer fields.
                 // A recipient MUST ignore fields that are forbidden to be sent in a trailer.
@@ -1031,7 +1031,7 @@ namespace System.Net.Http
                 pos++;
             }
 
-            Debug.Assert(response.RequestMessage != null);
+            Debug.Assert(response.RequestMessage is not null);
             Encoding? valueEncoding = connection._pool.Settings._responseHeaderEncodingSelector?.Invoke(descriptor.Name, response.RequestMessage);
 
             // Note we ignore the return value from TryAddWithoutValidation. If the header can't be added, we silently drop it.
@@ -1529,7 +1529,7 @@ namespace System.Net.Http
         // Throws IOException on EOF.  This is only called when we expect more data.
         private async ValueTask FillAsync(bool async)
         {
-            Debug.Assert(_readAheadTask == null);
+            Debug.Assert(_readAheadTask is null);
 
             int remaining = _readLength - _readOffset;
             Debug.Assert(remaining >= 0);
@@ -1605,7 +1605,7 @@ namespace System.Net.Http
 
             // No data in read buffer.
             // Do an unbuffered read directly against the underlying stream.
-            Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
+            Debug.Assert(_readAheadTask is null, "Read ahead task should have been consumed as part of the headers.");
             int count = _stream.Read(destination);
             if (NetEventSource.Log.IsEnabled()) Trace($"Received {count} bytes.");
             return count;
@@ -1633,7 +1633,7 @@ namespace System.Net.Http
 
             // No data in read buffer.
             // Do an unbuffered read directly against the underlying stream.
-            Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
+            Debug.Assert(_readAheadTask is null, "Read ahead task should have been consumed as part of the headers.");
             int count = await _stream.ReadAsync(destination).ConfigureAwait(false);
             if (NetEventSource.Log.IsEnabled()) Trace($"Received {count} bytes.");
             return count;
@@ -1664,7 +1664,7 @@ namespace System.Net.Http
             _readOffset = _readLength = 0;
 
             // Do a buffered read directly against the underlying stream.
-            Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
+            Debug.Assert(_readAheadTask is null, "Read ahead task should have been consumed as part of the headers.");
             int bytesRead = _stream.Read(_readBuffer, 0, _readBuffer.Length);
             if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             _readLength = bytesRead;
@@ -1710,7 +1710,7 @@ namespace System.Net.Http
             _readOffset = _readLength = 0;
 
             // Do a buffered read directly against the underlying stream.
-            Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
+            Debug.Assert(_readAheadTask is null, "Read ahead task should have been consumed as part of the headers.");
             int bytesRead = await _stream.ReadAsync(_readBuffer.AsMemory()).ConfigureAwait(false);
             if (NetEventSource.Log.IsEnabled()) Trace($"Received {bytesRead} bytes.");
             _readLength = bytesRead;
@@ -1740,7 +1740,7 @@ namespace System.Net.Http
 
         private Task CopyToUntilEofAsync(Stream destination, bool async, int bufferSize, CancellationToken cancellationToken)
         {
-            Debug.Assert(destination != null);
+            Debug.Assert(destination is not null);
 
             int remaining = _readLength - _readOffset;
 
@@ -1779,7 +1779,7 @@ namespace System.Net.Http
         // Copy *exactly* [length] bytes into destination; throws on end of stream.
         private async Task CopyToContentLengthAsync(Stream destination, bool async, ulong length, int bufferSize, CancellationToken cancellationToken)
         {
-            Debug.Assert(destination != null);
+            Debug.Assert(destination is not null);
             Debug.Assert(length > 0);
 
             // Copy any data left in the connection's buffer to the destination.
@@ -1828,7 +1828,7 @@ namespace System.Net.Http
                     // if we filled the read buffer while doing the last read (which is at least one indication that the
                     // data arrival rate is fast enough to warrant a larger buffer), and if the buffer size we'd want is
                     // larger than the one we already have, then grow the connection's read buffer to that size.
-                    if (origReadBuffer == null)
+                    if (origReadBuffer is null)
                     {
                         byte[] currentReadBuffer = _readBuffer;
                         if (remaining == currentReadBuffer.Length)
@@ -1845,7 +1845,7 @@ namespace System.Net.Http
             }
             finally
             {
-                if (origReadBuffer != null)
+                if (origReadBuffer is not null)
                 {
                     byte[] tmp = _readBuffer;
                     _readBuffer = origReadBuffer;
@@ -1865,7 +1865,7 @@ namespace System.Net.Http
 
         internal void Acquire()
         {
-            Debug.Assert(_currentRequest == null);
+            Debug.Assert(_currentRequest is null);
             Debug.Assert(!_inUse);
 
             _inUse = true;
@@ -1879,7 +1879,7 @@ namespace System.Net.Http
 
             // If the last request already completed (because the response had no content), return the connection to the pool now.
             // Otherwise, it will be returned when the response has been consumed and CompleteResponse below is called.
-            if (_currentRequest == null)
+            if (_currentRequest is null)
             {
                 ReturnConnectionToPool();
             }
@@ -1887,7 +1887,7 @@ namespace System.Net.Http
 
         private void CompleteResponse()
         {
-            Debug.Assert(_currentRequest != null, "Expected the connection to be associated with a request.");
+            Debug.Assert(_currentRequest is not null, "Expected the connection to be associated with a request.");
             Debug.Assert(_writeOffset == 0, "Everything in write buffer should have been flushed.");
 
             // Disassociate the connection from a request.
@@ -1925,13 +1925,13 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_authconnectionfailure);
             }
 
-            Debug.Assert(response.Content != null);
+            Debug.Assert(response.Content is not null);
             Stream stream = response.Content.ReadAsStream(cancellationToken);
             HttpContentReadStream? responseStream = stream as HttpContentReadStream;
 
-            Debug.Assert(responseStream != null || stream is EmptyReadStream);
+            Debug.Assert(responseStream is not null || stream is EmptyReadStream);
 
-            if (responseStream != null && responseStream.NeedsDrain)
+            if (responseStream is not null && responseStream.NeedsDrain)
             {
                 Debug.Assert(response.RequestMessage == _currentRequest);
 
@@ -1942,15 +1942,15 @@ namespace System.Net.Http
                 }
             }
 
-            Debug.Assert(_currentRequest == null);
+            Debug.Assert(_currentRequest is null);
 
             response.Dispose();
         }
 
         private void ReturnConnectionToPool()
         {
-            Debug.Assert(_currentRequest == null, "Connection should no longer be associated with a request.");
-            Debug.Assert(_readAheadTask == null, "Expected a previous initial read to already be consumed.");
+            Debug.Assert(_currentRequest is null, "Connection should no longer be associated with a request.");
+            Debug.Assert(_readAheadTask is null, "Expected a previous initial read to already be consumed.");
             Debug.Assert(RemainingBuffer.Length == 0, "Unexpected data in connection read buffer.");
 
             // If we decided not to reuse the connection (either because the server sent Connection: close,
@@ -1975,7 +1975,7 @@ namespace System.Net.Http
 
         private static bool EqualsOrdinal(string left, ReadOnlySpan<byte> right)
         {
-            Debug.Assert(left != null, "Expected non-null string");
+            Debug.Assert(left is not null, "Expected non-null string");
 
             if (left.Length != right.Length)
             {

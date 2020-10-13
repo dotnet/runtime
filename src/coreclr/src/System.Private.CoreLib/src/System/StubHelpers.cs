@@ -55,7 +55,7 @@ namespace System.StubHelpers
             int nb;
             byte* pbNativeBuffer = (byte*)pNativeBuffer;
 
-            if (pbNativeBuffer != null || Marshal.SystemMaxDBCSCharSize == 1)
+            if (pbNativeBuffer is not null || Marshal.SystemMaxDBCSCharSize == 1)
             {
                 // If we are marshaling into a stack buffer or we can accurately estimate the size of the required heap
                 // space, we will use a "1-pass" mode where we convert the string directly into the unmanaged buffer.
@@ -67,7 +67,7 @@ namespace System.StubHelpers
 
                 // Use the pre-allocated buffer (allocated by localloc IL instruction) if not NULL,
                 // otherwise fallback to AllocCoTaskMem
-                if (pbNativeBuffer == null)
+                if (pbNativeBuffer is null)
                 {
                     pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(nb);
                     didAlloc = true;
@@ -132,7 +132,7 @@ namespace System.StubHelpers
 
         internal static unsafe void ConvertFixedToNative(int flags, string strManaged, IntPtr pNativeBuffer, int length)
         {
-            if (strManaged == null)
+            if (strManaged is null)
             {
                 if (length > 0)
                     *(byte*)pNativeBuffer = 0;
@@ -223,7 +223,7 @@ namespace System.StubHelpers
             // If we are marshaling into a stack buffer allocated by the ILStub
             // we will use a "1-pass" mode where we convert the string directly into the unmanaged buffer.
             // else we will allocate the precise native heap memory.
-            if (pbNativeBuffer != null)
+            if (pbNativeBuffer is not null)
             {
                 // this is the number of bytes allocated by the ILStub.
                 nb = (strManaged.Length + 1) * MAX_UTF8_CHAR_SIZE;
@@ -955,7 +955,7 @@ namespace System.StubHelpers
 
         internal IntPtr ConvertToNative(object pManagedHome, int dwFlags)
         {
-            if (pManagedHome == null)
+            if (pManagedHome is null)
                 return IntPtr.Zero;
 
             if (pManagedHome is ArrayWithOffset)
@@ -1054,7 +1054,7 @@ namespace System.StubHelpers
         {
             if (pNativeHome != IntPtr.Zero)
             {
-                if (layoutType != null)
+                if (layoutType is not null)
                 {
                     // this must happen regardless of BackPropAction
                     Marshal.DestroyStructure(pNativeHome, layoutType);
@@ -1107,7 +1107,7 @@ namespace System.StubHelpers
         {
             DestroyCore();
             CleanupWorkListElement? next = m_Next;
-            while (next != null)
+            while (next is not null)
             {
                 next.DestroyCore();
                 next = next.m_Next;
@@ -1116,7 +1116,7 @@ namespace System.StubHelpers
 
         public static void AddToCleanupList(ref CleanupWorkListElement? list, CleanupWorkListElement newElement)
         {
-            if (list == null)
+            if (list is null)
             {
                 list = newElement;
             }
@@ -1210,7 +1210,7 @@ namespace System.StubHelpers
 
         internal static void DestroyCleanupList(ref CleanupWorkListElement? pCleanupWorkList)
         {
-            if (pCleanupWorkList != null)
+            if (pCleanupWorkList is not null)
             {
                 pCleanupWorkList.Destroy();
                 pCleanupWorkList = null;
@@ -1250,7 +1250,7 @@ namespace System.StubHelpers
         // AddRefs the SH and returns the underlying unmanaged handle.
         internal static IntPtr SafeHandleAddRef(SafeHandle pHandle, ref bool success)
         {
-            if (pHandle == null)
+            if (pHandle is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.pHandle, ExceptionResource.ArgumentNull_SafeHandle);
             }
@@ -1262,7 +1262,7 @@ namespace System.StubHelpers
         // Releases the SH (to be called from finally block).
         internal static void SafeHandleRelease(SafeHandle pHandle)
         {
-            if (pHandle == null)
+            if (pHandle is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.pHandle, ExceptionResource.ArgumentNull_SafeHandle);
             }

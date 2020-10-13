@@ -163,7 +163,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         private static bool TryGetOrCreateComInterfaceForObjectInternal(ComWrappers impl, object instance, CreateComInterfaceFlags flags, out IntPtr retValue)
         {
-            if (instance == null)
+            if (instance is null)
                 throw new ArgumentNullException(nameof(instance));
 
             return TryGetOrCreateComInterfaceForObjectInternal(ObjectHandleOnStack.Create(ref impl), impl.id, ObjectHandleOnStack.Create(ref instance), flags, out retValue);
@@ -262,7 +262,7 @@ namespace System.Runtime.InteropServices
                     break;
             }
 
-            if (impl == null)
+            if (impl is null)
                 return null;
 
             return impl.CreateObject(externalComObject, flags);
@@ -280,7 +280,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public object GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, object wrapper)
         {
-            if (wrapper == null)
+            if (wrapper is null)
                 throw new ArgumentNullException(nameof(externalComObject));
 
             object? obj;
@@ -338,7 +338,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public static void RegisterForTrackerSupport(ComWrappers instance)
         {
-            if (instance == null)
+            if (instance is null)
                 throw new ArgumentNullException(nameof(instance));
 
             if (null != Interlocked.CompareExchange(ref s_globalInstanceForTrackerSupport, instance, null))
@@ -369,7 +369,7 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public static void RegisterForMarshalling(ComWrappers instance)
         {
-            if (instance == null)
+            if (instance is null)
                 throw new ArgumentNullException(nameof(instance));
 
             if (null != Interlocked.CompareExchange(ref s_globalInstanceForMarshalling, instance, null))

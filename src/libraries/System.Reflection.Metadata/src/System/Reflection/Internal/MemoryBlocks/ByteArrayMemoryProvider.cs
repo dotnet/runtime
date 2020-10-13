@@ -43,11 +43,11 @@ namespace System.Reflection.Internal
         {
             get
             {
-                if (_pinned == null)
+                if (_pinned is null)
                 {
                     var newPinned = new PinnedObject(ImmutableByteArrayInterop.DangerousGetUnderlyingArray(_array)!);
 
-                    if (Interlocked.CompareExchange(ref _pinned, newPinned, null) != null)
+                    if (Interlocked.CompareExchange(ref _pinned, newPinned, null) is not null)
                     {
                         // another thread has already allocated the handle:
                         newPinned.Dispose();

@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.Xml
         /// </summary>
         private static string FormatBytes(byte[] bytes)
         {
-            if (bytes == null)
+            if (bytes is null)
                 return NullString;
 
             return HexConverter.ToString(bytes, HexConverter.Casing.Lower);
@@ -204,7 +204,7 @@ namespace System.Security.Cryptography.Xml
         /// </summary>
         private static string GetKeyName(object key)
         {
-            Debug.Assert(key != null, "key != null");
+            Debug.Assert(key is not null, "key is not null");
 
             ICspAsymmetricAlgorithm cspKey = key as ICspAsymmetricAlgorithm;
             X509Certificate certificate = key as X509Certificate;
@@ -220,15 +220,15 @@ namespace System.Security.Cryptography.Xml
             //
 
             string keyName = null;
-            if (cspKey != null && cspKey.CspKeyContainerInfo.KeyContainerName != null)
+            if (cspKey is not null && cspKey.CspKeyContainerInfo.KeyContainerName is not null)
             {
                 keyName = "\"" + cspKey.CspKeyContainerInfo.KeyContainerName + "\"";
             }
-            else if (certificate2 != null)
+            else if (certificate2 is not null)
             {
                 keyName = "\"" + certificate2.GetNameInfo(X509NameType.SimpleName, false) + "\"";
             }
-            else if (certificate != null)
+            else if (certificate is not null)
             {
                 keyName = "\"" + certificate.Subject + "\"";
             }
@@ -245,7 +245,7 @@ namespace System.Security.Cryptography.Xml
         /// </summary>
         private static string GetObjectId(object o)
         {
-            Debug.Assert(o != null, "o != null");
+            Debug.Assert(o is not null, "o is not null");
 
             return string.Format(CultureInfo.InvariantCulture,
                                  "{0}#{1}", o.GetType().Name,
@@ -257,7 +257,7 @@ namespace System.Security.Cryptography.Xml
         /// </summary>
         private static string GetOidName(Oid oid)
         {
-            Debug.Assert(oid != null, "oid != null");
+            Debug.Assert(oid is not null, "oid is not null");
 
             string friendlyName = oid.FriendlyName;
             if (string.IsNullOrEmpty(friendlyName))
@@ -273,8 +273,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="canonicalizationTransform">transform canonicalizing the input</param>
         internal static void LogBeginCanonicalization(SignedXml signedXml, Transform canonicalizationTransform)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(canonicalizationTransform != null, "canonicalizationTransform != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(canonicalizationTransform is not null, "canonicalizationTransform is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -308,8 +308,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="formatValidator">Callback delegate which is being used for format verification</param>
         internal static void LogBeginCheckSignatureFormat(SignedXml signedXml, Func<SignedXml, bool> formatValidator)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(formatValidator != null, "formatValidator != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(formatValidator is not null, "formatValidator is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -331,14 +331,14 @@ namespace System.Security.Cryptography.Xml
         /// <param name="signedInfo">SignedInfo object being verified</param>
         internal static void LogBeginCheckSignedInfo(SignedXml signedXml, SignedInfo signedInfo)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(signedInfo != null, " signedInfo != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(signedInfo is not null, " signedInfo is not null");
 
             if (InformationLoggingEnabled)
             {
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_CheckSignedInfo,
-                                                  signedInfo.Id != null ? signedInfo.Id : NullString);
+                                                  signedInfo.Id is not null ? signedInfo.Id : NullString);
                 WriteLine(signedXml, TraceEventType.Information, SignedXmlDebugEvent.BeginCheckSignedInfo, logMessage);
             }
         }
@@ -350,7 +350,7 @@ namespace System.Security.Cryptography.Xml
         /// <param name="context">Context of the signature</param>
         internal static void LogBeginSignatureComputation(SignedXml signedXml, XmlElement context)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -364,7 +364,7 @@ namespace System.Security.Cryptography.Xml
             {
                 string contextData = SR.Format(CultureInfo.InvariantCulture,
                                                    SR.Log_XmlContext,
-                                                   context != null ? context.OuterXml : NullString);
+                                                   context is not null ? context.OuterXml : NullString);
 
                 WriteLine(signedXml,
                           TraceEventType.Verbose,
@@ -380,7 +380,7 @@ namespace System.Security.Cryptography.Xml
         /// <param name="context">Context of the verification</param>
         internal static void LogBeginSignatureVerification(SignedXml signedXml, XmlElement context)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -394,7 +394,7 @@ namespace System.Security.Cryptography.Xml
             {
                 string contextData = SR.Format(CultureInfo.InvariantCulture,
                                                    SR.Log_XmlContext,
-                                                   context != null ? context.OuterXml : NullString);
+                                                   context is not null ? context.OuterXml : NullString);
 
                 WriteLine(signedXml,
                           TraceEventType.Verbose,
@@ -410,8 +410,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="canonicalizationTransform">transform canonicalizing the input</param>
         internal static void LogCanonicalizedOutput(SignedXml signedXml, Transform canonicalizationTransform)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(canonicalizationTransform != null, "canonicalizationTransform != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(canonicalizationTransform is not null, "canonicalizationTransform is not null");
 
             if (VerboseLoggingEnabled)
             {
@@ -435,7 +435,7 @@ namespace System.Security.Cryptography.Xml
         /// <param name="result">result of the signature format verification</param>
         internal static void LogFormatValidationResult(SignedXml signedXml, bool result)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -454,8 +454,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="validAlgorithms">List of valid canonicalization algorithms</param>
         internal static void LogUnsafeCanonicalizationMethod(SignedXml signedXml, string algorithm, IEnumerable<string> validAlgorithms)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(validAlgorithms != null, "validAlgorithms != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(validAlgorithms is not null, "validAlgorithms is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -493,9 +493,9 @@ namespace System.Security.Cryptography.Xml
             IEnumerable<string> validC14nAlgorithms,
             IEnumerable<string> validTransformAlgorithms)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(validC14nAlgorithms != null, "validC14nAlgorithms != null");
-            Debug.Assert(validTransformAlgorithms != null, "validTransformAlgorithms != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(validC14nAlgorithms is not null, "validC14nAlgorithms is not null");
+            Debug.Assert(validTransformAlgorithms is not null, "validTransformAlgorithms is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -536,11 +536,11 @@ namespace System.Security.Cryptography.Xml
         /// <param name="namespaces">namespaces being propagated</param>
         internal static void LogNamespacePropagation(SignedXml signedXml, XmlNodeList namespaces)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
 
             if (InformationLoggingEnabled)
             {
-                if (namespaces != null)
+                if (namespaces is not null)
                 {
                     foreach (XmlAttribute propagatedNamespace in namespaces)
                     {
@@ -626,10 +626,10 @@ namespace System.Security.Cryptography.Xml
                                         HashAlgorithm hash,
                                         AsymmetricSignatureFormatter asymmetricSignatureFormatter)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(signatureDescription != null, "signatureDescription != null");
-            Debug.Assert(hash != null, "hash != null");
-            Debug.Assert(asymmetricSignatureFormatter != null, "asymmetricSignatureFormatter != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(signatureDescription is not null, "signatureDescription is not null");
+            Debug.Assert(hash is not null, "hash is not null");
+            Debug.Assert(asymmetricSignatureFormatter is not null, "asymmetricSignatureFormatter is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -654,8 +654,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="key">key the signature is created with</param>
         internal static void LogSigning(SignedXml signedXml, KeyedHashAlgorithm key)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(key != null, "key != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(key is not null, "key is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -677,13 +677,13 @@ namespace System.Security.Cryptography.Xml
         /// <param name="reference">Reference being hashed</param>
         internal static void LogSigningReference(SignedXml signedXml, Reference reference)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(reference != null, "reference != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(reference is not null, "reference is not null");
 
             if (VerboseLoggingEnabled)
             {
                 HashAlgorithm hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
-                string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
+                string hashAlgorithmName = hashAlgorithm is null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_SigningReference,
                                                   GetObjectId(reference),
@@ -728,8 +728,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="verified">true if the signature verified, false otherwise</param>
         internal static void LogVerificationResult(SignedXml signedXml, object key, bool verified)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(key != null, "key != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(key is not null, "key is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -754,8 +754,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="keyUsages">key usages being examined</param>
         internal static void LogVerifyKeyUsage(SignedXml signedXml, X509Certificate certificate, X509KeyUsageExtension keyUsages)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(certificate != null, "certificate != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(certificate is not null, "certificate is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -779,8 +779,8 @@ namespace System.Security.Cryptography.Xml
         /// <param name="reference">reference being verified</param>
         internal static void LogVerifyReference(SignedXml signedXml, Reference reference)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(reference != null, "reference != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(reference is not null, "reference is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -810,15 +810,15 @@ namespace System.Security.Cryptography.Xml
                                                     byte[] actualHash,
                                                     byte[] expectedHash)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(reference != null, "reference != null");
-            Debug.Assert(actualHash != null, "actualHash != null");
-            Debug.Assert(expectedHash != null, "expectedHash != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(reference is not null, "reference is not null");
+            Debug.Assert(actualHash is not null, "actualHash is not null");
+            Debug.Assert(expectedHash is not null, "expectedHash is not null");
 
             if (VerboseLoggingEnabled)
             {
                 HashAlgorithm hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
-                string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
+                string hashAlgorithmName = hashAlgorithm is null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                   SR.Log_ReferenceHash,
                                                   GetObjectId(reference),
@@ -853,10 +853,10 @@ namespace System.Security.Cryptography.Xml
                                                  byte[] actualHashValue,
                                                  byte[] signatureValue)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(signatureDescription != null, "signatureDescription != null");
-            Debug.Assert(hashAlgorithm != null, "hashAlgorithm != null");
-            Debug.Assert(asymmetricSignatureDeformatter != null, "asymmetricSignatureDeformatter != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(signatureDescription is not null, "signatureDescription is not null");
+            Debug.Assert(hashAlgorithm is not null, "hashAlgorithm is not null");
+            Debug.Assert(asymmetricSignatureDeformatter is not null, "asymmetricSignatureDeformatter is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -899,8 +899,8 @@ namespace System.Security.Cryptography.Xml
                                                  byte[] actualHashValue,
                                                  byte[] signatureValue)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(mac != null, "mac != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(mac is not null, "mac is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -935,9 +935,9 @@ namespace System.Security.Cryptography.Xml
         /// <param name="certificate">certificate having the chain built for it</param>
         internal static void LogVerifyX509Chain(SignedXml signedXml, X509Chain chain, X509Certificate certificate)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(certificate != null, "certificate != null");
-            Debug.Assert(chain != null, "chain != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(certificate is not null, "certificate is not null");
+            Debug.Assert(chain is not null, "chain is not null");
 
             if (InformationLoggingEnabled)
             {
@@ -1026,13 +1026,13 @@ namespace System.Security.Cryptography.Xml
         internal static void LogSignedXmlRecursionLimit(SignedXml signedXml,
                                                         Reference reference)
         {
-            Debug.Assert(signedXml != null, "signedXml != null");
-            Debug.Assert(reference != null, "reference != null");
+            Debug.Assert(signedXml is not null, "signedXml is not null");
+            Debug.Assert(reference is not null, "reference is not null");
 
             if (InformationLoggingEnabled)
             {
                 HashAlgorithm hashAlgorithm = CryptoHelpers.CreateFromName<HashAlgorithm>(reference.DigestMethod);
-                string hashAlgorithmName = hashAlgorithm == null ? "null" : hashAlgorithm.GetType().Name;
+                string hashAlgorithmName = hashAlgorithm is null ? "null" : hashAlgorithm.GetType().Name;
                 string logMessage = SR.Format(CultureInfo.InvariantCulture,
                                                     SR.Log_SignedXmlRecursionLimit,
                                                     GetObjectId(reference),
@@ -1055,7 +1055,7 @@ namespace System.Security.Cryptography.Xml
         /// <param name="eventId">type of event being traced</param>
         private static void WriteLine(object source, TraceEventType eventType, SignedXmlDebugEvent eventId, string data)
         {
-            Debug.Assert(source != null, "source != null");
+            Debug.Assert(source is not null, "source is not null");
             Debug.Assert(!string.IsNullOrEmpty(data), "!string.IsNullOrEmpty(data)");
             Debug.Assert(InformationLoggingEnabled, "InformationLoggingEnabled");
 

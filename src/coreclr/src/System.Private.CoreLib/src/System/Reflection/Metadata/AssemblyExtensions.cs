@@ -22,7 +22,7 @@ namespace System.Reflection.Metadata
         [CLSCompliant(false)] // out byte* blob
         public static unsafe bool TryGetRawMetadata(this Assembly assembly, out byte* blob, out int length)
         {
-            if (assembly == null)
+            if (assembly is null)
             {
                 throw new ArgumentNullException(nameof(assembly));
             }
@@ -31,7 +31,7 @@ namespace System.Reflection.Metadata
             length = 0;
 
             var runtimeAssembly = assembly as RuntimeAssembly;
-            if (runtimeAssembly == null)
+            if (runtimeAssembly is null)
             {
                 return false;
             }

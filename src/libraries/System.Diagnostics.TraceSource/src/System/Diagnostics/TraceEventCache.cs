@@ -55,7 +55,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_stackTrace == null)
+                if (_stackTrace is null)
                 {
                     _stackTrace = Environment.StackTrace;
                 }

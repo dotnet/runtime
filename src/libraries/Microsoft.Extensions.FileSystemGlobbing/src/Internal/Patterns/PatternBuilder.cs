@@ -27,7 +27,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
 
         public IPattern Build(string pattern)
         {
-            if (pattern == null)
+            if (pattern is null)
             {
                 throw new ArgumentNullException(nameof(pattern));
             }
@@ -56,7 +56,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
 
                 IPathSegment segment = null;
 
-                if (segment == null && endSegment - beginSegment == 3)
+                if (segment is null && endSegment - beginSegment == 3)
                 {
                     if (pattern[beginSegment] == '*' &&
                         pattern[beginSegment + 1] == '.' &&
@@ -67,7 +67,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                     }
                 }
 
-                if (segment == null && endSegment - beginSegment == 2)
+                if (segment is null && endSegment - beginSegment == 2)
                 {
                     if (pattern[beginSegment] == '*' &&
                         pattern[beginSegment + 1] == '*')
@@ -88,7 +88,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                     }
                 }
 
-                if (segment == null && endSegment - beginSegment == 1)
+                if (segment is null && endSegment - beginSegment == 1)
                 {
                     if (pattern[beginSegment] == '.')
                     {
@@ -97,7 +97,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                     }
                 }
 
-                if (segment == null && endSegment - beginSegment > 2)
+                if (segment is null && endSegment - beginSegment > 2)
                 {
                     if (pattern[beginSegment] == '*' &&
                         pattern[beginSegment + 1] == '*' &&
@@ -111,7 +111,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                     }
                 }
 
-                if (segment == null)
+                if (segment is null)
                 {
                     string beginsWith = string.Empty;
                     var contains = new List<string>();
@@ -157,7 +157,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                         scanSegment = endLiteral + 1;
                     }
 
-                    if (segment == null)
+                    if (segment is null)
                     {
                         segment = new WildcardPathSegment(beginsWith, contains, endsWith, ComparisonType);
                     }
@@ -176,7 +176,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                 {
                     if (segment is RecursiveWildcardSegment)
                     {
-                        if (segmentsPatternStartsWith == null)
+                        if (segmentsPatternStartsWith is null)
                         {
                             segmentsPatternStartsWith = new List<IPathSegment>(allSegments);
                             segmentsPatternEndsWith = new List<IPathSegment>();
@@ -188,7 +188,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                             segmentsPatternEndsWith = new List<IPathSegment>();
                         }
                     }
-                    else if (segmentsPatternEndsWith != null)
+                    else if (segmentsPatternEndsWith is not null)
                     {
                         segmentsPatternEndsWith.Add(segment);
                     }
@@ -199,7 +199,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
                 scanPattern = endSegment + 1;
             }
 
-            if (segmentsPatternStartsWith == null)
+            if (segmentsPatternStartsWith is null)
             {
                 return new LinearPattern(allSegments);
             }

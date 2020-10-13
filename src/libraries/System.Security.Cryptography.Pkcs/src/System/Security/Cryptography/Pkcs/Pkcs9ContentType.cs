@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Pkcs
         [return: NotNullIfNotNull("rawData")]
         private static Oid? Decode(byte[]? rawData)
         {
-            if (rawData == null)
+            if (rawData is null)
                 return null;
 
             string contentTypeValue = PkcsHelpers.DecodeOid(rawData);

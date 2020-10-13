@@ -160,13 +160,13 @@ namespace System.Net
         {
             get
             {
-                if (_statusDescription == null)
+                if (_statusDescription is null)
                 {
                     // if the user hasn't set this, generated on the fly, if possible.
                     // We know this one is safe, no need to verify it as in the setter.
                     _statusDescription = HttpStatusDescription.Get(StatusCode);
                 }
-                if (_statusDescription == null)
+                if (_statusDescription is null)
                 {
                     _statusDescription = string.Empty;
                 }
@@ -175,7 +175,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (value == null)
+                if (value is null)
                 {
                     throw new ArgumentNullException(nameof(value));
                 }
@@ -209,7 +209,7 @@ namespace System.Net
 
         public void AppendCookie(Cookie cookie)
         {
-            if (cookie == null)
+            if (cookie is null)
             {
                 throw new ArgumentNullException(nameof(cookie));
             }
@@ -221,7 +221,7 @@ namespace System.Net
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Entering Set-Cookie: {Headers[HttpResponseHeader.SetCookie]}, Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
 
-            if (_cookies != null)
+            if (_cookies is not null)
             {
                 // now go through the collection, and concatenate all the cookies in per-variant strings
                 string? setCookie2 = null, setCookie = null;
@@ -229,18 +229,18 @@ namespace System.Net
                 {
                     Cookie cookie = _cookies[index];
                     string cookieString = cookie.ToServerString();
-                    if (cookieString == null || cookieString.Length == 0)
+                    if (cookieString is null || cookieString.Length == 0)
                     {
                         continue;
                     }
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Now looking at index:{index} cookie: {cookie}");
                     if (cookie.IsRfc2965Variant())
                     {
-                        setCookie2 = setCookie2 == null ? cookieString : setCookie2 + ", " + cookieString;
+                        setCookie2 = setCookie2 is null ? cookieString : setCookie2 + ", " + cookieString;
                     }
                     else
                     {
-                        setCookie = setCookie == null ? cookieString : setCookie + ", " + cookieString;
+                        setCookie = setCookie is null ? cookieString : setCookie + ", " + cookieString;
                     }
                 }
 
@@ -276,7 +276,7 @@ namespace System.Net
 
         public void SetCookie(Cookie cookie)
         {
-            if (cookie == null)
+            if (cookie is null)
             {
                 throw new ArgumentNullException(nameof(cookie));
             }

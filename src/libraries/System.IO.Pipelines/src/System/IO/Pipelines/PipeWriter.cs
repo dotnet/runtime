@@ -72,7 +72,7 @@ namespace System.IO.Pipelines
         /// <returns>The <see cref="Stream"/>.</returns>
         public virtual Stream AsStream(bool leaveOpen = false)
         {
-            if (_stream == null)
+            if (_stream is null)
             {
                 _stream = new PipeWriterStream(this, leaveOpen);
             }

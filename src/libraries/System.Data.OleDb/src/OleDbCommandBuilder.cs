@@ -366,12 +366,12 @@ namespace System.Data.OleDb
             string quoteSuffix = QuoteSuffix;
             if (ADP.IsEmpty(quotePrefix) == true)
             {
-                if (connection == null)
+                if (connection is null)
                 {
                     // Use the adapter's connection if QuoteIdentifier was called from
                     // DbCommandBuilder instance (which does not have an overload that gets connection object)
                     connection = DataAdapter?.SelectCommand?.Connection;
-                    if (connection == null)
+                    if (connection is null)
                     {
                         throw ADP.QuotePrefixNotSet(ADP.QuoteIdentifier);
                     }
@@ -379,7 +379,7 @@ namespace System.Data.OleDb
                 connection.GetLiteralQuotes(ADP.QuoteIdentifier, out quotePrefix, out quoteSuffix);
                 // if the quote suffix is null assume that it is the same as the prefix (See OLEDB spec
                 // IDBInfo::GetLiteralInfo DBLITERAL_QUOTE_SUFFIX.)
-                if (quoteSuffix == null)
+                if (quoteSuffix is null)
                 {
                     quoteSuffix = quotePrefix;
                 }
@@ -416,12 +416,12 @@ namespace System.Data.OleDb
             string quoteSuffix = QuoteSuffix;
             if (ADP.IsEmpty(quotePrefix) == true)
             {
-                if (connection == null)
+                if (connection is null)
                 {
                     // Use the adapter's connection if UnquoteIdentifier was called from
                     // DbCommandBuilder instance (which does not have an overload that gets connection object)
                     connection = DataAdapter?.SelectCommand?.Connection;
-                    if (connection == null)
+                    if (connection is null)
                     {
                         throw ADP.QuotePrefixNotSet(ADP.UnquoteIdentifier);
                     }
@@ -429,7 +429,7 @@ namespace System.Data.OleDb
                 connection.GetLiteralQuotes(ADP.UnquoteIdentifier, out quotePrefix, out quoteSuffix);
                 // if the quote suffix is null assume that it is the same as the prefix (See OLEDB spec
                 // IDBInfo::GetLiteralInfo DBLITERAL_QUOTE_SUFFIX.)
-                if (quoteSuffix == null)
+                if (quoteSuffix is null)
                 {
                     quoteSuffix = quotePrefix;
                 }

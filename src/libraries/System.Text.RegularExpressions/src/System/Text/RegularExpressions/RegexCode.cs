@@ -407,14 +407,14 @@ namespace System.Text.RegularExpressions
             sb.AppendLine("Anchor:     " + RegexPrefixAnalyzer.AnchorDescription(LeadingAnchor));
             sb.AppendLine("");
 
-            if (BoyerMoorePrefix != null)
+            if (BoyerMoorePrefix is not null)
             {
                 sb.AppendLine("Boyer-Moore:");
                 sb.AppendLine(BoyerMoorePrefix.Dump("    "));
                 sb.AppendLine();
             }
 
-            if (LeadingCharClasses != null)
+            if (LeadingCharClasses is not null)
             {
                 sb.AppendLine("First Chars:");
                 for (int i = 0; i < LeadingCharClasses.Length; i++)

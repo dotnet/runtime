@@ -25,12 +25,12 @@ namespace Microsoft.Extensions.DependencyInjection
             ServiceLifetime lifetime)
             : this(serviceType, lifetime)
         {
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            if (implementationType == null)
+            if (implementationType is null)
             {
                 throw new ArgumentNullException(nameof(implementationType));
             }
@@ -49,12 +49,12 @@ namespace Microsoft.Extensions.DependencyInjection
             object instance)
             : this(serviceType, ServiceLifetime.Singleton)
         {
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            if (instance == null)
+            if (instance is null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
@@ -74,12 +74,12 @@ namespace Microsoft.Extensions.DependencyInjection
             ServiceLifetime lifetime)
             : this(serviceType, lifetime)
         {
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            if (factory == null)
+            if (factory is null)
             {
                 throw new ArgumentNullException(nameof(factory));
             }
@@ -109,12 +109,12 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             string? lifetime = $"{nameof(ServiceType)}: {ServiceType} {nameof(Lifetime)}: {Lifetime} ";
 
-            if (ImplementationType != null)
+            if (ImplementationType is not null)
             {
                 return lifetime + $"{nameof(ImplementationType)}: {ImplementationType}";
             }
 
-            if (ImplementationFactory != null)
+            if (ImplementationFactory is not null)
             {
                 return lifetime + $"{nameof(ImplementationFactory)}: {ImplementationFactory.Method}";
             }
@@ -124,15 +124,15 @@ namespace Microsoft.Extensions.DependencyInjection
 
         internal Type GetImplementationType()
         {
-            if (ImplementationType != null)
+            if (ImplementationType is not null)
             {
                 return ImplementationType;
             }
-            else if (ImplementationInstance != null)
+            else if (ImplementationInstance is not null)
             {
                 return ImplementationInstance.GetType();
             }
-            else if (ImplementationFactory != null)
+            else if (ImplementationFactory is not null)
             {
                 Type[]? typeArguments = ImplementationFactory.GetType().GenericTypeArguments;
 
@@ -172,12 +172,12 @@ namespace Microsoft.Extensions.DependencyInjection
             Type service,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
-            if (service == null)
+            if (service is null)
             {
                 throw new ArgumentNullException(nameof(service));
             }
 
-            if (implementationType == null)
+            if (implementationType is null)
             {
                 throw new ArgumentNullException(nameof(implementationType));
             }
@@ -200,7 +200,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -219,7 +219,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static ServiceDescriptor Transient<TService>(Func<IServiceProvider, TService> implementationFactory)
             where TService : class
         {
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -237,12 +237,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
         public static ServiceDescriptor Transient(Type service, Func<IServiceProvider, object> implementationFactory)
         {
-            if (service == null)
+            if (service is null)
             {
                 throw new ArgumentNullException(nameof(service));
             }
 
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -295,7 +295,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -314,7 +314,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static ServiceDescriptor Scoped<TService>(Func<IServiceProvider, TService> implementationFactory)
             where TService : class
         {
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -332,12 +332,12 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>A new instance of <see cref="ServiceDescriptor"/>.</returns>
         public static ServiceDescriptor Scoped(Type service, Func<IServiceProvider, object> implementationFactory)
         {
-            if (service == null)
+            if (service is null)
             {
                 throw new ArgumentNullException(nameof(service));
             }
 
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -372,12 +372,12 @@ namespace Microsoft.Extensions.DependencyInjection
             Type service,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type implementationType)
         {
-            if (service == null)
+            if (service is null)
             {
                 throw new ArgumentNullException(nameof(service));
             }
 
-            if (implementationType == null)
+            if (implementationType is null)
             {
                 throw new ArgumentNullException(nameof(implementationType));
             }
@@ -400,7 +400,7 @@ namespace Microsoft.Extensions.DependencyInjection
             where TService : class
             where TImplementation : class, TService
         {
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -419,7 +419,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static ServiceDescriptor Singleton<TService>(Func<IServiceProvider, TService> implementationFactory)
             where TService : class
         {
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -439,12 +439,12 @@ namespace Microsoft.Extensions.DependencyInjection
             Type serviceType,
             Func<IServiceProvider, object> implementationFactory)
         {
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            if (implementationFactory == null)
+            if (implementationFactory is null)
             {
                 throw new ArgumentNullException(nameof(implementationFactory));
             }
@@ -463,7 +463,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static ServiceDescriptor Singleton<TService>(TService implementationInstance)
             where TService : class
         {
-            if (implementationInstance == null)
+            if (implementationInstance is null)
             {
                 throw new ArgumentNullException(nameof(implementationInstance));
             }
@@ -483,12 +483,12 @@ namespace Microsoft.Extensions.DependencyInjection
             Type serviceType,
             object implementationInstance)
         {
-            if (serviceType == null)
+            if (serviceType is null)
             {
                 throw new ArgumentNullException(nameof(serviceType));
             }
 
-            if (implementationInstance == null)
+            if (implementationInstance is null)
             {
                 throw new ArgumentNullException(nameof(implementationInstance));
             }

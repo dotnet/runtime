@@ -23,11 +23,11 @@ namespace System.Xml
             {
                 get
                 {
-                    if (_field == null)
+                    if (_field is null)
                         return 0;
 
                     List<object>? list = _field as List<object>;
-                    if (list != null)
+                    if (list is not null)
                         return list.Count;
 
                     return 1;
@@ -38,11 +38,11 @@ namespace System.Xml
             {
                 get
                 {
-                    if (_field == null)
+                    if (_field is null)
                         throw new ArgumentOutOfRangeException(nameof(index));
 
                     List<object>? list = _field as List<object>;
-                    if (list != null)
+                    if (list is not null)
                         return list[index];
 
                     if (index != 0)
@@ -54,9 +54,9 @@ namespace System.Xml
 
             public void Add(object value)
             {
-                if (_field == null)
+                if (_field is null)
                 {
-                    if (value == null)
+                    if (value is null)
                     {
                         Debug.Fail("Null was added to the collection which didn't expect it");
                         // If a single null value needs to be stored, then
@@ -72,7 +72,7 @@ namespace System.Xml
                 }
 
                 List<object>? list = _field as List<object>;
-                if (list != null)
+                if (list is not null)
                 {
                     list.Add(value);
                 }
@@ -87,11 +87,11 @@ namespace System.Xml
 
             public void RemoveAt(int index)
             {
-                if (_field == null)
+                if (_field is null)
                     throw new ArgumentOutOfRangeException(nameof(index));
 
                 List<object?>? list = _field as List<object?>;
-                if (list != null)
+                if (list is not null)
                 {
                     list.RemoveAt(index);
                     return;
@@ -105,7 +105,7 @@ namespace System.Xml
 
             public void Insert(int index, object value)
             {
-                if (_field == null)
+                if (_field is null)
                 {
                     if (index != 0)
                         throw new ArgumentOutOfRangeException(nameof(index));
@@ -114,7 +114,7 @@ namespace System.Xml
                 }
 
                 List<object>? list = _field as List<object>;
-                if (list != null)
+                if (list is not null)
                 {
                     list.Insert(index, value);
                     return;
@@ -183,13 +183,13 @@ namespace System.Xml
 
             public IEnumerator GetEnumerator()
             {
-                if (_field == null)
+                if (_field is null)
                 {
                     return XmlDocument.EmptyEnumerator;
                 }
 
                 List<object>? list = _field as List<object>;
-                if (list != null)
+                if (list is not null)
                 {
                     return list.GetEnumerator();
                 }

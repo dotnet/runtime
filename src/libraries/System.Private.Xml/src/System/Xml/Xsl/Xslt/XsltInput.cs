@@ -40,15 +40,15 @@ namespace System.Xml.Xsl.Xslt
 
         public XsltInput(XmlReader reader, Compiler compiler, KeywordsTable atoms)
         {
-            Debug.Assert(reader != null);
-            Debug.Assert(atoms != null);
+            Debug.Assert(reader is not null);
+            Debug.Assert(atoms is not null);
             EnsureExpandEntities(reader);
             IXmlLineInfo? xmlLineInfo = reader as IXmlLineInfo;
 
             _atoms = atoms;
             _reader = reader;
             _reatomize = reader.NameTable != atoms.NameTable;
-            _readerLineInfo = (xmlLineInfo != null && xmlLineInfo.HasLineInfo()) ? xmlLineInfo : null;
+            _readerLineInfo = (xmlLineInfo is not null && xmlLineInfo.HasLineInfo()) ? xmlLineInfo : null;
             _topLevelReader = reader.ReadState == ReadState.Initial;
             _scopeManager = new CompilerScopeManager<VarPar>(atoms);
             _compiler = compiler;
@@ -72,9 +72,9 @@ namespace System.Xml.Xsl.Xslt
         private static void EnsureExpandEntities(XmlReader reader)
         {
             XmlTextReader? tr = reader as XmlTextReader;
-            if (tr != null && tr.EntityHandling != EntityHandling.ExpandEntities)
+            if (tr is not null && tr.EntityHandling != EntityHandling.ExpandEntities)
             {
-                Debug.Assert(tr.Settings == null, "XmlReader created with XmlReader.Create should always expand entities.");
+                Debug.Assert(tr.Settings is null, "XmlReader created with XmlReader.Create should always expand entities.");
                 tr.EntityHandling = EntityHandling.ExpandEntities;
             }
         }
@@ -113,7 +113,7 @@ namespace System.Xml.Xsl.Xslt
             {
                 // This may be an embedded stylesheet - store namespaces in scope
                 IXmlNamespaceResolver? nsResolver = _reader as IXmlNamespaceResolver;
-                if (nsResolver != null)
+                if (nsResolver is not null)
                 {
                     namespacesInScope = nsResolver.GetNamespacesInScope(XmlNamespaceScope.ExcludeXml);
                 }
@@ -127,13 +127,13 @@ namespace System.Xml.Xsl.Xslt
                 // If namespacesInScope is not null then the stylesheet being read is an embedded stylesheet that can have namespaces
                 // defined outside of xsl:stylesheet instruction. In this case the namespace definitions collected above have to be added
                 // to the element scope.
-                if (namespacesInScope != null)
+                if (namespacesInScope is not null)
                 {
                     foreach (KeyValuePair<string, string> prefixNamespacePair in namespacesInScope)
                     {
                         // The namespace could be redefined on the element we just read. If this is the case scopeManager already has
                         // namespace definition for this prefix and the old definition must not be added to the scope.
-                        if (_scopeManager.LookupNamespace(prefixNamespacePair.Key) == null)
+                        if (_scopeManager.LookupNamespace(prefixNamespacePair.Key) is null)
                         {
                             string nsAtomizedValue = _atoms.NameTable.Add(prefixNamespacePair.Value);
                             _scopeManager.AddNsDeclaration(prefixNamespacePair.Key, nsAtomizedValue);
@@ -178,7 +178,7 @@ namespace System.Xml.Xsl.Xslt
                 rec.prefix = _atoms.NameTable.Add(rec.prefix);
             }
 
-            if (_readerLineInfo != null)
+            if (_readerLineInfo is not null)
             {
                 rec.start = new Location(_readerLineInfo.LineNumber, _readerLineInfo.LinePosition - PositionAdjustment(_reader.NodeType));
             }
@@ -186,7 +186,7 @@ namespace System.Xml.Xsl.Xslt
 
         private void SetRecordEnd(ref Record rec)
         {
-            if (_readerLineInfo != null)
+            if (_readerLineInfo is not null)
             {
                 rec.end = new Location(_readerLineInfo.LineNumber, _readerLineInfo.LinePosition - PositionAdjustment(_reader.NodeType));
                 if (_reader.BaseURI != rec.baseUri || rec.end.LessOrEqual(rec.start))
@@ -208,7 +208,7 @@ namespace System.Xml.Xsl.Xslt
             rec.value = _reader.Value;
             rec.baseUri = _reader.BaseURI;
 
-            if (_readerLineInfo != null)
+            if (_readerLineInfo is not null)
             {
                 bool isCDATA = (_reader.NodeType == XmlNodeType.CDATA);
                 int line = _readerLineInfo.LineNumber;
@@ -249,7 +249,7 @@ namespace System.Xml.Xsl.Xslt
             rec.prefix = string.Empty;
             rec.baseUri = _reader.BaseURI;
 
-            if (_readerLineInfo != null)
+            if (_readerLineInfo is not null)
             {
                 rec.start = new Location(_readerLineInfo.LineNumber, _readerLineInfo.LinePosition - 1);
             }
@@ -259,7 +259,7 @@ namespace System.Xml.Xsl.Xslt
             rec.value = _reader.Value;
             _reader.Read();
             Debug.Assert(_reader.NodeType == XmlNodeType.EndEntity);
-            if (_readerLineInfo != null)
+            if (_readerLineInfo is not null)
             {
                 rec.end = new Location(_readerLineInfo.LineNumber, _readerLineInfo.LinePosition + 1);
             }
@@ -298,7 +298,7 @@ namespace System.Xml.Xsl.Xslt
                     SetRecordEnd(ref rec);
                     return true;
                 }
-                if (_readerLineInfo != null)
+                if (_readerLineInfo is not null)
                 {
                     int correction = (_reader.NodeType == XmlNodeType.EntityReference) ? -2 : -1;
                     rec.valueStart = new Location(_readerLineInfo.LineNumber, _readerLineInfo.LinePosition + correction);
@@ -327,7 +327,7 @@ namespace System.Xml.Xsl.Xslt
                     }
                 } while (_reader.ReadAttributeValue());
                 rec.value = _strConcat.GetResult();
-                if (_readerLineInfo != null)
+                if (_readerLineInfo is not null)
                 {
                     Debug.Assert(_reader.NodeType != XmlNodeType.EntityReference);
                     int correction = ((_reader.NodeType == XmlNodeType.EndEntity) ? 1 : lastText.Length) + 1;
@@ -551,7 +551,7 @@ namespace System.Xml.Xsl.Xslt
 
         public bool MoveToXsltAttribute(int attNum, string attName)
         {
-            Debug.Assert(_attributes != null && _attributes[attNum].name == attName, "Attribute numbering error.");
+            Debug.Assert(_attributes is not null && _attributes[attNum].name == attName, "Attribute numbering error.");
             _currentRecord = _xsltAttributeNumber[attNum];
             return _currentRecord != 0;
         }
@@ -563,7 +563,7 @@ namespace System.Xml.Xsl.Xslt
 
         public bool AttributeExists(int attNum, string attName)
         {
-            Debug.Assert(_attributes != null && _attributes[attNum].name == attName, "Attribute numbering error.");
+            Debug.Assert(_attributes is not null && _attributes[attNum].name == attName, "Attribute numbering error.");
             return _xsltAttributeNumber[attNum] != 0;
         }
 
@@ -980,7 +980,7 @@ namespace System.Xml.Xsl.Xslt
 
                         for (int idx = 0; idx < list.Length; idx++)
                         {
-                            if (list[idx] != null)
+                            if (list[idx] is not null)
                             {
                                 ctxInfo.nsList = new NsDecl(ctxInfo.nsList, /*prefix:*/null, list[idx]); // null means that this Exlusion NS
                                 if (extensions)
@@ -1015,7 +1015,7 @@ namespace System.Xml.Xsl.Xslt
                 int col;
                 for (col = 0; col < list.Length; col++)
                 {
-                    if (System.Xml.Xsl.Runtime.XmlCollation.Create(list[col], /*throw:*/false) != null)
+                    if (System.Xml.Xsl.Runtime.XmlCollation.Create(list[col], /*throw:*/false) is not null)
                     {
                         break;
                     }
@@ -1055,7 +1055,7 @@ namespace System.Xml.Xsl.Xslt
 
         public ISourceLineInfo BuildNameLineInfo()
         {
-            if (_readerLineInfo == null)
+            if (_readerLineInfo is null)
             {
                 return BuildLineInfo();
             }
@@ -1065,7 +1065,7 @@ namespace System.Xml.Xsl.Xslt
             // LocalName (and other cached properties) can be null only if nothing has been read from the reader.
             // This happens for instance when a reader which has already been closed or a reader positioned
             // on the very last node of the document is passed to the ctor.
-            if (LocalName == null)
+            if (LocalName is null)
             {
                 // Fill up the current record to set all the properties used below.
                 FillupRecord(ref _records[_currentRecord]);
@@ -1081,7 +1081,7 @@ namespace System.Xml.Xsl.Xslt
         {
             Location loc;
 
-            if (_readerLineInfo != null)
+            if (_readerLineInfo is not null)
                 loc = new Location(_readerLineInfo.LineNumber, _readerLineInfo.LinePosition);
             else
                 loc = new Location(0, 0);
@@ -1092,9 +1092,9 @@ namespace System.Xml.Xsl.Xslt
         // Resolve prefix, return null and report an error if not found
         public string? LookupXmlNamespace(string prefix)
         {
-            Debug.Assert(prefix != null);
+            Debug.Assert(prefix is not null);
             string? nsUri = _scopeManager.LookupNamespace(prefix);
-            if (nsUri != null)
+            if (nsUri is not null)
             {
                 Debug.Assert(Ref.Equal(_atoms.NameTable.Get(nsUri), nsUri), "Namespaces must be atomized");
                 return nsUri;

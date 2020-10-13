@@ -112,7 +112,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <returns>The type store item.  It will not be null.</returns>
         private TypeStoreItem GetTypeStoreItem(Type type)
         {
-            Debug.Assert(type != null);
+            Debug.Assert(type is not null);
 
             lock (_typeStoreItems)
             {
@@ -134,17 +134,17 @@ namespace System.ComponentModel.DataAnnotations
         /// <param name="validationContext">The context to check</param>
         private static void EnsureValidationContext(ValidationContext validationContext)
         {
-            if (validationContext == null)
+            if (validationContext is null)
             {
                 throw new ArgumentNullException(nameof(validationContext));
             }
         }
 
         internal static bool IsPublic(PropertyInfo p) =>
-            (p.GetMethod != null && p.GetMethod.IsPublic) || (p.SetMethod != null && p.SetMethod.IsPublic);
+            (p.GetMethod is not null && p.GetMethod.IsPublic) || (p.SetMethod is not null && p.SetMethod.IsPublic);
 
         internal static bool IsStatic(PropertyInfo p) =>
-            (p.GetMethod != null && p.GetMethod.IsStatic) || (p.SetMethod != null && p.SetMethod.IsStatic);
+            (p.GetMethod is not null && p.GetMethod.IsStatic) || (p.SetMethod is not null && p.SetMethod.IsStatic);
 
         /// <summary>
         ///     Private abstract class for all store items
@@ -195,11 +195,11 @@ namespace System.ComponentModel.DataAnnotations
                     throw new ArgumentNullException(nameof(propertyName));
                 }
 
-                if (_propertyStoreItems == null)
+                if (_propertyStoreItems is null)
                 {
                     lock (_syncRoot)
                     {
-                        if (_propertyStoreItems == null)
+                        if (_propertyStoreItems is null)
                         {
                             _propertyStoreItems = CreatePropertyStoreItems();
                         }
@@ -236,7 +236,7 @@ namespace System.ComponentModel.DataAnnotations
             internal PropertyStoreItem(Type propertyType, IEnumerable<Attribute> attributes)
                 : base(attributes)
             {
-                Debug.Assert(propertyType != null);
+                Debug.Assert(propertyType is not null);
                 PropertyType = propertyType;
             }
 

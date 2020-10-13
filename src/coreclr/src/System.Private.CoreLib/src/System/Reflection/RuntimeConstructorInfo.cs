@@ -42,7 +42,7 @@ namespace System.Reflection
                     //
                     // first take care of all the NO_INVOKE cases.
                     if (declaringType == typeof(void) ||
-                         (declaringType != null && declaringType.ContainsGenericParameters) ||
+                         (declaringType is not null && declaringType.ContainsGenericParameters) ||
                          ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs))
                     {
                         // We don't need other flags if this method cannot be invoked
@@ -53,14 +53,14 @@ namespace System.Reflection
                         invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_RUN_CLASS_CONSTRUCTOR |
                                            INVOCATION_FLAGS.INVOCATION_FLAGS_NO_CTOR_INVOKE;
                     }
-                    else if (declaringType != null && declaringType.IsAbstract)
+                    else if (declaringType is not null && declaringType.IsAbstract)
                     {
                         invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NO_CTOR_INVOKE;
                     }
                     else
                     {
                         // Check for byref-like types
-                        if (declaringType != null && declaringType.IsByRefLike)
+                        if (declaringType is not null && declaringType.IsByRefLike)
                             invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_CONTAINS_STACK_POINTERS;
 
                         // Check for attempt to create a delegate class.
@@ -101,12 +101,12 @@ namespace System.Reflection
 
         private void CheckConsistency(object? target)
         {
-            if (target == null && IsStatic)
+            if (target is null && IsStatic)
                 return;
 
             if (!m_declaringType.IsInstanceOfType(target))
             {
-                if (target == null)
+                if (target is null)
                     throw new TargetException(SR.RFLCT_Targ_StatMethReqTarg);
 
                 throw new TargetException(SR.RFLCT_Targ_ITargMismatch);
@@ -119,7 +119,7 @@ namespace System.Reflection
         #region Object Overrides
         public override string ToString()
         {
-            if (m_toString == null)
+            if (m_toString is null)
             {
                 var sbName = new ValueStringBuilder(MethodNameBufferSize);
 
@@ -147,12 +147,12 @@ namespace System.Reflection
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null)
+            if (attributeRuntimeType is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
@@ -160,12 +160,12 @@ namespace System.Reflection
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 throw new ArgumentNullException(nameof(attributeType));
 
             RuntimeType? attributeRuntimeType = attributeType.UnderlyingSystemType as RuntimeType;
 
-            if (attributeRuntimeType == null)
+            if (attributeRuntimeType is null)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType);
@@ -228,7 +228,7 @@ namespace System.Reflection
 
         internal static void CheckCanCreateInstance(Type declaringType, bool isVarArg)
         {
-            if (declaringType == null)
+            if (declaringType is null)
                 throw new ArgumentNullException(nameof(declaringType));
 
             // ctor is declared on interface class
@@ -293,7 +293,7 @@ namespace System.Reflection
 
                 var declaringType = DeclaringType;
 
-                if (declaringType != null)
+                if (declaringType is not null)
                     RuntimeHelpers.RunClassConstructor(declaringType.TypeHandle);
                 else
                     RuntimeHelpers.RunModuleConstructor(Module.ModuleHandle);
@@ -305,7 +305,7 @@ namespace System.Reflection
 
             // get the signature
             int formalCount = sig.Arguments.Length;
-            int actualCount = (parameters != null) ? parameters.Length : 0;
+            int actualCount = (parameters is not null) ? parameters.Length : 0;
             if (formalCount != actualCount)
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
@@ -326,7 +326,7 @@ namespace System.Reflection
         public override MethodBody? GetMethodBody()
         {
             RuntimeMethodBody? mb = RuntimeMethodHandle.GetMethodBody(this, ReflectedTypeInternal);
-            if (mb != null)
+            if (mb is not null)
                 mb._methodBase = this;
             return mb;
         }
@@ -337,7 +337,7 @@ namespace System.Reflection
 
         public override bool IsSecurityTransparent => false;
 
-        public override bool ContainsGenericParameters => DeclaringType != null && DeclaringType.ContainsGenericParameters;
+        public override bool ContainsGenericParameters => DeclaringType is not null && DeclaringType.ContainsGenericParameters;
         #endregion
 
         #region ConstructorInfo Overrides
@@ -354,7 +354,7 @@ namespace System.Reflection
             Signature sig = Signature;
 
             int formalCount = sig.Arguments.Length;
-            int actualCount = (parameters != null) ? parameters.Length : 0;
+            int actualCount = (parameters is not null) ? parameters.Length : 0;
             if (formalCount != actualCount)
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 

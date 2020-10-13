@@ -118,18 +118,18 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration builder.</returns>
         public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration, Assembly assembly, bool optional, bool reloadOnChange)
         {
-            if (configuration == null)
+            if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            if (assembly == null)
+            if (assembly is null)
             {
                 throw new ArgumentNullException(nameof(assembly));
             }
 
             UserSecretsIdAttribute attribute = assembly.GetCustomAttribute<UserSecretsIdAttribute>();
-            if (attribute != null)
+            if (attribute is not null)
             {
                 return AddUserSecrets(configuration, attribute.UserSecretsId, reloadOnChange);
             }
@@ -170,12 +170,12 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration builder.</returns>
         public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration, string userSecretsId, bool reloadOnChange)
         {
-            if (configuration == null)
+            if (configuration is null)
             {
                 throw new ArgumentNullException(nameof(configuration));
             }
 
-            if (userSecretsId == null)
+            if (userSecretsId is null)
             {
                 throw new ArgumentNullException(nameof(userSecretsId));
             }

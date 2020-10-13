@@ -101,7 +101,7 @@ namespace System.Reflection.Emit
             get
             {
                 string? fullName = FormatName(m_baseType.FullName);
-                if (fullName == null)
+                if (fullName is null)
                     return null;
                 return fullName + ", " + m_baseType.Assembly.FullName;
             }
@@ -342,7 +342,7 @@ namespace System.Reflection.Emit
 
         protected override bool HasElementTypeImpl()
         {
-            return m_baseType != null;
+            return m_baseType is not null;
         }
 
         public override object[] GetCustomAttributes(bool inherit)
@@ -416,7 +416,7 @@ namespace System.Reflection.Emit
         [return: NotNullIfNotNull("elementName")]
         internal override string? FormatName(string? elementName)
         {
-            if (elementName == null)
+            if (elementName is null)
                 return null;
             StringBuilder sb = new StringBuilder(elementName);
             sb.Append('[');
@@ -449,7 +449,7 @@ namespace System.Reflection.Emit
         [return: NotNullIfNotNull("elementName")]
         internal override string? FormatName(string? elementName)
         {
-            if (elementName == null)
+            if (elementName is null)
                 return null;
             return elementName + "&";
         }
@@ -495,7 +495,7 @@ namespace System.Reflection.Emit
         [return: NotNullIfNotNull("elementName")]
         internal override string? FormatName(string? elementName)
         {
-            if (elementName == null)
+            if (elementName is null)
                 return null;
             return elementName + "*";
         }

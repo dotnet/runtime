@@ -37,7 +37,7 @@ namespace System.Configuration
         internal void FromString(string list)
         {
             char[] delimiters = { ',' };
-            if (list != null)
+            if (list is not null)
             {
                 string[] items = list.Split(delimiters);
                 foreach (string item in items)

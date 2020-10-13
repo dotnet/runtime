@@ -33,8 +33,8 @@ namespace System.Security.Cryptography
                 ThrowIfDisposed();
 
                 ECCurve curve = parameters.Curve;
-                bool includePrivateParameters = parameters.D != null;
-                bool hasPublicParameters = parameters.Q.X != null && parameters.Q.Y != null;
+                bool includePrivateParameters = parameters.D is not null;
+                bool hasPublicParameters = parameters.Q.X is not null && parameters.Q.Y is not null;
 
                 if (curve.IsPrime)
                 {
@@ -189,7 +189,7 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<byte> passwordBytes,
                 PbeParameters pbeParameters)
             {
-                if (pbeParameters == null)
+                if (pbeParameters is null)
                     throw new ArgumentNullException(nameof(pbeParameters));
 
                 return CngPkcs8.ExportEncryptedPkcs8PrivateKey(
@@ -202,7 +202,7 @@ namespace System.Security.Cryptography
                 ReadOnlySpan<char> password,
                 PbeParameters pbeParameters)
             {
-                if (pbeParameters == null)
+                if (pbeParameters is null)
                 {
                     throw new ArgumentNullException(nameof(pbeParameters));
                 }
@@ -229,7 +229,7 @@ namespace System.Security.Cryptography
                 Span<byte> destination,
                 out int bytesWritten)
             {
-                if (pbeParameters == null)
+                if (pbeParameters is null)
                     throw new ArgumentNullException(nameof(pbeParameters));
 
                 PasswordBasedEncryption.ValidatePbeParameters(
@@ -251,7 +251,7 @@ namespace System.Security.Cryptography
                 Span<byte> destination,
                 out int bytesWritten)
             {
-                if (pbeParameters == null)
+                if (pbeParameters is null)
                     throw new ArgumentNullException(nameof(pbeParameters));
 
                 PasswordBasedEncryption.ValidatePbeParameters(

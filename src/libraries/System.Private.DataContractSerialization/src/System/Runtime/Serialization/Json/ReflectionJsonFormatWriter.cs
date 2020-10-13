@@ -25,7 +25,7 @@ namespace System.Runtime.Serialization.Json
         public void ReflectionWriteCollection(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContextComplexJson context, CollectionDataContract collectionContract)
         {
             JsonWriterDelegator? jsonWriter = xmlWriter as JsonWriterDelegator;
-            if (jsonWriter == null)
+            if (jsonWriter is null)
             {
                 throw new ArgumentException(nameof(xmlWriter));
             }
@@ -82,7 +82,7 @@ namespace System.Runtime.Serialization.Json
                     ReflectionWriteArrayAttribute(jsonWriter);
 
                     PrimitiveDataContract? primitiveContractForType = PrimitiveDataContract.GetPrimitiveDataContract(collectionContract.UnderlyingType);
-                    if (primitiveContractForType != null && primitiveContractForType.UnderlyingType != Globals.TypeOfObject)
+                    if (primitiveContractForType is not null && primitiveContractForType.UnderlyingType != Globals.TypeOfObject)
                     {
                         while (enumerator.MoveNext())
                         {
@@ -137,7 +137,7 @@ namespace System.Runtime.Serialization.Json
         private bool ReflectionTryWritePrimitiveArray(JsonWriterDelegator jsonWriter, object obj, Type underlyingType, Type itemType, XmlDictionaryString collectionItemName)
         {
             PrimitiveDataContract? primitiveContract = PrimitiveDataContract.GetPrimitiveDataContract(itemType);
-            if (primitiveContract == null)
+            if (primitiveContract is null)
                 return false;
 
             XmlDictionaryString? itemNamespace = null;
@@ -192,9 +192,9 @@ namespace System.Runtime.Serialization.Json
     {
         protected override int ReflectionWriteMembers(XmlWriterDelegator xmlWriter, object obj, XmlObjectSerializerWriteContext context, ClassDataContract classContract, ClassDataContract derivedMostClassContract, int childElementIndex, XmlDictionaryString[]? memberNames)
         {
-            Debug.Assert(memberNames != null);
+            Debug.Assert(memberNames is not null);
 
-            int memberCount = (classContract.BaseContract == null) ? 0 :
+            int memberCount = (classContract.BaseContract is null) ? 0 :
                 ReflectionWriteMembers(xmlWriter, obj, context, classContract.BaseContract, derivedMostClassContract, childElementIndex, memberNames);
 
             childElementIndex += memberCount;
@@ -220,8 +220,8 @@ namespace System.Runtime.Serialization.Json
                 {
                     memberValue = ReflectionGetMemberValue(obj, member);
                     object? defaultValue = XmlFormatGeneratorStatics.GetDefaultValue(memberType);
-                    if ((memberValue == null && defaultValue == null)
-                        || (memberValue != null && memberValue.Equals(defaultValue)))
+                    if ((memberValue is null && defaultValue is null)
+                        || (memberValue is not null && memberValue.Equals(defaultValue)))
                     {
                         shouldWriteValue = false;
 
@@ -234,7 +234,7 @@ namespace System.Runtime.Serialization.Json
 
                 if (shouldWriteValue)
                 {
-                    if (memberValue == null)
+                    if (memberValue is null)
                     {
                         memberValue = ReflectionGetMemberValue(obj, member);
                     }

@@ -130,13 +130,13 @@ namespace System.ComponentModel.Composition.Hosting
             protected override CatalogPart GetPart()
             {
                 // we need to ensure that the part gets created only once, as the export contract requires that the same value be returned on subsequent calls
-                if (_part == null)
+                if (_part is null)
                 {
                     CatalogPart? part = GetPartCore();
 
                     lock (_lock)
                     {
-                        if (_part == null)
+                        if (_part is null)
                         {
                             Thread.MemoryBarrier();
                             _part = part;
@@ -144,7 +144,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                     }
 
-                    if (part != null)
+                    if (part is not null)
                     {
                         DisposePartCore(part, null);
                     }
@@ -163,7 +163,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             void IDisposable.Dispose()
             {
-                if (_part != null)
+                if (_part is not null)
                 {
                     DisposePartCore(_part, Value);
                     _part = null;

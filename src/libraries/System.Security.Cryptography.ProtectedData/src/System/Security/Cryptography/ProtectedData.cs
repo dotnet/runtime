@@ -16,7 +16,7 @@ namespace System.Security.Cryptography
 
         public static byte[] Protect(byte[] userData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
-            if (userData == null)
+            if (userData is null)
                 throw new ArgumentNullException(nameof(userData));
 
             return ProtectOrUnprotect(userData, optionalEntropy, scope, protect: true);
@@ -24,7 +24,7 @@ namespace System.Security.Cryptography
 
         public static byte[] Unprotect(byte[] encryptedData, byte[]? optionalEntropy, DataProtectionScope scope)
         {
-            if (encryptedData == null)
+            if (encryptedData is null)
                 throw new ArgumentNullException(nameof(encryptedData));
 
             return ProtectOrUnprotect(encryptedData, optionalEntropy, scope, protect: false);
@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
         {
             unsafe
             {
-                // The Win32 API will reject pbData == nullptr, and the fixed statement
+                // The Win32 API will reject pbData is nullptr, and the fixed statement
                 // maps empty arrays to nullptr... so when the input is empty use the address of a
                 // different array, but still assign cbData to 0.
                 byte[] relevantData = inputData.Length == 0 ? s_nonEmpty : inputData;
@@ -43,7 +43,7 @@ namespace System.Security.Cryptography
                 {
                     DATA_BLOB userDataBlob = new DATA_BLOB((IntPtr)pInputData, (uint)(inputData.Length));
                     DATA_BLOB optionalEntropyBlob = default(DATA_BLOB);
-                    if (optionalEntropy != null)
+                    if (optionalEntropy is not null)
                     {
                         optionalEntropyBlob = new DATA_BLOB((IntPtr)pOptionalEntropy, (uint)(optionalEntropy.Length));
                     }

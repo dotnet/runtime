@@ -22,8 +22,8 @@ namespace System.Net.Http
         /// <param name="disposeSource">Whether to dispose of the source stream after the copy has finished successfully.</param>
         public static void Copy(Stream source, Stream destination, int bufferSize, bool disposeSource)
         {
-            Debug.Assert(source != null);
-            Debug.Assert(destination != null);
+            Debug.Assert(source is not null);
+            Debug.Assert(destination is not null);
             Debug.Assert(bufferSize >= 0);
 
             if (bufferSize == 0)
@@ -49,8 +49,8 @@ namespace System.Net.Http
         /// <param name="cancellationToken">CancellationToken used to cancel the copy operation.</param>
         public static Task CopyAsync(Stream source, Stream destination, int bufferSize, bool disposeSource, CancellationToken cancellationToken = default(CancellationToken))
         {
-            Debug.Assert(source != null);
-            Debug.Assert(destination != null);
+            Debug.Assert(source is not null);
+            Debug.Assert(destination is not null);
             Debug.Assert(bufferSize >= 0);
 
             try

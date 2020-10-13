@@ -10,7 +10,7 @@ namespace System.Numerics
     {
         public static unsafe uint[] Square(uint[] value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 
             // Switching to unsafe pointers helps sparing
             // some nasty index calculations...
@@ -162,7 +162,7 @@ namespace System.Numerics
 
         public static uint[] Multiply(uint[] left, uint right)
         {
-            Debug.Assert(left != null);
+            Debug.Assert(left is not null);
 
             // Executes the multiplication for one big and one 32-bit integer.
             // Since every step holds the already slightly familiar equation
@@ -186,8 +186,8 @@ namespace System.Numerics
 
         public static unsafe uint[] Multiply(uint[] left, uint[] right)
         {
-            Debug.Assert(left != null);
-            Debug.Assert(right != null);
+            Debug.Assert(left is not null);
+            Debug.Assert(right is not null);
             Debug.Assert(left.Length >= right.Length);
 
             // Switching to unsafe pointers helps sparing

@@ -72,7 +72,7 @@ namespace System.Data.Odbc
             {
                 if (null != _weakDataReaderReference && !_weakDataReaderReference.IsAlive)
                 {
-                    if (_cmdWrapper != null)
+                    if (_cmdWrapper is not null)
                     {
                         _cmdWrapper.FreeKeyInfoStatementHandle(ODBC32.STMT.CLOSE);
                         _cmdWrapper.FreeStatementHandle(ODBC32.STMT.CLOSE);
@@ -99,7 +99,7 @@ namespace System.Data.Odbc
         {
             // get a reference to the datareader if it is alive
             OdbcDataReader? liveReader = null;
-            if (_weakDataReaderReference != null)
+            if (_weakDataReaderReference is not null)
             {
                 OdbcDataReader? reader;
                 reader = (OdbcDataReader?)_weakDataReaderReference.Target;
@@ -110,7 +110,7 @@ namespace System.Data.Odbc
             }
 
             // remove reference to this from the live datareader
-            if (liveReader != null)
+            if (liveReader is not null)
             {
                 liveReader.Command = null;
             }
@@ -124,7 +124,7 @@ namespace System.Data.Odbc
             }
 
             // if the reader is dead we have to dismiss the statement
-            if (liveReader == null)
+            if (liveReader is null)
             {
                 CloseCommandWrapper();
             }
@@ -404,7 +404,7 @@ namespace System.Data.Odbc
             // update the command wrapper object, allocate buffer
             // create reader object
             //
-            if (_cmdWrapper == null)
+            if (_cmdWrapper is null)
             {
                 _cmdWrapper = new CMDWrapper(_connection!);
 
@@ -412,7 +412,7 @@ namespace System.Data.Odbc
                 _connection.AddWeakReference(this, OdbcReferenceCollection.CommandTag);
             }
 
-            if (_cmdWrapper._dataReaderBuf == null)
+            if (_cmdWrapper._dataReaderBuf is null)
             {
                 _cmdWrapper._dataReaderBuf = new CNativeBuffer(4096);
             }
@@ -576,7 +576,7 @@ namespace System.Data.Odbc
 
         private OdbcDataReader ExecuteReaderObject(CommandBehavior behavior, string method, bool needReader)
         { // MDAC 68324
-            if ((CommandText == null) || (CommandText.Length == 0))
+            if ((CommandText is null) || (CommandText.Length == 0))
             {
                 throw (ADP.CommandTextRequired(method));
             }

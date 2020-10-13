@@ -82,7 +82,7 @@ namespace System.Collections.Generic
         public SortedSet(IEnumerable<T> collection, IComparer<T>? comparer)
             : this(comparer)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
@@ -90,11 +90,11 @@ namespace System.Collections.Generic
             // These are explicit type checks in the mold of HashSet. It would have worked better with
             // something like an ISorted<T> interface. (We could make this work for SortedList.Keys, etc.)
             SortedSet<T>? sortedSet = collection as SortedSet<T>;
-            if (sortedSet != null && !(sortedSet is TreeSubSet) && HasEqualComparer(sortedSet))
+            if (sortedSet is not null && !(sortedSet is TreeSubSet) && HasEqualComparer(sortedSet))
             {
                 if (sortedSet.Count > 0)
                 {
-                    Debug.Assert(sortedSet.root != null);
+                    Debug.Assert(sortedSet.root is not null);
                     this.count = sortedSet.count;
                     root = sortedSet.root.DeepClone(this.count);
                 }
@@ -180,7 +180,7 @@ namespace System.Collections.Generic
         /// <returns><c>true</c> if the entire tree has been walked; otherwise, <c>false</c>.</returns>
         internal virtual bool InOrderTreeWalk(TreeWalkPredicate<T> action)
         {
-            if (root == null)
+            if (root is null)
             {
                 return true;
             }
@@ -193,7 +193,7 @@ namespace System.Collections.Generic
             var stack = new Stack<Node>(2 * (int)Log2(Count + 1));
             Node? current = root;
 
-            while (current != null)
+            while (current is not null)
             {
                 stack.Push(current);
                 current = current.Left;
@@ -208,7 +208,7 @@ namespace System.Collections.Generic
                 }
 
                 Node? node = current.Right;
-                while (node != null)
+                while (node is not null)
                 {
                     stack.Push(node);
                     node = node.Left;
@@ -228,7 +228,7 @@ namespace System.Collections.Generic
         /// <returns><c>true</c> if the entire tree has been walked; otherwise, <c>false</c>.</returns>
         internal virtual bool BreadthFirstTreeWalk(TreeWalkPredicate<T> action)
         {
-            if (root == null)
+            if (root is null)
             {
                 return true;
             }
@@ -245,11 +245,11 @@ namespace System.Collections.Generic
                     return false;
                 }
 
-                if (current.Left != null)
+                if (current.Left is not null)
                 {
                     processQueue.Enqueue(current.Left);
                 }
-                if (current.Right != null)
+                if (current.Right is not null)
                 {
                     processQueue.Enqueue(current.Right);
                 }
@@ -301,7 +301,7 @@ namespace System.Collections.Generic
 
         internal virtual bool AddIfNotPresent(T item)
         {
-            if (root == null)
+            if (root is null)
             {
                 // The tree is empty and this is the first item.
                 root = new Node(item, NodeColor.Black);
@@ -323,7 +323,7 @@ namespace System.Collections.Generic
             version++;
 
             int order = 0;
-            while (current != null)
+            while (current is not null)
             {
                 order = comparer.Compare(item, current.Item);
                 if (order == 0)
@@ -351,7 +351,7 @@ namespace System.Collections.Generic
                 current = (order < 0) ? current.Left : current.Right;
             }
 
-            Debug.Assert(parent != null);
+            Debug.Assert(parent is not null);
             // We're ready to insert the new node.
             Node node = new Node(item, NodeColor.Red);
             if (order > 0)
@@ -379,7 +379,7 @@ namespace System.Collections.Generic
 
         internal virtual bool DoRemove(T item)
         {
-            if (root == null)
+            if (root is null)
             {
                 return false;
             }
@@ -402,12 +402,12 @@ namespace System.Collections.Generic
             Node? match = null;
             Node? parentOfMatch = null;
             bool foundMatch = false;
-            while (current != null)
+            while (current is not null)
             {
                 if (current.Is2Node)
                 {
                     // Fix up 2-node
-                    if (parent == null)
+                    if (parent is null)
                     {
                         // `current` is the root. Mark it red.
                         current.ColorRed();
@@ -487,7 +487,7 @@ namespace System.Collections.Generic
             }
 
             // Move successor to the matching node position and replace links.
-            if (match != null)
+            if (match is not null)
             {
                 ReplaceNode(match, parentOfMatch!, parent!, grandParent!);
                 --count;
@@ -504,7 +504,7 @@ namespace System.Collections.Generic
             ++version;
         }
 
-        public virtual bool Contains(T item) => FindNode(item) != null;
+        public virtual bool Contains(T item) => FindNode(item) is not null;
 
         public void CopyTo(T[] array) => CopyTo(array, 0, Count);
 
@@ -512,7 +512,7 @@ namespace System.Collections.Generic
 
         public void CopyTo(T[] array, int index, int count)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -548,7 +548,7 @@ namespace System.Collections.Generic
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -574,14 +574,14 @@ namespace System.Collections.Generic
             }
 
             T[]? tarray = array as T[];
-            if (tarray != null)
+            if (tarray is not null)
             {
                 CopyTo(tarray, index);
             }
             else
             {
                 object?[]? objects = array as object[];
-                if (objects == null)
+                if (objects is null)
                 {
                     throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }
@@ -621,8 +621,8 @@ namespace System.Collections.Generic
         // By the time we need to split again, everything will be correctly set.
         private void InsertionBalance(Node current, ref Node parent, Node grandParent, Node greatGrandParent)
         {
-            Debug.Assert(parent != null);
-            Debug.Assert(grandParent != null);
+            Debug.Assert(parent is not null);
+            Debug.Assert(grandParent is not null);
 
             bool parentIsOnRight = grandParent.Right == parent;
             bool currentIsOnRight = parent.Right == current;
@@ -656,7 +656,7 @@ namespace System.Collections.Generic
         /// <param name="newChild">The node to replace <paramref name="child"/> with.</param>
         private void ReplaceChildOrRoot(Node? parent, Node child, Node newChild)
         {
-            if (parent != null)
+            if (parent is not null)
             {
                 parent.ReplaceChild(child, newChild);
             }
@@ -671,19 +671,19 @@ namespace System.Collections.Generic
         /// </summary>
         private void ReplaceNode(Node match, Node parentOfMatch, Node successor, Node parentOfSuccessor)
         {
-            Debug.Assert(match != null);
+            Debug.Assert(match is not null);
 
             if (successor == match)
             {
                 // This node has no successor. This can only happen if the right child of the match is null.
-                Debug.Assert(match.Right == null);
+                Debug.Assert(match.Right is null);
                 successor = match.Left!;
             }
             else
             {
-                Debug.Assert(parentOfSuccessor != null);
-                Debug.Assert(successor.Left == null);
-                Debug.Assert((successor.Right == null && successor.IsRed) || (successor.Right!.IsRed && successor.IsBlack));
+                Debug.Assert(parentOfSuccessor is not null);
+                Debug.Assert(successor.Left is null);
+                Debug.Assert((successor.Right is null && successor.IsRed) || (successor.Right!.IsRed && successor.IsBlack));
 
                 successor.Right?.ColorBlack();
 
@@ -697,7 +697,7 @@ namespace System.Collections.Generic
                 successor.Left = match.Left;
             }
 
-            if (successor != null)
+            if (successor is not null)
             {
                 successor.Color = match.Color;
             }
@@ -708,7 +708,7 @@ namespace System.Collections.Generic
         internal virtual Node? FindNode(T item)
         {
             Node? current = root;
-            while (current != null)
+            while (current is not null)
             {
                 int order = comparer.Compare(item, current.Item);
                 if (order == 0)
@@ -740,7 +740,7 @@ namespace System.Collections.Generic
         {
             Node? current = root;
             int count = 0;
-            while (current != null)
+            while (current is not null)
             {
                 int order = comparer.Compare(item, current.Item);
                 if (order == 0)
@@ -760,7 +760,7 @@ namespace System.Collections.Generic
         internal Node? FindRange(T? from, T? to, bool lowerBoundActive, bool upperBoundActive)
         {
             Node? current = root;
-            while (current != null)
+            while (current is not null)
             {
                 if (lowerBoundActive && comparer.Compare(from, current.Item) > 0)
                 {
@@ -806,14 +806,14 @@ namespace System.Collections.Generic
         /// <returns><c>true</c> if the sets have equal contents; otherwise, <c>false</c>.</returns>
         internal static bool SortedSetEquals(SortedSet<T>? set1, SortedSet<T>? set2, IComparer<T> comparer)
         {
-            if (set1 == null)
+            if (set1 is null)
             {
-                return set2 == null;
+                return set2 is null;
             }
 
-            if (set2 == null)
+            if (set2 is null)
             {
-                Debug.Assert(set1 != null);
+                Debug.Assert(set1 is not null);
                 return false;
             }
 
@@ -860,7 +860,7 @@ namespace System.Collections.Generic
 
         public void UnionWith(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 throw new ArgumentNullException(nameof(other));
             }
@@ -868,10 +868,10 @@ namespace System.Collections.Generic
             SortedSet<T>? asSorted = other as SortedSet<T>;
             TreeSubSet? treeSubset = this as TreeSubSet;
 
-            if (treeSubset != null)
+            if (treeSubset is not null)
                 VersionCheck();
 
-            if (asSorted != null && treeSubset == null && Count == 0)
+            if (asSorted is not null && treeSubset is null && Count == 0)
             {
                 SortedSet<T> dummy = new SortedSet<T>(asSorted, comparer);
                 root = dummy.root;
@@ -881,7 +881,7 @@ namespace System.Collections.Generic
             }
 
             // This actually hurts if N is much greater than M. The / 2 is arbitrary.
-            if (asSorted != null && treeSubset == null && HasEqualComparer(asSorted) && (asSorted.Count > this.Count / 2))
+            if (asSorted is not null && treeSubset is null && HasEqualComparer(asSorted) && (asSorted.Count > this.Count / 2))
             {
                 // First do a merge sort to an array.
                 T[] merged = new T[asSorted.Count + this.Count];
@@ -964,7 +964,7 @@ namespace System.Collections.Generic
                     return null;
                 case 1:
                     root = new Node(arr[startIndex], NodeColor.Black);
-                    if (redNode != null)
+                    if (redNode is not null)
                     {
                         root.Left = redNode;
                     }
@@ -973,7 +973,7 @@ namespace System.Collections.Generic
                     root = new Node(arr[startIndex], NodeColor.Black);
                     root.Right = new Node(arr[endIndex], NodeColor.Black);
                     root.Right.ColorRed();
-                    if (redNode != null)
+                    if (redNode is not null)
                     {
                         root.Left = redNode;
                     }
@@ -982,7 +982,7 @@ namespace System.Collections.Generic
                     root = new Node(arr[startIndex + 1], NodeColor.Black);
                     root.Left = new Node(arr[startIndex], NodeColor.Black);
                     root.Right = new Node(arr[endIndex], NodeColor.Black);
-                    if (redNode != null)
+                    if (redNode is not null)
                     {
                         root.Left.Left = redNode;
                     }
@@ -1003,7 +1003,7 @@ namespace System.Collections.Generic
 
         public virtual void IntersectWith(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 throw new ArgumentNullException(nameof(other));
             }
@@ -1020,10 +1020,10 @@ namespace System.Collections.Generic
             SortedSet<T>? asSorted = other as SortedSet<T>;
             TreeSubSet? treeSubset = this as TreeSubSet;
 
-            if (treeSubset != null)
+            if (treeSubset is not null)
                 VersionCheck();
 
-            if (asSorted != null && treeSubset == null && HasEqualComparer(asSorted))
+            if (asSorted is not null && treeSubset is null && HasEqualComparer(asSorted))
             {
                 // First do a merge sort to an array.
                 T[] merged = new T[this.Count];
@@ -1088,7 +1088,7 @@ namespace System.Collections.Generic
 
         public void ExceptWith(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 throw new ArgumentNullException(nameof(other));
             }
@@ -1104,7 +1104,7 @@ namespace System.Collections.Generic
 
             SortedSet<T>? asSorted = other as SortedSet<T>;
 
-            if (asSorted != null && HasEqualComparer(asSorted))
+            if (asSorted is not null && HasEqualComparer(asSorted))
             {
                 // Outside range, no point in doing anything
                 if (comparer.Compare(asSorted.Max, Min) >= 0 && comparer.Compare(asSorted.Min, Max) <= 0)
@@ -1129,7 +1129,7 @@ namespace System.Collections.Generic
 
         public void SymmetricExceptWith(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 throw new ArgumentNullException(nameof(other));
             }
@@ -1148,7 +1148,7 @@ namespace System.Collections.Generic
 
             SortedSet<T>? asSorted = other as SortedSet<T>;
 
-            if (asSorted != null && HasEqualComparer(asSorted))
+            if (asSorted is not null && HasEqualComparer(asSorted))
             {
                 SymmetricExceptWithSameComparer(asSorted);
             }
@@ -1163,7 +1163,7 @@ namespace System.Collections.Generic
 
         private void SymmetricExceptWithSameComparer(SortedSet<T> other)
         {
-            Debug.Assert(other != null);
+            Debug.Assert(other is not null);
             Debug.Assert(HasEqualComparer(other));
 
             foreach (T item in other)
@@ -1175,7 +1175,7 @@ namespace System.Collections.Generic
 
         private void SymmetricExceptWithSameComparer(T[] other, int count)
         {
-            Debug.Assert(other != null);
+            Debug.Assert(other is not null);
             Debug.Assert(count >= 0 && count <= other.Length);
 
             if (count == 0)
@@ -1199,7 +1199,7 @@ namespace System.Collections.Generic
 
         public bool IsSubsetOf(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 throw new ArgumentNullException(nameof(other));
             }
@@ -1210,7 +1210,7 @@ namespace System.Collections.Generic
             }
 
             SortedSet<T>? asSorted = other as SortedSet<T>;
-            if (asSorted != null && HasEqualComparer(asSorted))
+            if (asSorted is not null && HasEqualComparer(asSorted))
             {
                 if (Count > asSorted.Count)
                     return false;
@@ -1237,7 +1237,7 @@ namespace System.Collections.Generic
 
         public bool IsProperSubsetOf(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 throw new ArgumentNullException(nameof(other));
             }
@@ -1250,7 +1250,7 @@ namespace System.Collections.Generic
 
             // another for sorted sets with the same comparer
             SortedSet<T>? asSorted = other as SortedSet<T>;
-            if (asSorted != null && HasEqualComparer(asSorted))
+            if (asSorted is not null && HasEqualComparer(asSorted))
             {
                 if (Count >= asSorted.Count)
                     return false;
@@ -1264,7 +1264,7 @@ namespace System.Collections.Generic
 
         public bool IsSupersetOf(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 throw new ArgumentNullException(nameof(other));
             }
@@ -1275,7 +1275,7 @@ namespace System.Collections.Generic
             // do it one way for HashSets
             // another for sorted sets with the same comparer
             SortedSet<T>? asSorted = other as SortedSet<T>;
-            if (asSorted != null && HasEqualComparer(asSorted))
+            if (asSorted is not null && HasEqualComparer(asSorted))
             {
                 if (Count < asSorted.Count)
                     return false;
@@ -1294,7 +1294,7 @@ namespace System.Collections.Generic
 
         public bool IsProperSupersetOf(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 throw new ArgumentNullException(nameof(other));
             }
@@ -1307,7 +1307,7 @@ namespace System.Collections.Generic
 
             // another way for sorted sets
             SortedSet<T>? asSorted = other as SortedSet<T>;
-            if (asSorted != null && HasEqualComparer(asSorted))
+            if (asSorted is not null && HasEqualComparer(asSorted))
             {
                 if (asSorted.Count >= Count)
                     return false;
@@ -1329,13 +1329,13 @@ namespace System.Collections.Generic
 
         public bool SetEquals(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 throw new ArgumentNullException(nameof(other));
             }
 
             SortedSet<T>? asSorted = other as SortedSet<T>;
-            if (asSorted != null && HasEqualComparer(asSorted))
+            if (asSorted is not null && HasEqualComparer(asSorted))
             {
                 Enumerator mine = GetEnumerator();
                 Enumerator theirs = asSorted.GetEnumerator();
@@ -1360,7 +1360,7 @@ namespace System.Collections.Generic
 
         public bool Overlaps(IEnumerable<T> other)
         {
-            if (other == null)
+            if (other is null)
             {
                 throw new ArgumentNullException(nameof(other));
             }
@@ -1372,7 +1372,7 @@ namespace System.Collections.Generic
                 return false;
 
             SortedSet<T>? asSorted = other as SortedSet<T>;
-            if (asSorted != null && HasEqualComparer(asSorted) && (comparer.Compare(Min, asSorted.Max) > 0 || comparer.Compare(Max, asSorted.Min) < 0))
+            if (asSorted is not null && HasEqualComparer(asSorted) && (comparer.Compare(Min, asSorted.Max) > 0 || comparer.Compare(Max, asSorted.Min) < 0))
             {
                 return false;
             }
@@ -1472,7 +1472,7 @@ namespace System.Collections.Generic
 
         public int RemoveWhere(Predicate<T> match)
         {
-            if (match == null)
+            if (match is null)
             {
                 throw new ArgumentNullException(nameof(match));
             }
@@ -1510,13 +1510,13 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (root == null)
+                if (root is null)
                 {
                     return default;
                 }
 
                 Node current = root;
-                while (current.Left != null)
+                while (current.Left is not null)
                 {
                     current = current.Left;
                 }
@@ -1531,13 +1531,13 @@ namespace System.Collections.Generic
         {
             get
             {
-                if (root == null)
+                if (root is null)
                 {
                     return default;
                 }
 
                 Node current = root;
-                while (current.Right != null)
+                while (current.Right is not null)
                 {
                     current = current.Right;
                 }
@@ -1579,7 +1579,7 @@ namespace System.Collections.Generic
 
         protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
+            if (info is null)
             {
                 throw new ArgumentNullException(nameof(info));
             }
@@ -1588,7 +1588,7 @@ namespace System.Collections.Generic
             info.AddValue(ComparerName, comparer, typeof(IComparer<T>));
             info.AddValue(VersionName, version);
 
-            if (root != null)
+            if (root is not null)
             {
                 T[] items = new T[Count];
                 CopyTo(items, 0);
@@ -1600,12 +1600,12 @@ namespace System.Collections.Generic
 
         protected virtual void OnDeserialization(object? sender)
         {
-            if (comparer != null)
+            if (comparer is not null)
             {
                 return; // Somebody had a dependency on this class and fixed us up before the ObjectManager got to it.
             }
 
-            if (siInfo == null)
+            if (siInfo is null)
             {
                 throw new SerializationException(SR.Serialization_InvalidOnDeser);
             }
@@ -1617,7 +1617,7 @@ namespace System.Collections.Generic
             {
                 T[]? items = (T[]?)siInfo.GetValue(ItemsName, typeof(T[]));
 
-                if (items == null)
+                if (items is null)
                 {
                     throw new SerializationException(SR.Serialization_MissingValues);
                 }
@@ -1649,11 +1649,11 @@ namespace System.Collections.Generic
                 Color = color;
             }
 
-            public static bool IsNonNullBlack(Node? node) => node != null && node.IsBlack;
+            public static bool IsNonNullBlack(Node? node) => node is not null && node.IsBlack;
 
-            public static bool IsNonNullRed(Node? node) => node != null && node.IsRed;
+            public static bool IsNonNullRed(Node? node) => node is not null && node.IsRed;
 
-            public static bool IsNullOrBlack(Node? node) => node == null || node.IsBlack;
+            public static bool IsNullOrBlack(Node? node) => node is null || node.IsBlack;
 
             public T Item { get; set; }
 
@@ -1690,7 +1690,7 @@ namespace System.Collections.Generic
                 Node? originalCurrent = this;
                 Node newCurrent = newRoot;
 
-                while (originalCurrent != null)
+                while (originalCurrent is not null)
                 {
                     originalNodes.Push(originalCurrent);
                     newNodes.Push(newCurrent);
@@ -1708,7 +1708,7 @@ namespace System.Collections.Generic
                     Node? newRight = originalRight?.ShallowClone();
                     newCurrent.Right = newRight;
 
-                    while (originalRight != null)
+                    while (originalRight is not null)
                     {
                         originalNodes.Push(originalRight);
                         newNodes.Push(newRight!);
@@ -1742,7 +1742,7 @@ namespace System.Collections.Generic
             /// </summary>
             public Node GetSibling(Node node)
             {
-                Debug.Assert(node != null);
+                Debug.Assert(node is not null);
                 Debug.Assert(node == Left ^ node == Right);
 
                 return node == Left ? Right! : Left!;
@@ -1752,8 +1752,8 @@ namespace System.Collections.Generic
 
             public void Split4Node()
             {
-                Debug.Assert(Left != null);
-                Debug.Assert(Right != null);
+                Debug.Assert(Left is not null);
+                Debug.Assert(Right is not null);
 
                 ColorRed();
                 Left.ColorBlack();
@@ -1937,7 +1937,7 @@ namespace System.Collections.Generic
                 _current = null;
                 Node? node = _tree.root;
                 Node? next = null, other = null;
-                while (node != null)
+                while (node is not null)
                 {
                     next = (_reverse ? node.Right : node.Left);
                     other = (_reverse ? node.Left : node.Right);
@@ -1946,7 +1946,7 @@ namespace System.Collections.Generic
                         _stack.Push(node);
                         node = next;
                     }
-                    else if (next == null || !_tree.IsWithinRange(next.Item))
+                    else if (next is null || !_tree.IsWithinRange(next.Item))
                     {
                         node = other;
                     }
@@ -1976,7 +1976,7 @@ namespace System.Collections.Generic
                 _current = _stack.Pop();
                 Node? node = (_reverse ? _current.Left : _current.Right);
                 Node? next = null, other = null;
-                while (node != null)
+                while (node is not null)
                 {
                     next = (_reverse ? node.Right : node.Left);
                     other = (_reverse ? node.Left : node.Right);
@@ -1985,7 +1985,7 @@ namespace System.Collections.Generic
                         _stack.Push(node);
                         node = next;
                     }
-                    else if (other == null || !_tree.IsWithinRange(other.Item))
+                    else if (other is null || !_tree.IsWithinRange(other.Item))
                     {
                         node = next;
                     }
@@ -2003,7 +2003,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_current != null)
+                    if (_current is not null)
                     {
                         return _current.Item;
                     }
@@ -2015,7 +2015,7 @@ namespace System.Collections.Generic
             {
                 get
                 {
-                    if (_current == null)
+                    if (_current is null)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_EnumOpCantHappen);
                     }
@@ -2024,7 +2024,7 @@ namespace System.Collections.Generic
                 }
             }
 
-            internal bool NotStartedOrEnded => _current == null;
+            internal bool NotStartedOrEnded => _current is null;
 
             internal void Reset()
             {
@@ -2065,7 +2065,7 @@ namespace System.Collections.Generic
         public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
         {
             Node? node = FindNode(equalValue);
-            if (node != null)
+            if (node is not null)
             {
                 actualValue = node.Item;
                 return true;

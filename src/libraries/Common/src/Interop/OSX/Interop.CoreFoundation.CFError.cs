@@ -31,7 +31,7 @@ internal static partial class Interop
 
         internal static string? GetErrorDescription(SafeCFErrorHandle cfError)
         {
-            Debug.Assert(cfError != null);
+            Debug.Assert(cfError is not null);
 
             if (cfError.IsInvalid)
             {

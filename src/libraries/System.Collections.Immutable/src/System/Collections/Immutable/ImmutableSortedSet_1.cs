@@ -251,7 +251,7 @@ namespace System.Collections.Immutable
                 }
             }
 
-            Debug.Assert(newSet != null);
+            Debug.Assert(newSet is not null);
             return newSet;
         }
 
@@ -348,7 +348,7 @@ namespace System.Collections.Immutable
         /// </summary>
         public ImmutableSortedSet<T> WithComparer(IComparer<T>? comparer)
         {
-            if (comparer == null)
+            if (comparer is null)
             {
                 comparer = Comparer<T>.Default;
             }
@@ -361,7 +361,7 @@ namespace System.Collections.Immutable
             {
                 var result = new ImmutableSortedSet<T>(Node.EmptyNode, comparer);
                 result = result.Union(this);
-                Debug.Assert(result != null);
+                Debug.Assert(result is not null);
                 return result;
             }
         }
@@ -992,13 +992,13 @@ namespace System.Collections.Immutable
         private static bool TryCastToImmutableSortedSet(IEnumerable<T> sequence, [NotNullWhen(true)] out ImmutableSortedSet<T>? other)
         {
             other = sequence as ImmutableSortedSet<T>;
-            if (other != null)
+            if (other is not null)
             {
                 return true;
             }
 
             var builder = sequence as Builder;
-            if (builder != null)
+            if (builder is not null)
             {
                 other = builder.ToImmutable();
                 return true;

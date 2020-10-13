@@ -21,7 +21,7 @@ namespace System.Configuration
 
         private static ConfigurationPropertyCollection EnsureStaticPropertyBag()
         {
-            if (s_properties == null)
+            if (s_properties is null)
             {
                 ConfigurationPropertyCollection properties = new ConfigurationPropertyCollection();
                 s_properties = properties;

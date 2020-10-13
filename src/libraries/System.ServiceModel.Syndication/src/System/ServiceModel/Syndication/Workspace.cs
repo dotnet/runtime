@@ -16,14 +16,14 @@ namespace System.ServiceModel.Syndication
         {
         }
 
-        public Workspace(string title, IEnumerable<ResourceCollectionInfo> collections) : this((title != null) ? new TextSyndicationContent(title) : null, collections)
+        public Workspace(string title, IEnumerable<ResourceCollectionInfo> collections) : this((title is not null) ? new TextSyndicationContent(title) : null, collections)
         {
         }
 
         public Workspace(TextSyndicationContent title, IEnumerable<ResourceCollectionInfo> collections)
         {
             Title = title;
-            if (collections != null)
+            if (collections is not null)
             {
                 _collections = new NullNotAllowedCollection<ResourceCollectionInfo>();
                 foreach (ResourceCollectionInfo collection in collections)

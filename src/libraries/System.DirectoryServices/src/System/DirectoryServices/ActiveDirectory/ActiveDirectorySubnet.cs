@@ -52,7 +52,7 @@ namespace System.DirectoryServices.ActiveDirectory
                                                       false, /* don't need paged search */
                                                       false /* don't need to cache result */);
                 SearchResult srchResult = adSearcher.FindOne();
-                if (srchResult == null)
+                if (srchResult is null)
                 {
                     // no such subnet object
                     Exception e = new ActiveDirectoryObjectNotFoundException(SR.DSNotFound, typeof(ActiveDirectorySubnet), subnetName);
@@ -73,13 +73,13 @@ namespace System.DirectoryServices.ActiveDirectory
                         // escaping manipulation
                         pathCracker.Set(tmp, NativeComInterfaces.ADS_SETTYPE_DN);
                         string rdn = pathCracker.Retrieve(NativeComInterfaces.ADS_FORMAT_LEAF);
-                        Debug.Assert(rdn != null && Utils.Compare(rdn, 0, 3, "CN=", 0, 3) == 0);
+                        Debug.Assert(rdn is not null && Utils.Compare(rdn, 0, 3, "CN=", 0, 3) == 0);
                         siteName = rdn.Substring(3);
                     }
 
                     // it is an existing subnet object
                     ActiveDirectorySubnet subnet = null;
-                    if (siteName == null)
+                    if (siteName is null)
                         subnet = new ActiveDirectorySubnet(context, subnetName, null, true);
                     else
                         subnet = new ActiveDirectorySubnet(context, subnetName, siteName, true);
@@ -102,7 +102,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (de != null)
+                if (de is not null)
                     de.Dispose();
             }
         }
@@ -143,14 +143,14 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             finally
             {
-                if (de != null)
+                if (de is not null)
                     de.Dispose();
             }
         }
 
         public ActiveDirectorySubnet(DirectoryContext context, string subnetName, string siteName) : this(context, subnetName)
         {
-            if (siteName == null)
+            if (siteName is null)
                 throw new ArgumentNullException(nameof(siteName));
 
             if (siteName.Length == 0)
@@ -174,7 +174,7 @@ namespace System.DirectoryServices.ActiveDirectory
             this.context = context;
             _name = subnetName;
 
-            if (siteName != null)
+            if (siteName is not null)
             {
                 try
                 {
@@ -214,7 +214,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (_disposed)
                     throw new ObjectDisposedException(GetType().Name);
 
-                if (value != null)
+                if (value is not null)
                 {
                     // check whether the site exists or not, you can not create a new site and set it to a subnet object with commit change to site object first
                     if (!value.existing)
@@ -252,7 +252,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 // if the value is null, it means that user wants to clear the value
                 try
                 {
-                    if (value == null)
+                    if (value is null)
                     {
                         if (cachedEntry.Properties.Contains("location"))
                             cachedEntry.Properties["location"].Clear();
@@ -279,7 +279,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if (existing)
                 {
                     // check whether site has been changed or not
-                    if (_site == null)
+                    if (_site is null)
                     {
                         // user wants to remove this subnet object from previous site
                         if (cachedEntry.Properties.Contains("siteObject"))
@@ -294,7 +294,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 }
                 else
                 {
-                    if (Site != null)
+                    if (Site is not null)
                         cachedEntry.Properties["siteObject"].Add(_site.cachedEntry.Properties["distinguishedName"][0]);
 
                     cachedEntry.CommitChanges();
@@ -365,7 +365,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (cachedEntry != null)
+                if (cachedEntry is not null)
                     cachedEntry.Dispose();
             }
 
@@ -377,24 +377,24 @@ namespace System.DirectoryServices.ActiveDirectory
         private static void ValidateArgument(DirectoryContext context, string subnetName)
         {
             // basic validation first
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
-            if ((context.Name == null) && (!context.isRootDomain()))
+            if ((context.Name is null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
             // more validation for the context, if the target is not null, then it should be either forest name or server name
-            if (context.Name != null)
+            if (context.Name is not null)
             {
                 // we only allow target to be forest, server name or ADAM config set
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
                     throw new ArgumentException(SR.NotADOrADAM, nameof(context));
             }
 
-            if (subnetName == null)
+            if (subnetName is null)
                 throw new ArgumentNullException(nameof(subnetName));
 
             if (subnetName.Length == 0)

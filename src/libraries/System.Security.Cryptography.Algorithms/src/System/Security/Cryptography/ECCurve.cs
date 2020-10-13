@@ -76,7 +76,7 @@ namespace System.Security.Cryptography
             get => _oid;
             private set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(Oid));
 
                 if (string.IsNullOrEmpty(value.Value) && string.IsNullOrEmpty(value.FriendlyName))
@@ -106,7 +106,7 @@ namespace System.Security.Cryptography
         /// <returns>An ECCurve representing a named curve.</returns>
         public static ECCurve CreateFromFriendlyName(string oidFriendlyName)
         {
-            if (oidFriendlyName == null)
+            if (oidFriendlyName is null)
             {
                 throw new ArgumentNullException(nameof(oidFriendlyName));
             }
@@ -120,7 +120,7 @@ namespace System.Security.Cryptography
         /// <returns>An ECCurve representing a named curve.</returns>
         public static ECCurve CreateFromValue(string oidValue)
         {
-            if (oidValue == null)
+            if (oidValue is null)
             {
                 throw new ArgumentNullException(nameof(oidValue));
             }
@@ -131,7 +131,7 @@ namespace System.Security.Cryptography
         {
             Oid? oid = null;
 
-            if (oidValue == null && oidFriendlyName != null)
+            if (oidValue is null && oidFriendlyName is not null)
             {
                 try
                 {
@@ -195,7 +195,7 @@ namespace System.Security.Cryptography
                     throw new CryptographicException(SR.Cryptography_InvalidECNamedCurve);
                 }
 
-                if (Oid == null ||
+                if (Oid is null ||
                     (string.IsNullOrEmpty(Oid.FriendlyName) && string.IsNullOrEmpty(Oid.Value)))
                 {
                     throw new CryptographicException(SR.Cryptography_InvalidCurveOid);
@@ -205,12 +205,12 @@ namespace System.Security.Cryptography
             {
                 bool hasErrors = false;
 
-                if (A == null ||
-                    B == null || B.Length != A.Length ||
-                    G.X == null || G.X.Length != A.Length ||
-                    G.Y == null || G.Y.Length != A.Length ||
-                    Order == null || Order.Length == 0 ||
-                    Cofactor == null || Cofactor.Length == 0)
+                if (A is null ||
+                    B is null || B.Length != A.Length ||
+                    G.X is null || G.X.Length != A.Length ||
+                    G.Y is null || G.Y.Length != A.Length ||
+                    Order is null || Order.Length == 0 ||
+                    Cofactor is null || Cofactor.Length == 0)
                 {
                     hasErrors = true;
                 }
@@ -219,7 +219,7 @@ namespace System.Security.Cryptography
                 {
                     if (!hasErrors)
                     {
-                        if (Prime == null || Prime.Length != A!.Length)
+                        if (Prime is null || Prime.Length != A!.Length)
                         {
                             hasErrors = true;
                         }
@@ -232,7 +232,7 @@ namespace System.Security.Cryptography
                 {
                     if (!hasErrors)
                     {
-                        if (Polynomial == null || Polynomial.Length == 0)
+                        if (Polynomial is null || Polynomial.Length == 0)
                         {
                             hasErrors = true;
                         }
@@ -246,7 +246,7 @@ namespace System.Security.Cryptography
             {
                 // Implicit; if there are any values, throw
                 Debug.Assert(CurveType == ECCurveType.Implicit);
-                if (HasAnyExplicitParameters() || Oid != null)
+                if (HasAnyExplicitParameters() || Oid is not null)
                 {
                     throw new CryptographicException(SR.Format(SR.Cryptography_CurveNotSupported, CurveType.ToString()));
                 }
@@ -255,16 +255,16 @@ namespace System.Security.Cryptography
 
         private bool HasAnyExplicitParameters()
         {
-            return (A != null ||
-                B != null ||
-                G.X != null ||
-                G.Y != null ||
-                Order != null ||
-                Cofactor != null ||
-                Prime != null ||
-                Polynomial != null ||
-                Seed != null ||
-                Hash != null);
+            return (A is not null ||
+                B is not null ||
+                G.X is not null ||
+                G.Y is not null ||
+                Order is not null ||
+                Cofactor is not null ||
+                Prime is not null ||
+                Polynomial is not null ||
+                Seed is not null ||
+                Hash is not null);
         }
     }
 }

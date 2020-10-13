@@ -53,7 +53,7 @@ namespace System.Xml.Xsl
         }
         public void Load(XmlReader stylesheet, XmlResolver? resolver)
         {
-            if (stylesheet == null)
+            if (stylesheet is null)
             {
                 throw new ArgumentNullException(nameof(stylesheet));
             }
@@ -66,7 +66,7 @@ namespace System.Xml.Xsl
         }
         public void Load(IXPathNavigable stylesheet, XmlResolver? resolver)
         {
-            if (stylesheet == null)
+            if (stylesheet is null)
             {
                 throw new ArgumentNullException(nameof(stylesheet));
             }
@@ -75,7 +75,7 @@ namespace System.Xml.Xsl
 
         public void Load(XPathNavigator stylesheet)
         {
-            if (stylesheet == null)
+            if (stylesheet is null)
             {
                 throw new ArgumentNullException(nameof(stylesheet));
             }
@@ -84,7 +84,7 @@ namespace System.Xml.Xsl
 
         public void Load(XPathNavigator stylesheet, XmlResolver? resolver)
         {
-            if (stylesheet == null)
+            if (stylesheet is null)
             {
                 throw new ArgumentNullException(nameof(stylesheet));
             }
@@ -112,13 +112,13 @@ namespace System.Xml.Xsl
         [MemberNotNull(nameof(_RootAction))]
         private void CheckCommand()
         {
-            if (_CompiledStylesheet == null)
+            if (_CompiledStylesheet is null)
             {
                 throw new InvalidOperationException(SR.Xslt_NoStylesheetLoaded);
             }
 
-            Debug.Assert(_QueryStore != null);
-            Debug.Assert(_RootAction != null);
+            Debug.Assert(_QueryStore is not null);
+            Debug.Assert(_RootAction is not null);
         }
 
         public XmlReader Transform(XPathNavigator input, XsltArgumentList? args, XmlResolver? resolver)
@@ -172,7 +172,7 @@ namespace System.Xml.Xsl
 
         public XmlReader Transform(IXPathNavigable input, XsltArgumentList? args, XmlResolver? resolver)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -181,7 +181,7 @@ namespace System.Xml.Xsl
 
         public XmlReader Transform(IXPathNavigable input, XsltArgumentList? args)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -189,7 +189,7 @@ namespace System.Xml.Xsl
         }
         public void Transform(IXPathNavigable input, XsltArgumentList? args, TextWriter output, XmlResolver? resolver)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -198,7 +198,7 @@ namespace System.Xml.Xsl
 
         public void Transform(IXPathNavigable input, XsltArgumentList? args, TextWriter output)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -207,7 +207,7 @@ namespace System.Xml.Xsl
 
         public void Transform(IXPathNavigable input, XsltArgumentList? args, Stream output, XmlResolver? resolver)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -216,7 +216,7 @@ namespace System.Xml.Xsl
 
         public void Transform(IXPathNavigable input, XsltArgumentList? args, Stream output)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -225,7 +225,7 @@ namespace System.Xml.Xsl
 
         public void Transform(IXPathNavigable input, XsltArgumentList? args, XmlWriter output, XmlResolver? resolver)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -234,7 +234,7 @@ namespace System.Xml.Xsl
 
         public void Transform(IXPathNavigable input, XsltArgumentList? args, XmlWriter output)
         {
-            if (input == null)
+            if (input is null)
             {
                 throw new ArgumentNullException(nameof(input));
             }
@@ -253,7 +253,7 @@ namespace System.Xml.Xsl
             }
             finally
             {
-                if (fs != null)
+                if (fs is not null)
                 {
                     fs.Dispose();
                 }
@@ -269,15 +269,15 @@ namespace System.Xml.Xsl
 
         private void Compile(XPathNavigator stylesheet, XmlResolver? resolver)
         {
-            Debug.Assert(stylesheet != null);
+            Debug.Assert(stylesheet is not null);
 
             Compiler compiler = new Compiler();
             NavigatorInput input = new NavigatorInput(stylesheet);
             compiler.Compile(input, resolver ?? XmlNullResolver.Singleton);
 
-            Debug.Assert(compiler.CompiledStylesheet != null);
-            Debug.Assert(compiler.QueryStore != null);
-            Debug.Assert(compiler.RootAction != null);
+            Debug.Assert(compiler.CompiledStylesheet is not null);
+            Debug.Assert(compiler.QueryStore is not null);
+            Debug.Assert(compiler.RootAction is not null);
             _CompiledStylesheet = compiler.CompiledStylesheet;
             _QueryStore = compiler.QueryStore;
             _RootAction = compiler.RootAction;

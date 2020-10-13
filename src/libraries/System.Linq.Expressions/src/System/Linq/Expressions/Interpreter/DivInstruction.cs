@@ -23,10 +23,10 @@ namespace System.Linq.Expressions.Interpreter
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
                 object? left = stack[index - 2];
-                if (left != null)
+                if (left is not null)
                 {
                     object? right = stack[index - 1];
-                    stack[index - 2] = right == null ? null : (object)unchecked((short)((short)left / (short)right));
+                    stack[index - 2] = right is null ? null : (object)unchecked((short)((short)left / (short)right));
                 }
 
                 frame.StackIndex = index - 1;
@@ -41,10 +41,10 @@ namespace System.Linq.Expressions.Interpreter
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
                 object? left = stack[index - 2];
-                if (left != null)
+                if (left is not null)
                 {
                     object? right = stack[index - 1];
-                    stack[index - 2] = right == null ? null : ScriptingRuntimeHelpers.Int32ToObject((int)left / (int)right);
+                    stack[index - 2] = right is null ? null : ScriptingRuntimeHelpers.Int32ToObject((int)left / (int)right);
                 }
 
                 frame.StackIndex = index - 1;
@@ -59,10 +59,10 @@ namespace System.Linq.Expressions.Interpreter
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
                 object? left = stack[index - 2];
-                if (left != null)
+                if (left is not null)
                 {
                     object? right = stack[index - 1];
-                    stack[index - 2] = right == null ? null : (object)((long)left / (long)right);
+                    stack[index - 2] = right is null ? null : (object)((long)left / (long)right);
                 }
 
                 frame.StackIndex = index - 1;
@@ -77,10 +77,10 @@ namespace System.Linq.Expressions.Interpreter
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
                 object? left = stack[index - 2];
-                if (left != null)
+                if (left is not null)
                 {
                     object? right = stack[index - 1];
-                    stack[index - 2] = right == null ? null : (object)unchecked((ushort)((ushort)left / (ushort)right));
+                    stack[index - 2] = right is null ? null : (object)unchecked((ushort)((ushort)left / (ushort)right));
                 }
 
                 frame.StackIndex = index - 1;
@@ -95,10 +95,10 @@ namespace System.Linq.Expressions.Interpreter
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
                 object? left = stack[index - 2];
-                if (left != null)
+                if (left is not null)
                 {
                     object? right = stack[index - 1];
-                    stack[index - 2] = right == null ? null : (object)((uint)left / (uint)right);
+                    stack[index - 2] = right is null ? null : (object)((uint)left / (uint)right);
                 }
 
                 frame.StackIndex = index - 1;
@@ -113,10 +113,10 @@ namespace System.Linq.Expressions.Interpreter
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
                 object? left = stack[index - 2];
-                if (left != null)
+                if (left is not null)
                 {
                     object? right = stack[index - 1];
-                    stack[index - 2] = right == null ? null : (object)((ulong)left / (ulong)right);
+                    stack[index - 2] = right is null ? null : (object)((ulong)left / (ulong)right);
                 }
 
                 frame.StackIndex = index - 1;
@@ -131,10 +131,10 @@ namespace System.Linq.Expressions.Interpreter
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
                 object? left = stack[index - 2];
-                if (left != null)
+                if (left is not null)
                 {
                     object? right = stack[index - 1];
-                    stack[index - 2] = right == null ? null : (object)((float)left / (float)right);
+                    stack[index - 2] = right is null ? null : (object)((float)left / (float)right);
                 }
 
                 frame.StackIndex = index - 1;
@@ -149,10 +149,10 @@ namespace System.Linq.Expressions.Interpreter
                 int index = frame.StackIndex;
                 object?[] stack = frame.Data;
                 object? left = stack[index - 2];
-                if (left != null)
+                if (left is not null)
                 {
                     object? right = stack[index - 1];
-                    stack[index - 2] = right == null ? null : (object)((double)left / (double)right);
+                    stack[index - 2] = right is null ? null : (object)((double)left / (double)right);
                 }
 
                 frame.StackIndex = index - 1;

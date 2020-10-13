@@ -30,7 +30,7 @@ namespace System.Linq.Expressions.Interpreter
         // throws NRE when o is null
         protected static void NullCheck(object? o)
         {
-            if (o == null)
+            if (o is null)
             {
                 o!.GetType();
             }

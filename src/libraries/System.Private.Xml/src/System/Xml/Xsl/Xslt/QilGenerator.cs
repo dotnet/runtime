@@ -134,7 +134,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilExpression Compile(Compiler compiler)
         {
-            Debug.Assert(compiler != null);
+            Debug.Assert(compiler is not null);
             _compiler = compiler;
             _functions = _f.FunctionList();
             _extPars = _f.GlobalParameterList();
@@ -200,7 +200,7 @@ namespace System.Xml.Xsl.Xslt
             List<EarlyBoundInfo> ebTypes = new List<EarlyBoundInfo>(scriptClasses.Count);
             foreach (KeyValuePair<string, Type?> pair in scriptClasses)
             {
-                if (pair.Value != null)
+                if (pair.Value is not null)
                 {
                     ebTypes.Add(new EarlyBoundInfo(pair.Key, pair.Value));
                 }
@@ -476,7 +476,7 @@ namespace System.Xml.Xsl.Xslt
 
             foreach (ProtoTemplate tmpl in _compiler.AllTemplates)
             {
-                Debug.Assert(tmpl != null && tmpl.Function == null);
+                Debug.Assert(tmpl is not null && tmpl.Function is null);
                 Debug.Assert(tmpl.NodeType == XslNodeType.AttributeSet || tmpl.NodeType == XslNodeType.Template);
                 QilList args = _f.FormalParameterList();
                 XslFlags flags = !IsDebug ? tmpl.Flags : XslFlags.FullFocus;
@@ -494,17 +494,17 @@ namespace System.Xml.Xsl.Xslt
                 {
                     args.Add(CreateXslParam(CloneName(_nameLast), T.DoubleX));
                 }
-                if (IsDebug && nsList != null)
+                if (IsDebug && nsList is not null)
                 {
                     // AttributeSet doesn't need this logic because: 1) it doesn't have args; 2) we merge them.
-                    // SimplifiedStylesheet has nsList == null as well.
+                    // SimplifiedStylesheet has nsList is null as well.
                     QilParameter ns = CreateXslParam(CloneName(_nameNamespaces), T.NamespaceS);
                     ns.DefaultValue = GetNsVar(nsList);
                     args.Add(ns);
                 }
 
                 Template? template = tmpl as Template;
-                if (template != null)
+                if (template is not null)
                 {
                     Debug.Assert(tmpl.NodeType == XslNodeType.Template);
 
@@ -570,7 +570,7 @@ namespace System.Xml.Xsl.Xslt
                                     paramFunc.DebugName = "<xsl:param name=\"" + xslPar.Name.QualifiedName + "\">";
                                     param.DefaultValue = _f.Invoke(paramFunc, paramActual);
                                     // store VarPar here to compile it on next pass:
-                                    if (paramWithCalls == null)
+                                    if (paramWithCalls is null)
                                     {
                                         paramWithCalls = new List<VarPar>();
                                         paramToTemplate = new Dictionary<VarPar, Template>();
@@ -600,13 +600,13 @@ namespace System.Xml.Xsl.Xslt
                     tmpl is AttributeSet ? T.AttributeS : T.NodeNotRtfS
                 );
                 tmpl.Function.DebugName = tmpl.GetDebugName();
-                Debug.Assert((template != null) == (tmpl.SourceLine != null), "Templates must have line information, and attribute sets must not");
+                Debug.Assert((template is not null) == (tmpl.SourceLine is not null), "Templates must have line information, and attribute sets must not");
                 SetLineInfo(tmpl.Function, tmpl.SourceLine ?? SourceLineInfo.NoSource);
                 _functions.Add(tmpl.Function);
             } // foreach (ProtoTemplate tmpl in compiler.AllTemplates)
 
             // Finish compiling postponed parameters (those having calls in their default values)
-            if (paramWithCalls != null)
+            if (paramWithCalls is not null)
             {
                 Debug.Assert(!IsDebug, "In debug mode we don't generate parumWithCalls functions. Otherwise focus flags should be adjusted");
                 foreach (VarPar par in paramWithCalls)
@@ -641,7 +641,7 @@ namespace System.Xml.Xsl.Xslt
 
         private void CompileProtoTemplate(ProtoTemplate tmpl)
         {
-            Debug.Assert(tmpl != null && tmpl.Function != null && tmpl.Function.Definition.NodeType == QilNodeType.Unknown);
+            Debug.Assert(tmpl is not null && tmpl.Function is not null && tmpl.Function.Definition.NodeType == QilNodeType.Unknown);
 
             EnterScope(tmpl);
 
@@ -654,7 +654,7 @@ namespace System.Xml.Xsl.Xslt
                     Debug.Assert(tmpl is Template, "Only templates can have explicit arguments");
                     if (IsDebug)
                     {
-                        Debug.Assert(arg.DefaultValue == null, "Argument must not be compiled yet");
+                        Debug.Assert(arg.DefaultValue is null, "Argument must not be compiled yet");
                         VarPar xslParam = (VarPar)arg.Annotation!;
                         QilList? nsListParam = EnterScope(xslParam);
                         arg.DefaultValue = CompileVarParValue(xslParam);
@@ -698,7 +698,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileInstructions(IList<XslNode> instructions, int from, QilList content)
         {
-            Debug.Assert(instructions != null);
+            Debug.Assert(instructions is not null);
             for (int i = from; i < instructions.Count; i++)
             {
                 XslNode node = instructions[i];
@@ -745,7 +745,7 @@ namespace System.Xml.Xsl.Xslt
                 }
 
                 ExitScope();
-                Debug.Assert(result != null, "Result of compilation should not be null");
+                Debug.Assert(result is not null, "Result of compilation should not be null");
                 if (result.NodeType == QilNodeType.Sequence && result.Count == 0)
                 {
                     continue;
@@ -874,14 +874,14 @@ namespace System.Xml.Xsl.Xslt
             QilNode qilName = CompileStringAvt(node.NameAvt);
             QilNode qname;
 
-            if (qilName.NodeType == QilNodeType.LiteralString && (qilNs == null || qilNs.NodeType == QilNodeType.LiteralString))
+            if (qilName.NodeType == QilNodeType.LiteralString && (qilNs is null || qilNs.NodeType == QilNodeType.LiteralString))
             {
                 string name = (string)(QilLiteral)qilName;
                 string prefix, local, nsUri;
 
                 bool isValid = _compiler.ParseQName(name, out prefix, out local, (IErrorHelper)this);
 
-                if (qilNs == null)
+                if (qilNs is null)
                 {
                     nsUri = isValid ? ResolvePrefix(/*ignoreDefaultNs:*/false, prefix) : _compiler.CreatePhantomNamespace();
                 }
@@ -893,7 +893,7 @@ namespace System.Xml.Xsl.Xslt
             }
             else
             {           // Process AVT
-                if (qilNs != null)
+                if (qilNs is not null)
                 {
                     qname = _f.StrParseQName(qilName, qilNs);
                 }
@@ -933,14 +933,14 @@ namespace System.Xml.Xsl.Xslt
             QilNode qname;
             bool explicitNamespace = false;
 
-            if (qilName.NodeType == QilNodeType.LiteralString && (qilNs == null || qilNs.NodeType == QilNodeType.LiteralString))
+            if (qilName.NodeType == QilNodeType.LiteralString && (qilNs is null || qilNs.NodeType == QilNodeType.LiteralString))
             {
                 string name = (string)(QilLiteral)qilName;
                 string prefix, local, nsUri;
 
                 bool isValid = _compiler.ParseQName(name, out prefix, out local, (IErrorHelper)this);
 
-                if (qilNs == null)
+                if (qilNs is null)
                 {
                     nsUri = isValid ? ResolvePrefix(/*ignoreDefaultNs:*/true, prefix) : _compiler.CreatePhantomNamespace();
                 }
@@ -960,7 +960,7 @@ namespace System.Xml.Xsl.Xslt
             else
             {
                 // Process AVT
-                if (qilNs != null)
+                if (qilNs is not null)
                 {
                     qname = _f.StrParseQName(qilName, qilNs);
                 }
@@ -1037,7 +1037,7 @@ namespace System.Xml.Xsl.Xslt
             while (pos < source.Length)
             {
                 QilNode? fixedPart = ExtractText(source, ref pos);
-                if (fixedPart != null)
+                if (fixedPart is not null)
                 {
                     result.Add(fixedPart);
                 }
@@ -1060,7 +1060,7 @@ namespace System.Xml.Xsl.Xslt
         [return: NotNullIfNotNull("avt")]
         private QilNode? CompileStringAvt(string? avt)
         {
-            if (avt == null)
+            if (avt is null)
             {
                 return null;
             }
@@ -1073,7 +1073,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileTextAvt(string avt)
         {
-            Debug.Assert(avt != null);
+            Debug.Assert(avt is not null);
             if (avt.IndexOfAny(s_curlyBraces) == -1)
             {
                 return _f.TextCtor(_f.String(avt));
@@ -1177,7 +1177,7 @@ namespace System.Xml.Xsl.Xslt
             for (int i = 0; i < content.Count; i++)
             {
                 VarPar? withParam = content[i] as VarPar;
-                if (withParam != null)
+                if (withParam is not null)
                 {
                     Debug.Assert(withParam.NodeType == XslNodeType.WithParam);
                     CompileWithParam(withParam);
@@ -1246,7 +1246,7 @@ namespace System.Xml.Xsl.Xslt
                 Template? tmpl;
                 if (_compiler.NamedTemplates.TryGetValue(node.Name!, out tmpl))
                 {
-                    Debug.Assert(tmpl.Function != null, "All templates should be already compiled");
+                    Debug.Assert(tmpl.Function is not null, "All templates should be already compiled");
                     result = _invkGen.GenerateInvoke(tmpl.Function, AddRemoveImplicitArgs(node.Content, tmpl.Flags)!);
                 }
                 else
@@ -1281,7 +1281,7 @@ namespace System.Xml.Xsl.Xslt
             AttributeSet? attSet;
             if (_compiler.AttributeSets.TryGetValue(node.Name!, out attSet))
             {
-                Debug.Assert(attSet.Function != null, "All templates should be already compiled");
+                Debug.Assert(attSet.Function is not null, "All templates should be already compiled");
                 return _invkGen.GenerateInvoke(attSet.Function, AddRemoveImplicitArgs(node.Content, attSet.Flags)!);
             }
             else
@@ -1421,7 +1421,7 @@ namespace System.Xml.Xsl.Xslt
                 QilList? nsList = EnterScope(when);
                 if (when.NodeType == XslNodeType.Otherwise)
                 {
-                    Debug.Assert(result == null, "xsl:otherwise must be the last child of xsl:choose");
+                    Debug.Assert(result is null, "xsl:otherwise must be the last child of xsl:choose");
                     result = CompileInstructions(when.Content);
                 }
                 else
@@ -1432,7 +1432,7 @@ namespace System.Xml.Xsl.Xslt
                 SetLineInfoCheck(result, when.SourceLine);
                 result = SetDebugNs(result, nsList);
             }
-            if (result == null)
+            if (result is null)
             {
                 return _f.Sequence();
             }
@@ -1478,7 +1478,7 @@ namespace System.Xml.Xsl.Xslt
             string? select = node.Select;
             QilNode varValue;
 
-            if (select != null)
+            if (select is not null)
             {
                 // In case of incorrect stylesheet, variable or parameter may have both a 'select' attribute and non-empty content
                 QilList list = InstructionList();
@@ -1502,7 +1502,7 @@ namespace System.Xml.Xsl.Xslt
                 // In debug mode every variable/param must be of type 'any'
                 varValue = _f.TypeAssert(varValue, T.ItemS);
             }
-            Debug.Assert(varValue.SourceLine == null);
+            Debug.Assert(varValue.SourceLine is null);
             return varValue;
         }
 
@@ -1528,7 +1528,7 @@ namespace System.Xml.Xsl.Xslt
             while (i < content.Count)
             {
                 Sort? sort = content[i] as Sort;
-                if (sort != null)
+                if (sort is not null)
                 {
                     CompileSort(sort, keyList, ref parentLoop);
                     content.RemoveAt(i);
@@ -1549,7 +1549,7 @@ namespace System.Xml.Xsl.Xslt
         {
             QilNode? result = CompileStringAvt(attValue);
 
-            if (result == null)
+            if (result is null)
             {
                 // Do nothing
             }
@@ -1583,7 +1583,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileLangToLcid(QilNode? lang, bool fwdCompat)
         {
-            if (lang == null)
+            if (lang is null)
             {
                 return _f.Double(XsltLibrary.InvariantCultureLcid);
             }
@@ -1602,7 +1602,7 @@ namespace System.Xml.Xsl.Xslt
             const string DtText = "text";
             const string DtNumber = "number";
             QilNode? result = CompileStringAvt(attValue);
-            if (result != null)
+            if (result is not null)
             {
                 if (result.NodeType == QilNodeType.LiteralString)
                 {
@@ -1685,7 +1685,7 @@ namespace System.Xml.Xsl.Xslt
         private QilNode CompileOrderAttribute(string attName, string? attValue, string value0, string value1, bool fwdCompat)
         {
             QilNode? result = CompileStringAvt(attValue);
-            if (result != null)
+            if (result is not null)
             {
                 if (result.NodeType == QilNodeType.LiteralString)
                 {
@@ -1733,7 +1733,7 @@ namespace System.Xml.Xsl.Xslt
 
             select = CompileXPathExpression(sort.Select);
 
-            if (sort.Lang != null || sort.DataType != null || sort.Order != null || sort.CaseOrder != null)
+            if (sort.Lang is not null || sort.DataType is not null || sort.Order is not null || sort.CaseOrder is not null)
             {
                 // Calculate these attributes in the context of the parent loop
                 LoopFocus curLoopSaved = _curLoop;
@@ -1774,14 +1774,14 @@ namespace System.Xml.Xsl.Xslt
             _strConcat.Append(lang);
 
             char separator = '?';
-            if (order != null)
+            if (order is not null)
             {
                 _strConcat.Append(separator);
                 _strConcat.Append("descendingOrder=");
                 _strConcat.Append(order);
                 separator = '&';
             }
-            if (caseOrder != null)
+            if (caseOrder is not null)
             {
                 _strConcat.Append(separator);
                 _strConcat.Append("upperFirst=");
@@ -1795,7 +1795,7 @@ namespace System.Xml.Xsl.Xslt
             // Line information is not copied
             keyList.Add(result);
 
-            if (select2 != null)
+            if (select2 is not null)
             {
                 result = _f.SortKey(select2, collation.DeepClone(_f.BaseFactory));
                 // Line information is not copied
@@ -1844,7 +1844,7 @@ namespace System.Xml.Xsl.Xslt
                 with the same node kind as the context node and, if the context node has an expanded-QName, with
                 the same expanded-QName as the context node.
             */
-            if (countPattern != null)
+            if (countPattern is not null)
             {
                 return MatchPattern(countPattern, testNode);
             }
@@ -1909,7 +1909,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode countMatches, fromMatches, A, F, AF;
             QilIterator i, j;
 
-            countPattern2 = (countPattern != null) ? countPattern.DeepClone(_f.BaseFactory) : null;
+            countPattern2 = (countPattern is not null) ? countPattern.DeepClone(_f.BaseFactory) : null;
             countMatches = _f.Filter(i = _f.For(_f.AncestorOrSelf(GetCurrentNode())), MatchCountPattern(countPattern, i));
             if (multiple)
             {
@@ -1920,7 +1920,7 @@ namespace System.Xml.Xsl.Xslt
                 A = _f.Filter(i = _f.For(countMatches), _f.Eq(_f.PositionOf(i), _f.Int32(1)));
             }
 
-            if (fromPattern == null)
+            if (fromPattern is null)
             {
                 AF = A;
             }
@@ -1959,7 +1959,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode range, fromMatches, F, AF;
             QilIterator i, j, k;
 
-            if (fromPattern == null)
+            if (fromPattern is null)
             {
                 // According to XSLT 2.0 spec, if the 'from' attribute is omitted, matches-from() returns true
                 // only for the root node. It means $F is a sequence of length one containing the root node,
@@ -1994,7 +1994,7 @@ namespace System.Xml.Xsl.Xslt
             string letterValue;
             QilNode? result = CompileStringAvt(attValue);
 
-            if (result != null)
+            if (result is not null)
             {
                 if (result.NodeType == QilNodeType.LiteralString)
                 {
@@ -2032,7 +2032,7 @@ namespace System.Xml.Xsl.Xslt
         {
             QilNode? result = CompileStringAvt(attValue);
 
-            if (result == null)
+            if (result is null)
             {
                 // NOTE: string.Empty value denotes unspecified attribute
                 result = _f.String(string.Empty);
@@ -2066,7 +2066,7 @@ namespace System.Xml.Xsl.Xslt
         {
             QilNode? result = CompileStringAvt(attValue);
 
-            if (result == null)
+            if (result is null)
             {
                 return _f.Double(0);
             }
@@ -2101,7 +2101,7 @@ namespace System.Xml.Xsl.Xslt
         {
             QilNode value;
 
-            if (num.Value != null)
+            if (num.Value is not null)
             {
                 // REVIEW: We may want to report a warning if any of 'level', 'count' and 'from' attributes
                 // specified together with 'value'. It is ERR XT0975 in XSLT 2.0.
@@ -2109,8 +2109,8 @@ namespace System.Xml.Xsl.Xslt
             }
             else
             {
-                QilNode? countPattern = (num.Count != null) ? CompileNumberPattern(num.Count) : null;
-                QilNode? fromPattern = (num.From != null) ? CompileNumberPattern(num.From) : null;
+                QilNode? countPattern = (num.Count is not null) ? CompileNumberPattern(num.Count) : null;
+                QilNode? fromPattern = (num.From is not null) ? CompileNumberPattern(num.From) : null;
 
                 switch (num.Level)
                 {
@@ -2141,7 +2141,7 @@ namespace System.Xml.Xsl.Xslt
 
             foreach (Template template in sheet.Templates)
             {
-                if (template.Match != null)
+                if (template.Match is not null)
                 {
                     EnterScope(template);
                     QilNode result = CompileMatchPattern(template.Match);
@@ -2276,7 +2276,7 @@ namespace System.Xml.Xsl.Xslt
         private void ReportErrorInXPath(XslLoadException e)
         {
             XPathCompileException? ex = e as XPathCompileException;
-            string errorText = (ex != null) ? ex.FormatDetailedMessage() : e.Message;
+            string errorText = (ex is not null) ? ex.FormatDetailedMessage() : e.Message;
             _compiler.ReportError(_lastScope!.SourceLine!, SR.Xml_UserException, errorText);
         }
 
@@ -2298,7 +2298,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode result;
 
             SetEnvironmentFlags(/*allowVariables:*/true, /*allowCurrent:*/true, /*allowKey:*/true);
-            if (expr == null)
+            if (expr is null)
             {
                 result = PhantomXPathExpression();
             }
@@ -2329,7 +2329,7 @@ namespace System.Xml.Xsl.Xslt
         private QilNode CompileNodeSetExpression(string expr)
         {
             QilNode? result = _f.TryEnsureNodeSet(CompileXPathExpression(expr));
-            if (result == null)
+            if (result is null)
             {
                 // The expression is never a node-set
                 XPathCompileException e = new XPathCompileException(expr, 0, expr.Length, SR.XPath_NodeSetExpected, null);
@@ -2344,7 +2344,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileXPathExpressionWithinAvt(string expr, ref int pos)
         {
-            Debug.Assert(expr != null);
+            Debug.Assert(expr is not null);
             XPathScanner scanner;
             QilNode result;
 
@@ -2373,7 +2373,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileMatchPattern(string pttrn)
         {
-            Debug.Assert(pttrn != null);
+            Debug.Assert(pttrn is not null);
             XPathScanner scanner;
             QilNode result;
 
@@ -2399,7 +2399,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode CompileNumberPattern(string pttrn)
         {
-            Debug.Assert(pttrn != null);
+            Debug.Assert(pttrn is not null);
             XPathScanner scanner;
             QilNode result;
 
@@ -2425,12 +2425,12 @@ namespace System.Xml.Xsl.Xslt
             XPathScanner scanner;
             QilNode result;
 
-            if (_keyMatchBuilder == null)
+            if (_keyMatchBuilder is null)
             {
                 _keyMatchBuilder = new KeyMatchBuilder((IXPathEnvironment)this);
             }
             SetEnvironmentFlags(/*allowVariables:*/false, /*allowCurrent:*/false, /*allowKey:*/false);
-            if (pttrn == null)
+            if (pttrn is null)
             {
                 result = PhantomKeyMatch();
             }
@@ -2460,7 +2460,7 @@ namespace System.Xml.Xsl.Xslt
             QilNode result;
 
             SetEnvironmentFlags(/*allowVariables:*/false, /*allowCurrent:*/true, /*allowKey:*/false);
-            if (expr == null)
+            if (expr is null)
             {
                 result = _f.Error(_f.String(XslLoadException.CreateMessage(key.SourceLine, SR.Xslt_MissingAttribute, "use")));
             }
@@ -2551,7 +2551,7 @@ namespace System.Xml.Xsl.Xslt
             }
             if ((flags & XslFlags.FocusFilter) != 0)
             {
-                if (args == null || args.IsReadOnly)
+                if (args is null || args.IsReadOnly)
                 {
                     args = new List<XslNode>(3);
                 }
@@ -2605,7 +2605,7 @@ namespace System.Xml.Xsl.Xslt
                         }
                     }
                 }
-                if (arg == null)
+                if (arg is null)
                 {
                     // Formal argument has not been found among actual arguments
                     return false;
@@ -2655,7 +2655,7 @@ namespace System.Xml.Xsl.Xslt
             }
 
             // If a suitable function has not been found, create it
-            if (applyFunction == null)
+            if (applyFunction is null)
             {
                 invokeArgs.Clear();
                 // We wasn't able to find suitable function. Let's build new:
@@ -2770,7 +2770,7 @@ namespace System.Xml.Xsl.Xslt
             else
             {
                 string? ns = _scope.LookupNamespace(prefix);
-                if (ns == null)
+                if (ns is null)
                 {
                     if (prefix.Length == 0)
                     {
@@ -2789,7 +2789,7 @@ namespace System.Xml.Xsl.Xslt
         private void SetLineInfoCheck(QilNode n, ISourceLineInfo? lineInfo)
         {
             // Prevent xsl:choose override xsl:when, etc.
-            if (n.SourceLine == null)
+            if (n.SourceLine is null)
             {
                 SetLineInfo(n, lineInfo);
             }
@@ -2801,8 +2801,8 @@ namespace System.Xml.Xsl.Xslt
 
         private static QilNode SetLineInfo(QilNode n, ISourceLineInfo? lineInfo)
         {
-            Debug.Assert(n.SourceLine == null);
-            if (lineInfo != null)
+            Debug.Assert(n.SourceLine is null);
+            if (lineInfo is not null)
             {
                 SourceLineInfo.Validate(lineInfo);
                 if (0 < lineInfo.Start.Line && lineInfo.Start.LessOrEqual(lineInfo.End))
@@ -2822,7 +2822,7 @@ namespace System.Xml.Xsl.Xslt
 
         private QilNode SetDebugNs(QilNode n, QilList? nsList)
         {
-            if (n != null && nsList != null)
+            if (n is not null && nsList is not null)
             {
                 QilNode nsVar = GetNsVar(nsList);
                 Debug.Assert(nsVar.XmlType!.IsSubtypeOf(T.NamespaceS));

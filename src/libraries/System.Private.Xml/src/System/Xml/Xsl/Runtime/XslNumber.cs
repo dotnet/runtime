@@ -25,7 +25,7 @@ namespace System.Xml.Xsl.Runtime
         [Conditional("DEBUG")]
         public void AssertSeparator(bool isSeparator)
         {
-            Debug.Assert(isSeparator == (formatString != null), "AssertSeparator");
+            Debug.Assert(isSeparator == (formatString is not null), "AssertSeparator");
         }
 
         // Creates a TokenInfo for a separator token.
@@ -196,7 +196,7 @@ namespace System.Xml.Xsl.Runtime
                 }
             }
 
-            if (_tokens == null)
+            if (_tokens is null)
             {
                 // Special case of the default format
                 for (int idx = 0; idx < val.Count; idx++)
@@ -225,7 +225,7 @@ namespace System.Xml.Xsl.Runtime
                 TokenInfo periodicSeparator = 2 < cFormats ? _tokens[cFormats - 2] : s_defaultSeparator;
                 TokenInfo periodicFormat = 0 < cFormats ? _tokens[cFormats - 1] : s_defaultFormat;
 
-                if (prefix != null)
+                if (prefix is not null)
                 {
                     prefix.AssertSeparator(true);
                     sb.Append(prefix.formatString, prefix.startIdx, prefix.length);
@@ -249,7 +249,7 @@ namespace System.Xml.Xsl.Runtime
                     FormatItem(sb, val[i], thisFormat.startChar, thisFormat.length);
                 }
 
-                if (suffix != null)
+                if (suffix is not null)
                 {
                     suffix.AssertSeparator(true);
                     sb.Append(suffix.formatString, suffix.startIdx, suffix.length);

@@ -27,7 +27,7 @@ namespace System.Data.SqlTypes
         public SqlBinary(byte[]? value)
         {
             // if value is null, this generates a SqlBinary.Null
-            if (value == null)
+            if (value is null)
             {
                 _value = null;
             }
@@ -93,7 +93,7 @@ namespace System.Data.SqlTypes
         {
             get
             {
-                if (_value != null)
+                if (_value is not null)
                 {
                     return _value.Length;
                 }
@@ -425,7 +425,7 @@ namespace System.Data.SqlTypes
         void IXmlSerializable.ReadXml(XmlReader reader)
         {
             string? isNull = reader.GetAttribute("nil", XmlSchema.InstanceNamespace);
-            if (isNull != null && XmlConvert.ToBoolean(isNull))
+            if (isNull is not null && XmlConvert.ToBoolean(isNull))
             {
                 // Read the next value.
                 reader.ReadElementString();
@@ -434,7 +434,7 @@ namespace System.Data.SqlTypes
             else
             {
                 string base64 = reader.ReadElementString();
-                if (base64 == null)
+                if (base64 is null)
                 {
                     _value = Array.Empty<byte>();
                 }

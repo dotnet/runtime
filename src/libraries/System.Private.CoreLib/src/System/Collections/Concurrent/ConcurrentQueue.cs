@@ -76,7 +76,7 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ArgumentNullException">The <paramref name="collection"/> argument is null.</exception>
         public ConcurrentQueue(IEnumerable<T> collection)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.collection);
             }
@@ -139,7 +139,7 @@ namespace System.Collections.Concurrent
             }
 
             // Validate arguments.
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -437,7 +437,7 @@ namespace System.Collections.Concurrent
         /// </exception>
         public void CopyTo(T[] array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -495,9 +495,9 @@ namespace System.Collections.Concurrent
                 // Snap the head and tail
                 head = _head;
                 tail = _tail;
-                Debug.Assert(head != null);
-                Debug.Assert(tail != null);
-                Debug.Assert(tail._nextSegment == null);
+                Debug.Assert(head is not null);
+                Debug.Assert(tail is not null);
+                Debug.Assert(tail._nextSegment is null);
 
                 // Mark them and all segments in between as preserving, and ensure no additional items
                 // can be added to the tail.
@@ -687,13 +687,13 @@ namespace System.Collections.Concurrent
                 // Check to see whether this segment is the last. If it is, we can consider
                 // this to be a moment-in-time empty condition (even though between the TryDequeue
                 // check and this check, another item could have arrived).
-                if (head._nextSegment == null)
+                if (head._nextSegment is null)
                 {
                     item = default;
                     return false;
                 }
 
-                // At this point we know that head.Next != null, which means
+                // At this point we know that head.Next is not null, which means
                 // this segment has been frozen for additional enqueues. But between
                 // the time that we ran TryDequeue and checked for a next segment,
                 // another item could have been added.  Try to dequeue one more time
@@ -756,7 +756,7 @@ namespace System.Collections.Concurrent
 
                 // The current segment was empty at the moment we checked.
 
-                if (next != null)
+                if (next is not null)
                 {
                     // If prior to the peek there was already a next segment, then
                     // during the peek no additional items could have been enqueued
@@ -764,7 +764,7 @@ namespace System.Collections.Concurrent
                     Debug.Assert(next == s._nextSegment);
                     s = next;
                 }
-                else if (Volatile.Read(ref s._nextSegment) == null)
+                else if (Volatile.Read(ref s._nextSegment) is null)
                 {
                     // The next segment is null.  Nothing more to peek at.
                     break;

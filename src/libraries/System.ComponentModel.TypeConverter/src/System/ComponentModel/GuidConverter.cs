@@ -57,7 +57,7 @@ namespace System.ComponentModel
             if (destinationType == typeof(InstanceDescriptor) && value is Guid)
             {
                 ConstructorInfo ctor = typeof(Guid).GetConstructor(new Type[] { typeof(string) });
-                Debug.Assert(ctor != null, "Expected constructor to exist.");
+                Debug.Assert(ctor is not null, "Expected constructor to exist.");
                 return new InstanceDescriptor(ctor, new object[] { value.ToString() });
             }
 

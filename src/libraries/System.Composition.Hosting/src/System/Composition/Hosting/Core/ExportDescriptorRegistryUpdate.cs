@@ -114,7 +114,7 @@ namespace System.Composition.Hosting.Core
         private StringBuilder DescribeCompositionStack(CompositionDependency import, IEnumerable<CompositionDependency> dependencies)
         {
             var result = new StringBuilder();
-            if (dependencies.FirstOrDefault() == null)
+            if (dependencies.FirstOrDefault() is null)
             {
                 return result;
             }

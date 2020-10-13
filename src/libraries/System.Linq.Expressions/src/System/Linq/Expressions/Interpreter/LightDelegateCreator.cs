@@ -15,8 +15,8 @@ namespace System.Linq.Expressions.Interpreter
 
         internal LightDelegateCreator(Interpreter interpreter, LambdaExpression lambda)
         {
-            Debug.Assert(interpreter != null);
-            Debug.Assert(lambda != null);
+            Debug.Assert(interpreter is not null);
+            Debug.Assert(lambda is not null);
 
             Interpreter = interpreter;
             _lambda = lambda;

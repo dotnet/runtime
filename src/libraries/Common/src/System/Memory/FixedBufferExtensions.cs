@@ -33,7 +33,7 @@ namespace System
         /// </summary>
         internal static unsafe bool FixedBufferEqualsString(this ReadOnlySpan<char> span, string value)
         {
-            if (value == null || value.Length > span.Length)
+            if (value is null || value.Length > span.Length)
                 return false;
 
             int i = 0;

@@ -35,7 +35,7 @@ namespace System.Net.WebSockets
             if (string.IsNullOrEmpty(clientSecWebSocketProtocol))
             {
                 // client hasn't specified any Sec-WebSocket-Protocol header
-                if (subProtocol != null)
+                if (subProtocol is not null)
                 {
                     // If the server specified _anything_ this isn't valid.
                     throw new WebSocketException(WebSocketError.UnsupportedProtocol,
@@ -47,7 +47,7 @@ namespace System.Net.WebSockets
 
             // here, we know the client specified something and it's non-empty.
 
-            if (subProtocol == null)
+            if (subProtocol is null)
             {
                 // client specified some protocols, server specified 'null'. So server should send headers.
                 return true;
@@ -78,7 +78,7 @@ namespace System.Net.WebSockets
 
         internal static void ValidateOptions(string subProtocol, int receiveBufferSize, int sendBufferSize, TimeSpan keepAliveInterval)
         {
-            if (subProtocol != null)
+            if (subProtocol is not null)
             {
                 WebSocketValidate.ValidateSubprotocol(subProtocol);
             }

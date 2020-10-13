@@ -15,7 +15,7 @@ namespace System.Reflection
     {
         public AssemblyName(string assemblyName)
         {
-            if (assemblyName == null)
+            if (assemblyName is null)
                 throw new ArgumentNullException(nameof(assemblyName));
             if (assemblyName.Length == 0 || assemblyName[0] == '\0')
                 throw new ArgumentException(SR.Format_StringZeroLength);
@@ -42,7 +42,7 @@ namespace System.Reflection
 
         private unsafe byte[]? ComputePublicKeyToken()
         {
-            if (_publicKey == null)
+            if (_publicKey is null)
                 return null;
             if (_publicKey.Length == 0)
                 return Array.Empty<byte>();

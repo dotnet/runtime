@@ -36,7 +36,7 @@ namespace System
 
         public static ReadOnlyCollection<T> AsReadOnly<T>(T[] array)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -51,7 +51,7 @@ namespace System
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.newSize, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
 
             T[]? larray = array; // local copy
-            if (larray == null)
+            if (larray is null)
             {
                 array = new T[newSize];
                 return;
@@ -73,12 +73,12 @@ namespace System
                 array = newArray;
             }
 
-            Debug.Assert(array != null);
+            Debug.Assert(array is not null);
         }
 
         public static Array CreateInstance(Type elementType, params long[] lengths)
         {
-            if (lengths == null)
+            if (lengths is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.lengths);
             }
@@ -164,7 +164,7 @@ namespace System
 
         public object? GetValue(params long[] indices)
         {
-            if (indices == null)
+            if (indices is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
@@ -224,7 +224,7 @@ namespace System
 
         public void SetValue(object? value, params long[] indices)
         {
-            if (indices == null)
+            if (indices is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.indices);
             if (Rank != indices.Length)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankIndices);
@@ -326,14 +326,14 @@ namespace System
 
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null)
+            if (other is null)
             {
                 return 1;
             }
 
             Array? o = other as Array;
 
-            if (o == null || this.Length != o.Length)
+            if (o is null || this.Length != o.Length)
             {
                 ThrowHelper.ThrowArgumentException(ExceptionResource.ArgumentException_OtherNotArrayOfCorrectLength, ExceptionArgument.other);
             }
@@ -355,7 +355,7 @@ namespace System
 
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -388,7 +388,7 @@ namespace System
 
         int IStructuralEquatable.GetHashCode(IEqualityComparer comparer)
         {
-            if (comparer == null)
+            if (comparer is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparer);
 
             HashCode hashCode = default;
@@ -416,7 +416,7 @@ namespace System
         //
         public static int BinarySearch(Array array, object? value)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             return BinarySearch(array, array.GetLowerBound(0), array.Length, value, null);
         }
@@ -455,7 +455,7 @@ namespace System
         //
         public static int BinarySearch(Array array, object? value, IComparer? comparer)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             return BinarySearch(array, array.GetLowerBound(0), array.Length, value, comparer);
         }
@@ -477,7 +477,7 @@ namespace System
         //
         public static int BinarySearch(Array array, int index, int length, object? value, IComparer? comparer)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             int lb = array.GetLowerBound(0);
             if (index < lb)
@@ -528,7 +528,7 @@ namespace System
                 CorElementType et = array.GetCorElementTypeOfElementType();
                 if (et.IsPrimitiveType())
                 {
-                    if (value == null)
+                    if (value is null)
                         return ~index;
 
                     if (array.IsValueOfElementType(value))
@@ -623,14 +623,14 @@ namespace System
 
         public static int BinarySearch<T>(T[] array, T value)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             return BinarySearch<T>(array, 0, array.Length, value, null);
         }
 
         public static int BinarySearch<T>(T[] array, T value, System.Collections.Generic.IComparer<T>? comparer)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             return BinarySearch<T>(array, 0, array.Length, value, comparer);
         }
@@ -642,7 +642,7 @@ namespace System
 
         public static int BinarySearch<T>(T[] array, int index, int length, T value, System.Collections.Generic.IComparer<T>? comparer)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             if (index < 0)
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
@@ -657,12 +657,12 @@ namespace System
 
         public static TOutput[] ConvertAll<TInput, TOutput>(TInput[] array, Converter<TInput, TOutput> converter)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (converter == null)
+            if (converter is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.converter);
             }
@@ -684,7 +684,7 @@ namespace System
         //
         public void CopyTo(Array array, int index)
         {
-            if (array != null && array.Rank != 1)
+            if (array is not null && array.Rank != 1)
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_RankMultiDimNotSupported);
             // Note: Array.Copy throws a RankException and we want a consistent ArgumentException for all the IList CopyTo methods.
             Array.Copy(this, GetLowerBound(0), array!, index, Length);
@@ -718,7 +718,7 @@ namespace System
 
         public static void Fill<T>(T[] array, T value)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -731,7 +731,7 @@ namespace System
 
         public static void Fill<T>(T[] array, T value, int startIndex, int count)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -754,12 +754,12 @@ namespace System
 
         public static T? Find<T>(T[] array, Predicate<T> match)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -776,12 +776,12 @@ namespace System
 
         public static T[] FindAll<T>(T[] array, Predicate<T> match)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -799,7 +799,7 @@ namespace System
 
         public static int FindIndex<T>(T[] array, Predicate<T> match)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -809,7 +809,7 @@ namespace System
 
         public static int FindIndex<T>(T[] array, int startIndex, Predicate<T> match)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -819,7 +819,7 @@ namespace System
 
         public static int FindIndex<T>(T[] array, int startIndex, int count, Predicate<T> match)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -834,7 +834,7 @@ namespace System
                 ThrowHelper.ThrowCountArgumentOutOfRange_ArgumentOutOfRange_Count();
             }
 
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -850,12 +850,12 @@ namespace System
 
         public static T? FindLast<T>(T[] array, Predicate<T> match)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -872,7 +872,7 @@ namespace System
 
         public static int FindLastIndex<T>(T[] array, Predicate<T> match)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -882,7 +882,7 @@ namespace System
 
         public static int FindLastIndex<T>(T[] array, int startIndex, Predicate<T> match)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -892,12 +892,12 @@ namespace System
 
         public static int FindLastIndex<T>(T[] array, int startIndex, int count, Predicate<T> match)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -938,12 +938,12 @@ namespace System
 
         public static void ForEach<T>(T[] array, Action<T> action)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (action == null)
+            if (action is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.action);
             }
@@ -960,7 +960,7 @@ namespace System
         //
         public static int IndexOf(Array array, object? value)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             return IndexOf(array, value, array.GetLowerBound(0), array.Length);
         }
@@ -973,7 +973,7 @@ namespace System
         //
         public static int IndexOf(Array array, object? value, int startIndex)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             int lb = array.GetLowerBound(0);
             return IndexOf(array, value, startIndex, array.Length - startIndex + lb);
@@ -987,7 +987,7 @@ namespace System
         //
         public static int IndexOf(Array array, object? value, int startIndex, int count)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             if (array.Rank != 1)
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
@@ -1001,11 +1001,11 @@ namespace System
             int endIndex = startIndex + count;
             if (array is object[] objArray)
             {
-                if (value == null)
+                if (value is null)
                 {
                     for (int i = startIndex; i < endIndex; i++)
                     {
-                        if (objArray[i] == null)
+                        if (objArray[i] is null)
                             return i;
                     }
                 }
@@ -1014,7 +1014,7 @@ namespace System
                     for (int i = startIndex; i < endIndex; i++)
                     {
                         object obj = objArray[i];
-                        if (obj != null && obj.Equals(value))
+                        if (obj is not null && obj.Equals(value))
                             return i;
                     }
                 }
@@ -1024,7 +1024,7 @@ namespace System
             CorElementType et = array.GetCorElementTypeOfElementType();
             if (et.IsPrimitiveType())
             {
-                if (value == null)
+                if (value is null)
                     return lb - 1;
 
                 if (array.IsValueOfElementType(value))
@@ -1080,9 +1080,9 @@ namespace System
             for (int i = startIndex; i < endIndex; i++)
             {
                 object? obj = array.GetValue(i);
-                if (obj == null)
+                if (obj is null)
                 {
-                    if (value == null)
+                    if (value is null)
                         return i;
                 }
                 else
@@ -1100,7 +1100,7 @@ namespace System
 
         public static int IndexOf<T>(T[] array, T value)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -1110,7 +1110,7 @@ namespace System
 
         public static int IndexOf<T>(T[] array, T value, int startIndex)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -1120,7 +1120,7 @@ namespace System
 
         public static int IndexOf<T>(T[] array, T value, int startIndex, int count)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -1184,7 +1184,7 @@ namespace System
         //
         public static int LastIndexOf(Array array, object? value)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             int lb = array.GetLowerBound(0);
             return LastIndexOf(array, value, array.Length - 1 + lb, array.Length);
@@ -1197,7 +1197,7 @@ namespace System
         //
         public static int LastIndexOf(Array array, object? value, int startIndex)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             int lb = array.GetLowerBound(0);
             return LastIndexOf(array, value, startIndex, startIndex + 1 - lb);
@@ -1211,7 +1211,7 @@ namespace System
         //
         public static int LastIndexOf(Array array, object? value, int startIndex, int count)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             int lb = array.GetLowerBound(0);
             if (array.Length == 0)
@@ -1231,11 +1231,11 @@ namespace System
             int endIndex = startIndex - count + 1;
             if (array is object[] objArray)
             {
-                if (value == null)
+                if (value is null)
                 {
                     for (int i = startIndex; i >= endIndex; i--)
                     {
-                        if (objArray[i] == null)
+                        if (objArray[i] is null)
                             return i;
                     }
                 }
@@ -1244,7 +1244,7 @@ namespace System
                     for (int i = startIndex; i >= endIndex; i--)
                     {
                         object obj = objArray[i];
-                        if (obj != null && obj.Equals(value))
+                        if (obj is not null && obj.Equals(value))
                             return i;
                     }
                 }
@@ -1254,7 +1254,7 @@ namespace System
             CorElementType et = array.GetCorElementTypeOfElementType();
             if (et.IsPrimitiveType())
             {
-                if (value == null)
+                if (value is null)
                     return lb - 1;
 
                 if (array.IsValueOfElementType(value))
@@ -1310,9 +1310,9 @@ namespace System
             for (int i = startIndex; i >= endIndex; i--)
             {
                 object? obj = array.GetValue(i);
-                if (obj == null)
+                if (obj is null)
                 {
-                    if (value == null)
+                    if (value is null)
                         return i;
                 }
                 else
@@ -1326,7 +1326,7 @@ namespace System
 
         public static int LastIndexOf<T>(T[] array, T value)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -1336,7 +1336,7 @@ namespace System
 
         public static int LastIndexOf<T>(T[] array, T value, int startIndex)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -1346,7 +1346,7 @@ namespace System
 
         public static int LastIndexOf<T>(T[] array, T value, int startIndex, int count)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
@@ -1440,7 +1440,7 @@ namespace System
         //
         public static void Reverse(Array array)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Reverse(array, array.GetLowerBound(0), array.Length);
         }
@@ -1453,7 +1453,7 @@ namespace System
         //
         public static void Reverse(Array array, int index, int length)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             int lowerBound = array.GetLowerBound(0);
             if (index < lowerBound)
@@ -1521,14 +1521,14 @@ namespace System
 
         public static void Reverse<T>(T[] array)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Reverse(array, 0, array.Length);
         }
 
         public static void Reverse<T>(T[] array, int index, int length)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             if (index < 0)
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
@@ -1558,7 +1558,7 @@ namespace System
         //
         public static void Sort(Array array)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Sort(array, null, array.GetLowerBound(0), array.Length, null);
         }
@@ -1571,7 +1571,7 @@ namespace System
         //
         public static void Sort(Array keys, Array? items)
         {
-            if (keys == null)
+            if (keys is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
             Sort(keys, items, keys.GetLowerBound(0), keys.Length, null);
         }
@@ -1604,7 +1604,7 @@ namespace System
         //
         public static void Sort(Array array, IComparer? comparer)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Sort(array, null, array.GetLowerBound(0), array.Length, comparer);
         }
@@ -1619,7 +1619,7 @@ namespace System
         //
         public static void Sort(Array keys, Array? items, IComparer? comparer)
         {
-            if (keys == null)
+            if (keys is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
             Sort(keys, items, keys.GetLowerBound(0), keys.Length, comparer);
         }
@@ -1645,19 +1645,19 @@ namespace System
         //
         public static void Sort(Array keys, Array? items, int index, int length, IComparer? comparer)
         {
-            if (keys == null)
+            if (keys is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
-            if (keys.Rank != 1 || (items != null && items.Rank != 1))
+            if (keys.Rank != 1 || (items is not null && items.Rank != 1))
                 ThrowHelper.ThrowRankException(ExceptionResource.Rank_MultiDimNotSupported);
             int keysLowerBound = keys.GetLowerBound(0);
-            if (items != null && keysLowerBound != items.GetLowerBound(0))
+            if (items is not null && keysLowerBound != items.GetLowerBound(0))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_LowerBoundsMustMatch);
             if (index < keysLowerBound)
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             if (length < 0)
                 ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
 
-            if (keys.Length - (index - keysLowerBound) < length || (items != null && (index - keysLowerBound) > items.Length - length))
+            if (keys.Length - (index - keysLowerBound) < length || (items is not null && (index - keysLowerBound) > items.Length - length))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
             if (length <= 1)
@@ -1668,7 +1668,7 @@ namespace System
             if (keys is object[] objKeys)
             {
                 object[]? objItems = items as object[];
-                if (items == null || objItems != null)
+                if (items is null || objItems is not null)
                 {
                     new SorterObjectArray(objKeys, objItems, comparer).Sort(index, length);
                     return;
@@ -1678,7 +1678,7 @@ namespace System
             if (comparer == Comparer.Default)
             {
                 CorElementType et = keys.GetCorElementTypeOfElementType();
-                if (items == null || items.GetCorElementTypeOfElementType() == et)
+                if (items is null || items.GetCorElementTypeOfElementType() == et)
                 {
                     int adjustedIndex = index - keysLowerBound;
                     switch (et)
@@ -1732,7 +1732,7 @@ namespace System
                     static void GenericSort<T>(Array keys, Array? items, int adjustedIndex, int length) where T: struct
                     {
                         Span<T> keysSpan = UnsafeArrayAsSpan<T>(keys, adjustedIndex, length);
-                        if (items != null)
+                        if (items is not null)
                         {
                             keysSpan.Sort<T, T>(UnsafeArrayAsSpan<T>(items, adjustedIndex, length));
                         }
@@ -1749,7 +1749,7 @@ namespace System
 
         public static void Sort<T>(T[] array)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
 
             if (array.Length > 1)
@@ -1761,7 +1761,7 @@ namespace System
 
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items)
         {
-            if (keys == null)
+            if (keys is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
             Sort<TKey, TValue>(keys, items, 0, keys.Length, null);
         }
@@ -1778,21 +1778,21 @@ namespace System
 
         public static void Sort<T>(T[] array, System.Collections.Generic.IComparer<T>? comparer)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             Sort<T>(array, 0, array.Length, comparer);
         }
 
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, System.Collections.Generic.IComparer<TKey>? comparer)
         {
-            if (keys == null)
+            if (keys is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
             Sort<TKey, TValue>(keys, items, 0, keys.Length, comparer);
         }
 
         public static void Sort<T>(T[] array, int index, int length, System.Collections.Generic.IComparer<T>? comparer)
         {
-            if (array == null)
+            if (array is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             if (index < 0)
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
@@ -1810,18 +1810,18 @@ namespace System
 
         public static void Sort<TKey, TValue>(TKey[] keys, TValue[]? items, int index, int length, System.Collections.Generic.IComparer<TKey>? comparer)
         {
-            if (keys == null)
+            if (keys is null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.keys);
             if (index < 0)
                 ThrowHelper.ThrowIndexArgumentOutOfRange_NeedNonNegNumException();
             if (length < 0)
                 ThrowHelper.ThrowLengthArgumentOutOfRange_ArgumentOutOfRange_NeedNonNegNum();
-            if (keys.Length - index < length || (items != null && index > items.Length - length))
+            if (keys.Length - index < length || (items is not null && index > items.Length - length))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Argument_InvalidOffLen);
 
             if (length > 1)
             {
-                if (items == null)
+                if (items is null)
                 {
                     Sort<TKey>(keys, index, length, comparer);
                     return;
@@ -1835,12 +1835,12 @@ namespace System
 
         public static void Sort<T>(T[] array, Comparison<T> comparison)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (comparison == null)
+            if (comparison is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.comparison);
             }
@@ -1851,12 +1851,12 @@ namespace System
 
         public static bool TrueForAll<T>(T[] array, Predicate<T> match)
         {
-            if (array == null)
+            if (array is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.array);
             }
 
-            if (match == null)
+            if (match is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.match);
             }
@@ -1894,7 +1894,7 @@ namespace System
                         object temp = keys[a];
                         keys[a] = keys[b];
                         keys[b] = temp;
-                        if (items != null)
+                        if (items is not null)
                         {
                             object? item = items[a];
                             items[a] = items[b];
@@ -1910,7 +1910,7 @@ namespace System
                 keys[i] = keys[j];
                 keys[j] = t;
 
-                if (items != null)
+                if (items is not null)
                 {
                     object? item = items[i];
                     items[i] = items[j];
@@ -2050,12 +2050,12 @@ namespace System
                     if (!(comparer.Compare(d, keys[lo + child - 1]) < 0))
                         break;
                     keys[lo + i - 1] = keys[lo + child - 1];
-                    if (items != null)
+                    if (items is not null)
                         items[lo + i - 1] = items[lo + child - 1];
                     i = child;
                 }
                 keys[lo + i - 1] = d;
-                if (items != null)
+                if (items is not null)
                     items[lo + i - 1] = dt;
             }
 
@@ -2072,12 +2072,12 @@ namespace System
                     while (j >= lo && comparer.Compare(t, keys[j]) < 0)
                     {
                         keys[j + 1] = keys[j];
-                        if (items != null)
+                        if (items is not null)
                             items[j + 1] = items[j];
                         j--;
                     }
                     keys[j + 1] = t;
-                    if (items != null)
+                    if (items is not null)
                         items[j + 1] = ti;
                 }
             }
@@ -2108,7 +2108,7 @@ namespace System
                         object? key = keys.GetValue(a);
                         keys.SetValue(keys.GetValue(b), a);
                         keys.SetValue(key, b);
-                        if (items != null)
+                        if (items is not null)
                         {
                             object? item = items.GetValue(a);
                             items.SetValue(items.GetValue(b), a);
@@ -2124,7 +2124,7 @@ namespace System
                 keys.SetValue(keys.GetValue(j), i);
                 keys.SetValue(t1, j);
 
-                if (items != null)
+                if (items is not null)
                 {
                     object? t2 = items.GetValue(i);
                     items.SetValue(items.GetValue(j), i);
@@ -2265,12 +2265,12 @@ namespace System
                         break;
 
                     keys.SetValue(keys.GetValue(lo + child - 1), lo + i - 1);
-                    if (items != null)
+                    if (items is not null)
                         items.SetValue(items.GetValue(lo + child - 1), lo + i - 1);
                     i = child;
                 }
                 keys.SetValue(d, lo + i - 1);
-                if (items != null)
+                if (items is not null)
                     items.SetValue(dt, lo + i - 1);
             }
 
@@ -2288,13 +2288,13 @@ namespace System
                     while (j >= lo && comparer.Compare(t, keys.GetValue(j)) < 0)
                     {
                         keys.SetValue(keys.GetValue(j), j + 1);
-                        if (items != null)
+                        if (items is not null)
                             items.SetValue(items.GetValue(j), j + 1);
                         j--;
                     }
 
                     keys.SetValue(t, j + 1);
-                    if (items != null)
+                    if (items is not null)
                         items.SetValue(dt, j + 1);
                 }
             }

@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
                     BinaryPrimitives.WriteUInt32BigEndian(rgbCounter, counter++);
                     hasher.TransformBlock(rgbSeed, 0, rgbSeed.Length, rgbSeed, 0);
                     hasher.TransformFinalBlock(rgbCounter, 0, 4);
-                    Debug.Assert(hasher.Hash != null);
+                    Debug.Assert(hasher.Hash is not null);
                     byte[] hash = hasher.Hash;
                     hasher.Initialize();
                     Buffer.BlockCopy(hash, 0, rgbT, ib, Math.Min(rgbT.Length - ib, hash.Length));

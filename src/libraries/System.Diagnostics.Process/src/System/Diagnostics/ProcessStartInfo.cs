@@ -67,7 +67,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_argumentList == null)
+                if (_argumentList is null)
                 {
                     _argumentList = new Collection<string>();
                 }
@@ -85,7 +85,7 @@ namespace System.Diagnostics
         {
             get
             {
-                if (_environmentVariables == null)
+                if (_environmentVariables is null)
                 {
                     IDictionary envVars = System.Environment.GetEnvironmentVariables();
 
@@ -176,7 +176,7 @@ namespace System.Diagnostics
 
         internal string BuildArguments()
         {
-            if (_argumentList == null || _argumentList.Count == 0)
+            if (_argumentList is null || _argumentList.Count == 0)
             {
                 return Arguments;
             }
@@ -190,7 +190,7 @@ namespace System.Diagnostics
 
         internal void AppendArgumentsTo(StringBuilder stringBuilder)
         {
-            if (_argumentList != null && _argumentList.Count > 0)
+            if (_argumentList is not null && _argumentList.Count > 0)
             {
                 foreach (string argument in _argumentList)
                 {

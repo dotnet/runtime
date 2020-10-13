@@ -38,7 +38,7 @@ namespace System.Configuration
             foreach (object parameter in parameters)
             {
                 _fileMap = parameter as ConfigurationFileMap;
-                if (_fileMap != null)
+                if (_fileMap is not null)
                     return;
             }
         }
@@ -62,7 +62,7 @@ namespace System.Configuration
         {
             Stream stream = base.OpenStreamForRead(streamName);
 
-            if (stream == null && streamName == _machineStreamName)
+            if (stream is null && streamName == _machineStreamName)
             {
                 // We only want to inject if we aren't able to load
                 stream = new MemoryStream(Encoding.UTF8.GetBytes(ImplicitMachineConfig));

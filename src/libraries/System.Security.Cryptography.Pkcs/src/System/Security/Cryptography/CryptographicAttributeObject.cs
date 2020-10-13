@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
         {
             _oid = oid.CopyOid();
 
-            if (values == null)
+            if (values is null)
             {
                 Values = new AsnEncodedDataCollection();
             }

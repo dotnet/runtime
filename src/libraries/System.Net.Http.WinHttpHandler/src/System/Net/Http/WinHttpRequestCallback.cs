@@ -41,7 +41,7 @@ namespace System.Net.Http
             }
 
             WinHttpRequestState state = WinHttpRequestState.FromIntPtr(context);
-            Debug.Assert(state != null, "WinHttpCallback must have a non-null state object");
+            Debug.Assert(state is not null, "WinHttpCallback must have a non-null state object");
 
             RequestCallback(handle, state, internetStatus, statusInformation, statusInformationLength);
         }
@@ -110,7 +110,7 @@ namespace System.Net.Http
             catch (Exception ex)
             {
                 state.SavedException = ex;
-                if (state.RequestHandle != null)
+                if (state.RequestHandle is not null)
                 {
                     // Since we got a fatal error processing the request callback,
                     // we need to close the WinHttp request handle in order to
@@ -127,7 +127,7 @@ namespace System.Net.Http
 
         private static void OnRequestHandleClosing(WinHttpRequestState state)
         {
-            Debug.Assert(state != null, "OnRequestSendRequestComplete: state is null");
+            Debug.Assert(state is not null, "OnRequestSendRequestComplete: state is null");
 
             // This is the last notification callback that WinHTTP will send. Therefore, we can
             // now explicitly dispose the state object which will free its corresponding GCHandle.
@@ -137,22 +137,22 @@ namespace System.Net.Http
 
         private static void OnRequestSendRequestComplete(WinHttpRequestState state)
         {
-            Debug.Assert(state != null, "OnRequestSendRequestComplete: state is null");
-            Debug.Assert(state.LifecycleAwaitable != null, "OnRequestSendRequestComplete: LifecycleAwaitable is null");
+            Debug.Assert(state is not null, "OnRequestSendRequestComplete: state is null");
+            Debug.Assert(state.LifecycleAwaitable is not null, "OnRequestSendRequestComplete: LifecycleAwaitable is null");
 
             state.LifecycleAwaitable.SetResult(1);
         }
 
         private static void OnRequestDataAvailable(WinHttpRequestState state, int bytesAvailable)
         {
-            Debug.Assert(state != null, "OnRequestDataAvailable: state is null");
+            Debug.Assert(state is not null, "OnRequestDataAvailable: state is null");
 
             state.LifecycleAwaitable.SetResult(bytesAvailable);
         }
 
         private static void OnRequestReadComplete(WinHttpRequestState state, uint bytesRead)
         {
-            Debug.Assert(state != null, "OnRequestReadComplete: state is null");
+            Debug.Assert(state is not null, "OnRequestReadComplete: state is null");
 
             // If we read to the end of the stream and we're using 'Content-Length' semantics on the response body,
             // then verify we read at least the number of bytes required.
@@ -174,8 +174,8 @@ namespace System.Net.Http
 
         private static void OnRequestWriteComplete(WinHttpRequestState state)
         {
-            Debug.Assert(state != null, "OnRequestWriteComplete: state is null");
-            Debug.Assert(state.TcsInternalWriteDataToRequestStream != null, "TcsInternalWriteDataToRequestStream is null");
+            Debug.Assert(state is not null, "OnRequestWriteComplete: state is null");
+            Debug.Assert(state.TcsInternalWriteDataToRequestStream is not null, "TcsInternalWriteDataToRequestStream is null");
             Debug.Assert(!state.TcsInternalWriteDataToRequestStream.Task.IsCompleted, "TcsInternalWriteDataToRequestStream.Task is completed");
 
             state.TcsInternalWriteDataToRequestStream.TrySetResult(true);
@@ -183,16 +183,16 @@ namespace System.Net.Http
 
         private static void OnRequestReceiveResponseHeadersComplete(WinHttpRequestState state)
         {
-            Debug.Assert(state != null, "OnRequestReceiveResponseHeadersComplete: state is null");
-            Debug.Assert(state.LifecycleAwaitable != null, "LifecycleAwaitable is null");
+            Debug.Assert(state is not null, "OnRequestReceiveResponseHeadersComplete: state is null");
+            Debug.Assert(state.LifecycleAwaitable is not null, "LifecycleAwaitable is null");
 
             state.LifecycleAwaitable.SetResult(1);
         }
 
         private static void OnRequestRedirect(WinHttpRequestState state, Uri redirectUri)
         {
-            Debug.Assert(state != null, "OnRequestRedirect: state is null");
-            Debug.Assert(redirectUri != null, "OnRequestRedirect: redirectUri is null");
+            Debug.Assert(state is not null, "OnRequestRedirect: state is null");
+            Debug.Assert(redirectUri is not null, "OnRequestRedirect: redirectUri is null");
 
             // If we're manually handling cookies, we need to reset them based on the new URI.
             if (state.Handler.CookieUsePolicy == CookieUsePolicy.UseSpecifiedCookieContainer)
@@ -232,8 +232,8 @@ namespace System.Net.Http
 
         private static void OnRequestSendingRequest(WinHttpRequestState state)
         {
-            Debug.Assert(state != null, "OnRequestSendingRequest: state is null");
-            Debug.Assert(state.RequestHandle != null, "OnRequestSendingRequest: state.RequestHandle is null");
+            Debug.Assert(state is not null, "OnRequestSendingRequest: state is null");
+            Debug.Assert(state.RequestHandle is not null, "OnRequestSendingRequest: state.RequestHandle is null");
 
             if (state.RequestMessage.RequestUri.Scheme != UriScheme.Https)
             {
@@ -245,7 +245,7 @@ namespace System.Net.Http
             // the TransportContext object.
             state.TransportContext.SetChannelBinding(state.RequestHandle);
 
-            if (state.ServerCertificateValidationCallback != null)
+            if (state.ServerCertificateValidationCallback is not null)
             {
                 IntPtr certHandle = IntPtr.Zero;
                 uint certHandleSize = (uint)IntPtr.Size;
@@ -307,7 +307,7 @@ namespace System.Net.Http
                 }
                 finally
                 {
-                    if (chain != null)
+                    if (chain is not null)
                     {
                         chain.Dispose();
                     }
@@ -325,7 +325,7 @@ namespace System.Net.Http
 
         private static void OnRequestError(WinHttpRequestState state, Interop.WinHttp.WINHTTP_ASYNC_RESULT asyncResult)
         {
-            Debug.Assert(state != null, "OnRequestError: state is null");
+            Debug.Assert(state is not null, "OnRequestError: state is null");
 
             if (NetEventSource.Log.IsEnabled()) WinHttpTraceHelper.TraceAsyncError(state, asyncResult);
 
@@ -350,7 +350,7 @@ namespace System.Net.Http
                         // (which means we have no certs to send). For security reasons, we don't
                         // allow the certificate to be re-applied. But we need to tell WinHttp
                         // explicitly that we don't have any certificate to send.
-                        Debug.Assert(state.RequestHandle != null, "OnRequestError: state.RequestHandle is null");
+                        Debug.Assert(state.RequestHandle is not null, "OnRequestError: state.RequestHandle is null");
                         WinHttpHandler.SetNoClientCertificate(state.RequestHandle);
                         state.RetryRequest = true;
                         state.LifecycleAwaitable.SetResult(0);

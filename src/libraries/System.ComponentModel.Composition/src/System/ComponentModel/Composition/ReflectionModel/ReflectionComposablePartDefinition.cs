@@ -23,7 +23,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionComposablePartDefinition(IReflectionPartCreationInfo creationInfo)
         {
-            if (creationInfo == null)
+            if (creationInfo is null)
             {
                 throw new ArgumentNullException(nameof(creationInfo));
             }
@@ -42,12 +42,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ConstructorInfo? GetConstructor()
         {
-            if (_constructor == null)
+            if (_constructor is null)
             {
                 ConstructorInfo? constructor = _creationInfo.GetConstructor();
                 lock (_lock)
                 {
-                    if (_constructor == null)
+                    if (_constructor is null)
                     {
                         _constructor = constructor;
                     }
@@ -61,12 +61,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             get
             {
-                if (_exports == null)
+                if (_exports is null)
                 {
                     ExportDefinition[] exports = _creationInfo.GetExports().ToArray();
                     lock (_lock)
                     {
-                        if (_exports == null)
+                        if (_exports is null)
                         {
                             _exports = exports;
                         }
@@ -88,12 +88,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             get
             {
-                if (_imports == null)
+                if (_imports is null)
                 {
                     ImportDefinition[] imports = _creationInfo.GetImports().ToArray();
                     lock (_lock)
                     {
-                        if (_imports == null)
+                        if (_imports is null)
                         {
                             _imports = imports;
                         }
@@ -107,12 +107,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             get
             {
-                if (_metadata == null)
+                if (_metadata is null)
                 {
                     IDictionary<string, object?> metadata = _creationInfo.GetMetadata().AsReadOnly();
                     lock (_lock)
                     {
-                        if (_metadata == null)
+                        if (_metadata is null)
                         {
                             _metadata = metadata;
                         }
@@ -163,7 +163,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
                 var genericParameters = (definition.Metadata.Count > 0) ? definition.Metadata.GetValue<IEnumerable<object>>(CompositionConstants.GenericParametersMetadataName) : null;
                 // if and only if generic parameters have been supplied can we attempt to "close" the generic
-                if (genericParameters != null)
+                if (genericParameters is not null)
                 {
                     // we only understand types
                     if (TryGetGenericTypeParameters(genericParameters, out Type?[]? genericTypeParameters))
@@ -177,9 +177,9 @@ namespace System.ComponentModel.Composition.ReflectionModel
                             if (TryMakeGenericPartDefinition(candidateParameters, out ComposablePartDefinition? candidatePart))
                             {
                                 bool alreadyProcessed = false;
-                                if (candidates == null)
+                                if (candidates is null)
                                 {
-                                    if (previousPart != null)
+                                    if (previousPart is not null)
                                     {
                                         if (candidatePart.Equals(previousPart))
                                         {
@@ -219,7 +219,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                         }
                     }
                 }
-                if (exports != null)
+                if (exports is not null)
                 {
                     multipleMatches = exports;
                     return true;
@@ -250,13 +250,13 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 if (definition.IsConstraintSatisfiedBy(export))
                 {
                     matchesFound = true;
-                    if (singleExport == null)
+                    if (singleExport is null)
                     {
                         singleExport = new Tuple<ComposablePartDefinition, ExportDefinition>(this, export);
                     }
                     else
                     {
-                        if (multipleExports == null)
+                        if (multipleExports is null)
                         {
                             multipleExports = new List<Tuple<ComposablePartDefinition, ExportDefinition>>();
                             multipleExports.Add(singleExport);
@@ -271,7 +271,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
                 return false;
             }
 
-            if (multipleExports != null)
+            if (multipleExports is not null)
             {
                 multipleMatches = multipleExports;
             }
@@ -288,7 +288,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             foreach (ExportDefinition export in ExportDefinitionsInternal)
             {
                 var genericParametersOrder = export.Metadata.GetValue<int[]>(CompositionConstants.GenericExportParametersOrderMetadataName);
-                if ((genericParametersOrder != null) && (genericParametersOrder.Length == genericParameters.Length))
+                if ((genericParametersOrder is not null) && (genericParametersOrder.Length == genericParameters.Length))
                 {
                     yield return GenericServices.Reorder(genericParameters, genericParametersOrder);
                 }
@@ -299,14 +299,14 @@ namespace System.ComponentModel.Composition.ReflectionModel
         private static bool TryGetGenericTypeParameters(IEnumerable<object> genericParameters, [NotNullWhen(true)] out Type?[]? genericTypeParameters)
         {
             genericTypeParameters = genericParameters as Type[];
-            if (genericTypeParameters == null)
+            if (genericTypeParameters is null)
             {
                 object[] genericParametersAsArray = genericParameters.AsArray();
                 genericTypeParameters = new Type[genericParametersAsArray.Length];
                 for (int i = 0; i < genericParametersAsArray.Length; i++)
                 {
                     genericTypeParameters[i] = genericParametersAsArray[i] as Type;
-                    if (genericTypeParameters[i] == null)
+                    if (genericTypeParameters[i] is null)
                     {
                         return false;
                     }

@@ -28,7 +28,7 @@ namespace System.Net.Sockets
         public SendPacketsElement(string filepath, long offset, int count, bool endOfPacket)
         {
             // We will validate if the file exists on send.
-            if (filepath == null)
+            if (filepath is null)
             {
                 throw new ArgumentNullException(nameof(filepath));
             }
@@ -57,7 +57,7 @@ namespace System.Net.Sockets
         public SendPacketsElement(FileStream fileStream, long offset, int count, bool endOfPacket)
         {
             // We will validate if the fileStream exists on send.
-            if (fileStream == null)
+            if (fileStream is null)
             {
                 throw new ArgumentNullException(nameof(fileStream));
             }
@@ -80,7 +80,7 @@ namespace System.Net.Sockets
 
         // Constructors for buffer elements.
         public SendPacketsElement(byte[] buffer) :
-            this(buffer, 0, (buffer != null ? buffer.Length : 0), false)
+            this(buffer, 0, (buffer is not null ? buffer.Length : 0), false)
         { }
 
         public SendPacketsElement(byte[] buffer, int offset, int count) :
@@ -89,7 +89,7 @@ namespace System.Net.Sockets
 
         public SendPacketsElement(byte[] buffer, int offset, int count, bool endOfPacket)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }

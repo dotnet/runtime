@@ -189,7 +189,7 @@ namespace System.Security.Principal
 
         internal static bool IsEqualDomainSid(SecurityIdentifier sid1, SecurityIdentifier sid2)
         {
-            if (sid1 == null || sid2 == null)
+            if (sid1 is null || sid2 is null)
             {
                 return false;
             }
@@ -211,7 +211,7 @@ namespace System.Security.Principal
 
         internal static void InitializeReferencedDomainsPointer(SafeLsaMemoryHandle referencedDomains)
         {
-            Debug.Assert(referencedDomains != null, "referencedDomains != null");
+            Debug.Assert(referencedDomains is not null, "referencedDomains is not null");
 
             // We don't know the real size of the referenced domains yet, so we need to set an initial
             // size based on the LSA_REFERENCED_DOMAIN_LIST structure, then resize it to include all of
@@ -241,7 +241,7 @@ namespace System.Security.Principal
                 }
                 finally
                 {
-                    if (pRdl != null)
+                    if (pRdl is not null)
                         referencedDomains.ReleasePointer();
                 }
             }

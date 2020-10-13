@@ -77,7 +77,7 @@ namespace Microsoft.Extensions.CommandLineUtils
                     Values.Add(value);
                     break;
                 case CommandOptionType.NoValue:
-                    if (value != null)
+                    if (value is not null)
                     {
                         return false;
                     }

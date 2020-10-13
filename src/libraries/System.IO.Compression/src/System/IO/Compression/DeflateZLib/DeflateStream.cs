@@ -51,7 +51,7 @@ namespace System.IO.Compression
         /// </summary>
         internal DeflateStream(Stream stream, CompressionMode mode, bool leaveOpen, int windowBits, long uncompressedSize = -1)
         {
-            if (stream == null)
+            if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
 
             switch (mode)
@@ -80,7 +80,7 @@ namespace System.IO.Compression
         /// </summary>
         internal DeflateStream(Stream stream, CompressionLevel compressionLevel, bool leaveOpen, int windowBits)
         {
-            if (stream == null)
+            if (stream is null)
                 throw new ArgumentNullException(nameof(stream));
 
             InitializeDeflater(stream, leaveOpen, windowBits, compressionLevel);
@@ -92,7 +92,7 @@ namespace System.IO.Compression
         [MemberNotNull(nameof(_stream))]
         internal void InitializeDeflater(Stream stream, bool leaveOpen, int windowBits, CompressionLevel compressionLevel)
         {
-            Debug.Assert(stream != null);
+            Debug.Assert(stream is not null);
             if (!stream.CanWrite)
                 throw new ArgumentException(SR.NotSupported_UnwritableStream, nameof(stream));
 
@@ -106,13 +106,13 @@ namespace System.IO.Compression
 
         private void InitializeBuffer()
         {
-            Debug.Assert(_buffer == null);
+            Debug.Assert(_buffer is null);
             _buffer = ArrayPool<byte>.Shared.Rent(DefaultBufferSize);
         }
 
         private void EnsureBufferInitialized()
         {
-            if (_buffer == null)
+            if (_buffer is null)
             {
                 InitializeBuffer();
             }
@@ -124,7 +124,7 @@ namespace System.IO.Compression
         {
             get
             {
-                if (_stream == null)
+                if (_stream is null)
                 {
                     return false;
                 }
@@ -137,7 +137,7 @@ namespace System.IO.Compression
         {
             get
             {
-                if (_stream == null)
+                if (_stream is null)
                 {
                     return false;
                 }
@@ -182,7 +182,7 @@ namespace System.IO.Compression
             AsyncOperationStarting();
             try
             {
-                Debug.Assert(_deflater != null && _buffer != null);
+                Debug.Assert(_deflater is not null && _buffer is not null);
                 // Compress any bytes left:
                 await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
 
@@ -223,7 +223,7 @@ namespace System.IO.Compression
             // Try to read a single byte from zlib without allocating an array, pinning an array, etc.
             // If zlib doesn't have any data, fall back to the base stream implementation, which will do that.
             byte b;
-            Debug.Assert(_inflater != null);
+            Debug.Assert(_inflater is not null);
             return _inflater.Inflate(out b) ? b : base.ReadByte();
         }
 
@@ -256,7 +256,7 @@ namespace System.IO.Compression
 
             int totalRead = 0;
 
-            Debug.Assert(_inflater != null);
+            Debug.Assert(_inflater is not null);
             while (true)
             {
                 int bytesRead = _inflater.Inflate(buffer.Slice(totalRead));
@@ -277,7 +277,7 @@ namespace System.IO.Compression
 
                 if (_inflater.NeedsInput())
                 {
-                    Debug.Assert(_buffer != null);
+                    Debug.Assert(_buffer is not null);
                     int bytes = _stream.Read(_buffer, 0, _buffer.Length);
                     if (bytes <= 0)
                     {
@@ -299,7 +299,7 @@ namespace System.IO.Compression
 
         private void ValidateParameters(byte[] array, int offset, int count)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
 
             if (offset < 0)
@@ -314,7 +314,7 @@ namespace System.IO.Compression
 
         private void EnsureNotDisposed()
         {
-            if (_stream == null)
+            if (_stream is null)
                 ThrowStreamClosedException();
         }
 
@@ -388,7 +388,7 @@ namespace System.IO.Compression
             AsyncOperationStarting();
             try
             {
-                Debug.Assert(_inflater != null);
+                Debug.Assert(_inflater is not null);
                 while (true)
                 {
                     // Finish inflating any bytes in the input buffer
@@ -439,7 +439,7 @@ namespace System.IO.Compression
         {
             try
             {
-                Debug.Assert(_inflater != null && _buffer != null);
+                Debug.Assert(_inflater is not null && _buffer is not null);
                 while (true)
                 {
                     if (_inflater.NeedsInput())
@@ -528,7 +528,7 @@ namespace System.IO.Compression
             EnsureCompressionMode();
             EnsureNotDisposed();
 
-            Debug.Assert(_deflater != null);
+            Debug.Assert(_deflater is not null);
             // Write compressed the bytes we already passed to the deflater:
             WriteDeflaterOutput();
 
@@ -546,7 +546,7 @@ namespace System.IO.Compression
 
         private void WriteDeflaterOutput()
         {
-            Debug.Assert(_deflater != null && _buffer != null);
+            Debug.Assert(_deflater is not null && _buffer is not null);
             while (!_deflater.NeedsInput())
             {
                 int compressedBytes = _deflater.GetDeflateOutput(_buffer);
@@ -566,7 +566,7 @@ namespace System.IO.Compression
                 // Compress any bytes left:
                 WriteDeflaterOutput();
 
-                Debug.Assert(_deflater != null && _buffer != null);
+                Debug.Assert(_deflater is not null && _buffer is not null);
                 // Pull out any bytes left inside deflater:
                 bool flushSuccessful;
                 do
@@ -588,13 +588,13 @@ namespace System.IO.Compression
             if (!disposing)
                 return;
 
-            if (_stream == null)
+            if (_stream is null)
                 return;
 
             if (_mode != CompressionMode.Compress)
                 return;
 
-            Debug.Assert(_deflater != null && _buffer != null);
+            Debug.Assert(_deflater is not null && _buffer is not null);
             // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
             // This round-trips and we should be ok with this, but our legacy managed deflater
             // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
@@ -636,13 +636,13 @@ namespace System.IO.Compression
         {
             // Same logic as PurgeBuffers, except with async counterparts.
 
-            if (_stream == null)
+            if (_stream is null)
                 return;
 
             if (_mode != CompressionMode.Compress)
                 return;
 
-            Debug.Assert(_deflater != null && _buffer != null);
+            Debug.Assert(_deflater is not null && _buffer is not null);
             // Some deflaters (e.g. ZLib) write more than zero bytes for zero byte inputs.
             // This round-trips and we should be ok with this, but our legacy managed deflater
             // always wrote zero output for zero input and upstack code (e.g. ZipArchiveEntry)
@@ -711,7 +711,7 @@ namespace System.IO.Compression
                         _inflater = null;
 
                         byte[]? buffer = _buffer;
-                        if (buffer != null)
+                        if (buffer is not null)
                         {
                             _buffer = null;
                             if (!AsyncOperationIsActive)
@@ -749,7 +749,7 @@ namespace System.IO.Compression
                 _stream = null!;
                 try
                 {
-                    if (!_leaveOpen && stream != null)
+                    if (!_leaveOpen && stream is not null)
                         await stream.DisposeAsync().ConfigureAwait(false);
                 }
                 finally
@@ -765,7 +765,7 @@ namespace System.IO.Compression
                         _inflater = null;
 
                         byte[]? buffer = _buffer;
-                        if (buffer != null)
+                        if (buffer is not null)
                         {
                             _buffer = null;
                             if (!AsyncOperationIsActive)
@@ -822,7 +822,7 @@ namespace System.IO.Compression
             {
                 await WriteDeflaterOutputAsync(cancellationToken).ConfigureAwait(false);
 
-                Debug.Assert(_deflater != null);
+                Debug.Assert(_deflater is not null);
                 // Pass new bytes through deflater
                 _deflater.SetInput(buffer);
 
@@ -841,7 +841,7 @@ namespace System.IO.Compression
         /// </summary>
         private async ValueTask WriteDeflaterOutputAsync(CancellationToken cancellationToken)
         {
-            Debug.Assert(_deflater != null && _buffer != null);
+            Debug.Assert(_deflater is not null && _buffer is not null);
             while (!_deflater.NeedsInput())
             {
                 int compressedBytes = _deflater.GetDeflateOutput(_buffer);
@@ -896,8 +896,8 @@ namespace System.IO.Compression
 
             public CopyToStream(DeflateStream deflateStream, Stream destination, int bufferSize, CancellationToken cancellationToken)
             {
-                Debug.Assert(deflateStream != null);
-                Debug.Assert(destination != null);
+                Debug.Assert(deflateStream is not null);
+                Debug.Assert(destination is not null);
                 Debug.Assert(bufferSize > 0);
 
                 _deflateStream = deflateStream;
@@ -911,7 +911,7 @@ namespace System.IO.Compression
                 _deflateStream.AsyncOperationStarting();
                 try
                 {
-                    Debug.Assert(_deflateStream._inflater != null);
+                    Debug.Assert(_deflateStream._inflater is not null);
                     // Flush any existing data in the inflater to the destination stream.
                     while (!_deflateStream._inflater.Finished())
                     {
@@ -943,7 +943,7 @@ namespace System.IO.Compression
             {
                 try
                 {
-                    Debug.Assert(_deflateStream._inflater != null);
+                    Debug.Assert(_deflateStream._inflater is not null);
                     // Flush any existing data in the inflater to the destination stream.
                     while (!_deflateStream._inflater.Finished())
                     {
@@ -985,7 +985,7 @@ namespace System.IO.Compression
                     throw new InvalidDataException(SR.GenericInvalidData);
                 }
 
-                Debug.Assert(_deflateStream._inflater != null);
+                Debug.Assert(_deflateStream._inflater is not null);
                 // Feed the data from base stream into the decompression engine.
                 _deflateStream._inflater.SetInput(buffer, offset, count);
 
@@ -1022,7 +1022,7 @@ namespace System.IO.Compression
                     throw new InvalidDataException(SR.GenericInvalidData);
                 }
 
-                Debug.Assert(_deflateStream._inflater != null);
+                Debug.Assert(_deflateStream._inflater is not null);
                 // Feed the data from base stream into the decompression engine.
                 _deflateStream._inflater.SetInput(buffer, offset, count);
 

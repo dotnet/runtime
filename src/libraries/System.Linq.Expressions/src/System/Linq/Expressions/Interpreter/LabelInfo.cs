@@ -58,7 +58,7 @@ namespace System.Linq.Expressions.Interpreter
             // Prevent the label from being shadowed, which enforces cleaner
             // trees. Also we depend on this for simplicity (keeping only one
             // active IL Label per LabelInfo)
-            for (LabelScopeInfo? j = block; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = block; j is not null; j = j.Parent)
             {
                 if (j.ContainsTarget(_node!))
                 {
@@ -96,7 +96,7 @@ namespace System.Linq.Expressions.Interpreter
         private void ValidateJump(LabelScopeInfo reference)
         {
             // look for a simple jump out
-            for (LabelScopeInfo? j = reference; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = reference; j is not null; j = j.Parent)
             {
                 if (DefinedIn(j))
                 {
@@ -110,7 +110,7 @@ namespace System.Linq.Expressions.Interpreter
             }
 
             _acrossBlockJump = true;
-            if (_node != null && _node.Type != typeof(void))
+            if (_node is not null && _node.Type != typeof(void))
             {
                 throw Error.NonLocalJumpWithValue(_node.Name);
             }
@@ -165,7 +165,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void EnsureLabel(LightCompiler compiler)
         {
-            if (_label == null)
+            if (_label is null)
             {
                 _label = compiler.Instructions.MakeLabel();
             }
@@ -185,7 +185,7 @@ namespace System.Linq.Expressions.Interpreter
             return false;
         }
 
-        private bool HasDefinitions => _definitions != null;
+        private bool HasDefinitions => _definitions is not null;
 
         private LabelScopeInfo FirstDefinition()
         {
@@ -202,14 +202,14 @@ namespace System.Linq.Expressions.Interpreter
 
         private void AddDefinition(LabelScopeInfo scope)
         {
-            if (_definitions == null)
+            if (_definitions is null)
             {
                 _definitions = scope;
             }
             else
             {
                 HashSet<LabelScopeInfo>? set = _definitions as HashSet<LabelScopeInfo>;
-                if (set == null)
+                if (set is null)
                 {
                     _definitions = set = new HashSet<LabelScopeInfo>() { (LabelScopeInfo)_definitions };
                 }
@@ -227,11 +227,11 @@ namespace System.Linq.Expressions.Interpreter
                 return first;
             }
             var set = new HashSet<T>(cmp);
-            for (T t = first; t != null; t = parent(t))
+            for (T t = first; t is not null; t = parent(t))
             {
                 set.Add(t);
             }
-            for (T t = second; t != null; t = parent(t))
+            for (T t = second; t is not null; t = parent(t))
             {
                 if (set.Contains(t))
                 {
@@ -308,7 +308,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal bool ContainsTarget(LabelTarget target)
         {
-            if (_labels == null)
+            if (_labels is null)
             {
                 return false;
             }
@@ -318,7 +318,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal bool TryGetLabelInfo(LabelTarget target, [NotNullWhen(true)] out LabelInfo? info)
         {
-            if (_labels == null)
+            if (_labels is null)
             {
                 info = null;
                 return false;
@@ -331,7 +331,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             Debug.Assert(CanJumpInto);
 
-            if (_labels == null)
+            if (_labels is null)
             {
                 _labels = new HybridReferenceDictionary<LabelTarget, LabelInfo>();
             }

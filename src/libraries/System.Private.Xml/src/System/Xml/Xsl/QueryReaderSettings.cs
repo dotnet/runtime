@@ -23,7 +23,7 @@ namespace System.Xml.Xsl
 
         public QueryReaderSettings(XmlNameTable xmlNameTable)
         {
-            Debug.Assert(xmlNameTable != null);
+            Debug.Assert(xmlNameTable is not null);
             _xmlReaderSettings = new XmlReaderSettings();
             _xmlReaderSettings.NameTable = xmlNameTable;
             _xmlReaderSettings.ConformanceLevel = ConformanceLevel.Document;
@@ -37,7 +37,7 @@ namespace System.Xml.Xsl
 #pragma warning disable 618
             XmlValidatingReader? valReader = reader as XmlValidatingReader;
 #pragma warning restore 618
-            if (valReader != null)
+            if (valReader is not null)
             {
                 // Unwrap validation reader
                 _validatingReader = true;
@@ -45,7 +45,7 @@ namespace System.Xml.Xsl
             }
 
             _xmlReaderSettings = reader.Settings;
-            if (_xmlReaderSettings != null)
+            if (_xmlReaderSettings is not null)
             {
                 _xmlReaderSettings = _xmlReaderSettings.Clone();
                 _xmlReaderSettings.NameTable = reader.NameTable;
@@ -53,7 +53,7 @@ namespace System.Xml.Xsl
                 _xmlReaderSettings.LineNumberOffset = 0;
                 _xmlReaderSettings.LinePositionOffset = 0;
                 XmlTextReaderImpl? impl = reader as XmlTextReaderImpl;
-                if (impl != null)
+                if (impl is not null)
                 {
                     _xmlReaderSettings.XmlResolver = impl.GetResolver();
                 }
@@ -62,7 +62,7 @@ namespace System.Xml.Xsl
             {
                 _xmlNameTable = reader.NameTable;
                 XmlTextReader? xmlTextReader = reader as XmlTextReader;
-                if (xmlTextReader != null)
+                if (xmlTextReader is not null)
                 {
                     XmlTextReaderImpl impl = xmlTextReader.Impl;
                     _entityHandling = impl.EntityHandling;
@@ -87,7 +87,7 @@ namespace System.Xml.Xsl
         public XmlReader CreateReader(Stream stream, string baseUri)
         {
             XmlReader reader;
-            if (_xmlReaderSettings != null)
+            if (_xmlReaderSettings is not null)
             {
                 reader = XmlTextReader.Create(stream, _xmlReaderSettings, baseUri);
             }
@@ -113,7 +113,7 @@ namespace System.Xml.Xsl
 
         public XmlNameTable NameTable
         {
-            get { return _xmlReaderSettings != null ? _xmlReaderSettings.NameTable! : _xmlNameTable!; }
+            get { return _xmlReaderSettings is not null ? _xmlReaderSettings.NameTable! : _xmlNameTable!; }
         }
     }
 }

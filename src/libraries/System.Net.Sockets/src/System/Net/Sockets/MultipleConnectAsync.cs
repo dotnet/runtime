@@ -114,7 +114,7 @@ namespace System.Net.Sockets
                 try
                 {
                     _addressList = Dns.EndGetHostAddresses(result);
-                    if (_addressList == null)
+                    if (_addressList is null)
                     {
                         NetEventSource.Fail(this, "MultipleConnectAsync.DoDnsCallback(): EndGetHostAddresses returned null!");
                     }
@@ -126,7 +126,7 @@ namespace System.Net.Sockets
                 }
 
                 // If the dns query succeeded, try to connect to the first address
-                if (exception == null)
+                if (exception is null)
                 {
                     _state = State.ConnectAttempt;
 
@@ -136,7 +136,7 @@ namespace System.Net.Sockets
 
                     (exception, pending) = AttemptConnection();
 
-                    if (exception != null)
+                    if (exception is not null)
                     {
                         // There was a synchronous error while connecting
                         _state = State.Completed;
@@ -145,7 +145,7 @@ namespace System.Net.Sockets
             }
 
             // Call this outside of the lock because it might call the user's callback.
-            if (exception != null)
+            if (exception is not null)
             {
                 return Fail(sync, exception);
             }
@@ -210,7 +210,7 @@ namespace System.Net.Sockets
 
                             (Exception? connectException, bool pending) = AttemptConnection();
 
-                            if (connectException == null)
+                            if (connectException is null)
                             {
                                 if (pending)
                                 {
@@ -224,7 +224,7 @@ namespace System.Net.Sockets
                             else
                             {
                                 SocketException? socketException = connectException as SocketException;
-                                if (socketException != null && socketException.SocketErrorCode == SocketError.NoData)
+                                if (socketException is not null && socketException.SocketErrorCode == SocketError.NoData)
                                 {
                                     // If the error is NoData, that means there are no more IPAddresses to attempt
                                     // a connection to.  Return the last error from an actual connection instead.
@@ -243,7 +243,7 @@ namespace System.Net.Sockets
                 }
             }
 
-            if (exception != null)
+            if (exception is not null)
             {
                 return Fail(sync, exception);
             }
@@ -261,11 +261,11 @@ namespace System.Net.Sockets
             try
             {
                 IPAddress? attemptAddress = GetNextAddress(out Socket? attemptSocket);
-                if (attemptAddress == null)
+                if (attemptAddress is null)
                 {
                     return (new SocketException((int)SocketError.NoData), false);
                 }
-                Debug.Assert(attemptSocket != null);
+                Debug.Assert(attemptSocket is not null);
 
                 SocketAsyncEventArgs args = _internalArgs!;
                 args.RemoteEndPoint = new IPEndPoint(attemptAddress, _endPoint!.Port);
@@ -322,13 +322,13 @@ namespace System.Net.Sockets
         {
             OnFail(false);
 
-            if (_internalArgs != null)
+            if (_internalArgs is not null)
             {
                 _internalArgs.Dispose();
             }
 
             SocketException? socketException = e as SocketException;
-            if (socketException != null)
+            if (socketException is not null)
             {
                 _userArgs!.FinishConnectByNameSyncFailure(socketException, 0, SocketFlags.None);
             }
@@ -342,7 +342,7 @@ namespace System.Net.Sockets
         {
             OnFail(false);
 
-            if (_internalArgs != null)
+            if (_internalArgs is not null)
             {
                 _internalArgs.Dispose();
             }
@@ -491,7 +491,7 @@ namespace System.Net.Sockets
             IPAddress? rval = null;
             attemptSocket = null;
 
-            while (attemptSocket == null)
+            while (attemptSocket is null)
             {
                 if (_nextAddress >= _addressList!.Length)
                 {
@@ -518,11 +518,11 @@ namespace System.Net.Sockets
         // on success, close the socket that wasn't used
         protected override void OnSucceed()
         {
-            if (_socket4 != null && !_socket4.Connected)
+            if (_socket4 is not null && !_socket4.Connected)
             {
                 _socket4.Dispose();
             }
-            if (_socket6 != null && !_socket6.Connected)
+            if (_socket6 is not null && !_socket6.Connected)
             {
                 _socket6.Dispose();
             }

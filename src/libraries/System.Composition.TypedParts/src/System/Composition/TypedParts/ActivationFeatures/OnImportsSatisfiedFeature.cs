@@ -21,7 +21,7 @@ namespace System.Composition.TypedParts.ActivationFeatures
 
         public OnImportsSatisfiedFeature(AttributedModelProvider attributeContext)
         {
-            if (attributeContext == null) throw new ArgumentNullException(nameof(attributeContext));
+            if (attributeContext is null) throw new ArgumentNullException(nameof(attributeContext));
             _attributeContext = attributeContext;
         }
 
@@ -35,7 +35,7 @@ namespace System.Composition.TypedParts.ActivationFeatures
 
             var partTypeAsType = partType.AsType();
             var importsSatisfiedMethods = partTypeAsType.GetRuntimeMethods()
-                .Where(mi => _attributeContext.GetDeclaredAttribute<OnImportsSatisfiedAttribute>(mi.DeclaringType, mi) != null);
+                .Where(mi => _attributeContext.GetDeclaredAttribute<OnImportsSatisfiedAttribute>(mi.DeclaringType, mi) is not null);
 
             foreach (var m in importsSatisfiedMethods)
             {

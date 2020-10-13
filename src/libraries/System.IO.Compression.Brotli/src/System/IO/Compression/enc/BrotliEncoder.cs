@@ -40,7 +40,7 @@ namespace System.IO.Compression
         internal void EnsureInitialized()
         {
             EnsureNotDisposed();
-            if (_state == null)
+            if (_state is null)
             {
                 InitializeEncoder();
             }
@@ -61,10 +61,10 @@ namespace System.IO.Compression
         internal void SetQuality(int quality)
         {
             EnsureNotDisposed();
-            if (_state == null || _state.IsInvalid || _state.IsClosed)
+            if (_state is null || _state.IsInvalid || _state.IsClosed)
             {
                 InitializeEncoder();
-                Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
+                Debug.Assert(_state is not null && !_state.IsInvalid && !_state.IsClosed);
             }
             if (quality < BrotliUtils.Quality_Min || quality > BrotliUtils.Quality_Max)
             {
@@ -79,10 +79,10 @@ namespace System.IO.Compression
         internal void SetWindow(int window)
         {
             EnsureNotDisposed();
-            if (_state == null || _state.IsInvalid || _state.IsClosed)
+            if (_state is null || _state.IsInvalid || _state.IsClosed)
             {
                 InitializeEncoder();
-                Debug.Assert(_state != null && !_state.IsInvalid && !_state.IsClosed);
+                Debug.Assert(_state is not null && !_state.IsInvalid && !_state.IsClosed);
             }
             if (window < BrotliUtils.WindowBits_Min || window > BrotliUtils.WindowBits_Max)
             {
@@ -121,7 +121,7 @@ namespace System.IO.Compression
         internal OperationStatus Compress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten, BrotliEncoderOperation operation)
         {
             EnsureInitialized();
-            Debug.Assert(_state != null);
+            Debug.Assert(_state is not null);
 
             bytesWritten = 0;
             bytesConsumed = 0;

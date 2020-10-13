@@ -137,7 +137,7 @@ namespace System.Data.Common
                     StringBuilder builder = new StringBuilder();
                     foreach (string keyword in Keys)
                     {
-                        Debug.Assert(keyword != null);
+                        Debug.Assert(keyword is not null);
                         object? value;
                         if (ShouldSerialize(keyword) && TryGetValue(keyword, out value))
                         {
@@ -249,7 +249,7 @@ namespace System.Data.Common
 
         internal virtual string? ConvertValueToString(object? value)
         {
-            return (value == null) ? null : Convert.ToString(value, CultureInfo.InvariantCulture);
+            return (value is null) ? null : Convert.ToString(value, CultureInfo.InvariantCulture);
         }
 
         void IDictionary.Add(object keyword, object? value)
@@ -422,7 +422,7 @@ namespace System.Data.Common
                 Attribute[]? attributes;
                 foreach (PropertyDescriptor reflected in TypeDescriptor.GetProperties(this, true))
                 {
-                    Debug.Assert(reflected != null);
+                    Debug.Assert(reflected is not null);
                     if (ADP.ConnectionString != reflected.Name)
                     {
                         string displayName = reflected.DisplayName;
@@ -451,7 +451,7 @@ namespace System.Data.Common
                     attributes = null;
                     foreach (string keyword in Keys)
                     {
-                        Debug.Assert(keyword != null);
+                        Debug.Assert(keyword is not null);
                         if (!propertyDescriptors.ContainsKey(keyword))
                         {
                             object value = this[keyword];
@@ -532,14 +532,14 @@ namespace System.Data.Common
             // Iterate over each property
             foreach (PropertyDescriptor property in propertyDescriptors)
             {
-                Debug.Assert(property != null);
+                Debug.Assert(property is not null);
 
                 // Identify if this property's attributes match the specification
                 bool match = true;
                 foreach (Attribute attribute in attributes)
                 {
                     Attribute attr = property.Attributes[attribute.GetType()];
-                    if ((attr == null && !attribute.IsDefaultAttribute()) || attr?.Match(attribute) == false)
+                    if ((attr is null && !attribute.IsDefaultAttribute()) || attr?.Match(attribute) == false)
                     {
                         match = false;
                         break;

@@ -63,7 +63,7 @@ namespace System
         [CLSCompliant(false)]
         public unsafe Utf8String(char* value)
         {
-            if (value == null)
+            if (value is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }

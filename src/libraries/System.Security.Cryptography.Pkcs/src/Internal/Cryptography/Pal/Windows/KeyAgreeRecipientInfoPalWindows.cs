@@ -145,7 +145,7 @@ namespace Internal.Cryptography.Pal.Windows
                         {
                             CMSG_RECIPIENT_ENCRYPTED_KEY_INFO* pEncryptedKeyInfo = recipient->rgpRecipientEncryptedKeys[SubIndex];
                             CRYPT_ATTRIBUTE_TYPE_VALUE* pCryptAttributeTypeValue = pEncryptedKeyInfo->pOtherAttr;
-                            if (pCryptAttributeTypeValue == null)
+                            if (pCryptAttributeTypeValue is null)
                                 return null;
 
                             string oidValue = pCryptAttributeTypeValue->pszObjId.ToStringAnsi();

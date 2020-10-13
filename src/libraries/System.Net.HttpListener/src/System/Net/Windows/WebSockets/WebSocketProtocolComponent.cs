@@ -156,7 +156,7 @@ namespace System.Net.WebSockets
                 int errorCode = Interop.WebSocket.WebSocketCreateClientHandle(null!, 0, out webSocketHandle);
                 ThrowOnError(errorCode);
 
-                if (webSocketHandle == null ||
+                if (webSocketHandle is null ||
                     webSocketHandle.IsInvalid)
                 {
                     HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
@@ -189,13 +189,13 @@ namespace System.Net.WebSockets
                         break;
                     }
                 }
-                Debug.Assert(version != null, "'version' MUST NOT be NULL.");
+                Debug.Assert(version is not null, "'version' MUST NOT be NULL.");
 
                 return version;
             }
             finally
             {
-                if (webSocketHandle != null)
+                if (webSocketHandle is not null)
                 {
                     webSocketHandle.Dispose();
                 }
@@ -207,8 +207,8 @@ namespace System.Net.WebSockets
             out SafeWebSocketHandle webSocketHandle)
         {
             Debug.Assert(propertyCount >= 0, "'propertyCount' MUST NOT be negative.");
-            Debug.Assert((properties == null && propertyCount == 0) ||
-                (properties != null && propertyCount == properties.Length),
+            Debug.Assert((properties is null && propertyCount == 0) ||
+                (properties is not null && propertyCount == properties.Length),
                 "'propertyCount' MUST MATCH 'properties.Length'.");
 
             if (!IsSupported)
@@ -219,7 +219,7 @@ namespace System.Net.WebSockets
             int errorCode = Interop.WebSocket.WebSocketCreateServerHandle(properties!, (uint)propertyCount, out webSocketHandle);
             ThrowOnError(errorCode);
 
-            if (webSocketHandle == null ||
+            if (webSocketHandle is null ||
                 webSocketHandle.IsInvalid)
             {
                 HttpWebSocket.ThrowPlatformNotSupportedException_WSPC();
@@ -252,12 +252,12 @@ namespace System.Net.WebSockets
 
             ThrowOnError(errorCode);
 
-            Debug.Assert(webSocketHandle != null, "'webSocketHandle' MUST NOT be NULL at this point.");
+            Debug.Assert(webSocketHandle is not null, "'webSocketHandle' MUST NOT be NULL at this point.");
         }
 
         internal static void WebSocketAbortHandle(SafeHandle webSocketHandle)
         {
-            Debug.Assert(webSocketHandle != null && !webSocketHandle.IsInvalid,
+            Debug.Assert(webSocketHandle is not null && !webSocketHandle.IsInvalid,
                 "'webSocketHandle' MUST NOT be NULL or INVALID.");
 
             Interop.WebSocket.WebSocketAbortHandle(webSocketHandle);
@@ -276,9 +276,9 @@ namespace System.Net.WebSockets
             BufferType bufferType,
             Interop.WebSocket.Buffer buffer)
         {
-            Debug.Assert(webSocket != null,
+            Debug.Assert(webSocket is not null,
                 "'webSocket' MUST NOT be NULL or INVALID.");
-            Debug.Assert(webSocket.SessionHandle != null && !webSocket.SessionHandle.IsInvalid,
+            Debug.Assert(webSocket.SessionHandle is not null && !webSocket.SessionHandle.IsInvalid,
                 "'webSocket.SessionHandle' MUST NOT be NULL or INVALID.");
 
             ThrowIfSessionHandleClosed(webSocket);
@@ -299,9 +299,9 @@ namespace System.Net.WebSockets
         internal static void WebSocketSendWithoutBody(WebSocketBase webSocket,
             BufferType bufferType)
         {
-            Debug.Assert(webSocket != null,
+            Debug.Assert(webSocket is not null,
                 "'webSocket' MUST NOT be NULL or INVALID.");
-            Debug.Assert(webSocket.SessionHandle != null && !webSocket.SessionHandle.IsInvalid,
+            Debug.Assert(webSocket.SessionHandle is not null && !webSocket.SessionHandle.IsInvalid,
                 "'webSocket.SessionHandle' MUST NOT be NULL or INVALID.");
 
             ThrowIfSessionHandleClosed(webSocket);
@@ -321,9 +321,9 @@ namespace System.Net.WebSockets
 
         internal static void WebSocketReceive(WebSocketBase webSocket)
         {
-            Debug.Assert(webSocket != null,
+            Debug.Assert(webSocket is not null,
                 "'webSocket' MUST NOT be NULL or INVALID.");
-            Debug.Assert(webSocket.SessionHandle != null && !webSocket.SessionHandle.IsInvalid,
+            Debug.Assert(webSocket.SessionHandle is not null && !webSocket.SessionHandle.IsInvalid,
                 "'webSocket.SessionHandle' MUST NOT be NULL or INVALID.");
 
             ThrowIfSessionHandleClosed(webSocket);
@@ -349,13 +349,13 @@ namespace System.Net.WebSockets
             out BufferType bufferType,
             out IntPtr actionContext)
         {
-            Debug.Assert(webSocket != null,
+            Debug.Assert(webSocket is not null,
                 "'webSocket' MUST NOT be NULL or INVALID.");
-            Debug.Assert(webSocket.SessionHandle != null && !webSocket.SessionHandle.IsInvalid,
+            Debug.Assert(webSocket.SessionHandle is not null && !webSocket.SessionHandle.IsInvalid,
                 "'webSocket.SessionHandle' MUST NOT be NULL or INVALID.");
             Debug.Assert(dataBufferCount >= 0, "'dataBufferCount' MUST NOT be negative.");
-            Debug.Assert((dataBuffers == null && dataBufferCount == 0) ||
-                (dataBuffers != null && dataBufferCount == dataBuffers.Length),
+            Debug.Assert((dataBuffers is null && dataBufferCount == 0) ||
+                (dataBuffers is not null && dataBufferCount == dataBuffers.Length),
                 "'dataBufferCount' MUST MATCH 'dataBuffers.Length'.");
 
             action = Action.NoAction;
@@ -386,7 +386,7 @@ namespace System.Net.WebSockets
             webSocket.ValidateNativeBuffers(action, bufferType, dataBuffers!, dataBufferCount);
 
             Debug.Assert(dataBufferCount >= 0);
-            Debug.Assert((dataBufferCount == 0 && dataBuffers == null) ||
+            Debug.Assert((dataBufferCount == 0 && dataBuffers is null) ||
                 (dataBufferCount <= dataBuffers!.Length));
         }
 
@@ -394,9 +394,9 @@ namespace System.Net.WebSockets
             IntPtr actionContext,
             int bytesTransferred)
         {
-            Debug.Assert(webSocket != null,
+            Debug.Assert(webSocket is not null,
                 "'webSocket' MUST NOT be NULL or INVALID.");
-            Debug.Assert(webSocket.SessionHandle != null && !webSocket.SessionHandle.IsInvalid,
+            Debug.Assert(webSocket.SessionHandle is not null && !webSocket.SessionHandle.IsInvalid,
                 "'webSocket.SessionHandle' MUST NOT be NULL or INVALID.");
             Debug.Assert(actionContext != IntPtr.Zero, "'actionContext' MUST NOT be IntPtr.Zero.");
             Debug.Assert(bytesTransferred >= 0, "'bytesTransferred' MUST NOT be negative.");
@@ -417,7 +417,7 @@ namespace System.Net.WebSockets
 
         private static void DrainActionQueue(SafeHandle webSocketHandle, ActionQueue actionQueue)
         {
-            Debug.Assert(webSocketHandle != null && !webSocketHandle.IsInvalid,
+            Debug.Assert(webSocketHandle is not null && !webSocketHandle.IsInvalid,
                 "'webSocketHandle' MUST NOT be NULL or INVALID.");
 
             IntPtr actionContext;
@@ -468,8 +468,8 @@ namespace System.Net.WebSockets
                 httpHeader.Name = Marshal.PtrToStringAnsi(httpHeaderNamePtr, length);
             }
 
-            if ((httpHeader.Name == null && length != 0) ||
-                (httpHeader.Name != null && length != httpHeader.Name.Length))
+            if ((httpHeader.Name is null && length != 0) ||
+                (httpHeader.Name is not null && length != httpHeader.Name.Length))
             {
                 Debug.Fail("The length of 'httpHeader.Name' MUST MATCH 'length'.");
                 throw new AccessViolationException();
@@ -491,8 +491,8 @@ namespace System.Net.WebSockets
             length = Marshal.ReadInt32(lengthPtr);
             httpHeader.Value = Marshal.PtrToStringAnsi(httpHeaderValuePtr, (int)length);
 
-            if ((httpHeader.Value == null && length != 0) ||
-                (httpHeader.Value != null && length != httpHeader.Value.Length))
+            if ((httpHeader.Value is null && length != 0) ||
+                (httpHeader.Value is not null && length != httpHeader.Value.Length))
             {
                 Debug.Fail("The length of 'httpHeader.Value' MUST MATCH 'length'.");
                 throw new AccessViolationException();
@@ -524,7 +524,7 @@ namespace System.Net.WebSockets
                 MarshalAndVerifyHttpHeader(currentHttpHeaderPtr, ref httpHeaders[i]);
             }
 
-            Debug.Assert(httpHeaders != null);
+            Debug.Assert(httpHeaders is not null);
             Debug.Assert(httpHeaders.Length == nativeHeaderCount);
 
             return httpHeaders;

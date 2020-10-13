@@ -62,7 +62,7 @@ namespace System.Reflection
         {
             this.ClassImpl = type;
             this.MemberImpl = member;
-            if (pb != null)
+            if (pb is not null)
             {
                 this.NameImpl = pb.Name;
                 this.PositionImpl = pb.Position - 1;    // ParameterInfo.Position is zero-based
@@ -86,7 +86,7 @@ namespace System.Reflection
         {
             this.ClassImpl = type;
             this.MemberImpl = member;
-            if (pinfo != null)
+            if (pinfo is not null)
             {
                 this.NameImpl = pinfo.Name;
                 this.PositionImpl = pinfo.Position - 1; // ParameterInfo.Position is zero-based
@@ -149,7 +149,7 @@ namespace System.Reflection
         {
             get
             {
-                if (DefaultValue != null && DefaultValue.GetType().IsEnum)
+                if (DefaultValue is not null && DefaultValue.GetType().IsEnum)
                     return ((Enum)DefaultValue).GetValue();
                 /*FIXME right now DefaultValue doesn't throw for reflection-only assemblies. Change this once the former is fixed.*/
                 return DefaultValue;
@@ -224,7 +224,7 @@ namespace System.Reflection
                 count++;
             if (IsOptional)
                 count++;
-            if (marshalAs != null)
+            if (marshalAs is not null)
                 count++;
 
             if (count == 0)
@@ -239,7 +239,7 @@ namespace System.Reflection
             if (IsOptional)
                 attrs[count++] = new OptionalAttribute();
 
-            if (marshalAs != null)
+            if (marshalAs is not null)
             {
                 attrs[count++] = (MarshalAsAttribute)marshalAs.CloneInternal();
             }
@@ -257,7 +257,7 @@ namespace System.Reflection
                 count++;
             if (IsOptional)
                 count++;
-            if (marshalAs != null)
+            if (marshalAs is not null)
                 count++;
 
             if (count == 0)
@@ -271,7 +271,7 @@ namespace System.Reflection
                 attrsData[count++] = new CustomAttributeData((typeof(OutAttribute)).GetConstructor(Type.EmptyTypes)!);
             if (IsOptional)
                 attrsData[count++] = new CustomAttributeData((typeof(OptionalAttribute)).GetConstructor(Type.EmptyTypes)!);
-            if (marshalAs != null)
+            if (marshalAs is not null)
             {
                 var ctorArgs = new CustomAttributeTypedArgument[] { new CustomAttributeTypedArgument(typeof(UnmanagedType), marshalAs.Value) };
                 attrsData[count++] = new CustomAttributeData(
@@ -290,7 +290,7 @@ namespace System.Reflection
             get
             {
                 object? defaultValue = DefaultValue;
-                if (defaultValue == null)
+                if (defaultValue is null)
                     return true;
 
                 if (defaultValue.GetType() == typeof(DBNull) || defaultValue.GetType() == typeof(Missing))

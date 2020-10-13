@@ -43,7 +43,7 @@ namespace System.Net
         public int GetHashCode(object myObject)
         {
             string? myString = myObject as string;
-            if (myString == null)
+            if (myString is null)
             {
                 return 0;
             }
@@ -61,11 +61,11 @@ namespace System.Net
         {
             string? firstString = firstObject as string;
             string? secondString = secondObject as string;
-            if (firstString == null)
+            if (firstString is null)
             {
-                return secondString == null ? 0 : -1;
+                return secondString is null ? 0 : -1;
             }
-            if (secondString == null)
+            if (secondString is null)
             {
                 return 1;
             }
@@ -101,11 +101,11 @@ namespace System.Net
         {
             string? firstString = firstObject as string;
             string? secondString = secondObject as string;
-            if (firstString == null)
+            if (firstString is null)
             {
-                return secondString == null;
+                return secondString is null;
             }
-            if (secondString != null)
+            if (secondString is not null)
             {
                 int index = firstString.Length;
                 if (index == secondString.Length)

@@ -83,7 +83,7 @@ namespace System.Security.Cryptography
 
         public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
             // hashAlgorithm is verified in the overload
 
@@ -113,7 +113,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
@@ -125,7 +125,7 @@ namespace System.Security.Cryptography
 
         public virtual byte[] SignData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -181,7 +181,7 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             DSASignatureFormat signatureFormat)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -228,7 +228,7 @@ namespace System.Security.Cryptography
 
         public virtual byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
@@ -260,7 +260,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
@@ -290,7 +290,7 @@ namespace System.Security.Cryptography
 
         public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
+            if (data is null)
             {
                 throw new ArgumentNullException(nameof(data));
             }
@@ -300,13 +300,13 @@ namespace System.Security.Cryptography
 
         public virtual bool VerifyData(byte[] data, int offset, int count, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(count));
-            if (signature == null)
+            if (signature is null)
                 throw new ArgumentNullException(nameof(signature));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
@@ -360,13 +360,13 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             DSASignatureFormat signatureFormat)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(count));
-            if (signature == null)
+            if (signature is null)
                 throw new ArgumentNullException(nameof(signature));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
@@ -378,9 +378,9 @@ namespace System.Security.Cryptography
 
         public virtual bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
-            if (signature == null)
+            if (signature is null)
                 throw new ArgumentNullException(nameof(signature));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
@@ -408,7 +408,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] CreateSignature(byte[] rgbHash, DSASignatureFormat signatureFormat)
         {
-            if (rgbHash == null)
+            if (rgbHash is null)
                 throw new ArgumentNullException(nameof(rgbHash));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
@@ -654,9 +654,9 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             DSASignatureFormat signatureFormat)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
-            if (signature == null)
+            if (signature is null)
                 throw new ArgumentNullException(nameof(signature));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
@@ -694,9 +694,9 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             DSASignatureFormat signatureFormat)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
-            if (signature == null)
+            if (signature is null)
                 throw new ArgumentNullException(nameof(signature));
             if (string.IsNullOrEmpty(hashAlgorithm.Name))
                 throw HashAlgorithmNameNullOrEmpty();
@@ -804,9 +804,9 @@ namespace System.Security.Cryptography
         /// </exception>
         public bool VerifySignature(byte[] rgbHash, byte[] rgbSignature, DSASignatureFormat signatureFormat)
         {
-            if (rgbHash == null)
+            if (rgbHash is null)
                 throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
+            if (rgbSignature is null)
                 throw new ArgumentNullException(nameof(rgbSignature));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
@@ -866,7 +866,7 @@ namespace System.Security.Cryptography
 
             // If the signature failed normalization to IEEE P1363 then it
             // obviously doesn't verify.
-            if (sig == null)
+            if (sig is null)
             {
                 return false;
             }
@@ -928,7 +928,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
+            if (pbeParameters is null)
                 throw new ArgumentNullException(nameof(pbeParameters));
 
             PasswordBasedEncryption.ValidatePbeParameters(
@@ -952,7 +952,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
+            if (pbeParameters is null)
                 throw new ArgumentNullException(nameof(pbeParameters));
 
             PasswordBasedEncryption.ValidatePbeParameters(

@@ -30,12 +30,12 @@ namespace System.Configuration
         /// </summary>
         public object GetValue(string key, Type type)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key));
-            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (key is null) throw new ArgumentNullException(nameof(key));
+            if (type is null) throw new ArgumentNullException(nameof(type));
 
             string val = _map[key];
 
-            if (val == null) throw new InvalidOperationException(SR.Format(SR.AppSettingsReaderNoKey, key));
+            if (val is null) throw new InvalidOperationException(SR.Format(SR.AppSettingsReaderNoKey, key));
 
             if (type == s_stringType)
             {

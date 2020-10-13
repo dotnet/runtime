@@ -190,14 +190,14 @@ namespace System
 
                 // First try a location specified in the TERMINFO environment variable.
                 string? terminfo = Environment.GetEnvironmentVariable("TERMINFO");
-                if (!string.IsNullOrWhiteSpace(terminfo) && (db = ReadDatabase(term, terminfo)) != null)
+                if (!string.IsNullOrWhiteSpace(terminfo) && (db = ReadDatabase(term, terminfo)) is not null)
                 {
                     return db;
                 }
 
                 // Then try in the user's home directory.
                 string? home = PersistedFiles.GetHomeDirectory();
-                if (!string.IsNullOrWhiteSpace(home) && (db = ReadDatabase(term, home + "/.terminfo")) != null)
+                if (!string.IsNullOrWhiteSpace(home) && (db = ReadDatabase(term, home + "/.terminfo")) is not null)
                 {
                     return db;
                 }
@@ -205,7 +205,7 @@ namespace System
                 // Then try a set of well-known locations.
                 foreach (string terminfoLocation in _terminfoLocations)
                 {
-                    if ((db = ReadDatabase(term, terminfoLocation)) != null)
+                    if ((db = ReadDatabase(term, terminfoLocation)) is not null)
                     {
                         return db;
                     }
@@ -323,7 +323,7 @@ namespace System
             /// <returns>The string if it's in the database; otherwise, null.</returns>
             public string? GetExtendedString(string name)
             {
-                Debug.Assert(name != null);
+                Debug.Assert(name is not null);
 
                 string? value;
                 return _extendedStrings.TryGetValue(name, out value) ?
@@ -529,7 +529,7 @@ namespace System
             public static string Evaluate(string format, FormatParam arg)
             {
                 FormatParam[]? args = t_cachedOneElementArgsArray;
-                if (args == null)
+                if (args is null)
                 {
                     t_cachedOneElementArgsArray = args = new FormatParam[1];
                 }
@@ -547,7 +547,7 @@ namespace System
             public static string Evaluate(string format, FormatParam arg1, FormatParam arg2)
             {
                 FormatParam[]? args = t_cachedTwoElementArgsArray;
-                if (args == null)
+                if (args is null)
                 {
                     t_cachedTwoElementArgsArray = args = new FormatParam[2];
                 }
@@ -564,18 +564,18 @@ namespace System
             /// <returns>The formatted string.</returns>
             public static string Evaluate(string format, params FormatParam[] args)
             {
-                if (format == null)
+                if (format is null)
                 {
                     throw new ArgumentNullException(nameof(format));
                 }
-                if (args == null)
+                if (args is null)
                 {
                     throw new ArgumentNullException(nameof(args));
                 }
 
                 // Initialize the stack to use for processing.
                 Stack<FormatParam>? stack = t_cachedStack;
-                if (stack == null)
+                if (stack is null)
                 {
                     t_cachedStack = stack = new Stack<FormatParam>();
                 }
@@ -873,7 +873,7 @@ namespace System
 
                 // Determine how much space is needed to store the formatted string.
                 string? stringArg = arg as string;
-                int neededLength = stringArg != null ?
+                int neededLength = stringArg is not null ?
                     Interop.Sys.SNPrintF(null, 0, format, stringArg) :
                     Interop.Sys.SNPrintF(null, 0, format, (int)arg);
                 if (neededLength == 0)
@@ -889,7 +889,7 @@ namespace System
                 byte[] bytes = new byte[neededLength + 1]; // extra byte for the null terminator
                 fixed (byte* ptr = &bytes[0])
                 {
-                    int length = stringArg != null ?
+                    int length = stringArg is not null ?
                         Interop.Sys.SNPrintF(ptr, bytes.Length, format, stringArg) :
                         Interop.Sys.SNPrintF(ptr, bytes.Length, format, (int)arg);
                     if (length != neededLength)

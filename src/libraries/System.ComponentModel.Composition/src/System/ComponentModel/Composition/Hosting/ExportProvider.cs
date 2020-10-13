@@ -102,7 +102,7 @@ namespace System.ComponentModel.Composition.Hosting
             switch (result)
             {
                 case ExportCardinalityCheckResult.Match:
-                    Debug.Assert(exports != null);
+                    Debug.Assert(exports is not null);
                     return exports;
                 case ExportCardinalityCheckResult.NoExports:
                     throw new ImportCardinalityMismatchException(SR.Format(SR.CardinalityMismatch_NoExports, definition));
@@ -182,7 +182,7 @@ namespace System.ComponentModel.Composition.Hosting
         protected virtual void OnExportsChanged(ExportsChangeEventArgs e)
         {
             EventHandler<ExportsChangeEventArgs>? changedEvent = ExportsChanged;
-            if (changedEvent != null)
+            if (changedEvent is not null)
             {
                 CompositionResult result = CompositionServices.TryFire(changedEvent, this, e);
                 result.ThrowOnErrors(e.AtomicComposition);
@@ -198,7 +198,7 @@ namespace System.ComponentModel.Composition.Hosting
         protected virtual void OnExportsChanging(ExportsChangeEventArgs e)
         {
             EventHandler<ExportsChangeEventArgs>? changingEvent = ExportsChanging;
-            if (changingEvent != null)
+            if (changingEvent is not null)
             {
                 CompositionResult result = CompositionServices.TryFire(changingEvent, this, e);
                 result.ThrowOnErrors(e.AtomicComposition);
@@ -207,7 +207,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private ExportCardinalityCheckResult TryGetExportsCore(ImportDefinition definition, AtomicComposition? atomicComposition, out IEnumerable<Export>? exports)
         {
-            if (definition == null)
+            if (definition is null)
             {
                 throw new ArgumentNullException(nameof(definition));
             }
@@ -227,7 +227,7 @@ namespace System.ComponentModel.Composition.Hosting
                 exports = null;
             }
 
-            if (exports == null)
+            if (exports is null)
             {
                 exports = Array.Empty<Export>();
             }

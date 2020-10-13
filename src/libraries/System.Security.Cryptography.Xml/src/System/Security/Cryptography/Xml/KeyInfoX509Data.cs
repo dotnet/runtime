@@ -41,7 +41,7 @@ namespace System.Security.Cryptography.Xml
 
         public KeyInfoX509Data(X509Certificate cert, X509IncludeOption includeOption)
         {
-            if (cert == null)
+            if (cert is null)
                 throw new ArgumentNullException(nameof(cert));
 
             X509Certificate2 certificate = new X509Certificate2(cert);
@@ -102,10 +102,10 @@ namespace System.Security.Cryptography.Xml
 
         public void AddCertificate(X509Certificate certificate)
         {
-            if (certificate == null)
+            if (certificate is null)
                 throw new ArgumentNullException(nameof(certificate));
 
-            if (_certificates == null)
+            if (_certificates is null)
                 _certificates = new ArrayList();
 
             X509Certificate2 x509 = new X509Certificate2(certificate);
@@ -119,14 +119,14 @@ namespace System.Security.Cryptography.Xml
 
         public void AddSubjectKeyId(byte[] subjectKeyId)
         {
-            if (_subjectKeyIds == null)
+            if (_subjectKeyIds is null)
                 _subjectKeyIds = new ArrayList();
             _subjectKeyIds.Add(subjectKeyId);
         }
 
         public void AddSubjectKeyId(string subjectKeyId)
         {
-            if (_subjectKeyIds == null)
+            if (_subjectKeyIds is null)
                 _subjectKeyIds = new ArrayList();
             _subjectKeyIds.Add(Utils.DecodeHexString(subjectKeyId));
         }
@@ -138,7 +138,7 @@ namespace System.Security.Cryptography.Xml
 
         public void AddSubjectName(string subjectName)
         {
-            if (_subjectNames == null)
+            if (_subjectNames is null)
                 _subjectNames = new ArrayList();
             _subjectNames.Add(subjectName);
         }
@@ -160,7 +160,7 @@ namespace System.Security.Cryptography.Xml
             if (!BigInteger.TryParse(serialNumber, NumberStyles.AllowHexSpecifier, NumberFormatInfo.CurrentInfo, out h))
                 throw new ArgumentException(SR.Cryptography_Xml_InvalidX509IssuerSerialNumber, nameof(serialNumber));
 
-            if (_issuerSerials == null)
+            if (_issuerSerials is null)
                 _issuerSerials = new ArrayList();
             _issuerSerials.Add(Utils.CreateX509IssuerSerial(issuerName, h.ToString()));
         }
@@ -168,7 +168,7 @@ namespace System.Security.Cryptography.Xml
         // When we load an X509Data from Xml, we know the serial number is in decimal representation.
         internal void InternalAddIssuerSerial(string issuerName, string serialNumber)
         {
-            if (_issuerSerials == null)
+            if (_issuerSerials is null)
                 _issuerSerials = new ArrayList();
             _issuerSerials.Add(Utils.CreateX509IssuerSerial(issuerName, serialNumber));
         }
@@ -186,10 +186,10 @@ namespace System.Security.Cryptography.Xml
         private void Clear()
         {
             _CRL = null;
-            if (_subjectKeyIds != null) _subjectKeyIds.Clear();
-            if (_subjectNames != null) _subjectNames.Clear();
-            if (_issuerSerials != null) _issuerSerials.Clear();
-            if (_certificates != null) _certificates.Clear();
+            if (_subjectKeyIds is not null) _subjectKeyIds.Clear();
+            if (_subjectNames is not null) _subjectNames.Clear();
+            if (_issuerSerials is not null) _issuerSerials.Clear();
+            if (_certificates is not null) _certificates.Clear();
         }
 
         //
@@ -207,7 +207,7 @@ namespace System.Security.Cryptography.Xml
         {
             XmlElement x509DataElement = xmlDocument.CreateElement("X509Data", SignedXml.XmlDsigNamespaceUrl);
 
-            if (_issuerSerials != null)
+            if (_issuerSerials is not null)
             {
                 foreach (X509IssuerSerial issuerSerial in _issuerSerials)
                 {
@@ -222,7 +222,7 @@ namespace System.Security.Cryptography.Xml
                 }
             }
 
-            if (_subjectKeyIds != null)
+            if (_subjectKeyIds is not null)
             {
                 foreach (byte[] subjectKeyId in _subjectKeyIds)
                 {
@@ -232,7 +232,7 @@ namespace System.Security.Cryptography.Xml
                 }
             }
 
-            if (_subjectNames != null)
+            if (_subjectNames is not null)
             {
                 foreach (string subjectName in _subjectNames)
                 {
@@ -242,7 +242,7 @@ namespace System.Security.Cryptography.Xml
                 }
             }
 
-            if (_certificates != null)
+            if (_certificates is not null)
             {
                 foreach (X509Certificate certificate in _certificates)
                 {
@@ -252,7 +252,7 @@ namespace System.Security.Cryptography.Xml
                 }
             }
 
-            if (_CRL != null)
+            if (_CRL is not null)
             {
                 XmlElement crlElement = xmlDocument.CreateElement("X509CRL", SignedXml.XmlDsigNamespaceUrl);
                 crlElement.AppendChild(xmlDocument.CreateTextNode(Convert.ToBase64String(_CRL)));
@@ -264,7 +264,7 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadXml(XmlElement element)
         {
-            if (element == null)
+            if (element is null)
                 throw new ArgumentNullException(nameof(element));
 
             XmlNamespaceManager nsm = new XmlNamespaceManager(element.OwnerDocument.NameTable);
@@ -290,7 +290,7 @@ namespace System.Security.Cryptography.Xml
             {
                 XmlNode x509IssuerNameNode = issuerSerialNode.SelectSingleNode("ds:X509IssuerName", nsm);
                 XmlNode x509SerialNumberNode = issuerSerialNode.SelectSingleNode("ds:X509SerialNumber", nsm);
-                if (x509IssuerNameNode == null || x509SerialNumberNode == null)
+                if (x509IssuerNameNode is null || x509SerialNumberNode is null)
                     throw new CryptographicException(SR.Cryptography_Xml_InvalidElement, "IssuerSerial");
                 InternalAddIssuerSerial(x509IssuerNameNode.InnerText.Trim(), x509SerialNumberNode.InnerText.Trim());
             }

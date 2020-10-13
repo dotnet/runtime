@@ -672,7 +672,7 @@ namespace System.Collections.Immutable
             {
                 if (match(self.array[i]))
                 {
-                    if (removeIndices == null)
+                    if (removeIndices is null)
                     {
                         removeIndices = new List<int>();
                     }
@@ -681,7 +681,7 @@ namespace System.Collections.Immutable
                 }
             }
 
-            return removeIndices != null ?
+            return removeIndices is not null ?
                 self.RemoveAtRange(removeIndices) :
                 self;
         }
@@ -746,7 +746,7 @@ namespace System.Collections.Immutable
             // 0 and 1 element arrays don't need to be sorted.
             if (count > 1)
             {
-                if (comparer == null)
+                if (comparer is null)
                 {
                     comparer = Comparer<T>.Default;
                 }
@@ -784,7 +784,7 @@ namespace System.Collections.Immutable
         public IEnumerable<TResult> OfType<TResult>()
         {
             var self = this;
-            if (self.array == null || self.array.Length == 0)
+            if (self.array is null || self.array.Length == 0)
             {
                 return Enumerable.Empty<TResult>();
             }
@@ -1124,17 +1124,17 @@ namespace System.Collections.Immutable
         {
             var self = this;
             Array? otherArray = other as Array;
-            if (otherArray == null)
+            if (otherArray is null)
             {
                 if (other is IImmutableArray theirs)
                 {
                     otherArray = theirs.Array;
 
-                    if (self.array == null && otherArray == null)
+                    if (self.array is null && otherArray is null)
                     {
                         return true;
                     }
-                    else if (self.array == null)
+                    else if (self.array is null)
                     {
                         return false;
                     }
@@ -1154,7 +1154,7 @@ namespace System.Collections.Immutable
         {
             var self = this;
             IStructuralEquatable? ours = self.array;
-            return ours != null ? ours.GetHashCode(comparer) : self.GetHashCode();
+            return ours is not null ? ours.GetHashCode(comparer) : self.GetHashCode();
         }
 
         /// <summary>
@@ -1174,27 +1174,27 @@ namespace System.Collections.Immutable
         {
             var self = this;
             Array? otherArray = other as Array;
-            if (otherArray == null)
+            if (otherArray is null)
             {
                 if (other is IImmutableArray theirs)
                 {
                     otherArray = theirs.Array;
 
-                    if (self.array == null && otherArray == null)
+                    if (self.array is null && otherArray is null)
                     {
                         return 0;
                     }
-                    else if (self.array == null ^ otherArray == null)
+                    else if (self.array is null ^ otherArray is null)
                     {
                         throw new ArgumentException(SR.ArrayInitializedStateNotEqual, nameof(other));
                     }
                 }
             }
 
-            if (otherArray != null)
+            if (otherArray is not null)
             {
                 IStructuralComparable? ours = self.array;
-                if (ours == null)
+                if (ours is null)
                 {
                     throw new ArgumentException(SR.ArrayInitializedStateNotEqual, nameof(other));
                 }

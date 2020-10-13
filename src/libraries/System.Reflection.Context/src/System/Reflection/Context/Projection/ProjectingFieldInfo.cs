@@ -73,7 +73,7 @@ namespace System.Reflection.Context.Projection
         {
             var other = o as ProjectingFieldInfo;
 
-            return other != null &&
+            return other is not null &&
                    Projector == other.Projector &&
                    UnderlyingField.Equals(other.UnderlyingField);
         }

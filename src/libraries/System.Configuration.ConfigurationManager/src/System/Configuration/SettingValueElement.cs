@@ -17,7 +17,7 @@ namespace System.Configuration
         {
             get
             {
-                if (_properties == null)
+                if (_properties is null)
                 {
                     _properties = new ConfigurationPropertyCollection();
                 }
@@ -47,7 +47,7 @@ namespace System.Configuration
         public override bool Equals(object settingValue)
         {
             SettingValueElement u = settingValue as SettingValueElement;
-            return (u != null && Equals(u.ValueXml, ValueXml));
+            return (u is not null && Equals(u.ValueXml, ValueXml));
         }
 
         public override int GetHashCode()
@@ -67,9 +67,9 @@ namespace System.Configuration
 
         protected internal override bool SerializeToXmlElement(XmlWriter writer, string elementName)
         {
-            if (ValueXml != null)
+            if (ValueXml is not null)
             {
-                if (writer != null)
+                if (writer is not null)
                 {
                     ValueXml?.WriteTo(writer);
                 }

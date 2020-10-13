@@ -139,7 +139,7 @@ namespace System.ServiceProcess
             }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 if (string.Equals(value, _displayName, StringComparison.OrdinalIgnoreCase))
@@ -161,7 +161,7 @@ namespace System.ServiceProcess
         {
             get
             {
-                if (_dependentServices == null)
+                if (_dependentServices is null)
                 {
                     using (var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_ENUMERATE_DEPENDENTS))
                     {
@@ -248,7 +248,7 @@ namespace System.ServiceProcess
             }
             set
             {
-                if (value == null)
+                if (value is null)
                     throw new ArgumentNullException(nameof(value));
 
                 if (string.Equals(value, _name, StringComparison.OrdinalIgnoreCase))
@@ -272,7 +272,7 @@ namespace System.ServiceProcess
         {
             get
             {
-                if (_servicesDependedOn != null)
+                if (_servicesDependedOn is not null)
                     return _servicesDependedOn;
 
                 using (var serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_QUERY_CONFIG))
@@ -302,7 +302,7 @@ namespace System.ServiceProcess
                         Dictionary<string, ServiceController>? dependencyHash = null;
 
                         char* dependencyChar = config.lpDependencies;
-                        if (dependencyChar != null)
+                        if (dependencyChar is not null)
                         {
                             // lpDependencies points to the start of multiple null-terminated strings. The list is
                             // double-null terminated.
@@ -335,7 +335,7 @@ namespace System.ServiceProcess
                             }
                         }
 
-                        if (dependencyHash != null)
+                        if (dependencyHash is not null)
                         {
                             _servicesDependedOn = new ServiceController[dependencyHash.Count];
                             dependencyHash.Values.CopyTo(_servicesDependedOn, 0);
@@ -438,7 +438,7 @@ namespace System.ServiceProcess
         /// </remarks>
         public void Close()
         {
-            if (_serviceManagerHandle != null)
+            if (_serviceManagerHandle is not null)
             {
                 _serviceManagerHandle.Dispose();
                 _serviceManagerHandle = null;
@@ -496,7 +496,7 @@ namespace System.ServiceProcess
                 // Try it as a display name
                 string? result = GetServiceKeyName(_serviceManagerHandle, userGivenName);
 
-                if (result != null)
+                if (result is not null)
                 {
                     // Now we have both
                     _name = result;
@@ -508,7 +508,7 @@ namespace System.ServiceProcess
                 // Try it as a service name
                 result = GetServiceDisplayName(_serviceManagerHandle, userGivenName);
 
-                if (result == null)
+                if (result is null)
                 {
                     throw new InvalidOperationException(SR.Format(SR.NoService, userGivenName, _machineName), new Win32Exception(Interop.Errors.ERROR_SERVICE_DOES_NOT_EXIST));
                 }
@@ -522,7 +522,7 @@ namespace System.ServiceProcess
                 // We must have _name
                 string? result = GetServiceDisplayName(_serviceManagerHandle, _name);
 
-                if (result == null)
+                if (result is null)
                 {
                     throw new InvalidOperationException(SR.Format(SR.NoService, _name, _machineName), new Win32Exception(Interop.Errors.ERROR_SERVICE_DOES_NOT_EXIST));
                 }
@@ -625,7 +625,7 @@ namespace System.ServiceProcess
             }
 
             // get a handle to SCM with connect access and store it in serviceManagerHandle field.
-            if (_serviceManagerHandle == null)
+            if (_serviceManagerHandle is null)
             {
                 _serviceManagerHandle = GetDataBaseHandleWithAccess(_machineName, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_CONNECT);
             }
@@ -809,7 +809,7 @@ namespace System.ServiceProcess
         /// Starts a service in the machine specified.
         public void Start(string[] args)
         {
-            if (args == null)
+            if (args is null)
                 throw new ArgumentNullException(nameof(args));
 
             using (SafeServiceHandle serviceHandle = GetServiceHandle(Interop.Advapi32.ServiceOptions.SERVICE_START))
@@ -820,7 +820,7 @@ namespace System.ServiceProcess
                 {
                     for (i = 0; i < args.Length; i++)
                     {
-                        if (args[i] == null)
+                        if (args[i] is null)
                             throw new ArgumentNullException($"{nameof(args)}[{i}]", SR.ArgsCantBeNull);
 
                         argPtrs[i] = Marshal.StringToHGlobalUni(args[i]);

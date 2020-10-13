@@ -43,7 +43,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
             switch (frame.State)
             {
                 case Initialized:
@@ -55,7 +55,7 @@ namespace System.Xml.Xsl.XsltOld
 
                 case ProcessingChildren:
                     TextOnlyOutput? recOutput = processor.PopOutput() as TextOnlyOutput;
-                    Debug.Assert(recOutput != null);
+                    Debug.Assert(recOutput is not null);
 
                     if (_Terminate)
                     {

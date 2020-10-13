@@ -22,7 +22,7 @@ namespace System.Collections
         {
             get
             {
-                if (_list == null)
+                if (_list is null)
                     _list = new ArrayList();
                 return _list;
             }

@@ -24,7 +24,7 @@ namespace System.IO.Compression
         internal void EnsureInitialized()
         {
             EnsureNotDisposed();
-            if (_state == null)
+            if (_state is null)
                 InitializeDecoder();
         }
 
@@ -43,7 +43,7 @@ namespace System.IO.Compression
         public OperationStatus Decompress(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesConsumed, out int bytesWritten)
         {
             EnsureInitialized();
-            Debug.Assert(_state != null);
+            Debug.Assert(_state is not null);
 
             bytesConsumed = 0;
             bytesWritten = 0;

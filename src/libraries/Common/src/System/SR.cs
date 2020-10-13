@@ -43,7 +43,7 @@ namespace System
             }
             catch (MissingManifestResourceException) { }
 
-            if (defaultString != null && resourceKey.Equals(resourceString))
+            if (defaultString is not null && resourceKey.Equals(resourceString))
             {
                 return defaultString;
             }
@@ -83,7 +83,7 @@ namespace System
 
         internal static string Format(string resourceFormat, params object?[]? args)
         {
-            if (args != null)
+            if (args is not null)
             {
                 if (UsingResourceKeys())
                 {
@@ -128,7 +128,7 @@ namespace System
 
         internal static string Format(IFormatProvider? provider, string resourceFormat, params object?[]? args)
         {
-            if (args != null)
+            if (args is not null)
             {
                 if (UsingResourceKeys())
                 {

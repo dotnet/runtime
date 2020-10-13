@@ -14,7 +14,7 @@ namespace System.Security.Cryptography
 
         internal static void Return(ArraySegment<byte> arraySegment)
         {
-            Debug.Assert(arraySegment.Array != null);
+            Debug.Assert(arraySegment.Array is not null);
             Debug.Assert(arraySegment.Offset == 0);
 
             Return(arraySegment.Array, arraySegment.Count);

@@ -30,7 +30,7 @@ namespace System.Collections.Generic
 
         public LinkedList(IEnumerable<T> collection)
         {
-            if (collection == null)
+            if (collection is null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
@@ -58,7 +58,7 @@ namespace System.Collections.Generic
 
         public LinkedListNode<T>? Last
         {
-            get { return head == null ? null : head.prev; }
+            get { return head is null ? null : head.prev; }
         }
 
         bool ICollection<T>.IsReadOnly
@@ -114,7 +114,7 @@ namespace System.Collections.Generic
         public LinkedListNode<T> AddFirst(T value)
         {
             LinkedListNode<T> result = new LinkedListNode<T>(this, value);
-            if (head == null)
+            if (head is null)
             {
                 InternalInsertNodeToEmptyList(result);
             }
@@ -130,7 +130,7 @@ namespace System.Collections.Generic
         {
             ValidateNewNode(node);
 
-            if (head == null)
+            if (head is null)
             {
                 InternalInsertNodeToEmptyList(node);
             }
@@ -145,7 +145,7 @@ namespace System.Collections.Generic
         public LinkedListNode<T> AddLast(T value)
         {
             LinkedListNode<T> result = new LinkedListNode<T>(this, value);
-            if (head == null)
+            if (head is null)
             {
                 InternalInsertNodeToEmptyList(result);
             }
@@ -160,7 +160,7 @@ namespace System.Collections.Generic
         {
             ValidateNewNode(node);
 
-            if (head == null)
+            if (head is null)
             {
                 InternalInsertNodeToEmptyList(node);
             }
@@ -174,7 +174,7 @@ namespace System.Collections.Generic
         public void Clear()
         {
             LinkedListNode<T>? current = head;
-            while (current != null)
+            while (current is not null)
             {
                 LinkedListNode<T> temp = current;
                 current = current.Next;   // use Next the instead of "next", otherwise it will loop forever
@@ -188,12 +188,12 @@ namespace System.Collections.Generic
 
         public bool Contains(T value)
         {
-            return Find(value) != null;
+            return Find(value) is not null;
         }
 
         public void CopyTo(T[] array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -214,7 +214,7 @@ namespace System.Collections.Generic
             }
 
             LinkedListNode<T>? node = head;
-            if (node != null)
+            if (node is not null)
             {
                 do
                 {
@@ -228,9 +228,9 @@ namespace System.Collections.Generic
         {
             LinkedListNode<T>? node = head;
             EqualityComparer<T> c = EqualityComparer<T>.Default;
-            if (node != null)
+            if (node is not null)
             {
-                if (value != null)
+                if (value is not null)
                 {
                     do
                     {
@@ -245,7 +245,7 @@ namespace System.Collections.Generic
                 {
                     do
                     {
-                        if (node!.item == null)
+                        if (node!.item is null)
                         {
                             return node;
                         }
@@ -258,14 +258,14 @@ namespace System.Collections.Generic
 
         public LinkedListNode<T>? FindLast(T value)
         {
-            if (head == null) return null;
+            if (head is null) return null;
 
             LinkedListNode<T>? last = head.prev;
             LinkedListNode<T>? node = last;
             EqualityComparer<T> c = EqualityComparer<T>.Default;
-            if (node != null)
+            if (node is not null)
             {
-                if (value != null)
+                if (value is not null)
                 {
                     do
                     {
@@ -281,7 +281,7 @@ namespace System.Collections.Generic
                 {
                     do
                     {
-                        if (node!.item == null)
+                        if (node!.item is null)
                         {
                             return node;
                         }
@@ -305,7 +305,7 @@ namespace System.Collections.Generic
         public bool Remove(T value)
         {
             LinkedListNode<T>? node = Find(value);
-            if (node != null)
+            if (node is not null)
             {
                 InternalRemoveNode(node);
                 return true;
@@ -321,13 +321,13 @@ namespace System.Collections.Generic
 
         public void RemoveFirst()
         {
-            if (head == null) { throw new InvalidOperationException(SR.LinkedListEmpty); }
+            if (head is null) { throw new InvalidOperationException(SR.LinkedListEmpty); }
             InternalRemoveNode(head);
         }
 
         public void RemoveLast()
         {
-            if (head == null) { throw new InvalidOperationException(SR.LinkedListEmpty); }
+            if (head is null) { throw new InvalidOperationException(SR.LinkedListEmpty); }
             InternalRemoveNode(head.prev!);
         }
 
@@ -336,7 +336,7 @@ namespace System.Collections.Generic
             // Customized serialization for LinkedList.
             // We need to do this because it will be too expensive to Serialize each node.
             // This will give us the flexiblility to change internal implementation freely in future.
-            if (info == null)
+            if (info is null)
             {
                 throw new ArgumentNullException(nameof(info));
             }
@@ -354,7 +354,7 @@ namespace System.Collections.Generic
 
         public virtual void OnDeserialization(object? sender)
         {
-            if (_siInfo == null)
+            if (_siInfo is null)
             {
                 return; //Somebody had a dependency on this LinkedList and fixed us up before the ObjectManager got to it.
             }
@@ -366,7 +366,7 @@ namespace System.Collections.Generic
             {
                 T[]? array = (T[]?)_siInfo.GetValue(ValuesName, typeof(T[]));
 
-                if (array == null)
+                if (array is null)
                 {
                     throw new SerializationException(SR.Serialization_MissingValues);
                 }
@@ -396,7 +396,7 @@ namespace System.Collections.Generic
 
         private void InternalInsertNodeToEmptyList(LinkedListNode<T> newNode)
         {
-            Debug.Assert(head == null && count == 0, "LinkedList must be empty when this method is called!");
+            Debug.Assert(head is null && count == 0, "LinkedList must be empty when this method is called!");
             newNode.next = newNode;
             newNode.prev = newNode;
             head = newNode;
@@ -407,7 +407,7 @@ namespace System.Collections.Generic
         internal void InternalRemoveNode(LinkedListNode<T> node)
         {
             Debug.Assert(node.list == this, "Deleting the node from another list!");
-            Debug.Assert(head != null, "This method shouldn't be called on empty list!");
+            Debug.Assert(head is not null, "This method shouldn't be called on empty list!");
             if (node.next == node)
             {
                 Debug.Assert(count == 1 && head == node, "this should only be true for a list with only one node");
@@ -429,12 +429,12 @@ namespace System.Collections.Generic
 
         internal void ValidateNewNode(LinkedListNode<T> node)
         {
-            if (node == null)
+            if (node is null)
             {
                 throw new ArgumentNullException(nameof(node));
             }
 
-            if (node.list != null)
+            if (node.list is not null)
             {
                 throw new InvalidOperationException(SR.LinkedListNodeIsAttached);
             }
@@ -442,7 +442,7 @@ namespace System.Collections.Generic
 
         internal void ValidateNode(LinkedListNode<T> node)
         {
-            if (node == null)
+            if (node is null)
             {
                 throw new ArgumentNullException(nameof(node));
             }
@@ -462,7 +462,7 @@ namespace System.Collections.Generic
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -488,7 +488,7 @@ namespace System.Collections.Generic
             }
 
             T[]? tArray = array as T[];
-            if (tArray != null)
+            if (tArray is not null)
             {
                 CopyTo(tArray, index);
             }
@@ -497,14 +497,14 @@ namespace System.Collections.Generic
                 // No need to use reflection to verify that the types are compatible because it isn't 100% correct and we can rely
                 // on the runtime validation during the cast that happens below (i.e. we will get an ArrayTypeMismatchException).
                 object?[]? objects = array as object[];
-                if (objects == null)
+                if (objects is null)
                 {
                     throw new ArgumentException(SR.Argument_InvalidArrayType, nameof(array));
                 }
                 LinkedListNode<T>? node = head;
                 try
                 {
-                    if (node != null)
+                    if (node is not null)
                     {
                         do
                         {
@@ -564,7 +564,7 @@ namespace System.Collections.Generic
                     throw new InvalidOperationException(SR.InvalidOperation_EnumFailedVersion);
                 }
 
-                if (_node == null)
+                if (_node is null)
                 {
                     _index = _list.Count + 1;
                     return false;
@@ -634,12 +634,12 @@ namespace System.Collections.Generic
 
         public LinkedListNode<T>? Next
         {
-            get { return next == null || next == list!.head ? null : next; }
+            get { return next is null || next == list!.head ? null : next; }
         }
 
         public LinkedListNode<T>? Previous
         {
-            get { return prev == null || this == list!.head ? null : prev; }
+            get { return prev is null || this == list!.head ? null : prev; }
         }
 
         public T Value

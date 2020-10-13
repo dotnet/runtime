@@ -43,7 +43,7 @@ namespace System.Linq.Expressions.Compiler
                 if (tailCall != CompilationFlags.EmitAsNoTail)
                 {
                     var g = next as GotoExpression;
-                    if (g != null && (g.Value == null || !Significant(g.Value)) && ReferenceLabel(g.Target).CanReturn)
+                    if (g is not null && (g.Value is null || !Significant(g.Value)) && ReferenceLabel(g.Target).CanReturn)
                     {
                         // Since tail call flags are not passed into EmitTryExpression, CanReturn means the goto will be emitted
                         // as Ret. Therefore we can emit the current expression with tail call.
@@ -84,7 +84,7 @@ namespace System.Linq.Expressions.Compiler
         private void EnterScope(object node)
         {
             if (HasVariables(node) &&
-                (_scope.MergedScopes == null || !_scope.MergedScopes.Contains(node)))
+                (_scope.MergedScopes is null || !_scope.MergedScopes.Contains(node)))
             {
                 if (!_tree.Scopes.TryGetValue(node, out CompilerScope? scope))
                 {
@@ -110,11 +110,11 @@ namespace System.Linq.Expressions.Compiler
         private static bool HasVariables(object node)
         {
             var block = node as BlockExpression;
-            if (block != null)
+            if (block is not null)
             {
                 return block.Variables.Count > 0;
             }
-            return ((CatchBlock)node).Variable != null;
+            return ((CatchBlock)node).Variable is not null;
         }
 
         private void ExitScope(object node)
@@ -167,7 +167,7 @@ namespace System.Linq.Expressions.Compiler
                 EmitExpressionAsVoid(node.SwitchValue);
 
                 // Now if there is a default body, it happens unconditionally.
-                if (node.DefaultBody != null)
+                if (node.DefaultBody is not null)
                 {
                     EmitExpressionAsType(node.DefaultBody, node.Type, flags);
                 }
@@ -225,7 +225,7 @@ namespace System.Linq.Expressions.Compiler
 
             // Define labels
             Label end = _ilg.DefineLabel();
-            Label @default = (node.DefaultBody == null) ? end : _ilg.DefineLabel();
+            Label @default = (node.DefaultBody is null) ? end : _ilg.DefineLabel();
 
             // Emit the case and default bodies
             EmitSwitchCases(node, labels, isGoto, @default, end, flags);
@@ -236,7 +236,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         private static Type GetTestValueType(SwitchExpression node)
         {
-            if (node.Comparison == null)
+            if (node.Comparison is null)
             {
                 // If we have no comparison, all right side types must be the
                 // same.
@@ -362,7 +362,7 @@ namespace System.Linq.Expressions.Compiler
         private bool TryEmitSwitchInstruction(SwitchExpression node, CompilationFlags flags)
         {
             // If we have a comparison, bail
-            if (node.Comparison != null)
+            if (node.Comparison is not null)
             {
                 return false;
             }
@@ -429,7 +429,7 @@ namespace System.Linq.Expressions.Compiler
 
             // Create end label, and default label if needed
             Label end = _ilg.DefineLabel();
-            Label @default = (node.DefaultBody == null) ? end : _ilg.DefineLabel();
+            Label @default = (node.DefaultBody is null) ? end : _ilg.DefineLabel();
 
             // Emit the switch
             var info = new SwitchInfo(node, value, @default);
@@ -460,7 +460,7 @@ namespace System.Linq.Expressions.Compiler
         {
             var jump = @case.Body as GotoExpression;
             // if it's a goto with no value
-            if (jump != null && jump.Value == null)
+            if (jump is not null && jump.Value is null)
             {
                 // Reference the label from the switch. This will cause us to
                 // analyze the jump target and determine if it is safe.
@@ -500,7 +500,7 @@ namespace System.Linq.Expressions.Compiler
                 EmitExpressionAsType(node.Cases[i].Body, node.Type, flags);
 
                 // Last case doesn't need branch
-                if (node.DefaultBody != null || i < n - 1)
+                if (node.DefaultBody is not null || i < n - 1)
                 {
                     if ((flags & CompilationFlags.EmitAsTailCallMask) == CompilationFlags.EmitAsTail)
                     {
@@ -516,7 +516,7 @@ namespace System.Linq.Expressions.Compiler
             }
 
             // Default value
-            if (node.DefaultBody != null)
+            if (node.DefaultBody is not null)
             {
                 _ilg.MarkLabel(@default);
                 EmitExpressionAsType(node.DefaultBody, node.Type, flags);
@@ -671,7 +671,7 @@ namespace System.Linq.Expressions.Compiler
             {
                 foreach (ConstantExpression t in node.Cases[i].TestValues)
                 {
-                    if (t.Value != null)
+                    if (t.Value is not null)
                     {
                         initializers.Add(Expression.ElementInit(add, new TrueReadOnlyCollection<Expression>(t, Utils.Constant(i))));
                     }
@@ -710,10 +710,10 @@ namespace System.Linq.Expressions.Compiler
             // Create a tree like:
             //
             // switchValue = switchValueExpression;
-            // if (switchValue == null) {
+            // if (switchValue is null) {
             //     switchIndex = nullCase;
             // } else {
-            //     if (_dictField == null) {
+            //     if (_dictField is null) {
             //         _dictField = new Dictionary<string, int>(count) { { ... }, ... };
             //     }
             //     if (!_dictField.TryGetValue(switchValue, out switchIndex)) {
@@ -755,7 +755,7 @@ namespace System.Linq.Expressions.Compiler
         private void CheckRethrow()
         {
             // Rethrow is only valid inside a catch.
-            for (LabelScopeInfo? j = _labelBlock; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = _labelBlock; j is not null; j = j.Parent)
             {
                 if (j.Kind == LabelScopeKind.Catch)
                 {
@@ -775,7 +775,7 @@ namespace System.Linq.Expressions.Compiler
         private void CheckTry()
         {
             // Try inside a filter is not verifiable
-            for (LabelScopeInfo? j = _labelBlock; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = _labelBlock; j is not null; j = j.Parent)
             {
                 if (j.Kind == LabelScopeKind.Filter)
                 {
@@ -786,7 +786,7 @@ namespace System.Linq.Expressions.Compiler
 
         private void EmitSaveExceptionOrPop(CatchBlock cb)
         {
-            if (cb.Variable != null)
+            if (cb.Variable is not null)
             {
                 // If the variable is present, store the exception
                 // in the variable.
@@ -835,7 +835,7 @@ namespace System.Linq.Expressions.Compiler
                 PushLabelBlock(LabelScopeKind.Catch);
 
                 // Begin the strongly typed exception block
-                if (cb.Filter == null)
+                if (cb.Filter is null)
                 {
                     _ilg.BeginCatchBlock(cb.Test);
                 }
@@ -867,11 +867,11 @@ namespace System.Linq.Expressions.Compiler
             // 4. Emit the finally block
             //******************************************************************
 
-            if (node.Finally != null || node.Fault != null)
+            if (node.Finally is not null || node.Fault is not null)
             {
                 PushLabelBlock(LabelScopeKind.Finally);
 
-                if (node.Finally != null)
+                if (node.Finally is not null)
                 {
                     _ilg.BeginFinallyBlock();
                 }
@@ -906,7 +906,7 @@ namespace System.Linq.Expressions.Compiler
         /// </summary>
         private void EmitCatchStart(CatchBlock cb)
         {
-            if (cb.Filter == null)
+            if (cb.Filter is null)
             {
                 EmitSaveExceptionOrPop(cb);
                 return;

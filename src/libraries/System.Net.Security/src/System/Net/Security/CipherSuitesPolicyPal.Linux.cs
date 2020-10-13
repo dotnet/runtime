@@ -57,7 +57,7 @@ namespace System.Net.Security
                                 cs,
                                 out bool isTls12OrLower);
 
-                            if (name == null)
+                            if (name is null)
                             {
                                 // we do not have a corresponding name
                                 // allowing less than user requested is OK
@@ -87,7 +87,7 @@ namespace System.Net.Security
                 return true;
             }
 
-            if (policy == null)
+            if (policy is null)
             {
                 // null means default, by default OpenSSL will choose if it wants to opt-out or not
                 return false;
@@ -104,7 +104,7 @@ namespace System.Net.Security
 
         internal static bool ShouldOptOutOfLowerThanTls13(CipherSuitesPolicy? policy, EncryptionPolicy encryptionPolicy)
         {
-            if (policy == null)
+            if (policy is null)
             {
                 // null means default, by default OpenSSL will choose if it wants to opt-out or not
                 return false;
@@ -136,7 +136,7 @@ namespace System.Net.Security
                 return null;
             }
 
-            if (policy == null)
+            if (policy is null)
             {
                 return CipherListFromEncryptionPolicy(encryptionPolicy);
             }
@@ -154,7 +154,7 @@ namespace System.Net.Security
             SslProtocols protocols,
             EncryptionPolicy encryptionPolicy)
         {
-            if (!WantsTls13(protocols) || policy == null)
+            if (!WantsTls13(protocols) || policy is null)
             {
                 // do not call TLS 1.3 API, let OpenSSL choose what to do
                 return null;

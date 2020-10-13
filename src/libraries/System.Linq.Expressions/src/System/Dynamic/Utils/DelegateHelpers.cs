@@ -163,7 +163,7 @@ namespace System.Dynamic.Utils
 
                 thunkMethod = GetCSharpThunk(returnType, hasReturnValue, parameters);
 
-                if (thunkMethod == null)
+                if (thunkMethod is null)
                 {
                     int thunkIndex = Interlocked.Increment(ref s_ThunksCreated);
                     Type[] paramTypes = new Type[parameters.Length + 1];

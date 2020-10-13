@@ -18,7 +18,7 @@ namespace System.Reflection.Metadata
         {
             get
             {
-                if (s_platformSpecificDirectorySeparator == null)
+                if (s_platformSpecificDirectorySeparator is null)
                 {
                     // '*' is a valid char on Unix-based FS
                     s_platformSpecificDirectorySeparator =
@@ -35,7 +35,7 @@ namespace System.Reflection.Metadata
         /// <returns>-1 if path is null.</returns>
         internal static int IndexOfFileName(string path)
         {
-            if (path == null)
+            if (path is null)
             {
                 return -1;
             }

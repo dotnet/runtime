@@ -76,7 +76,7 @@ namespace System.Composition.TypedParts
         // If the contract has metadata constraints, look for exports with matching metadata.
         private void DiscoverConstrainedParts(CompositionContract contract)
         {
-            if (contract.MetadataConstraints != null)
+            if (contract.MetadataConstraints is not null)
             {
                 var unconstrained = new CompositionContract(contract.ContractType, contract.ContractName);
                 DiscoverGenericParts(unconstrained);

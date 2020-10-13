@@ -160,11 +160,11 @@ namespace System.Net.WebSockets
         /// <param name="keepAliveInterval">The interval to use for keep-alive pings.</param>
         private ManagedWebSocket(Stream stream, bool isServer, string? subprotocol, TimeSpan keepAliveInterval)
         {
-            Debug.Assert(StateUpdateLock != null, $"Expected {nameof(StateUpdateLock)} to be non-null");
-            Debug.Assert(ReceiveAsyncLock != null, $"Expected {nameof(ReceiveAsyncLock)} to be non-null");
+            Debug.Assert(StateUpdateLock is not null, $"Expected {nameof(StateUpdateLock)} to be non-null");
+            Debug.Assert(ReceiveAsyncLock is not null, $"Expected {nameof(ReceiveAsyncLock)} to be non-null");
             Debug.Assert(StateUpdateLock != ReceiveAsyncLock, "Locks should be different objects");
 
-            Debug.Assert(stream != null, $"Expected non-null stream");
+            Debug.Assert(stream is not null, $"Expected non-null stream");
             Debug.Assert(stream.CanRead, $"Expected readable stream");
             Debug.Assert(stream.CanWrite, $"Expected writeable stream");
             Debug.Assert(keepAliveInterval == Timeout.InfiniteTimeSpan || keepAliveInterval >= TimeSpan.Zero, $"Invalid keepalive interval: {keepAliveInterval}");
@@ -471,7 +471,7 @@ namespace System.Net.WebSockets
         {
             // Ensure we have a _sendBuffer.
             AllocateSendBuffer(payloadBuffer.Length + MaxMessageHeaderLength);
-            Debug.Assert(_sendBuffer != null);
+            Debug.Assert(_sendBuffer is not null);
 
             // Write the message header data to the buffer.
             int headerLength;
@@ -668,7 +668,7 @@ namespace System.Net.WebSockets
                         }
 
                         string? headerErrorMessage = TryParseMessageHeaderFromReceiveBuffer(out header);
-                        if (headerErrorMessage != null)
+                        if (headerErrorMessage is not null)
                         {
                             await CloseWithReceiveErrorAndThrowAsync(WebSocketCloseStatus.ProtocolError, WebSocketError.Faulted, headerErrorMessage).ConfigureAwait(false);
                         }
@@ -972,7 +972,7 @@ namespace System.Net.WebSockets
             _receiveBufferCount = 0;
 
             // Let the caller know we've failed
-            throw errorMessage != null ?
+            throw errorMessage is not null ?
                 new WebSocketException(error, errorMessage, innerException) :
                 new WebSocketException(error, innerException);
         }
@@ -1137,7 +1137,7 @@ namespace System.Net.WebSockets
                         // Wait for whatever receive task we have.  We'll then loop around again to re-check our state.
                         // If this is an existing receive, and if we have a cancelable token, we need to register with that
                         // token while we wait, since it may not be the same one that was given to the receive initially.
-                        Debug.Assert(receiveTask != null);
+                        Debug.Assert(receiveTask is not null);
                         using (usingExistingReceive ? cancellationToken.Register(static s => ((ManagedWebSocket)s!).Abort(), this) : default)
                         {
                             await receiveTask.ConfigureAwait(false);
@@ -1189,7 +1189,7 @@ namespace System.Net.WebSockets
             }
             finally
             {
-                if (buffer != null)
+                if (buffer is not null)
                 {
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
@@ -1270,7 +1270,7 @@ namespace System.Net.WebSockets
         /// <summary>Gets a send buffer from the pool.</summary>
         private void AllocateSendBuffer(int minLength)
         {
-            Debug.Assert(_sendBuffer == null); // would only fail if had some catastrophic error previously that prevented cleaning up
+            Debug.Assert(_sendBuffer is null); // would only fail if had some catastrophic error previously that prevented cleaning up
             _sendBuffer = ArrayPool<byte>.Shared.Rent(minLength);
         }
 
@@ -1280,7 +1280,7 @@ namespace System.Net.WebSockets
             Debug.Assert(_sendFrameAsyncLock.CurrentCount == 0, "Caller should hold the _sendFrameAsyncLock");
 
             byte[]? old = _sendBuffer;
-            if (old != null)
+            if (old is not null)
             {
                 _sendBuffer = null;
                 ArrayPool<byte>.Shared.Return(old);

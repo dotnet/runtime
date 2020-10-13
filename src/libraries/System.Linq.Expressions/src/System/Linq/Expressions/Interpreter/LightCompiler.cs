@@ -40,7 +40,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal ExceptionHandler(int labelIndex, int handlerStartIndex, int handlerEndIndex, Type exceptionType, ExceptionFilter? filter)
         {
-            Debug.Assert(exceptionType != null);
+            Debug.Assert(exceptionType is not null);
             LabelIndex = labelIndex;
             _exceptionType = exceptionType;
             HandlerStartIndex = handlerStartIndex;
@@ -75,7 +75,7 @@ namespace System.Linq.Expressions.Interpreter
 
         internal ExceptionHandler[]? Handlers => _handlers;
 
-        internal bool IsCatchBlockExist => _handlers != null;
+        internal bool IsCatchBlockExist => _handlers is not null;
 
         /// <summary>
         /// No finally block
@@ -83,7 +83,7 @@ namespace System.Linq.Expressions.Interpreter
         internal TryCatchFinallyHandler(int tryStart, int tryEnd, int gotoEndTargetIndex, ExceptionHandler[] handlers)
             : this(tryStart, tryEnd, gotoEndTargetIndex, Instruction.UnknownInstrIndex, Instruction.UnknownInstrIndex, handlers)
         {
-            Debug.Assert(handlers != null, "catch blocks should exist");
+            Debug.Assert(handlers is not null, "catch blocks should exist");
         }
 
         /// <summary>
@@ -117,11 +117,11 @@ namespace System.Linq.Expressions.Interpreter
             if (IsCatchBlockExist)
             {
                 RuntimeWrappedException? rwe = exception as RuntimeWrappedException;
-                unwrappedException = rwe != null ? rwe.WrappedException : exception;
+                unwrappedException = rwe is not null ? rwe.WrappedException : exception;
                 Type exceptionType = unwrappedException.GetType();
                 foreach (ExceptionHandler candidate in _handlers!)
                 {
-                    if (candidate.Matches(exceptionType) && (candidate.Filter == null || FilterPasses(frame, ref unwrappedException, candidate.Filter)))
+                    if (candidate.Matches(exceptionType) && (candidate.Filter is null || FilterPasses(frame, ref unwrappedException, candidate.Filter)))
                     {
                         handler = candidate;
                         return true;
@@ -216,7 +216,7 @@ namespace System.Linq.Expressions.Interpreter
             //We allow comparison between int and DebugInfo here
             int IComparer<DebugInfo>.Compare(DebugInfo? d1, DebugInfo? d2)
             {
-                Debug.Assert(d1 != null && d2 != null);
+                Debug.Assert(d1 is not null && d2 is not null);
                 if (d1.Index > d2.Index) return 1;
                 else if (d1.Index == d2.Index) return 0;
                 else return -1;
@@ -272,7 +272,7 @@ namespace System.Linq.Expressions.Interpreter
             _debugInfo = info;
         }
 
-        public override string? ToString() => _debugInfo != null ? _methodName + ": " + _debugInfo : _methodName;
+        public override string? ToString() => _debugInfo is not null ? _methodName + ": " + _debugInfo : _methodName;
     }
 
     internal sealed class LightCompiler
@@ -362,7 +362,7 @@ namespace System.Linq.Expressions.Interpreter
                 else
                 {
                     object? value = ScriptingRuntimeHelpers.GetPrimitiveDefaultValue(type);
-                    if (value != null)
+                    if (value is not null)
                     {
                         _instructions.EmitLoad(value);
                     }
@@ -384,7 +384,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 return local;
             }
-            else if (_parent != null)
+            else if (_parent is not null)
             {
                 _parent.EnsureAvailableForClosure(expr);
                 return _locals.AddClosureVariable(expr);
@@ -571,7 +571,7 @@ namespace System.Linq.Expressions.Interpreter
             var index = (IndexExpression)expr;
 
             // instance:
-            if (index.Object != null)
+            if (index.Object is not null)
             {
                 EmitThisForMethodCall(index.Object);
             }
@@ -587,7 +587,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void EmitIndexGet(IndexExpression index)
         {
-            if (index.Indexer != null)
+            if (index.Indexer is not null)
             {
                 _instructions.EmitCall(index.Indexer.GetGetMethod(nonPublic: true)!);
             }
@@ -606,7 +606,7 @@ namespace System.Linq.Expressions.Interpreter
             var index = (IndexExpression)node.Left;
 
             // instance:
-            if (index.Object != null)
+            if (index.Object is not null)
             {
                 EmitThisForMethodCall(index.Object);
             }
@@ -626,7 +626,7 @@ namespace System.Linq.Expressions.Interpreter
                 _instructions.EmitAssignLocal(local.Index);
             }
 
-            if (index.Indexer != null)
+            if (index.Indexer is not null)
             {
                 _instructions.EmitCall(index.Indexer.GetSetMethod(nonPublic: true)!);
             }
@@ -650,7 +650,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             var member = (MemberExpression)node.Left;
             Expression? expr = member.Expression;
-            if (expr != null)
+            if (expr is not null)
             {
                 EmitThisForMethodCall(expr);
             }
@@ -688,7 +688,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 // other types inherited from MemberInfo (EventInfo\MethodBase\Type) cannot be used in MemberAssignment
                 var fi = (FieldInfo)refMember;
-                Debug.Assert(fi != null);
+                Debug.Assert(fi is not null);
                 if (fi.IsLiteral)
                 {
                     throw Error.NotSupported();
@@ -753,7 +753,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             var node = (BinaryExpression)expr;
 
-            if (node.Method != null)
+            if (node.Method is not null)
             {
                 if (node.IsLifted)
                 {
@@ -778,9 +778,9 @@ namespace System.Linq.Expressions.Interpreter
                         case ExpressionType.Equal:
                         case ExpressionType.NotEqual:
                             /* generating (equal/not equal):
-                                * if (left == null) {
-                                *      right == null/right != null
-                                * }else if (right == null) {
+                                * if (left is null) {
+                                *      right is null/right is not null
+                                * }else if (right is null) {
                                 *      False/True
                                 * }else{
                                 *      op_Equality(left, right)/op_Inequality(left, right)
@@ -969,7 +969,7 @@ namespace System.Linq.Expressions.Interpreter
         private static bool IsNullConstant(Expression e)
         {
             var c = e as ConstantExpression;
-            return c != null && c.Value == null;
+            return c is not null && c.Value is null;
         }
 #endif
         private void CompileEqual(Expression left, Expression right, bool liftedToNull)
@@ -1033,7 +1033,7 @@ namespace System.Linq.Expressions.Interpreter
         private void CompileConvertUnaryExpression(Expression expr)
         {
             var node = (UnaryExpression)expr;
-            if (node.Method != null)
+            if (node.Method is not null)
             {
                 BranchLabel end = _instructions.MakeLabel();
                 BranchLabel loadDefault = _instructions.MakeLabel();
@@ -1079,7 +1079,7 @@ namespace System.Linq.Expressions.Interpreter
                     _instructions.Emit(NullableMethodCallInstruction.CreateGetValue());
                 }
 
-                if (updater == null)
+                if (updater is null)
                 {
                     _instructions.EmitCall(method);
                 }
@@ -1225,7 +1225,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             var node = (UnaryExpression)expr;
 
-            if (node.Method != null)
+            if (node.Method is not null)
             {
                 EmitUnaryMethodCall(node);
             }
@@ -1331,7 +1331,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileLogicalBinaryExpression(BinaryExpression b, bool andAlso)
         {
-            if (b.Method != null && !b.IsLiftedLogical)
+            if (b.Method is not null && !b.IsLiftedLogical)
             {
                 CompileMethodLogicalBinaryExpression(b, andAlso);
             }
@@ -1356,7 +1356,7 @@ namespace System.Linq.Expressions.Interpreter
             _instructions.EmitDup();
 
             MethodInfo? opTrue = TypeUtils.GetBooleanOperator(expr.Method!.DeclaringType!, andAlso ? "op_False" : "op_True");
-            Debug.Assert(opTrue != null, "factory should check that the method exists");
+            Debug.Assert(opTrue is not null, "factory should check that the method exists");
             _instructions.EmitCall(opTrue);
             _instructions.EmitBranchTrue(labEnd);
 
@@ -1536,7 +1536,7 @@ namespace System.Linq.Expressions.Interpreter
                     CompileAsVoid(node.SwitchValue);
 
                     // Now if there is a default body, it happens unconditionally.
-                    if (node.DefaultBody != null)
+                    if (node.DefaultBody is not null)
                     {
                         Compile(node.DefaultBody);
                     }
@@ -1551,7 +1551,7 @@ namespace System.Linq.Expressions.Interpreter
 
                 TypeCode switchType = node.SwitchValue.Type.GetTypeCode();
 
-                if (node.Comparison == null)
+                if (node.Comparison is null)
                 {
                     switch (switchType)
                     {
@@ -1582,7 +1582,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     // If we have a comparison other than string equality, bail
                     MethodInfo? equality = String_op_Equality_String_String;
-                    if (equality != null && !equality.IsStatic)
+                    if (equality is not null && !equality.IsStatic)
                     {
                         equality = null;
                     }
@@ -1634,7 +1634,7 @@ namespace System.Linq.Expressions.Interpreter
             int switchIndex = _instructions.Count;
             _instructions.EmitIntSwitch(caseDict);
 
-            if (node.DefaultBody != null)
+            if (node.DefaultBody is not null)
             {
                 Compile(node.DefaultBody, !hasValue);
             }
@@ -1678,7 +1678,7 @@ namespace System.Linq.Expressions.Interpreter
             var nullCase = new StrongBox<int>(1);
             _instructions.EmitStringSwitch(caseDict, nullCase);
 
-            if (node.DefaultBody != null)
+            if (node.DefaultBody is not null)
             {
                 Compile(node.DefaultBody, !hasValue);
             }
@@ -1696,7 +1696,7 @@ namespace System.Linq.Expressions.Interpreter
                 foreach (ConstantExpression testValue in switchCase.TestValues)
                 {
                     var key = (string?)testValue.Value;
-                    if (key == null)
+                    if (key is null)
                     {
                         if (nullCase.Value == 1)
                         {
@@ -1734,21 +1734,21 @@ namespace System.Linq.Expressions.Interpreter
                 _labelBlock.TryGetLabelInfo(node.Target, out label);
 
                 // We're in a block but didn't find our label, try switch
-                if (label == null && _labelBlock.Parent!.Kind == LabelScopeKind.Switch)
+                if (label is null && _labelBlock.Parent!.Kind == LabelScopeKind.Switch)
                 {
                     _labelBlock.Parent.TryGetLabelInfo(node.Target, out label);
                 }
 
                 // if we're in a switch or block, we should've found the label
-                Debug.Assert(label != null);
+                Debug.Assert(label is not null);
             }
 
-            if (label == null)
+            if (label is null)
             {
                 label = DefineLabel(node.Target);
             }
 
-            if (node.DefaultValue != null)
+            if (node.DefaultValue is not null)
             {
                 if (node.Target.Type == typeof(void))
                 {
@@ -1768,14 +1768,14 @@ namespace System.Linq.Expressions.Interpreter
             var node = (GotoExpression)expr;
             LabelInfo labelInfo = ReferenceLabel(node.Target);
 
-            if (node.Value != null)
+            if (node.Value is not null)
             {
                 Compile(node.Value);
             }
 
             _instructions.EmitGoto(labelInfo.GetLabel(this),
                 node.Type != typeof(void),
-                node.Value != null && node.Value.Type != typeof(void),
+                node.Value is not null && node.Value.Type != typeof(void),
                 node.Target.Type != typeof(void));
         }
 
@@ -1786,7 +1786,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void PopLabelBlock(LabelScopeKind kind)
         {
-            Debug.Assert(_labelBlock != null && _labelBlock.Kind == kind);
+            Debug.Assert(_labelBlock is not null && _labelBlock.Kind == kind);
             _labelBlock = _labelBlock.Parent!;
         }
 
@@ -1808,7 +1808,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private LabelInfo DefineLabel(LabelTarget? node)
         {
-            if (node == null)
+            if (node is null)
             {
                 return new LabelInfo(null);
             }
@@ -1896,7 +1896,7 @@ namespace System.Linq.Expressions.Interpreter
         private void DefineBlockLabels(Expression? node)
         {
             var block = node as BlockExpression;
-            if (block == null)
+            if (block is null)
             {
                 return;
             }
@@ -1906,7 +1906,7 @@ namespace System.Linq.Expressions.Interpreter
                 Expression e = block.Expressions[i];
 
                 var label = e as LabelExpression;
-                if (label != null)
+                if (label is not null)
                 {
                     DefineLabel(label.Target);
                 }
@@ -1916,7 +1916,7 @@ namespace System.Linq.Expressions.Interpreter
         private void CheckRethrow()
         {
             // Rethrow is only valid inside a catch.
-            for (LabelScopeInfo? j = _labelBlock; j != null; j = j.Parent)
+            for (LabelScopeInfo? j = _labelBlock; j is not null; j = j.Parent)
             {
                 if (j.Kind == LabelScopeKind.Catch)
                 {
@@ -1935,7 +1935,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             var node = (UnaryExpression)expr;
 
-            if (node.Operand == null)
+            if (node.Operand is null)
             {
                 CheckRethrow();
 
@@ -1966,7 +1966,7 @@ namespace System.Linq.Expressions.Interpreter
         private void CompileTryExpression(Expression expr)
         {
             var node = (TryExpression)expr;
-            if (node.Fault != null)
+            if (node.Fault is not null)
             {
                 CompileTryFaultExpression(node);
             }
@@ -1977,7 +1977,7 @@ namespace System.Linq.Expressions.Interpreter
                 int tryStart = _instructions.Count;
 
                 BranchLabel? startOfFinally = null;
-                if (node.Finally != null)
+                if (node.Finally is not null)
                 {
                     startOfFinally = _instructions.MakeLabel();
                     _instructions.EmitEnterTryFinally(startOfFinally);
@@ -1989,7 +1989,7 @@ namespace System.Linq.Expressions.Interpreter
 
                 List<ExceptionHandler>? exHandlers = null;
                 var enterTryInstr = _instructions.GetInstruction(tryStart) as EnterTryCatchFinallyInstruction;
-                Debug.Assert(enterTryInstr != null);
+                Debug.Assert(enterTryInstr is not null);
 
                 PushLabelBlock(LabelScopeKind.Try);
                 bool hasValue = node.Type != typeof(void);
@@ -2015,7 +2015,7 @@ namespace System.Linq.Expressions.Interpreter
 
                         ExceptionFilter? filter = null;
 
-                        if (handler.Filter != null)
+                        if (handler.Filter is not null)
                         {
                             PushLabelBlock(LabelScopeKind.Filter);
 
@@ -2068,9 +2068,9 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 }
 
-                if (node.Finally != null)
+                if (node.Finally is not null)
                 {
-                    Debug.Assert(startOfFinally != null);
+                    Debug.Assert(startOfFinally is not null);
                     PushLabelBlock(LabelScopeKind.Finally);
 
                     _instructions.MarkLabel(startOfFinally);
@@ -2086,7 +2086,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    Debug.Assert(exHandlers != null);
+                    Debug.Assert(exHandlers is not null);
                     enterTryInstr.SetTryHandler(
                         new TryCatchFinallyHandler(tryStart, tryEnd, gotoEnd.TargetIndex, exHandlers.ToArray()));
                 }
@@ -2099,7 +2099,7 @@ namespace System.Linq.Expressions.Interpreter
 
         private void CompileTryFaultExpression(TryExpression expr)
         {
-            Debug.Assert(expr.Finally == null);
+            Debug.Assert(expr.Finally is null);
             Debug.Assert(expr.Handlers.Count == 0);
 
             // Mark where we begin.
@@ -2147,7 +2147,7 @@ namespace System.Linq.Expressions.Interpreter
             if (!method.IsStatic)
             {
                 ByRefUpdater? updater = CompileAddress(@object, -1);
-                if (updater != null)
+                if (updater is not null)
                 {
                     updaters = new List<ByRefUpdater>() { updater };
                 }
@@ -2164,9 +2164,9 @@ namespace System.Linq.Expressions.Interpreter
                 if (parameters[i].ParameterType.IsByRef)
                 {
                     ByRefUpdater? updater = CompileAddress(arg, i);
-                    if (updater != null)
+                    if (updater is not null)
                     {
-                        if (updaters == null)
+                        if (updaters is null)
                         {
                             updaters = new List<ByRefUpdater>();
                         }
@@ -2189,7 +2189,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             else
             {
-                if (updaters == null)
+                if (updaters is null)
                 {
                     _instructions.EmitCall(method, parameters);
                 }
@@ -2267,10 +2267,10 @@ namespace System.Linq.Expressions.Interpreter
                         return CompileArrayIndexAddress(array.Left, array.Right, index);
                     case ExpressionType.Index:
                         var indexNode = (IndexExpression)node;
-                        if (/*!TypeUtils.AreEquivalent(type, node.Type) || */indexNode.Indexer != null)
+                        if (/*!TypeUtils.AreEquivalent(type, node.Type) || */indexNode.Indexer is not null)
                         {
                             LocalDefinition? objTmp = null;
-                            if (indexNode.Object != null)
+                            if (indexNode.Object is not null)
                             {
                                 objTmp = _locals.DefineLocal(Expression.Parameter(indexNode.Object.Type), _instructions.Count);
                                 EmitThisForMethodCall(indexNode.Object);
@@ -2308,7 +2308,7 @@ namespace System.Linq.Expressions.Interpreter
                         var member = (MemberExpression)node;
 
                         LocalDefinition? memberTemp = null;
-                        if (member.Expression != null)
+                        if (member.Expression is not null)
                         {
                             memberTemp = _locals.DefineLocal(Expression.Parameter(member.Expression.Type, "member"), _instructions.Count);
                             EmitThisForMethodCall(member.Expression);
@@ -2317,7 +2317,7 @@ namespace System.Linq.Expressions.Interpreter
                         }
 
                         var field = member.Member as FieldInfo;
-                        if (field != null)
+                        if (field is not null)
                         {
                             _instructions.EmitLoadField(field);
                             if (!field.IsLiteral && !field.IsInitOnly)
@@ -2389,7 +2389,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             var node = (NewExpression)expr;
 
-            if (node.Constructor != null)
+            if (node.Constructor is not null)
             {
                 if (node.Constructor.DeclaringType!.IsAbstract)
                     throw Error.NonAbstractConstructorRequired();
@@ -2404,9 +2404,9 @@ namespace System.Linq.Expressions.Interpreter
                     if (parameters[i].ParameterType.IsByRef)
                     {
                         ByRefUpdater? updater = CompileAddress(arg, i);
-                        if (updater != null)
+                        if (updater is not null)
                         {
-                            if (updaters == null)
+                            if (updaters is null)
                             {
                                 updaters = new List<ByRefUpdater>();
                             }
@@ -2419,7 +2419,7 @@ namespace System.Linq.Expressions.Interpreter
                     }
                 }
 
-                if (updaters != null)
+                if (updaters is not null)
                 {
                     _instructions.EmitByRefNew(node.Constructor, parameters, updaters.ToArray());
                 }
@@ -2477,7 +2477,7 @@ namespace System.Linq.Expressions.Interpreter
                 }
                 else
                 {
-                    if (from != null)
+                    if (from is not null)
                     {
                         EmitThisForMethodCall(from);
                     }
@@ -2489,7 +2489,7 @@ namespace System.Linq.Expressions.Interpreter
             {
                 // MemberExpression can use either FieldInfo or PropertyInfo - other types derived from MemberInfo are not permitted
                 var pi = (PropertyInfo)member;
-                if (pi != null)
+                if (pi is not null)
                 {
                     MethodInfo method = pi.GetGetMethod(nonPublic: true)!;
                     if (forBinding && method.IsStatic)
@@ -2497,13 +2497,13 @@ namespace System.Linq.Expressions.Interpreter
                         throw Error.InvalidProgram();
                     }
 
-                    if (from != null)
+                    if (from is not null)
                     {
                         EmitThisForMethodCall(from);
                     }
 
                     if (!method.IsStatic &&
-                        (from != null && from.Type.IsNullableType()))
+                        (from is not null && from.Type.IsNullableType()))
                     {
                         // reflection doesn't let us call methods on Nullable<T> when the value
                         // is null...  so we get to special case those methods!
@@ -2581,7 +2581,7 @@ namespace System.Linq.Expressions.Interpreter
             var compiler = new LightCompiler(this);
             LightDelegateCreator creator = compiler.CompileTop(node);
 
-            if (compiler._locals.ClosureVariables != null)
+            if (compiler._locals.ClosureVariables is not null)
             {
                 foreach (ParameterExpression variable in compiler._locals.ClosureVariables.Keys)
                 {
@@ -2596,7 +2596,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             var node = (BinaryExpression)expr;
 
-            bool hasConversion = node.Conversion != null;
+            bool hasConversion = node.Conversion is not null;
             bool hasImplicitConversion = false;
             if (!hasConversion && node.Left.Type.IsNullableType())
             {
@@ -2641,7 +2641,7 @@ namespace System.Linq.Expressions.Interpreter
 
             _instructions.MarkLabel(leftNotNull);
 
-            if (node.Conversion != null)
+            if (node.Conversion is not null)
             {
                 ParameterExpression temp = Expression.Parameter(node.Left.Type, "temp");
                 LocalDefinition local = _locals.DefineLocal(temp, _instructions.Count);
@@ -2763,9 +2763,9 @@ namespace System.Linq.Expressions.Interpreter
         private static Type GetMemberType(MemberInfo member)
         {
             var fi = member as FieldInfo;
-            if (fi != null) return fi.FieldType;
+            if (fi is not null) return fi.FieldType;
             var pi = member as PropertyInfo;
-            if (pi != null) return pi.PropertyType;
+            if (pi is not null) return pi.PropertyType;
             throw new InvalidOperationException("MemberNotFieldOrProperty");
         }
 
@@ -2814,13 +2814,13 @@ namespace System.Linq.Expressions.Interpreter
 
             protected override CatchBlock VisitCatchBlock(CatchBlock node)
             {
-                if (node.Variable != null)
+                if (node.Variable is not null)
                 {
                     PushParameters(new[] { node.Variable });
                 }
                 Visit(node.Body);
                 Visit(node.Filter);
-                if (node.Variable != null)
+                if (node.Variable is not null)
                 {
                     PopParameters(new[] { node.Variable });
                 }
@@ -3198,13 +3198,13 @@ namespace System.Linq.Expressions.Interpreter
 
         public override void Update(InterpretedFrame frame, object? value)
         {
-            object? obj = _object == null ? null : frame.Data[_object.GetValueOrDefault().Index];
+            object? obj = _object is null ? null : frame.Data[_object.GetValueOrDefault().Index];
             _field.SetValue(obj, value);
         }
 
         public override void UndefineTemps(InstructionList instructions, LocalVariables locals)
         {
-            if (_object != null)
+            if (_object is not null)
             {
                 locals.UndefineLocal(_object.GetValueOrDefault(), instructions.Count);
             }
@@ -3225,7 +3225,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override void Update(InterpretedFrame frame, object? value)
         {
-            object? obj = _object == null ? null : frame.Data[_object.GetValueOrDefault().Index];
+            object? obj = _object is null ? null : frame.Data[_object.GetValueOrDefault().Index];
 
             try
             {
@@ -3240,7 +3240,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override void UndefineTemps(InstructionList instructions, LocalVariables locals)
         {
-            if (_object != null)
+            if (_object is not null)
             {
                 locals.UndefineLocal(_object.GetValueOrDefault(), instructions.Count);
             }
@@ -3270,7 +3270,7 @@ namespace System.Linq.Expressions.Interpreter
             }
             args[args.Length - 1] = value;
 
-            object? instance = _obj == null ? null : frame.Data[_obj.GetValueOrDefault().Index];
+            object? instance = _obj is null ? null : frame.Data[_obj.GetValueOrDefault().Index];
 
             try
             {
@@ -3285,7 +3285,7 @@ namespace System.Linq.Expressions.Interpreter
 
         public override void UndefineTemps(InstructionList instructions, LocalVariables locals)
         {
-            if (_obj != null)
+            if (_obj is not null)
             {
                 locals.UndefineLocal(_obj.GetValueOrDefault(), instructions.Count);
             }

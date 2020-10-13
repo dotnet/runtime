@@ -530,11 +530,11 @@ namespace System.Threading.Tasks
         [NonEvent]
         public void IncompleteAsyncMethod(IAsyncStateMachineBox stateMachineBox)
         {
-            System.Diagnostics.Debug.Assert(stateMachineBox != null);
+            System.Diagnostics.Debug.Assert(stateMachineBox is not null);
             if (IsEnabled() && IsEnabled(EventLevel.Warning, Keywords.AsyncMethod))
             {
                 IAsyncStateMachine stateMachine = stateMachineBox.GetStateMachineObject();
-                if (stateMachine != null)
+                if (stateMachine is not null)
                 {
                     string description = AsyncMethodBuilderCore.GetAsyncStateMachineDescription(stateMachine);
                     IncompleteAsyncMethod(description);

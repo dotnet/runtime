@@ -13,23 +13,23 @@ namespace System.Net.Http
             // general all_*. On Windows, environment variables are case insensitive.
 
             Uri? httpProxy = null;
-            if (Environment.GetEnvironmentVariable(EnvCGI) == null)
+            if (Environment.GetEnvironmentVariable(EnvCGI) is null)
             {
                 httpProxy = GetUriFromString(Environment.GetEnvironmentVariable(EnvHttpProxyUC));
             }
 
             Uri? httpsProxy = GetUriFromString(Environment.GetEnvironmentVariable(EnvHttpsProxyUC));
 
-            if (httpProxy == null || httpsProxy == null)
+            if (httpProxy is null || httpsProxy is null)
             {
                 Uri? allProxy = GetUriFromString(Environment.GetEnvironmentVariable(EnvAllProxyUC));
 
-                if (httpProxy == null)
+                if (httpProxy is null)
                 {
                     httpProxy = allProxy;
                 }
 
-                if (httpsProxy == null)
+                if (httpsProxy is null)
                 {
                     httpsProxy = allProxy;
                 }
@@ -37,7 +37,7 @@ namespace System.Net.Http
 
             // Do not instantiate if nothing is set.
             // Caller may pick some other proxy type.
-            if (httpProxy == null && httpsProxy == null)
+            if (httpProxy is null && httpsProxy is null)
             {
                 proxy = null;
                 return false;

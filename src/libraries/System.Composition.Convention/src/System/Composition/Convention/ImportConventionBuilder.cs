@@ -30,7 +30,7 @@ namespace System.Composition.Convention
         /// <returns>An import builder allowing further configuration.</returns>
         public ImportConventionBuilder AsContractName(string contractName)
         {
-            if (contractName == null)
+            if (contractName is null)
             {
                 throw new ArgumentNullException(nameof(contractName));
             }
@@ -92,7 +92,7 @@ namespace System.Composition.Convention
         /// <returns>An import builder allowing further configuration.</returns>
         public ImportConventionBuilder AddMetadataConstraint(string name, object value)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -100,7 +100,7 @@ namespace System.Composition.Convention
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
             }
-            if (_metadataConstraintItems == null)
+            if (_metadataConstraintItems is null)
             {
                 _metadataConstraintItems = new List<Tuple<string, object>>();
             }
@@ -116,7 +116,7 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ImportConventionBuilder AddMetadataConstraint(string name, Func<Type, object> getConstraintValueFromPartType)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -125,12 +125,12 @@ namespace System.Composition.Convention
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
             }
 
-            if (getConstraintValueFromPartType == null)
+            if (getConstraintValueFromPartType is null)
             {
                 throw new ArgumentNullException(nameof(getConstraintValueFromPartType));
             }
 
-            if (_metadataConstraintItemFuncs == null)
+            if (_metadataConstraintItemFuncs is null)
             {
                 _metadataConstraintItemFuncs = new List<Tuple<string, Func<Type, object>>>();
             }
@@ -142,7 +142,7 @@ namespace System.Composition.Convention
         {
             Attribute importAttribute;
 
-            var contractName = (_getContractNameFromPartType != null) ? _getContractNameFromPartType(type) : _contractName;
+            var contractName = (_getContractNameFromPartType is not null) ? _getContractNameFromPartType(type) : _contractName;
 
             // Infer from Type when not explicitly set.
             var asMany = _asMany ?? IsSupportedImportManyType(type.GetTypeInfo());
@@ -157,7 +157,7 @@ namespace System.Composition.Convention
             {
                 importAttribute = new ImportManyAttribute(contractName);
             }
-            if (attributes == null)
+            if (attributes is null)
             {
                 attributes = new List<Attribute>();
             }
@@ -165,7 +165,7 @@ namespace System.Composition.Convention
 
 
             //Add metadata attributes from direct specification
-            if (_metadataConstraintItems != null)
+            if (_metadataConstraintItems is not null)
             {
                 foreach (Tuple<string, object> item in _metadataConstraintItems)
                 {
@@ -174,12 +174,12 @@ namespace System.Composition.Convention
             }
 
             //Add metadata attributes from func specification
-            if (_metadataConstraintItemFuncs != null)
+            if (_metadataConstraintItemFuncs is not null)
             {
                 foreach (Tuple<string, Func<Type, object>> item in _metadataConstraintItemFuncs)
                 {
                     var name = item.Item1;
-                    var value = (item.Item2 != null) ? item.Item2(type) : null;
+                    var value = (item.Item2 is not null) ? item.Item2(type) : null;
                     attributes.Add(new ImportMetadataConstraintAttribute(name, value));
                 }
             }

@@ -20,7 +20,7 @@ namespace System.Reflection.Metadata
 
         internal LocalVariable(MetadataReader reader, LocalVariableHandle handle)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(!handle.IsNil);
 
             _reader = reader;

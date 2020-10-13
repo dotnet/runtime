@@ -22,7 +22,7 @@ namespace Internal.Cryptography
         //
         public static string? ToFriendlyName(string oid, OidGroup oidGroup, bool fallBackToAllGroups)
         {
-            if (oid == null)
+            if (oid is null)
                 throw new ArgumentNullException(nameof(oid));
 
             string? mappedName;
@@ -45,7 +45,7 @@ namespace Internal.Cryptography
 
             mappedName = NativeOidToFriendlyName(oid, oidGroup, fallBackToAllGroups);
 
-            if (shouldUseCache && mappedName != null)
+            if (shouldUseCache && mappedName is not null)
             {
                 s_lateBoundOidToFriendlyName.TryAdd(oid, mappedName);
 
@@ -61,7 +61,7 @@ namespace Internal.Cryptography
         //
         public static string? ToOid(string friendlyName, OidGroup oidGroup, bool fallBackToAllGroups)
         {
-            if (friendlyName == null)
+            if (friendlyName is null)
                 throw new ArgumentNullException(nameof(friendlyName));
             if (friendlyName.Length == 0)
                 return null;
@@ -80,7 +80,7 @@ namespace Internal.Cryptography
 
             mappedOid = NativeFriendlyNameToOid(friendlyName, oidGroup, fallBackToAllGroups);
 
-            if (shouldUseCache && mappedOid != null)
+            if (shouldUseCache && mappedOid is not null)
             {
                 s_lateBoundFriendlyNameToOid.TryAdd(friendlyName, mappedOid);
 
@@ -141,7 +141,7 @@ namespace Internal.Cryptography
                 s_oidToFriendlyName.Add(oid, primaryFriendlyName);
                 s_friendlyNameToOid.Add(primaryFriendlyName, oid);
 
-                if (additionalFriendlyNames != null)
+                if (additionalFriendlyNames is not null)
                 {
                     foreach (var additionalName in additionalFriendlyNames)
                     {

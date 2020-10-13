@@ -79,14 +79,14 @@ namespace System.Reflection.Emit
 
         internal override Type InternalResolve()
         {
-            if (mbuilder != null)
+            if (mbuilder is not null)
                 return MethodBase.GetMethodFromHandle(mbuilder.MethodHandleInternal, mbuilder.TypeBuilder.InternalResolve().TypeHandle)!.GetGenericArguments()[index];
             return tbuilder.InternalResolve().GetGenericArguments()[index];
         }
 
         internal override Type RuntimeResolve()
         {
-            if (mbuilder != null)
+            if (mbuilder is not null)
                 return MethodBase.GetMethodFromHandle(mbuilder.MethodHandleInternal, mbuilder.TypeBuilder.RuntimeResolve().TypeHandle)!.GetGenericArguments()[index];
             return tbuilder.RuntimeResolve().GetGenericArguments()[index];
         }
@@ -225,7 +225,7 @@ namespace System.Reflection.Emit
 
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
-            if (typeInfo == null)
+            if (typeInfo is null)
                 return false;
 
             return IsAssignableFrom(typeInfo.AsType());
@@ -263,7 +263,7 @@ namespace System.Reflection.Emit
 
         protected override bool IsValueTypeImpl()
         {
-            return base_type != null ? base_type.IsValueType : false;
+            return base_type is not null ? base_type.IsValueType : false;
         }
 
         public override bool IsSZArray
@@ -359,7 +359,7 @@ namespace System.Reflection.Emit
 
         public override Type? DeclaringType
         {
-            get { return mbuilder != null ? mbuilder.DeclaringType : tbuilder; }
+            get { return mbuilder is not null ? mbuilder.DeclaringType : tbuilder; }
         }
 
         public override Type? ReflectedType
@@ -427,10 +427,10 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
-            if (cattrs != null)
+            if (cattrs is not null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
                 cattrs.CopyTo(new_array, 0);

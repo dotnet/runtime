@@ -54,7 +54,7 @@ namespace System.Security.Cryptography
 
         private static Oid InitializeOid(string oidValue)
         {
-            Debug.Assert(oidValue != null);
+            Debug.Assert(oidValue is not null);
             Oid oid = new Oid(oidValue, null);
 
             // Do not remove - the FriendlyName property get has side effects.

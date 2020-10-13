@@ -43,7 +43,7 @@ namespace Microsoft.Extensions.DependencyInjection
                     }
                 }
 
-                if (exceptions != null)
+                if (exceptions is not null)
                 {
                     throw new AggregateException("Some services are not able to be constructed", exceptions.ToArray());
                 }

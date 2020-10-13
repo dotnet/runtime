@@ -44,7 +44,7 @@ namespace System.ComponentModel.Composition
             Requires.NotNull(attributedPart, nameof(attributedPart));
 
             var reflectionComposablePartDefinition = partDefinition as ReflectionComposablePartDefinition;
-            if (reflectionComposablePartDefinition == null)
+            if (reflectionComposablePartDefinition is null)
             {
                 throw ExceptionBuilder.CreateReflectionModelInvalidPartDefinition(nameof(partDefinition), partDefinition.GetType());
             }
@@ -141,7 +141,7 @@ namespace System.ComponentModel.Composition
 
             batch.AddPart(part);
 
-            Debug.Assert(part != null);
+            Debug.Assert(part is not null);
             return part;
         }
 
@@ -183,7 +183,7 @@ namespace System.ComponentModel.Composition
             ComposablePart part = AttributedModelServices.CreatePart(attributedPart);
             compositionService.SatisfyImportsOnce(part);
 
-            Debug.Assert(part != null);
+            Debug.Assert(part is not null);
             return part;
         }
 
@@ -215,7 +215,7 @@ namespace System.ComponentModel.Composition
             ComposablePart part = AttributedModelServices.CreatePart(attributedPart, reflectionContext);
             compositionService.SatisfyImportsOnce(part);
 
-            Debug.Assert(part != null);
+            Debug.Assert(part is not null);
             return part;
         }
 

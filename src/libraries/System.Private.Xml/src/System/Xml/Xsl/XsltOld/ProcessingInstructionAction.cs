@@ -65,15 +65,15 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             switch (frame.State)
             {
                 case Initialized:
-                    if (_nameAvt == null)
+                    if (_nameAvt is null)
                     {
                         frame.StoredOutput = _name;
-                        if (_name == null)
+                        if (_name is null)
                         {
                             // name was static but was bad;
                             frame.Finished();
@@ -92,7 +92,7 @@ namespace System.Xml.Xsl.XsltOld
                     goto case NameReady;
 
                 case NameReady:
-                    Debug.Assert(frame.StoredOutput != null);
+                    Debug.Assert(frame.StoredOutput is not null);
                     if (processor.BeginEvent(XPathNodeType.ProcessingInstruction, string.Empty, frame.StoredOutput, string.Empty, false) == false)
                     {
                         // Come back later
@@ -121,7 +121,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal static bool IsProcessingInstructionName(string? name)
         {
-            if (name == null)
+            if (name is null)
             {
                 return false;
             }

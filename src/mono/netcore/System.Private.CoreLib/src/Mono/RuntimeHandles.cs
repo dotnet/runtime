@@ -25,7 +25,7 @@ namespace Mono
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || GetType() != obj.GetType())
+            if (obj is null || GetType() != obj.GetType())
                 return false;
 
             return value == ((RuntimeClassHandle)obj).Value;
@@ -40,7 +40,7 @@ namespace Mono
 
         public static bool operator ==(RuntimeClassHandle left, object? right)
         {
-            return right != null && right is RuntimeClassHandle rch && left.Equals(rch);
+            return right is not null && right is RuntimeClassHandle rch && left.Equals(rch);
         }
 
         public static bool operator !=(RuntimeClassHandle left, object? right)
@@ -50,7 +50,7 @@ namespace Mono
 
         public static bool operator ==(object? left, RuntimeClassHandle right)
         {
-            return left != null && left is RuntimeClassHandle rch && rch.Equals(right);
+            return left is not null && left is RuntimeClassHandle rch && rch.Equals(right);
         }
 
         public static bool operator !=(object? left, RuntimeClassHandle right)
@@ -117,7 +117,7 @@ namespace Mono
         {
             int i = 0;
             RuntimeStructs.MonoClass** p = value->constraints;
-            while (p != null && *p != null)
+            while (p is not null && *p is not null)
             {
                 p++; i++;
             }
@@ -138,7 +138,7 @@ namespace Mono
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || GetType() != obj.GetType())
+            if (obj is null || GetType() != obj.GetType())
                 return false;
 
             return value == ((RuntimeEventHandle)obj).Value;
@@ -178,7 +178,7 @@ namespace Mono
 
         public override bool Equals(object? obj)
         {
-            if (obj == null || GetType() != obj.GetType())
+            if (obj is null || GetType() != obj.GetType())
                 return false;
 
             return value == ((RuntimePropertyHandle)obj).Value;

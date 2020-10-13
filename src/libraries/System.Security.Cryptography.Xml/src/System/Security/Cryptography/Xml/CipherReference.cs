@@ -50,7 +50,7 @@ namespace System.Security.Cryptography.Xml
 
         internal new XmlElement GetXml(XmlDocument document)
         {
-            if (ReferenceType == null)
+            if (ReferenceType is null)
                 throw new CryptographicException(SR.Cryptography_Xml_ReferenceTypeRequired);
 
             // Create the Reference
@@ -67,7 +67,7 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             ReferenceType = value.LocalName;
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography.Xml
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
             XmlNode transformsNode = value.SelectSingleNode("enc:Transforms", nsm);
-            if (transformsNode != null)
+            if (transformsNode is not null)
                 TransformChain.LoadXml(transformsNode as XmlElement);
 
             // cache the Xml

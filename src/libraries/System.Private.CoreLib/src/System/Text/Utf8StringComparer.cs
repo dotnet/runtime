@@ -69,7 +69,7 @@ namespace System.Text
 
             internal CultureAwareComparer(CompareInfo compareInfo, CompareOptions options)
             {
-                Debug.Assert(compareInfo != null);
+                Debug.Assert(compareInfo is not null);
 
                 _compareInfo = compareInfo;
                 _options = options;

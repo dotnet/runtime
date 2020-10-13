@@ -145,7 +145,7 @@ namespace System.Diagnostics
 
         private void Write(string? message, bool useLogFile)
         {
-            if (message == null)
+            if (message is null)
             {
                 message = string.Empty;
             }

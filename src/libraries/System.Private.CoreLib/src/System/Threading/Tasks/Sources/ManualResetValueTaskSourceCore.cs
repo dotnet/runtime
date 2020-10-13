@@ -80,8 +80,8 @@ namespace System.Threading.Tasks.Sources
         {
             ValidateToken(token);
             return
-                _continuation == null || !_completed ? ValueTaskSourceStatus.Pending :
-                _error == null ? ValueTaskSourceStatus.Succeeded :
+                _continuation is null || !_completed ? ValueTaskSourceStatus.Pending :
+                _error is null ? ValueTaskSourceStatus.Succeeded :
                 _error.SourceException is OperationCanceledException ? ValueTaskSourceStatus.Canceled :
                 ValueTaskSourceStatus.Faulted;
         }
@@ -108,7 +108,7 @@ namespace System.Threading.Tasks.Sources
         /// <param name="flags">The flags describing the behavior of the continuation.</param>
         public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
         {
-            if (continuation == null)
+            if (continuation is null)
             {
                 throw new ArgumentNullException(nameof(continuation));
             }
@@ -122,7 +122,7 @@ namespace System.Threading.Tasks.Sources
             if ((flags & ValueTaskSourceOnCompletedFlags.UseSchedulingContext) != 0)
             {
                 SynchronizationContext? sc = SynchronizationContext.Current;
-                if (sc != null && sc.GetType() != typeof(SynchronizationContext))
+                if (sc is not null && sc.GetType() != typeof(SynchronizationContext))
                 {
                     _capturedContext = sc;
                 }
@@ -145,13 +145,13 @@ namespace System.Threading.Tasks.Sources
             // is already set to something other than the completion sentinel.
 
             object? oldContinuation = _continuation;
-            if (oldContinuation == null)
+            if (oldContinuation is null)
             {
                 _continuationState = state;
                 oldContinuation = Interlocked.CompareExchange(ref _continuation, continuation, null);
             }
 
-            if (oldContinuation != null)
+            if (oldContinuation is not null)
             {
                 // Operation already completed, so we need to queue the supplied callback.
                 if (!ReferenceEquals(oldContinuation, ManualResetValueTaskSourceCoreShared.s_sentinel))
@@ -162,7 +162,7 @@ namespace System.Threading.Tasks.Sources
                 switch (_capturedContext)
                 {
                     case null:
-                        if (_executionContext != null)
+                        if (_executionContext is not null)
                         {
                             ThreadPool.QueueUserWorkItem(continuation, state, preferLocal: true);
                         }
@@ -241,8 +241,8 @@ namespace System.Threading.Tasks.Sources
             // for the surrounding code to become less efficent (stack spills etc)
             // and it is an uncommon path.
 
-            Debug.Assert(_continuation != null);
-            Debug.Assert(_executionContext != null);
+            Debug.Assert(_continuation is not null);
+            Debug.Assert(_executionContext is not null);
 
             ExecutionContext? currentContext = ExecutionContext.CaptureForRestore();
             // Restore the captured ExecutionContext before executing anything.
@@ -312,8 +312,8 @@ namespace System.Threading.Tasks.Sources
         /// </summary>
         private void InvokeSchedulerContinuation()
         {
-            Debug.Assert(_capturedContext != null);
-            Debug.Assert(_continuation != null);
+            Debug.Assert(_capturedContext is not null);
+            Debug.Assert(_continuation is not null);
 
             switch (_capturedContext)
             {

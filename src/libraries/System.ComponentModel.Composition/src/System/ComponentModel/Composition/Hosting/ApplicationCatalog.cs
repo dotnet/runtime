@@ -47,13 +47,13 @@ namespace System.ComponentModel.Composition.Hosting
 
         internal ComposablePartCatalog CreateCatalog(string location, string pattern)
         {
-            if (_reflectionContext != null)
+            if (_reflectionContext is not null)
             {
-                return (_definitionOrigin != null)
+                return (_definitionOrigin is not null)
                     ? new DirectoryCatalog(location, pattern, _reflectionContext, _definitionOrigin)
                     : new DirectoryCatalog(location, pattern, _reflectionContext);
             }
-            return (_definitionOrigin != null)
+            return (_definitionOrigin is not null)
                 ? new DirectoryCatalog(location, pattern, _definitionOrigin)
                 : new DirectoryCatalog(location, pattern);
         }
@@ -65,14 +65,14 @@ namespace System.ComponentModel.Composition.Hosting
         {
             get
             {
-                if (_innerCatalog == null)
+                if (_innerCatalog is null)
                 {
                     lock (_thisLock)
                     {
-                        if (_innerCatalog == null)
+                        if (_innerCatalog is null)
                         {
                             var location = AppDomain.CurrentDomain.BaseDirectory;
-                            if (location == null)
+                            if (location is null)
                             {
                                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
                             }
@@ -117,7 +117,7 @@ namespace System.ComponentModel.Composition.Hosting
                         _innerCatalog = null;
                         _isDisposed = true;
                     }
-                    if (innerCatalog != null)
+                    if (innerCatalog is not null)
                     {
                         innerCatalog.Dispose();
                     }

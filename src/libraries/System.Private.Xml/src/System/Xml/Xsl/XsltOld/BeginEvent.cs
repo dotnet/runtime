@@ -23,7 +23,7 @@ namespace System.Xml.Xsl.XsltOld
         public BeginEvent(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
             Debug.Assert(input.NodeType != XPathNodeType.Namespace);
             _nodeType = input.NodeType;
             _namespaceUri = input.NamespaceURI;
@@ -51,10 +51,10 @@ namespace System.Xml.Xsl.XsltOld
                 return; // '#default' aren't apply to attributes.
             }
             NamespaceInfo? ResultURIInfo = compiler.FindNamespaceAlias(_namespaceUri);
-            if (ResultURIInfo != null)
+            if (ResultURIInfo is not null)
             {
                 _namespaceUri = ResultURIInfo.nameSpace!;
-                if (ResultURIInfo.prefix != null)
+                if (ResultURIInfo.prefix is not null)
                 {
                     _prefix = ResultURIInfo.prefix;
                 }

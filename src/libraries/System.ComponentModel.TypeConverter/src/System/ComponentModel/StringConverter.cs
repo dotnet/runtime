@@ -29,7 +29,7 @@ namespace System.ComponentModel
             {
                 return (string)value;
             }
-            if (value == null)
+            if (value is null)
             {
                 return string.Empty;
             }

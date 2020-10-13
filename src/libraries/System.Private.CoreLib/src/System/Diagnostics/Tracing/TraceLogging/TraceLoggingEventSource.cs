@@ -80,11 +80,11 @@ namespace System.Diagnostics.Tracing
             EventSourceSettings config,
             params string[]? traits)
             : this(
-                eventSourceName == null ? default : GenerateGuidFromName(eventSourceName.ToUpperInvariant()),
+                eventSourceName is null ? default : GenerateGuidFromName(eventSourceName.ToUpperInvariant()),
                 eventSourceName!,
                 config, traits)
         {
-            if (eventSourceName == null)
+            if (eventSourceName is null)
             {
                 throw new ArgumentNullException(nameof(eventSourceName));
             }
@@ -403,7 +403,7 @@ namespace System.Diagnostics.Tracing
                 : eventTypes.keywords;
 
             NameInfo nameInfo = eventTypes.GetNameInfo(eventName ?? eventTypes.Name, tags);
-            if (nameInfo == null)
+            if (nameInfo is null)
             {
                 return;
             }
@@ -519,7 +519,7 @@ namespace System.Diagnostics.Tracing
             fixed (EventSourceOptions* pOptions = &options)
             {
                 NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out EventDescriptor descriptor);
-                if (nameInfo == null)
+                if (nameInfo is null)
                 {
                     return;
                 }
@@ -587,7 +587,7 @@ namespace System.Diagnostics.Tracing
                 {
                     options.Opcode = options.IsOpcodeSet ? options.Opcode : GetOpcodeWithDefault(options.Opcode, eventName);
                     NameInfo? nameInfo = this.UpdateDescriptor(eventName, eventTypes, ref options, out EventDescriptor descriptor);
-                    if (nameInfo == null)
+                    if (nameInfo is null)
                     {
                         return;
                     }
@@ -627,17 +627,17 @@ namespace System.Diagnostics.Tracing
 
                         Guid activityId = Guid.Empty;
                         Guid relatedActivityId = Guid.Empty;
-                        if (pActivityId == null && pRelatedActivityId == null &&
+                        if (pActivityId is null && pRelatedActivityId is null &&
                            ((options.ActivityOptions & EventActivityOptions.Disable) == 0))
                         {
                             if (opcode == EventOpcode.Start)
                             {
-                                Debug.Assert(eventName != null, "GetOpcodeWithDefault should not returned Start when eventName is null");
+                                Debug.Assert(eventName is not null, "GetOpcodeWithDefault should not returned Start when eventName is null");
                                 m_activityTracker.OnStart(m_name, eventName, 0, ref activityId, ref relatedActivityId, options.ActivityOptions);
                             }
                             else if (opcode == EventOpcode.Stop)
                             {
-                                Debug.Assert(eventName != null, "GetOpcodeWithDefault should not returned Stop when eventName is null");
+                                Debug.Assert(eventName is not null, "GetOpcodeWithDefault should not returned Stop when eventName is null");
                                 m_activityTracker.OnStop(m_name, eventName, 0, ref activityId);
                             }
                             if (activityId != Guid.Empty)
@@ -671,7 +671,7 @@ namespace System.Diagnostics.Tracing
 #endif // FEATURE_MANAGED_ETW
 
                             // TODO enable filtering for listeners.
-                            if (m_Dispatchers != null)
+                            if (m_Dispatchers is not null)
                             {
                                 var eventData = (EventPayload?)(eventTypes.typeInfos[0].GetData(data));
                                 WriteToAllListeners(eventName, ref descriptor, nameInfo.tags, pActivityId, pRelatedActivityId, eventData);
@@ -713,12 +713,12 @@ namespace System.Diagnostics.Tracing
 
             // Self described events do not have an id attached. We mark it internally with -1.
             eventCallbackArgs.EventId = -1;
-            if (pActivityId != null)
+            if (pActivityId is not null)
                 eventCallbackArgs.ActivityId = *pActivityId;
-            if (pChildActivityId != null)
+            if (pChildActivityId is not null)
                 eventCallbackArgs.RelatedActivityId = *pChildActivityId;
 
-            if (payload != null)
+            if (payload is not null)
             {
                 eventCallbackArgs.Payload = new ReadOnlyCollection<object?>((IList<object?>)payload.Values);
                 eventCallbackArgs.PayloadNames = new ReadOnlyCollection<string>((IList<string>)payload.Keys);
@@ -749,7 +749,7 @@ namespace System.Diagnostics.Tracing
         private void InitializeProviderMetadata()
         {
 #if FEATURE_MANAGED_ETW
-            if (m_traits != null)
+            if (m_traits is not null)
             {
                 List<byte> traitMetaData = new List<byte>(100);
                 for (int i = 0; i < m_traits.Length - 1; i += 2)

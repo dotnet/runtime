@@ -27,17 +27,17 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public static ActiveDirectoryInterSiteTransport FindByTransportType(DirectoryContext context, ActiveDirectoryTransportType transport)
         {
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
             // if target is not specified, then we determin the target from the logon credential, so if it is a local user context, it should fail
-            if ((context.Name == null) && (!context.isRootDomain()))
+            if ((context.Name is null) && (!context.isRootDomain()))
             {
                 throw new ArgumentException(SR.ContextNotAssociatedWithDomain, nameof(context));
             }
 
             // more validation for the context, if the target is not null, then it should be either forest name or server name
-            if (context.Name != null)
+            if (context.Name is not null)
             {
                 if (!(context.isRootDomain() || context.isServer() || context.isADAMConfigSet()))
                     throw new ArgumentException(SR.NotADOrADAM, nameof(context));
@@ -350,7 +350,7 @@ namespace System.DirectoryServices.ActiveDirectory
             if (disposing)
             {
                 // free other state (managed objects)
-                if (_cachedEntry != null)
+                if (_cachedEntry is not null)
                     _cachedEntry.Dispose();
             }
 

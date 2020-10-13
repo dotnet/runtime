@@ -176,7 +176,7 @@ namespace System.Net.Sockets
         private Socket? GetOrCreateAcceptSocket(Socket? acceptSocket, bool unused, string propertyName, out SafeSocketHandle? handle)
         {
             // AcceptSocket is not supported on Unix.
-            if (acceptSocket != null)
+            if (acceptSocket is not null)
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_AcceptSocket);
             }
@@ -208,13 +208,13 @@ namespace System.Net.Sockets
             {
                 // Send the preBuffer, if any
                 // This will throw on error
-                if (preBuffer != null && preBuffer.Length > 0)
+                if (preBuffer is not null && preBuffer.Length > 0)
                 {
                     Send(preBuffer);
                 }
 
                 // Send the file, if any
-                if (fileStream != null)
+                if (fileStream is not null)
                 {
                     // This can throw ObjectDisposedException.
                     errorCode = SocketPal.SendFile(_handle, fileStream);
@@ -230,7 +230,7 @@ namespace System.Net.Sockets
 
             // Send the postBuffer, if any
             // This will throw on error
-            if (postBuffer != null && postBuffer.Length > 0)
+            if (postBuffer is not null && postBuffer.Length > 0)
             {
                 Send(postBuffer);
             }
@@ -243,14 +243,14 @@ namespace System.Net.Sockets
             {
                 // Send the preBuffer, if any
                 // This will throw on error
-                if (preBuffer != null && preBuffer.Length > 0)
+                if (preBuffer is not null && preBuffer.Length > 0)
                 {
                     // Using "this." makes the extension method kick in
                     await this.SendAsync(new ArraySegment<byte>(preBuffer), SocketFlags.None).ConfigureAwait(false);
                 }
 
                 // Send the file, if any
-                if (fileStream != null)
+                if (fileStream is not null)
                 {
                     var tcs = new TaskCompletionSource<SocketError>();
                     errorCode = SocketPal.SendFileAsync(_handle, fileStream, (_, socketError) => tcs.SetResult(socketError));
@@ -269,7 +269,7 @@ namespace System.Net.Sockets
 
             // Send the postBuffer, if any
             // This will throw on error
-            if (postBuffer != null && postBuffer.Length > 0)
+            if (postBuffer is not null && postBuffer.Length > 0)
             {
                 // Using "this." makes the extension method kick in
                 await this.SendAsync(new ArraySegment<byte>(postBuffer), SocketFlags.None).ConfigureAwait(false);

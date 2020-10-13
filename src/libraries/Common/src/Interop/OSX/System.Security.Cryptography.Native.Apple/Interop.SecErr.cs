@@ -12,7 +12,7 @@ internal static partial class Interop
         {
             string? msg = GetSecErrorString(osStatus);
 
-            if (msg == null)
+            if (msg is null)
             {
                 return CreateExceptionForCCError(osStatus, "OSStatus");
             }

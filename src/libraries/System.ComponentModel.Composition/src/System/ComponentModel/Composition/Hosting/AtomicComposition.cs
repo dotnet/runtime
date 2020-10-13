@@ -52,7 +52,7 @@ namespace System.ComponentModel.Composition.Hosting
         {
             // Lock the inner atomicComposition so that we can assume nothing changes except on
             // the innermost scope, and thereby optimize the query path
-            if (outerAtomicComposition != null)
+            if (outerAtomicComposition is not null)
             {
                 _outerAtomicComposition = outerAtomicComposition;
                 _outerAtomicComposition.ContainsInnerAtomicComposition = true;
@@ -93,7 +93,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             Requires.NotNull(completeAction, nameof(completeAction));
 
-            if (_completeActionList == null)
+            if (_completeActionList is null)
             {
                 _completeActionList = new List<Action>();
             }
@@ -108,7 +108,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             Requires.NotNull(revertAction, nameof(revertAction));
 
-            if (_revertActionList == null)
+            if (_revertActionList is null)
             {
                 _revertActionList = new List<Action>();
             }
@@ -120,7 +120,7 @@ namespace System.ComponentModel.Composition.Hosting
             ThrowIfDisposed();
             ThrowIfCompleted();
 
-            if (_outerAtomicComposition == null)
+            if (_outerAtomicComposition is null)
             {   // Execute all the complete actions
                 FinalComplete();
             }
@@ -143,7 +143,7 @@ namespace System.ComponentModel.Composition.Hosting
             ThrowIfDisposed();
             _isDisposed = true;
 
-            if (_outerAtomicComposition != null)
+            if (_outerAtomicComposition is not null)
             {
                 _outerAtomicComposition.ContainsInnerAtomicComposition = false;
             }
@@ -152,7 +152,7 @@ namespace System.ComponentModel.Composition.Hosting
             // exceuting any appropriate revert actions
             if (!_isCompleted)
             {
-                if (_revertActionList != null)
+                if (_revertActionList is not null)
                 {
                     List<Exception>? exceptions = null;
 
@@ -172,7 +172,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                         catch (Exception e)
                         {
-                            if (exceptions == null)
+                            if (exceptions is null)
                             {
                                 //If any exceptions leak through the actions we will swallow them for now
                                 // complete processing the list
@@ -183,7 +183,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                     }
                     _revertActionList = null;
-                    if (exceptions != null)
+                    if (exceptions is not null)
                     {
                         throw new InvalidOperationException(SR.InvalidOperation_RevertAndCompleteActionsMustNotThrow, new AggregateException(exceptions));
                     }
@@ -194,7 +194,7 @@ namespace System.ComponentModel.Composition.Hosting
         private void FinalComplete()
         {
             // Completeting the outer most scope is easy, just execute all the actions
-            if (_completeActionList != null)
+            if (_completeActionList is not null)
             {
                 List<Exception>? exceptions = null;
 
@@ -211,7 +211,7 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                     catch (Exception e)
                     {
-                        if (exceptions == null)
+                        if (exceptions is null)
                         {
                             //If any exceptions leak through the actions we will swallow them for now complete processing the list
                             // and we will throw InvalidOperationException with an AggregateException as it's innerException
@@ -221,7 +221,7 @@ namespace System.ComponentModel.Composition.Hosting
                     }
                 }
                 _completeActionList = null;
-                if (exceptions != null)
+                if (exceptions is not null)
                 {
                     throw new InvalidOperationException(SR.InvalidOperation_RevertAndCompleteActionsMustNotThrow, new AggregateException(exceptions));
                 }
@@ -230,7 +230,7 @@ namespace System.ComponentModel.Composition.Hosting
 
         private void CopyComplete()
         {
-            if (_outerAtomicComposition == null)
+            if (_outerAtomicComposition is null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
@@ -240,7 +240,7 @@ namespace System.ComponentModel.Composition.Hosting
             // Inner scopes are much odder, because completeting them means coalescing them into the
             // outer scope - the complete or revert actions are deferred until the outermost scope completes
             // or any intermediate rolls back
-            if (_completeActionList != null)
+            if (_completeActionList is not null)
             {
                 foreach (Action action in _completeActionList)
                 {
@@ -248,7 +248,7 @@ namespace System.ComponentModel.Composition.Hosting
                 }
             }
 
-            if (_revertActionList != null)
+            if (_revertActionList is not null)
             {
                 foreach (Action action in _revertActionList)
                 {
@@ -290,7 +290,7 @@ namespace System.ComponentModel.Composition.Hosting
 
             // If there's no atomicComposition available then recurse until we hit the outermost
             // scope, where upon we go ahead and return null
-            if (!localAtomicCompositionOnly && _outerAtomicComposition != null)
+            if (!localAtomicCompositionOnly && _outerAtomicComposition is not null)
             {
                 return _outerAtomicComposition.TryGetValueInternal<T>(key, localAtomicCompositionOnly, out value);
             }
@@ -312,10 +312,10 @@ namespace System.ComponentModel.Composition.Hosting
             }
 
             // Expand storage when needed
-            if (_values == null || _valueCount == _values.Length)
+            if (_values is null || _valueCount == _values.Length)
             {
                 var newQueries = new KeyValuePair<object, object?>[_valueCount == 0 ? 5 : _valueCount * 2];
-                if (_values != null)
+                if (_values is not null)
                 {
                     Array.Copy(_values, newQueries, _valueCount);
                 }

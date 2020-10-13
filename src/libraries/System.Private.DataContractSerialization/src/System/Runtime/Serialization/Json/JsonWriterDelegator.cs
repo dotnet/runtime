@@ -28,7 +28,7 @@ namespace System.Runtime.Serialization.Json
 
         internal override void WriteBase64(byte[]? bytes)
         {
-            if (bytes == null)
+            if (bytes is null)
             {
                 return;
             }
@@ -160,7 +160,7 @@ namespace System.Runtime.Serialization.Json
 
         internal override void WriteDateTime(DateTime value)
         {
-            if (_dateTimeFormat == null)
+            if (_dateTimeFormat is null)
             {
                 WriteDateTimeInDefaultFormat(value);
             }
@@ -235,7 +235,7 @@ namespace System.Runtime.Serialization.Json
 
         internal override void WriteStartElement(string? prefix, string localName, string? ns)
         {
-            if (localName != null && localName.Length == 0)
+            if (localName is not null && localName.Length == 0)
             {
                 base.WriteStartElement(JsonGlobals.itemString, JsonGlobals.itemString);
                 base.WriteAttributeString(null, JsonGlobals.itemString, null, localName);

@@ -310,7 +310,7 @@ namespace System.Numerics.Tensors
         /// <param name="reverseStride">False (default) to indicate that the first dimension is most major (farthest apart) and the last dimension is most minor (closest together): akin to row-major in a rank-2 tensor.  True to indicate that the last dimension is most major (farthest apart) and the first dimension is most minor (closest together): akin to column-major in a rank-2 tensor.</param>
         protected Tensor(Array fromArray, bool reverseStride)
         {
-            if (fromArray == null)
+            if (fromArray is null)
             {
                 throw new ArgumentNullException(nameof(fromArray));
             }
@@ -640,7 +640,7 @@ namespace System.Numerics.Tensors
         {
             get
             {
-                if (indices == null)
+                if (indices is null)
                 {
                     throw new ArgumentNullException(nameof(indices));
                 }
@@ -650,7 +650,7 @@ namespace System.Numerics.Tensors
 
             set
             {
-                if (indices == null)
+                if (indices is null)
                 {
                     throw new ArgumentNullException(nameof(indices));
                 }
@@ -738,7 +738,7 @@ namespace System.Numerics.Tensors
             }
             else
             {
-                if (array == null)
+                if (array is null)
                 {
                     throw new ArgumentNullException(nameof(array));
                 }
@@ -885,7 +885,7 @@ namespace System.Numerics.Tensors
         /// </param>
         protected virtual void CopyTo(T[] array, int arrayIndex)
         {
-            if (array == null)
+            if (array is null)
             {
                 throw new ArgumentNullException(nameof(array));
             }
@@ -962,7 +962,7 @@ namespace System.Numerics.Tensors
         #region IStructuralComparable members
         int IStructuralComparable.CompareTo(object? other, IComparer comparer)
         {
-            if (other == null)
+            if (other is null)
             {
                 return 1;
             }
@@ -974,7 +974,7 @@ namespace System.Numerics.Tensors
 
             var otherArray = other as Array;
 
-            if (otherArray != null)
+            if (otherArray is not null)
             {
                 return CompareTo(otherArray, comparer);
             }
@@ -1064,7 +1064,7 @@ namespace System.Numerics.Tensors
         #region IStructuralEquatable members
         bool IStructuralEquatable.Equals(object? other, IEqualityComparer comparer)
         {
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -1076,7 +1076,7 @@ namespace System.Numerics.Tensors
 
             var otherArray = other as Array;
 
-            if (otherArray != null)
+            if (otherArray is not null)
             {
                 return Equals(otherArray, comparer);
             }
@@ -1309,7 +1309,7 @@ namespace System.Numerics.Tensors
         {
             // Non-null values are fine.  Only accept nulls if T is a class or Nullable<T>.
             // Note that default(T) is not equal to null for value types except when T is Nullable<T>.
-            return ((value is T) || (value == null && default(T) == null));
+            return ((value is T) || (value is null && default(T) is null));
         }
     }
 }

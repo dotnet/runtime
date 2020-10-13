@@ -71,11 +71,11 @@ namespace System.Resources.Extensions
         /// <param name="typeName">Assembly qualified type name of the resource</param>
         public void AddResource(string name, string value, string typeName)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
-            if (typeName == null)
+            if (typeName is null)
                 throw new ArgumentNullException(nameof(typeName));
 
             // determine if the type is a primitive type
@@ -94,7 +94,7 @@ namespace System.Resources.Extensions
                     // and instead will only ever convert to one of the known types.
                     TypeConverter converter = TypeDescriptor.GetConverter(primitiveType);
 
-                    if (converter == null)
+                    if (converter is null)
                     {
                         throw new TypeLoadException(SR.Format(SR.TypeLoadException_CannotLoadConverter, primitiveType));
                     }
@@ -122,11 +122,11 @@ namespace System.Resources.Extensions
         /// <param name="typeName">Assembly qualified type name of the resource</param>
         public void AddTypeConverterResource(string name, byte[] value, string typeName)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
-            if (typeName == null)
+            if (typeName is null)
                 throw new ArgumentNullException(nameof(typeName));
 
             AddResourceData(name, typeName, new ResourceDataRecord(SerializationFormat.TypeConverterByteArray, value));
@@ -143,11 +143,11 @@ namespace System.Resources.Extensions
         /// <param name="typeName">Assembly qualified type name of the resource</param>
         public void AddBinaryFormattedResource(string name, byte[] value, string? typeName = null)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
-            if (typeName == null)
+            if (typeName is null)
             {
                 // Some resx-files are missing type information for binary-formatted resources.
                 // These would have previously been handled by deserializing once, capturing the type
@@ -174,11 +174,11 @@ namespace System.Resources.Extensions
         /// <param name="closeAfterWrite">Indicates that the stream should be closed after resources have been written</param>
         public void AddActivatorResource(string name, Stream value, string typeName, bool closeAfterWrite = false)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
-            if (typeName == null)
+            if (typeName is null)
                 throw new ArgumentNullException(nameof(typeName));
 
             if (!value.CanSeek)
@@ -207,7 +207,7 @@ namespace System.Resources.Extensions
         {
             ResourceDataRecord? record = dataContext as ResourceDataRecord;
 
-            Debug.Assert(record != null);
+            Debug.Assert(record is not null);
 
             // Only write the format if we resources are in DeserializingResourceReader format
             if (_requiresDeserializingResourceReader)

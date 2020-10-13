@@ -57,7 +57,7 @@ namespace System.DirectoryServices.AccountManagement
         private unsafe void SplitUsername(string username, ref string parsedUserName, ref string parsedDomainName)
         {
             // If the user has passed null creds then parsed components should also be null.
-            if (username == null)
+            if (username is null)
             {
                 parsedDomainName = null;
                 parsedUserName = null;

@@ -33,11 +33,11 @@ namespace System.DirectoryServices.ActiveDirectory
             int result = 0;
 
             // empty siteName/computerName should be treated as null
-            if ((computerName != null) && (computerName.Length == 0))
+            if ((computerName is not null) && (computerName.Length == 0))
             {
                 computerName = null;
             }
-            if ((siteName != null) && (siteName.Length == 0))
+            if ((siteName is not null) && (siteName.Length == 0))
             {
                 siteName = null;
             }
@@ -80,7 +80,7 @@ namespace System.DirectoryServices.ActiveDirectory
             // (site is either specified or defaulted to the site of the local machine) are also returned in this list.
             //
 
-            if (siteName == null)
+            if (siteName is null)
             {
                 //
                 // if the site name is not specified then we get the site specific records for the local machine's site (in the context of the domain/forest/application partition that is specified)
@@ -204,7 +204,7 @@ namespace System.DirectoryServices.ActiveDirectory
             IntPtr dnsResults = IntPtr.Zero;
 
             // construct the record name
-            if ((siteName != null) && (!(siteName.Length == 0)))
+            if ((siteName is not null) && (!(siteName.Length == 0)))
             {
                 // only looking for domain controllers / global catalogs within a
                 // particular site

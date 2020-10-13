@@ -151,7 +151,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         private U? UnBoxValue(object jsValue)
         {
-            if (jsValue == null)
+            if (jsValue is null)
                 return null;
 
             Type type = jsValue.GetType();
@@ -170,7 +170,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public static unsafe T From(ReadOnlySpan<U> span)
         {
             // source has to be instantiated.
-            if (span == null)
+            if (span is null)
             {
                 throw new System.ArgumentException($"Invalid argument: {nameof(span)} can not be null.");
             }
@@ -206,7 +206,7 @@ namespace System.Runtime.InteropServices.JavaScript
         public unsafe int CopyFrom(ReadOnlySpan<U> span)
         {
             // source has to be instantiated.
-            if (span == null || span.Length == 0)
+            if (span is null || span.Length == 0)
             {
                 throw new System.ArgumentException($"Invalid argument: {nameof(span)} can not be null and must have a length");
             }

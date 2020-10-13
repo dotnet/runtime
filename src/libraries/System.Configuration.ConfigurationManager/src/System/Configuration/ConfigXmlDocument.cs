@@ -24,7 +24,7 @@ namespace System.Configuration
         {
             get
             {
-                if (_reader == null)
+                if (_reader is null)
                 {
                     return 0;
                 }
@@ -61,7 +61,7 @@ namespace System.Configuration
             }
             finally
             {
-                if (_reader != null)
+                if (_reader is not null)
                 {
                     _reader.Close();
                     _reader = null;
@@ -82,7 +82,7 @@ namespace System.Configuration
             }
             finally
             {
-                if (_reader != null)
+                if (_reader is not null)
                 {
                     _reader.Close();
                     _reader = null;

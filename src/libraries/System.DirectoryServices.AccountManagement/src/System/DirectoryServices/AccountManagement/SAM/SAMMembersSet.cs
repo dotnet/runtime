@@ -42,19 +42,19 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (_current != null)
+                if (_current is not null)
                 {
                     // Local principal --- handle it ourself
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMMembersSet", "CurrentAsPrincipal: returning current");
                     return SAMUtils.DirectoryEntryAsPrincipal(_current, _storeCtx);
                 }
-                else if (_currentFakePrincipal != null)
+                else if (_currentFakePrincipal is not null)
                 {
                     // Local fake principal --- handle it ourself
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMMembersSet", "CurrentAsPrincipal: returning currentFakePrincipal");
                     return _currentFakePrincipal;
                 }
-                else if (_currentForeign != null)
+                else if (_currentForeign is not null)
                 {
                     // Foreign, non-recursive principal.  Just return the principal.
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMMembersSet", "CurrentAsPrincipal: returning currentForeign");
@@ -63,7 +63,7 @@ namespace System.DirectoryServices.AccountManagement
                 else
                 {
                     // Foreign recursive expansion.  Proxy the call to the foreign ResultSet.
-                    Debug.Assert(_foreignResultSet != null);
+                    Debug.Assert(_foreignResultSet is not null);
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMMembersSet", "CurrentAsPrincipal: returning foreignResultSet");
                     return _foreignResultSet.CurrentAsPrincipal;
                 }
@@ -119,7 +119,7 @@ namespace System.DirectoryServices.AccountManagement
                         _current = null;
                         _currentForeign = null;
 
-                        if (_foreignResultSet != null)
+                        if (_foreignResultSet is not null)
                             _foreignResultSet.Dispose();
                         _foreignResultSet = null;
                         return true;
@@ -195,7 +195,7 @@ namespace System.DirectoryServices.AccountManagement
                             _currentFakePrincipal = null;
                             _currentForeign = null;
 
-                            if (_foreignResultSet != null)
+                            if (_foreignResultSet is not null)
                                 _foreignResultSet.Dispose();
                             _foreignResultSet = null;
                             return true;
@@ -297,7 +297,7 @@ namespace System.DirectoryServices.AccountManagement
                         _currentFakePrincipal = null;
                         _currentForeign = foreignPrincipal;
 
-                        if (_foreignResultSet != null)
+                        if (_foreignResultSet is not null)
                             _foreignResultSet.Dispose();
                         _foreignResultSet = null;
                         return true;
@@ -313,7 +313,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
 
-                if (_foreignResultSet == null && _foreignGroups.Count > 0)
+                if (_foreignResultSet is null && _foreignGroups.Count > 0)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info,
                                             "SAMMembersSet",
@@ -337,7 +337,7 @@ namespace System.DirectoryServices.AccountManagement
 
                 // We're either just beginning the recursive expansion of a foreign group, or we're continuing the expansion
                 // that we started on a previous call to MoveNext().
-                if (_foreignResultSet != null)
+                if (_foreignResultSet is not null)
                 {
                     Debug.Assert(_recursive == true);
 
@@ -465,7 +465,7 @@ namespace System.DirectoryServices.AccountManagement
                 _foreignMembers.Clear();
                 _foreignGroups.Clear();
 
-                if (_foreignResultSet != null)
+                if (_foreignResultSet is not null)
                 {
                     _foreignResultSet.Dispose();
                     _foreignResultSet = null;
@@ -532,7 +532,7 @@ namespace System.DirectoryServices.AccountManagement
             _foreignMembers = samBookmark.foreignMembers;
             _foreignGroups = samBookmark.foreignGroups;
 
-            if (_foreignResultSet != null)
+            if (_foreignResultSet is not null)
                 _foreignResultSet.Dispose();
 
             _foreignResultSet = samBookmark.foreignResultSet;
@@ -547,7 +547,7 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMMembersSet", "Dispose: disposing");
 
-                    if (_foreignResultSet != null)
+                    if (_foreignResultSet is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "SAMMembersSet", "Dispose: disposing foreignResultSet");
                         _foreignResultSet.Dispose();

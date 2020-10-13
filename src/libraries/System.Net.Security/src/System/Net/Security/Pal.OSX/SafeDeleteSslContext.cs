@@ -49,7 +49,7 @@ namespace System.Net
                     throw Interop.AppleCrypto.CreateExceptionForOSStatus(osStatus);
                 }
 
-                if (sslAuthenticationOptions.CipherSuitesPolicy != null)
+                if (sslAuthenticationOptions.CipherSuitesPolicy is not null)
                 {
                     uint[] tlsCipherSuites = sslAuthenticationOptions.CipherSuitesPolicy.Pal.TlsCipherSuites;
 
@@ -70,7 +70,7 @@ namespace System.Net
                     }
                 }
 
-                if (sslAuthenticationOptions.ApplicationProtocols != null)
+                if (sslAuthenticationOptions.ApplicationProtocols is not null)
                 {
                     // On OSX coretls supports only client side. For server, we will silently ignore the option.
                     if (!sslAuthenticationOptions.IsServer)
@@ -118,7 +118,7 @@ namespace System.Net
                     SetProtocols(sslContext, credential.Protocols);
                 }
 
-                if (credential.CertificateContext != null)
+                if (credential.CertificateContext is not null)
                 {
                     SetCertificate(sslContext, credential.CertificateContext);
                 }
@@ -223,7 +223,7 @@ namespace System.Net
 
         internal int ReadPendingWrites(byte[] buf, int offset, int count)
         {
-            Debug.Assert(buf != null);
+            Debug.Assert(buf is not null);
             Debug.Assert(offset >= 0);
             Debug.Assert(count >= 0);
             Debug.Assert(count <= buf.Length - offset);
@@ -317,7 +317,7 @@ namespace System.Net
 
         private static void SetCertificate(SafeSslHandle sslContext, SslStreamCertificateContext context)
         {
-            Debug.Assert(sslContext != null, "sslContext != null");
+            Debug.Assert(sslContext is not null, "sslContext is not null");
 
 
             IntPtr[] ptrs = new IntPtr[context!.IntermediateCertificates!.Length + 1];

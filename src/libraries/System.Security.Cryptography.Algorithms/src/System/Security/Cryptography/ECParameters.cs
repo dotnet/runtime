@@ -39,9 +39,9 @@ namespace System.Security.Cryptography
         {
             bool hasErrors = true;
 
-            if (D != null && Q.Y is null && Q.X is null)
+            if (D is not null && Q.Y is null && Q.X is null)
                 hasErrors = false;
-            if (Q.Y != null && Q.X != null && Q.Y.Length == Q.X.Length)
+            if (Q.Y is not null && Q.X is not null && Q.Y.Length == Q.X.Length)
                 hasErrors = false;
 
             if (!hasErrors)
@@ -49,13 +49,13 @@ namespace System.Security.Cryptography
                 if (Curve.IsExplicit)
                 {
                     // Explicit curves require D length to match Curve.Order
-                    hasErrors = (D != null && (D.Length != Curve.Order!.Length));
+                    hasErrors = (D is not null && (D.Length != Curve.Order!.Length));
                 }
-                else if (Curve.IsNamed && Q.X != null)
+                else if (Curve.IsNamed && Q.X is not null)
                 {
                     // Named curves require D length to match Q.X and Q.Y if Q
                     // is present.
-                    hasErrors = (D != null && (D.Length != Q.X.Length));
+                    hasErrors = (D is not null && (D.Length != Q.X.Length));
                 }
             }
 

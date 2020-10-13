@@ -21,7 +21,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionProperty(MethodInfo? getMethod, MethodInfo? setMethod)
         {
-            if (getMethod == null && setMethod == null)
+            if (getMethod is null && setMethod is null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
@@ -37,12 +37,12 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public override bool CanRead
         {
-            get { return UnderlyingGetMethod != null; }
+            get { return UnderlyingGetMethod is not null; }
         }
 
         public override bool CanWrite
         {
-            get { return UnderlyingSetMethod != null; }
+            get { return UnderlyingSetMethod is not null; }
         }
 
         public MethodInfo? UnderlyingGetMethod
@@ -93,7 +93,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             get
             {
-                if (UnderlyingGetMethod != null)
+                if (UnderlyingGetMethod is not null)
                 {
                     return UnderlyingGetMethod.ReturnType;
                 }
@@ -115,7 +115,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public override object? GetValue(object? instance)
         {
-            if (_getMethod == null)
+            if (_getMethod is null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }
@@ -125,7 +125,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public override void SetValue(object? instance, object? value)
         {
-            if (_setMethod == null)
+            if (_setMethod is null)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
             }

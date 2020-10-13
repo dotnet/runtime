@@ -406,7 +406,7 @@ namespace System.Security.Principal
             // Give us something to work with
             //
 
-            if (binaryForm == null)
+            if (binaryForm is null)
             {
                 throw new ArgumentNullException(nameof(binaryForm));
             }
@@ -518,7 +518,7 @@ namespace System.Security.Principal
             // Give us something to work with
             //
 
-            if (sddlForm == null)
+            if (sddlForm is null)
             {
                 throw new ArgumentNullException(nameof(sddlForm));
             }
@@ -603,7 +603,7 @@ namespace System.Security.Principal
             int error;
             if ((sidType >= WellKnownSidType.AccountAdministratorSid) && (sidType <= WellKnownSidType.AccountRasAndIasServersSid))
             {
-                if (domainSid == null)
+                if (domainSid is null)
                 {
                     throw new ArgumentNullException(nameof(domainSid), SR.Format(SR.IdentityReference_DomainSidRequired, sidType));
                 }
@@ -741,7 +741,7 @@ namespace System.Security.Principal
 
         public override string ToString()
         {
-            if (_sddlForm == null)
+            if (_sddlForm is null)
             {
                 //
                 // Typecasting of _IdentifierAuthority to a ulong below is important, since
@@ -844,7 +844,7 @@ namespace System.Security.Principal
                 _accountDomainSidInitialized = true;
             }
 
-            if (_accountDomainSid == null)
+            if (_accountDomainSid is null)
             {
                 return false;
             }
@@ -855,7 +855,7 @@ namespace System.Security.Principal
 
         public override IdentityReference Translate(Type targetType)
         {
-            if (targetType == null)
+            if (targetType is null)
             {
                 throw new ArgumentNullException(nameof(targetType));
             }
@@ -893,7 +893,7 @@ namespace System.Security.Principal
             {
                 return true;
             }
-            else if (l == null || r == null)
+            else if (l is null || r is null)
             {
                 return false;
             }
@@ -914,7 +914,7 @@ namespace System.Security.Principal
 
         public int CompareTo(SecurityIdentifier? sid)
         {
-            if (sid == null)
+            if (sid is null)
             {
                 throw new ArgumentNullException(nameof(sid));
             }
@@ -993,7 +993,7 @@ namespace System.Security.Principal
 
         private static IdentityReferenceCollection TranslateToNTAccounts(IdentityReferenceCollection sourceSids, out bool someFailed)
         {
-            if (sourceSids == null)
+            if (sourceSids is null)
             {
                 throw new ArgumentNullException(nameof(sourceSids));
             }
@@ -1172,7 +1172,7 @@ namespace System.Security.Principal
 
         internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceSids, Type targetType, out bool someFailed)
         {
-            if (sourceSids == null)
+            if (sourceSids is null)
             {
                 throw new ArgumentNullException(nameof(sourceSids));
             }

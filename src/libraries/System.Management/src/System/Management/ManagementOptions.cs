@@ -135,7 +135,7 @@ namespace System.Management
         //Fires IdentifierChanged event
         internal void FireIdentifierChanged()
         {
-            if (IdentifierChanged != null)
+            if (IdentifierChanged is not null)
                 IdentifierChanged(this, null);
         }
 
@@ -167,7 +167,7 @@ namespace System.Management
         {
             get
             {
-                if (context == null)
+                if (context is null)
                     return context = new ManagementNamedValueCollection();
                 else
                     return context;
@@ -226,7 +226,7 @@ namespace System.Management
         internal ManagementOptions(ManagementNamedValueCollection context, TimeSpan timeout, int flags)
         {
             this.flags = flags;
-            if (context != null)
+            if (context is not null)
                 this.Context = context;
             else
                 this.context = null;
@@ -236,7 +236,7 @@ namespace System.Management
 
         internal IWbemContext GetContext()
         {
-            if (context != null)
+            if (context is not null)
                 return context.GetContext();
             else
                 return null;
@@ -788,16 +788,16 @@ namespace System.Management
         {
             ObjectGetOptions optionsTmp;
 
-            if (options != null)
+            if (options is not null)
                 optionsTmp = new ObjectGetOptions(options.context, options.timeout, options.UseAmendedQualifiers);
             else
                 optionsTmp = new ObjectGetOptions();
 
             // Wire up change handler chain. Use supplied handler, if specified;
             // otherwise, default to that of the path argument.
-            if (handler != null)
+            if (handler is not null)
                 optionsTmp.IdentifierChanged += handler;
-            else if (options != null)
+            else if (options is not null)
                 optionsTmp.IdentifierChanged += new IdentifierChangedEventHandler(options.HandleIdentifierChange);
 
             return optionsTmp;
@@ -1348,9 +1348,9 @@ namespace System.Management
         {
             set
             {
-                if (value != null)
+                if (value is not null)
                 {
-                    if (securePassword == null)
+                    if (securePassword is null)
                     {
                         securePassword = new SecureString();
                         for (int i = 0; i < value.Length; i++)
@@ -1373,7 +1373,7 @@ namespace System.Management
                 }
                 else
                 {
-                    if (securePassword != null)
+                    if (securePassword is not null)
                     {
                         securePassword.Dispose();
                         securePassword = null;
@@ -1397,9 +1397,9 @@ namespace System.Management
         {
             set
             {
-                if (value != null)
+                if (value is not null)
                 {
-                    if (securePassword == null)
+                    if (securePassword is null)
                     {
                         securePassword = value.Copy();
                     }
@@ -1412,7 +1412,7 @@ namespace System.Management
                 }
                 else
                 {
-                    if (securePassword != null)
+                    if (securePassword is not null)
                     {
                         securePassword.Dispose();
                         securePassword = null;
@@ -1581,13 +1581,13 @@ namespace System.Management
                 bool enablePrivileges,
                 ManagementNamedValueCollection context, TimeSpan timeout) : base(context, timeout)
         {
-            if (locale != null)
+            if (locale is not null)
                 this.locale = locale;
 
             this.username = username;
             this.enablePrivileges = enablePrivileges;
 
-            if (password != null)
+            if (password is not null)
             {
                 this.securePassword = new SecureString();
                 for (int i = 0; i < password.Length; i++)
@@ -1596,7 +1596,7 @@ namespace System.Management
                 }
             }
 
-            if (authority != null)
+            if (authority is not null)
                 this.authority = authority;
 
             if (impersonation != 0)
@@ -1625,18 +1625,18 @@ namespace System.Management
                 bool enablePrivileges,
                 ManagementNamedValueCollection context, TimeSpan timeout) : base(context, timeout)
         {
-            if (locale != null)
+            if (locale is not null)
                 this.locale = locale;
 
             this.username = username;
             this.enablePrivileges = enablePrivileges;
 
-            if (password != null)
+            if (password is not null)
             {
                 this.securePassword = password.Copy();
             }
 
-            if (authority != null)
+            if (authority is not null)
                 this.authority = authority;
 
             if (impersonation != 0)
@@ -1668,7 +1668,7 @@ namespace System.Management
 
         internal IntPtr GetPassword()
         {
-            if (securePassword != null)
+            if (securePassword is not null)
             {
                 try
                 {
@@ -1684,7 +1684,7 @@ namespace System.Management
         }
         internal SecureString GetSecurePassword()
         {
-            if (securePassword != null)
+            if (securePassword is not null)
                 return securePassword.Copy();
             else
                 return null;
@@ -1703,7 +1703,7 @@ namespace System.Management
         {
             ConnectionOptions optionsTmp;
 
-            if (options != null)
+            if (options is not null)
             {
                 optionsTmp = new ConnectionOptions(options.Context, options.Timeout, options.Flags);
 
@@ -1712,14 +1712,14 @@ namespace System.Management
                 optionsTmp.username = options.username;
                 optionsTmp.enablePrivileges = options.enablePrivileges;
 
-                if (options.securePassword != null)
+                if (options.securePassword is not null)
                 {
                     optionsTmp.securePassword = options.securePassword.Copy();
                 }
                 else
                     optionsTmp.securePassword = null;
 
-                if (options.authority != null)
+                if (options.authority is not null)
                     optionsTmp.authority = options.authority;
 
                 if (options.impersonation != 0)
@@ -1733,9 +1733,9 @@ namespace System.Management
 
             // Wire up change handler chain. Use supplied handler, if specified;
             // otherwise, default to that of the path argument.
-            if (handler != null)
+            if (handler is not null)
                 optionsTmp.IdentifierChanged += handler;
-            else if (options != null)
+            else if (options is not null)
                 optionsTmp.IdentifierChanged += new IdentifierChangedEventHandler(options.HandleIdentifierChange);
 
             return optionsTmp;

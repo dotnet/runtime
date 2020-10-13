@@ -12,7 +12,7 @@ namespace System.ServiceModel.Syndication
         public static string AddLineInfo(XmlReader reader, string error)
         {
             IXmlLineInfo lineInfo = reader as IXmlLineInfo;
-            if (lineInfo != null && lineInfo.HasLineInfo())
+            if (lineInfo is not null && lineInfo.HasLineInfo())
             {
                 error = string.Format(CultureInfo.InvariantCulture, "{0} {1}", SR.Format(SR.ErrorInLine, lineInfo.LineNumber, lineInfo.LinePosition), SR.Format(error));
             }
@@ -21,7 +21,7 @@ namespace System.ServiceModel.Syndication
 
         internal static Collection<SyndicationCategory> CloneCategories(Collection<SyndicationCategory> categories)
         {
-            if (categories == null)
+            if (categories is null)
             {
                 return null;
             }
@@ -35,7 +35,7 @@ namespace System.ServiceModel.Syndication
 
         internal static Collection<SyndicationLink> CloneLinks(Collection<SyndicationLink> links)
         {
-            if (links == null)
+            if (links is null)
             {
                 return null;
             }
@@ -49,7 +49,7 @@ namespace System.ServiceModel.Syndication
 
         internal static Collection<SyndicationPerson> ClonePersons(Collection<SyndicationPerson> persons)
         {
-            if (persons == null)
+            if (persons is null)
             {
                 return null;
             }
@@ -63,7 +63,7 @@ namespace System.ServiceModel.Syndication
 
         internal static TextSyndicationContent CloneTextContent(TextSyndicationContent content)
         {
-            if (content == null)
+            if (content is null)
             {
                 return null;
             }
@@ -77,7 +77,7 @@ namespace System.ServiceModel.Syndication
                 return rootBase;
             }
             Uri newBaseUri = new Uri(newBase, UriKind.RelativeOrAbsolute);
-            if (rootBase == null || newBaseUri.IsAbsoluteUri)
+            if (rootBase is null || newBaseUri.IsAbsoluteUri)
             {
                 return newBaseUri;
             }
@@ -87,11 +87,11 @@ namespace System.ServiceModel.Syndication
         internal static Uri GetBaseUriToWrite(Uri rootBase, Uri currentBase)
         {
             Uri uriToWrite;
-            if (rootBase == currentBase || currentBase == null)
+            if (rootBase == currentBase || currentBase is null)
             {
                 uriToWrite = null;
             }
-            else if (rootBase == null)
+            else if (rootBase is null)
             {
                 uriToWrite = currentBase;
             }
@@ -113,7 +113,7 @@ namespace System.ServiceModel.Syndication
 
         internal static string GetUriString(Uri uri)
         {
-            if (uri == null)
+            if (uri is null)
             {
                 return null;
             }

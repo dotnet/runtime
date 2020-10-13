@@ -30,7 +30,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
         {
             get
             {
-                if (_metadata == null)
+                if (_metadata is null)
                 {
                     var metadata = new Dictionary<string, object?>(_productDefinition.Metadata);
                     metadata[CompositionConstants.ExportTypeIdentityMetadataName] = CompositionConstants.PartCreatorTypeIdentity;

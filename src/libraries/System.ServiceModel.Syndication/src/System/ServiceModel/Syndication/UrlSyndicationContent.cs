@@ -19,7 +19,7 @@ namespace System.ServiceModel.Syndication
 
         protected UrlSyndicationContent(UrlSyndicationContent source) : base(source)
         {
-            Debug.Assert(source != null, "The base constructor already checks if source is valid.");
+            Debug.Assert(source is not null, "The base constructor already checks if source is valid.");
             Url = source.Url;
             _mediaType = source._mediaType;
         }

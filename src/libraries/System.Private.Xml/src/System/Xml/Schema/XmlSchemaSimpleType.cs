@@ -28,7 +28,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_content == null)
+                if (_content is null)
                 {
                     // type derived from anyType
                     return XmlQualifiedName.Empty;
@@ -44,7 +44,7 @@ namespace System.Xml.Schema
         internal override XmlSchemaObject Clone()
         {
             XmlSchemaSimpleType newSimpleType = (XmlSchemaSimpleType)MemberwiseClone();
-            if (_content != null)
+            if (_content is not null)
             {
                 newSimpleType.Content = (XmlSchemaSimpleTypeContent)_content.Clone();
             }

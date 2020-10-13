@@ -22,7 +22,7 @@ namespace System.Collections
         {
             get
             {
-                if (_hashtable == null)
+                if (_hashtable is null)
                     _hashtable = new Hashtable();
                 return _hashtable;
             }
@@ -36,7 +36,7 @@ namespace System.Collections
         public int Count
         {
             // to avoid newing inner list if no items are ever added
-            get { return _hashtable == null ? 0 : _hashtable.Count; }
+            get { return _hashtable is null ? 0 : _hashtable.Count; }
         }
 
         bool IDictionary.IsReadOnly
@@ -87,7 +87,7 @@ namespace System.Collections
                 OnValidate(key, value);
                 bool keyExists = true;
                 object? temp = InnerHashtable[key];
-                if (temp == null)
+                if (temp is null)
                 {
                     keyExists = InnerHashtable.Contains(key);
                 }

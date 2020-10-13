@@ -56,7 +56,7 @@ namespace System.Net
             _requestUri = requestUri;
 
             // Match Desktop behavior. If the request didn't set a CookieContainer, we don't populate the response's CookieCollection.
-            if (cookieContainer != null)
+            if (cookieContainer is not null)
             {
                 _cookies = cookieContainer.GetCookies(requestUri);
             }
@@ -92,7 +92,7 @@ namespace System.Net
                 // We use TryGetValues() instead of the strongly type Headers.ContentType property so that
                 // we return a string regardless of it being fully RFC conformant. This matches current
                 // .NET Framework behavior.
-                if (_httpResponseMessage.Content != null && _httpResponseMessage.Content.Headers.TryGetValues("Content-Type", out IEnumerable<string>? values))
+                if (_httpResponseMessage.Content is not null && _httpResponseMessage.Content.Headers.TryGetValues("Content-Type", out IEnumerable<string>? values))
                 {
                     // In most cases, there is only one media type value as per RFC. But for completeness, we
                     // return all values in cases of overly malformed strings.
@@ -123,7 +123,7 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                if (_httpResponseMessage.Content != null)
+                if (_httpResponseMessage.Content is not null)
                 {
                     return GetHeaderValueAsString(_httpResponseMessage.Content.Headers.ContentEncoding);
                 }
@@ -205,7 +205,7 @@ namespace System.Net
             get
             {
                 CheckDisposed();
-                if (_webHeaderCollection == null)
+                if (_webHeaderCollection is null)
                 {
                     _webHeaderCollection = new WebHeaderCollection();
 
@@ -214,7 +214,7 @@ namespace System.Net
                         _webHeaderCollection[header.Key] = GetHeaderValueAsString(header.Value);
                     }
 
-                    if (_httpResponseMessage.Content != null)
+                    if (_httpResponseMessage.Content is not null)
                     {
                         foreach (var header in _httpResponseMessage.Content.Headers)
                         {
@@ -275,7 +275,7 @@ namespace System.Net
                 CheckDisposed();
                 string? contentType = Headers["Content-Type"];
 
-                if (_characterSet == null && !string.IsNullOrWhiteSpace(contentType))
+                if (_characterSet is null && !string.IsNullOrWhiteSpace(contentType))
                 {
                     //sets characterset so the branch is never executed again.
                     _characterSet = string.Empty;
@@ -346,7 +346,7 @@ namespace System.Net
         public override Stream GetResponseStream()
         {
             CheckDisposed();
-            if (_httpResponseMessage.Content != null)
+            if (_httpResponseMessage.Content is not null)
             {
                 return _httpResponseMessage.Content.ReadAsStream();
             }
@@ -358,7 +358,7 @@ namespace System.Net
         {
             CheckDisposed();
             string? headerValue = Headers[headerName];
-            return (headerValue == null) ? string.Empty : headerValue;
+            return (headerValue is null) ? string.Empty : headerValue;
         }
 
         public override void Close()
@@ -369,7 +369,7 @@ namespace System.Net
         protected override void Dispose(bool disposing)
         {
             var httpResponseMessage = _httpResponseMessage;
-            if (httpResponseMessage != null)
+            if (httpResponseMessage is not null)
             {
                 httpResponseMessage.Dispose();
                 _httpResponseMessage = null!;
@@ -378,7 +378,7 @@ namespace System.Net
 
         private void CheckDisposed()
         {
-            if (_httpResponseMessage == null)
+            if (_httpResponseMessage is null)
             {
                 throw new ObjectDisposedException(this.GetType().ToString());
             }

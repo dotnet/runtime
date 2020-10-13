@@ -14,7 +14,7 @@ namespace System.Reflection.Metadata
 
         internal Constant(MetadataReader reader, int rowId)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             Debug.Assert(rowId != 0);
 
             _reader = reader;

@@ -91,7 +91,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
             }
 
 
-            if (Extensions != null)
+            if (Extensions is not null)
             {
 
                 writer.PushSequence(new Asn1Tag(TagClass.ContextSpecific, 1));

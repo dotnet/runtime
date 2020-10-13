@@ -29,8 +29,8 @@ namespace System.Xml.Xsl.XsltOld
         {
             get
             {
-                Debug.Assert(_scopeStack != null);
-                Debug.Assert(_scopeStack.Parent != null);
+                Debug.Assert(_scopeStack is not null);
+                Debug.Assert(_scopeStack.Parent is not null);
                 return _scopeStack.Parent;
             }
         }
@@ -56,13 +56,13 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void PopScope()
         {
-            Debug.Assert(_scopeStack != null, "Push/Pop disbalance");
-            if (_scopeStack == null)
+            Debug.Assert(_scopeStack is not null, "Push/Pop disbalance");
+            if (_scopeStack is null)
             {
                 return;
             }
 
-            for (NamespaceDecl? scope = _scopeStack.Scopes; scope != null; scope = scope.Next)
+            for (NamespaceDecl? scope = _scopeStack.Scopes; scope is not null; scope = scope.Next)
             {
                 _defaultNS = scope.PrevDefaultNsUri;
             }
@@ -72,12 +72,12 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void PushNamespace(string prefix, string nspace)
         {
-            Debug.Assert(_scopeStack != null, "PushScope wasn't called");
-            Debug.Assert(prefix != null);
-            Debug.Assert(nspace != null);
+            Debug.Assert(_scopeStack is not null, "PushScope wasn't called");
+            Debug.Assert(prefix is not null);
+            Debug.Assert(nspace is not null);
             _scopeStack.AddNamespace(prefix, nspace, _defaultNS);
 
-            if (prefix == null || prefix.Length == 0)
+            if (prefix is null || prefix.Length == 0)
             {
                 _defaultNS = nspace;
             }
@@ -92,7 +92,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private string ResolveNonEmptyPrefix(string prefix)
         {
-            Debug.Assert(_scopeStack != null, "PushScope wasn't called");
+            Debug.Assert(_scopeStack is not null, "PushScope wasn't called");
             Debug.Assert(!string.IsNullOrEmpty(prefix));
             if (prefix == "xml")
             {
@@ -103,10 +103,10 @@ namespace System.Xml.Xsl.XsltOld
                 return XmlReservedNs.NsXmlNs;
             }
 
-            for (InputScope? inputScope = _scopeStack; inputScope != null; inputScope = inputScope.Parent)
+            for (InputScope? inputScope = _scopeStack; inputScope is not null; inputScope = inputScope.Parent)
             {
                 string? nspace = inputScope.ResolveNonAtom(prefix);
-                if (nspace != null)
+                if (nspace is not null)
                 {
                     return nspace;
                 }
@@ -116,7 +116,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public string ResolveXmlNamespace(string prefix)
         {
-            Debug.Assert(prefix != null);
+            Debug.Assert(prefix is not null);
             if (prefix.Length == 0)
             {
                 return _defaultNS;
@@ -126,7 +126,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public string ResolveXPathNamespace(string prefix)
         {
-            Debug.Assert(prefix != null);
+            Debug.Assert(prefix is not null);
             if (prefix.Length == 0)
             {
                 return string.Empty;
@@ -136,8 +136,8 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void InsertExtensionNamespaces(string[] nsList)
         {
-            Debug.Assert(_scopeStack != null, "PushScope wasn't called");
-            Debug.Assert(nsList != null);
+            Debug.Assert(_scopeStack is not null, "PushScope wasn't called");
+            Debug.Assert(nsList is not null);
             for (int idx = 0; idx < nsList.Length; idx++)
             {
                 _scopeStack.InsertExtensionNamespace(nsList[idx]);
@@ -146,8 +146,8 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool IsExtensionNamespace(string nspace)
         {
-            Debug.Assert(_scopeStack != null, "PushScope wasn't called");
-            for (InputScope? inputScope = _scopeStack; inputScope != null; inputScope = inputScope.Parent)
+            Debug.Assert(_scopeStack is not null, "PushScope wasn't called");
+            for (InputScope? inputScope = _scopeStack; inputScope is not null; inputScope = inputScope.Parent)
             {
                 if (inputScope.IsExtensionNamespace(nspace))
                 {
@@ -159,8 +159,8 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void InsertExcludedNamespaces(string[] nsList)
         {
-            Debug.Assert(_scopeStack != null, "PushScope wasn't called");
-            Debug.Assert(nsList != null);
+            Debug.Assert(_scopeStack is not null, "PushScope wasn't called");
+            Debug.Assert(nsList is not null);
             for (int idx = 0; idx < nsList.Length; idx++)
             {
                 _scopeStack.InsertExcludedNamespace(nsList[idx]);
@@ -169,8 +169,8 @@ namespace System.Xml.Xsl.XsltOld
 
         internal bool IsExcludedNamespace(string nspace)
         {
-            Debug.Assert(_scopeStack != null, "PushScope wasn't called");
-            for (InputScope? inputScope = _scopeStack; inputScope != null; inputScope = inputScope.Parent)
+            Debug.Assert(_scopeStack is not null, "PushScope wasn't called");
+            for (InputScope? inputScope = _scopeStack; inputScope is not null; inputScope = inputScope.Parent)
             {
                 if (inputScope.IsExcludedNamespace(nspace))
                 {

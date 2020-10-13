@@ -11,7 +11,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ReadOnlyStringCollection(ArrayList values)
         {
-            if (values == null)
+            if (values is null)
             {
                 values = new ArrayList();
             }
@@ -33,7 +33,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(string value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -51,7 +51,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(string value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }

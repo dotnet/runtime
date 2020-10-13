@@ -62,7 +62,7 @@ namespace System.Net.Security
         protected override bool ReleaseHandle()
         {
             SafeFreeCredentials target = Target;
-            if (target != null)
+            if (target is not null)
             {
                 target.DangerousRelease();
             }

@@ -42,13 +42,13 @@ namespace System.Xml.Xsl.Runtime
             if (sequence.Count == 0)
                 return;
 
-            if (_firstSequence == null)
+            if (_firstSequence is null)
             {
                 _firstSequence = sequence;
             }
             else
             {
-                if (_sequencesToMerge == null)
+                if (_sequencesToMerge is null)
                 {
                     _sequencesToMerge = new List<IEnumerator<XPathNavigator>>();
                     MoveAndInsertSequence(_firstSequence.GetEnumerator());
@@ -68,11 +68,11 @@ namespace System.Xml.Xsl.Runtime
             XmlQueryNodeSequence newSequence;
 
             // Zero sequences to merge
-            if (_firstSequence == null)
+            if (_firstSequence is null)
                 return XmlQueryNodeSequence.Empty;
 
             // One sequence to merge
-            if (_sequencesToMerge == null || _sequencesToMerge.Count <= 1)
+            if (_sequencesToMerge is null || _sequencesToMerge.Count <= 1)
                 return _firstSequence;
 
             // Two or more sequences to merge

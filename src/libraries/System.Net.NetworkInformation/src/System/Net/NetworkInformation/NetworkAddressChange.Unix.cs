@@ -30,7 +30,7 @@ namespace System.Net.NetworkInformation
         {
             add
             {
-                if (value != null)
+                if (value is not null)
                 {
                     lock (s_gate)
                     {
@@ -45,7 +45,7 @@ namespace System.Net.NetworkInformation
             }
             remove
             {
-                if (value != null)
+                if (value is not null)
                 {
                     lock (s_gate)
                     {
@@ -70,7 +70,7 @@ namespace System.Net.NetworkInformation
         {
             add
             {
-                if (value != null)
+                if (value is not null)
                 {
                     lock (s_gate)
                     {
@@ -79,7 +79,7 @@ namespace System.Net.NetworkInformation
                             CreateSocket();
                         }
 
-                        if (s_availabilityTimer == null)
+                        if (s_availabilityTimer is null)
                         {
                             // Don't capture the current ExecutionContext and its AsyncLocals onto the timer causing them to live forever
                             bool restoreFlow = false;
@@ -107,7 +107,7 @@ namespace System.Net.NetworkInformation
             }
             remove
             {
-                if (value != null)
+                if (value is not null)
                 {
                     lock (s_gate)
                     {
@@ -121,7 +121,7 @@ namespace System.Net.NetworkInformation
                         s_availabilityChangedSubscribers.Remove(value);
                         if (s_availabilityChangedSubscribers.Count == 0)
                         {
-                            if (s_availabilityTimer != null)
+                            if (s_availabilityTimer is not null)
                             {
                                 s_availabilityTimer.Dispose();
                                 s_availabilityTimer = null;
@@ -200,7 +200,7 @@ namespace System.Net.NetworkInformation
                 case Interop.Sys.NetworkChangeKind.AvailabilityChanged:
                     lock (s_gate)
                     {
-                        if (s_availabilityTimer != null)
+                        if (s_availabilityTimer is not null)
                         {
                             if (!s_availabilityHasChanged)
                             {
@@ -225,7 +225,7 @@ namespace System.Net.NetworkInformation
                 }
             }
 
-            if (addressChangedSubscribers != null)
+            if (addressChangedSubscribers is not null)
             {
                 foreach (KeyValuePair<NetworkAddressChangedEventHandler, ExecutionContext?>
                     subscriber in addressChangedSubscribers)
@@ -233,7 +233,7 @@ namespace System.Net.NetworkInformation
                     NetworkAddressChangedEventHandler handler = subscriber.Key;
                     ExecutionContext? ec = subscriber.Value;
 
-                    if (ec == null) // Flow supressed
+                    if (ec is null) // Flow supressed
                     {
                         handler(null, EventArgs.Empty);
                     }
@@ -263,7 +263,7 @@ namespace System.Net.NetworkInformation
                 }
             }
 
-            if (availabilityChangedSubscribers != null)
+            if (availabilityChangedSubscribers is not null)
             {
                 bool isAvailable = NetworkInterface.GetIsNetworkAvailable();
                 NetworkAvailabilityEventArgs args = isAvailable ? s_availableEventArgs : s_notAvailableEventArgs;
@@ -275,7 +275,7 @@ namespace System.Net.NetworkInformation
                     NetworkAvailabilityChangedEventHandler handler = subscriber.Key;
                     ExecutionContext? ec = subscriber.Value;
 
-                    if (ec == null) // Flow supressed
+                    if (ec is null) // Flow supressed
                     {
                         handler(null, args);
                     }

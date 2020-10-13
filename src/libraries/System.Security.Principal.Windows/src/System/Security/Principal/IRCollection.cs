@@ -68,7 +68,7 @@ namespace System.Security.Principal
 
         public void Add(IdentityReference identity)
         {
-            if (identity == null)
+            if (identity is null)
             {
                 throw new ArgumentNullException(nameof(identity));
             }
@@ -78,7 +78,7 @@ namespace System.Security.Principal
 
         public bool Remove(IdentityReference identity)
         {
-            if (identity == null)
+            if (identity is null)
             {
                 throw new ArgumentNullException(nameof(identity));
             }
@@ -98,7 +98,7 @@ namespace System.Security.Principal
 
         public bool Contains(IdentityReference identity)
         {
-            if (identity == null)
+            if (identity is null)
             {
                 throw new ArgumentNullException(nameof(identity));
             }
@@ -156,7 +156,7 @@ namespace System.Security.Principal
 
         public IdentityReferenceCollection Translate(Type targetType, bool forceSuccess)
         {
-            if (targetType == null)
+            if (targetType is null)
             {
                 throw new ArgumentNullException(nameof(targetType));
             }
@@ -308,7 +308,7 @@ namespace System.Security.Principal
 
                 Result = new IdentityReferenceCollection();
 
-                if (TargetSids != null)
+                if (TargetSids is not null)
                 {
                     foreach (IdentityReference id in TargetSids)
                     {
@@ -319,7 +319,7 @@ namespace System.Security.Principal
                     }
                 }
 
-                if (TargetNTAccounts != null)
+                if (TargetNTAccounts is not null)
                 {
                     foreach (IdentityReference id in TargetNTAccounts)
                     {

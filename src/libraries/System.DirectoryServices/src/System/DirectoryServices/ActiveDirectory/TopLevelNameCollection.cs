@@ -13,7 +13,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(TopLevelName name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             return InnerList.Contains(name);
@@ -21,7 +21,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(TopLevelName name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             return InnerList.IndexOf(name);
@@ -34,7 +34,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal int Add(TopLevelName name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             return InnerList.Add(name);

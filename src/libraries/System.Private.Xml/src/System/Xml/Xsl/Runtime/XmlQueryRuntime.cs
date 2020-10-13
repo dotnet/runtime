@@ -77,35 +77,35 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         internal XmlQueryRuntime(XmlQueryStaticData data, object defaultDataSource, XmlResolver dataSources, XsltArgumentList argList, XmlSequenceWriter seqWrt)
         {
-            Debug.Assert(data != null);
+            Debug.Assert(data is not null);
             string[] names = data.Names;
             Int32Pair[] filters = data.Filters;
             WhitespaceRuleLookup wsRules;
             int i;
 
             // Early-Bound Library Objects
-            wsRules = (data.WhitespaceRules != null && data.WhitespaceRules.Count != 0) ? new WhitespaceRuleLookup(data.WhitespaceRules) : null;
+            wsRules = (data.WhitespaceRules is not null && data.WhitespaceRules.Count != 0) ? new WhitespaceRuleLookup(data.WhitespaceRules) : null;
             _ctxt = new XmlQueryContext(this, defaultDataSource, dataSources, argList, wsRules);
             _xsltLib = null;
             _earlyInfo = data.EarlyBound;
-            _earlyObjects = (_earlyInfo != null) ? new object[_earlyInfo.Length] : null;
+            _earlyObjects = (_earlyInfo is not null) ? new object[_earlyInfo.Length] : null;
 
             // Global variables and parameters
             _globalNames = data.GlobalNames;
-            _globalValues = (_globalNames != null) ? new object[_globalNames.Length] : null;
+            _globalValues = (_globalNames is not null) ? new object[_globalNames.Length] : null;
 
             // Names
             _nameTableQuery = _ctxt.QueryNameTable;
             _atomizedNames = null;
 
-            if (names != null)
+            if (names is not null)
             {
                 // Atomize all names in "nameTableQuery".  Use names from the default data source's
                 // name table when possible.
                 XmlNameTable nameTableDefault = _ctxt.DefaultNameTable;
                 _atomizedNames = new string[names.Length];
 
-                if (nameTableDefault != _nameTableQuery && nameTableDefault != null)
+                if (nameTableDefault != _nameTableQuery && nameTableDefault is not null)
                 {
                     // Ensure that atomized names from the default data source are added to the
                     // name table used in this query
@@ -125,7 +125,7 @@ namespace System.Xml.Xsl.Runtime
 
             // Name filters
             _filters = null;
-            if (filters != null)
+            if (filters is not null)
             {
                 // Construct name filters.  Each pair of integers in the filters[] array specifies the
                 // (localName, namespaceUri) of the NameFilter to be created.
@@ -211,10 +211,10 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public object DebugGetXsltValue(IList seq)
         {
-            if (seq != null && seq.Count == 1)
+            if (seq is not null && seq.Count == 1)
             {
                 XPathItem item = seq[0] as XPathItem;
-                if (item != null && !item.IsNode)
+                if (item is not null && !item.IsNode)
                 {
                     return item.TypedValue;
                 }
@@ -250,7 +250,7 @@ namespace System.Xml.Xsl.Runtime
         {
             get
             {
-                if (_xsltLib == null)
+                if (_xsltLib is null)
                 {
                     _xsltLib = new XsltLibrary(this);
                 }
@@ -266,10 +266,10 @@ namespace System.Xml.Xsl.Runtime
         public object GetEarlyBoundObject(int index)
         {
             object obj;
-            Debug.Assert(_earlyObjects != null && index < _earlyObjects.Length, "Early bound object does not exist");
+            Debug.Assert(_earlyObjects is not null && index < _earlyObjects.Length, "Early bound object does not exist");
 
             obj = _earlyObjects[index];
-            if (obj == null)
+            if (obj is null)
             {
                 // Early-bound object does not yet exist, so create it now
                 obj = _earlyInfo[index].CreateObject();
@@ -284,7 +284,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public bool EarlyBoundFunctionExists(string name, string namespaceUri)
         {
-            if (_earlyInfo == null)
+            if (_earlyInfo is null)
                 return false;
 
             for (int idx = 0; idx < _earlyInfo.Length; idx++)
@@ -306,7 +306,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public bool IsGlobalComputed(int index)
         {
-            return _globalValues[index] != null;
+            return _globalValues[index] is not null;
         }
 
         /// <summary>
@@ -347,7 +347,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public string GetAtomizedName(int index)
         {
-            Debug.Assert(_atomizedNames != null);
+            Debug.Assert(_atomizedNames is not null);
             return _atomizedNames[index];
         }
 
@@ -356,7 +356,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XmlNavigatorFilter GetNameFilter(int index)
         {
-            Debug.Assert(_filters != null);
+            Debug.Assert(_filters is not null);
             return _filters[index];
         }
 
@@ -409,7 +409,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         internal void ParseTagName(string tagName, int idxPrefixMappings, out string prefix, out string localName, out string ns)
         {
-            Debug.Assert(_prefixMappingsList != null);
+            Debug.Assert(_prefixMappingsList is not null);
 
             // Parse the tagName as a prefix, localName pair
             ValidateNames.ParseQNameThrow(tagName, out prefix, out localName);
@@ -426,7 +426,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // Throw exception if prefix could not be resolved
-            if (ns == null)
+            if (ns is null)
             {
                 // Check for mappings that are always in-scope
                 if (prefix.Length == 0)
@@ -476,7 +476,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         internal XmlQueryType GetXmlType(int idxType)
         {
-            Debug.Assert(_types != null);
+            Debug.Assert(_types is not null);
             return _types[idxType];
         }
 
@@ -553,7 +553,7 @@ namespace System.Xml.Xsl.Runtime
                             {
                                 // Node or Rtf
                                 RtfNavigator rtf = item as RtfNavigator;
-                                if (rtf != null)
+                                if (rtf is not null)
                                     value = rtf.ToNavigator();
                                 else
                                     value = new XPathArrayIterator((IList)value);
@@ -591,7 +591,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         internal object ChangeTypeXsltResult(XmlQueryType xmlType, object value)
         {
-            if (value == null)
+            if (value is null)
                 throw new XslTransformException(SR.Xslt_ItemNull, string.Empty);
 
             switch (xmlType.TypeCode)
@@ -613,7 +613,7 @@ namespace System.Xml.Xsl.Runtime
                         XPathArrayIterator iter = value as XPathArrayIterator;
 
                         // Special-case XPathArrayIterator in order to avoid copies
-                        if (iter != null && iter.AsList is XmlQueryNodeSequence)
+                        if (iter is not null && iter.AsList is XmlQueryNodeSequence)
                         {
                             value = iter.AsList as XmlQueryNodeSequence;
                         }
@@ -623,7 +623,7 @@ namespace System.Xml.Xsl.Runtime
                             XmlQueryNodeSequence seq = new XmlQueryNodeSequence();
                             IList list = value as IList;
 
-                            if (list != null)
+                            if (list is not null)
                             {
                                 for (int i = 0; i < list.Count; i++)
                                     seq.Add(EnsureNavigator(list[i]));
@@ -680,7 +680,7 @@ namespace System.Xml.Xsl.Runtime
 
                                 // Support IXPathNavigable and XPathNavigator
                                 navigable = value as IXPathNavigable;
-                                if (navigable != null)
+                                if (navigable is not null)
                                 {
                                     if (value is XPathNavigator)
                                         value = new XmlQueryNodeSequence((XPathNavigator)value);
@@ -708,7 +708,7 @@ namespace System.Xml.Xsl.Runtime
         {
             XPathNavigator nav = value as XPathNavigator;
 
-            if (nav == null)
+            if (nav is null)
                 throw new XslTransformException(SR.Xslt_ItemNull, string.Empty);
 
             return nav;
@@ -807,7 +807,7 @@ namespace System.Xml.Xsl.Runtime
             {
                 // Rtf
                 RtfNavigator rtf = item as RtfNavigator;
-                if (rtf != null)
+                if (rtf is not null)
                     return XmlQueryTypeFactory.Node;
 
                 // Node
@@ -816,13 +816,13 @@ namespace System.Xml.Xsl.Runtime
                 {
                     case XPathNodeType.Root:
                     case XPathNodeType.Element:
-                        if (nav.XmlType == null)
+                        if (nav.XmlType is null)
                             return XmlQueryTypeFactory.Type(nav.NodeType, XmlQualifiedNameTest.New(nav.LocalName, nav.NamespaceURI), XmlSchemaComplexType.UntypedAnyType, false);
 
                         return XmlQueryTypeFactory.Type(nav.NodeType, XmlQualifiedNameTest.New(nav.LocalName, nav.NamespaceURI), nav.XmlType, nav.SchemaInfo.SchemaElement.IsNillable);
 
                     case XPathNodeType.Attribute:
-                        if (nav.XmlType == null)
+                        if (nav.XmlType is null)
                             return XmlQueryTypeFactory.Type(nav.NodeType, XmlQualifiedNameTest.New(nav.LocalName, nav.NamespaceURI), DatatypeImplementation.UntypedAtomicType, false);
 
                         return XmlQueryTypeFactory.Type(nav.NodeType, XmlQualifiedNameTest.New(nav.LocalName, nav.NamespaceURI), nav.XmlType, false);
@@ -845,7 +845,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public XmlCollation GetCollation(int index)
         {
-            Debug.Assert(_collations != null);
+            Debug.Assert(_collations is not null);
             return _collations[index];
         }
 
@@ -880,7 +880,7 @@ namespace System.Xml.Xsl.Runtime
                 return seq;
 
             XmlQueryNodeSequence nodeSeq = (XmlQueryNodeSequence)seq;
-            if (nodeSeq == null)
+            if (nodeSeq is null)
                 nodeSeq = new XmlQueryNodeSequence(seq);
 
             return nodeSeq.DocOrderDistinct(_docOrderCmp);
@@ -908,17 +908,17 @@ namespace System.Xml.Xsl.Runtime
         {
             XPathNavigator navRoot;
             ArrayList docIndexes;
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
 
             // Get root of document
             navRoot = context.Clone();
             navRoot.MoveToRoot();
 
             // Search pre-existing indexes in order to determine whether the specified index has already been created
-            if (_indexes != null && indexId < _indexes.Length)
+            if (_indexes is not null && indexId < _indexes.Length)
             {
                 docIndexes = (ArrayList)_indexes[indexId];
-                if (docIndexes != null)
+                if (docIndexes is not null)
                 {
                     // Search for an index defined over the specified document
                     for (int i = 0; i < docIndexes.Count; i += 2)
@@ -945,14 +945,14 @@ namespace System.Xml.Xsl.Runtime
         {
             XPathNavigator navRoot;
             ArrayList docIndexes;
-            Debug.Assert(context != null);
+            Debug.Assert(context is not null);
 
             // Get root of document
             navRoot = context.Clone();
             navRoot.MoveToRoot();
 
             // Ensure that a slot exists for the new index
-            if (_indexes == null)
+            if (_indexes is null)
             {
                 _indexes = new ArrayList[indexId + 4];
             }
@@ -965,7 +965,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             docIndexes = (ArrayList)_indexes[indexId];
-            if (docIndexes == null)
+            if (docIndexes is null)
             {
                 docIndexes = new ArrayList();
                 _indexes[indexId] = docIndexes;
@@ -1079,7 +1079,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         internal static XPathNavigator SyncToNavigator(XPathNavigator navigatorThis, XPathNavigator navigatorThat)
         {
-            if (navigatorThis == null || !navigatorThis.MoveTo(navigatorThat))
+            if (navigatorThis is null || !navigatorThis.MoveTo(navigatorThat))
                 return navigatorThat.Clone();
 
             return navigatorThis;
@@ -1093,7 +1093,7 @@ namespace System.Xml.Xsl.Runtime
             IXmlLineInfo lineInfo = currentNode as IXmlLineInfo;
 
             // In case of a namespace node, check whether it is inherited or locally defined
-            if (lineInfo != null && !(currentNode.NodeType == XPathNodeType.Namespace && IsInheritedNamespace(currentNode)))
+            if (lineInfo is not null && !(currentNode.NodeType == XPathNodeType.Namespace && IsInheritedNamespace(currentNode)))
             {
                 OnCurrentNodeChanged2(currentNode.BaseURI, lineInfo.LineNumber, lineInfo.LinePosition);
             }

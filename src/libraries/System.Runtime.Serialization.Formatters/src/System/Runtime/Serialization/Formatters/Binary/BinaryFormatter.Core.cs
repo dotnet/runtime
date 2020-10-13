@@ -16,7 +16,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
             }
 
-            if (serializationStream == null)
+            if (serializationStream is null)
             {
                 throw new ArgumentNullException(nameof(serializationStream));
             }
@@ -66,7 +66,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
                 throw new NotSupportedException(SR.BinaryFormatter_SerializationDisallowed);
             }
 
-            if (serializationStream == null)
+            if (serializationStream is null)
             {
                 throw new ArgumentNullException(nameof(serializationStream));
             }

@@ -80,17 +80,17 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="ArgumentNullException">When <paramref name="instance" /> is <c>null</c></exception>
         public ValidationContext(object instance, IServiceProvider? serviceProvider, IDictionary<object, object?>? items)
         {
-            if (instance == null)
+            if (instance is null)
             {
                 throw new ArgumentNullException(nameof(instance));
             }
 
-            if (serviceProvider != null)
+            if (serviceProvider is not null)
             {
                 InitializeServiceProvider(serviceType => serviceProvider.GetService(serviceType));
             }
 
-            _items = items != null ? new Dictionary<object, object?>(items) : new Dictionary<object, object?>();
+            _items = items is not null ? new Dictionary<object, object?>(items) : new Dictionary<object, object?>();
             ObjectInstance = instance;
         }
 
@@ -189,7 +189,7 @@ namespace System.ComponentModel.DataAnnotations
                 displayAttribute = store.GetPropertyDisplayAttribute(this);
             }
 
-            if (displayAttribute != null)
+            if (displayAttribute is not null)
             {
                 displayName = displayAttribute.GetName();
             }

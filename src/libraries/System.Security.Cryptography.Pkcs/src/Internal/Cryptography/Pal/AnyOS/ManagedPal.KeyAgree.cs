@@ -78,7 +78,7 @@ namespace Internal.Cryptography.Pal.AnyOS
                     Oid oid = new Oid(rid.RKeyId.Value.Other.Value.KeyAttrId);
                     byte[] rawData = Array.Empty<byte>();
 
-                    if (rid.RKeyId.Value.Other.Value.KeyAttr != null)
+                    if (rid.RKeyId.Value.Other.Value.KeyAttr is not null)
                     {
                         rawData = rid.RKeyId.Value.Other.Value.KeyAttr!.Value.ToArray();
                     }

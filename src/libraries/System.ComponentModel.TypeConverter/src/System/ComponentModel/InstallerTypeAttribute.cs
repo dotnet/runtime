@@ -18,7 +18,7 @@ namespace System.ComponentModel
         /// </summary>
         public InstallerTypeAttribute(Type installerType)
         {
-            if (installerType == null)
+            if (installerType is null)
             {
                 throw new ArgumentNullException(nameof(installerType));
             }

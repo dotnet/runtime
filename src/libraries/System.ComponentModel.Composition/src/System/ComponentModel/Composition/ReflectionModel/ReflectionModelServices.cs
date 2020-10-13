@@ -19,7 +19,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Requires.NotNull(partDefinition, nameof(partDefinition));
 
             ReflectionComposablePartDefinition? reflectionPartDefinition = partDefinition as ReflectionComposablePartDefinition;
-            if (reflectionPartDefinition == null)
+            if (reflectionPartDefinition is null)
             {
                 throw ExceptionBuilder.CreateReflectionModelInvalidPartDefinition(nameof(partDefinition), partDefinition.GetType());
             }
@@ -32,7 +32,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Requires.NotNull(partDefinition, nameof(partDefinition));
 
             ReflectionComposablePartDefinition? reflectionPartDefinition = partDefinition as ReflectionComposablePartDefinition;
-            if (reflectionPartDefinition == null)
+            if (reflectionPartDefinition is null)
             {
                 throw ExceptionBuilder.CreateReflectionModelInvalidPartDefinition(nameof(partDefinition), partDefinition.GetType());
             }
@@ -45,7 +45,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Requires.NotNull(exportDefinition, nameof(exportDefinition));
 
             ReflectionMemberExportDefinition? reflectionExportDefinition = exportDefinition as ReflectionMemberExportDefinition;
-            if (reflectionExportDefinition == null)
+            if (reflectionExportDefinition is null)
             {
                 throw new ArgumentException(
                     SR.Format(SR.ReflectionModel_InvalidExportDefinition, exportDefinition.GetType()),
@@ -60,7 +60,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Requires.NotNull(importDefinition, nameof(importDefinition));
 
             ReflectionMemberImportDefinition? reflectionMemberImportDefinition = importDefinition as ReflectionMemberImportDefinition;
-            if (reflectionMemberImportDefinition == null)
+            if (reflectionMemberImportDefinition is null)
             {
                 throw new ArgumentException(
                     SR.Format(SR.ReflectionModel_InvalidMemberImportDefinition, importDefinition.GetType()),
@@ -75,14 +75,14 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Requires.NotNull(importDefinition, nameof(importDefinition));
 
             ReflectionParameterImportDefinition? reflectionParameterImportDefinition = importDefinition as ReflectionParameterImportDefinition;
-            if (reflectionParameterImportDefinition == null)
+            if (reflectionParameterImportDefinition is null)
             {
                 throw new ArgumentException(
                     SR.Format(SR.ReflectionModel_InvalidParameterImportDefinition, importDefinition.GetType()),
                     nameof(importDefinition));
             }
 
-            Debug.Assert(reflectionParameterImportDefinition.ImportingLazyParameter != null);
+            Debug.Assert(reflectionParameterImportDefinition.ImportingLazyParameter is not null);
             return reflectionParameterImportDefinition.ImportingLazyParameter;
         }
 
@@ -91,7 +91,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Requires.NotNull(importDefinition, nameof(importDefinition));
 
             ReflectionImportDefinition? reflectionImportDefinition = importDefinition as ReflectionImportDefinition;
-            if (reflectionImportDefinition == null)
+            if (reflectionImportDefinition is null)
             {
                 throw new ArgumentException(
                     SR.Format(SR.ReflectionModel_InvalidImportDefinition, importDefinition.GetType()),
@@ -113,7 +113,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Requires.NotNull(importDefinition, nameof(importDefinition));
 
             IPartCreatorImportDefinition? partCreatorImportDefinition = importDefinition as IPartCreatorImportDefinition;
-            if (partCreatorImportDefinition == null)
+            if (partCreatorImportDefinition is null)
             {
                 throw new ArgumentException(
                     SR.Format(SR.ReflectionModel_InvalidImportDefinition, importDefinition.GetType()),
@@ -305,7 +305,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
             specialization = null;
             ReflectionComposablePartDefinition? reflectionPartDefinition = partDefinition as ReflectionComposablePartDefinition;
-            if (reflectionPartDefinition == null)
+            if (reflectionPartDefinition is null)
             {
                 throw ExceptionBuilder.CreateReflectionModelInvalidPartDefinition(nameof(partDefinition), partDefinition.GetType());
             }
@@ -332,7 +332,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             Lazy<IDictionary<string, object?>>? metadata,
             ICompositionElement? origin)
         {
-            if (partType == null)
+            if (partType is null)
             {
                 throw new ArgumentNullException(nameof(partType));
             }
@@ -357,7 +357,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ConstructorInfo? GetConstructor()
         {
-            if (_constructor == null)
+            if (_constructor is null)
             {
                 ConstructorInfo[]? constructors = null;
                 constructors = GetImports()
@@ -397,19 +397,19 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public IDictionary<string, object?>? GetMetadata()
         {
-            return (_metadata != null) ? _metadata.Value : null;
+            return (_metadata is not null) ? _metadata.Value : null;
         }
 
         public IEnumerable<ExportDefinition> GetExports()
         {
-            if (_exports == null)
+            if (_exports is null)
             {
                 yield break;
             }
 
             IEnumerable<ExportDefinition> exports = _exports.Value;
 
-            if (exports == null)
+            if (exports is null)
             {
                 yield break;
             }
@@ -417,7 +417,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             foreach (ExportDefinition export in exports)
             {
                 ReflectionMemberExportDefinition? reflectionExport = export as ReflectionMemberExportDefinition;
-                if (reflectionExport == null)
+                if (reflectionExport is null)
                 {
                     throw new InvalidOperationException(
                         SR.Format(SR.ReflectionModel_InvalidExportDefinition, export.GetType()));
@@ -428,14 +428,14 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public IEnumerable<ImportDefinition> GetImports()
         {
-            if (_imports == null)
+            if (_imports is null)
             {
                 yield break;
             }
 
             IEnumerable<ImportDefinition> imports = _imports.Value;
 
-            if (imports == null)
+            if (imports is null)
             {
                 yield break;
             }
@@ -443,7 +443,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
             foreach (ImportDefinition import in imports)
             {
                 ReflectionImportDefinition? reflectionImport = import as ReflectionImportDefinition;
-                if (reflectionImport == null)
+                if (reflectionImport is null)
                 {
                     throw new InvalidOperationException(
                         SR.Format(SR.ReflectionModel_InvalidMemberImportDefinition, import.GetType()));

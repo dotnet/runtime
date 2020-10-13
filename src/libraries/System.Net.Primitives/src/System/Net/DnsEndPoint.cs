@@ -15,7 +15,7 @@ namespace System.Net
 
         public DnsEndPoint(string host, int port, AddressFamily addressFamily)
         {
-            if (host == null)
+            if (host is null)
             {
                 throw new ArgumentNullException(nameof(host));
             }
@@ -46,7 +46,7 @@ namespace System.Net
         {
             DnsEndPoint? dnsComparand = comparand as DnsEndPoint;
 
-            if (dnsComparand == null)
+            if (dnsComparand is null)
             {
                 return false;
             }

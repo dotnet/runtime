@@ -63,7 +63,7 @@ namespace System.Net.NetworkInformation
                 }
 
                 // Executing user callbacks if Availability Change event occured.
-                if (availabilityChangedSubscribers != null)
+                if (availabilityChangedSubscribers is not null)
                 {
                     bool isAvailable = s_isAvailable;
                     NetworkAvailabilityEventArgs args = isAvailable ? s_availableEventArgs : s_notAvailableEventArgs;
@@ -75,7 +75,7 @@ namespace System.Net.NetworkInformation
                         NetworkAvailabilityChangedEventHandler handler = subscriber.Key;
                         ExecutionContext? ec = subscriber.Value;
 
-                        if (ec == null) // Flow supressed
+                        if (ec is null) // Flow supressed
                         {
                             handler(null, args);
                         }
@@ -89,7 +89,7 @@ namespace System.Net.NetworkInformation
 
             internal static void Start(NetworkAvailabilityChangedEventHandler? caller)
             {
-                if (caller != null)
+                if (caller is not null)
                 {
                     lock (s_globalLock)
                     {
@@ -106,7 +106,7 @@ namespace System.Net.NetworkInformation
 
             internal static void Stop(NetworkAvailabilityChangedEventHandler? caller)
             {
-                if (caller != null)
+                if (caller is not null)
                 {
                     lock (s_globalLock)
                     {
@@ -166,7 +166,7 @@ namespace System.Net.NetworkInformation
                 }
 
                 // Release the lock before calling into user callback.
-                if (addressChangedSubscribers != null)
+                if (addressChangedSubscribers is not null)
                 {
                     foreach (KeyValuePair<NetworkAddressChangedEventHandler, ExecutionContext?>
                         subscriber in addressChangedSubscribers)
@@ -174,7 +174,7 @@ namespace System.Net.NetworkInformation
                         NetworkAddressChangedEventHandler handler = subscriber.Key;
                         ExecutionContext? ec = subscriber.Value;
 
-                        if (ec == null) // Flow supressed
+                        if (ec is null) // Flow supressed
                         {
                             handler(null, EventArgs.Empty);
                         }
@@ -201,7 +201,7 @@ namespace System.Net.NetworkInformation
                 lock (s_globalLock)
                 {
                     // Setup changedEvent and native overlapped struct.
-                    if (s_ipv4Socket == null)
+                    if (s_ipv4Socket is null)
                     {
                         // Sockets will be initialized by the call to OSSupportsIP*.
                         if (Socket.OSSupportsIPv4)
@@ -217,7 +217,7 @@ namespace System.Net.NetworkInformation
                         }
                     }
 
-                    if (caller != null)
+                    if (caller is not null)
                     {
                         s_addressChangedSubscribers.TryAdd(caller, captureContext ? ExecutionContext.Capture() : null);
                     }
@@ -309,7 +309,7 @@ namespace System.Net.NetworkInformation
 
             internal static void Stop(NetworkAddressChangedEventHandler? caller)
             {
-                if (caller != null)
+                if (caller is not null)
                 {
                     lock (s_globalLock)
                     {

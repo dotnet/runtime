@@ -27,12 +27,12 @@ namespace System.Net.Http.Json
 
         private JsonContent(object? inputValue, Type inputType, MediaTypeHeaderValue? mediaType, JsonSerializerOptions? options)
         {
-            if (inputType == null)
+            if (inputType is null)
             {
                 throw new ArgumentNullException(nameof(inputType));
             }
 
-            if (inputValue != null && !inputType.IsAssignableFrom(inputValue.GetType()))
+            if (inputValue is not null && !inputType.IsAssignableFrom(inputValue.GetType()))
             {
                 throw new ArgumentException(SR.Format(SR.SerializeWrongType, inputType, inputValue.GetType()));
             }
@@ -63,7 +63,7 @@ namespace System.Net.Http.Json
             Encoding? targetEncoding = GetEncoding(Headers.ContentType?.CharSet);
 
             // Wrap provided stream into a transcoding stream that buffers the data transcoded from utf-8 to the targetEncoding.
-            if (targetEncoding != null && targetEncoding != Encoding.UTF8)
+            if (targetEncoding is not null && targetEncoding != Encoding.UTF8)
             {
 #if NETCOREAPP
                 Stream transcodingStream = Encoding.CreateTranscodingStream(targetStream, targetEncoding, Encoding.UTF8, leaveOpen: true);
@@ -131,7 +131,7 @@ namespace System.Net.Http.Json
         {
             Encoding? encoding = null;
 
-            if (charset != null)
+            if (charset is not null)
             {
                 try
                 {
@@ -150,7 +150,7 @@ namespace System.Net.Http.Json
                     throw new InvalidOperationException(SR.CharSetInvalid, e);
                 }
 
-                Debug.Assert(encoding != null);
+                Debug.Assert(encoding is not null);
             }
 
             return encoding;

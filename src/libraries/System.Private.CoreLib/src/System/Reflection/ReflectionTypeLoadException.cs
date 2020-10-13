@@ -59,7 +59,7 @@ namespace System.Reflection
             var text = new StringBuilder(baseValue);
             foreach (Exception? e in exceptions)
             {
-                if (e != null)
+                if (e is not null)
                 {
                     text.AppendLine().Append(isMessage ? e.Message : e.ToString());
                 }

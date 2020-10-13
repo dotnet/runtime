@@ -65,11 +65,11 @@ namespace System.Xml.Xsl.IlGen
         public static XmlILConstructInfo Read(QilNode nd)
         {
             XmlILAnnotation? ann = nd.Annotation as XmlILAnnotation;
-            XmlILConstructInfo? constrInfo = (ann != null) ? ann.ConstructInfo : null;
+            XmlILConstructInfo? constrInfo = (ann is not null) ? ann.ConstructInfo : null;
 
-            if (constrInfo == null)
+            if (constrInfo is null)
             {
-                if (s_default == null)
+                if (s_default is null)
                 {
                     constrInfo = new XmlILConstructInfo(QilNodeType.Unknown);
                     constrInfo._isReadOnly = true;
@@ -93,7 +93,7 @@ namespace System.Xml.Xsl.IlGen
             XmlILAnnotation ann = XmlILAnnotation.Write(nd);
             XmlILConstructInfo? constrInfo = ann.ConstructInfo;
 
-            if (constrInfo == null || constrInfo._isReadOnly)
+            if (constrInfo is null || constrInfo._isReadOnly)
             {
                 constrInfo = new XmlILConstructInfo(nd.NodeType);
                 ann.ConstructInfo = constrInfo;
@@ -278,7 +278,7 @@ namespace System.Xml.Xsl.IlGen
         {
             get
             {
-                if (_parentInfo != null && _parentInfo._nodeType == QilNodeType.ElementCtor)
+                if (_parentInfo is not null && _parentInfo._nodeType == QilNodeType.ElementCtor)
                     return _parentInfo;
 
                 return null;
@@ -363,7 +363,7 @@ namespace System.Xml.Xsl.IlGen
         {
             get
             {
-                if (_callersInfo == null)
+                if (_callersInfo is null)
                     _callersInfo = new ArrayList();
 
                 return _callersInfo;
@@ -441,14 +441,14 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public virtual QilNode? Analyze(QilNode? ndConstr, QilNode? ndContent)
         {
-            if (ndConstr == null)
+            if (ndConstr is null)
             {
                 // Root expression is analyzed
                 this.parentInfo = null;
                 this.xstates = PossibleXmlStates.WithinSequence;
                 this.withinElem = false;
 
-                Debug.Assert(ndContent != null);
+                Debug.Assert(ndContent is not null);
                 ndContent = AnalyzeContent(ndContent);
             }
             else
@@ -497,20 +497,20 @@ namespace System.Xml.Xsl.IlGen
                     case QilNodeType.DocumentCtor: this.xstates = PossibleXmlStates.WithinContent; break;
                     case QilNodeType.ElementCtor: this.xstates = PossibleXmlStates.EnumAttrs; break;
                     case QilNodeType.AttributeCtor: this.xstates = PossibleXmlStates.WithinAttr; break;
-                    case QilNodeType.NamespaceDecl: Debug.Assert(ndContent == null); break;
-                    case QilNodeType.TextCtor: Debug.Assert(ndContent == null); break;
-                    case QilNodeType.RawTextCtor: Debug.Assert(ndContent == null); break;
+                    case QilNodeType.NamespaceDecl: Debug.Assert(ndContent is null); break;
+                    case QilNodeType.TextCtor: Debug.Assert(ndContent is null); break;
+                    case QilNodeType.RawTextCtor: Debug.Assert(ndContent is null); break;
                     case QilNodeType.CommentCtor: this.xstates = PossibleXmlStates.WithinComment; break;
                     case QilNodeType.PICtor: this.xstates = PossibleXmlStates.WithinPI; break;
                     case QilNodeType.XsltCopy: this.xstates = PossibleXmlStates.Any; break;
-                    case QilNodeType.XsltCopyOf: Debug.Assert(ndContent == null); break;
+                    case QilNodeType.XsltCopyOf: Debug.Assert(ndContent is null); break;
                     case QilNodeType.Function: this.xstates = this.parentInfo.InitialStates; break;
                     case QilNodeType.RtfCtor: this.xstates = PossibleXmlStates.WithinContent; break;
                     case QilNodeType.Choice: this.xstates = PossibleXmlStates.Any; break;
                     default: Debug.Fail($"{ndConstr.NodeType} is not handled by XmlILStateAnalyzer."); break;
                 }
 
-                if (ndContent != null)
+                if (ndContent is not null)
                     ndContent = AnalyzeContent(ndContent);
 
                 if (ndConstr.NodeType == QilNodeType.Choice)
@@ -845,7 +845,7 @@ namespace System.Xml.Xsl.IlGen
             if (ndCopy.NodeType == QilNodeType.AttributeCtor)
             {
                 QilBinary? binaryNode = ndCopy as QilBinary;
-                Debug.Assert(binaryNode != null);
+                Debug.Assert(binaryNode is not null);
                 AnalyzeAttributeCtor(binaryNode, info);
             }
             else
@@ -864,7 +864,7 @@ namespace System.Xml.Xsl.IlGen
             if (ndAttr.Left.NodeType == QilNodeType.LiteralQName)
             {
                 QilName? ndName = ndAttr.Left as QilName;
-                Debug.Assert(ndName != null);
+                Debug.Assert(ndName is not null);
                 XmlQualifiedName qname;
                 int idx;
 
@@ -1053,7 +1053,7 @@ namespace System.Xml.Xsl.IlGen
                 case QilNodeType.ElementCtor:
                 case QilNodeType.AttributeCtor:
                     ndName = nd.Left as QilName;
-                    if (ndName != null)
+                    if (ndName is not null)
                     {
                         prefix = ndName.Prefix;
                         ns = ndName.NamespaceUri;

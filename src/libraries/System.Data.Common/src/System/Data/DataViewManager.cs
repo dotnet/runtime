@@ -29,7 +29,7 @@ namespace System.Data
         {
             GC.SuppressFinalize(this);
             _dataSet = dataSet;
-            if (_dataSet != null)
+            if (_dataSet is not null)
             {
                 _dataSet.Tables.CollectionChanged += new CollectionChangeEventHandler(TableCollectionChanged);
                 _dataSet.Relations.CollectionChanged += new CollectionChangeEventHandler(RelationCollectionChanged);
@@ -46,7 +46,7 @@ namespace System.Data
             get { return _dataSet; }
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     throw ExceptionBuilder.SetFailed("DataSet to null");
                 }
@@ -56,7 +56,7 @@ namespace System.Data
                     throw ExceptionBuilder.SetDataSetFailed();
                 }
 
-                if (_dataSet != null)
+                if (_dataSet is not null)
                 {
                     if (_nViews > 0)
                     {
@@ -82,7 +82,7 @@ namespace System.Data
         {
             get
             {
-                if (_dataSet == null)
+                if (_dataSet is null)
                 {
                     return string.Empty;
                 }
@@ -257,19 +257,19 @@ namespace System.Data
         string System.ComponentModel.ITypedList.GetListName(PropertyDescriptor[] listAccessors)
         {
             DataSet? dataSet = DataSet;
-            if (dataSet == null)
+            if (dataSet is null)
             {
                 throw ExceptionBuilder.CanNotUseDataViewManager();
             }
 
-            if (listAccessors == null || listAccessors.Length == 0)
+            if (listAccessors is null || listAccessors.Length == 0)
             {
                 return dataSet.DataSetName;
             }
             else
             {
                 DataTable? table = dataSet.FindTable(null, listAccessors, 0);
-                if (table != null)
+                if (table is not null)
                 {
                     return table.TableName;
                 }
@@ -280,19 +280,19 @@ namespace System.Data
         PropertyDescriptorCollection System.ComponentModel.ITypedList.GetItemProperties(PropertyDescriptor[] listAccessors)
         {
             DataSet? dataSet = DataSet;
-            if (dataSet == null)
+            if (dataSet is null)
             {
                 throw ExceptionBuilder.CanNotUseDataViewManager();
             }
 
-            if (listAccessors == null || listAccessors.Length == 0)
+            if (listAccessors is null || listAccessors.Length == 0)
             {
                 return ((ICustomTypeDescriptor)(new DataViewManagerListItemTypeDescriptor(this))).GetProperties();
             }
             else
             {
                 DataTable? table = dataSet.FindTable(null, listAccessors, 0);
-                if (table != null)
+                if (table is not null)
                 {
                     return table.GetPropertyDescriptorCollection(null);
                 }
@@ -302,7 +302,7 @@ namespace System.Data
 
         public DataView CreateDataView(DataTable table)
         {
-            if (_dataSet == null)
+            if (_dataSet is null)
             {
                 throw ExceptionBuilder.CanNotUseDataViewManager();
             }

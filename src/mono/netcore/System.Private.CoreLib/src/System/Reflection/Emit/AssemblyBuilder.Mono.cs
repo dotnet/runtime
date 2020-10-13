@@ -62,7 +62,7 @@ namespace System.Reflection.Emit
         private static bool IsBoundedVector(Type type)
         {
             ArrayType? at = type as ArrayType;
-            if (at != null)
+            if (at is not null)
                 return at.GetEffectiveRank() == 1;
             return type.ToString().EndsWith("[*]", StringComparison.Ordinal); /*Super uggly hack, SR doesn't allow one to query for it */
         }
@@ -144,7 +144,7 @@ namespace System.Reflection.Emit
         public override bool Equals(object? obj)
         {
             GenericInstanceKey? other = obj as GenericInstanceKey;
-            if (other == null)
+            if (other is null)
                 return false;
             if (gtd != other.gtd)
                 return false;
@@ -238,13 +238,13 @@ namespace System.Reflection.Emit
             dir = directory;
 
             /* Set defaults from n */
-            if (n.CultureInfo != null)
+            if (n.CultureInfo is not null)
             {
                 culture = n.CultureInfo.Name;
                 versioninfo_culture = n.CultureInfo.Name;
             }
             Version? v = n.Version;
-            if (v != null)
+            if (v is not null)
             {
                 version = v.ToString();
             }
@@ -284,7 +284,7 @@ namespace System.Reflection.Emit
 
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             return new AssemblyBuilder(name, null, access, false);
@@ -293,7 +293,7 @@ namespace System.Reflection.Emit
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access, IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             AssemblyBuilder ab = DefineDynamicAssembly(name, access);
-            if (assemblyAttributes != null)
+            if (assemblyAttributes is not null)
             {
                 foreach (CustomAttributeBuilder attr in assemblyAttributes)
                     ab.SetCustomAttribute(attr);
@@ -309,7 +309,7 @@ namespace System.Reflection.Emit
 
         public ModuleBuilder DefineDynamicModule(string name, bool emitSymbolInfo)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException("Empty name is not legal.", nameof(name));
@@ -324,12 +324,12 @@ namespace System.Reflection.Emit
 
         public ModuleBuilder? GetDynamicModule(string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException("Empty name is not legal.", nameof(name));
 
-            if (modules != null)
+            if (modules is not null)
                 for (int i = 0; i < modules.Length; ++i)
                     if (modules[i].name == name)
                         return modules[i];
@@ -389,10 +389,10 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
+            if (customBuilder is null)
                 throw new ArgumentNullException(nameof(customBuilder));
 
-            if (cattrs != null)
+            if (cattrs is not null)
             {
                 CustomAttributeBuilder[] new_array = new CustomAttributeBuilder[cattrs.Length + 1];
                 cattrs.CopyTo(new_array, 0);
@@ -411,9 +411,9 @@ namespace System.Reflection.Emit
         [ComVisible(true)]
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
+            if (con is null)
                 throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
+            if (binaryAttribute is null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
 
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
@@ -434,7 +434,7 @@ namespace System.Reflection.Emit
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(string name, bool throwOnError, bool ignoreCase)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(name);
             if (name.Length == 0)
                 throw new ArgumentException("Name cannot be empty", nameof(name));
@@ -451,12 +451,12 @@ namespace System.Reflection.Emit
 
         public override Module? GetModule(string name)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
             if (name.Length == 0)
                 throw new ArgumentException("Name can't be empty");
 
-            if (modules == null)
+            if (modules is null)
                 return null;
 
             foreach (Module module in modules)

@@ -27,7 +27,7 @@ namespace System.Net.Http
 
         public NetworkCredential? GetCredential(Uri? uri, string authType)
         {
-            if (uri == null)
+            if (uri is null)
             {
                 return null;
             }
@@ -40,15 +40,15 @@ namespace System.Net.Http
             NetworkCredential? httpCred = null;
             NetworkCredential? httpsCred = null;
 
-            if (httpProxy != null)
+            if (httpProxy is not null)
             {
                 httpCred = GetCredentialsFromString(httpProxy.UserInfo);
             }
-            if (httpsProxy != null)
+            if (httpsProxy is not null)
             {
                 httpsCred = GetCredentialsFromString(httpsProxy.UserInfo);
             }
-            if (httpCred == null && httpsCred == null)
+            if (httpCred is null && httpsCred is null)
             {
                 return null;
             }
@@ -189,12 +189,12 @@ namespace System.Net.Http
             try
             {
                 UriBuilder ub = new UriBuilder("http", host, port);
-                if (user != null)
+                if (user is not null)
                 {
                     ub.UserName = Uri.EscapeDataString(user);
                 }
 
-                if (password != null)
+                if (password is not null)
                 {
                     ub.Password = Uri.EscapeDataString(password);
                 }
@@ -211,7 +211,7 @@ namespace System.Net.Http
         /// </summary>
         private bool IsMatchInBypassList(Uri input)
         {
-            if (_bypass != null)
+            if (_bypass is not null)
             {
                 foreach (string s in _bypass)
                 {
@@ -255,7 +255,7 @@ namespace System.Net.Http
         /// </summary>
         public bool IsBypassed(Uri uri)
         {
-            return GetProxy(uri) == null ? true : IsMatchInBypassList(uri);
+            return GetProxy(uri) is null ? true : IsMatchInBypassList(uri);
         }
 
         public ICredentials? Credentials

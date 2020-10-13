@@ -55,17 +55,17 @@ namespace System.Linq
 
         IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
-            if (expression == null)
+            if (expression is null)
                 throw Error.ArgumentNull(nameof(expression));
             Type? iqType = TypeHelper.FindGenericType(typeof(IQueryable<>), expression.Type);
-            if (iqType == null)
+            if (iqType is null)
                 throw Error.ArgumentNotValid(nameof(expression));
             return Create(iqType.GetGenericArguments()[0], expression);
         }
 
         IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression)
         {
-            if (expression == null)
+            if (expression is null)
                 throw Error.ArgumentNull(nameof(expression));
             if (!typeof(IQueryable<TElement>).IsAssignableFrom(expression.Type))
             {
@@ -76,14 +76,14 @@ namespace System.Linq
 
         object? IQueryProvider.Execute(Expression expression)
         {
-            if (expression == null)
+            if (expression is null)
                 throw Error.ArgumentNull(nameof(expression));
             return EnumerableExecutor.Create(expression).ExecuteBoxed();
         }
 
         TElement IQueryProvider.Execute<TElement>(Expression expression)
         {
-            if (expression == null)
+            if (expression is null)
                 throw Error.ArgumentNull(nameof(expression));
             if (!typeof(TElement).IsAssignableFrom(expression.Type))
                 throw Error.ArgumentNotValid(nameof(expression));
@@ -96,7 +96,7 @@ namespace System.Linq
 
         private IEnumerator<T> GetEnumerator()
         {
-            if (_enumerable == null)
+            if (_enumerable is null)
             {
                 EnumerableRewriter rewriter = new EnumerableRewriter();
                 Expression body = rewriter.Visit(_expression);
@@ -113,7 +113,7 @@ namespace System.Linq
         {
             if (_expression is ConstantExpression c && c.Value == this)
             {
-                if (_enumerable != null)
+                if (_enumerable is not null)
                     return _enumerable.ToString();
                 return "null";
             }

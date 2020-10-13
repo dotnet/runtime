@@ -22,7 +22,7 @@ namespace System.ComponentModel
             NullableType = type;
 
             UnderlyingType = Nullable.GetUnderlyingType(type);
-            if (UnderlyingType == null)
+            if (UnderlyingType is null)
             {
                 throw new ArgumentException(SR.NullableConverterBadCtorArg, nameof(type));
             }
@@ -40,7 +40,7 @@ namespace System.ComponentModel
             {
                 return true;
             }
-            else if (UnderlyingTypeConverter != null)
+            else if (UnderlyingTypeConverter is not null)
             {
                 return UnderlyingTypeConverter.CanConvertFrom(context, sourceType);
             }
@@ -53,7 +53,7 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
         {
-            if (value == null || value.GetType() == UnderlyingType)
+            if (value is null || value.GetType() == UnderlyingType)
             {
                 return value;
             }
@@ -61,7 +61,7 @@ namespace System.ComponentModel
             {
                 return null;
             }
-            else if (UnderlyingTypeConverter != null)
+            else if (UnderlyingTypeConverter is not null)
             {
                 return UnderlyingTypeConverter.ConvertFrom(context, culture, value);
             }
@@ -82,7 +82,7 @@ namespace System.ComponentModel
             {
                 return true;
             }
-            else if (UnderlyingTypeConverter != null)
+            else if (UnderlyingTypeConverter is not null)
             {
                 return UnderlyingTypeConverter.CanConvertTo(context, destinationType);
             }
@@ -95,22 +95,22 @@ namespace System.ComponentModel
         /// </summary>
         public override object ConvertTo(ITypeDescriptorContext context, System.Globalization.CultureInfo culture, object value, Type destinationType)
         {
-            if (destinationType == null)
+            if (destinationType is null)
             {
                 throw new ArgumentNullException(nameof(destinationType));
             }
 
-            if (destinationType == UnderlyingType && value != null && NullableType.IsInstanceOfType(value))
+            if (destinationType == UnderlyingType && value is not null && NullableType.IsInstanceOfType(value))
             {
                 return value;
             }
             else if (destinationType == typeof(InstanceDescriptor))
             {
                 ConstructorInfo ci = NullableType.GetConstructor(new Type[] { UnderlyingType });
-                Debug.Assert(ci != null, "Couldn't find constructor");
+                Debug.Assert(ci is not null, "Couldn't find constructor");
                 return new InstanceDescriptor(ci, new object[] { value }, true);
             }
-            else if (value == null)
+            else if (value is null)
             {
                 // Handle our own nulls here
                 if (destinationType == typeof(string))
@@ -118,7 +118,7 @@ namespace System.ComponentModel
                     return string.Empty;
                 }
             }
-            else if (UnderlyingTypeConverter != null)
+            else if (UnderlyingTypeConverter is not null)
             {
                 return UnderlyingTypeConverter.ConvertTo(context, culture, value, destinationType);
             }
@@ -130,7 +130,7 @@ namespace System.ComponentModel
         /// </summary>
         public override object CreateInstance(ITypeDescriptorContext context, IDictionary propertyValues)
         {
-            if (UnderlyingTypeConverter != null)
+            if (UnderlyingTypeConverter is not null)
             {
                 object instance = UnderlyingTypeConverter.CreateInstance(context, propertyValues);
                 return instance;
@@ -146,7 +146,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool GetCreateInstanceSupported(ITypeDescriptorContext context)
         {
-            if (UnderlyingTypeConverter != null)
+            if (UnderlyingTypeConverter is not null)
             {
                 return UnderlyingTypeConverter.GetCreateInstanceSupported(context);
             }
@@ -160,7 +160,7 @@ namespace System.ComponentModel
         /// </summary>
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
-            if (UnderlyingTypeConverter != null)
+            if (UnderlyingTypeConverter is not null)
             {
                 object unwrappedValue = value;
                 return UnderlyingTypeConverter.GetProperties(context, unwrappedValue, attributes);
@@ -174,7 +174,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool GetPropertiesSupported(ITypeDescriptorContext context)
         {
-            if (UnderlyingTypeConverter != null)
+            if (UnderlyingTypeConverter is not null)
             {
                 return UnderlyingTypeConverter.GetPropertiesSupported(context);
             }
@@ -187,10 +187,10 @@ namespace System.ComponentModel
         /// </summary>
         public override StandardValuesCollection GetStandardValues(ITypeDescriptorContext context)
         {
-            if (UnderlyingTypeConverter != null)
+            if (UnderlyingTypeConverter is not null)
             {
                 StandardValuesCollection values = UnderlyingTypeConverter.GetStandardValues(context);
-                if (GetStandardValuesSupported(context) && values != null)
+                if (GetStandardValuesSupported(context) && values is not null)
                 {
                     // Create a set of standard values around nullable instances.
                     object[] wrappedValues = new object[values.Count + 1];
@@ -216,7 +216,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool GetStandardValuesExclusive(ITypeDescriptorContext context)
         {
-            if (UnderlyingTypeConverter != null)
+            if (UnderlyingTypeConverter is not null)
             {
                 return UnderlyingTypeConverter.GetStandardValuesExclusive(context);
             }
@@ -230,7 +230,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool GetStandardValuesSupported(ITypeDescriptorContext context)
         {
-            if (UnderlyingTypeConverter != null)
+            if (UnderlyingTypeConverter is not null)
             {
                 return UnderlyingTypeConverter.GetStandardValuesSupported(context);
             }
@@ -243,10 +243,10 @@ namespace System.ComponentModel
         /// </summary>
         public override bool IsValid(ITypeDescriptorContext context, object value)
         {
-            if (UnderlyingTypeConverter != null)
+            if (UnderlyingTypeConverter is not null)
             {
                 object unwrappedValue = value;
-                if (unwrappedValue == null)
+                if (unwrappedValue is null)
                 {
                     return true; // null is valid for nullable.
                 }

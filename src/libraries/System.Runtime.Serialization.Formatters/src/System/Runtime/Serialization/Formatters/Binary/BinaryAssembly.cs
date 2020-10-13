@@ -22,7 +22,7 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             output.WriteByte((byte)BinaryHeaderEnum.Assembly);
             output.WriteInt32(_assemId);
-            Debug.Assert(_assemblyString != null);
+            Debug.Assert(_assemblyString is not null);
             output.WriteString(_assemblyString);
         }
 

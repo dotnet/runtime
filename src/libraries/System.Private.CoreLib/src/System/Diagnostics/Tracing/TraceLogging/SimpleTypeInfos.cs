@@ -160,7 +160,7 @@ namespace System.Diagnostics.Tracing
 
         public override object GetData(object? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 return "";
             }
@@ -293,7 +293,7 @@ namespace System.Diagnostics.Tracing
         {
             // It's not currently possible to get the HasValue property of a nullable type through reflection when the
             // value is null. Instead, we simply check that the nullable is not null.
-            bool hasValue = value.ReferenceValue != null;
+            bool hasValue = value.ReferenceValue is not null;
             collector.AddScalar(hasValue);
             PropertyValue val = hasValue ? valueGetter(value) : valueInfo.PropertyValueFactory(Activator.CreateInstance(valueInfo.DataType));
             this.valueInfo.WriteData(collector, val);

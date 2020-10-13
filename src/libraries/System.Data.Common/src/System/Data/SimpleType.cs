@@ -38,7 +38,7 @@ namespace System.Data
         internal SimpleType(XmlSchemaSimpleType node)
         { // named simpletype
             _name = node.Name;
-            _ns = (node.QualifiedName != null) ? node.QualifiedName.Namespace : "";
+            _ns = (node.QualifiedName is not null) ? node.QualifiedName.Namespace : "";
             LoadTypeValues(node);
         }
 
@@ -58,7 +58,7 @@ namespace System.Data
                 XmlSchemaSimpleTypeRestriction content = (XmlSchemaSimpleTypeRestriction)node.Content;
 
                 XmlSchemaSimpleType? ancestor = node.BaseXmlSchemaType as XmlSchemaSimpleType;
-                if ((ancestor != null) && (ancestor.QualifiedName.Namespace != Keywords.XSDNS))
+                if ((ancestor is not null) && (ancestor.QualifiedName.Namespace != Keywords.XSDNS))
                 {
                     _baseSimpleType = new SimpleType(ancestor);
                 }
@@ -71,7 +71,7 @@ namespace System.Data
                     _baseType = content.BaseTypeName.ToString();
 
 
-                if (_baseSimpleType != null && _baseSimpleType.Name != null && _baseSimpleType.Name.Length > 0)
+                if (_baseSimpleType is not null && _baseSimpleType.Name is not null && _baseSimpleType.Name.Length > 0)
                 {
                     _xmlBaseType = _baseSimpleType.XmlBaseType; //  SimpleTypeQualifiedName;
                 }
@@ -80,7 +80,7 @@ namespace System.Data
                     _xmlBaseType = content.BaseTypeName;
                 }
 
-                if (_baseType == null || _baseType.Length == 0)
+                if (_baseType is null || _baseType.Length == 0)
                 {
                     _baseType = content.BaseType!.Name;
                     _xmlBaseType = null;
@@ -122,7 +122,7 @@ namespace System.Data
             }
 
             string tempStr = XSDSchema.GetMsdataAttribute(node, Keywords.TARGETNAMESPACE);
-            if (tempStr != null)
+            if (tempStr is not null)
                 _ns = tempStr;
         }
 
@@ -231,7 +231,7 @@ namespace System.Data
         {
             XmlElement typeNode = dc.CreateElement(Keywords.XSD_PREFIX, Keywords.XSD_SIMPLETYPE, Keywords.XSDNS);
 
-            if (_name != null && _name.Length != 0)
+            if (_name is not null && _name.Length != 0)
             {
                 // this is a global type
                 typeNode.SetAttribute(Keywords.NAME, _name);
@@ -244,12 +244,12 @@ namespace System.Data
 
             if (!inRemoting)
             {
-                if (_baseSimpleType != null)
+                if (_baseSimpleType is not null)
                 {
-                    if (_baseSimpleType.Namespace != null && _baseSimpleType.Namespace.Length > 0)
+                    if (_baseSimpleType.Namespace is not null && _baseSimpleType.Namespace.Length > 0)
                     {
-                        string? prefix = (prefixes != null) ? (string?)prefixes[_baseSimpleType.Namespace] : null;
-                        if (prefix != null)
+                        string? prefix = (prefixes is not null) ? (string?)prefixes[_baseSimpleType.Namespace] : null;
+                        if (prefix is not null)
                         {
                             type.SetAttribute(Keywords.BASE, (prefix + ":" + _baseSimpleType.Name));
                         }
@@ -270,7 +270,7 @@ namespace System.Data
             }
             else
             {
-                type.SetAttribute(Keywords.BASE, (_baseSimpleType != null) ? _baseSimpleType.Name : QualifiedName(_baseType!));
+                type.SetAttribute(Keywords.BASE, (_baseSimpleType is not null) ? _baseSimpleType.Name : QualifiedName(_baseType!));
             }
 
             XmlElement constraint;
@@ -324,14 +324,14 @@ namespace System.Data
         // if existing simpletype is being redefined with different facets, then it will return no-empty string defining the error
         internal string HasConflictingDefinition(SimpleType otherSimpleType)
         {
-            if (otherSimpleType == null)
+            if (otherSimpleType is null)
                 return nameof(otherSimpleType);
             if (MaxLength != otherSimpleType.MaxLength)
                 return ("MaxLength");
 
             if (!string.Equals(BaseType, otherSimpleType.BaseType, StringComparison.Ordinal))
                 return ("BaseType");
-            if ((BaseSimpleType != null && otherSimpleType.BaseSimpleType != null) &&
+            if ((BaseSimpleType is not null && otherSimpleType.BaseSimpleType is not null) &&
                 (BaseSimpleType.HasConflictingDefinition(otherSimpleType.BaseSimpleType)).Length != 0)
                 return ("BaseSimpleType");
             return string.Empty;
@@ -341,7 +341,7 @@ namespace System.Data
         internal bool CanHaveMaxLength()
         {
             SimpleType rootType = this;
-            while (rootType.BaseSimpleType != null)
+            while (rootType.BaseSimpleType is not null)
             {
                 rootType = rootType.BaseSimpleType;
             }
@@ -355,7 +355,7 @@ namespace System.Data
             _ns = string.Empty;
             SimpleType tmpSimpleType = this;
 
-            while (tmpSimpleType._baseSimpleType != null)
+            while (tmpSimpleType._baseSimpleType is not null)
             {
                 tmpSimpleType = tmpSimpleType._baseSimpleType;
             }

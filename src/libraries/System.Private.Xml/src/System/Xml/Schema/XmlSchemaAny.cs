@@ -38,7 +38,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_ns == null || _ns.Length == 0)
+                if (_ns is null || _ns.Length == 0)
                 {
                     return "##any";
                 }
@@ -86,7 +86,7 @@ namespace System.Xml.Schema
 
         internal void BuildNamespaceList(string? targetNamespace)
         {
-            if (_ns != null)
+            if (_ns is not null)
             { //If namespace="" default to namespace="##any"
                 _namespaceList = new NamespaceList(_ns, targetNamespace!);
             }
@@ -98,7 +98,7 @@ namespace System.Xml.Schema
 
         internal void BuildNamespaceListV1Compat(string targetNamespace)
         {
-            if (_ns != null)
+            if (_ns is not null)
             {
                 _namespaceList = new NamespaceListV1Compat(_ns, targetNamespace);
             }

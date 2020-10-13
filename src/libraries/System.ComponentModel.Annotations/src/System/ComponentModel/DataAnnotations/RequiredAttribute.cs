@@ -38,7 +38,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </returns>
         public override bool IsValid(object? value)
         {
-            if (value == null)
+            if (value is null)
             {
                 return false;
             }

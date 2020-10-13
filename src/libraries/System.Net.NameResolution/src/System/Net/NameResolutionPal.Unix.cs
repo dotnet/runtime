@@ -47,7 +47,7 @@ namespace System.Net
         {
             try
             {
-                hostName = !justAddresses && hostEntry.CanonicalName != null ?
+                hostName = !justAddresses && hostEntry.CanonicalName is not null ?
                     Marshal.PtrToStringAnsi((IntPtr)hostEntry.CanonicalName) :
                     null;
 
@@ -89,10 +89,10 @@ namespace System.Net
                 }
 
                 string[] localAliases = Array.Empty<string>();
-                if (!justAddresses && hostEntry.Aliases != null)
+                if (!justAddresses && hostEntry.Aliases is not null)
                 {
                     int numAliases = 0;
-                    while (hostEntry.Aliases[numAliases] != null)
+                    while (hostEntry.Aliases[numAliases] is not null)
                     {
                         numAliases++;
                     }

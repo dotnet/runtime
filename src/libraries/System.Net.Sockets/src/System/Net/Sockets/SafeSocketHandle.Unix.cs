@@ -99,7 +99,7 @@ namespace System.Net.Sockets
         {
             get
             {
-                if (Volatile.Read(ref _asyncContext) == null)
+                if (Volatile.Read(ref _asyncContext) is null)
                 {
                     Interlocked.CompareExchange(ref _asyncContext, new SocketAsyncContext(this), null);
                 }

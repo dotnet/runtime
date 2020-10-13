@@ -58,7 +58,7 @@ namespace System.Xml
 
         private int GetByteCount(char[] chars)
         {
-            if (_encoding == null)
+            if (_encoding is null)
             {
                 return s_UTF8Encoding.GetByteCount(chars);
             }
@@ -456,7 +456,7 @@ namespace System.Xml
 
         public override void Close()
         {
-            if (_stream != null)
+            if (_stream is not null)
             {
                 if (_ownsStream)
                 {

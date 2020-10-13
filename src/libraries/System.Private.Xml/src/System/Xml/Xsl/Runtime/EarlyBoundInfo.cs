@@ -17,12 +17,12 @@ namespace System.Xml.Xsl.Runtime
 
         public EarlyBoundInfo(string namespaceUri, Type ebType)
         {
-            Debug.Assert(namespaceUri != null && ebType != null);
+            Debug.Assert(namespaceUri is not null && ebType is not null);
 
             // Get the default constructor
             _namespaceUri = namespaceUri;
             _constrInfo = ebType.GetConstructor(Type.EmptyTypes);
-            Debug.Assert(_constrInfo != null, "The early bound object type " + ebType.FullName + " must have a public default constructor");
+            Debug.Assert(_constrInfo is not null, "The early bound object type " + ebType.FullName + " must have a public default constructor");
         }
 
         /// <summary>
@@ -46,7 +46,7 @@ namespace System.Xml.Xsl.Runtime
         public override bool Equals(object obj)
         {
             EarlyBoundInfo info = obj as EarlyBoundInfo;
-            if (info == null)
+            if (info is null)
                 return false;
 
             return _namespaceUri == info._namespaceUri && _constrInfo == info._constrInfo;

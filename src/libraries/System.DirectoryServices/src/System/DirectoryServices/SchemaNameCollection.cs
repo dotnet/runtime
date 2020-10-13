@@ -69,7 +69,7 @@ namespace System.DirectoryServices
         /// </devdoc>
         public void AddRange(string[] value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -84,7 +84,7 @@ namespace System.DirectoryServices
 
         public void AddRange(SchemaNameCollection value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -125,7 +125,7 @@ namespace System.DirectoryServices
         private object[] GetValue()
         {
             object value = _propGetter();
-            if (value == null)
+            if (value is null)
                 return Array.Empty<object>();
             else
                 return (object[])value;

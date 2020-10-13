@@ -28,7 +28,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public void Push(XPathNavigator nav)
         {
-            if (_stkNav == null)
+            if (_stkNav is null)
             {
                 _stkNav = new XPathNavigator[InitialStackSize];
             }

@@ -128,7 +128,7 @@ namespace System.Reflection.Emit
             {
                 ConstructorBuilder? cb = m_ctor as ConstructorBuilder;
 
-                if (cb != null)
+                if (cb is not null)
                     return cb.MetadataToken;
                 else
                 {
@@ -229,7 +229,7 @@ namespace System.Reflection.Emit
             {
                 FieldBuilder? fb = m_field as FieldBuilder;
 
-                if (fb != null)
+                if (fb is not null)
                     return fb.MetadataToken;
                 else
                 {

@@ -66,7 +66,7 @@ namespace System.Globalization
 
         private void InsertOrSwapOverride(string? value, ref string[] destination)
         {
-            if (value == null)
+            if (value is null)
                 return;
 
             for (int i = 0; i < destination.Length; i++)
@@ -254,7 +254,7 @@ namespace System.Globalization
                     string? res = CultureData.GetLocaleInfoEx(localeName, lcType);
 
                     // if it succeeded remember the override for the later callers
-                    if (res != null)
+                    if (res is not null)
                     {
                         // Remember this was the override (so we can look for duplicates later in the enum function)
                         context.userOverride = res;
@@ -269,7 +269,7 @@ namespace System.Globalization
             Interop.Kernel32.EnumCalendarInfoExEx(&EnumCalendarInfoCallback, localeName, (uint)calendar, null, calType, Unsafe.AsPointer(ref context));
 
             // Now we have a list of data, fail if we didn't find anything.
-            Debug.Assert(context.strings != null);
+            Debug.Assert(context.strings is not null);
             if (context.strings.Count == 0)
             {
                 data = null;

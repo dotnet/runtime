@@ -47,7 +47,7 @@ namespace System.Diagnostics
         // in number of 16-bit characters, is set by bufferSize.
         internal AsyncStreamReader(Stream stream, Action<string?> callback, Encoding encoding)
         {
-            Debug.Assert(stream != null && encoding != null && callback != null, "Invalid arguments!");
+            Debug.Assert(stream is not null && encoding is not null && callback is not null, "Invalid arguments!");
             Debug.Assert(stream.CanRead, "Stream must be readable!");
 
             _stream = stream;
@@ -69,7 +69,7 @@ namespace System.Diagnostics
         {
             _cancelOperation = false;
 
-            if (_sb == null)
+            if (_sb is null)
             {
                 _sb = new StringBuilder(DefaultBufferSize);
                 _readToBufferTask = Task.Run((Func<Task>)ReadBufferAsync);

@@ -11,7 +11,7 @@ namespace System.Security.Cryptography.Pkcs
     {
         internal SubjectIdentifierOrKey(SubjectIdentifierOrKeyType type, object value)
         {
-            Debug.Assert(value != null);
+            Debug.Assert(value is not null);
 #if DEBUG
             switch (type)
             {

@@ -20,7 +20,7 @@ namespace System.Xml
             if (i < 0)
                 return null;
 
-            for (XmlNode? n = _container.FirstChild; n != null; n = n.NextSibling, i--)
+            for (XmlNode? n = _container.FirstChild; n is not null; n = n.NextSibling, i--)
             {
                 if (i == 0)
                     return n;
@@ -34,7 +34,7 @@ namespace System.Xml
             get
             {
                 int c = 0;
-                for (XmlNode? n = _container.FirstChild; n != null; n = n.NextSibling)
+                for (XmlNode? n = _container.FirstChild; n is not null; n = n.NextSibling)
                 {
                     c++;
                 }
@@ -45,7 +45,7 @@ namespace System.Xml
 
         public override IEnumerator GetEnumerator()
         {
-            if (_container.FirstChild == null)
+            if (_container.FirstChild is null)
             {
                 return XmlDocument.EmptyEnumerator;
             }

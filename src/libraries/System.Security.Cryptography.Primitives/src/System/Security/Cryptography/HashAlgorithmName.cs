@@ -91,7 +91,7 @@ namespace System.Security.Cryptography
 
         public override int GetHashCode()
         {
-            return _name == null ? 0 : _name.GetHashCode();
+            return _name is null ? 0 : _name.GetHashCode();
         }
 
         public static bool operator ==(HashAlgorithmName left, HashAlgorithmName right)

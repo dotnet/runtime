@@ -175,7 +175,7 @@ namespace System.Net.Http
                 }
 
                 // We need to check for body content
-                if (request.Content != null)
+                if (request.Content is not null)
                 {
                     if (request.Content is StringContent)
                     {
@@ -202,7 +202,7 @@ namespace System.Net.Http
                             jsHeaders.Invoke("append", header.Key, value);
                         }
                     }
-                    if (request.Content != null)
+                    if (request.Content is not null)
                     {
                         foreach (KeyValuePair<string, IEnumerable<string>> header in request.Content.Headers)
                         {
@@ -236,7 +236,7 @@ namespace System.Net.Http
                 }));
 
                 var args = new System.Runtime.InteropServices.JavaScript.Array();
-                if (request.RequestUri != null)
+                if (request.RequestUri is not null)
                 {
                     args.Push(request.RequestUri.ToString());
                     args.Push(requestObject);
@@ -246,7 +246,7 @@ namespace System.Net.Http
 
                 var response = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
                 args.Dispose();
-                if (response == null)
+                if (response is null)
                     throw new Exception("Internal error marshalling the response Promise from `fetch`.");
 
                 JSObject t = (JSObject)await response.ConfigureAwait(continueOnCapturedContext: true);
@@ -287,7 +287,7 @@ namespace System.Net.Http
                 // Note: Some of the headers may not even be valid header types in .NET thus we use TryAddWithoutValidation
                 using (JSObject respHeaders = status.Headers)
                 {
-                    if (respHeaders != null)
+                    if (respHeaders is not null)
                     {
                         using (var entriesIterator = (JSObject)respHeaders.Invoke("entries"))
                         {
@@ -392,7 +392,7 @@ namespace System.Net.Http
 
             private async Task<byte[]> GetResponseData()
             {
-                if (_data != null)
+                if (_data is not null)
                 {
                     return _data;
                 }
@@ -424,7 +424,7 @@ namespace System.Net.Http
             }
             protected internal override bool TryComputeLength(out long length)
             {
-                if (_data != null)
+                if (_data is not null)
                 {
                     length = _data.Length;
                     return true;
@@ -466,7 +466,7 @@ namespace System.Net.Http
 
             public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                if (buffer == null)
+                if (buffer is null)
                 {
                     throw new ArgumentNullException(nameof(buffer));
                 }
@@ -479,10 +479,10 @@ namespace System.Net.Http
                     throw new ArgumentOutOfRangeException(nameof(count));
                 }
 
-                if (_reader == null)
+                if (_reader is null)
                 {
                     // If we've read everything, then _reader and _status will be null
-                    if (_status == null)
+                    if (_status is null)
                     {
                         return 0;
                     }
@@ -501,7 +501,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (_bufferedBytes != null && _position < _bufferedBytes.Length)
+                if (_bufferedBytes is not null && _position < _bufferedBytes.Length)
                 {
                     return ReadBuffered();
                 }

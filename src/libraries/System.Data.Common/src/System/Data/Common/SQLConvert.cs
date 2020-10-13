@@ -11,7 +11,7 @@ namespace System.Data.Common
     {
         public static SqlByte ConvertToSqlByte(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlByte");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlByte");
             if ((value == DBNull.Value))
             { // null is not valid, SqlByte is struct
                 return SqlByte.Null;
@@ -29,7 +29,7 @@ namespace System.Data.Common
 
         public static SqlInt16 ConvertToSqlInt16(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlInt16");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlInt16");
             if (value == DBNull.Value)
             {
                 return SqlInt16.Null;
@@ -48,7 +48,7 @@ namespace System.Data.Common
 
         public static SqlInt32 ConvertToSqlInt32(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlInt32");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlInt32");
             if (value == DBNull.Value)
             {
                 return SqlInt32.Null;
@@ -71,7 +71,7 @@ namespace System.Data.Common
 
         public static SqlInt64 ConvertToSqlInt64(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlInt64");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlInt64");
             if (value == DBNull.Value)
             {
                 return SqlInt32.Null;
@@ -96,7 +96,7 @@ namespace System.Data.Common
 
         public static SqlDouble ConvertToSqlDouble(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlDouble");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlDouble");
             if (value == DBNull.Value)
             {
                 return SqlDouble.Null;
@@ -129,7 +129,7 @@ namespace System.Data.Common
 
         public static SqlDecimal ConvertToSqlDecimal(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlDecimal");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlDecimal");
             if (value == DBNull.Value)
             {
                 return SqlDecimal.Null;
@@ -159,7 +159,7 @@ namespace System.Data.Common
 
         public static SqlSingle ConvertToSqlSingle(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlSingle");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlSingle");
             if (value == DBNull.Value)
             {
                 return SqlSingle.Null;
@@ -190,7 +190,7 @@ namespace System.Data.Common
 
         public static SqlMoney ConvertToSqlMoney(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlMoney");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlMoney");
             if (value == DBNull.Value)
             {
                 return SqlMoney.Null;
@@ -220,7 +220,7 @@ namespace System.Data.Common
 
         public static SqlDateTime ConvertToSqlDateTime(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlDateTime");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlDateTime");
             if (value == DBNull.Value)
             {
                 return SqlDateTime.Null;
@@ -238,8 +238,8 @@ namespace System.Data.Common
 
         public static SqlBoolean ConvertToSqlBoolean(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlBoolean");
-            if ((value == DBNull.Value) || (value == null))
+            Debug.Assert(value is not null, "null argument in ConvertToSqlBoolean");
+            if ((value == DBNull.Value) || (value is null))
             {
                 return SqlBoolean.Null;
             }
@@ -256,7 +256,7 @@ namespace System.Data.Common
 
         public static SqlGuid ConvertToSqlGuid(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlGuid");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlGuid");
             if (value == DBNull.Value)
             {
                 return SqlGuid.Null;
@@ -274,7 +274,7 @@ namespace System.Data.Common
 
         public static SqlBinary ConvertToSqlBinary(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlBinary");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlBinary");
             if (value == DBNull.Value)
             {
                 return SqlBinary.Null;
@@ -292,8 +292,8 @@ namespace System.Data.Common
 
         public static SqlString ConvertToSqlString(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlString");
-            if ((value == DBNull.Value) || (value == null))
+            Debug.Assert(value is not null, "null argument in ConvertToSqlString");
+            if ((value == DBNull.Value) || (value is null))
             {
                 return SqlString.Null;
             }
@@ -310,7 +310,7 @@ namespace System.Data.Common
 
         public static SqlChars ConvertToSqlChars(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlChars");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlChars");
             if (value == DBNull.Value)
             {
                 return SqlChars.Null;
@@ -326,7 +326,7 @@ namespace System.Data.Common
 
         public static SqlBytes ConvertToSqlBytes(object value)
         {
-            Debug.Assert(value != null, "null argument in ConvertToSqlBytes");
+            Debug.Assert(value is not null, "null argument in ConvertToSqlBytes");
             if (value == DBNull.Value)
             {
                 return SqlBytes.Null;

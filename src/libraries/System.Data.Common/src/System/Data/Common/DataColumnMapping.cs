@@ -114,7 +114,7 @@ namespace System.Data.Common
 
         internal static DataColumn? CreateDataColumnBySchemaAction(string? sourceColumn, string? dataSetColumn, DataTable dataTable, Type? dataType, MissingSchemaAction schemaAction)
         {
-            Debug.Assert(dataTable != null, "Should not call with a null DataTable");
+            Debug.Assert(dataTable is not null, "Should not call with a null DataTable");
             if (string.IsNullOrEmpty(dataSetColumn))
             {
                 return null;

@@ -15,7 +15,7 @@ namespace System.IO
             get
             {
                 var inner = _in as StdInReader;
-                Debug.Assert(inner != null);
+                Debug.Assert(inner is not null);
                 return inner;
             }
         }

@@ -161,7 +161,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             RtfNavigator rtf = item as RtfNavigator;
-            if (rtf != null)
+            if (rtf is not null)
                 return rtf.ToNavigator();
 
             return (XPathNavigator)item;

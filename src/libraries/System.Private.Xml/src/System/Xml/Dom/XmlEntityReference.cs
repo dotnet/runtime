@@ -81,7 +81,7 @@ namespace System.Xml
         // Creates a duplicate of this node.
         public override XmlNode CloneNode(bool deep)
         {
-            Debug.Assert(OwnerDocument != null);
+            Debug.Assert(OwnerDocument is not null);
             XmlEntityReference eref = OwnerDocument.CreateEntityReference(_name);
             return eref;
         }
@@ -107,7 +107,7 @@ namespace System.Xml
         internal override void SetParent(XmlNode? node)
         {
             base.SetParent(node);
-            if (LastNode == null && node != null && node != OwnerDocument)
+            if (LastNode is null && node is not null && node != OwnerDocument)
             {
                 //first time insert the entity reference into the tree, we should expand its children now
                 XmlLoader loader = new XmlLoader();
@@ -181,7 +181,7 @@ namespace System.Xml
 
         private string ConstructBaseURI(string baseURI, string systemId)
         {
-            if (baseURI == null)
+            if (baseURI is null)
                 return systemId;
             int nCount = baseURI.LastIndexOf('/') + 1;
             string buf = baseURI;
@@ -199,7 +199,7 @@ namespace System.Xml
             {
                 //get the associate entity and return its baseUri
                 XmlEntity? ent = OwnerDocument!.GetEntityNode(_name);
-                if (ent != null)
+                if (ent is not null)
                 {
                     if (!string.IsNullOrEmpty(ent.SystemId))
                         return ConstructBaseURI(ent.BaseURI, ent.SystemId);

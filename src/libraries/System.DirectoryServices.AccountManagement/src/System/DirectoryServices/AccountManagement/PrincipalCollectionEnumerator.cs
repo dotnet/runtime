@@ -38,7 +38,7 @@ namespace System.DirectoryServices.AccountManagement
                     throw new InvalidOperationException(SR.PrincipalCollectionEnumInvalidPos);
                 }
 
-                Debug.Assert(_current != null);
+                Debug.Assert(_current is not null);
                 return _current;
             }
         }
@@ -97,7 +97,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                 }
 
-                Debug.Assert(_resultSet != null);
+                Debug.Assert(_resultSet is not null);
 
                 if (_currentMode == CurrentEnumeratorMode.ResultSet)
                 {
@@ -245,7 +245,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             GlobalDebug.WriteLineIf(GlobalDebug.Info, "PrincipalCollectionEnumerator", "Ctor");
 
-            Debug.Assert(resultSet != null);
+            Debug.Assert(resultSet is not null);
 
             _resultSet = resultSet;
             _memberCollection = memberCollection;

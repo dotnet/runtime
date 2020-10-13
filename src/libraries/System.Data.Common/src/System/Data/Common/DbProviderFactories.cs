@@ -43,7 +43,7 @@ namespace System.Data.Common
         public static bool TryGetFactory(string providerInvariantName, [NotNullWhen(true)] out DbProviderFactory? factory)
         {
             factory = GetFactory(providerInvariantName, throwOnError: false);
-            return factory != null;
+            return factory is not null;
         }
 
         public static DbProviderFactory GetFactory(string providerInvariantName)
@@ -152,7 +152,7 @@ namespace System.Data.Common
                 return throwOnError ? throw ADP.Argument(SR.Format(SR.ADP_DbProviderFactories_InvariantNameNotFound, providerInvariantName)) : (DbProviderFactory?)null;
             }
             DbProviderFactory? toReturn = registration.FactoryInstance;
-            if (toReturn == null)
+            if (toReturn is null)
             {
                 // Deferred registration, do checks now on the type specified and register instance in storage.
                 // Even in the case of throwOnError being false, this will throw when an exception occurs checking the registered type as the user has to be notified the

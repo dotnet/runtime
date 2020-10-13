@@ -24,7 +24,7 @@ namespace System.Collections.Immutable
         public static void NotNull<T>([ValidatedNotNull]T value, string? parameterName)
             where T : class // ensures value-types aren't passed to a null checking method
         {
-            if (value == null)
+            if (value is null)
             {
                 FailArgumentNullException(parameterName);
             }

@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
 
         public AesGcm(byte[] key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             AesAEAD.CheckKeySize(key.Length * 8);

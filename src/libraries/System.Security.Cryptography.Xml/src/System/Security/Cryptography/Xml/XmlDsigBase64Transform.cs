@@ -59,7 +59,7 @@ namespace System.Security.Cryptography.Xml
 
         private void LoadStreamInput(Stream inputStream)
         {
-            if (inputStream == null) throw new ArgumentException("obj");
+            if (inputStream is null) throw new ArgumentException("obj");
             MemoryStream ms = new MemoryStream();
             byte[] buffer = new byte[1024];
             int bytesRead;
@@ -94,7 +94,7 @@ namespace System.Security.Cryptography.Xml
             foreach (XmlNode node in nodeList)
             {
                 XmlNode result = node.SelectSingleNode("self::text()");
-                if (result != null)
+                if (result is not null)
                     sb.Append(result.OuterXml);
             }
             UTF8Encoding utf8 = new UTF8Encoding(false);

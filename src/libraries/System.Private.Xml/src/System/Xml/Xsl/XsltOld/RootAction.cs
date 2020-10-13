@@ -35,7 +35,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public void AddKey(XPathNavigator root, Hashtable table)
         {
-            if (_keyNodes == null)
+            if (_keyNodes is null)
             {
                 _keyNodes = new ArrayList();
             }
@@ -44,7 +44,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public Hashtable? GetKeys(XPathNavigator root)
         {
-            if (_keyNodes != null)
+            if (_keyNodes is not null)
             {
                 for (int i = 0; i < _keyNodes.Count; i++)
                 {
@@ -93,7 +93,7 @@ namespace System.Xml.Xsl.XsltOld
         {
             get
             {
-                if (_output == null)
+                if (_output is null)
                 {
                     _output = new XsltOutput();
                 }
@@ -111,7 +111,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal void InsertKey(XmlQualifiedName name, int MatchKey, int UseKey)
         {
-            if (_keyList == null)
+            if (_keyList is null)
             {
                 _keyList = new List<Key>();
             }
@@ -121,7 +121,7 @@ namespace System.Xml.Xsl.XsltOld
         internal AttributeSetAction GetAttributeSet(XmlQualifiedName name)
         {
             AttributeSetAction? action = (AttributeSetAction?)_attributeSetTable[name];
-            if (action == null)
+            if (action is null)
             {
                 throw XsltException.Create(SR.Xslt_NoAttributeSet, name.ToString());
             }
@@ -136,7 +136,7 @@ namespace System.Xml.Xsl.XsltOld
             // As we mentioned we need to invert all lists.
             foreach (AttributeSetAction attSet in _attributeSetTable.Values)
             {
-                if (attSet.containedActions != null)
+                if (attSet.containedActions is not null)
                 {
                     attSet.containedActions.Reverse();
                 }
@@ -150,13 +150,13 @@ namespace System.Xml.Xsl.XsltOld
         {
             // mirge stylesheet.AttributeSetTable to this.AttributeSetTable
 
-            if (stylesheet.AttributeSetTable != null)
+            if (stylesheet.AttributeSetTable is not null)
             {
                 foreach (AttributeSetAction srcAttSet in stylesheet.AttributeSetTable.Values)
                 {
                     ArrayList? srcAttList = srcAttSet.containedActions;
                     AttributeSetAction? dstAttSet = (AttributeSetAction?)_attributeSetTable[srcAttSet.Name!];
-                    if (dstAttSet == null)
+                    if (dstAttSet is null)
                     {
                         dstAttSet = new AttributeSetAction();
                         {
@@ -169,7 +169,7 @@ namespace System.Xml.Xsl.XsltOld
                     ArrayList? dstAttList = dstAttSet.containedActions;
                     // We adding attributes in reverse order for purpuse. In the mirged list most importent attset shoud go last one
                     // so we'll need to invert dstAttList finaly.
-                    if (srcAttList != null)
+                    if (srcAttList is not null)
                     {
                         for (int src = srcAttList.Count - 1; 0 <= src; src--)
                         {
@@ -204,7 +204,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 else
                 {
-                    Debug.Assert(mark == null);
+                    Debug.Assert(mark is null);
 
                     markTable[qname] = (object)PROCESSING;
                     CheckAttributeSets_RecurceInContainer(markTable, GetAttributeSet(qname));
@@ -215,7 +215,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private void CheckAttributeSets_RecurceInContainer(Hashtable markTable, ContainerAction container)
         {
-            if (container.containedActions == null)
+            if (container.containedActions is null)
             {
                 return;
             }
@@ -235,7 +235,7 @@ namespace System.Xml.Xsl.XsltOld
         internal void AddDecimalFormat(XmlQualifiedName name, DecimalFormat formatinfo)
         {
             DecimalFormat? exist = (DecimalFormat?)_decimalFormatTable[name];
-            if (exist != null)
+            if (exist is not null)
             {
                 NumberFormatInfo info = exist.info;
                 NumberFormatInfo newinfo = formatinfo.info;
@@ -269,7 +269,7 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             switch (frame.State)
             {
@@ -279,7 +279,7 @@ namespace System.Xml.Xsl.XsltOld
                     root.MoveToRoot();
                     frame.InitNodeSet(new XPathSingletonIterator(root));
 
-                    if (this.containedActions != null && this.containedActions.Count > 0)
+                    if (this.containedActions is not null && this.containedActions.Count > 0)
                     {
                         processor.PushActionFrame(frame);
                     }
@@ -289,7 +289,7 @@ namespace System.Xml.Xsl.XsltOld
                     Debug.Assert(frame.State == QueryInitialized);
                     frame.NextNode(processor);
                     Debug.Assert(Processor.IsRoot(frame.Node!));
-                    if (processor.Debugger != null)
+                    if (processor.Debugger is not null)
                     {
                         // this is like apply-templates, but we don't have it on stack.
                         // Pop the stack, otherwise last instruction will be on it.

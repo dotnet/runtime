@@ -39,11 +39,11 @@ namespace System.Net.WebSockets
             string secWebSocketKey,
             WebSocket webSocket)
         {
-            Debug.Assert(requestUri != null, "requestUri shouldn't be null");
-            Debug.Assert(headers != null, "headers shouldn't be null");
-            Debug.Assert(cookieCollection != null, "cookieCollection shouldn't be null");
-            Debug.Assert(secWebSocketProtocols != null, "secWebSocketProtocols shouldn't be null");
-            Debug.Assert(webSocket != null, "webSocket shouldn't be null");
+            Debug.Assert(requestUri is not null, "requestUri shouldn't be null");
+            Debug.Assert(headers is not null, "headers shouldn't be null");
+            Debug.Assert(cookieCollection is not null, "cookieCollection shouldn't be null");
+            Debug.Assert(secWebSocketProtocols is not null, "secWebSocketProtocols shouldn't be null");
+            Debug.Assert(webSocket is not null, "webSocket shouldn't be null");
 
             _cookieCollection = new CookieCollection();
             _cookieCollection.Add(cookieCollection);
@@ -88,7 +88,7 @@ namespace System.Net.WebSockets
 
         private static IPrincipal? CopyPrincipal(IPrincipal user)
         {
-            if (user != null)
+            if (user is not null)
             {
                 if (!(user is WindowsPrincipal))
                 {

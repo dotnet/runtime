@@ -73,7 +73,7 @@ namespace System.Reflection.Context.Projection
         {
             ProjectingConstructorInfo other = o as ProjectingConstructorInfo;
 
-            return other != null &&
+            return other is not null &&
                    Projector == other.Projector &&
                    UnderlyingConstructor.Equals(other.UnderlyingConstructor);
         }

@@ -50,15 +50,15 @@ namespace System.ServiceModel.Syndication
 
         public SyndicationFeed(string title, string description, Uri feedAlternateLink, string id, DateTimeOffset lastUpdatedTime, IEnumerable<SyndicationItem> items)
         {
-            if (title != null)
+            if (title is not null)
             {
                 Title = new TextSyndicationContent(title);
             }
-            if (description != null)
+            if (description is not null)
             {
                 Description = new TextSyndicationContent(description);
             }
-            if (feedAlternateLink != null)
+            if (feedAlternateLink is not null)
             {
                 Links.Add(SyndicationLink.CreateAlternateLink(feedAlternateLink));
             }
@@ -69,7 +69,7 @@ namespace System.ServiceModel.Syndication
 
         protected SyndicationFeed(SyndicationFeed source, bool cloneItems)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -154,7 +154,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                if (LastUpdatedTimeException != null)
+                if (LastUpdatedTimeException is not null)
                 {
                     throw LastUpdatedTimeException;
                 }
@@ -205,7 +205,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                if (InternalSkipHours == null)
+                if (InternalSkipHours is null)
                 {
                     var skipHours = new Collection<int>();
                     TryReadSkipHoursFromExtension(ElementExtensions, skipHours);
@@ -222,7 +222,7 @@ namespace System.ServiceModel.Syndication
         {
             get
             {
-                if (InternalSkipDays == null)
+                if (InternalSkipDays is null)
                 {
                     var skipDays = new Collection<string>();
                     TryReadSkipDaysFromExtension(ElementExtensions, skipDays);
@@ -246,7 +246,7 @@ namespace System.ServiceModel.Syndication
             SyndicationElementExtension documentationElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.DocumentationTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
 
-            if (documentationElement == null)
+            if (documentationElement is null)
                 return null;
 
             using (XmlReader reader = documentationElement.GetReader())
@@ -261,7 +261,7 @@ namespace System.ServiceModel.Syndication
             SyndicationElementExtension timeToLiveElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.TimeToLiveTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
 
-            if (timeToLiveElement == null)
+            if (timeToLiveElement is null)
                 return null;
 
             using (XmlReader reader = timeToLiveElement.GetReader())
@@ -290,7 +290,7 @@ namespace System.ServiceModel.Syndication
             SyndicationElementExtension skipHoursElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.SkipHoursTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
 
-            if (skipHoursElement == null)
+            if (skipHoursElement is null)
                 return;
 
             using (XmlReader reader = skipHoursElement.GetReader())
@@ -324,7 +324,7 @@ namespace System.ServiceModel.Syndication
             SyndicationElementExtension skipDaysElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.SkipDaysTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
 
-            if (skipDaysElement == null)
+            if (skipDaysElement is null)
                 return;
 
             using (XmlReader reader = skipDaysElement.GetReader())
@@ -360,7 +360,7 @@ namespace System.ServiceModel.Syndication
             SyndicationElementExtension textInputElement = elementExtensions
                                       .FirstOrDefault(e => e.OuterName == Rss20Constants.TextInputTag && e.OuterNamespace == Rss20Constants.Rss20Namespace);
 
-            if (textInputElement == null)
+            if (textInputElement is null)
                 return null;
 
             var textInput = new SyndicationTextInput();
@@ -404,14 +404,14 @@ namespace System.ServiceModel.Syndication
         private static bool IsValidTextInput(SyndicationTextInput textInput)
         {
             // All textInput items are required, we check if all items were instantiated.
-            return textInput.Description != null && textInput.Title != null && textInput.Name != null && textInput.Link != null;
+            return textInput.Description is not null && textInput.Title is not null && textInput.Name is not null && textInput.Link is not null;
         }
 
         public static SyndicationFeed Load(XmlReader reader) => Load<SyndicationFeed>(reader);
 
         public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader) where TSyndicationFeed : SyndicationFeed, new()
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -503,19 +503,19 @@ namespace System.ServiceModel.Syndication
                 switch (localName)
                 {
                     case Rss20Constants.DocumentationTag:
-                        return InternalDocumentation != null;
+                        return InternalDocumentation is not null;
 
                     case Rss20Constants.TimeToLiveTag:
-                        return InternalTimeToLive != null;
+                        return InternalTimeToLive is not null;
 
                     case Rss20Constants.TextInputTag:
-                        return InternalTextInput != null;
+                        return InternalTextInput is not null;
 
                     case Rss20Constants.SkipHoursTag:
-                        return InternalSkipHours != null;
+                        return InternalSkipHours is not null;
 
                     case Rss20Constants.SkipDaysTag:
-                        return InternalSkipDays != null;
+                        return InternalSkipDays is not null;
                 }
             }
 

@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadInnerXml(XmlNodeList nodeList)
         {
-            if (nodeList == null)
+            if (nodeList is null)
                 throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
             // check that the XSLT element is well formed
             XmlElement firstDataElement = null;
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Xml
                 // Only allow whitespace
                 count++;
             }
-            if (count != 1 || firstDataElement == null)
+            if (count != 1 || firstDataElement is null)
                 throw new CryptographicException(SR.Cryptography_Xml_UnknownTransform);
             _xslNodes = nodeList;
             _xslFragment = firstDataElement.OuterXml.Trim(null);
@@ -79,7 +79,7 @@ namespace System.Security.Cryptography.Xml
 
         public override void LoadInput(object obj)
         {
-            if (_inputStream != null)
+            if (_inputStream is not null)
                 _inputStream.Close();
             _inputStream = new MemoryStream();
             if (obj is Stream)
@@ -90,7 +90,7 @@ namespace System.Security.Cryptography.Xml
             {
                 CanonicalXml xmlDoc = new CanonicalXml((XmlNodeList)obj, null, _includeComments);
                 byte[] buffer = xmlDoc.GetBytes();
-                if (buffer == null) return;
+                if (buffer is null) return;
                 _inputStream.Write(buffer, 0, buffer.Length);
                 _inputStream.Flush();
                 _inputStream.Position = 0;
@@ -99,7 +99,7 @@ namespace System.Security.Cryptography.Xml
             {
                 CanonicalXml xmlDoc = new CanonicalXml((XmlDocument)obj, null, _includeComments);
                 byte[] buffer = xmlDoc.GetBytes();
-                if (buffer == null) return;
+                if (buffer is null) return;
                 _inputStream.Write(buffer, 0, buffer.Length);
                 _inputStream.Flush();
                 _inputStream.Position = 0;

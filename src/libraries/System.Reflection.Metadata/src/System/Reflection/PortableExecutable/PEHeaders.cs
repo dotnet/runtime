@@ -72,7 +72,7 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
         public PEHeaders(Stream peStream, int size, bool isLoadedImage)
         {
-            if (peStream == null)
+            if (peStream is null)
             {
                 throw new ArgumentNullException(nameof(peStream));
             }
@@ -153,7 +153,7 @@ namespace System.Reflection.PortableExecutable
         /// </summary>
         public bool IsCoffOnly
         {
-            get { return _peHeader == null; }
+            get { return _peHeader is null; }
         }
 
         /// <summary>
@@ -203,7 +203,7 @@ namespace System.Reflection.PortableExecutable
         {
             get
             {
-                return _peHeader != null && _peHeader.Subsystem == Subsystem.WindowsCui;
+                return _peHeader is not null && _peHeader.Subsystem == Subsystem.WindowsCui;
             }
         }
 
@@ -396,7 +396,7 @@ namespace System.Reflection.PortableExecutable
                     size = SectionHeaders[cormeta].SizeOfRawData;
                 }
             }
-            else if (_corHeader == null)
+            else if (_corHeader is null)
             {
                 start = 0;
                 size = 0;

@@ -19,7 +19,7 @@ namespace System.Buffers
                 get
                 {
                     T[]? array = _array;
-                    if (array == null)
+                    if (array is null)
                     {
                         ThrowHelper.ThrowObjectDisposedException_ArrayMemoryPoolBuffer();
                     }
@@ -31,7 +31,7 @@ namespace System.Buffers
             public void Dispose()
             {
                 T[]? array = _array;
-                if (array != null)
+                if (array is not null)
                 {
                     _array = null;
                     ArrayPool<T>.Shared.Return(array);

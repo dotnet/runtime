@@ -127,7 +127,7 @@ namespace System.Threading
 
         public static bool IsEntered(object obj)
         {
-            if (obj == null)
+            if (obj is null)
                 throw new ArgumentNullException(nameof(obj));
 
             return IsEnteredNative(obj);
@@ -151,7 +151,7 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public static bool Wait(object obj, int millisecondsTimeout)
         {
-            if (obj == null)
+            if (obj is null)
                 throw (new ArgumentNullException(nameof(obj)));
             if (millisecondsTimeout < -1)
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);
@@ -169,7 +169,7 @@ namespace System.Threading
 
         public static void Pulse(object obj)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
@@ -184,7 +184,7 @@ namespace System.Threading
 
         public static void PulseAll(object obj)
         {
-            if (obj == null)
+            if (obj is null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }

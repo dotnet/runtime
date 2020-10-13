@@ -22,7 +22,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(ReplicationNeighbor neighbor)
         {
-            if (neighbor == null)
+            if (neighbor is null)
                 throw new ArgumentNullException(nameof(neighbor));
 
             return InnerList.Contains(neighbor);
@@ -30,7 +30,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(ReplicationNeighbor neighbor)
         {
-            if (neighbor == null)
+            if (neighbor is null)
                 throw new ArgumentNullException(nameof(neighbor));
 
             return InnerList.IndexOf(neighbor);

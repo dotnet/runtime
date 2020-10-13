@@ -62,7 +62,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public Oid GetCertificateType()
         {
-            if (_certTypeOid == null)
+            if (_certTypeOid is null)
             {
                 _certTypeOid = new Oid(_decoded.CertId);
             }
@@ -84,9 +84,9 @@ namespace System.Security.Cryptography.Pkcs
 
         private static byte[] EncodeBagValue(Oid certificateType, ReadOnlyMemory<byte> encodedCertificate)
         {
-            if (certificateType == null)
+            if (certificateType is null)
                 throw new ArgumentNullException(nameof(certificateType));
-            if (certificateType.Value == null)
+            if (certificateType.Value is null)
                 throw new CryptographicException(SR.Argument_InvalidOidValue);
 
             return EncodeBagValue(certificateType.Value, encodedCertificate);

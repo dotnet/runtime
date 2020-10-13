@@ -32,7 +32,7 @@ namespace System.ComponentModel
         /// </summary>
         public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
         {
-            if (sourceType == typeof(string) && context != null)
+            if (sourceType == typeof(string) && context is not null)
             {
                 return true;
             }
@@ -48,13 +48,13 @@ namespace System.ComponentModel
             if (value is string text)
             {
                 text = text.Trim();
-                if (!string.Equals(text, s_none) && context != null)
+                if (!string.Equals(text, s_none) && context is not null)
                 {
                     // Try the reference service first.
                     if (context.GetService(typeof(IReferenceService)) is IReferenceService refSvc)
                     {
                         object obj = refSvc.GetReference(text);
-                        if (obj != null)
+                        if (obj is not null)
                         {
                             return obj;
                         }
@@ -62,10 +62,10 @@ namespace System.ComponentModel
 
                     // Now try IContainer
                     IContainer cont = context.Container;
-                    if (cont != null)
+                    if (cont is not null)
                     {
                         object obj = cont.Components[text];
-                        if (obj != null)
+                        if (obj is not null)
                         {
                             return obj;
                         }
@@ -85,13 +85,13 @@ namespace System.ComponentModel
         {
             if (destinationType == typeof(string))
             {
-                if (value != null)
+                if (value is not null)
                 {
                     // Try the reference service first.
                     if (context?.GetService(typeof(IReferenceService)) is IReferenceService refSvc)
                     {
                         string name = refSvc.GetName(value);
-                        if (name != null)
+                        if (name is not null)
                         {
                             return name;
                         }
@@ -102,7 +102,7 @@ namespace System.ComponentModel
                     {
                         ISite site = comp.Site;
                         string name = site?.Name;
-                        if (name != null)
+                        if (name is not null)
                         {
                             return name;
                         }
@@ -125,7 +125,7 @@ namespace System.ComponentModel
         {
             List<object> components = null;
 
-            if (context != null)
+            if (context is not null)
             {
                 components = new List<object> { null };
 
@@ -133,7 +133,7 @@ namespace System.ComponentModel
                 if (context.GetService(typeof(IReferenceService)) is IReferenceService refSvc)
                 {
                     object[] objs = refSvc.GetReferences(_type);
-                    if (objs != null)
+                    if (objs is not null)
                     {
                         for (int i = 0; i < objs.Length; i++)
                         {
@@ -148,12 +148,12 @@ namespace System.ComponentModel
                 {
                     // Now try IContainer.
                     IContainer cont = context.Container;
-                    if (cont != null)
+                    if (cont is not null)
                     {
                         ComponentCollection objs = cont.Components;
                         foreach (IComponent obj in objs)
                         {
-                            if (obj != null && _type != null && _type.IsInstanceOfType(obj) && IsValueAllowed(context, obj))
+                            if (obj is not null && _type is not null && _type.IsInstanceOfType(obj) && IsValueAllowed(context, obj))
                             {
                                 components.Add(obj);
                             }

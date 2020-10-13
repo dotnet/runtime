@@ -14,7 +14,7 @@ namespace System.Data
 
         public RelatedView(DataColumn[] columns, object[] values) : base(columns[0].Table, false)
         {
-            if (values == null)
+            if (values is null)
             {
                 throw ExceptionBuilder.ArgumentNull(nameof(values));
             }
@@ -39,7 +39,7 @@ namespace System.Data
 
         private object[]? GetParentValues()
         {
-            if (_filterValues != null)
+            if (_filterValues is not null)
             {
                 return _filterValues;
             }
@@ -55,7 +55,7 @@ namespace System.Data
         public bool Invoke(DataRow row, DataRowVersion version)
         {
             object[]? parentValues = GetParentValues();
-            if (parentValues == null)
+            if (parentValues is null)
             {
                 return false;
             }
@@ -80,7 +80,7 @@ namespace System.Data
             }
 
             IFilter? baseFilter = base.GetFilter();
-            if (baseFilter != null)
+            if (baseFilter is not null)
             {
                 allow &= baseFilter.Invoke(row, version);
             }
@@ -107,7 +107,7 @@ namespace System.Data
         public override bool Equals(DataView? dv)
         {
             RelatedView? other = dv as RelatedView;
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -115,13 +115,13 @@ namespace System.Data
             {
                 return false;
             }
-            if (_filterValues != null)
+            if (_filterValues is not null)
             {
                 return (CompareArray(_childKey.ColumnsReference, other._childKey.ColumnsReference) && CompareArray(_filterValues, other._filterValues));
             }
             else
             {
-                if (other._filterValues != null)
+                if (other._filterValues is not null)
                 {
                     return false;
                 }
@@ -134,7 +134,7 @@ namespace System.Data
 
         private bool CompareArray(object?[]? value1, object?[]? value2)
         {
-            if (value1 == null || value2 == null)
+            if (value1 is null || value2 is null)
             {
                 return value1 == value2;
             }

@@ -11,7 +11,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal ReadOnlyDirectoryServerCollection(ArrayList values)
         {
-            if (values != null)
+            if (values is not null)
             {
                 for (int i = 0; i < values.Count; i++)
                 {
@@ -24,7 +24,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public bool Contains(DirectoryServer directoryServer)
         {
-            if (directoryServer == null)
+            if (directoryServer is null)
                 throw new ArgumentNullException(nameof(directoryServer));
 
             for (int i = 0; i < InnerList.Count; i++)
@@ -40,7 +40,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public int IndexOf(DirectoryServer directoryServer)
         {
-            if (directoryServer == null)
+            if (directoryServer is null)
                 throw new ArgumentNullException(nameof(directoryServer));
 
             for (int i = 0; i < InnerList.Count; i++)

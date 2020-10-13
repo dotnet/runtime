@@ -216,7 +216,7 @@ namespace System.Formats.Asn1
             // * else: X = 2, Y = identifier - 80.
             byte firstArc;
 
-            if (smallValue != null)
+            if (smallValue is not null)
             {
                 long firstIdentifier = smallValue.Value;
 
@@ -241,7 +241,7 @@ namespace System.Formats.Asn1
             }
             else
             {
-                Debug.Assert(largeValue != null);
+                Debug.Assert(largeValue is not null);
                 BigInteger firstIdentifier = largeValue.Value;
 
                 // We're only here because we were bigger than long.MaxValue, so
@@ -262,11 +262,11 @@ namespace System.Formats.Asn1
             {
                 ReadSubIdentifier(contents, out bytesRead, out smallValue, out largeValue);
                 // Exactly one should be non-null.
-                Debug.Assert((smallValue == null) != (largeValue == null));
+                Debug.Assert((smallValue is null) != (largeValue is null));
 
                 builder.Append('.');
 
-                if (smallValue != null)
+                if (smallValue is not null)
                 {
                     builder.Append(smallValue.Value);
                 }

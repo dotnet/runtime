@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> secretAppend,
             DeriveSecretAgreement deriveSecretAgreement)
         {
-            Debug.Assert(otherPartyPublicKey != null);
+            Debug.Assert(otherPartyPublicKey is not null);
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
             using (IncrementalHash hash = IncrementalHash.CreateHash(hashAlgorithm))
@@ -30,7 +30,7 @@ namespace System.Security.Cryptography
 
                 byte[]? secretAgreement = deriveSecretAgreement(otherPartyPublicKey, hash);
                 // We want the side effect, and it should not have returned the answer.
-                Debug.Assert(secretAgreement == null);
+                Debug.Assert(secretAgreement is null);
 
                 hash.AppendData(secretAppend);
 
@@ -46,7 +46,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> secretAppend,
             DeriveSecretAgreement deriveSecretAgreement)
         {
-            Debug.Assert(otherPartyPublicKey != null);
+            Debug.Assert(otherPartyPublicKey is not null);
             Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
 
             // If an hmac key is provided then calculate
@@ -55,13 +55,13 @@ namespace System.Security.Cryptography
             // Otherwise, calculate
             // HMAC(derived, prepend || derived || append)
 
-            bool useSecretAsKey = hmacKey == null;
+            bool useSecretAsKey = hmacKey is null;
 
             if (useSecretAsKey)
             {
                 hmacKey = deriveSecretAgreement(otherPartyPublicKey, null);
             }
-            Debug.Assert(hmacKey != null);
+            Debug.Assert(hmacKey is not null);
 
             // Reduce the likelihood of the value getting copied during heap compaction.
             fixed (byte* pinnedHmacKey = hmacKey)
@@ -80,7 +80,7 @@ namespace System.Security.Cryptography
                         {
                             byte[]? secretAgreement = deriveSecretAgreement(otherPartyPublicKey, hash);
                             // We want the side effect, and it should not have returned the answer.
-                            Debug.Assert(secretAgreement == null);
+                            Debug.Assert(secretAgreement is null);
                         }
 
                         hash.AppendData(secretAppend);
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> prfSeed,
             DeriveSecretAgreement deriveSecretAgreement)
         {
-            Debug.Assert(otherPartyPublicKey != null);
+            Debug.Assert(otherPartyPublicKey is not null);
 
             if (prfSeed.Length != 64)
             {
@@ -118,7 +118,7 @@ namespace System.Security.Cryptography
             const int Md5Size = 16;
 
             byte[]? secretAgreement = deriveSecretAgreement(otherPartyPublicKey, null);
-            Debug.Assert(secretAgreement != null);
+            Debug.Assert(secretAgreement is not null);
 
             // Reduce the likelihood of the value getting copied during heap compaction.
             fixed (byte* pinnedSecretAgreement = secretAgreement)

@@ -81,7 +81,7 @@ namespace System.IO.Pipelines
             _synchronizationContext = null;
             _executionContext = null;
 
-            completionData = currentCompletion != null ?
+            completionData = currentCompletion is not null ?
                 new CompletionData(currentCompletion, currentState, executionContext, synchronizationContext) :
                 default;
         }
@@ -89,10 +89,10 @@ namespace System.IO.Pipelines
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void SetUncompleted()
         {
-            Debug.Assert(_completion == null);
-            Debug.Assert(_completionState == null);
-            Debug.Assert(_synchronizationContext == null);
-            Debug.Assert(_executionContext == null);
+            Debug.Assert(_completion is null);
+            Debug.Assert(_completionState is null);
+            Debug.Assert(_synchronizationContext is null);
+            Debug.Assert(_executionContext is null);
 
             _awaitableState &= ~AwaitableState.Completed;
         }
@@ -116,7 +116,7 @@ namespace System.IO.Pipelines
                 (flags & ValueTaskSourceOnCompletedFlags.UseSchedulingContext) != 0)
             {
                 SynchronizationContext? sc = SynchronizationContext.Current;
-                if (sc != null && sc.GetType() != typeof(SynchronizationContext))
+                if (sc is not null && sc.GetType() != typeof(SynchronizationContext))
                 {
                     _synchronizationContext = sc;
                 }

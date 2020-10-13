@@ -19,7 +19,7 @@ namespace System
     {
         public virtual bool IsEnumDefined(object value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             if (!IsEnum)
@@ -66,7 +66,7 @@ namespace System
 
         public virtual string? GetEnumName(object value)
         {
-            if (value == null)
+            if (value is null)
                 throw new ArgumentNullException(nameof(value));
 
             if (!IsEnum)

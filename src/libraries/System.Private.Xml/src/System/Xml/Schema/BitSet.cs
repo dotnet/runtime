@@ -151,7 +151,7 @@ namespace System.Xml.Schema
         public override bool Equals(object? obj)
         {
             // assume the same type
-            if (obj != null)
+            if (obj is not null)
             {
                 if (this == obj)
                 {

@@ -51,7 +51,7 @@ namespace System.Security.Cryptography.Pkcs
                     AsnEncodingRules.BER);
 
                 _signedAttributes = signedSet.SignedAttributes;
-                Debug.Assert(_signedAttributes != null);
+                Debug.Assert(_signedAttributes is not null);
             }
 
             _document = ownerDocument;
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                if (_parsedSignedAttrs == null)
+                if (_parsedSignedAttrs is null)
                 {
                     _parsedSignedAttrs = MakeAttributeCollection(_signedAttributes);
                 }
@@ -74,7 +74,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                if (_parsedUnsignedAttrs == null)
+                if (_parsedUnsignedAttrs is null)
                 {
                     _parsedUnsignedAttrs = MakeAttributeCollection(_unsignedAttributes);
                 }
@@ -91,7 +91,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             get
             {
-                if (_signerCertificate == null)
+                if (_signerCertificate is null)
                 {
                     _signerCertificate = FindSignerCertificate();
                 }
@@ -105,8 +105,8 @@ namespace System.Security.Cryptography.Pkcs
             get
             {
                 // We only support one level of counter signing.
-                if (_parentSignerInfo != null ||
-                    _unsignedAttributes == null ||
+                if (_parentSignerInfo is not null ||
+                    _unsignedAttributes is null ||
                     _unsignedAttributes.Length == 0)
                 {
                     return new SignerInfoCollection();
@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private void WithSelfInfo(WithSelfInfoDelegate action)
         {
-            if (_parentSignerInfo == null)
+            if (_parentSignerInfo is null)
             {
                 int myIdx = _document.SignerInfos.FindIndexForSigner(this);
 
@@ -154,7 +154,7 @@ namespace System.Security.Cryptography.Pkcs
                 ref SignedDataAsn documentData = ref _document.GetRawData();
                 ref SignerInfoAsn parentData = ref documentData.SignerInfos[parentIdx];
 
-                if (parentData.UnsignedAttributes == null)
+                if (parentData.UnsignedAttributes is null)
                 {
                     throw new CryptographicException(SR.Cryptography_Cms_NoSignerAtIndex);
                 }
@@ -206,7 +206,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static void AddUnsignedAttribute(ref SignerInfoAsn mySigner, AsnEncodedData unsignedAttribute)
         {
-            int existingAttribute = mySigner.UnsignedAttributes == null ? -1 : FindAttributeIndexByOid(mySigner.UnsignedAttributes, unsignedAttribute.Oid!);
+            int existingAttribute = mySigner.UnsignedAttributes is null ? -1 : FindAttributeIndexByOid(mySigner.UnsignedAttributes, unsignedAttribute.Oid!);
 
             if (existingAttribute == -1)
             {
@@ -214,7 +214,7 @@ namespace System.Security.Cryptography.Pkcs
                 AttributeAsn newUnsignedAttr = new AttributeAsn(unsignedAttribute);
                 int newAttributeIdx;
 
-                if (mySigner.UnsignedAttributes == null)
+                if (mySigner.UnsignedAttributes is null)
                 {
                     newAttributeIdx = 0;
                     mySigner.UnsignedAttributes = new AttributeAsn[1];
@@ -298,9 +298,9 @@ namespace System.Security.Cryptography.Pkcs
 
         public void ComputeCounterSignature(CmsSigner signer)
         {
-            if (_parentSignerInfo != null)
+            if (_parentSignerInfo is not null)
                 throw new CryptographicException(SR.Cryptography_Cms_NoCounterCounterSigner);
-            if (signer == null)
+            if (signer is null)
                 throw new ArgumentNullException(nameof(signer));
 
             signer.CheckCertificateValue();
@@ -333,7 +333,7 @@ namespace System.Security.Cryptography.Pkcs
 
             int newExtensionIdx;
 
-            if (mySigner.UnsignedAttributes == null)
+            if (mySigner.UnsignedAttributes is null)
             {
                 mySigner.UnsignedAttributes = new AttributeAsn[1];
                 newExtensionIdx = 0;
@@ -373,7 +373,7 @@ namespace System.Security.Cryptography.Pkcs
             ref SignedDataAsn parentData = ref _document.GetRawData();
             ref SignerInfoAsn myData = ref parentData.SignerInfos[myIdx];
 
-            if (myData.UnsignedAttributes == null)
+            if (myData.UnsignedAttributes is null)
             {
                 throw new CryptographicException(SR.Cryptography_Cms_NoSignerAtIndex);
             }
@@ -432,7 +432,7 @@ namespace System.Security.Cryptography.Pkcs
 
         public void RemoveCounterSignature(SignerInfo counterSignerInfo)
         {
-            if (counterSignerInfo == null)
+            if (counterSignerInfo is null)
                 throw new ArgumentNullException(nameof(counterSignerInfo));
 
             SignerInfoCollection docSigners = _document.SignerInfos;
@@ -459,16 +459,16 @@ namespace System.Security.Cryptography.Pkcs
 
         public void CheckSignature(X509Certificate2Collection extraStore, bool verifySignatureOnly)
         {
-            if (extraStore == null)
+            if (extraStore is null)
                 throw new ArgumentNullException(nameof(extraStore));
 
             X509Certificate2? certificate = Certificate;
 
-            if (certificate == null)
+            if (certificate is null)
             {
                 certificate = FindSignerCertificate(SignerIdentifier, extraStore);
 
-                if (certificate == null)
+                if (certificate is null)
                 {
                     throw new CryptographicException(SR.Cryptography_Cms_SignerNotFound);
                 }
@@ -494,7 +494,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             using (IncrementalHash? hasher = PrepareDigest(compatMode))
             {
-                if (hasher == null)
+                if (hasher is null)
                 {
                     Debug.Assert(compatMode, $"{nameof(PrepareDigest)} returned null for the primary check");
                     return false;
@@ -514,7 +514,7 @@ namespace System.Security.Cryptography.Pkcs
             SubjectIdentifier signerIdentifier,
             X509Certificate2Collection? extraStore)
         {
-            if (extraStore == null || extraStore.Count == 0)
+            if (extraStore is null || extraStore.Count == 0)
             {
                 return null;
             }
@@ -553,7 +553,7 @@ namespace System.Security.Cryptography.Pkcs
                 }
             }
 
-            if (filtered != null)
+            if (filtered is not null)
             {
                 foreach (X509Certificate2 cert in filtered)
                 {
@@ -573,7 +573,7 @@ namespace System.Security.Cryptography.Pkcs
 
             IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName);
 
-            if (_parentSignerInfo == null)
+            if (_parentSignerInfo is null)
             {
                 // Windows compatibility: If a document was loaded in detached mode,
                 // but had content, hash both parts of the content.
@@ -582,7 +582,7 @@ namespace System.Security.Cryptography.Pkcs
                     ref SignedDataAsn documentData = ref _document.GetRawData();
                     ReadOnlyMemory<byte>? embeddedContent = documentData.EncapContentInfo.Content;
 
-                    if (embeddedContent != null)
+                    if (embeddedContent is not null)
                     {
                         // Unwrap the OCTET STRING manually, because of PKCS#7 compatibility.
                         // https://tools.ietf.org/html/rfc5652#section-5.2.1
@@ -603,9 +603,9 @@ namespace System.Security.Cryptography.Pkcs
 
             // A Counter-Signer always requires signed attributes.
             // If any signed attributes are present, message-digest is required.
-            bool invalid = _parentSignerInfo != null || _signedAttributes != null;
+            bool invalid = _parentSignerInfo is not null || _signedAttributes is not null;
 
-            if (_signedAttributes != null)
+            if (_signedAttributes is not null)
             {
                 byte[] contentDigest = hasher.GetHashAndReset();
 
@@ -689,7 +689,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             CmsSignature? signatureProcessor = CmsSignature.ResolveAndVerifyKeyType(SignatureAlgorithm.Value!, key: null);
 
-            if (signatureProcessor == null)
+            if (signatureProcessor is null)
             {
                 throw new CryptographicException(SR.Cryptography_Cms_UnknownAlgorithm, SignatureAlgorithm.Value);
             }
@@ -747,7 +747,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             using (IncrementalHash? hasher = PrepareDigest(compatMode))
             {
-                if (hasher == null)
+                if (hasher is null)
                 {
                     Debug.Assert(compatMode, $"{nameof(PrepareDigest)} returned null for the primary check");
                     return false;
@@ -791,7 +791,7 @@ namespace System.Security.Cryptography.Pkcs
         {
             var coll = new CryptographicAttributeObjectCollection();
 
-            if (attributes == null)
+            if (attributes is null)
                 return coll;
 
             foreach (AttributeAsn attribute in attributes)
@@ -817,7 +817,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static int FindAttributeIndexByOid(AttributeAsn[] attributes, Oid oid, int startIndex = 0)
         {
-            if (attributes != null)
+            if (attributes is not null)
             {
                 for (int i = startIndex; i < attributes.Length; i++)
                 {
@@ -833,7 +833,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static int FindAttributeValueIndexByEncodedData(ReadOnlyMemory<byte>[] attributeValues, ReadOnlySpan<byte> asnEncodedData, out bool isOnlyValue)
         {
-            if (attributeValues != null)
+            if (attributeValues is not null)
             {
                 for (int i = 0; i < attributeValues.Length; i++)
                 {
@@ -852,7 +852,7 @@ namespace System.Security.Cryptography.Pkcs
 
         private static (int, int) FindAttributeLocation(AttributeAsn[]? attributes, AsnEncodedData attribute, out bool isOnlyValue)
         {
-            if (attributes != null)
+            if (attributes is not null)
             {
                 for (int outerIndex = 0; ; outerIndex++)
                 {

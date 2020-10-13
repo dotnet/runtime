@@ -33,7 +33,7 @@ namespace System.Data.ProviderBase
             _sidString = sidString;
             _isRestricted = isRestricted;
             _isNetwork = isNetwork;
-            _hashCode = sidString == null ? 0 : sidString.GetHashCode();
+            _hashCode = sidString is null ? 0 : sidString.GetHashCode();
         }
 
         internal bool IsRestricted

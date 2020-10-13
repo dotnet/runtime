@@ -145,7 +145,7 @@ namespace System
             }
 
             Delegate? d = CreateDelegate_internal(type, firstArgument, method, throwOnBindFailure);
-            if (d != null)
+            if (d is not null)
             {
                 d.original_method_info = method;
                 d.data = delegate_data!;
@@ -238,11 +238,11 @@ namespace System
             if (ignoreCase)
                 flags |= BindingFlags.IgnoreCase;
 
-            for (Type? targetType = target; targetType != null; targetType = targetType.BaseType)
+            for (Type? targetType = target; targetType is not null; targetType = targetType.BaseType)
             {
                 MethodInfo? mi = targetType.GetMethod(method, flags, null, delargtypes, Array.Empty<ParameterModifier>());
 
-                if (mi != null && IsReturnTypeMatch(invoke.ReturnType!, mi.ReturnType!))
+                if (mi is not null && IsReturnTypeMatch(invoke.ReturnType!, mi.ReturnType!))
                 {
                     return mi;
                 }
@@ -257,7 +257,7 @@ namespace System
         {
             MethodInfo? invoke = type.GetMethod("Invoke");
 
-            if (invoke == null || !IsReturnTypeMatch(invoke.ReturnType!, method.ReturnType!))
+            if (invoke is null || !IsReturnTypeMatch(invoke.ReturnType!, method.ReturnType!))
             {
                 delegateData = null;
                 return false;
@@ -268,7 +268,7 @@ namespace System
 
             bool argLengthMatch;
 
-            if (target != null)
+            if (target is not null)
             {
                 // delegate closed over target
                 if (!method.IsStatic)
@@ -311,7 +311,7 @@ namespace System
             bool argsMatch;
             delegateData = new DelegateData();
 
-            if (target != null)
+            if (target is not null)
             {
                 if (!method.IsStatic)
                 {
@@ -440,7 +440,7 @@ namespace System
 
             // replace all Type.Missing with default values defined on parameters of the delegate if any
             MethodInfo? invoke = GetType().GetMethod("Invoke");
-            if (invoke != null && args != null)
+            if (invoke is not null && args is not null)
             {
                 ParameterInfo[] delegateParameters = invoke.GetParameters();
                 for (int i = 0; i < args.Length; i++)
@@ -498,16 +498,16 @@ namespace System
             // Do not compare method_ptr, since it can point to a trampoline
             if (d._target == _target && d.Method == Method)
             {
-                if (d.data != null || data != null)
+                if (d.data is not null || data is not null)
                 {
                     /* Uncommon case */
-                    if (d.data != null && data != null)
+                    if (d.data is not null && data is not null)
                         return (d.data.target_type == data.target_type && d.data.method_name == data.method_name);
                     else
                     {
-                        if (d.data != null)
+                        if (d.data is not null)
                             return d.data.target_type is null;
-                        if (data != null)
+                        if (data is not null)
                             return data.target_type is null;
                         return false;
                     }
@@ -522,12 +522,12 @@ namespace System
         {
             MethodInfo? m = Method;
 
-            return (m != null ? m.GetHashCode() : GetType().GetHashCode()) ^ RuntimeHelpers.GetHashCode(_target);
+            return (m is not null ? m.GetHashCode() : GetType().GetHashCode()) ^ RuntimeHelpers.GetHashCode(_target);
         }
 
         protected virtual MethodInfo GetMethodImpl()
         {
-            if (method_info != null)
+            if (method_info is not null)
                 return method_info;
 
             if (method != IntPtr.Zero)
@@ -546,14 +546,14 @@ namespace System
             DelegateData delegate_data = new DelegateData();
             if (method_info!.IsStatic)
             {
-                if (_target != null)
+                if (_target is not null)
                 {
                     delegate_data.curried_first_arg = true;
                 }
                 else
                 {
                     MethodInfo? invoke = GetType().GetMethod("Invoke");
-                    if (invoke != null && invoke.GetParametersCount() + 1 == method_info.GetParametersCount())
+                    if (invoke is not null && invoke.GetParametersCount() + 1 == method_info.GetParametersCount())
                         delegate_data.curried_first_arg = true;
                 }
             }

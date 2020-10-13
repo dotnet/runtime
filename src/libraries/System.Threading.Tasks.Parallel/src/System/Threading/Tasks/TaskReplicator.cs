@@ -58,7 +58,7 @@ namespace System.Threading.Tasks
                 // in the case where all other threads are blocked for other reasons.
                 //
                 Task? pendingTask;
-                while ((pendingTask = _pendingTask) != null)
+                while ((pendingTask = _pendingTask) is not null)
                     pendingTask.Wait();
             }
 
@@ -140,7 +140,7 @@ namespace System.Threading.Tasks
             while (replicator._pendingReplicas.TryDequeue(out nextReplica))
                 nextReplica.Wait();
 
-            if (replicator._exceptions != null)
+            if (replicator._exceptions is not null)
                 throw new AggregateException(replicator._exceptions);
         }
 

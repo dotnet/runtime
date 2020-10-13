@@ -168,7 +168,7 @@ namespace System.Security.Cryptography
 
         internal void VerifyGetBytes(byte[] data, int offset, int count)
         {
-            if (data == null)
+            if (data is null)
                 throw new ArgumentNullException(nameof(data));
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);

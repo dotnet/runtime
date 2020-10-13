@@ -12,7 +12,7 @@ namespace System.Configuration
         {
             ValidateType(value, typeof(string));
 
-            return value == null ? string.Empty : ((string)value).Trim();
+            return value is null ? string.Empty : ((string)value).Trim();
         }
 
         public override object ConvertFrom(ITypeDescriptorContext ctx, CultureInfo ci, object data)

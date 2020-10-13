@@ -20,7 +20,7 @@ namespace System.CodeDom
         {
             TargetObject = targetObject;
             MethodName = methodName;
-            if (typeParameters != null && typeParameters.Length > 0)
+            if (typeParameters is not null && typeParameters.Length > 0)
             {
                 TypeArguments.AddRange(typeParameters);
             }

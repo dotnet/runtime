@@ -178,7 +178,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> pkcs1PrivateKey,
             AsnWriter? copyFrom=null)
         {
-            Debug.Assert(copyFrom == null || pkcs1PrivateKey.IsEmpty);
+            Debug.Assert(copyFrom is null || pkcs1PrivateKey.IsEmpty);
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.BER);
 
@@ -188,7 +188,7 @@ namespace System.Security.Cryptography
                 writer.WriteInteger(0);
                 WriteAlgorithmIdentifier(writer);
 
-                if (copyFrom != null)
+                if (copyFrom is not null)
                 {
                     using (writer.PushOctetString())
                     {
@@ -228,7 +228,7 @@ namespace System.Security.Cryptography
 
         internal static AsnWriter WritePkcs1PublicKey(in RSAParameters rsaParameters)
         {
-            if (rsaParameters.Modulus == null || rsaParameters.Exponent == null)
+            if (rsaParameters.Modulus is null || rsaParameters.Exponent is null)
             {
                 throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
             }
@@ -244,17 +244,17 @@ namespace System.Security.Cryptography
 
         internal static AsnWriter WritePkcs1PrivateKey(in RSAParameters rsaParameters)
         {
-            if (rsaParameters.Modulus == null || rsaParameters.Exponent == null)
+            if (rsaParameters.Modulus is null || rsaParameters.Exponent is null)
             {
                 throw new CryptographicException(SR.Cryptography_InvalidRsaParameters);
             }
 
-            if (rsaParameters.D == null ||
-                rsaParameters.P == null ||
-                rsaParameters.Q == null ||
-                rsaParameters.DP == null ||
-                rsaParameters.DQ == null ||
-                rsaParameters.InverseQ == null)
+            if (rsaParameters.D is null ||
+                rsaParameters.P is null ||
+                rsaParameters.Q is null ||
+                rsaParameters.DP is null ||
+                rsaParameters.DQ is null ||
+                rsaParameters.InverseQ is null)
             {
                 throw new CryptographicException(SR.Cryptography_NotValidPrivateKey);
             }

@@ -23,7 +23,7 @@ namespace System.Security.Cryptography
 
         public int Add(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData == null)
+            if (asnEncodedData is null)
                 throw new ArgumentNullException(nameof(asnEncodedData));
 
             int indexOfNewItem = _list.Count;
@@ -33,7 +33,7 @@ namespace System.Security.Cryptography
 
         public void Remove(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData == null)
+            if (asnEncodedData is null)
                 throw new ArgumentNullException(nameof(asnEncodedData));
             _list.Remove(asnEncodedData);
         }
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
             // Need to do part of the argument validation ourselves as AsnEncodedDataCollection throws
             // ArgumentOutOfRangeException where List<>.CopyTo() throws ArgumentException.
 
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
             if (index < 0 || index >= array.Length)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);

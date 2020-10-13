@@ -35,7 +35,7 @@ namespace System.Data
         internal LinqDataView(DataTable table, SortExpressionBuilder<DataRow>? sortExpressionBuilder)
             : base(table)
         {
-            Debug.Assert(table != null, "null DataTable");
+            Debug.Assert(table is not null, "null DataTable");
             this.sortExpressionBuilder = sortExpressionBuilder ?? new SortExpressionBuilder<DataRow>();
         }
 
@@ -62,7 +62,7 @@ namespace System.Data
                 comparison,
                 DataViewRowState.CurrentRows)
         {
-            this.sortExpressionBuilder = (sortExpressionBuilder == null) ? this.sortExpressionBuilder : sortExpressionBuilder;
+            this.sortExpressionBuilder = (sortExpressionBuilder is null) ? this.sortExpressionBuilder : sortExpressionBuilder;
             this.comparerKeyRow = comparerKeyRow;
         }
 
@@ -73,7 +73,7 @@ namespace System.Data
         {
             get
             {
-                if (base.RowPredicate == null)// using string based filter or no filter
+                if (base.RowPredicate is null)// using string based filter or no filter
                 {
                     return base.RowFilter;
                 }
@@ -85,7 +85,7 @@ namespace System.Data
 
             set
             {
-                if (value == null)
+                if (value is null)
                 {
                     base.RowPredicate = null;
                     base.RowFilter = string.Empty; // INDEX rebuild twice
@@ -107,15 +107,15 @@ namespace System.Data
         /// <returns>Index of the first match of input key</returns>
         internal override int FindByKey(object? key)
         {
-            Debug.Assert(base.Sort != null);
-            Debug.Assert(!(!string.IsNullOrEmpty(base.Sort) && base.SortComparison != null),
+            Debug.Assert(base.Sort is not null);
+            Debug.Assert(!(!string.IsNullOrEmpty(base.Sort) && base.SortComparison is not null),
                 "string and expression based sort cannot both be set");
 
             if (!string.IsNullOrEmpty(base.Sort))  // use find for DV's sort string
             {
                 return base.FindByKey(key);
             }
-            else if (base.SortComparison == null) // neither string or expr set
+            else if (base.SortComparison is null) // neither string or expr set
             {
                 // This is the exception message from DataView that we want to use
                 throw ExceptionBuilder.IndexKeyLength(0, 0);
@@ -144,17 +144,17 @@ namespace System.Data
         internal override int FindByKey(object?[] key)
         {
             // must have string or expression based sort specified
-            if (base.SortComparison == null && string.IsNullOrEmpty(base.Sort))
+            if (base.SortComparison is null && string.IsNullOrEmpty(base.Sort))
             {
                 // This is the exception message from DataView that we want to use
                 throw ExceptionBuilder.IndexKeyLength(0, 0);
             }
-            else if (base.SortComparison != null && key.Length != sortExpressionBuilder!.Count)
+            else if (base.SortComparison is not null && key.Length != sortExpressionBuilder!.Count)
             {
                 throw DataSetUtil.InvalidOperation(SR.Format(SR.LDV_InvalidNumOfKeys, sortExpressionBuilder.Count));
             }
 
-            if (base.SortComparison == null)
+            if (base.SortComparison is null)
             {
                 // using string to sort
                 return base.FindByKey(key);
@@ -184,17 +184,17 @@ namespace System.Data
         internal override DataRowView[] FindRowsByKey(object?[] key)
         {
             // must have string or expression based sort specified
-            if (base.SortComparison == null && string.IsNullOrEmpty(base.Sort))
+            if (base.SortComparison is null && string.IsNullOrEmpty(base.Sort))
             {
                 // This is the exception message from DataView that we want to use
                 throw ExceptionBuilder.IndexKeyLength(0, 0);
             }
-            else if (base.SortComparison != null && key.Length != sortExpressionBuilder!.Count)
+            else if (base.SortComparison is not null && key.Length != sortExpressionBuilder!.Count)
             {
                 throw DataSetUtil.InvalidOperation(SR.Format(SR.LDV_InvalidNumOfKeys, sortExpressionBuilder.Count));
             }
 
-            if (base.SortComparison == null)// using string to sort
+            if (base.SortComparison is null)// using string to sort
             {
                 return base.FindRowsByKey(key);
             }
@@ -217,7 +217,7 @@ namespace System.Data
         internal override void SetIndex(string newSort, DataViewRowState newRowStates, IFilter? newRowFilter)
         {
             // Throw only if expressions (filter or sort) are used and rowstate is not current rows
-            if ((base.SortComparison != null || base.RowPredicate != null) && newRowStates != DataViewRowState.CurrentRows)
+            if ((base.SortComparison is not null || base.RowPredicate is not null) && newRowStates != DataViewRowState.CurrentRows)
             {
                 throw DataSetUtil.Argument(SR.LDVRowStateError);
             }
@@ -249,7 +249,7 @@ namespace System.Data
         {
             get
             {
-                return (base.SortComparison == null) ? base.GetSortProperty() : null;
+                return (base.SortComparison is null) ? base.GetSortProperty() : null;
             }
         }
 
@@ -261,7 +261,7 @@ namespace System.Data
         {
             get
             {
-                if (base.SortComparison == null)
+                if (base.SortComparison is null)
                 {
                     return base.GetSortDescriptions();
                 }
@@ -279,7 +279,7 @@ namespace System.Data
         {
             get
             {   // Sorted if either expression based sort or string based sort is set
-                return !(base.SortComparison == null && base.Sort.Length == 0);
+                return !(base.SortComparison is null && base.Sort.Length == 0);
             }
         }
 #nullable enable

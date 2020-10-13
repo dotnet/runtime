@@ -37,7 +37,7 @@ namespace System.Xml.Xsl.Qil
         [Conditional("DEBUG")]
         public static void Validate(QilNode node)
         {
-            Debug.Assert(node != null);
+            Debug.Assert(node is not null);
             new QilValidationVisitor().VisitAssumeReference(node);
         }
 
@@ -62,7 +62,7 @@ namespace System.Xml.Xsl.Qil
             }
             else if (AddNode(parent))
             {
-                if (parent.XmlType == null)
+                if (parent.XmlType is null)
                 {
                     SetError(parent, "Type information missing");
                 }
@@ -79,7 +79,7 @@ namespace System.Xml.Xsl.Qil
 
                 for (int i = 0; i < parent.Count; i++)
                 {
-                    if (parent[i] == null)
+                    if (parent[i] is null)
                     {
                         // Allow parameter name and default value to be null
                         if (parent.NodeType == QilNodeType.Parameter)
@@ -93,7 +93,7 @@ namespace System.Xml.Xsl.Qil
                         parent.NodeType == QilNodeType.GlobalParameterList ||
                         parent.NodeType == QilNodeType.FunctionList)
                     {
-                        if (((QilReference)parent[i]).DebugName == null)
+                        if (((QilReference)parent[i]).DebugName is null)
                             SetError(parent[i], "DebugName must not be null");
                     }
 
@@ -183,7 +183,7 @@ namespace System.Xml.Xsl.Qil
 #endif
 
             string? s = n.Annotation as string;
-            if (s != null)
+            if (s is not null)
             {
                 message = s + "\n" + message;
             }

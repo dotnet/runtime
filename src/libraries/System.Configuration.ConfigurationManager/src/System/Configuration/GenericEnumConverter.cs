@@ -13,7 +13,7 @@ namespace System.Configuration
 
         public GenericEnumConverter(Type typeEnum)
         {
-            if (typeEnum == null)
+            if (typeEnum is null)
                 throw new ArgumentNullException(nameof(typeEnum));
 
             _enumType = typeEnum;

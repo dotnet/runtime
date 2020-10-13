@@ -28,7 +28,7 @@ namespace System.Net.Http.Headers
 
         internal static void SetQuality(ObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
-            Debug.Assert(parameters != null);
+            Debug.Assert(parameters is not null);
 
             NameValueHeaderValue? qualityParameter = NameValueHeaderValue.Find(parameters, qualityName);
             if (value.HasValue)
@@ -44,7 +44,7 @@ namespace System.Net.Http.Headers
                 }
 
                 string qualityString = ((double)value).ToString("0.0##", NumberFormatInfo.InvariantInfo);
-                if (qualityParameter != null)
+                if (qualityParameter is not null)
                 {
                     qualityParameter.Value = qualityString;
                 }
@@ -56,7 +56,7 @@ namespace System.Net.Http.Headers
             else
             {
                 // Remove quality parameter
-                if (qualityParameter != null)
+                if (qualityParameter is not null)
                 {
                     parameters.Remove(qualityParameter);
                 }
@@ -65,7 +65,7 @@ namespace System.Net.Http.Headers
 
         internal static bool ContainsNonAscii(string input)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
 
             foreach (char c in input)
             {
@@ -119,7 +119,7 @@ namespace System.Net.Http.Headers
         /// <summary>Transforms an ASCII character into its hexadecimal representation, adding the characters to a StringBuilder.</summary>
         private static void AddHexEscaped(byte c, StringBuilder destination)
         {
-            Debug.Assert(destination != null);
+            Debug.Assert(destination is not null);
 
             destination.Append('%');
             destination.Append(HexConverter.ToCharUpper(c >> 4));
@@ -128,10 +128,10 @@ namespace System.Net.Http.Headers
 
         internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
         {
-            Debug.Assert(parameters != null);
+            Debug.Assert(parameters is not null);
 
             NameValueHeaderValue? qualityParameter = NameValueHeaderValue.Find(parameters, qualityName);
-            if (qualityParameter != null)
+            if (qualityParameter is not null)
             {
                 // Note that the RFC requires decimal '.' regardless of the culture. I.e. using ',' as decimal
                 // separator is considered invalid (even if the current culture would allow it).
@@ -197,12 +197,12 @@ namespace System.Net.Http.Headers
 
         internal static bool AreEqualCollections<T>(ObjectCollection<T>? x, ObjectCollection<T>? y, IEqualityComparer<T>? comparer) where T : class
         {
-            if (x == null)
+            if (x is null)
             {
-                return (y == null) || (y.Count == 0);
+                return (y is null) || (y.Count == 0);
             }
 
-            if (y == null)
+            if (y is null)
             {
                 return (x.Count == 0);
             }
@@ -223,7 +223,7 @@ namespace System.Net.Http.Headers
             int i = 0;
             foreach (var xItem in x)
             {
-                Debug.Assert(xItem != null);
+                Debug.Assert(xItem is not null);
 
                 i = 0;
                 bool found = false;
@@ -231,8 +231,8 @@ namespace System.Net.Http.Headers
                 {
                     if (!alreadyFound[i])
                     {
-                        if (((comparer == null) && xItem.Equals(yItem)) ||
-                            ((comparer != null) && comparer.Equals(xItem, yItem)))
+                        if (((comparer is null) && xItem.Equals(yItem)) ||
+                            ((comparer is not null) && comparer.Equals(xItem, yItem)))
                         {
                             alreadyFound[i] = true;
                             found = true;
@@ -259,7 +259,7 @@ namespace System.Net.Http.Headers
         internal static int GetNextNonEmptyOrWhitespaceIndex(string input, int startIndex, bool skipEmptyValues,
             out bool separatorFound)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
             Debug.Assert(startIndex <= input.Length); // it's OK if index == value.Length.
 
             separatorFound = false;
@@ -290,14 +290,14 @@ namespace System.Net.Http.Headers
 
         internal static DateTimeOffset? GetDateTimeOffsetValue(HeaderDescriptor descriptor, HttpHeaders store, DateTimeOffset? defaultValue = null)
         {
-            Debug.Assert(store != null);
+            Debug.Assert(store is not null);
 
             object? storedValue = store.GetParsedValues(descriptor);
-            if (storedValue != null)
+            if (storedValue is not null)
             {
                 return (DateTimeOffset)storedValue;
             }
-            else if (defaultValue != null && store.Contains(descriptor))
+            else if (defaultValue is not null && store.Contains(descriptor))
             {
                 return defaultValue;
             }
@@ -307,10 +307,10 @@ namespace System.Net.Http.Headers
 
         internal static TimeSpan? GetTimeSpanValue(HeaderDescriptor descriptor, HttpHeaders store)
         {
-            Debug.Assert(store != null);
+            Debug.Assert(store is not null);
 
             object? storedValue = store.GetParsedValues(descriptor);
-            if (storedValue != null)
+            if (storedValue is not null)
             {
                 return (TimeSpan)storedValue;
             }
@@ -355,7 +355,7 @@ namespace System.Net.Http.Headers
 
             for (int i = 0; i < headers.Length; i++)
             {
-                if (headers[i] != null)
+                if (headers[i] is not null)
                 {
                     foreach (var header in headers[i]!) // TODO-NULLABLE: https://github.com/dotnet/roslyn/issues/34644
                     {

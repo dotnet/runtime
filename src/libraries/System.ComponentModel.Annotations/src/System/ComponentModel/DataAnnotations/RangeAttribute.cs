@@ -110,7 +110,7 @@ namespace System.ComponentModel.DataAnnotations
             SetupConversion();
 
             // Automatically pass if value is null or empty. RequiredAttribute should be used to assert a value is not empty.
-            if (value == null || (value as string)?.Length == 0)
+            if (value is null || (value as string)?.Length == 0)
             {
                 return true;
             }
@@ -160,12 +160,12 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         private void SetupConversion()
         {
-            if (Conversion == null)
+            if (Conversion is null)
             {
                 object minimum = Minimum;
                 object maximum = Maximum;
 
-                if (minimum == null || maximum == null)
+                if (minimum is null || maximum is null)
                 {
                     throw new InvalidOperationException(SR.RangeAttribute_Must_Set_Min_And_Max);
                 }
@@ -187,7 +187,7 @@ namespace System.ComponentModel.DataAnnotations
                 else
                 {
                     Type type = OperandType;
-                    if (type == null)
+                    if (type is null)
                     {
                         throw new InvalidOperationException(SR.RangeAttribute_Must_Set_Operand_Type);
                     }

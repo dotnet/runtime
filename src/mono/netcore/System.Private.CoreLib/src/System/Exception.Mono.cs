@@ -60,9 +60,9 @@ namespace System
             string? stackTraceString = _stackTraceString;
             string? remoteStackTraceString = _remoteStackTraceString;
 
-            if (stackTraceString != null)
+            if (stackTraceString is not null)
                 return remoteStackTraceString + stackTraceString;
-            if (_traceIPs == null)
+            if (_traceIPs is null)
                 return remoteStackTraceString;
 
             return remoteStackTraceString + new StackTrace(this, needFileInfo).ToString(Diagnostics.StackTrace.TraceFormat.Normal);
@@ -72,12 +72,12 @@ namespace System
         {
             MonoStackFrame[]? stackFrames;
 
-            if (_traceIPs != null)
+            if (_traceIPs is not null)
             {
                 stackFrames = Diagnostics.StackTrace.get_trace(this, 0, true);
                 stackFrames[stackFrames.Length - 1].isLastFrameFromForeignException = true;
 
-                if (foreignExceptionsFrames != null)
+                if (foreignExceptionsFrames is not null)
                 {
                     var combinedStackFrames = new MonoStackFrame[stackFrames.Length + foreignExceptionsFrames.Length];
                     Array.Copy(foreignExceptionsFrames, 0, combinedStackFrames, 0, foreignExceptionsFrames.Length);
@@ -105,7 +105,7 @@ namespace System
         internal void SetCurrentStackTrace()
         {
             // Check to see if the exception already has a stack set in it.
-            if (_traceIPs != null || _stackTraceString != null || _remoteStackTraceString != null)
+            if (_traceIPs is not null || _stackTraceString is not null || _remoteStackTraceString is not null)
             {
                 ThrowHelper.ThrowInvalidOperationException();
             }
@@ -130,10 +130,10 @@ namespace System
                 Module? module = method?.Module;
                 RuntimeModule? rtModule = module as RuntimeModule;
 
-                if (rtModule == null)
+                if (rtModule is null)
                 {
                     var moduleBuilder = module as System.Reflection.Emit.ModuleBuilder;
-                    if (moduleBuilder != null)
+                    if (moduleBuilder is not null)
                         throw new NotImplementedException(); // TODO: rtModule = moduleBuilder.InternalModule;
                     else
                         throw new ArgumentException(SR.Argument_MustBeRuntimeReflectionObject);

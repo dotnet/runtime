@@ -58,10 +58,10 @@ namespace System.Net.Sockets
                 unsafe
                 {
                     Debug.Assert(OperatingSystem.IsWindows());
-                    Debug.Assert(_socketHandle != null, "_socketHandle is null.");
+                    Debug.Assert(_socketHandle is not null, "_socketHandle is null.");
 
                     ThreadPoolBoundHandle? boundHandle = _socketHandle.IOCPBoundHandle;
-                    Debug.Assert(boundHandle != null, "SafeNativeOverlapped::FreeNativeOverlapped - boundHandle is null");
+                    Debug.Assert(boundHandle is not null, "SafeNativeOverlapped::FreeNativeOverlapped - boundHandle is null");
 
                     // FreeNativeOverlapped will be called even if boundHandle was previously disposed.
                     boundHandle?.FreeNativeOverlapped((NativeOverlapped*)oldHandle);

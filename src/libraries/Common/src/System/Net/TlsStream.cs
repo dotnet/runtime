@@ -81,7 +81,7 @@ namespace System.Net
         {
             base.Close();
 
-            if (_sslStream != null)
+            if (_sslStream is not null)
             {
                 _sslStream.Close();
             }

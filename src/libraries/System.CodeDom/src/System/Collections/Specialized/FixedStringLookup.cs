@@ -23,7 +23,7 @@ namespace System.Collections.Specialized
             }
 
             string[] subArray = lookupTable[length - 1];
-            if (subArray == null)
+            if (subArray is null)
             {
                 return false;
             }

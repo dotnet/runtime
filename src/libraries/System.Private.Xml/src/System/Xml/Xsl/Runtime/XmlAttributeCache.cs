@@ -68,7 +68,7 @@ namespace System.Xml.Xsl.Runtime
         {
             // If new writer might remove itself from pipeline, have it callback on this method when its ready to go
             IRemovableWriter removable = writer as IRemovableWriter;
-            if (removable != null)
+            if (removable is not null)
                 removable.OnRemoveWriterEvent = SetWrappedWriter;
 
             _wrapped = writer;
@@ -86,7 +86,7 @@ namespace System.Xml.Xsl.Runtime
         {
             int hashCode;
             int idx = 0;
-            Debug.Assert(localName != null && localName.Length != 0 && prefix != null && ns != null);
+            Debug.Assert(localName is not null && localName.Length != 0 && prefix is not null && ns is not null);
 
             // Compute hashcode based on first letter of the localName
             hashCode = (1 << ((int)localName[0] & 31));
@@ -143,8 +143,8 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         public override void WriteString(string text)
         {
-            Debug.Assert(text != null);
-            Debug.Assert(_arrAttrs != null && _numEntries != 0);
+            Debug.Assert(text is not null);
+            Debug.Assert(_arrAttrs is not null && _numEntries != 0);
             EnsureAttributeCache();
             _arrAttrs[_numEntries++].Init(text);
         }
@@ -156,7 +156,7 @@ namespace System.Xml.Xsl.Runtime
         public override void WriteValue(object value)
         {
             Debug.Assert(value is XmlAtomicValue, "value should always be an XmlAtomicValue, as XmlAttributeCache is only used by XmlQueryOutput");
-            Debug.Assert(_arrAttrs != null && _numEntries != 0);
+            Debug.Assert(_arrAttrs is not null && _numEntries != 0);
             EnsureAttributeCache();
             _arrAttrs[_numEntries++].Init((XmlAtomicValue)value);
         }
@@ -234,7 +234,7 @@ namespace System.Xml.Xsl.Runtime
 
                 // If localName is null, then this is a duplicate attribute that has been marked as "deleted"
                 localName = _arrAttrs[idx].LocalName;
-                if (localName != null)
+                if (localName is not null)
                 {
                     string prefix = _arrAttrs[idx].Prefix;
                     string ns = _arrAttrs[idx].Namespace;
@@ -246,7 +246,7 @@ namespace System.Xml.Xsl.Runtime
                     {
                         string text = _arrAttrs[idx].Text;
 
-                        if (text != null)
+                        if (text is not null)
                             _wrapped.WriteString(text);
                         else
                             _wrapped.WriteValue(_arrAttrs[idx].Value);
@@ -262,7 +262,7 @@ namespace System.Xml.Xsl.Runtime
             }
 
             // Notify event listener that attributes have been flushed
-            if (_onRemove != null)
+            if (_onRemove is not null)
                 _onRemove(_wrapped);
         }
 
@@ -319,7 +319,7 @@ namespace System.Xml.Xsl.Runtime
             public bool IsDuplicate(string localName, string ns, int hashCode)
             {
                 // If attribute is not marked as deleted
-                if (_localName != null)
+                if (_localName is not null)
                 {
                     // And if hash codes match,
                     if (_hashCode == hashCode)
@@ -353,7 +353,7 @@ namespace System.Xml.Xsl.Runtime
         /// </summary>
         private void EnsureAttributeCache()
         {
-            if (_arrAttrs == null)
+            if (_arrAttrs is null)
             {
                 // Create caching array
                 _arrAttrs = new AttrNameVal[DefaultCacheSize];

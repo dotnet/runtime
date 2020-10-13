@@ -38,7 +38,7 @@ namespace System.Net
                 // already transitioned to a Canceled state via a previous HttpWebRequest.Abort() call.
                 if (shouldInvokeCallback)
                 {
-                    if (callback != null)
+                    if (callback is not null)
                     {
                         callback(tcs.Task);
                     }

@@ -124,7 +124,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
-                frame.Push(obj != null);
+                frame.Push(obj is not null);
                 return 1;
             }
         }
@@ -133,7 +133,7 @@ namespace System.Linq.Expressions.Interpreter
         {
             public override int Run(InterpretedFrame frame)
             {
-                if (frame.Peek() == null)
+                if (frame.Peek() is null)
                 {
                     // Trigger InvalidOperationException with same localized method as if we'd called the Value getter.
                     return (int)default(int?)!;
@@ -154,7 +154,7 @@ namespace System.Linq.Expressions.Interpreter
 
             public override int Run(InterpretedFrame frame)
             {
-                if (frame.Peek() == null)
+                if (frame.Peek() is null)
                 {
                     frame.Pop();
                     frame.Push(Activator.CreateInstance(_defaultValueType));
@@ -184,11 +184,11 @@ namespace System.Linq.Expressions.Interpreter
             {
                 object? other = frame.Pop();
                 object? obj = frame.Pop();
-                if (obj == null)
+                if (obj is null)
                 {
-                    frame.Push(other == null);
+                    frame.Push(other is null);
                 }
-                else if (other == null)
+                else if (other is null)
                 {
                     frame.Push(Utils.BoxedFalse);
                 }
@@ -205,7 +205,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object? obj = frame.Pop();
-                frame.Push(obj == null ? "" : obj.ToString());
+                frame.Push(obj is null ? "" : obj.ToString());
                 return 1;
             }
         }
@@ -292,7 +292,7 @@ namespace System.Linq.Expressions.Interpreter
             public override int Run(InterpretedFrame frame)
             {
                 object? value = frame.Pop();
-                if (value != null)
+                if (value is not null)
                 {
                     Type valueType = value.GetType();
 
@@ -390,7 +390,7 @@ namespace System.Linq.Expressions.Interpreter
                     TypeCode.Empty, TypeCode.Int32, TypeCode.SByte, TypeCode.Int16, TypeCode.Int64, TypeCode.UInt32,
                     TypeCode.Byte, TypeCode.UInt16, TypeCode.UInt64, TypeCode.Char, TypeCode.Boolean
                 }.Contains(Convert.GetTypeCode(from)));
-            frame.Push(from == null ? null : Enum.ToObject(_t, from));
+            frame.Push(from is null ? null : Enum.ToObject(_t, from));
             return 1;
         }
     }
@@ -408,7 +408,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             object? from = frame.Pop();
-            Debug.Assert(from != null);
+            Debug.Assert(from is not null);
 
             // If from is neither a T nor a type assignable to T (viz. an T-backed enum)
             // this will cause an InvalidCastException, which is what this operation should
@@ -474,7 +474,7 @@ namespace System.Linq.Expressions.Interpreter
         public override int Run(InterpretedFrame frame)
         {
             Expression? operand = _operand;
-            if (_hoistedVariables != null)
+            if (_hoistedVariables is not null)
             {
                 operand = new ExpressionQuoter(_hoistedVariables, frame).Visit(operand);
             }
@@ -540,7 +540,7 @@ namespace System.Linq.Expressions.Interpreter
                 {
                     _shadowedVars.Pop();
                 }
-                if (b == null)
+                if (b is null)
                 {
                     return node;
                 }
@@ -549,13 +549,13 @@ namespace System.Linq.Expressions.Interpreter
 
             protected override CatchBlock VisitCatchBlock(CatchBlock node)
             {
-                if (node.Variable != null)
+                if (node.Variable is not null)
                 {
                     _shadowedVars.Push(new HashSet<ParameterExpression> { node.Variable });
                 }
                 Expression? b = Visit(node.Body);
                 Expression? f = Visit(node.Filter);
-                if (node.Variable != null)
+                if (node.Variable is not null)
                 {
                     _shadowedVars.Pop();
                 }
@@ -575,7 +575,7 @@ namespace System.Linq.Expressions.Interpreter
                 for (int i = 0; i < indexes.Length; i++)
                 {
                     IStrongBox? box = GetBox(node.Variables[i]);
-                    if (box == null)
+                    if (box is null)
                     {
                         indexes[i] = vars.Count;
                         vars.Add(node.Variables[i]);
@@ -617,7 +617,7 @@ namespace System.Linq.Expressions.Interpreter
             protected internal override Expression VisitParameter(ParameterExpression node)
             {
                 IStrongBox? box = GetBox(node);
-                if (box == null)
+                if (box is null)
                 {
                     return node;
                 }

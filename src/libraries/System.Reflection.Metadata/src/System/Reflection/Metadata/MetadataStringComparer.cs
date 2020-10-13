@@ -51,7 +51,7 @@ namespace System.Reflection.Metadata
 
         internal MetadataStringComparer(MetadataReader reader)
         {
-            Debug.Assert(reader != null);
+            Debug.Assert(reader is not null);
             _reader = reader;
         }
 
@@ -62,7 +62,7 @@ namespace System.Reflection.Metadata
 
         public bool Equals(StringHandle handle, string value, bool ignoreCase)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ValueArgumentNull();
             }
@@ -77,7 +77,7 @@ namespace System.Reflection.Metadata
 
         public bool Equals(NamespaceDefinitionHandle handle, string value, bool ignoreCase)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ValueArgumentNull();
             }
@@ -97,7 +97,7 @@ namespace System.Reflection.Metadata
 
         public bool Equals(DocumentNameBlobHandle handle, string value, bool ignoreCase)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ValueArgumentNull();
             }
@@ -112,7 +112,7 @@ namespace System.Reflection.Metadata
 
         public bool StartsWith(StringHandle handle, string value, bool ignoreCase)
         {
-            if (value == null)
+            if (value is null)
             {
                 Throw.ValueArgumentNull();
             }

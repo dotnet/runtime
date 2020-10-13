@@ -25,17 +25,17 @@ namespace System.Reflection.Context.Virtual
             CustomReflectionContext context)
             : base(propertyType, name, context)
         {
-            if (getter == null && setter == null)
+            if (getter is null && setter is null)
                 throw new ArgumentException(SR.ArgumentNull_GetterOrSetterMustBeSpecified);
 
             CustomType rcType = propertyType as CustomType;
-            if (rcType == null || rcType.ReflectionContext != context)
+            if (rcType is null || rcType.ReflectionContext != context)
                 throw new ArgumentException(SR.Argument_PropertyTypeFromDifferentContext);
 
-            if (getter != null)
+            if (getter is not null)
                 _getter = new PropertyGetter(this, getter, getterAttributes);
 
-            if (setter != null)
+            if (setter is not null)
                 _setter = new PropertySetter(this, setter, setterAttributes);
 
             _attributes = propertyAttributes ?? CollectionServices.Empty<Attribute>();
@@ -44,14 +44,14 @@ namespace System.Reflection.Context.Virtual
         public override MethodInfo GetGetMethod(bool nonPublic)
         {
             // Current we don't support adding nonpulbic getters
-            Debug.Assert(_getter == null || _getter.IsPublic);
+            Debug.Assert(_getter is null || _getter.IsPublic);
             return _getter;
         }
 
         public override MethodInfo GetSetMethod(bool nonPublic)
         {
             // Current we don't support adding nonpulbic setters
-            Debug.Assert(_setter == null || _setter.IsPublic);
+            Debug.Assert(_setter is null || _setter.IsPublic);
             return _setter;
         }
 

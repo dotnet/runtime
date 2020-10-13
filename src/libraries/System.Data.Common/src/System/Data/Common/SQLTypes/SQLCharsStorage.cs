@@ -78,7 +78,7 @@ namespace System.Data.Common
 
         public override void Set(int record, object value)
         {
-            if ((value == DBNull.Value) || (value == null))
+            if ((value == DBNull.Value) || (value is null))
             {
                 _values[record] = SqlChars.Null;
             }

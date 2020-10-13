@@ -104,7 +104,7 @@ namespace System.Reflection.Context.Projection
         {
             var other = o as ProjectingAssembly;
 
-            return other != null &&
+            return other is not null &&
                    Projector == other.Projector &&
                    UnderlyingAssembly == other.UnderlyingAssembly;
         }

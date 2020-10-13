@@ -23,7 +23,7 @@ namespace System.Reflection
             if (handle.IsNullHandle())
                 throw new ArgumentException(SR.Argument_InvalidHandle);
             FieldInfo fi = internal_from_handle_type(handle.Value, declaringType.Value);
-            if (fi == null)
+            if (fi is null)
                 throw new ArgumentException("The field handle and the type handle are incompatible.");
             return fi;
         }
@@ -47,7 +47,7 @@ namespace System.Reflection
                 count++;
 
             MarshalAsAttribute marshalAs = get_marshal_info();
-            if (marshalAs != null)
+            if (marshalAs is not null)
                 count++;
 
             if (count == 0)
@@ -59,7 +59,7 @@ namespace System.Reflection
                 attrs[count++] = new NonSerializedAttribute();
             if (DeclaringType.IsExplicitLayout)
                 attrs[count++] = new FieldOffsetAttribute(GetFieldOffset());
-            if (marshalAs != null)
+            if (marshalAs is not null)
                 attrs[count++] = marshalAs;
 
             return attrs;
@@ -76,7 +76,7 @@ namespace System.Reflection
                 count++;
 
             MarshalAsAttribute marshalAs = get_marshal_info();
-            if (marshalAs != null)
+            if (marshalAs is not null)
                 count++;
 
             if (count == 0)
@@ -95,7 +95,7 @@ namespace System.Reflection
                     Array.Empty<CustomAttributeNamedArgument>());
             }
 
-            if (marshalAs != null)
+            if (marshalAs is not null)
             {
                 var ctorArgs = new CustomAttributeTypedArgument[] { new CustomAttributeTypedArgument(typeof(UnmanagedType), marshalAs.Value) };
                 attrsData[count++] = new CustomAttributeData(

@@ -25,7 +25,7 @@ namespace System.Linq.Expressions
         {
             get
             {
-                if (Value == null)
+                if (Value is null)
                 {
                     return typeof(object);
                 }
@@ -96,7 +96,7 @@ namespace System.Linq.Expressions
         {
             ContractUtils.RequiresNotNull(type, nameof(type));
             TypeUtils.ValidateType(type, nameof(type));
-            if (value == null)
+            if (value is null)
             {
                 if (type == typeof(object))
                 {

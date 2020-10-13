@@ -55,7 +55,7 @@ namespace System.Collections.Specialized
 
         private OrderedDictionary(OrderedDictionary dictionary)
         {
-            Debug.Assert(dictionary != null);
+            Debug.Assert(dictionary is not null);
 
             _readOnly = true;
             _objectsArray = dictionary._objectsArray;
@@ -79,7 +79,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (_objectsArray == null)
+                if (_objectsArray is null)
                 {
                     return 0;
                 }
@@ -157,7 +157,7 @@ namespace System.Collections.Specialized
                 {
                     throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
                 }
-                if (_objectsArray == null || index < 0 || index >= _objectsArray.Count)
+                if (_objectsArray is null || index < 0 || index >= _objectsArray.Count)
                 {
                     throw new ArgumentOutOfRangeException(nameof(index));
                 }
@@ -176,7 +176,7 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (_objectsTable == null)
+                if (_objectsTable is null)
                 {
                     return null;
                 }
@@ -238,11 +238,11 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (_objectsTable != null)
+            if (_objectsTable is not null)
             {
                 _objectsTable.Clear();
             }
-            if (_objectsArray != null)
+            if (_objectsArray is not null)
             {
                 _objectsArray.Clear();
             }
@@ -261,11 +261,11 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public bool Contains(object key)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
-            if (_objectsTable == null)
+            if (_objectsTable is null)
             {
                 return false;
             }
@@ -283,14 +283,14 @@ namespace System.Collections.Specialized
 
         private int IndexOfKey(object key)
         {
-            if (_objectsArray == null)
+            if (_objectsArray is null)
             {
                 return -1;
             }
             for (int i = 0; i < _objectsArray.Count; i++)
             {
                 object o = ((DictionaryEntry)_objectsArray[i]!).Key;
-                if (_comparer != null)
+                if (_comparer is not null)
                 {
                     if (_comparer.Equals(o, key))
                     {
@@ -356,7 +356,7 @@ namespace System.Collections.Specialized
             {
                 throw new NotSupportedException(SR.OrderedDictionary_ReadOnly);
             }
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
@@ -392,7 +392,7 @@ namespace System.Collections.Specialized
 #region ISerializable implementation
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
+            if (info is null)
             {
                 throw new ArgumentNullException(nameof(info));
             }
@@ -416,7 +416,7 @@ namespace System.Collections.Specialized
 
         protected virtual void OnDeserialization(object? sender)
         {
-            if (_siInfo == null)
+            if (_siInfo is null)
             {
                 throw new SerializationException(SR.Serialization_InvalidOnDeser);
             }
@@ -426,7 +426,7 @@ namespace System.Collections.Specialized
 
             object[]? serArray = (object[]?)_siInfo.GetValue(ArrayListName, typeof(object[]));
 
-            if (serArray != null)
+            if (serArray is not null)
             {
                 Hashtable objectsTable = EnsureObjectsTable();
                 ArrayList objectsArray = EnsureObjectsArray();
@@ -474,7 +474,7 @@ namespace System.Collections.Specialized
             {
                 get
                 {
-                    Debug.Assert(_arrayEnumerator.Current != null);
+                    Debug.Assert(_arrayEnumerator.Current is not null);
                     if (_objectReturnType == Keys)
                     {
                         return ((DictionaryEntry)_arrayEnumerator.Current).Key;
@@ -494,7 +494,7 @@ namespace System.Collections.Specialized
             {
                 get
                 {
-                    Debug.Assert(_arrayEnumerator.Current != null);
+                    Debug.Assert(_arrayEnumerator.Current is not null);
                     return new DictionaryEntry(((DictionaryEntry)_arrayEnumerator.Current).Key, ((DictionaryEntry)_arrayEnumerator.Current).Value);
                 }
             }
@@ -506,7 +506,7 @@ namespace System.Collections.Specialized
             {
                 get
                 {
-                    Debug.Assert(_arrayEnumerator.Current != null);
+                    Debug.Assert(_arrayEnumerator.Current is not null);
                     return ((DictionaryEntry)_arrayEnumerator.Current).Key;
                 }
             }
@@ -518,7 +518,7 @@ namespace System.Collections.Specialized
             {
                 get
                 {
-                    Debug.Assert(_arrayEnumerator.Current != null);
+                    Debug.Assert(_arrayEnumerator.Current is not null);
                     return ((DictionaryEntry)_arrayEnumerator.Current).Value;
                 }
             }
@@ -558,13 +558,13 @@ namespace System.Collections.Specialized
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array == null)
+                if (array is null)
                     throw new ArgumentNullException(nameof(array));
                 if (index < 0)
                     throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum_Index);
                 foreach (object? o in _objects)
                 {
-                    Debug.Assert(o != null);
+                    Debug.Assert(o is not null);
                     array.SetValue(_isKeys ? ((DictionaryEntry)o).Key : ((DictionaryEntry)o).Value, index);
                     index++;
                 }

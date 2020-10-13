@@ -257,7 +257,7 @@ namespace System.Globalization
             // Write fraction and separator, if necessary
             if (fractionDigits != 0)
             {
-                Debug.Assert(format == StandardFormat.C || decimalSeparator != null);
+                Debug.Assert(format == StandardFormat.C || decimalSeparator is not null);
                 if (format == StandardFormat.C)
                 {
                     destination[idx++] = '.';
@@ -309,10 +309,10 @@ namespace System.Globalization
         /// <summary>Format the TimeSpan instance using the specified format.</summary>
         private static StringBuilder FormatCustomized(TimeSpan value, ReadOnlySpan<char> format, DateTimeFormatInfo dtfi, StringBuilder? result = null)
         {
-            Debug.Assert(dtfi != null);
+            Debug.Assert(dtfi is not null);
 
             bool resultBuilderIsPooled = false;
-            if (result == null)
+            if (result is null)
             {
                 result = StringBuilderCache.Acquire(InternalGlobalizationHelper.StringBuilderDefaultCapacity);
                 resultBuilderIsPooled = true;

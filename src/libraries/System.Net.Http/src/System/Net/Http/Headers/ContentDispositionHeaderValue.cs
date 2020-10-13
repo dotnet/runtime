@@ -83,7 +83,7 @@ namespace System.Net.Http.Headers
             {
                 NameValueHeaderValue? sizeParameter = NameValueHeaderValue.Find(_parameters, size);
                 ulong value;
-                if (sizeParameter != null)
+                if (sizeParameter is not null)
                 {
                     string? sizeString = sizeParameter.Value;
                     if (ulong.TryParse(sizeString, NumberStyles.Integer, CultureInfo.InvariantCulture, out value))
@@ -96,10 +96,10 @@ namespace System.Net.Http.Headers
             set
             {
                 NameValueHeaderValue? sizeParameter = NameValueHeaderValue.Find(_parameters, size);
-                if (value == null)
+                if (value is null)
                 {
                     // Remove parameter.
-                    if (sizeParameter != null)
+                    if (sizeParameter is not null)
                     {
                         _parameters!.Remove(sizeParameter);
                     }
@@ -108,7 +108,7 @@ namespace System.Net.Http.Headers
                 {
                     throw new ArgumentOutOfRangeException(nameof(value));
                 }
-                else if (sizeParameter != null)
+                else if (sizeParameter is not null)
                 {
                     sizeParameter.Value = value.Value.ToString(CultureInfo.InvariantCulture);
                 }
@@ -131,11 +131,11 @@ namespace System.Net.Http.Headers
 
         protected ContentDispositionHeaderValue(ContentDispositionHeaderValue source)
         {
-            Debug.Assert(source != null);
+            Debug.Assert(source is not null);
 
             _dispositionType = source._dispositionType;
 
-            if (source._parameters != null)
+            if (source._parameters is not null)
             {
                 foreach (var parameter in source._parameters)
                 {
@@ -166,7 +166,7 @@ namespace System.Net.Http.Headers
         {
             ContentDispositionHeaderValue? other = obj as ContentDispositionHeaderValue;
 
-            if (other == null)
+            if (other is null)
             {
                 return false;
             }
@@ -259,7 +259,7 @@ namespace System.Net.Http.Headers
 
         private static int GetDispositionTypeExpressionLength(string input, int startIndex, out string? dispositionType)
         {
-            Debug.Assert((input != null) && (input.Length > 0) && (startIndex < input.Length));
+            Debug.Assert((input is not null) && (input.Length > 0) && (startIndex < input.Length));
 
             // This method just parses the disposition type string, it does not parse parameters.
             dispositionType = null;
@@ -303,7 +303,7 @@ namespace System.Net.Http.Headers
         {
             NameValueHeaderValue? dateParameter = NameValueHeaderValue.Find(_parameters, parameter);
             DateTimeOffset date;
-            if (dateParameter != null)
+            if (dateParameter is not null)
             {
                 ReadOnlySpan<char> dateString = dateParameter.Value;
                 // Should have quotes, remove them.
@@ -323,10 +323,10 @@ namespace System.Net.Http.Headers
         private void SetDate(string parameter, DateTimeOffset? date)
         {
             NameValueHeaderValue? dateParameter = NameValueHeaderValue.Find(_parameters, parameter);
-            if (date == null)
+            if (date is null)
             {
                 // Remove parameter.
-                if (dateParameter != null)
+                if (dateParameter is not null)
                 {
                     _parameters!.Remove(dateParameter);
                 }
@@ -335,7 +335,7 @@ namespace System.Net.Http.Headers
             {
                 // Must always be quoted.
                 string dateString = "\"" + HttpDateParser.DateToString(date.Value) + "\"";
-                if (dateParameter != null)
+                if (dateParameter is not null)
                 {
                     dateParameter.Value = dateString;
                 }
@@ -351,13 +351,13 @@ namespace System.Net.Http.Headers
         private string? GetName(string parameter)
         {
             NameValueHeaderValue? nameParameter = NameValueHeaderValue.Find(_parameters, parameter);
-            if (nameParameter != null)
+            if (nameParameter is not null)
             {
                 string? result;
                 // filename*=utf-8'lang'%7FMyString
                 if (parameter.EndsWith('*'))
                 {
-                    Debug.Assert(nameParameter.Value != null);
+                    Debug.Assert(nameParameter.Value is not null);
                     if (TryDecode5987(nameParameter.Value, out result))
                     {
                         return result;
@@ -384,7 +384,7 @@ namespace System.Net.Http.Headers
             if (string.IsNullOrEmpty(value))
             {
                 // Remove parameter.
-                if (nameParameter != null)
+                if (nameParameter is not null)
                 {
                     _parameters!.Remove(nameParameter);
                 }
@@ -401,7 +401,7 @@ namespace System.Net.Http.Headers
                     processedValue = EncodeAndQuoteMime(value);
                 }
 
-                if (nameParameter != null)
+                if (nameParameter is not null)
                 {
                     nameParameter.Value = processedValue;
                 }
@@ -467,7 +467,7 @@ namespace System.Net.Http.Headers
         // Attempt to decode MIME encoded strings.
         private static bool TryDecodeMime(string? input, [NotNullWhen(true)] out string? output)
         {
-            Debug.Assert(input != null);
+            Debug.Assert(input is not null);
 
             output = null;
             string? processedInput = input;

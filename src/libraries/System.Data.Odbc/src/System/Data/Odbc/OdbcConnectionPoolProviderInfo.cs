@@ -83,7 +83,7 @@ namespace System.Data.Odbc
         {
             get
             {
-                Debug.Assert(_quoteChar != null, "QuoteChar getter called but no quote char was set");
+                Debug.Assert(_quoteChar is not null, "QuoteChar getter called but no quote char was set");
                 return _quoteChar;
             }
             set

@@ -83,12 +83,12 @@ namespace System.Net.Security
         {
 
             InputSecurityBuffers inputBuffers = default;
-            if (incomingBlob != null)
+            if (incomingBlob is not null)
             {
                 inputBuffers.SetNextBuffer(new InputSecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN));
             }
 
-            if (channelBinding != null)
+            if (channelBinding is not null)
             {
                 inputBuffers.SetNextBuffer(new InputSecurityBuffer(channelBinding));
             }
@@ -139,12 +139,12 @@ namespace System.Net.Security
             ref ContextFlagsPal contextFlags)
         {
             InputSecurityBuffers inputBuffers = default;
-            if (incomingBlob != null)
+            if (incomingBlob is not null)
             {
                 inputBuffers.SetNextBuffer(new InputSecurityBuffer(incomingBlob, SecurityBufferType.SECBUFFER_TOKEN));
             }
 
-            if (channelBinding != null)
+            if (channelBinding is not null)
             {
                 inputBuffers.SetNextBuffer(new InputSecurityBuffer(channelBinding));
             }
@@ -178,7 +178,7 @@ namespace System.Net.Security
         internal static int VerifySignature(SafeDeleteContext securityContext, byte[] buffer, int offset, int count)
         {
             // validate offset within length
-            if (offset < 0 || offset > (buffer == null ? 0 : buffer.Length))
+            if (offset < 0 || offset > (buffer is null ? 0 : buffer.Length))
             {
                 NetEventSource.Info("Argument 'offset' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -186,7 +186,7 @@ namespace System.Net.Security
 
             // validate count within offset and end of buffer
             if (count < 0 ||
-                count > (buffer == null ? 0 : buffer.Length - offset))
+                count > (buffer is null ? 0 : buffer.Length - offset))
             {
                 NetEventSource.Info("Argument 'count' out of range.");
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -233,7 +233,7 @@ namespace System.Net.Security
 
             // alloc new output buffer if not supplied or too small
             int resultSize = count + sizes.cbMaxSignature;
-            if (output == null || output.Length < resultSize)
+            if (output is null || output.Length < resultSize)
             {
                 output = new byte[resultSize];
             }

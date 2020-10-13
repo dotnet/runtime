@@ -21,9 +21,9 @@ namespace System
         // array element indices and counts, use Array.Copy.
         public static unsafe void BlockCopy(Array src, int srcOffset, Array dst, int dstOffset, int count)
         {
-            if (src == null)
+            if (src is null)
                 throw new ArgumentNullException(nameof(src));
-            if (dst == null)
+            if (dst is null)
                 throw new ArgumentNullException(nameof(dst));
 
             nuint uSrcLen = (nuint)src.LongLength;
@@ -66,7 +66,7 @@ namespace System
         public static int ByteLength(Array array)
         {
             // Is the array present?
-            if (array == null)
+            if (array is null)
                 throw new ArgumentNullException(nameof(array));
 
             // Is it of primitive types?

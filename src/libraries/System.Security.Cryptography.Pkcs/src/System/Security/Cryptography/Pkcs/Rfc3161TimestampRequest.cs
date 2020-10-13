@@ -26,7 +26,7 @@ namespace System.Security.Cryptography.Pkcs
         public int Version => _parsedData.Version;
         public ReadOnlyMemory<byte> GetMessageHash() => _parsedData.MessageImprint.HashedMessage;
         public Oid HashAlgorithmId => (_hashAlgorithmId ??= new Oid(_parsedData.MessageImprint.HashAlgorithm.Algorithm, null));
-        public Oid? RequestedPolicyId => _parsedData.ReqPolicy == null ? null : (_requestedPolicyId ??= new Oid(_parsedData.ReqPolicy, null));
+        public Oid? RequestedPolicyId => _parsedData.ReqPolicy is null ? null : (_requestedPolicyId ??= new Oid(_parsedData.ReqPolicy, null));
         public bool RequestSignerCertificate => _parsedData.CertReq;
         public ReadOnlyMemory<byte>? GetNonce() => _parsedData.Nonce;
         public bool HasExtensions => _parsedData.Extensions?.Length > 0;
@@ -170,7 +170,7 @@ namespace System.Security.Cryptography.Pkcs
             bool requestSignerCertificates = false,
             X509ExtensionCollection? extensions = null)
         {
-            if (signerInfo == null)
+            if (signerInfo is null)
             {
                 throw new ArgumentNullException(nameof(signerInfo));
             }
@@ -315,7 +315,7 @@ namespace System.Security.Cryptography.Pkcs
                 Nonce = nonce,
             };
 
-            if (extensions != null)
+            if (extensions is not null)
             {
                 req.Extensions =
                     extensions.OfType<X509Extension>().Select(e => new X509ExtensionAsn(e)).ToArray();
@@ -384,7 +384,7 @@ namespace System.Security.Cryptography.Pkcs
             Rfc3161TimestampToken token,
             bool shouldThrow)
         {
-            Debug.Assert(token != null);
+            Debug.Assert(token is not null);
 
             // This method validates the acceptance criteria sprinkled throughout the
             // field descriptions in https://tools.ietf.org/html/rfc3161#section-2.4.1 and
@@ -423,9 +423,9 @@ namespace System.Security.Cryptography.Pkcs
             //
             // It does not say that if no nonce was requested that the response MUST NOT include one, so
             // don't check anything if no nonce was requested.
-            if (requestNonce != null)
+            if (requestNonce is not null)
             {
-                if (responseNonce == null ||
+                if (responseNonce is null ||
                     !requestNonce.Value.Span.SequenceEqual(responseNonce.Value.Span))
                 {
                     if (shouldThrow)
@@ -447,7 +447,7 @@ namespace System.Security.Cryptography.Pkcs
                 //
                 // Other certificates are permitted, and will not be validated.
 
-                if (tokenCms.SignerInfos[0].Certificate == null)
+                if (tokenCms.SignerInfos[0].Certificate is null)
                 {
                     if (shouldThrow)
                     {

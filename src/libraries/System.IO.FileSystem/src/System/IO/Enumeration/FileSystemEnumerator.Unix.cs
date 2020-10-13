@@ -107,7 +107,7 @@ namespace System.IO.Enumeration
                 {
                     do
                     {
-                        FindNextEntry(entryBufferPtr, _entryBuffer == null ? 0 : _entryBuffer.Length);
+                        FindNextEntry(entryBufferPtr, _entryBuffer is null ? 0 : _entryBuffer.Length);
                         if (_lastEntryFound)
                             return false;
 
@@ -147,7 +147,7 @@ namespace System.IO.Enumeration
                             if (_options.RecurseSubdirectories && ShouldRecurseIntoEntry(ref entry))
                             {
                                 // Recursion is on and the directory was accepted, Queue it
-                                if (_pending == null)
+                                if (_pending is null)
                                     _pending = new Queue<string>();
                                 _pending.Enqueue(Path.Join(_currentPath, entry.FileName));
                             }
@@ -167,7 +167,7 @@ namespace System.IO.Enumeration
         {
             fixed (byte* entryBufferPtr = _entryBuffer)
             {
-                FindNextEntry(entryBufferPtr, _entryBuffer == null ? 0 : _entryBuffer.Length);
+                FindNextEntry(entryBufferPtr, _entryBuffer is null ? 0 : _entryBuffer.Length);
             }
         }
 
@@ -212,7 +212,7 @@ namespace System.IO.Enumeration
 
             while (_directoryHandle == IntPtr.Zero)
             {
-                if (_pending == null || _pending.Count == 0)
+                if (_pending is null || _pending.Count == 0)
                     return false;
 
                 _currentPath = _pending.Dequeue();
@@ -225,7 +225,7 @@ namespace System.IO.Enumeration
         private void InternalDispose(bool disposing)
         {
             // It is possible to fail to allocate the lock, but the finalizer will still run
-            if (_lock != null)
+            if (_lock is not null)
             {
                 lock (_lock)
                 {
@@ -234,10 +234,10 @@ namespace System.IO.Enumeration
 
                     CloseDirectoryHandle();
 
-                    if (_pathBuffer != null)
+                    if (_pathBuffer is not null)
                         ArrayPool<char>.Shared.Return(_pathBuffer);
                     _pathBuffer = null;
-                    if (_entryBuffer != null)
+                    if (_entryBuffer is not null)
                         ArrayPool<byte>.Shared.Return(_entryBuffer);
                     _entryBuffer = null;
                 }

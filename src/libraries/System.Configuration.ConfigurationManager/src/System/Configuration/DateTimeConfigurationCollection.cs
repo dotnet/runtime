@@ -15,7 +15,7 @@ namespace System.Configuration
             get { return ((DateTimeConfigurationElement)BaseGet(index)).Value; }
             set
             {
-                if (BaseGet(index) != null) BaseRemoveAt(index);
+                if (BaseGet(index) is not null) BaseRemoveAt(index);
                 BaseAdd(index, new DateTimeConfigurationElement(value));
             }
         }

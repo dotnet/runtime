@@ -31,7 +31,7 @@ namespace System.Reflection.Metadata.Ecma335
             MetadataReader metadataReader,
             TGenericContext genericContext)
         {
-            if (provider == null)
+            if (provider is null)
             {
                 Throw.ArgumentNull(nameof(provider));
             }

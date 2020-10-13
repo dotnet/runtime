@@ -23,7 +23,7 @@ namespace Microsoft.Win32.SafeHandles
             IntPtr h = handle;
             SetHandle(IntPtr.Zero);
 
-            if (_parent != null)
+            if (_parent is not null)
             {
                 SafeHandle parent = _parent;
                 _parent = null;
@@ -42,14 +42,14 @@ namespace Microsoft.Win32.SafeHandles
             {
                 // If handle is 0, we're invalid.
                 // If we have a _parent and they're invalid, we're invalid.
-                return handle == IntPtr.Zero || (_parent != null && _parent.IsInvalid);
+                return handle == IntPtr.Zero || (_parent is not null && _parent.IsInvalid);
             }
         }
 
         internal void TransferOwnershipToParent(SafeHandle parent)
         {
-            Debug.Assert(_parent == null, "Expected no existing parent");
-            Debug.Assert(parent != null && !parent.IsInvalid, "Expected new parent to be non-null and valid");
+            Debug.Assert(_parent is null, "Expected no existing parent");
+            Debug.Assert(parent is not null && !parent.IsInvalid, "Expected new parent to be non-null and valid");
 
             bool addedRef = false;
             parent.DangerousAddRef(ref addedRef);

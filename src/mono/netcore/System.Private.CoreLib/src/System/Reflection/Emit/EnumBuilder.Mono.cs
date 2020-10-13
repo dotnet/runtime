@@ -247,7 +247,7 @@ namespace System.Reflection.Emit
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
+            if (attributeType is null)
                 return _tb.GetCustomAttributes(inherit);
             else
                 return _tb.GetCustomAttributes(attributeType, inherit);
@@ -322,7 +322,7 @@ namespace System.Reflection.Emit
             CallingConventions callConvention, Type[]? types,
             ParameterModifier[]? modifiers)
         {
-            if (types == null)
+            if (types is null)
             {
                 return _tb.GetMethod(name, bindingAttr);
             }
@@ -471,7 +471,7 @@ namespace System.Reflection.Emit
 
         public override bool IsAssignableFrom([NotNullWhen(true)] TypeInfo? typeInfo)
         {
-            if (typeInfo == null) return false;
+            if (typeInfo is null) return false;
             return IsAssignableFrom(typeInfo.AsType());
         }
 

@@ -124,7 +124,7 @@ namespace System.Reflection.Internal
         /// <exception cref="IOException">IO error while mapping memory or not enough memory to create the mapping.</exception>
         private unsafe bool TryCreateMemoryMappedFileBlock(long start, int size, [NotNullWhen(true)]out MemoryMappedFileBlock? block)
         {
-            if (_lazyMemoryMap == null)
+            if (_lazyMemoryMap is null)
             {
                 // leave the underlying stream open. It will be closed by the Dispose method.
                 IDisposable newMemoryMap;
@@ -135,20 +135,20 @@ namespace System.Reflection.Internal
                     newMemoryMap = MemoryMapLightUp.CreateMemoryMap(_stream);
                 }
 
-                if (newMemoryMap == null)
+                if (newMemoryMap is null)
                 {
                     block = null;
                     return false;
                 }
 
-                if (Interlocked.CompareExchange(ref _lazyMemoryMap, newMemoryMap, null) != null)
+                if (Interlocked.CompareExchange(ref _lazyMemoryMap, newMemoryMap, null) is not null)
                 {
                     newMemoryMap.Dispose();
                 }
             }
 
             IDisposable accessor = MemoryMapLightUp.CreateViewAccessor(_lazyMemoryMap, start, size);
-            if (accessor == null)
+            if (accessor is null)
             {
                 block = null;
                 return false;

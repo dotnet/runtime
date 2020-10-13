@@ -35,7 +35,7 @@ namespace System.Configuration
             Assembly exeAssembly = null;
             bool isSingleFile = false;
 
-            if (exePath != null)
+            if (exePath is not null)
             {
                 // Exe path was specified, use it
                 ApplicationUri = Path.GetFullPath(exePath);
@@ -56,7 +56,7 @@ namespace System.Configuration
                     HasEntryAssembly = true;
                 }
 
-                if (exeAssembly != null && !isSingleFile)
+                if (exeAssembly is not null && !isSingleFile)
                 {
                     HasEntryAssembly = true;
 
@@ -105,7 +105,7 @@ namespace System.Configuration
 
             // In the case when exePath was explicitly supplied, we will not be able to
             // construct user.config paths, so quit here.
-            if (exePath != null) return;
+            if (exePath is not null) return;
 
             // Skip expensive initialization of user config file information if requested.
             if (!_includesUserConfig) return;
@@ -163,13 +163,13 @@ namespace System.Configuration
 
         internal string RoamingConfigDirectory { get; }
 
-        internal bool HasRoamingConfig => (RoamingConfigFilename != null) || !_includesUserConfig;
+        internal bool HasRoamingConfig => (RoamingConfigFilename is not null) || !_includesUserConfig;
 
         internal string LocalConfigFilename { get; }
 
         internal string LocalConfigDirectory { get; }
 
-        internal bool HasLocalConfig => (LocalConfigFilename != null) || !_includesUserConfig;
+        internal bool HasLocalConfig => (LocalConfigFilename is not null) || !_includesUserConfig;
 
         internal string ProductName { get; private set; }
 
@@ -179,9 +179,9 @@ namespace System.Configuration
         {
             ClientConfigPaths result;
 
-            if (exePath == null)
+            if (exePath is null)
             {
-                if ((s_current == null) || (includeUserConfig && !s_currentIncludesUserConfig))
+                if ((s_current is null) || (includeUserConfig && !s_currentIncludesUserConfig))
                 {
                     s_current = new ClientConfigPaths(null, includeUserConfig);
                     s_currentIncludesUserConfig = includeUserConfig;
@@ -203,7 +203,7 @@ namespace System.Configuration
         // Combines path2 with path1 if possible, else returns null.
         private static string CombineIfValid(string path1, string path2)
         {
-            if ((path1 == null) || (path2 == null)) return null;
+            if ((path1 is null) || (path2 is null)) return null;
 
             try
             {
@@ -227,7 +227,7 @@ namespace System.Configuration
             string typeName = null;
             string hash = null;
 
-            if (assembly != null && !isSingleFile)
+            if (assembly is not null && !isSingleFile)
             {
                 AssemblyName assemblyName = assembly.GetName();
                 Uri codeBase = new Uri(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, assembly.ManifestModule.Name));
@@ -239,7 +239,7 @@ namespace System.Configuration
                 }
                 catch (PlatformNotSupportedException) { }
 
-                if (hash != null)
+                if (hash is not null)
                 {
                     typeName = StrongNameDesc;
                 }
@@ -276,16 +276,16 @@ namespace System.Configuration
 
             // Get CompanyName, ProductName, and ProductVersion
             // First try custom attributes on the assembly.
-            if (exeAssembly != null)
+            if (exeAssembly is not null)
             {
                 object[] attrs = exeAssembly.GetCustomAttributes(typeof(AssemblyCompanyAttribute), false);
-                if ((attrs != null) && (attrs.Length > 0))
+                if ((attrs is not null) && (attrs.Length > 0))
                 {
                     _companyName = ((AssemblyCompanyAttribute)attrs[0]).Company?.Trim();
                 }
 
                 attrs = exeAssembly.GetCustomAttributes(typeof(AssemblyProductAttribute), false);
-                if ((attrs != null) && (attrs.Length > 0))
+                if ((attrs is not null) && (attrs.Length > 0))
                 {
                     ProductName = ((AssemblyProductAttribute)attrs[0]).Product?.Trim();
                 }
@@ -298,22 +298,22 @@ namespace System.Configuration
                 (string.IsNullOrEmpty(_companyName) || string.IsNullOrEmpty(ProductName) ||
                 string.IsNullOrEmpty(ProductVersion)))
             {
-                if (exeAssembly != null)
+                if (exeAssembly is not null)
                 {
                     MethodInfo entryPoint = exeAssembly.EntryPoint;
-                    if (entryPoint != null)
+                    if (entryPoint is not null)
                     {
                         mainType = entryPoint.ReflectedType;
                     }
                 }
 
                 string ns = null;
-                if (mainType != null) ns = mainType.Namespace;
+                if (mainType is not null) ns = mainType.Namespace;
 
                 if (string.IsNullOrEmpty(ProductName))
                 {
                     // Try the remainder of the namespace
-                    if (ns != null)
+                    if (ns is not null)
                     {
                         int lastDot = ns.LastIndexOf('.');
                         if ((lastDot != -1) && (lastDot < ns.Length - 1)) ProductName = ns.Substring(lastDot + 1);
@@ -323,16 +323,16 @@ namespace System.Configuration
                     }
 
                     // Try the type of the entry assembly
-                    if (string.IsNullOrEmpty(ProductName) && (mainType != null)) ProductName = mainType.Name.Trim();
+                    if (string.IsNullOrEmpty(ProductName) && (mainType is not null)) ProductName = mainType.Name.Trim();
 
                     // give up, return empty string
-                    if (ProductName == null) ProductName = string.Empty;
+                    if (ProductName is null) ProductName = string.Empty;
                 }
 
                 if (string.IsNullOrEmpty(_companyName))
                 {
                     // Try the first part of the namespace
-                    if (ns != null)
+                    if (ns is not null)
                     {
                         int firstDot = ns.IndexOf('.');
                         _companyName = firstDot != -1 ? ns.Substring(0, firstDot) : ns;

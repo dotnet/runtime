@@ -100,7 +100,7 @@ namespace System.Collections.Immutable
             /// </value>
             public bool IsEmpty
             {
-                get { return _left == null; }
+                get { return _left is null; }
             }
 
             /// <summary>
@@ -236,7 +236,7 @@ namespace System.Collections.Immutable
                 get
                 {
                     Requires.Range(index >= 0 && index < this.Count, nameof(index));
-                    Debug.Assert(_left != null && _right != null);
+                    Debug.Assert(_left is not null && _right is not null);
 
                     if (index < _left._count)
                     {
@@ -261,7 +261,7 @@ namespace System.Collections.Immutable
             internal ref readonly T ItemRef(int index)
             {
                 Requires.Range(index >= 0 && index < this.Count, nameof(index));
-                Debug.Assert(_left != null && _right != null);
+                Debug.Assert(_left is not null && _right is not null);
 
                 if (index < _left._count)
                 {
@@ -421,7 +421,7 @@ namespace System.Collections.Immutable
                 }
                 else
                 {
-                    Debug.Assert(_left != null && _right != null);
+                    Debug.Assert(_left is not null && _right is not null);
                     Node result = this;
                     int compare = comparer.Compare(key, _key);
                     if (compare == 0)
@@ -502,7 +502,7 @@ namespace System.Collections.Immutable
                 // If this node is frozen, all its descendants must already be frozen.
                 if (!_frozen)
                 {
-                    Debug.Assert(_left != null && _right != null);
+                    Debug.Assert(_left is not null && _right is not null);
                     _left.Freeze();
                     _right.Freeze();
                     _frozen = true;
@@ -557,7 +557,7 @@ namespace System.Collections.Immutable
                 }
                 else
                 {
-                    Debug.Assert(_left != null && _right != null);
+                    Debug.Assert(_left is not null && _right is not null);
                     int compare = comparer.Compare(key, _key);
                     if (compare == 0)
                     {
@@ -774,19 +774,19 @@ namespace System.Collections.Immutable
             /// <returns>The mutated (or created) node.</returns>
             private Node Mutate(Node? left = null, Node? right = null)
             {
-                Debug.Assert(_left != null && _right != null);
+                Debug.Assert(_left is not null && _right is not null);
                 if (_frozen)
                 {
                     return new Node(_key, left ?? _left, right ?? _right);
                 }
                 else
                 {
-                    if (left != null)
+                    if (left is not null)
                     {
                         _left = left;
                     }
 
-                    if (right != null)
+                    if (right is not null)
                     {
                         _right = right;
                     }

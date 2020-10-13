@@ -32,7 +32,7 @@ namespace System.Runtime.Serialization
 
         internal DataContractSet(DataContractSet dataContractSet)
         {
-            if (dataContractSet == null)
+            if (dataContractSet is null)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(dataContractSet)));
 
             //this.dataContractSurrogate = dataContractSet.dataContractSurrogate;
@@ -44,7 +44,7 @@ namespace System.Runtime.Serialization
                 Add(pair.Key, pair.Value);
             }
 
-            if (dataContractSet._processedContracts != null)
+            if (dataContractSet._processedContracts is not null)
             {
                 foreach (KeyValuePair<DataContract, object> pair in dataContractSet._processedContracts)
                 {
@@ -57,7 +57,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_contracts == null)
+                if (_contracts is null)
                 {
                     _contracts = new Dictionary<XmlQualifiedName, DataContract>();
                 }
@@ -69,7 +69,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_processedContracts == null)
+                if (_processedContracts is null)
                 {
                     _processedContracts = new Dictionary<DataContract, object>();
                 }
@@ -81,7 +81,7 @@ namespace System.Runtime.Serialization
         {
             get
             {
-                if (_surrogateDataTable == null)
+                if (_surrogateDataTable is null)
                     _surrogateDataTable = new Hashtable();
                 return _surrogateDataTable;
             }
@@ -120,7 +120,7 @@ namespace System.Runtime.Serialization
             {
                 if (!dataContractInSet.Equals(dataContract))
                 {
-                    if (dataContract.UnderlyingType == null || dataContractInSet.UnderlyingType == null)
+                    if (dataContract.UnderlyingType is null || dataContractInSet.UnderlyingType is null)
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.DupContractInDataContractSet, dataContract.StableName.Name, dataContract.StableName.Namespace)));
                     else
                     {
@@ -150,26 +150,26 @@ namespace System.Runtime.Serialization
 
         private void AddClassDataContract(ClassDataContract classDataContract)
         {
-            if (classDataContract.BaseContract != null)
+            if (classDataContract.BaseContract is not null)
             {
                 Add(classDataContract.BaseContract.StableName, classDataContract.BaseContract);
             }
             if (!classDataContract.IsISerializable)
             {
-                if (classDataContract.Members != null)
+                if (classDataContract.Members is not null)
                 {
                     for (int i = 0; i < classDataContract.Members.Count; i++)
                     {
                         DataMember dataMember = classDataContract.Members[i];
                         DataContract memberDataContract = GetMemberTypeDataContract(dataMember);
 #if SUPPORT_SURROGATE
-                        if (_dataContractSurrogate != null && dataMember.MemberInfo != null)
+                        if (_dataContractSurrogate is not null && dataMember.MemberInfo is not null)
                         {
                             object customData = DataContractSurrogateCaller.GetCustomDataToExport(
                                                    _dataContractSurrogate,
                                                    dataMember.MemberInfo,
                                                    memberDataContract.UnderlyingType);
-                            if (customData != null)
+                            if (customData is not null)
                                 SurrogateDataTable.Add(dataMember, customData);
                         }
 #endif
@@ -190,7 +190,7 @@ namespace System.Runtime.Serialization
             else
             {
                 DataContract itemContract = GetItemTypeDataContract(collectionDataContract);
-                if (itemContract != null)
+                if (itemContract is not null)
                     Add(itemContract.StableName, itemContract);
             }
             AddKnownDataContracts(collectionDataContract.KnownDataContracts);
@@ -203,7 +203,7 @@ namespace System.Runtime.Serialization
 
         private void AddKnownDataContracts(DataContractDictionary? knownDataContracts)
         {
-            if (knownDataContracts != null)
+            if (knownDataContracts is not null)
             {
                 foreach (DataContract knownDataContract in knownDataContracts.Values)
                 {
@@ -215,11 +215,11 @@ namespace System.Runtime.Serialization
         internal DataContract GetDataContract(Type clrType)
         {
 #if SUPPORT_SURROGATE
-            if (_dataContractSurrogate == null)
+            if (_dataContractSurrogate is null)
                 return DataContract.GetDataContract(clrType);
 #endif
             DataContract? dataContract = DataContract.GetBuiltInDataContract(clrType);
-            if (dataContract != null)
+            if (dataContract is not null)
                 return dataContract;
 
 #if SUPPORT_SURROGATE
@@ -234,7 +234,7 @@ namespace System.Runtime.Serialization
             {
                 object customData = DataContractSurrogateCaller.GetCustomDataToExport(
                                       _dataContractSurrogate, clrType, dcType);
-                if (customData != null)
+                if (customData is not null)
                     SurrogateDataTable.Add(dataContract, customData);
             }
 #endif
@@ -247,7 +247,7 @@ namespace System.Runtime.Serialization
             if (dataMember.IsGetOnlyCollection)
             {
 #if SUPPORT_SURROGATE
-                    if (_dataContractSurrogate != null)
+                    if (_dataContractSurrogate is not null)
                     {
                         Type dcType = DataContractSurrogateCaller.GetDataContractType(_dataContractSurrogate, dataMemberType);
                         if (dcType != dataMemberType)
@@ -267,7 +267,7 @@ namespace System.Runtime.Serialization
 
         internal DataContract GetItemTypeDataContract(CollectionDataContract collectionContract)
         {
-            if (collectionContract.ItemType != null)
+            if (collectionContract.ItemType is not null)
                 return GetDataContract(collectionContract.ItemType);
             return collectionContract.ItemContract;
         }

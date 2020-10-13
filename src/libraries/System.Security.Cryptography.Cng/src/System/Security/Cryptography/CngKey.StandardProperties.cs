@@ -44,7 +44,7 @@ namespace System.Security.Cryptography
             get
             {
                 string? algorithmGroup = _keyHandle.GetPropertyAsString(KeyPropertyName.AlgorithmGroup, CngPropertyOptions.None);
-                if (algorithmGroup == null)
+                if (algorithmGroup is null)
                     return null;
                 return new CngAlgorithmGroup(algorithmGroup);
             }
@@ -230,7 +230,7 @@ namespace System.Security.Cryptography
             get
             {
                 string? provider = _providerHandle.GetPropertyAsString(ProviderPropertyName.Name, CngPropertyOptions.None);
-                if (provider == null)
+                if (provider is null)
                     return null;
                 return new CngProvider(provider);
             }

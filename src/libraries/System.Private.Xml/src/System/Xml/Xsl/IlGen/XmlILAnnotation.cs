@@ -31,7 +31,7 @@ namespace System.Xml.Xsl.IlGen
         {
             XmlILAnnotation? ann = nd.Annotation as XmlILAnnotation;
 
-            if (ann == null)
+            if (ann is null)
             {
                 ann = new XmlILAnnotation(nd.Annotation);
                 nd.Annotation = ann;
@@ -111,7 +111,7 @@ namespace System.Xml.Xsl.IlGen
         /// </summary>
         public override int Count
         {
-            get { return (_annPrev != null) ? 3 : 2; }
+            get { return (_annPrev is not null) ? 3 : 2; }
         }
 
         /// <summary>
@@ -121,7 +121,7 @@ namespace System.Xml.Xsl.IlGen
         {
             get
             {
-                if (_annPrev != null)
+                if (_annPrev is not null)
                 {
                     if (index == 0)
                         return _annPrev;

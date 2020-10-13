@@ -46,7 +46,7 @@ namespace System.DirectoryServices.AccountManagement
                             bool recursive,
                             ADStoreCtx storeCtx) : base(groupDN, members, primaryGroupDN, queryMembersSearcher, recursive, storeCtx)
         {
-            Debug.Assert(constraintData != null);
+            Debug.Assert(constraintData is not null);
 
             _constraint = constraint;
             _constraintData = constraintData;
@@ -63,7 +63,7 @@ namespace System.DirectoryServices.AccountManagement
                     ADStoreCtx storeCtx)
             : base(groupDN, membersSearcher, primaryGroupDN, primaryGroupMembersSearcher, recursive, storeCtx)
         {
-            Debug.Assert(constraintData != null);
+            Debug.Assert(constraintData is not null);
 
             _constraint = constraint;
             _constraintData = constraintData;
@@ -104,7 +104,7 @@ namespace System.DirectoryServices.AccountManagement
                         case ConstraintType.ResultValidatorDelegateMatch:
                             {
                                 ResultValidator resultValidator = _constraintData as ResultValidator;
-                                if (resultValidator != null)
+                                if (resultValidator is not null)
                                 {
                                     dSPropertyCollection resultPropCollection = null;
                                     if (this.current is SearchResult)

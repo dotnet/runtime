@@ -31,12 +31,12 @@ namespace BenchmarkDotNet.Attributes
                 { NamedConfiguration.PerfLab, typeof(DefaultCorePerfLabConfig) },
             };
 
-            if (configType != null)
+            if (configType is not null)
             {
                 ConfigTypes[NamedConfiguration.Default] = configType;
             }
 
-            if (validationConfigType != null)
+            if (validationConfigType is not null)
             {
                 ConfigTypes[NamedConfiguration.Validation] = validationConfigType;
             }

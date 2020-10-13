@@ -37,7 +37,7 @@ namespace System.IO
             }
 
             // Don't start another instance if one is already runnings
-            if (_cancellation != null)
+            if (_cancellation is not null)
             {
                 return;
             }
@@ -67,7 +67,7 @@ namespace System.IO
                 return;
 
             CancellationTokenSource? token = _cancellation;
-            if (token != null)
+            if (token is not null)
             {
                 _cancellation = null;
                 token.Cancel();
@@ -264,7 +264,7 @@ namespace System.IO
             private void CleanupEventStream()
             {
                 SafeEventStreamHandle? eventStream = Interlocked.Exchange(ref _eventStream, null);
-                if (eventStream != null)
+                if (eventStream is not null)
                 {
                     _cancellationRegistration.Unregister();
                     try
@@ -476,7 +476,7 @@ namespace System.IO
                 static ParsedEvent ParseEvent(byte* nativeEventPath)
                 {
                     int byteCount = 0;
-                    Debug.Assert(nativeEventPath != null);
+                    Debug.Assert(nativeEventPath is not null);
                     byte* temp = nativeEventPath;
 
                     // Finds the position of null character.

@@ -18,7 +18,7 @@ namespace System.Runtime.Serialization.Json
 
         public override object? ReadJsonValueCore(XmlReaderDelegator jsonReader, XmlObjectSerializerReadContextComplexJson? context)
         {
-            if (context == null)
+            if (context is null)
             {
                 return TryReadNullAtTopLevel(jsonReader) ? null : jsonReader.ReadElementContentAsQName();
             }

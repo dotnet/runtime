@@ -141,7 +141,7 @@ namespace System.Reflection
                     if (genericTypeArgument is SignatureType signatureGenericTypeArgument)
                     {
                         newGenericTypeArguments[i] = signatureGenericTypeArgument.TryResolve(genericMethodParameters);
-                        if (newGenericTypeArguments[i] == null)
+                        if (newGenericTypeArguments[i] is null)
                             return null;
                     }
                     else

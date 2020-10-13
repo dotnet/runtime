@@ -79,9 +79,9 @@ namespace System.Reflection.Emit
 
         internal CustomAttributeBuilder(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
+            if (con is null)
                 throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
+            if (binaryAttribute is null)
                 throw new ArgumentNullException(nameof(binaryAttribute));
             ctor = con;
             data = (byte[])binaryAttribute.Clone();
@@ -147,13 +147,13 @@ namespace System.Reflection.Emit
 
         private static bool IsValidValue(Type type, object? value)
         {
-            if (type.IsValueType && value == null)
+            if (type.IsValueType && value is null)
                 return false;
             if (type.IsArray && type.GetElementType()!.IsValueType)
             {
                 foreach (object? v in (Array)value!)
                 {
-                    if (v == null)
+                    if (v is null)
                         return false;
                 }
             }
@@ -171,17 +171,17 @@ namespace System.Reflection.Emit
             this.namedFields = namedFields;
             this.fieldValues = fieldValues;
 
-            if (con == null)
+            if (con is null)
                 throw new ArgumentNullException(nameof(con));
-            if (constructorArgs == null)
+            if (constructorArgs is null)
                 throw new ArgumentNullException(nameof(constructorArgs));
-            if (namedProperties == null)
+            if (namedProperties is null)
                 throw new ArgumentNullException(nameof(namedProperties));
-            if (propertyValues == null)
+            if (propertyValues is null)
                 throw new ArgumentNullException(nameof(propertyValues));
-            if (namedFields == null)
+            if (namedFields is null)
                 throw new ArgumentNullException(nameof(namedFields));
-            if (fieldValues == null)
+            if (fieldValues is null)
                 throw new ArgumentNullException(nameof(fieldValues));
             if (con.GetParametersCount() != constructorArgs.Length)
                 throw new ArgumentException(SR.Argument_BadParameterCountsForConstructor);
@@ -210,7 +210,7 @@ namespace System.Reflection.Emit
                 if (!IsValidValue(fi.FieldType, fieldValues[i]))
                     throw new ArgumentException("Field " + fi.Name + " is not a valid value.");
                 // FIXME: Check enums and TypeBuilders as well
-                if (fieldValues[i] != null)
+                if (fieldValues[i] is not null)
                     // IsEnum does not seem to work on TypeBuilders
                     if (!(fi.FieldType is TypeBuilder) && !fi.FieldType.IsEnum && !fi.FieldType.IsInstanceOfType(fieldValues[i]))
                     {
@@ -236,7 +236,7 @@ namespace System.Reflection.Emit
                     throw new ArgumentException("Property '" + pi.Name + "' does not have a valid type.");
                 if (!IsValidValue(pi.PropertyType, propertyValues[i]))
                     throw new ArgumentException("Property " + pi.Name + " is not a valid value.");
-                if (propertyValues[i] != null)
+                if (propertyValues[i] is not null)
                 {
                     if (!(pi.PropertyType is TypeBuilder) && !pi.PropertyType.IsEnum && !pi.PropertyType.IsInstanceOfType(propertyValues[i]))
                         if (!pi.PropertyType.IsArray)
@@ -248,7 +248,7 @@ namespace System.Reflection.Emit
             i = 0;
             foreach (ParameterInfo pi in GetParameters(con))
             {
-                if (pi != null)
+                if (pi is not null)
                 {
                     Type paramType = pi.ParameterType;
                     if (!IsValidType(paramType))
@@ -256,7 +256,7 @@ namespace System.Reflection.Emit
                     if (!IsValidValue(paramType, constructorArgs[i]))
                         throw new ArgumentException("Parameter " + i + " is not a valid value.");
 
-                    if (constructorArgs[i] != null)
+                    if (constructorArgs[i] is not null)
                     {
                         if (!(paramType is TypeBuilder) && !paramType.IsEnum && !paramType.IsInstanceOfType(constructorArgs[i]))
                             if (!paramType.IsArray)
@@ -401,7 +401,7 @@ namespace System.Reflection.Emit
                         break;
                     case "MarshalTypeRef":
                         marshalTypeName = decode_string(data, pos, out pos);
-                        if (marshalTypeName != null)
+                        if (marshalTypeName is not null)
                             marshalTypeRef = Type.GetType(marshalTypeName);
                         break;
                     case "MarshalCookie":
@@ -551,11 +551,11 @@ namespace System.Reflection.Emit
                 {
                     /* Field */
                     FieldInfo? fi = ctor.DeclaringType!.GetField(name, BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
-                    if (fi == null)
+                    if (fi is null)
                         throw new Exception("Custom attribute type '" + ctor.DeclaringType + "' doesn't contain a field named '" + name + "'");
 
                     object? val = decode_cattr_value(fi.FieldType, data, pos, out pos);
-                    if (enum_type_name != null)
+                    if (enum_type_name is not null)
                     {
                         Type enumType = Type.GetType(enum_type_name)!;
                         val = Enum.ToObject(enumType, val!);

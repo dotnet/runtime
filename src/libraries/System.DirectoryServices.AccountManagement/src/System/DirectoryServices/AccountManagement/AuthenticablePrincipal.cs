@@ -75,7 +75,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Make sure we're not disposed or deleted.
                 CheckDisposedOrDeleted();
 
-                if (_accountInfo == null)
+                if (_accountInfo is null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthenticablePrincipal", "AccountInfo: creating new AccountInfo");
                     _accountInfo = new AccountInfo(this);
@@ -170,7 +170,7 @@ namespace System.DirectoryServices.AccountManagement
                 // Make sure we're not disposed or deleted.
                 CheckDisposedOrDeleted();
 
-                if (_passwordInfo == null)
+                if (_passwordInfo is null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "AuthenticablePrincipal", "PasswordInfo: creating new PasswordInfo");
                     _passwordInfo = new PasswordInfo(this);
@@ -326,7 +326,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         protected internal AuthenticablePrincipal(PrincipalContext context)
         {
-            if (context == null)
+            if (context is null)
                 throw new ArgumentException(SR.NullArguments);
 
             this.ContextRaw = context;
@@ -336,12 +336,12 @@ namespace System.DirectoryServices.AccountManagement
 
         protected internal AuthenticablePrincipal(PrincipalContext context, string samAccountName, string password, bool enabled) : this(context)
         {
-            if (samAccountName != null)
+            if (samAccountName is not null)
             {
                 this.SamAccountName = samAccountName;
             }
 
-            if (password != null)
+            if (password is not null)
             {
                 this.SetPassword(password);
             }
@@ -363,10 +363,10 @@ namespace System.DirectoryServices.AccountManagement
                  (!subtype.IsSubclassOf(typeof(AuthenticablePrincipal))))
                 throw new ArgumentException(SR.AuthenticablePrincipalMustBeSubtypeOfAuthPrinc);
 
-            if (context == null)
+            if (context is null)
                 throw new ArgumentNullException(nameof(context));
 
-            if (subtype == null)
+            if (subtype is null)
                 throw new ArgumentNullException(nameof(subtype));
         }
 
@@ -398,7 +398,7 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         // If this is the first AccountInfo attribute we're loading,
                         // we'll need to create the AccountInfo to hold it
-                        if (_accountInfo == null)
+                        if (_accountInfo is null)
                             _accountInfo = new AccountInfo(this);
 
                         _accountInfo.LoadValueIntoProperty(propertyName, value);
@@ -407,7 +407,7 @@ namespace System.DirectoryServices.AccountManagement
                     {
                         // If this is the first PasswordInfo attribute we're loading,
                         // we'll need to create the PasswordInfo to hold it
-                        if (_passwordInfo == null)
+                        if (_passwordInfo is null)
                             _passwordInfo = new PasswordInfo(this);
 
                         _passwordInfo.LoadValueIntoProperty(propertyName, value);
@@ -449,14 +449,14 @@ namespace System.DirectoryServices.AccountManagement
 
                     if (propertyName.StartsWith(PropertyNames.AcctInfoPrefix, StringComparison.Ordinal))
                     {
-                        if (_accountInfo == null)
+                        if (_accountInfo is null)
                             return false;
 
                         return _accountInfo.GetChangeStatusForProperty(propertyName);
                     }
                     else if (propertyName.StartsWith(PropertyNames.PwdInfoPrefix, StringComparison.Ordinal))
                     {
-                        if (_passwordInfo == null)
+                        if (_passwordInfo is null)
                             return false;
 
                         return _passwordInfo.GetChangeStatusForProperty(propertyName);
@@ -490,7 +490,7 @@ namespace System.DirectoryServices.AccountManagement
 
                     if (propertyName.StartsWith(PropertyNames.AcctInfoPrefix, StringComparison.Ordinal))
                     {
-                        if (_accountInfo == null)
+                        if (_accountInfo is null)
                         {
                             // Should never happen, since GetChangeStatusForProperty returned false
                             Debug.Fail("AuthenticablePrincipal.GetValueForProperty(AcctInfo): shouldn't be here");
@@ -501,7 +501,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                     else if (propertyName.StartsWith(PropertyNames.PwdInfoPrefix, StringComparison.Ordinal))
                     {
-                        if (_passwordInfo == null)
+                        if (_passwordInfo is null)
                         {
                             // Should never happen, since GetChangeStatusForProperty returned false
                             Debug.Fail("AuthenticablePrincipal.GetValueForProperty(PwdInfo): shouldn't be here");
@@ -526,12 +526,12 @@ namespace System.DirectoryServices.AccountManagement
 
             RefreshOriginalThumbprintList();
 
-            if (_accountInfo != null)
+            if (_accountInfo is not null)
             {
                 _accountInfo.ResetAllChangeStatus();
             }
 
-            if (_passwordInfo != null)
+            if (_passwordInfo is not null)
             {
                 _passwordInfo.ResetAllChangeStatus();
             }

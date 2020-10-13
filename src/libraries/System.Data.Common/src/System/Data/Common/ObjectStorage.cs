@@ -37,9 +37,9 @@ namespace System.Data.Common
 
             if (valueNo1 == valueNo2)
                 return 0;
-            if (valueNo1 == null)
+            if (valueNo1 is null)
                 return -1;
-            if (valueNo2 == null)
+            if (valueNo2 is null)
                 return 1;
 
             IComparable? icomparable = (valueNo1 as IComparable);
@@ -70,7 +70,7 @@ namespace System.Data.Common
             if (valueNo1 == value)
                 return 0;
 
-            if (valueNo1 == null)
+            if (valueNo1 is null)
             {
                 if (_nullValue == value)
                 {
@@ -89,9 +89,9 @@ namespace System.Data.Common
 
         private int CompareTo(object? valueNo1, object? valueNo2)
         {
-            if (valueNo1 == null)
+            if (valueNo1 is null)
                 return -1;
-            if (valueNo2 == null)
+            if (valueNo2 is null)
                 return 1;
             if (valueNo1 == valueNo2)
                 return 0;
@@ -297,7 +297,7 @@ namespace System.Data.Common
         public override void SetCapacity(int capacity)
         {
             object[] newValues = new object[capacity];
-            if (_values != null)
+            if (_values is not null)
             {
                 Array.Copy(_values, newValues, Math.Min(capacity, _values.Length));
             }
@@ -356,7 +356,7 @@ namespace System.Data.Common
             { // this means type implements IXmlSerializable
                 Type? type = null;
                 string? typeName = xmlReader.GetAttribute(Keywords.MSD_INSTANCETYPE, Keywords.MSDNS);
-                if (typeName == null || typeName.Length == 0)
+                if (typeName is null || typeName.Length == 0)
                 { // No CDT polumorphism
                     string? xsdTypeName = xmlReader.GetAttribute(Keywords.TYPE, Keywords.XSINS); // this xsd type: Base type polymorphism
                     if (null != xsdTypeName && xsdTypeName.Length > 0)
@@ -393,7 +393,7 @@ namespace System.Data.Common
                     {
                         if (null == type)
                         {
-                            type = (typeName == null) ? _dataType : DataStorage.GetType(typeName);
+                            type = (typeName is null) ? _dataType : DataStorage.GetType(typeName);
                         }
 
                         if (type == typeof(char) || type == typeof(Guid))
@@ -446,7 +446,7 @@ namespace System.Data.Common
 
         public override string ConvertObjectToXml(object value)
         {
-            if ((value == null) || (value == _nullValue))// this case won't happen,  this is added in case if code in xml saver changes
+            if ((value is null) || (value == _nullValue))// this case won't happen,  this is added in case if code in xml saver changes
                 return string.Empty;
 
             Type type = _dataType;
@@ -626,8 +626,8 @@ namespace System.Data.Common
             public bool Equals(KeyValuePair<Type, XmlRootAttribute> x, KeyValuePair<Type, XmlRootAttribute> y)
             {
                 return ((x.Key == y.Key) &&                                         // same type
-                        (((x.Value == null) && (y.Value == null)) ||                // XmlRootAttribute both null
-                         ((x.Value != null) && (y.Value != null) &&                 // XmlRootAttribute both with value
+                        (((x.Value is null) && (y.Value is null)) ||                // XmlRootAttribute both null
+                         ((x.Value is not null) && (y.Value is not null) &&                 // XmlRootAttribute both with value
                           (x.Value.ElementName == y.Value.ElementName) &&           // all attribute elements are equal
                           (x.Value.Namespace == y.Value.Namespace) &&
                           (x.Value.DataType == y.Value.DataType) &&

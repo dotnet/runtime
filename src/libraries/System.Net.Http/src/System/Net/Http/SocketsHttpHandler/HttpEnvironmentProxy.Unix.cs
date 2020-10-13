@@ -19,7 +19,7 @@ namespace System.Net.Http
             // Note that curl uses HTTPS_PROXY but not HTTP_PROXY.
 
             Uri? httpProxy = GetUriFromString(Environment.GetEnvironmentVariable(EnvHttpProxyLC));
-            if (httpProxy == null && Environment.GetEnvironmentVariable(EnvCGI) == null)
+            if (httpProxy is null && Environment.GetEnvironmentVariable(EnvCGI) is null)
             {
                 httpProxy = GetUriFromString(Environment.GetEnvironmentVariable(EnvHttpProxyUC));
             }
@@ -27,17 +27,17 @@ namespace System.Net.Http
             Uri? httpsProxy = GetUriFromString(Environment.GetEnvironmentVariable(EnvHttpsProxyLC)) ??
                              GetUriFromString(Environment.GetEnvironmentVariable(EnvHttpsProxyUC));
 
-            if (httpProxy == null || httpsProxy == null)
+            if (httpProxy is null || httpsProxy is null)
             {
                 Uri? allProxy = GetUriFromString(Environment.GetEnvironmentVariable(EnvAllProxyLC)) ??
                                 GetUriFromString(Environment.GetEnvironmentVariable(EnvAllProxyUC));
 
-                if (httpProxy == null)
+                if (httpProxy is null)
                 {
                     httpProxy = allProxy;
                 }
 
-                if (httpsProxy == null)
+                if (httpsProxy is null)
                 {
                     httpsProxy = allProxy;
                 }
@@ -45,7 +45,7 @@ namespace System.Net.Http
 
             // Do not instantiate if nothing is set.
             // Caller may pick some other proxy type.
-            if (httpProxy == null && httpsProxy == null)
+            if (httpProxy is null && httpsProxy is null)
             {
                 proxy = null;
                 return false;

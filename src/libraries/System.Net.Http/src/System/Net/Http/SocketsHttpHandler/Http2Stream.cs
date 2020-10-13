@@ -47,7 +47,7 @@ namespace System.Net.Http
             // If this is not null, then we have received a reset from the server
             // (i.e. RST_STREAM or general IO error processing the connection)
             private Exception? _resetException;
-            private bool _canRetry;             // if _resetException != null, this indicates the stream was refused and so the request is retryable
+            private bool _canRetry;             // if _resetException is not null, this indicates the stream was refused and so the request is retryable
 
             // This flag indicates that, per section 8.1 of the RFC, the server completed the response and then sent a RST_STREAM with error = NO_ERROR.
             // This is a signal to stop sending the request body, but the request is still considered successful.
@@ -104,7 +104,7 @@ namespace System.Net.Http
                 _pendingWindowUpdate = 0;
                 _headerBudgetRemaining = connection._pool.Settings._maxResponseHeadersLength * 1024;
 
-                if (_request.Content == null)
+                if (_request.Content is null)
                 {
                     _requestCompletionState = StreamCompletionState.Completed;
                 }
@@ -154,7 +154,7 @@ namespace System.Net.Http
                 // Since the Http2Stream is rooted by the Http2Connection dictionary, doing so would prevent
                 // the response stream from being collected and finalized if it were to be dropped without
                 // being disposed first.
-                Debug.Assert(_response != null);
+                Debug.Assert(_response is not null);
                 HttpResponseMessage r = _response;
                 _response = null;
                 return r;
@@ -162,14 +162,14 @@ namespace System.Net.Http
 
             public async Task SendRequestBodyAsync(CancellationToken cancellationToken)
             {
-                if (_request.Content == null)
+                if (_request.Content is null)
                 {
                     Debug.Assert(_requestCompletionState == StreamCompletionState.Completed);
                     return;
                 }
 
                 if (NetEventSource.Log.IsEnabled()) Trace($"{_request.Content}");
-                Debug.Assert(_requestBodyCancellationSource != null);
+                Debug.Assert(_requestBodyCancellationSource is not null);
 
                 // Cancel the request body sending if cancellation is requested on the supplied cancellation token.
                 // Normally we might create a linked token, but once cancellation is requested, we can't recover anyway,
@@ -184,7 +184,7 @@ namespace System.Net.Http
                 try
                 {
                     bool sendRequestContent = true;
-                    if (_expect100ContinueWaiter != null)
+                    if (_expect100ContinueWaiter is not null)
                     {
                         linkedRegistration = RegisterRequestBodyCancellation(cancellationToken);
                         sendRequestContent = await WaitFor100ContinueAsync(_requestBodyCancellationSource.Token).ConfigureAwait(false);
@@ -295,7 +295,7 @@ namespace System.Net.Http
             // If we get response status >= 300, we will not send the request body.
             public async ValueTask<bool> WaitFor100ContinueAsync(CancellationToken cancellationToken)
             {
-                Debug.Assert(_request?.Content != null);
+                Debug.Assert(_request?.Content is not null);
                 if (NetEventSource.Log.IsEnabled()) Trace($"Waiting to send request body content for 100-Continue.");
 
                 // Use TCS created in constructor. It will complete when one of three things occurs:
@@ -333,7 +333,7 @@ namespace System.Net.Http
                 if (NetEventSource.Log.IsEnabled()) Trace($"Stream reset. Request={_requestCompletionState}, Response={_responseCompletionState}.");
 
                 // Don't send a RST_STREAM if we've already received one from the server.
-                if (_resetException == null)
+                if (_resetException is null)
                 {
                     _connection.LogExceptions(_connection.SendRstStreamAsync(StreamId, Http2ProtocolErrorCode.Cancel));
                 }
@@ -350,7 +350,7 @@ namespace System.Net.Http
                 _connection.RemoveStream(this);
 
                 CreditWaiter? w = _creditWaiter;
-                if (w != null)
+                if (w is not null)
                 {
                     w.Dispose();
                     _creditWaiter = null;
@@ -371,7 +371,7 @@ namespace System.Net.Http
                     if (_requestCompletionState == StreamCompletionState.InProgress)
                     {
                         requestBodyCancellationSource = _requestBodyCancellationSource;
-                        Debug.Assert(requestBodyCancellationSource != null);
+                        Debug.Assert(requestBodyCancellationSource is not null);
                     }
 
                     (signalWaiter, sendReset) = CancelResponseBody();
@@ -427,7 +427,7 @@ namespace System.Net.Http
                 lock (SyncObject)
                 {
                     _availableCredit = checked(_availableCredit + amount);
-                    if (_availableCredit > 0 && _creditWaiter != null)
+                    if (_availableCredit > 0 && _creditWaiter is not null)
                     {
                         int granted = Math.Min(_availableCredit, _creditWaiter.Amount);
                         if (_creditWaiter.TrySetResult(granted))
@@ -581,7 +581,7 @@ namespace System.Net.Http
                         throw new HttpRequestException(SR.net_http_invalid_response_pseudo_header_in_trailer);
                     }
 
-                    Debug.Assert(_response != null);
+                    Debug.Assert(_response is not null);
                     _response.StatusCode = (HttpStatusCode)statusCode;
 
                     if (statusCode < 200)
@@ -589,7 +589,7 @@ namespace System.Net.Http
                         // We do not process headers from 1xx responses.
                         _responseProtocolState = ResponseProtocolState.ExpectingIgnoredHeaders;
 
-                        if (_response.StatusCode == HttpStatusCode.Continue && _expect100ContinueWaiter != null)
+                        if (_response.StatusCode == HttpStatusCode.Continue && _expect100ContinueWaiter is not null)
                         {
                             if (NetEventSource.Log.IsEnabled()) Trace("Received 100-Continue status.");
                             _expect100ContinueWaiter.TrySetResult(true);
@@ -600,7 +600,7 @@ namespace System.Net.Http
                         _responseProtocolState = ResponseProtocolState.ExpectingHeaders;
 
                         // If we are waiting for a 100-continue response, signal the waiter now.
-                        if (_expect100ContinueWaiter != null)
+                        if (_expect100ContinueWaiter is not null)
                         {
                             // If the final status code is >= 300, skip sending the body.
                             bool shouldSendBody = (statusCode < 300);
@@ -645,19 +645,19 @@ namespace System.Net.Http
                     // if the header can't be added, we silently drop it.
                     if (_responseProtocolState == ResponseProtocolState.ExpectingTrailingHeaders)
                     {
-                        Debug.Assert(_trailers != null);
+                        Debug.Assert(_trailers is not null);
                         string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                         _trailers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
                     }
                     else if ((descriptor.HeaderType & HttpHeaderType.Content) == HttpHeaderType.Content)
                     {
-                        Debug.Assert(_response != null && _response.Content != null);
+                        Debug.Assert(_response is not null && _response.Content is not null);
                         string headerValue = descriptor.GetHeaderValue(value, valueEncoding);
                         _response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
                     }
                     else
                     {
-                        Debug.Assert(_response != null);
+                        Debug.Assert(_response is not null);
                         string headerValue = _connection.GetResponseHeaderValueWithCaching(descriptor, value, valueEncoding);
                         _response.Headers.TryAddWithoutValidation((descriptor.HeaderType & HttpHeaderType.Request) == HttpHeaderType.Request ? descriptor.AsCustomHeader() : descriptor, headerValue);
                     }
@@ -867,7 +867,7 @@ namespace System.Net.Http
 
                     // It's possible we could be called twice, e.g. we receive a RST_STREAM and then the whole connection dies
                     // before we have a chance to process cancellation and tear everything down. Just ignore this.
-                    if (_resetException != null)
+                    if (_resetException is not null)
                     {
                         return;
                     }
@@ -892,7 +892,7 @@ namespace System.Net.Http
                         {
                             _requestBodyAbandoned = true;
                             requestBodyCancellationSource = _requestBodyCancellationSource;
-                            Debug.Assert(requestBodyCancellationSource != null);
+                            Debug.Assert(requestBodyCancellationSource is not null);
                         }
                     }
                     else
@@ -903,7 +903,7 @@ namespace System.Net.Http
                     }
                 }
 
-                if (requestBodyCancellationSource != null)
+                if (requestBodyCancellationSource is not null)
                 {
                     Debug.Assert(_requestBodyAbandoned);
                     Debug.Assert(!cancel);
@@ -990,7 +990,7 @@ namespace System.Net.Http
                     throw;
                 }
 
-                Debug.Assert(_response != null && _response.Content != null);
+                Debug.Assert(_response is not null && _response.Content is not null);
                 // Start to process the response body.
                 var responseContent = (HttpConnectionResponseContent)_response.Content;
                 if (emptyResponse)
@@ -1201,7 +1201,7 @@ namespace System.Net.Http
 
             private void MoveTrailersToResponseMessage(HttpResponseMessage responseMessage)
             {
-                if (_trailers != null)
+                if (_trailers is not null)
                 {
                     responseMessage.StoreReceivedTrailingHeaders(_trailers);
                 }
@@ -1209,7 +1209,7 @@ namespace System.Net.Http
 
             private async ValueTask SendDataAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
             {
-                Debug.Assert(_requestBodyCancellationSource != null);
+                Debug.Assert(_requestBodyCancellationSource is not null);
 
                 // Cancel the request body sending if cancellation is requested on the supplied cancellation token.
                 CancellationTokenRegistration linkedRegistration = cancellationToken.CanBeCanceled && cancellationToken != _requestBodyCancellationSource.Token ?
@@ -1245,7 +1245,7 @@ namespace System.Net.Http
                         if (sendSize == -1)
                         {
                             // Logically this is part of the else block above, but we can't await while holding the lock.
-                            Debug.Assert(_creditWaiter != null);
+                            Debug.Assert(_creditWaiter is not null);
                             sendSize = await _creditWaiter.AsValueTask().ConfigureAwait(false);
                         }
 
@@ -1377,8 +1377,8 @@ namespace System.Net.Http
 
                 public Http2ReadStream(Http2Stream http2Stream)
                 {
-                    Debug.Assert(http2Stream != null);
-                    Debug.Assert(http2Stream._response != null);
+                    Debug.Assert(http2Stream is not null);
+                    Debug.Assert(http2Stream._response is not null);
                     _http2Stream = http2Stream;
                     _responseMessage = _http2Stream._response;
                 }
@@ -1399,7 +1399,7 @@ namespace System.Net.Http
                 protected override void Dispose(bool disposing)
                 {
                     Http2Stream? http2Stream = Interlocked.Exchange(ref _http2Stream, null);
-                    if (http2Stream == null)
+                    if (http2Stream is null)
                     {
                         return;
                     }
@@ -1429,7 +1429,7 @@ namespace System.Net.Http
                 {
                     Http2Stream? http2Stream = _http2Stream;
 
-                    if (http2Stream == null)
+                    if (http2Stream is null)
                     {
                         return ValueTask.FromException<int>(ExceptionDispatchInfo.SetCurrentStackTrace(new ObjectDisposedException(nameof(Http2ReadStream))));
                     }
@@ -1472,14 +1472,14 @@ namespace System.Net.Http
 
                 public Http2WriteStream(Http2Stream http2Stream)
                 {
-                    Debug.Assert(http2Stream != null);
+                    Debug.Assert(http2Stream is not null);
                     _http2Stream = http2Stream;
                 }
 
                 protected override void Dispose(bool disposing)
                 {
                     Http2Stream? http2Stream = Interlocked.Exchange(ref _http2Stream, null);
-                    if (http2Stream == null)
+                    if (http2Stream is null)
                     {
                         return;
                     }
@@ -1500,7 +1500,7 @@ namespace System.Net.Http
 
                     Http2Stream? http2Stream = _http2Stream;
 
-                    if (http2Stream == null)
+                    if (http2Stream is null)
                     {
                         return ValueTask.FromException(new ObjectDisposedException(nameof(Http2WriteStream)));
                     }
@@ -1517,7 +1517,7 @@ namespace System.Net.Http
 
                     Http2Stream? http2Stream = _http2Stream;
 
-                    if (http2Stream == null)
+                    if (http2Stream is null)
                     {
                         return Task.CompletedTask;
                     }

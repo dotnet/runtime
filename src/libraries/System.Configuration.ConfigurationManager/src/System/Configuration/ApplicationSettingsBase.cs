@@ -57,24 +57,24 @@ namespace System.Configuration
         /// </summary>
         protected ApplicationSettingsBase(IComponent owner, string settingsKey) : this(settingsKey)
         {
-            if (owner == null)
+            if (owner is null)
             {
                 throw new ArgumentNullException(nameof(owner));
             }
 
             _owner = owner;
 
-            if (owner.Site != null)
+            if (owner.Site is not null)
             {
                 ISettingsProviderService providerService = owner.Site.GetService(typeof(ISettingsProviderService)) as ISettingsProviderService;
-                if (providerService != null)
+                if (providerService is not null)
                 {
                     // The component's site has a settings provider service. We pass each SettingsProperty to it
                     // to see if it wants to override the current provider.
                     foreach (SettingsProperty property in Properties)
                     {
                         SettingsProvider provider = providerService.GetSettingsProvider(property);
-                        if (provider != null)
+                        if (provider is not null)
                         {
                             property.Provider = provider;
                         }
@@ -93,13 +93,13 @@ namespace System.Configuration
         {
             get
             {
-                if (_context == null)
+                if (_context is null)
                 {
                     if (IsSynchronized)
                     {
                         lock (this)
                         {
-                            if (_context == null)
+                            if (_context is null)
                             {
                                 _context = new SettingsContext();
                                 EnsureInitialized();
@@ -128,13 +128,13 @@ namespace System.Configuration
         {
             get
             {
-                if (_settings == null)
+                if (_settings is null)
                 {
                     if (IsSynchronized)
                     {
                         lock (this)
                         {
-                            if (_settings == null)
+                            if (_settings is null)
                             {
                                 _settings = new SettingsPropertyCollection();
                                 EnsureInitialized();
@@ -173,13 +173,13 @@ namespace System.Configuration
         {
             get
             {
-                if (_providers == null)
+                if (_providers is null)
                 {
                     if (IsSynchronized)
                     {
                         lock (this)
                         {
-                            if (_providers == null)
+                            if (_providers is null)
                             {
                                 _providers = new SettingsProviderCollection();
                                 EnsureInitialized();
@@ -287,17 +287,17 @@ namespace System.Configuration
             SettingsProperty sp = Properties[propertyName];
             SettingsPropertyValue value = null;
 
-            if (sp == null)
+            if (sp is null)
                 throw new SettingsPropertyNotFoundException();
 
             IApplicationSettingsProvider clientProv = sp.Provider as IApplicationSettingsProvider;
 
-            if (clientProv != null)
+            if (clientProv is not null)
             {
                 value = clientProv.GetPreviousVersion(Context, sp);
             }
 
-            if (value != null)
+            if (value is not null)
             {
                 return value.PropertyValue;
             }
@@ -342,7 +342,7 @@ namespace System.Configuration
         /// </summary>
         public void Reload()
         {
-            if (PropertyValues != null)
+            if (PropertyValues is not null)
             {
                 PropertyValues.Clear();
             }
@@ -360,12 +360,12 @@ namespace System.Configuration
         /// </summary>
         public void Reset()
         {
-            if (Properties != null)
+            if (Properties is not null)
             {
                 foreach (SettingsProvider provider in Providers)
                 {
                     IApplicationSettingsProvider clientProv = provider as IApplicationSettingsProvider;
-                    if (clientProv != null)
+                    if (clientProv is not null)
                     {
                         clientProv.Reset(Context);
                     }
@@ -431,12 +431,12 @@ namespace System.Configuration
         /// </summary>
         public virtual void Upgrade()
         {
-            if (Properties != null)
+            if (Properties is not null)
             {
                 foreach (SettingsProvider provider in Providers)
                 {
                     IApplicationSettingsProvider clientProv = provider as IApplicationSettingsProvider;
-                    if (clientProv != null)
+                    if (clientProv is not null)
                     {
                         clientProv.Upgrade(Context, GetPropertiesForProvider(provider));
                     }
@@ -465,7 +465,7 @@ namespace System.Configuration
             for (int i = 0; i < attributes.Length; i++)
             {
                 Attribute attribute = attributes[i] as Attribute;
-                if (attribute == null)
+                if (attribute is null)
                     continue;
 
                 if (attribute is DefaultSettingValueAttribute)
@@ -480,14 +480,14 @@ namespace System.Configuration
                 {
                     string providerTypeName = ((SettingsProviderAttribute)attribute).ProviderTypeName;
                     Type providerType = Type.GetType(providerTypeName);
-                    if (providerType == null)
+                    if (providerType is null)
                     {
                         throw new ConfigurationErrorsException(SR.Format(SR.ProviderTypeLoadFailed, providerTypeName));
                     }
 
                     SettingsProvider settingsProvider = TypeUtil.CreateInstance(providerType) as SettingsProvider;
 
-                    if (settingsProvider == null)
+                    if (settingsProvider is null)
                     {
                         throw new ConfigurationErrorsException(SR.Format(SR.ProviderInstantiationFailed, providerTypeName));
                     }
@@ -498,7 +498,7 @@ namespace System.Configuration
                     // See if we already have a provider of the same name in our collection. If so,
                     // re-use the existing instance, since we cannot have multiple providers of the same name.
                     SettingsProvider existing = _providers[settingsProvider.Name];
-                    if (existing != null)
+                    if (existing is not null)
                     {
                         settingsProvider = existing;
                     }
@@ -558,7 +558,7 @@ namespace System.Configuration
 
                 Type type = GetType();
 
-                if (_context == null)
+                if (_context is null)
                 {
                     _context = new SettingsContext();
                 }
@@ -569,12 +569,12 @@ namespace System.Configuration
                 PropertyInfo[] properties = SettingsFilter(type.GetProperties(BindingFlags.Instance | BindingFlags.Public));
                 _classAttributes = type.GetCustomAttributes(false);
 
-                if (_settings == null)
+                if (_settings is null)
                 {
                     _settings = new SettingsPropertyCollection();
                 }
 
-                if (_providers == null)
+                if (_providers is null)
                 {
                     _providers = new SettingsProviderCollection();
                 }
@@ -582,11 +582,11 @@ namespace System.Configuration
                 for (int i = 0; i < properties.Length; i++)
                 {
                     SettingsProperty sp = CreateSetting(properties[i]);
-                    if (sp != null)
+                    if (sp is not null)
                     {
                         _settings.Add(sp);
 
-                        if (sp.Provider != null && _providers[sp.Provider.Name] == null)
+                        if (sp.Provider is not null && _providers[sp.Provider.Name] is null)
                         {
                             _providers.Add(sp.Provider);
                         }
@@ -607,7 +607,7 @@ namespace System.Configuration
 
             get
             {
-                if (_init == null)
+                if (_init is null)
                 {
                     _init = new SettingsProperty("");
                     _init.DefaultValue = null;
@@ -616,12 +616,12 @@ namespace System.Configuration
 
                     SettingsProvider provider = new LocalFileSettingsProvider();
 
-                    if (_classAttributes != null)
+                    if (_classAttributes is not null)
                     {
                         for (int i = 0; i < _classAttributes.Length; i++)
                         {
                             Attribute attr = _classAttributes[i] as Attribute;
-                            if (attr != null)
+                            if (attr is not null)
                             {
                                 if (attr is ReadOnlyAttribute)
                                 {
@@ -629,7 +629,7 @@ namespace System.Configuration
                                 }
                                 else if (attr is SettingsGroupNameAttribute)
                                 {
-                                    if (_context == null)
+                                    if (_context is null)
                                     {
                                         _context = new SettingsContext();
                                     }
@@ -639,10 +639,10 @@ namespace System.Configuration
                                 {
                                     string providerTypeName = ((SettingsProviderAttribute)attr).ProviderTypeName;
                                     Type providerType = Type.GetType(providerTypeName);
-                                    if (providerType != null)
+                                    if (providerType is not null)
                                     {
                                         SettingsProvider spdr = TypeUtil.CreateInstance(providerType) as SettingsProvider;
-                                        if (spdr != null)
+                                        if (spdr is not null)
                                         {
                                             provider = spdr;
                                         }
@@ -711,7 +711,7 @@ namespace System.Configuration
         /// </summary>
         private object GetPropertyValue(string propertyName)
         {
-            if (PropertyValues[propertyName] == null)
+            if (PropertyValues[propertyName] is null)
             {
 
                 // If this is our first load and we are part of a Clickonce app, call Upgrade.
@@ -729,9 +729,9 @@ namespace System.Configuration
                 // on an infinite recursion when calling Properties[propertyName] as that calls this.
                 _ = base[propertyName];
                 SettingsProperty setting = Properties[propertyName];
-                SettingsProvider provider = setting != null ? setting.Provider : null;
+                SettingsProvider provider = setting is not null ? setting.Provider : null;
 
-                Debug.Assert(provider != null, "Could not determine provider from which settings were loaded");
+                Debug.Assert(provider is not null, "Could not determine provider from which settings were loaded");
 
                 SettingsLoadedEventArgs e = new SettingsLoadedEventArgs(provider);
                 OnSettingsLoaded(this, e);
@@ -802,7 +802,7 @@ namespace System.Configuration
 
             foreach (SettingsProperty sp in Properties)
             {
-                if (Providers[sp.Provider.Name] == null)
+                if (Providers[sp.Provider.Name] is null)
                 {
                     Providers.Add(sp.Provider);
                 }

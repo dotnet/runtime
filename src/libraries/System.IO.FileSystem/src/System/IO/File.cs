@@ -29,7 +29,7 @@ namespace System.IO
 
         public static StreamReader OpenText(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             return new StreamReader(path);
@@ -37,7 +37,7 @@ namespace System.IO
 
         public static StreamWriter CreateText(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             return new StreamWriter(path, append: false);
@@ -45,7 +45,7 @@ namespace System.IO
 
         public static StreamWriter AppendText(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             return new StreamWriter(path, append: true);
@@ -65,9 +65,9 @@ namespace System.IO
         /// </summary>
         public static void Copy(string sourceFileName, string destFileName, bool overwrite)
         {
-            if (sourceFileName == null)
+            if (sourceFileName is null)
                 throw new ArgumentNullException(nameof(sourceFileName), SR.ArgumentNull_FileName);
-            if (destFileName == null)
+            if (destFileName is null)
                 throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
             if (sourceFileName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(sourceFileName));
@@ -104,7 +104,7 @@ namespace System.IO
         // or a file that is memory mapped.
         public static void Delete(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
 
             FileSystem.DeleteFile(Path.GetFullPath(path));
@@ -118,7 +118,7 @@ namespace System.IO
         {
             try
             {
-                if (path == null)
+                if (path is null)
                     return false;
                 if (path.Length == 0)
                     return false;
@@ -128,7 +128,7 @@ namespace System.IO
                 // After normalizing, check whether path ends in directory separator.
                 // Otherwise, FillAttributeInfo removes it and we may return a false positive.
                 // GetFullPath should never return null
-                Debug.Assert(path != null, "File.Exists: GetFullPath returned null");
+                Debug.Assert(path is not null, "File.Exists: GetFullPath returned null");
                 if (path.Length > 0 && PathInternal.IsDirectorySeparator(path[path.Length - 1]))
                 {
                     return false;
@@ -267,7 +267,7 @@ namespace System.IO
 
         public static string ReadAllText(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -277,9 +277,9 @@ namespace System.IO
 
         public static string ReadAllText(string path, Encoding encoding)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -289,8 +289,8 @@ namespace System.IO
 
         private static string InternalReadAllText(string path, Encoding encoding)
         {
-            Debug.Assert(path != null);
-            Debug.Assert(encoding != null);
+            Debug.Assert(path is not null);
+            Debug.Assert(encoding is not null);
             Debug.Assert(path.Length > 0);
 
             using (StreamReader sr = new StreamReader(path, encoding, detectEncodingFromByteOrderMarks: true))
@@ -299,7 +299,7 @@ namespace System.IO
 
         public static void WriteAllText(string path, string? contents)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -312,9 +312,9 @@ namespace System.IO
 
         public static void WriteAllText(string path, string? contents, Encoding encoding)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -379,7 +379,7 @@ namespace System.IO
 
                         byte[] tmp = ArrayPool<byte>.Shared.Rent((int)newLength);
                         buffer.CopyTo(tmp);
-                        if (rentedArray != null)
+                        if (rentedArray is not null)
                         {
                             ArrayPool<byte>.Shared.Return(rentedArray);
                         }
@@ -397,7 +397,7 @@ namespace System.IO
             }
             finally
             {
-                if (rentedArray != null)
+                if (rentedArray is not null)
                 {
                     ArrayPool<byte>.Shared.Return(rentedArray);
                 }
@@ -407,11 +407,11 @@ namespace System.IO
 
         public static void WriteAllBytes(string path, byte[] bytes)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
             InternalWriteAllBytes(path, bytes);
@@ -419,9 +419,9 @@ namespace System.IO
 
         private static void InternalWriteAllBytes(string path, byte[] bytes)
         {
-            Debug.Assert(path != null);
+            Debug.Assert(path is not null);
             Debug.Assert(path.Length != 0);
-            Debug.Assert(bytes != null);
+            Debug.Assert(bytes is not null);
 
             using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read))
             {
@@ -430,7 +430,7 @@ namespace System.IO
         }
         public static string[] ReadAllLines(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -440,9 +440,9 @@ namespace System.IO
 
         public static string[] ReadAllLines(string path, Encoding encoding)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -452,15 +452,15 @@ namespace System.IO
 
         private static string[] InternalReadAllLines(string path, Encoding encoding)
         {
-            Debug.Assert(path != null);
-            Debug.Assert(encoding != null);
+            Debug.Assert(path is not null);
+            Debug.Assert(encoding is not null);
             Debug.Assert(path.Length != 0);
 
             string? line;
             List<string> lines = new List<string>();
 
             using (StreamReader sr = new StreamReader(path, encoding))
-                while ((line = sr.ReadLine()) != null)
+                while ((line = sr.ReadLine()) is not null)
                     lines.Add(line);
 
             return lines.ToArray();
@@ -468,7 +468,7 @@ namespace System.IO
 
         public static IEnumerable<string> ReadLines(string path)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -478,9 +478,9 @@ namespace System.IO
 
         public static IEnumerable<string> ReadLines(string path, Encoding encoding)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -495,9 +495,9 @@ namespace System.IO
 
         public static void WriteAllLines(string path, IEnumerable<string> contents)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (contents == null)
+            if (contents is null)
                 throw new ArgumentNullException(nameof(contents));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -512,11 +512,11 @@ namespace System.IO
 
         public static void WriteAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (contents == null)
+            if (contents is null)
                 throw new ArgumentNullException(nameof(contents));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -526,8 +526,8 @@ namespace System.IO
 
         private static void InternalWriteAllLines(TextWriter writer, IEnumerable<string> contents)
         {
-            Debug.Assert(writer != null);
-            Debug.Assert(contents != null);
+            Debug.Assert(writer is not null);
+            Debug.Assert(contents is not null);
 
             using (writer)
             {
@@ -540,7 +540,7 @@ namespace System.IO
 
         public static void AppendAllText(string path, string? contents)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -553,9 +553,9 @@ namespace System.IO
 
         public static void AppendAllText(string path, string? contents, Encoding encoding)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -568,9 +568,9 @@ namespace System.IO
 
         public static void AppendAllLines(string path, IEnumerable<string> contents)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (contents == null)
+            if (contents is null)
                 throw new ArgumentNullException(nameof(contents));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -580,11 +580,11 @@ namespace System.IO
 
         public static void AppendAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (contents == null)
+            if (contents is null)
                 throw new ArgumentNullException(nameof(contents));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -599,15 +599,15 @@ namespace System.IO
 
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
-            if (sourceFileName == null)
+            if (sourceFileName is null)
                 throw new ArgumentNullException(nameof(sourceFileName));
-            if (destinationFileName == null)
+            if (destinationFileName is null)
                 throw new ArgumentNullException(nameof(destinationFileName));
 
             FileSystem.ReplaceFile(
                 Path.GetFullPath(sourceFileName),
                 Path.GetFullPath(destinationFileName),
-                destinationBackupFileName != null ? Path.GetFullPath(destinationBackupFileName) : null,
+                destinationBackupFileName is not null ? Path.GetFullPath(destinationBackupFileName) : null,
                 ignoreMetadataErrors);
         }
 
@@ -626,9 +626,9 @@ namespace System.IO
 
         public static void Move(string sourceFileName, string destFileName, bool overwrite)
         {
-            if (sourceFileName == null)
+            if (sourceFileName is null)
                 throw new ArgumentNullException(nameof(sourceFileName), SR.ArgumentNull_FileName);
-            if (destFileName == null)
+            if (destFileName is null)
                 throw new ArgumentNullException(nameof(destFileName), SR.ArgumentNull_FileName);
             if (sourceFileName.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyFileName, nameof(sourceFileName));
@@ -686,9 +686,9 @@ namespace System.IO
 
         public static Task<string> ReadAllTextAsync(string path, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -701,7 +701,7 @@ namespace System.IO
         private static async Task<string> InternalReadAllTextAsync(string path, Encoding encoding, CancellationToken cancellationToken)
         {
             Debug.Assert(!string.IsNullOrEmpty(path));
-            Debug.Assert(encoding != null);
+            Debug.Assert(encoding is not null);
 
             char[]? buffer = null;
             StreamReader sr = AsyncStreamReader(path, encoding);
@@ -728,7 +728,7 @@ namespace System.IO
             finally
             {
                 sr.Dispose();
-                if (buffer != null)
+                if (buffer is not null)
                 {
                     ArrayPool<char>.Shared.Return(buffer);
                 }
@@ -740,9 +740,9 @@ namespace System.IO
 
         public static Task WriteAllTextAsync(string path, string? contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -868,11 +868,11 @@ namespace System.IO
 
         public static Task WriteAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path), SR.ArgumentNull_Path);
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
-            if (bytes == null)
+            if (bytes is null)
                 throw new ArgumentNullException(nameof(bytes));
 
             return cancellationToken.IsCancellationRequested
@@ -883,7 +883,7 @@ namespace System.IO
         private static async Task InternalWriteAllBytesAsync(string path, byte[] bytes, CancellationToken cancellationToken)
         {
             Debug.Assert(!string.IsNullOrEmpty(path));
-            Debug.Assert(bytes != null);
+            Debug.Assert(bytes is not null);
 
             using (FileStream fs = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, DefaultBufferSize, FileOptions.Asynchronous | FileOptions.SequentialScan))
             {
@@ -901,9 +901,9 @@ namespace System.IO
 
         public static Task<string[]> ReadAllLinesAsync(string path, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -916,14 +916,14 @@ namespace System.IO
         private static async Task<string[]> InternalReadAllLinesAsync(string path, Encoding encoding, CancellationToken cancellationToken)
         {
             Debug.Assert(!string.IsNullOrEmpty(path));
-            Debug.Assert(encoding != null);
+            Debug.Assert(encoding is not null);
 
             using (StreamReader sr = AsyncStreamReader(path, encoding))
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 string? line;
                 List<string> lines = new List<string>();
-                while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) != null)
+                while ((line = await sr.ReadLineAsync().ConfigureAwait(false)) is not null)
                 {
                     lines.Add(line);
                     cancellationToken.ThrowIfCancellationRequested();
@@ -938,11 +938,11 @@ namespace System.IO
 
         public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (contents == null)
+            if (contents is null)
                 throw new ArgumentNullException(nameof(contents));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -954,8 +954,8 @@ namespace System.IO
 
         private static async Task InternalWriteAllLinesAsync(TextWriter writer, IEnumerable<string> contents, CancellationToken cancellationToken)
         {
-            Debug.Assert(writer != null);
-            Debug.Assert(contents != null);
+            Debug.Assert(writer is not null);
+            Debug.Assert(contents is not null);
 
             using (writer)
             {
@@ -996,7 +996,7 @@ namespace System.IO
             finally
             {
                 sw.Dispose();
-                if (buffer != null)
+                if (buffer is not null)
                 {
                     ArrayPool<char>.Shared.Return(buffer);
                 }
@@ -1008,9 +1008,9 @@ namespace System.IO
 
         public static Task AppendAllTextAsync(string path, string? contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));
@@ -1035,11 +1035,11 @@ namespace System.IO
 
         public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
-            if (path == null)
+            if (path is null)
                 throw new ArgumentNullException(nameof(path));
-            if (contents == null)
+            if (contents is null)
                 throw new ArgumentNullException(nameof(contents));
-            if (encoding == null)
+            if (encoding is null)
                 throw new ArgumentNullException(nameof(encoding));
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_EmptyPath, nameof(path));

@@ -65,7 +65,7 @@ namespace System.Configuration
         }
 
         private bool IsRuntime => _flags[FlagAttached] &&
-            (_configRecord == null);
+            (_configRecord is null);
 
         internal bool Attached => _flags[FlagAttached];
 
@@ -92,7 +92,7 @@ namespace System.Configuration
                 // allow AllowDefinition to be different from current type,
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
-                if ((factoryRecord != null) && (factoryRecord.AllowDefinition != value))
+                if ((factoryRecord is not null) && (factoryRecord.AllowDefinition != value))
                     throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, ConfigKey));
 
                 _allowDefinition = value;
@@ -113,7 +113,7 @@ namespace System.Configuration
                 // allow AllowDefinition to be different from current type,
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
-                if ((factoryRecord != null) && (factoryRecord.AllowExeDefinition != value))
+                if ((factoryRecord is not null) && (factoryRecord.AllowExeDefinition != value))
                     throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, ConfigKey));
 
                 _allowExeDefinition = value;
@@ -134,7 +134,7 @@ namespace System.Configuration
                 // allow OverrideModeDefault to be different from current value,
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
-                if ((factoryRecord != null) && (factoryRecord.OverrideModeDefault.OverrideMode != value))
+                if ((factoryRecord is not null) && (factoryRecord.OverrideModeDefault.OverrideMode != value))
                     throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, ConfigKey));
 
                 // Threat "Inherit" as "Allow" as "Inherit" does not make sense as a default
@@ -160,7 +160,7 @@ namespace System.Configuration
                 // allow AllowLocation to be different from current type,
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
-                if ((factoryRecord != null) && (factoryRecord.AllowLocation != value))
+                if ((factoryRecord is not null) && (factoryRecord.AllowLocation != value))
                     throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, ConfigKey));
 
                 _flags[FlagAllowLocation] = value;
@@ -290,18 +290,18 @@ namespace System.Configuration
         // on the Definition that is allowed, and what context we are
         // writing the file
         private bool IsDefinitionAllowed
-            => (_configRecord == null) || _configRecord.IsDefinitionAllowed(_allowDefinition, _allowExeDefinition);
+            => (_configRecord is null) || _configRecord.IsDefinitionAllowed(_allowDefinition, _allowExeDefinition);
 
         public bool IsLocked => _flags[FlagLocationLocked] || !IsDefinitionAllowed ||
             _configurationSection.ElementInformation.IsLocked;
 
-        public bool IsProtected => ProtectionProvider != null;
+        public bool IsProtected => ProtectionProvider is not null;
 
         public ProtectedConfigurationProvider ProtectionProvider
         {
             get
             {
-                if (!_flags[FlagProtectionProviderDetermined] && (_configRecord != null))
+                if (!_flags[FlagProtectionProviderDetermined] && (_configRecord is not null))
                 {
                     _protectionProvider = _configRecord.GetProtectionProviderFromName(ProtectionProviderName, false);
                     _flags[FlagProtectionProviderDetermined] = true;
@@ -324,7 +324,7 @@ namespace System.Configuration
                 // allow RestartOnExternalChanges to be different from current type,
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
-                if ((factoryRecord != null) && (factoryRecord.RestartOnExternalChanges != value))
+                if ((factoryRecord is not null) && (factoryRecord.RestartOnExternalChanges != value))
                     throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, ConfigKey));
 
                 _flags[FlagRestartOnExternalChanges] = value;
@@ -345,7 +345,7 @@ namespace System.Configuration
                 // allow RequirePermission to be different from current type,
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
-                if ((factoryRecord != null) && (factoryRecord.RequirePermission != value))
+                if ((factoryRecord is not null) && (factoryRecord.RequirePermission != value))
                     throw new ConfigurationErrorsException(SR.Format(SR.Config_tag_name_already_defined, ConfigKey));
 
                 _flags[FlagRequirePermission] = value;
@@ -369,10 +369,10 @@ namespace System.Configuration
                 // allow type to be different from current type,
                 // so long as it doesn't conflict with a type already defined
                 FactoryRecord factoryRecord = FindParentFactoryRecord(false);
-                if (factoryRecord != null)
+                if (factoryRecord is not null)
                 {
                     IInternalConfigHost host = null;
-                    if (_configRecord != null) host = _configRecord.Host;
+                    if (_configRecord is not null) host = _configRecord.Host;
 
                     if (!factoryRecord.IsEquivalentType(host, value))
                     {
@@ -443,7 +443,7 @@ namespace System.Configuration
             else
             {
                 _flags[FlagIsUndeclared] = false;
-                _flags[FlagDeclared] = configRecord.GetFactoryRecord(factoryRecord.ConfigKey, false) != null;
+                _flags[FlagDeclared] = configRecord.GetFactoryRecord(factoryRecord.ConfigKey, false) is not null;
                 _flags[FlagDeclarationRequired] = configRecord.IsRootDeclaration(factoryRecord.ConfigKey, false);
             }
 
@@ -491,7 +491,7 @@ namespace System.Configuration
 
         private void VerifyIsAttachedToConfigRecord()
         {
-            if (_configRecord == null)
+            if (_configRecord is null)
                 throw new InvalidOperationException(SR.Config_cannot_edit_configurationsection_when_not_attached);
         }
 
@@ -515,7 +515,7 @@ namespace System.Configuration
                 throw new InvalidOperationException(SR.Config_cannot_edit_configurationsection_parentsection);
 
             if (!_flags[FlagAllowLocation] &&
-                (_configRecord != null) &&
+                (_configRecord is not null) &&
                 _configRecord.IsLocationConfig)
                 throw new InvalidOperationException(SR.Config_cannot_edit_configurationsection_when_location_locked);
         }
@@ -530,14 +530,14 @@ namespace System.Configuration
         // in machine.config, or in any place for the web config system
         private void VerifySupportsLocation()
         {
-            if ((_configRecord != null) &&
+            if ((_configRecord is not null) &&
                 !_configRecord.RecordSupportsLocation)
                 throw new InvalidOperationException(SR.Config_cannot_edit_locationattriubtes);
         }
 
         internal void VerifyIsEditableFactory()
         {
-            if ((_configRecord != null) && _configRecord.IsLocationConfig)
+            if ((_configRecord is not null) && _configRecord.IsLocationConfig)
                 throw new InvalidOperationException(SR.Config_cannot_edit_configurationsection_in_location_config);
 
             // Can't edit factory if the section is built-in
@@ -553,7 +553,7 @@ namespace System.Configuration
         {
             FactoryRecord factoryRecord = null;
 
-            if ((_configRecord != null) && !_configRecord.Parent.IsRootConfig)
+            if ((_configRecord is not null) && !_configRecord.Parent.IsRootConfig)
                 factoryRecord = _configRecord.Parent.FindFactoryRecord(ConfigKey, permitErrors);
 
             return factoryRecord;
@@ -608,7 +608,7 @@ namespace System.Configuration
             if (!AllowLocation || (ConfigKey == BaseConfigurationRecord.ReservedSectionProtectedConfiguration))
                 throw new InvalidOperationException(SR.Config_not_allowed_to_encrypt_this_section);
 
-            if (_configRecord != null)
+            if (_configRecord is not null)
             {
                 if (string.IsNullOrEmpty(protectionProvider)) protectionProvider = _configRecord.DefaultProviderName;
 
@@ -643,10 +643,10 @@ namespace System.Configuration
             // if a users create a configsection with : sectionType sec  = new sectionType();
             // the config record will be null.  Return null for the parent in this case.
             ConfigurationSection ancestor = null;
-            if (_configRecord != null)
+            if (_configRecord is not null)
             {
                 ancestor = _configRecord.FindAndCloneImmediateParentSection(_configurationSection);
-                if (ancestor != null)
+                if (ancestor is not null)
                 {
                     ancestor.SectionInformation._flags[FlagIsParentSection] = true;
                     ancestor.SetReadOnly();
@@ -668,7 +668,7 @@ namespace System.Configuration
         {
             VerifyIsEditable();
 
-            if (_configRecord != null) _configRecord.SetRawXml(_configurationSection, rawXml);
+            if (_configRecord is not null) _configRecord.SetRawXml(_configurationSection, rawXml);
             else RawXml = string.IsNullOrEmpty(rawXml) ? null : rawXml;
         }
 

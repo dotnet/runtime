@@ -14,7 +14,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields)]
             this Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -25,7 +25,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
             this Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -36,7 +36,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties)]
             this Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -47,7 +47,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents)]
             this Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -58,7 +58,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicFields)]
             this Type type, string name)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -69,7 +69,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods)]
             this Type type, string name, Type[] parameters)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -80,7 +80,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)]
             this Type type, string name)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -91,7 +91,7 @@ namespace System.Reflection
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicEvents)]
             this Type type, string name)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -100,7 +100,7 @@ namespace System.Reflection
 
         public static MethodInfo? GetRuntimeBaseDefinition(this MethodInfo method)
         {
-            if (method == null)
+            if (method is null)
             {
                 throw new ArgumentNullException(nameof(method));
             }
@@ -109,7 +109,7 @@ namespace System.Reflection
 
         public static InterfaceMapping GetRuntimeInterfaceMap(this TypeInfo typeInfo, Type interfaceType)
         {
-            if (typeInfo == null)
+            if (typeInfo is null)
             {
                 throw new ArgumentNullException(nameof(typeInfo));
             }
@@ -118,7 +118,7 @@ namespace System.Reflection
 
         public static MethodInfo GetMethodInfo(this Delegate del)
         {
-            if (del == null)
+            if (del is null)
             {
                 throw new ArgumentNullException(nameof(del));
             }

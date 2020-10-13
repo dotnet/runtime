@@ -29,7 +29,7 @@ namespace System.ComponentModel
         /// </summary>
         public override PropertyDescriptorCollection GetProperties(ITypeDescriptorContext context, object value, Attribute[] attributes)
         {
-            if (value == null)
+            if (value is null)
             {
                 return null;
             }

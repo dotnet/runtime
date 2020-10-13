@@ -82,7 +82,7 @@ namespace System.Net
         public override bool Equals(object? o)
         {
             ListenerPrefix? other = o as ListenerPrefix;
-            if (other == null)
+            if (other is null)
                 return false;
 
             return (_original == other._original);

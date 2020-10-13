@@ -29,11 +29,11 @@ namespace System.Xml
             var handler = new HttpClientHandler();
             using (var client = new HttpClient(handler))
             {
-                if (credentials != null)
+                if (credentials is not null)
                 {
                     handler.Credentials = credentials;
                 }
-                if (proxy != null)
+                if (proxy is not null)
                 {
                     handler.Proxy = proxy;
                 }

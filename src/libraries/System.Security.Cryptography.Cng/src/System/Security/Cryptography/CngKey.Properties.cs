@@ -17,11 +17,11 @@ namespace System.Security.Cryptography
         /// </summary>
         public CngProperty GetProperty(string name, CngPropertyOptions options)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             byte[]? value = _keyHandle.GetProperty(name, options);
-            if (value == null)
+            if (value is null)
                 throw ErrorCode.NTE_NOT_FOUND.ToCryptographicException();
 
             if (value.Length == 0)
@@ -35,7 +35,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public bool HasProperty(string name, CngPropertyOptions options)
         {
-            if (name == null)
+            if (name is null)
                 throw new ArgumentNullException(nameof(name));
 
             unsafe
@@ -60,7 +60,7 @@ namespace System.Security.Cryptography
                 byte[]? propertyValue = property.GetValueWithoutCopying();
 
                 // .NET Framework compat. It would have nicer to throw an ArgumentNull exception or something...
-                if (propertyValue == null)
+                if (propertyValue is null)
                     throw ErrorCode.NTE_INVALID_PARAMETER.ToCryptographicException();
 
                 fixed (byte* pinnedPropertyValue = propertyValue.MapZeroLengthArrayToNonNullPointer())

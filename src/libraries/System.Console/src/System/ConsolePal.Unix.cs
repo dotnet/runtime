@@ -268,7 +268,7 @@ namespace System
         {
             Debug.Assert(left >= 0);
 
-            bool setPosition = version == null || version == s_cursorVersion;
+            bool setPosition = version is null || version == s_cursorVersion;
 
             if (setPosition)
             {
@@ -725,7 +725,7 @@ namespace System
         private static Encoding GetConsoleEncoding()
         {
             Encoding? enc = EncodingHelper.GetEncodingFromCharset();
-            return enc != null ?
+            return enc is not null ?
                 enc.RemovePreamble() :
                 new UTF8Encoding(encoderShouldEmitUTF8Identifier: false);
         }
@@ -789,7 +789,7 @@ namespace System
             int fgbgIndex = foreground ? 0 : 1;
             int ccValue = (int)color;
             string evaluatedString = s_fgbgAndColorStrings[fgbgIndex, ccValue]; // benign race
-            if (evaluatedString != null)
+            if (evaluatedString is not null)
             {
                 WriteStdoutAnsiString(evaluatedString);
                 return;
@@ -947,7 +947,7 @@ namespace System
                     if (!Console.IsOutputRedirected)
                     {
                         string? keypadXmit = TerminalFormatStrings.Instance.KeypadXmit;
-                        if (keypadXmit != null)
+                        if (keypadXmit is not null)
                         {
                             Interop.Sys.SetKeypadXmit(keypadXmit);
                         }
@@ -1034,7 +1034,7 @@ namespace System
 
             public TerminalFormatStrings(TermInfo.Database? db)
             {
-                if (db == null)
+                if (db is null)
                     return;
 
                 KeypadXmit = db.GetString(TermInfo.WellKnownStrings.KeypadXmit);
@@ -1147,13 +1147,13 @@ namespace System
                 // Try to get the format string from tsl/fsl and use it if they're available
                 string? tsl = db.GetString(TermInfo.WellKnownStrings.ToStatusLine);
                 string? fsl = db.GetString(TermInfo.WellKnownStrings.FromStatusLine);
-                if (tsl != null && fsl != null)
+                if (tsl is not null && fsl is not null)
                 {
                     return tsl + "%p1%s" + fsl;
                 }
 
                 string term = db.Term;
-                if (term == null)
+                if (term is null)
                 {
                     return string.Empty;
                 }
@@ -1410,7 +1410,7 @@ namespace System
             internal UnixConsoleStream(SafeFileHandle handle, FileAccess access, bool useReadLine = false)
                 : base(access)
             {
-                Debug.Assert(handle != null, "Expected non-null console handle");
+                Debug.Assert(handle is not null, "Expected non-null console handle");
                 Debug.Assert(!handle.IsInvalid, "Expected valid console handle");
                 _handle = handle;
                 _useReadLine = useReadLine;
@@ -1489,7 +1489,7 @@ namespace System
 
             private static void HandleBreakEvent(object? state)
             {
-                Debug.Assert(state != null);
+                Debug.Assert(state is not null);
                 var ctrlCode = (Interop.Sys.CtrlCode)state;
                 ConsoleSpecialKey controlKey = (ctrlCode == Interop.Sys.CtrlCode.Break ? ConsoleSpecialKey.ControlBreak : ConsoleSpecialKey.ControlC);
                 bool cancel = Console.HandleBreakEvent(controlKey);

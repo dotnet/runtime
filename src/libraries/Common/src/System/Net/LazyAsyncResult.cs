@@ -24,7 +24,7 @@ namespace System.Net
             get
             {
                 ThreadContext? threadContext = t_threadContext;
-                if (threadContext == null)
+                if (threadContext is null)
                 {
                     threadContext = new ThreadContext();
                     t_threadContext = threadContext;
@@ -128,7 +128,7 @@ namespace System.Net
                 // IsCompleted has become true.  Therefore it's possible for this property
                 // to give different (set) events to different callers when IsCompleted is true.
                 ManualResetEvent? asyncEvent = (ManualResetEvent?)_event;
-                while (asyncEvent == null)
+                while (asyncEvent is null)
                 {
                     LazilyCreateEvent(out asyncEvent);
                 }
@@ -144,7 +144,7 @@ namespace System.Net
             waitHandle = new ManualResetEvent(false);
             try
             {
-                if (Interlocked.CompareExchange(ref _event, waitHandle, null) == null)
+                if (Interlocked.CompareExchange(ref _event, waitHandle, null) is null)
                 {
                     if (InternalPeekCompleted)
                     {
@@ -322,7 +322,7 @@ namespace System.Net
                 }
 
                 ManualResetEvent? asyncEvent = (ManualResetEvent?)_event;
-                if (asyncEvent != null)
+                if (asyncEvent is not null)
                 {
                     try
                     {
@@ -362,7 +362,7 @@ namespace System.Net
             try
             {
                 ++threadContext._nestedIOCount;
-                if (_asyncCallback != null)
+                if (_asyncCallback is not null)
                 {
                     if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, "Invoking callback");
 
@@ -439,13 +439,13 @@ namespace System.Net
             {
                 // Not done yet, so wait:
                 waitHandle = (ManualResetEvent?)_event;
-                if (waitHandle == null)
+                if (waitHandle is null)
                 {
                     createdByMe = LazilyCreateEvent(out waitHandle);
                 }
             }
 
-            if (waitHandle != null)
+            if (waitHandle is not null)
             {
                 try
                 {

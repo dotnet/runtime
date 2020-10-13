@@ -87,7 +87,7 @@ namespace System.Runtime.CompilerServices
             if (!delegateType.IsSubclassOf(typeof(MulticastDelegate))) throw System.Linq.Expressions.Error.TypeMustBeDerivedFromSystemDelegate();
 
             CacheDict<Type, Func<CallSiteBinder, CallSite>>? ctors = s_siteCtors;
-            if (ctors == null)
+            if (ctors is null)
             {
                 // It's okay to just set this, worst case we're just throwing away some data
                 s_siteCtors = ctors = new CacheDict<Type, Func<CallSiteBinder, CallSite>>(100);
@@ -128,12 +128,12 @@ namespace System.Runtime.CompilerServices
                 // if this site is set up for match making, then use NoMatch as an Update
                 if (_match)
                 {
-                    Debug.Assert(s_cachedNoMatch != null, "all normal sites should have Update cached once there is an instance.");
+                    Debug.Assert(s_cachedNoMatch is not null, "all normal sites should have Update cached once there is an instance.");
                     return s_cachedNoMatch;
                 }
                 else
                 {
-                    Debug.Assert(s_cachedUpdate != null, "all normal sites should have Update cached once there is an instance.");
+                    Debug.Assert(s_cachedUpdate is not null, "all normal sites should have Update cached once there is an instance.");
                     return s_cachedUpdate;
                 }
             }
@@ -180,7 +180,7 @@ namespace System.Runtime.CompilerServices
         {
             // check if we have a cached matchmaker and attempt to atomically grab it.
             var matchmaker = _cachedMatchmaker;
-            if (matchmaker != null)
+            if (matchmaker is not null)
             {
                 matchmaker = Interlocked.Exchange(ref _cachedMatchmaker, null);
                 Debug.Assert(matchmaker?._match != false, "cached site should be set up for matchmaking");
@@ -194,7 +194,7 @@ namespace System.Runtime.CompilerServices
             // If "Rules" has not been created, this is the first (and likely the only) Update of the site.
             // 90% sites stay monomorphic and will never need a matchmaker again.
             // Otherwise store the matchmaker for the future use.
-            if (Rules != null)
+            if (Rules is not null)
             {
                 _cachedMatchmaker = matchMaker;
             }
@@ -223,7 +223,7 @@ namespace System.Runtime.CompilerServices
 
         private T GetUpdateDelegate(ref T? addr)
         {
-            if (addr == null)
+            if (addr is null)
             {
                 // reduce creation cost by not using Interlocked.CompareExchange.  Calling I.CE causes
                 // us to spend 25% of our creation time in JIT_GenericHandle.  Instead we'll rarely
@@ -239,7 +239,7 @@ namespace System.Runtime.CompilerServices
         internal void AddRule(T newRule)
         {
             T[]? rules = Rules;
-            if (rules == null)
+            if (rules is null)
             {
                 Rules = new[] { newRule };
                 return;
@@ -316,7 +316,7 @@ namespace System.Runtime.CompilerServices
                         noMatchMethod = typeof(UpdateDelegates).GetMethod("NoMatch" + (args.Length - 1), BindingFlags.NonPublic | BindingFlags.Static);
                     }
                 }
-                if (method != null)
+                if (method is not null)
                 {
                     s_cachedNoMatch = (T)(object)noMatchMethod!.MakeGenericMethod(args).CreateDelegate(target);
                     return (T)(object)method.MakeGenericMethod(args).CreateDelegate(target);

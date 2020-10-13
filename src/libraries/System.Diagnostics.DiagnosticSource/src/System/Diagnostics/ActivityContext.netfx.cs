@@ -21,7 +21,7 @@ namespace System.Diagnostics
             hash = ((hash << 5) + hash) + TraceId.GetHashCode();
             hash = ((hash << 5) + hash) + SpanId.GetHashCode();
             hash = ((hash << 5) + hash) + (int) TraceFlags;
-            hash = ((hash << 5) + hash) + (TraceState == null ? 0 : TraceState.GetHashCode());
+            hash = ((hash << 5) + hash) + (TraceState is null ? 0 : TraceState.GetHashCode());
 
             return hash;
         }

@@ -104,7 +104,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                if (privilege != null)
+                if (privilege is not null)
                 {
                     try
                     {
@@ -116,11 +116,11 @@ namespace System.Security.AccessControl
                     }
                 }
 
-                if (name != null)
+                if (name is not null)
                 {
                     errorCode = (int)Interop.Advapi32.GetSecurityInfoByName(name, (uint)resourceType, (uint)SecurityInfos, out SidOwner, out SidGroup, out Dacl, out Sacl, out ByteArray);
                 }
-                else if (handle != null)
+                else if (handle is not null)
                 {
                     if (handle.IsInvalid)
                     {
@@ -168,7 +168,7 @@ namespace System.Security.AccessControl
             catch
             {
                 // protection against exception filter-based luring attacks
-                if (privilege != null)
+                if (privilege is not null)
                 {
                     privilege.Revert();
                 }
@@ -176,7 +176,7 @@ namespace System.Security.AccessControl
             }
             finally
             {
-                if (privilege != null)
+                if (privilege is not null)
                 {
                     privilege.Revert();
                 }
@@ -227,28 +227,28 @@ namespace System.Security.AccessControl
             byte[]? OwnerBinary = null, GroupBinary = null, SaclBinary = null, DaclBinary = null;
             Privilege? securityPrivilege = null;
 
-            if (owner != null)
+            if (owner is not null)
             {
                 Length = owner.BinaryLength;
                 OwnerBinary = new byte[Length];
                 owner.GetBinaryForm(OwnerBinary, 0);
             }
 
-            if (group != null)
+            if (group is not null)
             {
                 Length = group.BinaryLength;
                 GroupBinary = new byte[Length];
                 group.GetBinaryForm(GroupBinary, 0);
             }
 
-            if (dacl != null)
+            if (dacl is not null)
             {
                 Length = dacl.BinaryLength;
                 DaclBinary = new byte[Length];
                 dacl.GetBinaryForm(DaclBinary, 0);
             }
 
-            if (sacl != null)
+            if (sacl is not null)
             {
                 Length = sacl.BinaryLength;
                 SaclBinary = new byte[Length];
@@ -267,7 +267,7 @@ namespace System.Security.AccessControl
 
             try
             {
-                if (securityPrivilege != null)
+                if (securityPrivilege is not null)
                 {
                     try
                     {
@@ -279,11 +279,11 @@ namespace System.Security.AccessControl
                     }
                 }
 
-                if (name != null)
+                if (name is not null)
                 {
                     errorCode = (int)Interop.Advapi32.SetSecurityInfoByName(name, (uint)type, unchecked((uint)securityInformation), OwnerBinary, GroupBinary, DaclBinary, SaclBinary);
                 }
-                else if (handle != null)
+                else if (handle is not null)
                 {
                     if (handle.IsInvalid)
                     {
@@ -321,7 +321,7 @@ namespace System.Security.AccessControl
             catch
             {
                 // protection against exception filter-based luring attacks
-                if (securityPrivilege != null)
+                if (securityPrivilege is not null)
                 {
                     securityPrivilege.Revert();
                 }
@@ -329,7 +329,7 @@ namespace System.Security.AccessControl
             }
             finally
             {
-                if (securityPrivilege != null)
+                if (securityPrivilege is not null)
                 {
                     securityPrivilege.Revert();
                 }

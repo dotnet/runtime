@@ -64,7 +64,7 @@ namespace System.Xml
             _nameTable = _document.NameTable;
             _nsManager = new XmlNamespaceManager(_nameTable);
 
-            Debug.Assert(schemas != null && schemas.Count > 0);
+            Debug.Assert(schemas is not null && schemas.Count > 0);
 
             _nodeValueGetter = new XmlValueGetter(GetNodeValue);
             _psviAugmentation = true;
@@ -86,7 +86,7 @@ namespace System.Xml
         {
             XmlSchemaObject? partialValidationType = null;
             XmlSchemaValidationFlags validationFlags = XmlSchemaValidationFlags.AllowXmlAttributes;
-            Debug.Assert(nodeToValidate.SchemaInfo != null);
+            Debug.Assert(nodeToValidate.SchemaInfo is not null);
 
             _startNode = nodeToValidate;
             switch (nodeToValidate.NodeType)
@@ -101,7 +101,7 @@ namespace System.Xml
                 case XmlNodeType.Element: //Validate children of this element
                     IXmlSchemaInfo schemaInfo = nodeToValidate.SchemaInfo;
                     XmlSchemaElement? schemaElement = schemaInfo.SchemaElement;
-                    if (schemaElement != null)
+                    if (schemaElement is not null)
                     {
                         if (!schemaElement.RefName.IsEmpty)
                         { //If it is element ref,
@@ -118,7 +118,7 @@ namespace System.Xml
                     { //Can be an element that matched xs:any and had xsi:type
                         partialValidationType = schemaInfo.SchemaType;
 
-                        if (partialValidationType == null)
+                        if (partialValidationType is null)
                         { //Validated against xs:any with pc= lax or skip or undeclared / not validated element
                             if (nodeToValidate.ParentNode!.NodeType == XmlNodeType.Document)
                             {
@@ -128,7 +128,7 @@ namespace System.Xml
                             else
                             {
                                 partialValidationType = FindSchemaInfo((nodeToValidate as XmlElement)!);
-                                if (partialValidationType == null)
+                                if (partialValidationType is null)
                                 {
                                     throw new XmlSchemaValidationException(SR.XmlDocument_NoNodeSchemaInfo, null, nodeToValidate);
                                 }
@@ -140,10 +140,10 @@ namespace System.Xml
                 case XmlNodeType.Attribute:
                     if (nodeToValidate.XPNodeType == XPathNodeType.Namespace) goto default;
                     partialValidationType = nodeToValidate.SchemaInfo.SchemaAttribute;
-                    if (partialValidationType == null)
+                    if (partialValidationType is null)
                     { //Validated against xs:anyAttribute with pc = lax or skip / undeclared attribute
                         partialValidationType = FindSchemaInfo((nodeToValidate as XmlAttribute)!);
-                        if (partialValidationType == null)
+                        if (partialValidationType is null)
                         {
                             throw new XmlSchemaValidationException(SR.XmlDocument_NoNodeSchemaInfo, null, nodeToValidate);
                         }
@@ -157,7 +157,7 @@ namespace System.Xml
             CreateValidator(partialValidationType, validationFlags);
             if (_psviAugmentation)
             {
-                if (_schemaInfo == null)
+                if (_schemaInfo is null)
                 { //Might have created it during FindSchemaInfo
                     _schemaInfo = new XmlSchemaInfo();
                 }
@@ -174,7 +174,7 @@ namespace System.Xml
             if (scope != XmlNamespaceScope.Local)
             {
                 XmlNode? node = _startNode;
-                while (node != null)
+                while (node is not null)
                 {
                     switch (node.NodeType)
                     {
@@ -224,7 +224,7 @@ namespace System.Xml
         public string? LookupNamespace(string prefix)
         {
             string? namespaceName = _nsManager.LookupNamespace(prefix);
-            if (namespaceName == null)
+            if (namespaceName is null)
             {
                 namespaceName = _startNode!.GetNamespaceOfPrefixStrict(prefix);
             }
@@ -235,7 +235,7 @@ namespace System.Xml
         public string? LookupPrefix(string namespaceName)
         {
             string? prefix = _nsManager.LookupPrefix(namespaceName);
-            if (prefix == null)
+            if (prefix is null)
             {
                 prefix = _startNode!.GetPrefixOfNamespaceStrict(namespaceName);
             }
@@ -264,7 +264,7 @@ namespace System.Xml
             _validator.ValidationEventHandler += _internalEventHandler;
             _validator.ValidationEventSender = this;
 
-            if (partialValidationType != null)
+            if (partialValidationType is not null)
             {
                 _validator.Initialize(partialValidationType);
             }
@@ -281,7 +281,7 @@ namespace System.Xml
             {
                 case XmlNodeType.Document:
                     XmlElement? docElem = ((XmlDocument)node).DocumentElement;
-                    if (docElem == null)
+                    if (docElem is null)
                     {
                         throw new InvalidOperationException(SR.Format(SR.Xml_InvalidXmlDocument, SR.Xdom_NoRootEle));
                     }
@@ -291,7 +291,7 @@ namespace System.Xml
 
                 case XmlNodeType.DocumentFragment:
                 case XmlNodeType.EntityReference:
-                    for (XmlNode? child = node.FirstChild; child != null; child = child.NextSibling)
+                    for (XmlNode? child = node.FirstChild; child is not null; child = child.NextSibling)
                     {
                         ValidateNode(child);
                     }
@@ -337,7 +337,7 @@ namespace System.Xml
         {
             _nsManager.PushScope();
             XmlElement? elementNode = _currentNode as XmlElement;
-            Debug.Assert(elementNode != null);
+            Debug.Assert(elementNode is not null);
 
             XmlAttributeCollection attributes = elementNode.Attributes;
             XmlAttribute? attr = null;
@@ -351,8 +351,8 @@ namespace System.Xml
                 attr = attributes[i];
                 string objectNs = attr.NamespaceURI;
                 string objectName = attr.LocalName;
-                Debug.Assert(_nameTable.Get(attr.NamespaceURI) != null);
-                Debug.Assert(_nameTable.Get(attr.LocalName) != null);
+                Debug.Assert(_nameTable.Get(attr.NamespaceURI) is not null);
+                Debug.Assert(_nameTable.Get(attr.LocalName) is not null);
 
                 if (Ref.Equal(objectNs, _nsXsi))
                 {
@@ -376,7 +376,7 @@ namespace System.Xml
             _validator!.ValidateEndOfAttributes(_schemaInfo);
 
             //If element has children, drill down
-            for (XmlNode? child = elementNode.FirstChild; child != null; child = child.NextSibling)
+            for (XmlNode? child = elementNode.FirstChild; child is not null; child = child.NextSibling)
             {
                 ValidateNode(child);
             }
@@ -421,7 +421,7 @@ namespace System.Xml
             if (_psviAugmentation)
             {
                 //Add default attributes to the attributes collection
-                if (_defaultAttributes == null)
+                if (_defaultAttributes is null)
                 {
                     _defaultAttributes = new ArrayList();
                 }
@@ -436,14 +436,14 @@ namespace System.Xml
                 {
                     XmlSchemaAttribute schemaAttribute = (_defaultAttributes[i] as XmlSchemaAttribute)!;
                     attrQName = schemaAttribute.QualifiedName;
-                    Debug.Assert(schemaAttribute != null);
+                    Debug.Assert(schemaAttribute is not null);
                     attr = _document.CreateDefaultAttribute(GetDefaultPrefix(attrQName.Namespace), attrQName.Name, attrQName.Namespace);
                     SetDefaultAttributeSchemaInfo(schemaAttribute);
                     attr.XmlName = _document.AddAttrXmlName(attr.Prefix, attr.LocalName, attr.NamespaceURI, _attributeSchemaInfo);
                     attr.AppendChild(_document.CreateTextNode(schemaAttribute.AttDef!.DefaultValueRaw));
                     attributes.Append(attr);
                     XmlUnspecifiedAttribute? defAttr = attr as XmlUnspecifiedAttribute;
-                    if (defAttr != null)
+                    if (defAttr is not null)
                     {
                         defAttr.SetSpecified(false);
                     }
@@ -453,7 +453,7 @@ namespace System.Xml
 
         private void SetDefaultAttributeSchemaInfo(XmlSchemaAttribute schemaAttribute)
         {
-            Debug.Assert(_attributeSchemaInfo != null);
+            Debug.Assert(_attributeSchemaInfo is not null);
             _attributeSchemaInfo.Clear();
             _attributeSchemaInfo.IsDefault = true;
             _attributeSchemaInfo.IsNil = false;
@@ -465,7 +465,7 @@ namespace System.Xml
             if (attributeDef.Datatype.Variety == XmlSchemaDatatypeVariety.Union)
             {
                 XsdSimpleValue? simpleValue = attributeDef.DefaultValueTyped as XsdSimpleValue;
-                Debug.Assert(simpleValue != null);
+                Debug.Assert(simpleValue is not null);
                 _attributeSchemaInfo.MemberType = simpleValue.XmlType;
             }
             _attributeSchemaInfo.Validity = XmlSchemaValidity.Valid;
@@ -515,16 +515,16 @@ namespace System.Xml
             do
             {
                 parentSchemaInfo = parentNode!.SchemaInfo;
-                if (parentSchemaInfo.SchemaElement != null || parentSchemaInfo.SchemaType != null)
+                if (parentSchemaInfo.SchemaElement is not null || parentSchemaInfo.SchemaType is not null)
                 {
                     break; //Found ancestor with schemaInfo
                 }
                 CheckNodeSequenceCapacity(nodeIndex);
                 _nodeSequenceToValidate![nodeIndex++] = parentNode;
                 parentNode = parentNode.ParentNode;
-            } while (parentNode != null);
+            } while (parentNode is not null);
 
-            if (parentNode == null)
+            if (parentNode is null)
             { //Did not find any type info all the way to the root, currentNode is Document || DocumentFragment
                 nodeIndex = nodeIndex - 1; //Subtract the one for document and set the node to null
                 _nodeSequenceToValidate![nodeIndex] = null;
@@ -537,7 +537,7 @@ namespace System.Xml
                 CheckNodeSequenceCapacity(nodeIndex);
                 _nodeSequenceToValidate![nodeIndex++] = parentNode;
                 XmlSchemaObject? ancestorSchemaObject = parentSchemaInfo.SchemaElement;
-                if (ancestorSchemaObject == null)
+                if (ancestorSchemaObject is null)
                 {
                     ancestorSchemaObject = parentSchemaInfo.SchemaType;
                 }
@@ -548,17 +548,17 @@ namespace System.Xml
         /*private XmlSchemaElement GetTypeFromParent(XmlElement elementToValidate, XmlSchemaComplexType parentSchemaType) {
             XmlQualifiedName elementName = new XmlQualifiedName(elementToValidate.LocalName, elementToValidate.NamespaceURI);
             XmlSchemaElement elem = parentSchemaType.LocalElements[elementName] as XmlSchemaElement;
-            if (elem == null) { //Element not found as direct child of the content model. It might be invalid at this position or it might be a substitution member
+            if (elem is null) { //Element not found as direct child of the content model. It might be invalid at this position or it might be a substitution member
                 SchemaInfo compiledSchemaInfo = schemas.CompiledInfo;
                 XmlSchemaElement memberElem = compiledSchemaInfo.GetElement(elementName);
-                if (memberElem != null) {
+                if (memberElem is not null) {
                 }
             }
         }*/
 
         private void CheckNodeSequenceCapacity(int currentIndex)
         {
-            if (_nodeSequenceToValidate == null)
+            if (_nodeSequenceToValidate is null)
             { //Normally users would call Validate one level down, this allows for 4
                 _nodeSequenceToValidate = new XmlNode[4];
             }
@@ -575,17 +575,17 @@ namespace System.Xml
             XmlElement parentElement = attributeToValidate.OwnerElement!;
             XmlSchemaObject? schemaObject = FindSchemaInfo(parentElement);
             XmlSchemaComplexType? elementSchemaType = GetComplexType(schemaObject);
-            if (elementSchemaType == null)
+            if (elementSchemaType is null)
             {
                 return null;
             }
 
             XmlQualifiedName attName = new XmlQualifiedName(attributeToValidate.LocalName, attributeToValidate.NamespaceURI);
             XmlSchemaAttribute? schemaAttribute = elementSchemaType.AttributeUses[attName] as XmlSchemaAttribute;
-            if (schemaAttribute == null)
+            if (schemaAttribute is null)
             {
                 XmlSchemaAnyAttribute? anyAttribute = elementSchemaType.AttributeWildcard;
-                if (anyAttribute != null)
+                if (anyAttribute is not null)
                 {
                     if (anyAttribute.NamespaceList!.Allows(attName))
                     { //Match wildcard against global attribute
@@ -634,7 +634,7 @@ namespace System.Xml
             ValidateSingleElement(elementToValidate, false, _schemaInfo);
 
             XmlSchemaObject? schemaInfoFound = null;
-            if (_schemaInfo.SchemaElement != null)
+            if (_schemaInfo.SchemaElement is not null)
             {
                 schemaInfoFound = _schemaInfo.SchemaElement;
             }
@@ -642,7 +642,7 @@ namespace System.Xml
             {
                 schemaInfoFound = _schemaInfo.SchemaType;
             }
-            if (schemaInfoFound == null)
+            if (schemaInfoFound is null)
             { //Detect if the node was validated lax or skip
                 if (_validator.CurrentProcessContents == XmlSchemaContentProcessing.Skip)
                 {
@@ -662,7 +662,7 @@ namespace System.Xml
         private bool AncestorTypeHasWildcard(XmlSchemaObject? ancestorType)
         {
             XmlSchemaComplexType? ancestorSchemaType = GetComplexType(ancestorType);
-            if (ancestorType != null)
+            if (ancestorType is not null)
             {
                 return ancestorSchemaType!.HasWildCard;
             }
@@ -672,14 +672,14 @@ namespace System.Xml
 
         private XmlSchemaComplexType? GetComplexType(XmlSchemaObject? schemaObject)
         {
-            if (schemaObject == null)
+            if (schemaObject is null)
             {
                 return null;
             }
 
             XmlSchemaElement? schemaElement = schemaObject as XmlSchemaElement;
             XmlSchemaComplexType? complexType = null;
-            if (schemaElement != null)
+            if (schemaElement is not null)
             {
                 complexType = schemaElement.ElementSchemaType as XmlSchemaComplexType;
             }
@@ -694,7 +694,7 @@ namespace System.Xml
         private void ValidateSingleElement(XmlElement elementNode, bool skipToEnd, XmlSchemaInfo? newSchemaInfo)
         {
             _nsManager.PushScope();
-            Debug.Assert(elementNode != null);
+            Debug.Assert(elementNode is not null);
 
             XmlAttributeCollection attributes = elementNode.Attributes;
             XmlAttribute? attr = null;
@@ -708,8 +708,8 @@ namespace System.Xml
                 attr = attributes[i];
                 string objectNs = attr.NamespaceURI;
                 string objectName = attr.LocalName;
-                Debug.Assert(_nameTable.Get(attr.NamespaceURI) != null);
-                Debug.Assert(_nameTable.Get(attr.LocalName) != null);
+                Debug.Assert(_nameTable.Get(attr.NamespaceURI) is not null);
+                Debug.Assert(_nameTable.Get(attr.LocalName) is not null);
 
                 if (Ref.Equal(objectNs, _nsXsi))
                 {
@@ -742,7 +742,7 @@ namespace System.Xml
         {
             XmlNode? child;
 
-            for (child = parentNode.FirstChild; child != null; child = child.NextSibling)
+            for (child = parentNode.FirstChild; child is not null; child = child.NextSibling)
             {
                 if (child == childToStopAt)
                 {
@@ -785,7 +785,7 @@ namespace System.Xml
         {
             XmlSchemaValidator findTypeValidator = new XmlSchemaValidator(_document.NameTable, _document.Schemas, _nsManager, XmlSchemaValidationFlags.None);
             findTypeValidator.ValidationEventHandler += new ValidationEventHandler(TypeFinderCallBack);
-            if (partialValidationType != null)
+            if (partialValidationType is not null)
             {
                 findTypeValidator.Initialize(partialValidationType);
             }
@@ -812,9 +812,9 @@ namespace System.Xml
                 _isValid = false;
             }
             XmlSchemaValidationException? ex = arg.Exception as XmlSchemaValidationException;
-            Debug.Assert(ex != null);
+            Debug.Assert(ex is not null);
             ex.SetSourceObject(_currentNode);
-            if (_eventHandler != null)
+            if (_eventHandler is not null)
             { //Invoke user's event handler
                 _eventHandler(sender, arg);
             }

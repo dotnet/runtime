@@ -71,7 +71,7 @@ namespace System.Runtime.Serialization
             int position = ComputeStartPosition(obj);
             for (int i = position; i != (position - 1); i++)
             {
-                if (m_objs[i] == null)
+                if (m_objs[i] is null)
                 {
                     isEmpty = true;
                     return i;
@@ -98,7 +98,7 @@ namespace System.Runtime.Serialization
             int lastVacantPosition = position;
             for (int next = (position == cacheSize - 1) ? 0 : position + 1; next != position; next++)
             {
-                if (m_objs[next] == null)
+                if (m_objs[next] is null)
                 {
                     m_objs[lastVacantPosition] = null;
                     m_ids[lastVacantPosition] = 0;
@@ -148,7 +148,7 @@ namespace System.Runtime.Serialization
             for (int j = 0; j < oldObjs.Length; j++)
             {
                 object? obj = oldObjs[j];
-                if (obj != null)
+                if (obj is not null)
                 {
                     bool found, isWrapped;
                     int position = FindElement(obj, out found, out isWrapped);

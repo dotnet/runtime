@@ -16,7 +16,7 @@ namespace System.DirectoryServices.AccountManagement
         //
         private UnknownPrincipal(PrincipalContext context)
         {
-            if (context == null)
+            if (context is null)
                 throw new ArgumentException(SR.NullArguments);
 
             this.ContextRaw = context;

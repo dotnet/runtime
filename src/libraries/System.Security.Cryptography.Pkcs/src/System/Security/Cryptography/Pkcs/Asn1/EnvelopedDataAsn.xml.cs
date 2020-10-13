@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.Pkcs.Asn1
 
             EncryptedContentInfo.Encode(writer);
 
-            if (UnprotectedAttributes != null)
+            if (UnprotectedAttributes is not null)
             {
 
                 writer.PushSetOf(new Asn1Tag(TagClass.ContextSpecific, 1));

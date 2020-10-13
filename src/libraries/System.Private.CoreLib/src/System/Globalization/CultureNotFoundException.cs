@@ -77,7 +77,7 @@ namespace System.Globalization
         private static string DefaultMessage => SR.Argument_CultureNotSupported;
 
         private string? FormattedInvalidCultureId =>
-            InvalidCultureId != null ?
+            InvalidCultureId is not null ?
                 string.Format(CultureInfo.InvariantCulture, "{0} (0x{0:x4})", (int)InvalidCultureId) :
                 InvalidCultureName;
 
@@ -86,10 +86,10 @@ namespace System.Globalization
             get
             {
                 string s = base.Message;
-                if (_invalidCultureId != null || _invalidCultureName != null)
+                if (_invalidCultureId is not null || _invalidCultureName is not null)
                 {
                     string valueMessage = SR.Format(SR.Argument_CultureInvalidIdentifier, FormattedInvalidCultureId);
-                    if (s == null)
+                    if (s is null)
                     {
                         return valueMessage;
                     }

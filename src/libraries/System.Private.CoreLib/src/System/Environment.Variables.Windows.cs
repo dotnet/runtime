@@ -59,7 +59,7 @@ namespace System
         public static unsafe IDictionary GetEnvironmentVariables()
         {
             char* pStrings = Interop.Kernel32.GetEnvironmentStrings();
-            if (pStrings == null)
+            if (pStrings is null)
             {
                 throw new OutOfMemoryException();
             }

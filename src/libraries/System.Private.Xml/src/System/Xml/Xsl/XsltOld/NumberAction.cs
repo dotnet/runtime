@@ -114,7 +114,7 @@ namespace System.Xml.Xsl.XsltOld
             {
                 string str;
 
-                if (groupSize != 0 && groupSeparator != null)
+                if (groupSize != 0 && groupSeparator is not null)
                 {
                     NumberFormatInfo NumberFormat = new NumberFormatInfo();
                     NumberFormat.NumberGroupSizes = new int[] { groupSize };
@@ -231,7 +231,7 @@ namespace System.Xml.Xsl.XsltOld
             _letter = ParseLetter(PrecalculateAvt(ref _letterAvt));
             _lang = PrecalculateAvt(ref _langAvt);
             _groupingSep = PrecalculateAvt(ref _groupingSepAvt);
-            if (_groupingSep != null && _groupingSep.Length > 1)
+            if (_groupingSep is not null && _groupingSep.Length > 1)
             {
                 throw XsltException.Create(SR.Xslt_CharAttribute, "grouping-separator");
             }
@@ -382,7 +382,7 @@ namespace System.Xml.Xsl.XsltOld
             if (Type.GetTypeCode(value.GetType()) == TypeCode.Object)
             {
                 XPathNodeIterator? nodeset = value as XPathNodeIterator;
-                if (nodeset != null)
+                if (nodeset is not null)
                 {
                     if (nodeset.MoveNext())
                     {
@@ -391,7 +391,7 @@ namespace System.Xml.Xsl.XsltOld
                     return string.Empty;
                 }
                 XPathNavigator? nav = value as XPathNavigator;
-                if (nav != null)
+                if (nav is not null)
                 {
                     return nav.Value;
                 }
@@ -401,13 +401,13 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
             ArrayList list = processor.NumberList;
             switch (frame.State)
             {
                 case Initialized:
-                    Debug.Assert(frame != null);
-                    Debug.Assert(frame.NodeSet != null);
+                    Debug.Assert(frame is not null);
+                    Debug.Assert(frame.NodeSet is not null);
                     list.Clear();
                     if (_valueKey != Compiler.InvalidQueryKey)
                     {
@@ -446,15 +446,15 @@ namespace System.Xml.Xsl.XsltOld
 
                     /*CalculatingFormat:*/
                     frame.StoredOutput = Format(list,
-                        _formatAvt == null ? _formatTokens : ParseFormat(_formatAvt.Evaluate(processor, frame)),
-                        _langAvt == null ? _lang : _langAvt.Evaluate(processor, frame),
-                        _letterAvt == null ? _letter : ParseLetter(_letterAvt.Evaluate(processor, frame)),
-                        _groupingSepAvt == null ? _groupingSep : _groupingSepAvt.Evaluate(processor, frame),
-                        _groupingSizeAvt == null ? _groupingSize : _groupingSizeAvt.Evaluate(processor, frame)
+                        _formatAvt is null ? _formatTokens : ParseFormat(_formatAvt.Evaluate(processor, frame)),
+                        _langAvt is null ? _lang : _langAvt.Evaluate(processor, frame),
+                        _letterAvt is null ? _letter : ParseLetter(_letterAvt.Evaluate(processor, frame)),
+                        _groupingSepAvt is null ? _groupingSep : _groupingSepAvt.Evaluate(processor, frame),
+                        _groupingSizeAvt is null ? _groupingSize : _groupingSizeAvt.Evaluate(processor, frame)
                     );
                     goto case OutputNumber;
                 case OutputNumber:
-                    Debug.Assert(frame.StoredOutput != null);
+                    Debug.Assert(frame.StoredOutput is not null);
                     if (!processor.TextEvent(frame.StoredOutput))
                     {
                         frame.State = OutputNumber;
@@ -502,13 +502,13 @@ namespace System.Xml.Xsl.XsltOld
         {
             StringBuilder result = new StringBuilder();
             int cFormats = 0;
-            if (tokens != null)
+            if (tokens is not null)
             {
                 cFormats = tokens.Count;
             }
 
             NumberingFormat numberingFormat = new NumberingFormat();
-            if (groupingSize != null)
+            if (groupingSize is not null)
             {
                 try
                 {
@@ -517,7 +517,7 @@ namespace System.Xml.Xsl.XsltOld
                 catch (System.FormatException) { }
                 catch (System.OverflowException) { }
             }
-            if (groupingSep != null)
+            if (groupingSep is not null)
             {
                 if (groupingSep.Length > 1)
                 {
@@ -529,7 +529,7 @@ namespace System.Xml.Xsl.XsltOld
             if (0 < cFormats)
             {
                 FormatInfo? prefix = tokens![0];
-                Debug.Assert(prefix == null || prefix.isSeparator);
+                Debug.Assert(prefix is null || prefix.isSeparator);
                 FormatInfo? sufix = null;
                 if (cFormats % 2 == 1)
                 {
@@ -538,7 +538,7 @@ namespace System.Xml.Xsl.XsltOld
                 }
                 FormatInfo periodicSeparator = 2 < cFormats ? tokens[cFormats - 2]! : s_defaultSeparator;
                 FormatInfo periodicFormat = 0 < cFormats ? tokens[cFormats - 1]! : s_defaultFormat;
-                if (prefix != null)
+                if (prefix is not null)
                 {
                     result.Append(prefix.formatString);
                 }
@@ -565,7 +565,7 @@ namespace System.Xml.Xsl.XsltOld
                     result.Append(numberingFormat.FormatItem(numberlist[i]!));
                 }
 
-                if (sufix != null)
+                if (sufix is not null)
                 {
                     result.Append(sufix.formatString);
                 }
@@ -700,7 +700,7 @@ namespace System.Xml.Xsl.XsltOld
         [return: NotNullIfNotNull("formatString")]
         private static List<FormatInfo?>? ParseFormat(string? formatString)
         {
-            if (formatString == null || formatString.Length == 0)
+            if (formatString is null || formatString.Length == 0)
             {
                 return null;
             }
@@ -752,7 +752,7 @@ namespace System.Xml.Xsl.XsltOld
 
         private string? ParseLetter(string? letter)
         {
-            if (letter == null || letter == "traditional" || letter == "alphabetic")
+            if (letter is null || letter == "traditional" || letter == "alphabetic")
             {
                 return letter;
             }

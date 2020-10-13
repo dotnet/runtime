@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Hosting
             builder.ConfigureHostConfiguration(config =>
             {
                 config.AddEnvironmentVariables(prefix: "DOTNET_");
-                if (args != null)
+                if (args is not null)
                 {
                     config.AddCommandLine(args);
                 }
@@ -79,7 +79,7 @@ namespace Microsoft.Extensions.Hosting
                 if (env.IsDevelopment() && !string.IsNullOrEmpty(env.ApplicationName))
                 {
                     var appAssembly = Assembly.Load(new AssemblyName(env.ApplicationName));
-                    if (appAssembly != null)
+                    if (appAssembly is not null)
                     {
                         config.AddUserSecrets(appAssembly, optional: true);
                     }
@@ -87,7 +87,7 @@ namespace Microsoft.Extensions.Hosting
 
                 config.AddEnvironmentVariables();
 
-                if (args != null)
+                if (args is not null)
                 {
                     config.AddCommandLine(args);
                 }

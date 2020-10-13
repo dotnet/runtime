@@ -12,7 +12,7 @@ namespace System.Configuration
 
         public SchemeSettingInternal(string name, GenericUriParserOptions options)
         {
-            Debug.Assert(name != null, "'name' must not be null.");
+            Debug.Assert(name is not null, "'name' must not be null.");
 
             this.name = name.ToLowerInvariant();
             this.options = options;

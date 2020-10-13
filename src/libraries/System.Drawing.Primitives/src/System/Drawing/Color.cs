@@ -386,14 +386,14 @@ namespace System.Drawing
             {
                 if ((state & StateNameValid) != 0)
                 {
-                    Debug.Assert(name != null);
+                    Debug.Assert(name is not null);
                     return name;
                 }
 
                 if (IsKnownColor)
                 {
                     string tablename = KnownColorNames.KnownColorToName((KnownColor)knownColor);
-                    Debug.Assert(tablename != null, $"Could not find known color '{(KnownColor)knownColor}' in the KnownColorTable");
+                    Debug.Assert(tablename is not null, $"Could not find known color '{(KnownColor)knownColor}' in the KnownColorTable");
 
                     return tablename;
                 }
@@ -580,7 +580,7 @@ namespace System.Drawing
             // an unnamed color with the same ARGB value.
             // 3. Have an unknown name. Will differ from other unknown-named colors only by name, so we
             // can usefully use the names hash code alone.
-            if (name != null && !IsKnownColor)
+            if (name is not null && !IsKnownColor)
                 return name.GetHashCode();
 
             return HashCode.Combine(value.GetHashCode(), state.GetHashCode(), knownColor.GetHashCode());

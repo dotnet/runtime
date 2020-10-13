@@ -44,7 +44,7 @@ namespace System.Xml
 
         internal override unsafe int Decode(char[] chars, int startPos, int len)
         {
-            if (chars == null)
+            if (chars is null)
             {
                 throw new ArgumentNullException(nameof(chars));
             }
@@ -79,7 +79,7 @@ namespace System.Xml
 
         internal override unsafe int Decode(string str, int startPos, int len)
         {
-            if (str == null)
+            if (str is null)
             {
                 throw new ArgumentNullException(nameof(str));
             }
@@ -122,11 +122,11 @@ namespace System.Xml
 
         internal override void SetNextOutputBuffer(Array buffer, int index, int count)
         {
-            Debug.Assert(buffer != null);
+            Debug.Assert(buffer is not null);
             Debug.Assert(count >= 0);
             Debug.Assert(index >= 0);
             Debug.Assert(buffer.Length - index >= count);
-            Debug.Assert((buffer as byte[]) != null);
+            Debug.Assert((buffer as byte[]) is not null);
 
             _buffer = (byte[])buffer;
             _startIndex = index;

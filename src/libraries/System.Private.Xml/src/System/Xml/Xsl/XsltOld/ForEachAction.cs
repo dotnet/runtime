@@ -51,12 +51,12 @@ namespace System.Xml.Xsl.XsltOld
 
         internal override void Execute(Processor processor, ActionFrame frame)
         {
-            Debug.Assert(processor != null && frame != null);
+            Debug.Assert(processor is not null && frame is not null);
 
             switch (frame.State)
             {
                 case Initialized:
-                    if (_sortContainer != null)
+                    if (_sortContainer is not null)
                     {
                         processor.InitSortArray();
                         processor.PushActionFrame(_sortContainer, frame.NodeSet!);
@@ -66,7 +66,7 @@ namespace System.Xml.Xsl.XsltOld
                     goto case ProcessedSort;
                 case ProcessedSort:
                     frame.InitNewNodeSet(processor.StartQuery(frame.NodeSet!, _selectKey));
-                    if (_sortContainer != null)
+                    if (_sortContainer is not null)
                     {
                         Debug.Assert(processor.SortArray.Count != 0);
                         frame.SortNewNodeSet(processor, processor.SortArray);
@@ -76,7 +76,7 @@ namespace System.Xml.Xsl.XsltOld
 
                 case ProcessNextNode:
                     Debug.Assert(frame.State == ProcessNextNode);
-                    Debug.Assert(frame.NewNodeSet != null);
+                    Debug.Assert(frame.NewNodeSet is not null);
 
                     if (frame.NewNextNode(processor))
                     {
@@ -111,7 +111,7 @@ namespace System.Xml.Xsl.XsltOld
                         if (Ref.Equal(input.NamespaceURI, input.Atoms.UriXsl) &&
                             Ref.Equal(input.LocalName, input.Atoms.Sort))
                         {
-                            if (_sortContainer == null)
+                            if (_sortContainer is null)
                             {
                                 _sortContainer = new ContainerAction();
                             }

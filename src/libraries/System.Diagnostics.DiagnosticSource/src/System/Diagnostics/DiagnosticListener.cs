@@ -39,7 +39,7 @@ namespace System.Diagnostics
                 GC.KeepAlive(HttpHandlerDiagnosticListener.s_instance);
 #endif
 
-                if (s_allListenerObservable == null)
+                if (s_allListenerObservable is null)
                 {
                     s_allListenerObservable = new AllListenerObservable();
                 }
@@ -65,7 +65,7 @@ namespace System.Diagnostics
         public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object?>> observer, Predicate<string>? isEnabled)
         {
             IDisposable subscription;
-            if (isEnabled == null)
+            if (isEnabled is null)
             {
                 subscription = SubscribeInternal(observer, null, null, null, null);
             }
@@ -108,7 +108,7 @@ namespace System.Diagnostics
         /// </param>
         public virtual IDisposable Subscribe(IObserver<KeyValuePair<string, object?>> observer, Func<string, object?, object?, bool>? isEnabled)
         {
-            return isEnabled == null ?
+            return isEnabled is null ?
              SubscribeInternal(observer, null, null, null, null) :
              SubscribeInternal(observer, name => IsEnabled(name, null, null), isEnabled, null, null);
         }
@@ -137,7 +137,7 @@ namespace System.Diagnostics
             {
                 // Issue the callback for this new diagnostic listener.
                 var allListenerObservable = s_allListenerObservable;
-                if (allListenerObservable != null)
+                if (allListenerObservable is not null)
                     allListenerObservable.OnNewDiagnosticListener(this);
 
                 // And add it to the list of all past listeners.
@@ -171,7 +171,7 @@ namespace System.Diagnostics
                 else
                 {
                     var cur = s_allListeners;
-                    while (cur != null)
+                    while (cur is not null)
                     {
                         if (cur._next == this)
                         {
@@ -187,7 +187,7 @@ namespace System.Diagnostics
             // Indicate completion to all subscribers.
             DiagnosticSubscription? subscriber = null;
             Interlocked.Exchange(ref subscriber, _subscriptions);
-            while (subscriber != null)
+            while (subscriber is not null)
             {
                 subscriber.Observer.OnCompleted();
                 subscriber = subscriber.Next;
@@ -222,7 +222,7 @@ namespace System.Diagnostics
         /// to ensure somebody listens to the DiagnosticListener at all.</remarks>
         public bool IsEnabled()
         {
-            return _subscriptions != null;
+            return _subscriptions is not null;
         }
 
         /// <summary>
@@ -230,9 +230,9 @@ namespace System.Diagnostics
         /// </summary>
         public override bool IsEnabled(string name)
         {
-            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription is not null; curSubscription = curSubscription.Next)
             {
-                if (curSubscription.IsEnabled1Arg == null || curSubscription.IsEnabled1Arg(name))
+                if (curSubscription.IsEnabled1Arg is null || curSubscription.IsEnabled1Arg(name))
                     return true;
             }
             return false;
@@ -244,9 +244,9 @@ namespace System.Diagnostics
         /// </summary>
         public override bool IsEnabled(string name, object? arg1, object? arg2 = null)
         {
-            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription is not null; curSubscription = curSubscription.Next)
             {
-                if (curSubscription.IsEnabled3Arg == null || curSubscription.IsEnabled3Arg(name, arg1, arg2))
+                if (curSubscription.IsEnabled3Arg is null || curSubscription.IsEnabled3Arg(name, arg1, arg2))
                     return true;
             }
             return false;
@@ -257,7 +257,7 @@ namespace System.Diagnostics
         /// </summary>
         public override void Write(string name, object? value)
         {
-            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription != null; curSubscription = curSubscription.Next)
+            for (DiagnosticSubscription? curSubscription = _subscriptions; curSubscription is not null; curSubscription = curSubscription.Next)
                 curSubscription.Observer.OnNext(new KeyValuePair<string, object?>(name, value));
         }
 
@@ -306,7 +306,7 @@ namespace System.Diagnostics
                     {
 #if DEBUG
                         var cur = newSubscriptions;
-                        while (cur != null)
+                        while (cur is not null)
                         {
                             Debug.Assert(!(cur.Observer == Observer && cur.IsEnabled1Arg == IsEnabled1Arg && cur.IsEnabled3Arg == IsEnabled3Arg), "Did not remove subscription!");
                             cur = cur.Next;
@@ -320,7 +320,7 @@ namespace System.Diagnostics
             // Create a new linked list where 'subscription has been removed from the linked list of 'subscriptions'.
             private static DiagnosticSubscription? Remove(DiagnosticSubscription? subscriptions, DiagnosticSubscription subscription)
             {
-                if (subscriptions == null)
+                if (subscriptions is null)
                 {
                     // May happen if the IDisposable returned from Subscribe is Dispose'd again
                     return null;
@@ -352,7 +352,7 @@ namespace System.Diagnostics
                 lock (s_allListenersLock)
                 {
                     // Call back for each existing listener on the new callback (catch-up).
-                    for (DiagnosticListener? cur = s_allListeners; cur != null; cur = cur._next)
+                    for (DiagnosticListener? cur = s_allListeners; cur is not null; cur = cur._next)
                         observer.OnNext(cur);
 
                     // Add the observer to the list of subscribers.
@@ -370,7 +370,7 @@ namespace System.Diagnostics
                 Debug.Assert(Monitor.IsEntered(s_allListenersLock));     // We should only be called when we hold this lock
 
                 // Simply send a callback to every subscriber that we have a new listener
-                for (var cur = _subscriptions; cur != null; cur = cur.Next)
+                for (var cur = _subscriptions; cur is not null; cur = cur.Next)
                     cur.Subscriber.OnNext(diagnosticListener);
             }
 
@@ -388,9 +388,9 @@ namespace System.Diagnostics
                         _subscriptions = subscription.Next;
                         return true;
                     }
-                    else if (_subscriptions != null)
+                    else if (_subscriptions is not null)
                     {
-                        for (var cur = _subscriptions; cur.Next != null; cur = cur.Next)
+                        for (var cur = _subscriptions; cur.Next is not null; cur = cur.Next)
                         {
                             if (cur.Next == subscription)
                             {

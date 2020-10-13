@@ -40,7 +40,7 @@ namespace System.Xml
                             XmlBinaryReaderSession? session,
                             OnXmlDictionaryReaderClose? onClose)
         {
-            if (buffer == null)
+            if (buffer is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(buffer));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
@@ -61,7 +61,7 @@ namespace System.Xml
                             XmlBinaryReaderSession? session,
                             OnXmlDictionaryReaderClose? onClose)
         {
-            if (stream == null)
+            if (stream is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(stream));
             MoveToInitial(quotas, session, null);
             BufferReader.SetBuffer(stream, dictionary, session);
@@ -1216,7 +1216,7 @@ namespace System.Xml
 
         private void CheckArray(Array array, int offset, int count)
         {
-            if (array == null)
+            if (array is null)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(array)));
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));

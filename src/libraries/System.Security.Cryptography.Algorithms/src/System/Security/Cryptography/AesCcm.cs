@@ -20,7 +20,7 @@ namespace System.Security.Cryptography
 
         public AesCcm(byte[] key)
         {
-            if (key == null)
+            if (key is null)
                 throw new ArgumentNullException(nameof(key));
 
             AesAEAD.CheckKeySize(key.Length * 8);

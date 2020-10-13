@@ -11,8 +11,8 @@ namespace System.Globalization
         {
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(GlobalizationMode.UseNls);
-            Debug.Assert(pSource != null);
-            Debug.Assert(pResult != null);
+            Debug.Assert(pSource is not null);
+            Debug.Assert(pResult is not null);
             Debug.Assert(pSourceLen >= 0);
             Debug.Assert(pResultLen >= 0);
             Debug.Assert(pSourceLen <= pResultLen);

@@ -63,14 +63,14 @@ namespace System.ComponentModel
             // are null (and are immutable), so we only need to check the
             // nullability of one property to know about the nullability
             // of the rest.
-            if (other.ExtenderProperty == null)
+            if (other.ExtenderProperty is null)
             {
-                Debug.Assert(other.Provider == null);
-                Debug.Assert(other.ReceiverType == null);
-                Debug.Assert(Provider == null);
-                Debug.Assert(ReceiverType == null);
+                Debug.Assert(other.Provider is null);
+                Debug.Assert(other.ReceiverType is null);
+                Debug.Assert(Provider is null);
+                Debug.Assert(ReceiverType is null);
 
-                return ExtenderProperty == null;
+                return ExtenderProperty is null;
             }
 
             return other.ExtenderProperty.Equals(ExtenderProperty)
@@ -80,6 +80,6 @@ namespace System.ComponentModel
 
         public override int GetHashCode() => base.GetHashCode();
 
-        public override bool IsDefaultAttribute() => ReceiverType == null;
+        public override bool IsDefaultAttribute() => ReceiverType is null;
     }
 }

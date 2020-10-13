@@ -1041,11 +1041,11 @@ namespace System.Data.OleDb
 
             IntPtr ptr = IntPtr.Zero;
             // lazy init reflection objects
-            if (s_getIDispatchForObject == null)
+            if (s_getIDispatchForObject is null)
             {
                 object? delegateInstance = null;
                 MethodInfo? mi = typeof(Marshal).GetMethod("GetIDispatchForObject", BindingFlags.Public | BindingFlags.Static);
-                if (mi == null)
+                if (mi is null)
                 {
                     throw new NotSupportedException(SR.PlatformNotSupported_GetIDispatchForObject);
                 }

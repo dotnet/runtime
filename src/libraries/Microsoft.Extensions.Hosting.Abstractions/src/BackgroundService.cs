@@ -60,7 +60,7 @@ namespace Microsoft.Extensions.Hosting
         public virtual async Task StopAsync(CancellationToken cancellationToken)
         {
             // Stop called without start
-            if (_executeTask == null)
+            if (_executeTask is null)
             {
                 return;
             }

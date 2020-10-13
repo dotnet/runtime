@@ -12,7 +12,7 @@ namespace System.Net.Security
     {
         internal SslAuthenticationOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertificateValidationCallback? remoteCallback, LocalCertSelectionCallback? localCallback)
         {
-            Debug.Assert(sslClientAuthenticationOptions.TargetHost != null);
+            Debug.Assert(sslClientAuthenticationOptions.TargetHost is not null);
 
             // Common options.
             AllowRenegotiation = sslClientAuthenticationOptions.AllowRenegotiation;
@@ -52,15 +52,15 @@ namespace System.Net.Security
             CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
             CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
 
-            if (sslServerAuthenticationOptions.ServerCertificateContext != null)
+            if (sslServerAuthenticationOptions.ServerCertificateContext is not null)
             {
                 CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
             }
-            else if (sslServerAuthenticationOptions.ServerCertificate != null)
+            else if (sslServerAuthenticationOptions.ServerCertificate is not null)
             {
                 X509Certificate2? certificateWithKey = sslServerAuthenticationOptions.ServerCertificate as X509Certificate2;
 
-                if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
+                if (certificateWithKey is not null && certificateWithKey.HasPrivateKey)
                 {
                     // given cert is X509Certificate2 with key. We can use it directly.
                     CertificateContext = SslStreamCertificateContext.Create(certificateWithKey, null);
@@ -70,7 +70,7 @@ namespace System.Net.Security
                     // This is legacy fix-up. If the Certificate did not have key, we will search stores and we
                     // will try to find one with matching hash.
                     certificateWithKey = SecureChannel.FindCertificateWithPrivateKey(this, true, sslServerAuthenticationOptions.ServerCertificate);
-                    if (certificateWithKey == null)
+                    if (certificateWithKey is null)
                     {
                         throw new AuthenticationException(SR.net_ssl_io_no_server_cert);
                     }
@@ -79,7 +79,7 @@ namespace System.Net.Security
                 }
             }
 
-            if (sslServerAuthenticationOptions.RemoteCertificateValidationCallback != null)
+            if (sslServerAuthenticationOptions.RemoteCertificateValidationCallback is not null)
             {
                 CertValidationDelegate = sslServerAuthenticationOptions.RemoteCertificateValidationCallback;
             }
@@ -104,7 +104,7 @@ namespace System.Net.Security
             RemoteCertRequired = sslServerAuthenticationOptions.ClientCertificateRequired;
             CipherSuitesPolicy = sslServerAuthenticationOptions.CipherSuitesPolicy;
             CertificateRevocationCheckMode = sslServerAuthenticationOptions.CertificateRevocationCheckMode;
-            if (sslServerAuthenticationOptions.ServerCertificateContext != null)
+            if (sslServerAuthenticationOptions.ServerCertificateContext is not null)
             {
                 CertificateContext = sslServerAuthenticationOptions.ServerCertificateContext;
             }
@@ -115,7 +115,7 @@ namespace System.Net.Security
                 CertificateContext = SslStreamCertificateContext.Create(certificateWithKey);
             }
 
-            if (sslServerAuthenticationOptions.RemoteCertificateValidationCallback != null)
+            if (sslServerAuthenticationOptions.RemoteCertificateValidationCallback is not null)
             {
                 CertValidationDelegate = sslServerAuthenticationOptions.RemoteCertificateValidationCallback;
             }

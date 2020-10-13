@@ -16,7 +16,7 @@ namespace Microsoft.Win32.SafeHandles
         /// <returns>A SafeFileHandle for the opened file.</returns>
         internal static SafeFileHandle Open(string path, Interop.Sys.OpenFlags flags, int mode)
         {
-            Debug.Assert(path != null);
+            Debug.Assert(path is not null);
 
             // If we fail to open the file due to a path not existing, we need to know whether to blame
             // the file itself or its directory.  If we're creating the file, then we blame the directory,

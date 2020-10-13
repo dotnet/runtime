@@ -98,7 +98,7 @@ namespace Microsoft.Win32
 
         public void Dispose()
         {
-            if (_hkey != null)
+            if (_hkey is not null)
             {
                 if (!IsSystemKey())
                 {
@@ -167,7 +167,7 @@ namespace Microsoft.Win32
             if (!_remoteKey)
             {
                 RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, (permissionCheck != RegistryKeyPermissionCheck.ReadSubTree));
-                if (key != null)
+                if (key is not null)
                 {
                     // Key already exits
                     key._checkMode = permissionCheck;
@@ -199,7 +199,7 @@ namespace Microsoft.Win32
             // explicitly call close to avoid keeping an extra HKEY open.
             //
             RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, false);
-            if (key != null)
+            if (key is not null)
             {
                 using (key)
                 {
@@ -243,7 +243,7 @@ namespace Microsoft.Win32
             subkey = FixupName(subkey); // Fixup multiple slashes to a single slash
 
             RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
-            if (key != null)
+            if (key is not null)
             {
                 using (key)
                 {
@@ -273,7 +273,7 @@ namespace Microsoft.Win32
         private void DeleteSubKeyTreeInternal(string subkey)
         {
             RegistryKey? key = InternalOpenSubKeyWithoutSecurityChecks(subkey, true);
-            if (key != null)
+            if (key is not null)
             {
                 using (key)
                 {
@@ -325,7 +325,7 @@ namespace Microsoft.Win32
 
         public static RegistryKey OpenRemoteBaseKey(RegistryHive hKey, string machineName, RegistryView view)
         {
-            if (machineName == null)
+            if (machineName is null)
             {
                 throw new ArgumentNullException(nameof(machineName));
             }
@@ -405,7 +405,7 @@ namespace Microsoft.Win32
         public void SetAccessControl(RegistrySecurity registrySecurity)
         {
             EnsureWriteable();
-            if (registrySecurity == null)
+            if (registrySecurity is null)
             {
                 throw new ArgumentNullException(nameof(registrySecurity));
             }
@@ -449,7 +449,7 @@ namespace Microsoft.Win32
 
         public static RegistryKey FromHandle(SafeRegistryHandle handle, RegistryView view)
         {
-            if (handle == null) throw new ArgumentNullException(nameof(handle));
+            if (handle is null) throw new ArgumentNullException(nameof(handle));
             ValidateKeyView(view);
 
             return new RegistryKey(handle, writable: true, view: view);
@@ -559,12 +559,12 @@ namespace Microsoft.Win32
 
         public void SetValue(string? name, object value, RegistryValueKind valueKind)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
 
-            if (name != null && name.Length > MaxValueLength)
+            if (name is not null && name.Length > MaxValueLength)
             {
                 throw new ArgumentException(SR.Arg_RegValStrLenBug, nameof(name));
             }
@@ -626,7 +626,7 @@ namespace Microsoft.Win32
 
         private static string FixupName(string name)
         {
-            Debug.Assert(name != null, "[FixupName]name!=null");
+            Debug.Assert(name is not null, "[FixupName]name!=null");
 
             // string.Contains(char) is .NetCore2.1+ specific
             if (name.IndexOf('\\') == -1)
@@ -647,7 +647,7 @@ namespace Microsoft.Win32
 
         private static void FixupPath(StringBuilder path)
         {
-            Debug.Assert(path != null);
+            Debug.Assert(path is not null);
 
             int length = path.Length;
             bool fixup = false;
@@ -690,7 +690,7 @@ namespace Microsoft.Win32
 
         private void EnsureNotDisposed()
         {
-            if (_hkey == null)
+            if (_hkey is null)
             {
                 throw new ObjectDisposedException(_keyName, SR.ObjectDisposed_RegKeyClosed);
             }
@@ -724,7 +724,7 @@ namespace Microsoft.Win32
 
         private static void ValidateKeyName(string name)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }

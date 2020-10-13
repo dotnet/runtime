@@ -75,7 +75,7 @@ namespace System.Xml.Schema
             }
             catch (XmlSchemaException e)
             {
-                if (validationEventHandler != null)
+                if (validationEventHandler is not null)
                 {
                     validationEventHandler(null, new ValidationEventArgs(e));
                 }
@@ -122,16 +122,16 @@ namespace System.Xml.Schema
             XmlSerializer serializer = new XmlSerializer(typeof(XmlSchema));
             XmlSerializerNamespaces ns;
 
-            if (namespaceManager != null)
+            if (namespaceManager is not null)
             {
                 ns = new XmlSerializerNamespaces();
                 bool ignoreXS = false;
-                if (this.Namespaces != null)
+                if (this.Namespaces is not null)
                 { //User may have set both nsManager and Namespaces property on the XmlSchema object
                     ignoreXS = this.Namespaces.Namespaces.ContainsKey("xs") || this.Namespaces.Namespaces.ContainsValue(XmlReservedNs.NsXs);
                 }
-                if (!ignoreXS && namespaceManager.LookupPrefix(XmlReservedNs.NsXs) == null &&
-                    namespaceManager.LookupNamespace("xs") == null)
+                if (!ignoreXS && namespaceManager.LookupPrefix(XmlReservedNs.NsXs) is null &&
+                    namespaceManager.LookupNamespace("xs") is null)
                 {
                     ns.Add("xs", XmlReservedNs.NsXs);
                 }
@@ -143,7 +143,7 @@ namespace System.Xml.Schema
                     }
                 }
             }
-            else if (this.Namespaces != null && this.Namespaces.Count > 0)
+            else if (this.Namespaces is not null && this.Namespaces.Count > 0)
             {
                 Dictionary<string, string?> serializerNS = this.Namespaces.Namespaces;
                 if (!serializerNS.ContainsKey("xs") && !serializerNS.ContainsValue(XmlReservedNs.NsXs))
@@ -156,7 +156,7 @@ namespace System.Xml.Schema
             {
                 ns = new XmlSerializerNamespaces();
                 ns.Add("xs", XmlSchema.Namespace);
-                if (_targetNs != null && _targetNs.Length != 0)
+                if (_targetNs is not null && _targetNs.Length != 0)
                 {
                     ns.Add("tns", _targetNs);
                 }
@@ -310,7 +310,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_attributes == null)
+                if (_attributes is null)
                 {
                     _attributes = new XmlSchemaObjectTable();
                 }
@@ -323,7 +323,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_attributeGroups == null)
+                if (_attributeGroups is null)
                 {
                     _attributeGroups = new XmlSchemaObjectTable();
                 }
@@ -336,7 +336,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_types == null)
+                if (_types is null)
                 {
                     _types = new XmlSchemaObjectTable();
                 }
@@ -349,7 +349,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_elements == null)
+                if (_elements is null)
                 {
                     _elements = new XmlSchemaObjectTable();
                 }
@@ -434,7 +434,7 @@ namespace System.Xml.Schema
         [XmlIgnore]
         internal XmlDocument Document
         {
-            get { if (_document == null) _document = new XmlDocument(); return _document; }
+            get { if (_document is null) _document = new XmlDocument(); return _document; }
         }
 
         [XmlIgnore]
@@ -484,15 +484,15 @@ namespace System.Xml.Schema
                 XmlSchemaElement? element;
                 XmlSchemaGroup? group;
 
-                if ((complexType = _items[i] as XmlSchemaComplexType) != null)
+                if ((complexType = _items[i] as XmlSchemaComplexType) is not null)
                 {
                     newItem = complexType.Clone(this);
                 }
-                else if ((element = _items[i] as XmlSchemaElement) != null)
+                else if ((element = _items[i] as XmlSchemaElement) is not null)
                 {
                     newItem = element.Clone(this);
                 }
-                else if ((group = _items[i] as XmlSchemaGroup) != null)
+                else if ((group = _items[i] as XmlSchemaGroup) is not null)
                 {
                     newItem = group.Clone(this);
                 }
@@ -539,14 +539,14 @@ namespace System.Xml.Schema
 
         internal XmlNameTable NameTable
         {
-            get { if (_nameTable == null) _nameTable = new System.Xml.NameTable(); return _nameTable; }
+            get { if (_nameTable is null) _nameTable = new System.Xml.NameTable(); return _nameTable; }
         }
 
         internal ArrayList ImportedSchemas
         {
             get
             {
-                if (_importedSchemas == null)
+                if (_importedSchemas is null)
                 {
                     _importedSchemas = new ArrayList();
                 }
@@ -558,7 +558,7 @@ namespace System.Xml.Schema
         {
             get
             {
-                if (_importedNamespaces == null)
+                if (_importedNamespaces is null)
                 {
                     _importedNamespaces = new ArrayList();
                 }
@@ -568,7 +568,7 @@ namespace System.Xml.Schema
 
         internal void GetExternalSchemasList(IList extList, XmlSchema schema)
         {
-            Debug.Assert(extList != null && schema != null);
+            Debug.Assert(extList is not null && schema is not null);
             if (extList.Contains(schema))
             {
                 return;
@@ -577,7 +577,7 @@ namespace System.Xml.Schema
             for (int i = 0; i < schema.Includes.Count; ++i)
             {
                 XmlSchemaExternal ext = (XmlSchemaExternal)schema.Includes[i];
-                if (ext.Schema != null)
+                if (ext.Schema is not null)
                 {
                     GetExternalSchemasList(extList, ext.Schema);
                 }
@@ -590,14 +590,14 @@ namespace System.Xml.Schema
             foreach (XmlSchemaElement element in elements.Values) {
                 itemName = element.QualifiedName;
                 schemaInfo.TargetNamespaces[itemName.Namespace] = true;
-                if (schemaInfo.ElementDecls[itemName] == null) {
+                if (schemaInfo.ElementDecls[itemName] is null) {
                     schemaInfo.ElementDecls.Add(itemName, element.ElementDecl);
                 }
             }
             foreach (XmlSchemaAttribute attribute in attributes.Values) {
                 itemName = attribute.QualifiedName;
                 schemaInfo.TargetNamespaces[itemName.Namespace] = true;
-                if (schemaInfo.ElementDecls[itemName] == null) {
+                if (schemaInfo.ElementDecls[itemName] is null) {
                     schemaInfo.AttributeDecls.Add(itemName, attribute.AttDef);
                 }
             }
@@ -605,7 +605,7 @@ namespace System.Xml.Schema
                 itemName = type.QualifiedName;
                 schemaInfo.TargetNamespaces[itemName.Namespace] = true;
                 XmlSchemaComplexType complexType = type as XmlSchemaComplexType;
-                if ((complexType == null || type != XmlSchemaComplexType.AnyType) && schemaInfo.ElementDeclsByType[itemName] == null) {
+                if ((complexType is null || type != XmlSchemaComplexType.AnyType) && schemaInfo.ElementDeclsByType[itemName] is null) {
                     schemaInfo.ElementDeclsByType.Add(itemName, type.ElementDecl);
                 }
             }
@@ -615,7 +615,7 @@ namespace System.Xml.Schema
                 SchemaNotation no = new SchemaNotation(itemName);
                 no.SystemLiteral = notation.System;
                 no.Pubid = notation.Public;
-                if (schemaInfo.Notations[itemName.Name] == null) {
+                if (schemaInfo.Notations[itemName.Name] is null) {
                     schemaInfo.Notations.Add(itemName.Name, no);
                 }
             }

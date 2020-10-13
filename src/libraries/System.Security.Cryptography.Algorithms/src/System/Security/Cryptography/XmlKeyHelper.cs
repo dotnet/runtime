@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
     {
         internal static ParseState ParseDocument(string xmlString)
         {
-            if (xmlString == null)
+            if (xmlString is null)
             {
                 throw new ArgumentNullException(nameof(xmlString));
             }
@@ -37,7 +37,7 @@ namespace System.Security.Cryptography
         {
             string? value = state.GetValue(name);
 
-            if (value == null)
+            if (value is null)
             {
                 return null;
             }
@@ -78,7 +78,7 @@ namespace System.Security.Cryptography
 
         internal static int ReadCryptoBinaryInt32(byte[] buf)
         {
-            Debug.Assert(buf != null);
+            Debug.Assert(buf is not null);
             int val = 0;
             int idx = Math.Max(0, buf.Length - sizeof(int));
 
@@ -126,7 +126,7 @@ namespace System.Security.Cryptography
         {
             Debug.Assert(name.Length > 0);
             Debug.Assert(value.Length > 0);
-            Debug.Assert(builder != null);
+            Debug.Assert(builder is not null);
 
             builder.Append('<');
             builder.Append(name);
@@ -185,7 +185,7 @@ namespace System.Security.Cryptography
             {
                 string? value = GetValue(localName);
 
-                bool ret = value != null;
+                bool ret = value is not null;
 
                 if (ret)
                 {
@@ -199,12 +199,12 @@ namespace System.Security.Cryptography
 
             internal string? GetValue(string localName)
             {
-                if (_enumerable == null)
+                if (_enumerable is null)
                 {
                     return null;
                 }
 
-                if (_enumerator == null)
+                if (_enumerator is null)
                 {
                     _enumerator = _enumerable.GetEnumerator();
                 }

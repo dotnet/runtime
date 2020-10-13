@@ -39,15 +39,15 @@ namespace System.Reflection
             if (MetadataToken.IsNullToken(tkMethod))
                 return null;
 
-            Debug.Assert(declaredType != null);
-            Debug.Assert(reflectedType != null);
+            Debug.Assert(declaredType is not null);
+            Debug.Assert(reflectedType is not null);
 
             bool isInherited = declaredType != reflectedType;
 
             IntPtr[]? genericArgumentHandles = null;
             int genericArgumentCount = 0;
             RuntimeType[] genericArguments = declaredType.GetTypeHandleInternal().GetInstantiationInternal();
-            if (genericArguments != null)
+            if (genericArguments is not null)
             {
                 genericArgumentCount = genericArguments.Length;
                 genericArgumentHandles = new IntPtr[genericArguments.Length];
@@ -143,7 +143,7 @@ namespace System.Reflection
                 RuntimeMethodInfo? associateMethod =
                     AssignAssociates(methodDefToken, declaringType, reflectedType);
 
-                if (associateMethod == null)
+                if (associateMethod is null)
                     continue;
 
                 MethodAttributes methAttr = associateMethod.Attributes;

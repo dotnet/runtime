@@ -27,7 +27,7 @@ namespace System.Text
             if (capacity <= MaxBuilderSize)
             {
                 StringBuilder? sb = t_cachedInstance;
-                if (sb != null)
+                if (sb is not null)
                 {
                     // Avoid stringbuilder block fragmentation by getting a new StringBuilder
                     // when the requested size is larger than the current capacity

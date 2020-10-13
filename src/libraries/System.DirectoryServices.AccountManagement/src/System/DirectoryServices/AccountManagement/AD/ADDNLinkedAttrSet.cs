@@ -44,10 +44,10 @@ namespace System.DirectoryServices.AccountManagement
                                     "ADDNLinkedAttrSet",
                                     "ADDNLinkedAttrSet: groupDN={0}, primaryGroupDN={1}, recursive={2}, PG queryFilter={3}, PG queryBase={4}",
                                     groupDN,
-                                    (primaryGroupDN != null ? primaryGroupDN : "NULL"),
+                                    (primaryGroupDN is not null ? primaryGroupDN : "NULL"),
                                     recursive,
-                                    (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.Filter : "NULL"),
-                                    (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.SearchRoot.Path : "NULL"));
+                                    (primaryGroupMembersSearcher is not null ? primaryGroupMembersSearcher.Filter : "NULL"),
+                                    (primaryGroupMembersSearcher is not null ? primaryGroupMembersSearcher.SearchRoot.Path : "NULL"));
 
             _groupsVisited.Add(groupDN);    // so we don't revisit it
             _recursive = recursive;
@@ -67,7 +67,7 @@ namespace System.DirectoryServices.AccountManagement
 
             _currentMembersSearcher = null;
             _primaryGroupDN = primaryGroupDN;
-            if (primaryGroupDN == null)
+            if (primaryGroupDN is null)
                 _returnedPrimaryGroup = true;    // so we don't bother trying to return the primary group
 
             _primaryGroupMembersSearcher = primaryGroupMembersSearcher;
@@ -89,12 +89,12 @@ namespace System.DirectoryServices.AccountManagement
                                     "ADDNLinkedAttrSet",
                                     "ADDNLinkedAttrSet: groupDN={0}, primaryGroupDN={1}, recursive={2}, M queryFilter={3}, M queryBase={4}, PG queryFilter={5}, PG queryBase={6}",
                                     groupDN,
-                                    (primaryGroupDN != null ? primaryGroupDN : "NULL"),
+                                    (primaryGroupDN is not null ? primaryGroupDN : "NULL"),
                                     recursive,
-                                    (membersSearcher != null ? membersSearcher[0].Filter : "NULL"),
-                                    (membersSearcher != null ? membersSearcher[0].SearchRoot.Path : "NULL"),
-                                    (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.Filter : "NULL"),
-                                    (primaryGroupMembersSearcher != null ? primaryGroupMembersSearcher.SearchRoot.Path : "NULL"));
+                                    (membersSearcher is not null ? membersSearcher[0].Filter : "NULL"),
+                                    (membersSearcher is not null ? membersSearcher[0].SearchRoot.Path : "NULL"),
+                                    (primaryGroupMembersSearcher is not null ? primaryGroupMembersSearcher.Filter : "NULL"),
+                                    (primaryGroupMembersSearcher is not null ? primaryGroupMembersSearcher.SearchRoot.Path : "NULL"));
 
             _groupsVisited.Add(groupDN);    // so we don't revisit it
             _recursive = recursive;
@@ -106,7 +106,7 @@ namespace System.DirectoryServices.AccountManagement
             _membersEnum = null;
 
             _primaryGroupDN = primaryGroupDN;
-            if (primaryGroupDN == null)
+            if (primaryGroupDN is null)
                 _returnedPrimaryGroup = true;    // so we don't bother trying to return the primary group
 
             if (null != membersSearcher)
@@ -132,7 +132,7 @@ namespace System.DirectoryServices.AccountManagement
         {
             get
             {
-                if (this.current != null)
+                if (this.current is not null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "CurrentAsPrincipal: using current");
                     if (this.current is DirectoryEntry)
@@ -145,7 +145,7 @@ namespace System.DirectoryServices.AccountManagement
                 else
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "CurrentAsPrincipal: using currentForeignPrincipal");
-                    Debug.Assert(_currentForeignPrincipal != null);
+                    Debug.Assert(_currentForeignPrincipal is not null);
                     return _currentForeignPrincipal;
                 }
             }
@@ -209,7 +209,7 @@ namespace System.DirectoryServices.AccountManagement
         private bool MoveNextPrimaryGroupDN()
         {
             // Do the special primary group ID processing if we haven't yet returned the primary group.
-            Debug.Assert(_primaryGroupDN != null);
+            Debug.Assert(_primaryGroupDN is not null);
 
             this.current = SDSUtils.BuildDirectoryEntry(
                                         BuildPathFromDN(_primaryGroupDN),
@@ -233,9 +233,9 @@ namespace System.DirectoryServices.AccountManagement
 
             do
             {
-                if (_currentMembersSearcher == null)
+                if (_currentMembersSearcher is null)
                 {
-                    Debug.Assert(_memberSearchersQueue != null);
+                    Debug.Assert(_memberSearchersQueue is not null);
 
                     if (_memberSearchersQueue.Count == 0)
                     {
@@ -247,7 +247,7 @@ namespace System.DirectoryServices.AccountManagement
                         // Remove the next searcher from the queue and place it in the current search variable.
                         _currentMembersSearcher = _memberSearchersQueue.Dequeue();
                         _memberSearchResults = _currentMembersSearcher.FindAll();
-                        Debug.Assert(_memberSearchResults != null);
+                        Debug.Assert(_memberSearchResults is not null);
                         _memberSearchResultsEnumerator = _memberSearchResults.GetEnumerator();
                     }
                 }
@@ -418,12 +418,12 @@ namespace System.DirectoryServices.AccountManagement
                 if (!memberFound)
                 {
                     IDisposable disposableMembers = _members as IDisposable;
-                    if (disposableMembers != null)
+                    if (disposableMembers is not null)
                     {
                         disposableMembers.Dispose();
                     }
                     IDisposable disposableMembersEnum = _membersEnum as IDisposable;
-                    if (disposableMembersEnum != null)
+                    if (disposableMembersEnum is not null)
                     {
                         disposableMembersEnum.Dispose();
                     }
@@ -532,7 +532,7 @@ namespace System.DirectoryServices.AccountManagement
                     }
                     finally
                     {
-                        if (disposeMemberDE && memberDE != null)
+                        if (disposeMemberDE && memberDE is not null)
                         {
                             //This means the constructed member is not used in the new principal
                             memberDE.Dispose();
@@ -664,7 +664,7 @@ namespace System.DirectoryServices.AccountManagement
                     _fakePrincipalMembers[0].Dispose();
                     _fakePrincipalMembers.RemoveAt(0);
                 }
-                else if ((_foreignMembersToReturn != null) && (_foreignMembersToReturn.Length > 0))
+                else if ((_foreignMembersToReturn is not null) && (_foreignMembersToReturn.Length > 0))
                 {
                     StoreCtx foreignStoreCtx;
 
@@ -715,8 +715,8 @@ namespace System.DirectoryServices.AccountManagement
                                         ContextType.Domain,
                                         foreignSid.sidIssuerName,
                                         null,
-                                        (this.storeCtx.Credentials != null ? this.storeCtx.Credentials.UserName : null),
-                                        (this.storeCtx.Credentials != null ? storeCtx.storeCtx.Credentials.Password : null),
+                                        (this.storeCtx.Credentials is not null ? this.storeCtx.Credentials.UserName : null),
+                                        (this.storeCtx.Credentials is not null ? storeCtx.storeCtx.Credentials.Password : null),
                                         remoteOptions);
 
 #endif
@@ -894,17 +894,17 @@ namespace System.DirectoryServices.AccountManagement
         {
             bool f = false;
 
-            if (_primaryGroupMembersSearcher != null)
+            if (_primaryGroupMembersSearcher is not null)
             {
                 GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextQueryMember: have a searcher");
 
-                if (_queryMembersResults == null)
+                if (_queryMembersResults is null)
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "MoveNextQueryMember: issuing query");
 
                     _queryMembersResults = _primaryGroupMembersSearcher.FindAll();
 
-                    Debug.Assert(_queryMembersResults != null);
+                    Debug.Assert(_queryMembersResults is not null);
 
                     _queryMembersResultEnumerator = _queryMembersResults.GetEnumerator();
                 }
@@ -914,7 +914,7 @@ namespace System.DirectoryServices.AccountManagement
                 if (f)
                 {
                     this.current = (SearchResult)_queryMembersResultEnumerator.Current;
-                    Debug.Assert(this.current != null);
+                    Debug.Assert(this.current is not null);
 
                     _currentForeignDE = null;
                     _currentForeignPrincipal = null;
@@ -966,7 +966,7 @@ namespace System.DirectoryServices.AccountManagement
                 _storeCtx = _originalStoreCtx;
 
                 this.current = null;
-                if (_primaryGroupDN != null)
+                if (_primaryGroupDN is not null)
                     _returnedPrimaryGroup = false;
 
                 _foreignMembersCurrentGroup.Clear();
@@ -981,7 +981,7 @@ namespace System.DirectoryServices.AccountManagement
                 _foreignGroups.Clear();
 
                 _queryMembersResultEnumerator = null;
-                if (_queryMembersResults != null)
+                if (_queryMembersResults is not null)
                 {
                     _queryMembersResults.Dispose();
                     _queryMembersResults = null;
@@ -994,7 +994,7 @@ namespace System.DirectoryServices.AccountManagement
                 }
 
                 _memberSearchResultsEnumerator = null;
-                if (_memberSearchResults != null)
+                if (_memberSearchResults is not null)
                 {
                     _memberSearchResults.Dispose();
                     _memberSearchResults = null;
@@ -1064,7 +1064,7 @@ namespace System.DirectoryServices.AccountManagement
             {
                 _membersQueue.Clear();
 
-                if (_originalMembers != null)
+                if (_originalMembers is not null)
                 {
                     foreach (IEnumerable ie in _originalMembers)
                     {
@@ -1090,7 +1090,7 @@ namespace System.DirectoryServices.AccountManagement
             bookmark.current = this.current;
             bookmark.returnedPrimaryGroup = _returnedPrimaryGroup;
             this.current = null;
-            if (_primaryGroupDN != null)
+            if (_primaryGroupDN is not null)
                 _returnedPrimaryGroup = false;
 
             bookmark.foreignMembersCurrentGroup = _foreignMembersCurrentGroup;
@@ -1160,7 +1160,7 @@ namespace System.DirectoryServices.AccountManagement
             _currentForeignPrincipal = adBookmark.currentForeignPrincipal;
             _currentForeignDE = adBookmark.currentForeignDE;
             _foreignGroups = adBookmark.foreignGroups;
-            if (_queryMembersResults != null)
+            if (_queryMembersResults is not null)
                 _queryMembersResults.Dispose();
             _queryMembersResults = adBookmark.queryMembersResults;
             _queryMembersResultEnumerator = adBookmark.queryMembersResultEnumerator;
@@ -1215,31 +1215,31 @@ namespace System.DirectoryServices.AccountManagement
                 {
                     GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing");
 
-                    if (_primaryGroupMembersSearcher != null)
+                    if (_primaryGroupMembersSearcher is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing primaryGroupMembersSearcher");
                         _primaryGroupMembersSearcher.Dispose();
                     }
 
-                    if (_queryMembersResults != null)
+                    if (_queryMembersResults is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing queryMembersResults");
                         _queryMembersResults.Dispose();
                     }
 
-                    if (_currentMembersSearcher != null)
+                    if (_currentMembersSearcher is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing membersSearcher");
                         _currentMembersSearcher.Dispose();
                     }
 
-                    if (_memberSearchResults != null)
+                    if (_memberSearchResults is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing memberSearchResults");
                         _memberSearchResults.Dispose();
                     }
 
-                    if (_memberSearchersQueue != null)
+                    if (_memberSearchersQueue is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing memberSearchersQueue");
                         foreach (DirectorySearcher ds in _memberSearchersQueue)
@@ -1250,30 +1250,30 @@ namespace System.DirectoryServices.AccountManagement
                         _memberSearchersQueue.Clear();
                     }
                     IDisposable disposableMembers = _members as IDisposable;
-                    if (disposableMembers != null)
+                    if (disposableMembers is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing members Enumerable");
                         disposableMembers.Dispose();
                     }
                     IDisposable disposableMembersEnum = _membersEnum as IDisposable;
-                    if (disposableMembersEnum != null)
+                    if (disposableMembersEnum is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing membersEnum Enumerator");
                         disposableMembersEnum.Dispose();
                     }
-                    if (_membersQueue != null)
+                    if (_membersQueue is not null)
                     {
                         GlobalDebug.WriteLineIf(GlobalDebug.Info, "ADDNLinkedAttrSet", "Dispose: disposing membersQueue");
                         foreach (IEnumerable enumerable in _membersQueue)
                         {
                             IDisposable disposableEnum = enumerable as IDisposable;
-                            if (disposableEnum != null)
+                            if (disposableEnum is not null)
                             {
                                 disposableEnum.Dispose();
                             }
                         }
                     }
-                    if (_foreignGroups != null)
+                    if (_foreignGroups is not null)
                     {
                         foreach (GroupPrincipal gp in _foreignGroups)
                         {

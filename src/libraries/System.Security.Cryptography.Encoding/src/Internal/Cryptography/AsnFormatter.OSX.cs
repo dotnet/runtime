@@ -18,7 +18,7 @@ namespace Internal.Cryptography
     {
         protected override string? FormatNative(Oid? oid, byte[] rawData, bool multiLine)
         {
-            if (oid == null || string.IsNullOrEmpty(oid.Value))
+            if (oid is null || string.IsNullOrEmpty(oid.Value))
             {
                 return EncodeSpaceSeparatedHexString(rawData);
             }
@@ -61,31 +61,31 @@ namespace Internal.Cryptography
                     {
                         output.Append("othername:<unsupported>");
                     }
-                    else if (generalName.Rfc822Name != null)
+                    else if (generalName.Rfc822Name is not null)
                     {
                         output.Append("email:");
                         output.Append(generalName.Rfc822Name);
                     }
-                    else if (generalName.DnsName != null)
+                    else if (generalName.DnsName is not null)
                     {
                         output.Append("DNS:");
                         output.Append(generalName.DnsName);
                     }
-                    else if (generalName.X400Address != null)
+                    else if (generalName.X400Address is not null)
                     {
                         output.Append("X400Name:<unsupported>");
                     }
-                    else if (generalName.DirectoryName != null)
+                    else if (generalName.DirectoryName is not null)
                     {
                         // OpenSSL supports printing one of these, but the logic lives in X509Certificates,
                         // and it isn't very common.  So we'll skip this one until someone asks for it.
                         output.Append("DirName:<unsupported>");
                     }
-                    else if (generalName.EdiPartyName != null)
+                    else if (generalName.EdiPartyName is not null)
                     {
                         output.Append("EdiPartyName:<unsupported>");
                     }
-                    else if (generalName.Uri != null)
+                    else if (generalName.Uri is not null)
                     {
                         output.Append("URI:");
                         output.Append(generalName.Uri);
@@ -117,7 +117,7 @@ namespace Internal.Cryptography
                             output.Append(":<invalid>");
                         }
                     }
-                    else if (generalName.RegisteredId != null)
+                    else if (generalName.RegisteredId is not null)
                     {
                         output.Append("Registered ID:");
                         output.Append(generalName.RegisteredId);
