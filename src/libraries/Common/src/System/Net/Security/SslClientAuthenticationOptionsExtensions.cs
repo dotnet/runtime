@@ -14,6 +14,7 @@ namespace System.Net.Security
     {
         public static SslClientAuthenticationOptions ShallowClone(this SslClientAuthenticationOptions options)
         {
+#pragma warning disable CA1416 // Validate platform compatibility
             var clone = new SslClientAuthenticationOptions()
             {
                 AllowRenegotiation = options.AllowRenegotiation,
@@ -27,7 +28,7 @@ namespace System.Net.Security
                 RemoteCertificateValidationCallback = options.RemoteCertificateValidationCallback,
                 TargetHost = options.TargetHost
             };
-
+#pragma warning restore CA1416
 #if DEBUG
             // Try to detect if a property gets added that we're not copying correctly.
             foreach (PropertyInfo pi in options.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))

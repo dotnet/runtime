@@ -85,8 +85,10 @@ namespace System.Net
             {
                 CheckDisposed();
 
+#pragma warning disable CA1416 // Validate platform compatibility
                 if (value < 100 || value > 999)
                     throw new ProtocolViolationException(SR.net_invalidstatus);
+#pragma warning restore CA1416
 
                 _statusCode = value;
             }

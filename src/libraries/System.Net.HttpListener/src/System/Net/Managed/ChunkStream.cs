@@ -391,7 +391,9 @@ namespace System.Net
 
         private static void ThrowProtocolViolation(string message)
         {
+#pragma warning disable CA1416 // Validate platform compatibility
             WebException we = new WebException(message, null, WebExceptionStatus.ServerProtocolViolation, null);
+#pragma warning restore CA1416
             throw we;
         }
     }

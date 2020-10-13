@@ -30,10 +30,12 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 //
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Security;
 using System.Net.Sockets;
+using System.Runtime.Versioning;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -79,11 +81,14 @@ namespace System.Net
             _cert = cert;
             if (secure == false)
             {
+#pragma warning disable CA1416 // Validate platform compatibility
                 _stream = new NetworkStream(sock, false);
+#pragma warning restore CA1416
             }
             else
             {
 #pragma warning disable CA5359
+                Debug.Assert(!OperatingSystem.IsBrowser());
                 _sslStream = epl.Listener.CreateSslStream(new NetworkStream(sock, false), false, (t, c, ch, e) =>
                 {
                     if (c == null)
@@ -91,6 +96,7 @@ namespace System.Net
                         return true;
                     }
 
+                    Debug.Assert(!OperatingSystem.IsBrowser());
                     var c2 = c as X509Certificate2;
                     if (c2 == null)
                     {
@@ -108,7 +114,9 @@ namespace System.Net
 
             _timer = new Timer(OnTimeout, null, Timeout.Infinite, Timeout.Infinite);
             if (_sslStream != null) {
+#pragma warning disable CA1416 // Validate platform compatibility
                 _sslStream.AuthenticateAsServer (_cert, true, (SslProtocols)ServicePointManager.SecurityProtocol, false);
+#pragma warning restore CA1416
             }
             Init();
         }
@@ -156,6 +164,7 @@ namespace System.Net
             get { return _reuses; }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public IPEndPoint? LocalEndPoint
         {
             get
@@ -168,6 +177,7 @@ namespace System.Net
             }
         }
 
+        [UnsupportedOSPlatform("browser")]
         public IPEndPoint? RemoteEndPoint
         {
             get { return (IPEndPoint?)_socket!.RemoteEndPoint; }
@@ -458,7 +468,9 @@ namespace System.Net
                     str = string.Format("<h1>{0}</h1>", description);
 
                 byte[] error = Encoding.Default.GetBytes(str);
+#pragma warning disable CA1416 // Validate platform compatibility
                 response.Close(error, false);
+#pragma warning restore CA1416
             }
             catch
             {
@@ -492,7 +504,9 @@ namespace System.Net
 
             try
             {
+#pragma warning disable CA1416 // Validate platform compatibility
                 _socket.Close();
+#pragma warning restore CA1416
             }
             catch { }
             finally
@@ -541,6 +555,7 @@ namespace System.Net
 
                 Socket s = _socket;
                 _socket = null;
+#pragma warning disable CA1416 // Validate platform compatibility
                 try
                 {
                     if (s != null)
@@ -554,6 +569,7 @@ namespace System.Net
                     if (s != null)
                         s.Close();
                 }
+#pragma warning restore CA1416
                 Unbind();
                 RemoveConnection();
                 return;

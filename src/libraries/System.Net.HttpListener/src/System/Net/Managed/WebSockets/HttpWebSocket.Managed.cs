@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Threading.Tasks;
 
 namespace System.Net.WebSockets
@@ -59,6 +60,7 @@ namespace System.Net.WebSockets
 
             WebSocket webSocket = WebSocket.CreateFromStream(context.Connection.ConnectedStream, isServer:true, subProtocol, keepAliveInterval);
 
+            Debug.Assert(!OperatingSystem.IsBrowser());
             HttpListenerWebSocketContext webSocketContext = new HttpListenerWebSocketContext(
                                                                 request.Url!,
                                                                 request.Headers,
