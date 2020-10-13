@@ -46,6 +46,7 @@ jobs:
 
     enableMicrobuild: ${{ parameters.enableMicrobuild }}
     enablePublishUsingPipelines: true
+    enableRichCodeNavigation: ${{ parameters.enableRichCodeNavigation }}
 
     strategy: ${{ parameters.strategy }}
 

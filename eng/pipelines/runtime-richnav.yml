@@ -1,0 +1,40 @@
+trigger:
+  branches:
+    include:
+    - master
+    - dev/infrastructure
+    - release/*.*
+
+pr: none
+
+variables:
+- template: /eng/pipelines/common/variables.yml
+# TODO: (Consolidation) Switch away from old signing/validation variables from former Core-Setup. https://github.com/dotnet/runtime/issues/1027
+- name: TeamName
+  value: dotnet-core-acquisition
+# Set the target blob feed for package publish during official and validation builds.
+- name: _DotNetArtifactsCategory
+  value: .NETCore
+- name: _DotNetValidationArtifactsCategory
+  value: .NETCoreValidation
+
+stages:
+- stage: Build
+  jobs:
+  #
+  # Checkout repository
+  #
+  - template: /eng/pipelines/common/checkout-job.yml
+
+  #
+  # Build CoreCLR for Windows
+  #
+  - template: /eng/pipelines/common/xplat-setup.yml
+    parameters:
+      jobTemplate: /eng/pipelines/coreclr/templates/build-job.yml
+      osGroup: Windows_NT
+      archType: x64
+      targetRid: win-x64
+      platform: Windows_NT_x64
+      jobParameters:
+        buildConfig: checked
