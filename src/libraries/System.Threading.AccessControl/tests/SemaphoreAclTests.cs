@@ -171,6 +171,87 @@ namespace System.Threading.Tests
             semaphoreExisting.Dispose();
         }
 
+        [Fact]
+        public void Semaphore_OpenExisting_NameNotFound()
+        {
+            string name = "ThisShouldNotExist";
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
+            {
+                SemaphoreAcl.OpenExisting(name, SemaphoreRights.FullControl).Dispose();
+            });
+
+            Assert.False(SemaphoreAcl.TryOpenExisting(name, SemaphoreRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void Semaphore_OpenExisting_NameInvalid()
+        {
+            string name = '\0'.ToString();
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
+            {
+                SemaphoreAcl.OpenExisting(name, SemaphoreRights.FullControl).Dispose();
+            });
+
+            Assert.False(SemaphoreAcl.TryOpenExisting(name, SemaphoreRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void Semaphore_OpenExisting_BadPathName()
+        {
+            string name = @"\\?\Path";
+            Assert.Throws<System.IO.IOException>(() =>
+            {
+                SemaphoreAcl.OpenExisting(name, SemaphoreRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<System.IO.IOException>(() =>
+            {
+                SemaphoreAcl.TryOpenExisting(name, SemaphoreRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void Semaphore_OpenExisting_NullName()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                SemaphoreAcl.OpenExisting(null, SemaphoreRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                SemaphoreAcl.TryOpenExisting(null, SemaphoreRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void Semaphore_OpenExisting_EmptyName()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                SemaphoreAcl.OpenExisting(string.Empty, SemaphoreRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                SemaphoreAcl.TryOpenExisting(string.Empty, SemaphoreRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void Semaphore_OpenExisting_RightsOutOfRange()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                SemaphoreAcl.OpenExisting("name", (SemaphoreRights)(-1)).Dispose();
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                SemaphoreAcl.TryOpenExisting("name", (SemaphoreRights)(-1), out _);
+            });
+        }
+
         private SemaphoreSecurity GetBasicSemaphoreSecurity()
         {
             return GetSemaphoreSecurity(
