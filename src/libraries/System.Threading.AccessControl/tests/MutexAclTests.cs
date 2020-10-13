@@ -34,7 +34,7 @@ namespace System.Threading.Tests
             string name = GetRandomName();
             MutexSecurity security = GetBasicMutexSecurity();
 
-            using Mutex mutexNew      = CreateAndVerifyMutex(initiallyOwned: true, name, security, expectedCreatedNew: true);
+            using Mutex mutexNew = CreateAndVerifyMutex(initiallyOwned: true, name, security, expectedCreatedNew: true);
             using Mutex mutexExisting = CreateAndVerifyMutex(initiallyOwned: true, name, security, expectedCreatedNew: false);
         }
 
@@ -59,26 +59,49 @@ namespace System.Threading.Tests
             }
         }
 
+        public static IEnumerable<object[]> GetMutexSpecificParameters() =>
+            from initiallyOwned in new[] { false, true }
+            from rights in new[] { MutexRights.FullControl, MutexRights.Synchronize, MutexRights.Modify, MutexRights.Modify | MutexRights.Synchronize }
+            from accessControl in new[] { AccessControlType.Allow, AccessControlType.Deny }
+            select new object[] { initiallyOwned, rights, accessControl };
+
         [Theory]
-        [InlineData(true, MutexRights.FullControl, AccessControlType.Allow)]
-        [InlineData(true, MutexRights.FullControl, AccessControlType.Deny)]
-        [InlineData(true, MutexRights.Synchronize, AccessControlType.Allow)]
-        [InlineData(true, MutexRights.Synchronize, AccessControlType.Deny)]
-        [InlineData(true, MutexRights.Modify, AccessControlType.Allow)]
-        [InlineData(true, MutexRights.Modify, AccessControlType.Deny)]
-        [InlineData(true, MutexRights.Modify | MutexRights.Synchronize, AccessControlType.Allow)]
-        [InlineData(true, MutexRights.Modify | MutexRights.Synchronize, AccessControlType.Deny)]
-        [InlineData(false, MutexRights.FullControl, AccessControlType.Allow)]
-        [InlineData(false, MutexRights.FullControl, AccessControlType.Deny)]
-        [InlineData(false, MutexRights.Synchronize, AccessControlType.Allow)]
-        [InlineData(false, MutexRights.Synchronize, AccessControlType.Deny)]
-        [InlineData(false, MutexRights.Modify, AccessControlType.Allow)]
-        [InlineData(false, MutexRights.Modify, AccessControlType.Deny)]
+        [MemberData(nameof(GetMutexSpecificParameters))]
         public void Mutex_Create_SpecificParameters(bool initiallyOwned, MutexRights rights, AccessControlType accessControl)
         {
             MutexSecurity security = GetMutexSecurity(WellKnownSidType.BuiltinUsersSid, rights, accessControl);
             CreateAndVerifyMutex(initiallyOwned, GetRandomName(), security, expectedCreatedNew: true).Dispose();
+        }
 
+        [Fact]
+        public void Mutex_OpenExisting()
+        {
+            string name = GetRandomName();
+            MutexSecurity expectedSecurity = GetMutexSecurity(WellKnownSidType.BuiltinUsersSid, MutexRights.FullControl, AccessControlType.Allow);
+            using Mutex mutexNew = CreateAndVerifyMutex(initiallyOwned: true, name, expectedSecurity, expectedCreatedNew: true);
+
+            using Mutex mutexExisting = MutexAcl.OpenExisting(name, MutexRights.FullControl);
+
+            VerifyHandles(mutexNew, mutexExisting);
+            MutexSecurity actualSecurity = mutexExisting.GetAccessControl();
+            VerifyMutexSecurity(expectedSecurity, actualSecurity);
+        }
+
+        [Fact]
+        public void Mutex_TryOpenExisting()
+        {
+            string name = GetRandomName();
+            MutexSecurity expectedSecurity = GetMutexSecurity(WellKnownSidType.BuiltinUsersSid, MutexRights.FullControl, AccessControlType.Allow);
+            using Mutex mutexNew = CreateAndVerifyMutex(initiallyOwned: true, name, expectedSecurity, expectedCreatedNew: true);
+
+            Assert.True(MutexAcl.TryOpenExisting(name, MutexRights.FullControl, out Mutex mutexExisting));
+            Assert.NotNull(mutexExisting);
+
+            VerifyHandles(mutexNew, mutexExisting);
+            MutexSecurity actualSecurity = mutexExisting.GetAccessControl();
+            VerifyMutexSecurity(expectedSecurity, actualSecurity);
+
+            mutexExisting.Dispose();
         }
 
         private MutexSecurity GetBasicMutexSecurity()
@@ -113,6 +136,18 @@ namespace System.Threading.Tests
             return mutex;
         }
 
+        private void VerifyHandles(Mutex expected, Mutex actual)
+        {
+            Assert.NotNull(expected.SafeWaitHandle);
+            Assert.NotNull(actual.SafeWaitHandle);
+
+            Assert.False(expected.SafeWaitHandle.IsClosed);
+            Assert.False(actual.SafeWaitHandle.IsClosed);
+
+            Assert.False(expected.SafeWaitHandle.IsInvalid);
+            Assert.False(actual.SafeWaitHandle.IsInvalid);
+        }
+
         private void VerifyMutexSecurity(MutexSecurity expectedSecurity, MutexSecurity actualSecurity)
         {
             Assert.Equal(typeof(MutexRights), expectedSecurity.AccessRightType);
@@ -139,9 +174,9 @@ namespace System.Threading.Tests
         {
             return
                 expectedRule.AccessControlType == actualRule.AccessControlType &&
-                expectedRule.MutexRights       == actualRule.MutexRights &&
-                expectedRule.InheritanceFlags  == actualRule.InheritanceFlags &&
-                expectedRule.PropagationFlags  == actualRule.PropagationFlags;
+                expectedRule.MutexRights == actualRule.MutexRights &&
+                expectedRule.InheritanceFlags == actualRule.InheritanceFlags &&
+                expectedRule.PropagationFlags == actualRule.PropagationFlags;
         }
     }
 }
