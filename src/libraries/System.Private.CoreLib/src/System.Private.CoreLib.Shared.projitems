@@ -31,8 +31,8 @@
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.LittleEndian.xml" Condition="'$(Platform)' == 'wasm' or '$(Platform)' == 'arm' or '$(Platform)' == 'arm64' or '$(Platform)' == 'x86' or '$(Platform)' == 'x64'" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.32bit.xml" Condition="'$(Platform)' == 'wasm' or '$(Platform)' == 'arm' or '$(Platform)' == 'x86'" />
     <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.64bit.xml" Condition="'$(Platform)' == 'arm64' or '$(Platform)' == 'x64'" />
-    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.NoArmIntrinsics.xml" Condition="'$(Platform)' == 'wasm' or '$(Platform)' == 'x86' or '$(Platform)' == 'x64'" />
-    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.NoX86Intrinsics.xml" Condition="'$(Platform)' == 'wasm' or '$(Platform)' == 'arm' or '$(Platform)' == 'arm64'" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.NoArmIntrinsics.xml" Condition="'$(SupportsArmIntrinsics)' != 'true'" />
+    <ILLinkSubstitutionsXmls Include="$(ILLinkSharedDirectory)ILLink.Substitutions.NoX86Intrinsics.xml" Condition="'$(SupportsX86Intrinsics)' != 'true'" />
     <ILLinkLinkAttributesXmls Include="$(ILLinkSharedDirectory)ILLink.LinkAttributes.Shared.xml" />
   </ItemGroup>
   <ItemGroup>
