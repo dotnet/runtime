@@ -9732,36 +9732,30 @@ namespace System.Xml
             }
         }
 
-        internal static unsafe void AdjustLineInfo(char[] chars, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
+        internal static void AdjustLineInfo(char[] chars, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
         {
             Debug.Assert(startPos >= 0);
             Debug.Assert(endPos < chars.Length);
             Debug.Assert(startPos <= endPos);
 
-            fixed (char* pChars = &chars[startPos])
-            {
-                AdjustLineInfo(pChars, endPos - startPos, isNormalized, ref lineInfo);
-            }
+            AdjustLineInfo(chars.AsSpan(startPos, endPos - startPos), isNormalized, ref lineInfo);
         }
 
-        internal static unsafe void AdjustLineInfo(string str, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
+        internal static void AdjustLineInfo(string str, int startPos, int endPos, bool isNormalized, ref LineInfo lineInfo)
         {
             Debug.Assert(startPos >= 0);
             Debug.Assert(endPos < str.Length);
             Debug.Assert(startPos <= endPos);
 
-            fixed (char* pChars = str)
-            {
-                AdjustLineInfo(pChars + startPos, endPos - startPos, isNormalized, ref lineInfo);
-            }
+            AdjustLineInfo(str.AsSpan(startPos, endPos - startPos), isNormalized, ref lineInfo);
         }
 
-        internal static unsafe void AdjustLineInfo(char* pChars, int length, bool isNormalized, ref LineInfo lineInfo)
+        private static void AdjustLineInfo(ReadOnlySpan<char> chars, bool isNormalized, ref LineInfo lineInfo)
         {
             int lastNewLinePos = -1;
-            for (int i = 0; i < length; i++)
+            for (int i = 0; i < chars.Length; i++)
             {
-                switch (pChars[i])
+                switch (chars[i])
                 {
                     case '\n':
                         lineInfo.lineNo++;
@@ -9774,7 +9768,8 @@ namespace System.Xml
                         }
                         lineInfo.lineNo++;
                         lastNewLinePos = i;
-                        if (i + 1 < length && pChars[i + 1] == '\n')
+                        int nextIdx = i + 1;
+                        if ((uint)nextIdx < (uint)chars.Length && chars[nextIdx] == '\n')
                         {
                             i++;
                             lastNewLinePos++;
@@ -9784,7 +9779,7 @@ namespace System.Xml
             }
             if (lastNewLinePos >= 0)
             {
-                lineInfo.linePos = length - lastNewLinePos;
+                lineInfo.linePos = chars.Length - lastNewLinePos;
             }
         }
 
