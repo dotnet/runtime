@@ -57,7 +57,7 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
         if (ip == 0 || sp <= previousSp) {
             break;
         }
-        // Break out of the endless loop if the IP matches over a 100 times. This is a fallback
+        // Break out of the endless loop if the IP matches over a 1000 times. This is a fallback
         // behavior of libunwind when the module the IP is in doesn't have unwind info and for
         // simple stack overflows. The stack memory is added to the dump in GetThreadStack and
         // it isn't necessary to add the same IP page over and over again. The only place this
@@ -65,9 +65,9 @@ ThreadInfo::UnwindNativeFrames(CONTEXT* pContext)
         // over.
         if (ip == previousIp)
         {
-            if (ipMatchCount++ > 100)
+            if (ipMatchCount++ > 1000)
             {
-                TRACE("Unwind: same ip %" PRIA PRIx64 " over 100 times\n", ip);
+                TRACE("Unwind: same ip %" PRIA PRIx64 " over 1000 times\n", ip);
                 break;
             }
         }
