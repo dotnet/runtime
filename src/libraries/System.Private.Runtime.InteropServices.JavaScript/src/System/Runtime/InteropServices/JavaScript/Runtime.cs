@@ -243,6 +243,11 @@ namespace System.Runtime.InteropServices.JavaScript
             return i;
         }
 
+        private static object BoxUInt(uint i)
+        {
+            return i;
+        }
+
         private static object BoxDouble(double d)
         {
             return d;

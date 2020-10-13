@@ -120,6 +120,7 @@ var BindingSupportLib = {
 			this._get_raw_mono_obj = bind_runtime_method ("GetDotNetObject", "i!");
 
 			this._box_js_int = bind_runtime_method ("BoxInt", "i!");
+			this._box_js_uint = bind_runtime_method ("BoxUInt", "i!");
 			this._box_js_double = bind_runtime_method ("BoxDouble", "d!");
 			this._box_js_bool = bind_runtime_method ("BoxBool", "i!");
 			this._is_simple_array = bind_runtime_method ("IsSimpleArray", "m");
@@ -418,8 +419,10 @@ var BindingSupportLib = {
 				case typeof js_obj === "undefined":
 					return 0;
 				case typeof js_obj === "number": {
-					if (parseInt(js_obj) == js_obj)
-						result = this._box_js_int (js_obj);
+					if ((js_obj | 0) === js_obj)
+						result = this._box_js_int (js_obj | 0);
+					else if ((js_obj >>> 0) === js_obj)
+						result = this._box_js_uint (js_obj >>> 0);
 					else
 						result = this._box_js_double (js_obj);
 
@@ -875,8 +878,8 @@ var BindingSupportLib = {
 			// console.log("_compile_converter_for_marshal_string", args_marshal);
 
 			var converter = this._get_converter_for_marshal_string (args_marshal);
-			if (!converter.args_marshal)
-				throw new Error ("Corrupt converter");
+			if (typeof (converter.args_marshal) !== "string")
+				throw new Error ("Corrupt converter for '" + args_marshal + "'");
 
 			if (converter.compiled_function && converter.compiled_variadic_function)
 				return converter;
@@ -1367,9 +1370,7 @@ var BindingSupportLib = {
 				argsRoot.value = this.js_array_to_mono_array (js_args);
 				if (!this.delegate_dynamic_invoke)
 					throw new Error("System.Delegate.DynamicInvoke method can not be resolved.");
-				// Note: the single 'm' passed here is causing problems with AOT.  Changed to "mo" again.  
-				// This may need more analysis if causes problems again.
-				return this.call_method (this.delegate_dynamic_invoke, delegateRoot.value, "mo", [ argsRoot.value ]);
+				return this.call_method (this.delegate_dynamic_invoke, delegateRoot.value, "m", [ argsRoot.value ]);
 			} finally {
 				MONO.mono_wasm_release_roots (delegateRoot, argsRoot);
 			}
