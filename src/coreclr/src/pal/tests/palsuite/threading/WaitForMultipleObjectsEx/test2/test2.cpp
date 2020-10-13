@@ -56,7 +56,7 @@ PALTEST(threading_WaitForMultipleObjectsEx_test2_paltest_waitformultipleobjectse
     // wait timeout
     if ( 
         ((ThreadWaitDelta_WFMO_test2 >= ChildThreadWaitTime) && (ThreadWaitDelta_WFMO_test2 - ChildThreadWaitTime) > TOLERANCE)
-        || (( ThreadWaitDelta_WFMO_test2 < InterruptTime) && (ThreadWaitDelta_WFMO_test2 - InterruptTime) > TOLERANCE)
+        || (( ThreadWaitDelta_WFMO_test2 < InterruptTime) && (InterruptTime - ThreadWaitDelta_WFMO_test2) > TOLERANCE)
         )
     {
         Fail("Expected thread to wait for %d ms (and get interrupted).\n"
