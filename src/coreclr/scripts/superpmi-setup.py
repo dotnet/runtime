@@ -33,8 +33,10 @@
 ################################################################################
 
 
-import subprocess
 import argparse
+import shutil
+import subprocess
+import tempfile
 
 from os import listdir, path, walk
 from os.path import isfile, join, getsize

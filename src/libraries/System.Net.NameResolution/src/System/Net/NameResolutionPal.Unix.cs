@@ -15,8 +15,6 @@ namespace System.Net
     {
         public const bool SupportsGetAddrInfoAsync = false;
 
-        public static void EnsureSocketsAreInitialized() { } // No-op for Unix
-
         internal static Task GetAddrInfoAsync(string hostName, bool justAddresses) =>
             throw new NotSupportedException();
 

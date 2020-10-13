@@ -1715,8 +1715,6 @@ namespace System.Threading.Tasks.Tests
                 Task t = new Task(
                     (passedInState) =>
                     {
-                        //Debug.WriteLine(" threadCrossingSyncContext..running callback delegate on threadID = " + Thread.CurrentThread.ManagedThreadId);
-
                         try
                         {
                             d(passedInState);
@@ -1729,9 +1727,6 @@ namespace System.Threading.Tasks.Tests
 
                 t.Start();
                 t.Wait();
-
-                //t.Start(state);
-                //t.Join();
 
                 if (marshalledException != null)
                     throw new AggregateException("DUMMY: ThreadCrossingSynchronizationContext.Send captured and propogated an exception",

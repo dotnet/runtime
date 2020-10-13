@@ -557,7 +557,7 @@ namespace System.Threading
         }
     }
 
-    public struct AsyncFlowControl : IDisposable
+    public struct AsyncFlowControl : IEquatable<AsyncFlowControl>, IDisposable
     {
         private Thread? _thread;
 
@@ -604,7 +604,7 @@ namespace System.Threading
 
         public override bool Equals(object? obj)
         {
-            return obj is AsyncFlowControl && Equals((AsyncFlowControl)obj);
+            return obj is AsyncFlowControl asyncControl && Equals(asyncControl);
         }
 
         public bool Equals(AsyncFlowControl obj)

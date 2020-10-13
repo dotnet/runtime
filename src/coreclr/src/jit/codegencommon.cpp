@@ -11840,12 +11840,16 @@ void CodeGen::genMultiRegStoreToLocal(GenTreeLclVar* lclNode)
             }
             else
             {
+                varReg = REG_STK;
+            }
+            if ((varReg == REG_STK) || fieldVarDsc->lvLiveInOutOfHndlr)
+            {
                 if (!lclNode->AsLclVar()->IsLastUse(i))
                 {
                     GetEmitter()->emitIns_S_R(ins_Store(type), emitTypeSize(type), reg, fieldLclNum, 0);
                 }
-                fieldVarDsc->SetRegNum(REG_STK);
             }
+            fieldVarDsc->SetRegNum(varReg);
         }
         else
         {

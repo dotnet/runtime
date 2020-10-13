@@ -4309,7 +4309,7 @@ mini_add_profiler_argument (const char *desc)
 	if (!profile_options)
 		profile_options = g_ptr_array_new ();
 
-	g_ptr_array_add (profile_options, (gpointer) desc);
+	g_ptr_array_add (profile_options, (gpointer) g_strdup (desc));
 }
 
 
@@ -4562,6 +4562,12 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_profiler_state.context_get_local = mini_profiler_context_get_local;
 	mono_profiler_state.context_get_result = mini_profiler_context_get_result;
 	mono_profiler_state.context_free_buffer = mini_profiler_context_free_buffer;
+
+	if (g_hasenv ("MONO_PROFILE")) {
+		gchar *profile_env = g_getenv ("MONO_PROFILE");
+		mini_add_profiler_argument (profile_env);
+		g_free (profile_env);
+	}
 
 	if (profile_options)
 		for (guint i = 0; i < profile_options->len; i++)
@@ -5083,8 +5089,11 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_profiler_cleanup ();
 
-	if (profile_options)
+	if (profile_options) {
+		for (guint i = 0; i < profile_options->len; ++i)
+			g_free (g_ptr_array_index (profile_options, i));
 		g_ptr_array_free (profile_options, TRUE);
+	}
 
 	mono_icall_cleanup ();
 
