@@ -48,7 +48,7 @@ public class Program
     public static Type GetCallingUnmanagedCallersOnlyDirectlyType()
     {
         var asm = Assembly.Load(InvalidCSharpAssemblyName);
-        return asm.GetType("InvalidCSharp.CallingUnmanagedCalllersOnlyDirectly");
+        return asm.GetType("InvalidCSharp.CallingUnmanagedCallersOnlyDirectly");
     }
 
     private delegate int IntNativeMethodInvoker();
@@ -731,7 +731,7 @@ public class Program
            {
                 .locals init (native int V_0)
                 IL_0000:  nop
-                IL_0001:  ldftn      int InvalidCSharp.CallingUnmanagedCalllersOnlyDirectly::PInvokeMarkedWithUnmanagedCallersOnly(int32)
+                IL_0001:  ldftn      int InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::PInvokeMarkedWithUnmanagedCallersOnly(int32)
                 IL_0007:  stloc.0
 
                 IL_0008:  ldc.i4     1234
