@@ -94,7 +94,7 @@ jobs:
 
     - name: crossArg
       value: ''
-    - ${{ if eq(parameters.crossBuild, 'true') }}:
+    - ${{ if eq(parameters.crossBuild, true) }}:
       - name: crossArg
         value: '-cross'
 

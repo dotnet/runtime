@@ -57,7 +57,7 @@ jobs:
         - ${{ if ne(parameters.testScope, '') }}:
           - _testScopeArg: -testscope ${{ parameters.testScope }}
 
-        - ${{ if eq(parameters.crossBuild, 'true') }}:
+        - ${{ if eq(parameters.crossBuild, true) }}:
           - _crossBuildPropertyArg: /p:CrossBuild=true
 
         - ${{ if and(eq(parameters.osGroup, 'Linux'), eq(parameters.osSubGroup, '_musl')) }}:
