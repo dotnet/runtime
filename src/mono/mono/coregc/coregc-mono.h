@@ -6,8 +6,8 @@
 #ifndef __MONO_COREGC_MONO_H__
 #define __MONO_COREGC_MONO_H__
 
-#include <external/coreclr/src/gc/env/gcenv.base.h>
-#include <external/coreclr/src/gc/gcinterface.h>
+#include <../coreclr/src/gc/env/gcenv.base.h>
+#include <../coreclr/src/gc/gcinterface.h>
 
 /* FIXME: what's the correct struct? */
 #define COREGC_CLIENT_OBJECT_HEADER_SIZE (sizeof (MonoObject))

@@ -594,12 +594,14 @@ mono_gc_alloc_obj (MonoVTable *vtable, size_t size)
 		size = MIN_OBJECT_SIZE;
 	if (mono_class_has_finalizer(vtable->klass))
 		flags |= GC_ALLOC_FINALIZE;
-	if (size < 85000) {
-		CoreGCThreadInfo *info = (CoreGCThreadInfo*) mono_thread_info_current ();
-		o = (MonoObject*) pGCHeap->Alloc (&info->alloc_context, size, flags);
-	} else {
-		o = (MonoObject*) pGCHeap->AllocLHeap (size, flags);
-	}
+
+	// It looks like the AllocLHeap to allocate directly in the LargeObject heap
+	// is no longe present in CoreCLR. I'm not sure if we need it; Alloc
+	// should decide which I think works just fine?
+	// Ask Vlad why his change was explicitly allocated in large object space. 
+	CoreGCThreadInfo *info = (CoreGCThreadInfo*) mono_thread_info_current ();
+	o = (MonoObject*) pGCHeap->Alloc (&info->alloc_context, size, flags);
+
 	o->vtable = vtable;
 	return o;
 }
