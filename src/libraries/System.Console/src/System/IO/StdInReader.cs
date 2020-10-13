@@ -46,6 +46,9 @@ namespace System.IO
 
         internal void AppendExtraBuffer(ReadOnlySpan<byte> buffer)
         {
+            // Ensure a reasonable upper bound applies to the stackalloc
+            Debug.Assert(buffer.Length <= 1024);
+
             // Then convert the bytes to chars
             Span<char> chars = stackalloc char[_encoding.GetMaxCharCount(buffer.Length)];
             int charLen = _encoding.GetChars(buffer, chars);

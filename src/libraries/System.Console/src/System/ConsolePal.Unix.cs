@@ -518,11 +518,11 @@ namespace System
                         !BufferUntil((byte)';', r, ref readBytes, ref readBytesPos, out semiPos) ||
                         !BufferUntil((byte)'R', r, ref readBytes, ref readBytesPos, out rPos))
                     {
-                        // We were unable to read everything from stdin, e.g. a timeout ocurred.
+                        // We were unable to read everything from stdin, e.g. a timeout occurred.
                         // Since we couldn't get the complete CPR, transfer any bytes we did read
                         // back to the StdInReader's extra buffer, treating it all as user input,
                         // and exit having not computed a valid cursor position.
-                        r.AppendExtraBuffer(readBytes.Slice(readBytesPos));
+                        TransferBytes(readBytes.Slice(readBytesPos), r);
                         return false;
                     }
 
@@ -544,8 +544,8 @@ namespace System
                     // Everything before the \ESC is transferred back to the StdInReader. As is everything
                     // between the \ESC and the '['; there really shouldn't be anything there, but we're
                     // defensive in case the CPR wasn't written atomically and something crept in.
-                    r.AppendExtraBuffer(readBytes.Slice(0, escPos));
-                    r.AppendExtraBuffer(readBytes.Slice(escPos + 1, bracketPos - (escPos + 1)));
+                    TransferBytes(readBytes.Slice(0, escPos), r);
+                    TransferBytes(readBytes.Slice(escPos + 1, bracketPos - (escPos + 1)), r);
 
                     // Now loop through all characters between the '[' and the ';' to compute the row,
                     // and then between the ';' and the 'R' to compute the column. We incorporate any
@@ -656,6 +656,14 @@ namespace System
                     {
                         result = row - 1;
                     }
+                }
+            }
+
+            static void TransferBytes(ReadOnlySpan<byte> src, StdInReader dst)
+            {
+                for (int i = 0; i < src.Length; i++)
+                {
+                    dst.AppendExtraBuffer(src.Slice(i, 1));
                 }
             }
 
