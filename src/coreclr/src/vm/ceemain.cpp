@@ -507,7 +507,7 @@ void InitGSCookie()
 
 #ifdef TARGET_UNIX
     // PAL layer is unable to extract old protection for regions that were not allocated using VirtualAlloc
-    oldProtection = PAGE_READONLY;
+    oldProtection = PAGE_READWRITE;
 #endif // TARGET_UNIX
 
 #ifndef TARGET_UNIX
