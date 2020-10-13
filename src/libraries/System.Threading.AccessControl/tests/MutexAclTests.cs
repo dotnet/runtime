@@ -104,6 +104,86 @@ namespace System.Threading.Tests
             mutexExisting.Dispose();
         }
 
+        [Fact]
+        public void Mutex_OpenExisting_NameNotFound()
+        {
+            string name = "ThisShouldNotExist";
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
+            {
+                MutexAcl.OpenExisting(name, MutexRights.FullControl).Dispose();
+            });
+
+            Assert.False(MutexAcl.TryOpenExisting(name, MutexRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void Mutex_OpenExisting_NameInvalid()
+        {
+            string name = '\0'.ToString();
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
+            {
+                MutexAcl.OpenExisting(name, MutexRights.FullControl).Dispose();
+            });
+
+            Assert.False(MutexAcl.TryOpenExisting(name, MutexRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void Mutex_OpenExisting_BadPathName()
+        {
+            string name = @"\\?\Path";
+            Assert.Throws<System.IO.IOException>(() =>
+            {
+                MutexAcl.OpenExisting(name, MutexRights.FullControl).Dispose();
+            });
+            Assert.Throws<System.IO.IOException>(() =>
+            {
+                MutexAcl.TryOpenExisting(name, MutexRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void Mutex_OpenExisting_NullName()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                MutexAcl.OpenExisting(null, MutexRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                MutexAcl.TryOpenExisting(null, MutexRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void Mutex_OpenExisting_EmptyName()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                MutexAcl.OpenExisting(string.Empty, MutexRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                MutexAcl.TryOpenExisting(string.Empty, MutexRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void Mutex_OpenExisting_RightsOutOfRange()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                MutexAcl.OpenExisting("name", (MutexRights)(-1)).Dispose();
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                MutexAcl.TryOpenExisting("name", (MutexRights)(-1), out _);
+            });
+        }
+
         private MutexSecurity GetBasicMutexSecurity()
         {
             return GetMutexSecurity(
