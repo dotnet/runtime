@@ -12,7 +12,10 @@ namespace System.Net.Mail
     public class SmtpFailedRecipientException : SmtpException, ISerializable
     {
         private readonly string? _failedRecipient;
+
+#pragma warning disable CS0649      // Browser - never assigned to
         internal bool fatal;
+#pragma warning restore CS0649
 
         public SmtpFailedRecipientException() : base() { }
 
