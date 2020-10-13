@@ -55,7 +55,8 @@
     <tvOSVersionMin>9.0</tvOSVersionMin>
     <watchOSVersionMin>2.0</watchOSVersionMin>
     <watchOS64_32VersionMin>5.1</watchOS64_32VersionMin>
-    <macOSVersionMin>10.13</macOSVersionMin>
+    <macOSVersionMin Condition="'$(TargetArchitecture)' != 'arm64'">10.13</macOSVersionMin>
+    <macOSVersionMin Condition="'$(TargetArchitecture)' == 'arm64'">11.0</macOSVersionMin>
 
     <!-- Version of the OS SDK we target -->
     <iOSVersion></iOSVersion>
