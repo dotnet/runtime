@@ -37,8 +37,7 @@ jobs:
 
     # Only run Rich Nav indexer on Windows NT_x64 platform for now
     ${{ if and(eq(parameters.buildConfig, 'checked'), eq(parameters.platform, 'Windows_NT_x64')) }}:
-      name: enableRichCodeNavigation
-      value: true
+      enableRichCodeNavigation: true
 
     # Compute job name from template parameters
     ${{ if and(ne(parameters.testGroup, 'clrTools'), eq(parameters.compilerName, 'gcc')) }}:
