@@ -4,6 +4,8 @@
     <PackageReference Include="xunit" Version="$(XUnitVersion)" ExcludeAssets="build" />
     <PackageReference Include="Microsoft.DotNet.XUnitExtensions" Version="$(MicrosoftDotNetXUnitExtensionsVersion)" />
     <PackageReference Include="xunit.runner.visualstudio" Version="$(XUnitRunnerVisualStudioVersion)" GeneratePathProperty="true" Condition="'$(TargetsMobile)' != 'true'" />
+    <!-- TODO: Remove when vstest's lightweight mode is available. -->
+    <PackageDownload Include="Microsoft.DotNet.XUnitConsoleRunner" Version="[$(MicrosoftDotNetXUnitConsoleRunnerVersion)]" Condition="'$(TargetsMobile)' != 'true' and '$(ArchiveTests)' != 'true'" />
   </ItemGroup>
 
   <ItemGroup>

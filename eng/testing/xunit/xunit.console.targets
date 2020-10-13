@@ -1,0 +1,42 @@
+<Project>
+  <!--
+    This file is using the unsupported xunit.console runner.
+    It's recommended to use `dotnet test` instead.
+    TODO: Remove this file when vstest's lightweight mode is available.
+  -->
+
+  <PropertyGroup>
+    <!-- Implicit test build support when invoking the Test target on the project directly. -->
+    <TestDependsOn Condition="'$(VSTestNoBuild)' != 'true'">Build</TestDependsOn>
+  </PropertyGroup>
+
+  <Target Name="VSTest" DependsOnTargets="$(TestDependsOn)">
+    <PropertyGroup>
+      <_depsFileArgument Condition="'$(GenerateDependencyFile)' == 'true'">--depsfile "$(TargetDir)$(TargetName).deps.json"</_depsFileArgument>
+      <_xunitConsoleAppPath>$(NuGetPackageRoot)microsoft.dotnet.xunitconsolerunner\$(MicrosoftDotNetXUnitConsoleRunnerVersion)\tools\netcoreapp2.1\xunit.console.dll</_xunitConsoleAppPath>
+
+      <_runCommand>"$(TestHostRootPath)$([System.IO.Path]::GetFileName('$(DotNetTool)'))" exec --runtimeconfig "$(TargetDir)$(AssemblyName).runtimeconfig.json" $(_depsFileArgument) $(_xunitConsoleAppPath)</_runCommand>
+      <_runCommand>$(_runCommand) "$(TargetPath)"</_runCommand>
+      <_runCommand>$(_runCommand) -xml $(TargetDir)testResults.xml</_runCommand>
+      <_runCommand Condition="'$(TestDisableParallelization)' == 'true'">$(_runCommand) -maxthreads 1</_runCommand>
+      <_runCommand Condition="'$(XUnitShowProgress)' == 'true'">$(_runCommand) -verbose</_runCommand>
+
+      <!-- Add local and global options to the argument stack. -->
+      <_runCommand Condition="'$(XUnitMethodName)' != ''">$(_runCommand) -method $(XUnitMethodName)</_runCommand>
+      <_runCommand Condition="'$(XUnitClassName)' != ''">$(_runCommand) -class $(XUnitClassName)</_runCommand>
+
+      <!-- Add to run argument string -->
+      <_runCommand>$(_runCommand)$(_withCategories.Replace(';', ' -trait category='))</_runCommand>
+      <_runCommand>$(_runCommand)$(_withoutCategories.Replace(';', ' -notrait category='))</_runCommand>
+
+      <!-- User passed in options. -->
+      <_runCommand Condition="'$(XUnitOptions)' != ''">$(_runCommand) $(XUnitOptions)</_runCommand>
+    </PropertyGroup>
+
+    <Error Text="Error: looks the package 'microsoft.dotnet.xunitconsolerunner' hasn't been restored yet. Please restore the test project and specify xunit.console as the runner."
+           Condition="!Exists('$(_xunitConsoleAppPath)')" />
+    
+    <Exec Command="$(_runCommand)" />
+    <Message Text="Test results: $(TargetDir)testResults.xml" Importance="high" />
+  </Target>
+</Project>

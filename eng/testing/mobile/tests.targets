@@ -231,9 +231,6 @@
     <Error Condition="'$(TestRunExitCode)' != '0'" Text="$(TestRunErrorMessage)" />
   </Target>
 
-  <Target Name="Test" DependsOnTargets="$(TestDependsOn)" />
-  <!-- Overwrite the VSTest target to enable "dotnet test". -->
-  <Target Name="VSTest" DependsOnTargets="Test" />
-
-  <Import Project="$(MSBuildThisFileDirectory)outerBuild.targets" Condition="'$(IsCrossTargetingBuild)' == 'true'" />
+  <!-- Overwrite the VSTest target to make "dotnet test" the entry point. -->
+  <Target Name="VSTest" DependsOnTargets="$(TestDependsOn)" />
 </Project>

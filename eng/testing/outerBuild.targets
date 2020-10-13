@@ -5,4 +5,8 @@
              Targets="VSTest"
              BuildInParallel="$(BuildAllProjects)" />
   </Target>
+  <Target Name="Test"
+          DependsOnTargets="VSTest">
+    <Message Importance="high" Text="The Test target will be removed with the next infrastructure rollout. Please use 'dotnet test' instead." />
+  </Target>
 </Project>

@@ -5,4 +5,11 @@
                       Version="$(NetStandardLibrary20Version)"
                       Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'" />
   </ItemGroup>
+
+  <!-- TODO: Remove when vstest's lightweight mode is available. -->
+  <Import Project="$(MSBuildThisFileDirectory)xunit.console.targets"
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                     '$(TargetsMobile)' != 'true' and
+                     '$(ArchiveTests)' != 'true' and
+                     '$(TestRunner)' == 'xunit'" />
 </Project>

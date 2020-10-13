@@ -58,5 +58,5 @@ run-tests-coreclr-all:
 #   make run-tests-corefx-System.Runtime 
 # for `System.Runtime.Tests` (the rule builds both the lib and the test if needed)
 run-tests-corefx-%:
-	$(DOTNET) build ../../../src/libraries/$*/tests -c $(LIBRARIES_TESTS_CONFIG) /p:RuntimeFlavor=mono /t:Test
+	$(DOTNET) test ../../../src/libraries/$*/tests -c $(LIBRARIES_TESTS_CONFIG) /p:RuntimeFlavor=mono /p:BuildTargetFramework=net6.0
 
