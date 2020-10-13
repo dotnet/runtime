@@ -12,7 +12,11 @@ namespace Mono.Linker.Tests.Cases.Warnings.Individual
 	[Reference ("System.Core.dll")]
 #endif
 	[SetupLinkerCoreAction ("skip")]
-	[SetupCompileBefore ("library.dll", new[] { "../Dependencies/TriggerWarnings_Lib.cs" })]
+#if !ILLINK
+	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) }, new[] { "System.Core.dll" })]
+#else
+	[SetupCompileBefore ("library.dll", new[] { typeof (TriggerWarnings_Lib) })]
+#endif
 	[KeptAssembly ("library.dll")]
 	[SetupLinkerAction ("link", "library.dll")]
 	[SetupLinkerArgument ("--verbose")]
