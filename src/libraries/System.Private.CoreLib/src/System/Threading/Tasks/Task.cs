@@ -839,10 +839,13 @@ namespace System.Threading.Tasks
             {
                 m_stateFlags |= Task.TASK_STATE_TASKSCHEDULED_WAS_FIRED;
 
-                Task? currentTask = Task.InternalCurrent;
-                Task? parentTask = m_contingentProperties?.m_parent;
-                TplEventSource.Log.TaskScheduled(ts.Id, currentTask == null ? 0 : currentTask.Id,
-                                     this.Id, parentTask == null ? 0 : parentTask.Id, (int)this.Options);
+                if (TplEventSource.Log.IsEnabled())
+                {
+                    Task? currentTask = Task.InternalCurrent;
+                    Task? parentTask = m_contingentProperties?.m_parent;
+                    TplEventSource.Log.TaskScheduled(ts.Id, currentTask == null ? 0 : currentTask.Id,
+                                        this.Id, parentTask == null ? 0 : parentTask.Id, (int)this.Options);
+                }
             }
         }
 
@@ -2169,7 +2172,7 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(props != null);
 
-            // In rare occurences during AppDomainUnload() processing, it is possible for this method to be called
+            // In rare occurrences during AppDomainUnload() processing, it is possible for this method to be called
             // simultaneously on the same task from two different contexts.  This can result in m_exceptionalChildren
             // being nulled out while it is being processed, which could lead to a NullReferenceException.  To
             // protect ourselves, we'll cache m_exceptionalChildren in a local variable.
@@ -2288,11 +2291,9 @@ namespace System.Threading.Tasks
                     log.TaskStarted(previousTask.m_taskScheduler!.Id, previousTask.Id, this.Id);
                 else
                     log.TaskStarted(TaskScheduler.Current.Id, 0, this.Id);
-            }
 
-            bool loggingOn = TplEventSource.Log.IsEnabled();
-            if (loggingOn)
-                TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
+                log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.Execution);
+            }
 
             try
             {
@@ -2327,8 +2328,8 @@ namespace System.Threading.Tasks
                     HandleException(exn);
                 }
 
-                if (loggingOn)
-                    TplEventSource.Log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
+                if (etwIsEnabled)
+                    log.TraceSynchronousWorkEnd(CausalitySynchronousWork.Execution);
 
                 Finish(true);
             }
@@ -3199,14 +3200,10 @@ namespace System.Threading.Tasks
         {
             Debug.Assert(continuationObject != null);
 
-            TplEventSource? log = TplEventSource.Log;
-            if (!log.IsEnabled())
-            {
-                log = null;
-            }
-
-            if (TplEventSource.Log.IsEnabled())
-                TplEventSource.Log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.CompletionNotification);
+            TplEventSource log = TplEventSource.Log;
+            bool etwIsEnabled = log.IsEnabled();
+            if (etwIsEnabled)
+                log.TraceSynchronousWorkBegin(this.Id, CausalitySynchronousWork.CompletionNotification);
 
             bool canInlineContinuations =
                 (m_stateFlags & (int)TaskCreationOptions.RunContinuationsAsynchronously) == 0 &&
@@ -3279,7 +3276,8 @@ namespace System.Threading.Tasks
                         if ((stc.m_options & TaskContinuationOptions.ExecuteSynchronously) == 0)
                         {
                             continuations[i] = null; // so that we can skip this later
-                            log?.RunningContinuationList(Id, i, stc);
+                            if (etwIsEnabled)
+                                log.RunningContinuationList(Id, i, stc);
                             stc.Run(this, canInlineContinuationTask: false);
                         }
                     }
@@ -3288,7 +3286,8 @@ namespace System.Threading.Tasks
                         if (forceContinuationsAsync)
                         {
                             continuations[i] = null;
-                            log?.RunningContinuationList(Id, i, currentContinuation);
+                            if (etwIsEnabled)
+                                log.RunningContinuationList(Id, i, currentContinuation);
                             switch (currentContinuation)
                             {
                                 case IAsyncStateMachineBox stateMachineBox:
@@ -3319,7 +3318,8 @@ namespace System.Threading.Tasks
                     continue;
                 }
                 continuations[i] = null; // to enable free'ing up memory earlier
-                log?.RunningContinuationList(Id, i, currentContinuation);
+                if (etwIsEnabled)
+                   log.RunningContinuationList(Id, i, currentContinuation);
 
                 switch (currentContinuation)
                 {
@@ -5412,25 +5412,23 @@ namespace System.Threading.Tasks
         /// <summary>DelayPromise that also supports cancellation.</summary>
         private sealed class DelayPromiseWithCancellation : DelayPromise
         {
-            private readonly CancellationToken _token;
             private readonly CancellationTokenRegistration _registration;
 
             internal DelayPromiseWithCancellation(int millisecondsDelay, CancellationToken token) : base(millisecondsDelay)
             {
                 Debug.Assert(token.CanBeCanceled);
 
-                _token = token;
-                _registration = token.UnsafeRegister(static state => ((DelayPromiseWithCancellation)state!).CompleteCanceled(), this);
-            }
-
-            private void CompleteCanceled()
-            {
-                if (TrySetCanceled(_token))
+                _registration = token.UnsafeRegister(static (state, cancellationToken) =>
                 {
-                    Cleanup();
-                    // This path doesn't invoke RemoveFromActiveTasks or TraceOperationCompletion
-                    // because that's strangely already handled inside of TrySetCanceled.
-                }
+                    var thisRef = (DelayPromiseWithCancellation)state!;
+                    if (thisRef.TrySetCanceled(cancellationToken))
+                    {
+                        thisRef.Cleanup();
+                        // This path doesn't invoke RemoveFromActiveTasks or TraceOperationCompletion
+                        // because that's strangely already handled inside of TrySetCanceled.
+                    }
+                }, this);
+
             }
 
             protected override void Cleanup()
@@ -5471,15 +5469,15 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task WhenAll(IEnumerable<Task> tasks)
         {
-            // Take a more efficient path if tasks is actually an array
-            if (tasks is Task[] taskArray)
-            {
-                return WhenAll(taskArray);
-            }
-
             // Skip a List allocation/copy if tasks is a collection
             if (tasks is ICollection<Task> taskCollection)
             {
+                // Take a more efficient path if tasks is actually an array
+                if (tasks is Task[] taskArray)
+                {
+                    return WhenAll(taskArray);
+                }
+
                 int index = 0;
                 taskArray = new Task[taskCollection.Count];
                 foreach (Task task in tasks)
@@ -6079,6 +6077,25 @@ namespace System.Threading.Tasks
         /// </exception>
         public static Task<Task> WhenAny(IEnumerable<Task> tasks)
         {
+            // Skip a List allocation/copy if tasks is a collection
+            if (tasks is ICollection<Task> taskCollection)
+            {
+                // Take a more efficient path if tasks is actually an array
+                if (tasks is Task[] taskArray)
+                {
+                    return WhenAny(taskArray);
+                }
+
+                int index = 0;
+                taskArray = new Task[taskCollection.Count];
+                foreach (Task task in tasks)
+                {
+                    if (task == null) ThrowHelper.ThrowArgumentException(ExceptionResource.Task_MultiTaskContinuation_NullTask, ExceptionArgument.tasks);
+                    taskArray[index++] = task;
+                }
+                return TaskFactory.CommonCWAnyLogic(taskArray);
+            }
+
             if (tasks == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.tasks);
 
             // Make a defensive copy, as the user may manipulate the tasks collection

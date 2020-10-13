@@ -14,7 +14,7 @@ NESTED_ENTRY FuncEvalHijack, _TEXT, UnhandledExceptionHandlerUnix
         CHECK_STACK_ALIGNMENT
         call C_FUNC(FuncEvalHijackWorker)
         add  esp, (4 + STK_ALIGN_PADDING)
-        jmp  eax        // return is the patch addresss to jmp to
+        jmp  eax        // return is the patch address to jmp to
 #undef STK_ALIGN_PADDING
 NESTED_END FuncEvalHijack, _TEXT
 

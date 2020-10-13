@@ -351,7 +351,7 @@ ep_parameter_desc_init (
 	EP_ASSERT (parameter_desc != NULL);
 
 	parameter_desc->type = type;
-	parameter_desc->element_type = 0;
+	parameter_desc->element_type = EP_PARAMETER_TYPE_EMPTY;
 	parameter_desc->name = name;
 
 	return parameter_desc;

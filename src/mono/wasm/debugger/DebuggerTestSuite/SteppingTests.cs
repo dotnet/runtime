@@ -1054,8 +1054,7 @@ namespace DebuggerTests
             });
         }
 
-        // [Fact]
-        // Issue: https://github.com/dotnet/runtime/issues/42703
+        [Fact]
         async Task StepOverHiddenLinesInMethodWithNoNextAvailableLineShouldResumeAtCallSite()
         {
             var insp = new Inspector();

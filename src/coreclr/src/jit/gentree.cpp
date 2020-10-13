@@ -10534,71 +10534,92 @@ void Compiler::gtDispNode(GenTree* tree, IndentStack* indentStack, __in __in_z _
     }
 }
 
+#if FEATURE_MULTIREG_RET
+//----------------------------------------------------------------------------------
+// gtDispRegCount: determine how many registers to print for a multi-reg node
+//
+// Arguments:
+//    tree  -  Gentree node whose registers we want to print
+//
+// Return Value:
+//    The number of registers to print
+//
+// Notes:
+//    This is not the same in all cases as GenTree::GetMultiRegCount().
+//    In particular, for COPY or RELOAD it only returns the number of *valid* registers,
+//    and for CALL, it will return 0 if the ReturnTypeDesc hasn't yet been initialized.
+//    But we want to print all register positions.
+//
+unsigned Compiler::gtDispRegCount(GenTree* tree)
+{
+    if (tree->IsCopyOrReload())
+    {
+        // GetRegCount() will return only the number of valid regs for COPY or RELOAD,
+        // but we want to print all positions, so we get the reg count for op1.
+        return gtDispRegCount(tree->gtGetOp1());
+    }
+    else if (!tree->IsMultiRegNode())
+    {
+        // We can wind up here because IsMultiRegNode() always returns true for COPY or RELOAD,
+        // even if its op1 is not multireg.
+        // Note that this method won't be called for non-register-producing nodes.
+        return 1;
+    }
+    else if (tree->IsMultiRegLclVar())
+    {
+        return tree->AsLclVar()->GetFieldCount(this);
+    }
+    else if (tree->OperIs(GT_CALL))
+    {
+        unsigned regCount = tree->AsCall()->GetReturnTypeDesc()->TryGetReturnRegCount();
+        // If it hasn't yet been initialized, we'd still like to see the registers printed.
+        if (regCount == 0)
+        {
+            regCount = MAX_RET_REG_COUNT;
+        }
+        return regCount;
+    }
+    else
+    {
+        return tree->GetMultiRegCount();
+    }
+}
+#endif // FEATURE_MULTIREG_RET
+
+//----------------------------------------------------------------------------------
+// gtDispRegVal: Print the register(s) defined by the given node
+//
+// Arguments:
+//    tree  -  Gentree node whose registers we want to print
+//
 void Compiler::gtDispRegVal(GenTree* tree)
 {
     switch (tree->GetRegTag())
     {
-        // Don't display NOREG; the absence of this tag will imply this state
-        // case GenTree::GT_REGTAG_NONE:       printf(" NOREG");   break;
+        // Don't display anything for the GT_REGTAG_NONE case;
+        // the absence of printed register values will imply this state.
 
         case GenTree::GT_REGTAG_REG:
             printf(" REG %s", compRegVarName(tree->GetRegNum()));
             break;
 
         default:
-            break;
+            return;
     }
 
 #if FEATURE_MULTIREG_RET
-    if (tree->OperIs(GT_CALL))
+    if (tree->IsMultiRegNode())
     {
         // 0th reg is GetRegNum(), which is already printed above.
-        // Print the remaining regs of a multi-reg call node.
-        // Note that, prior to the initialization of the ReturnTypeDesc we won't print
-        // any additional registers.
-        const GenTreeCall* call     = tree->AsCall();
-        const unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
+        // Print the remaining regs of a multi-reg node.
+        unsigned regCount = gtDispRegCount(tree);
+
+        // For some nodes, e.g. COPY, RELOAD or CALL, we may not have valid regs for all positions.
         for (unsigned i = 1; i < regCount; ++i)
         {
-            printf(",%s", compRegVarName(call->GetRegNumByIdx(i)));
+            regNumber reg = tree->GetRegByIndex(i);
+            printf(",%s", genIsValidReg(reg) ? compRegVarName(reg) : "NA");
         }
-    }
-    else if (tree->IsCopyOrReload())
-    {
-        GenTree*                   op1          = tree->gtGetOp1();
-        const GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-        unsigned                   regCount     = 0;
-        if (op1->OperIs(GT_CALL))
-        {
-            regCount = op1->AsCall()->GetReturnTypeDesc()->TryGetReturnRegCount();
-            // If it hasn't yet been initialized, we'd still like to see the registers printed.
-            if (regCount == 0)
-            {
-                regCount = MAX_RET_REG_COUNT;
-            }
-        }
-        else if (op1->IsMultiRegLclVar())
-        {
-            regCount = op1->AsLclVar()->GetFieldCount(this);
-        }
-        else if (op1->IsMultiRegNode())
-        {
-            regCount = op1->GetMultiRegCount();
-        }
-        // We will only have valid regs for positions that require copy or reload.
-        // But we'd like to keep track of where they are so we print all positions.
-        for (unsigned i = 1; i < regCount; i++)
-        {
-            regNumber reg = tree->AsCopyOrReload()->GetRegNumByIdx(i);
-            printf(",%s", (reg == REG_NA) ? "NA" : compRegVarName(reg));
-        }
-    }
-#endif
-
-#if defined(TARGET_ARM)
-    if (tree->OperIsMultiRegOp() && (tree->AsMultiRegOp()->gtOtherReg != REG_NA))
-    {
-        printf(",%s", compRegVarName(tree->AsMultiRegOp()->gtOtherReg));
     }
 #endif
 }
@@ -11114,8 +11135,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
 
     switch (tree->gtOper)
     {
-        unsigned   varNum;
-        LclVarDsc* varDsc;
 
         case GT_LCL_FLD:
         case GT_LCL_FLD_ADDR:
@@ -11127,9 +11146,10 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_LCL_VAR:
         case GT_LCL_VAR_ADDR:
         case GT_STORE_LCL_VAR:
+        {
             printf(" ");
-            varNum = tree->AsLclVarCommon()->GetLclNum();
-            varDsc = &lvaTable[varNum];
+            const unsigned   varNum = tree->AsLclVarCommon()->GetLclNum();
+            const LclVarDsc* varDsc = lvaGetDesc(varNum);
             gtDispLclVar(varNum);
             if (tree->AsLclVarCommon()->HasSsaName())
             {
@@ -11170,8 +11190,6 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                 }
                 else
                 {
-                    CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
-                    CORINFO_FIELD_HANDLE fldHnd;
 
                     for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
                     {
@@ -11185,7 +11203,9 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                         else
 #endif // !defined(TARGET_64BIT)
                         {
-                            fldHnd    = info.compCompHnd->getFieldInClass(typeHnd, fieldVarDsc->lvFldOrdinal);
+                            CORINFO_CLASS_HANDLE typeHnd = varDsc->GetStructHnd();
+                            CORINFO_FIELD_HANDLE fldHnd =
+                                info.compCompHnd->getFieldInClass(typeHnd, fieldVarDsc->lvFldOrdinal);
                             fieldName = eeGetFieldName(fldHnd);
                         }
 
@@ -11217,7 +11237,8 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
                     printf(" (last use)");
                 }
             }
-            break;
+        }
+        break;
 
         case GT_JMP:
         {

@@ -434,11 +434,11 @@ public:
 
     int GetArrLength(ValueNum vn);
 
-    // Check whether the computed range is within lower and upper bounds. This function
+    // Check whether the computed range is within 0 and upper bounds. This function
     // assumes that the lower range is resolved and upper range is symbolic as in an
     // increasing loop.
     // TODO-CQ: This is not general enough.
-    bool BetweenBounds(Range& range, int lower, GenTree* upper);
+    bool BetweenBounds(Range& range, GenTree* upper, int arrSize);
 
     // Entry point to optimize range checks in the block. Assumes value numbering
     // and assertion prop phases are completed.
@@ -473,6 +473,9 @@ public:
     // Inspect the "assertions" and extract assertions about the given "phiArg" and
     // refine the "pRange" value.
     void MergeEdgeAssertions(GenTreeLclVarCommon* lcl, ASSERT_VALARG_TP assertions, Range* pRange);
+
+    // Inspect the assertions about the current ValueNum to refine pRange
+    void MergeEdgeAssertions(ValueNum num, ASSERT_VALARG_TP assertions, Range* pRange);
 
     // The maximum possible value of the given "limit." If such a value could not be determined
     // return "false." For example: ARRLEN_MAX for array length.

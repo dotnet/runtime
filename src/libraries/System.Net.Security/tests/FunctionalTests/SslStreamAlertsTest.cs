@@ -24,12 +24,9 @@ namespace System.Net.Security.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/18837", TestPlatforms.AnyUnix)]
         public async Task SslStream_StreamToStream_HandshakeAlert_Ok()
         {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new SslStream(clientStream, true, AllowAnyServerCertificate))
-            using (var server = new SslStream(serverStream, true, FailClientCertificate))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new SslStream(stream1, true, AllowAnyServerCertificate))
+            using (var server = new SslStream(stream2, true, FailClientCertificate))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
                 Task serverAuth = server.AuthenticateAsServerAsync(certificate);
@@ -58,12 +55,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_ServerInitiatedCloseNotify_Ok()
         {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new SslStream(clientStream, true, AllowAnyServerCertificate))
-            using (var server = new SslStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new SslStream(stream1, true, AllowAnyServerCertificate))
+            using (var server = new SslStream(stream2))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
                 var handshake = new Task[2];
@@ -131,12 +125,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_StreamToStream_DataAfterShutdown_Fail()
         {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var client = new SslStream(clientStream, true, AllowAnyServerCertificate))
-            using (var server = new SslStream(serverStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var client = new SslStream(stream1, true, AllowAnyServerCertificate))
+            using (var server = new SslStream(stream2))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())
             {
                 var handshake = new Task[2];

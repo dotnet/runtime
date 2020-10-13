@@ -1013,6 +1013,10 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
     case x86_THREAD_STATE64:
         targetSP = ((x86_thread_state64_t*)pState)->__rsp;
         break;
+#elif defined(HOST_ARM64)
+    case ARM_THREAD_STATE64:
+        targetSP = arm_thread_state64_get_sp(*(arm_thread_state64_t*)pState);
+        break;
 #else
 #error Unexpected architecture.
 #endif
@@ -1031,9 +1035,17 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
     for (mach_msg_type_number_t i = 0; i < cThreads; i++)
     {
         // Get the general register state of each thread.
+#if defined(HOST_AMD64)
         x86_thread_state_t threadState;
         mach_msg_type_number_t count = x86_THREAD_STATE_COUNT;
         machret = thread_get_state(pThreads[i], x86_THREAD_STATE, (thread_state_t)&threadState, &count);
+#elif defined(HOST_ARM64)
+        arm_thread_state64_t threadState;
+        mach_msg_type_number_t count = ARM_THREAD_STATE64_COUNT;
+        machret = thread_get_state(pThreads[i], ARM_THREAD_STATE64, (thread_state_t)&threadState, &count);
+#else
+#error Unexpected architecture
+#endif
         if (machret == KERN_SUCCESS)
         {
             // If a thread has the same SP as our target it should be the same thread (otherwise we have two
@@ -1044,6 +1056,8 @@ thread_act_t MachMessage::GetThreadFromState(thread_state_flavor_t eFlavor, thre
             if (threadState.uts.ts32.esp == targetSP)
 #elif defined(HOST_AMD64)
             if (threadState.uts.ts64.__rsp == targetSP)
+#elif defined(HOST_ARM64)
+            if (arm_thread_state64_get_sp(threadState) == targetSP)
 #else
 #error Unexpected architecture.
 #endif

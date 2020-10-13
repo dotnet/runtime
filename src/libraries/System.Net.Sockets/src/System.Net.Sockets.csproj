@@ -176,6 +176,8 @@
              Link="Common\Interop\Windows\WinSock\Interop.WSASocketW.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSASocketW.SafeCloseSocket.cs"
              Link="Common\Interop\Windows\WinSock\Interop.WSASocketW.SafeCloseSocket.cs" />
+    <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.WSAStartup.cs"
+             Link="Common\Interop\Windows\WinSock\Interop.WSAStartup.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs"
              Link="Common\Interop\Windows\WinSock\Interop.SocketConstructorFlags.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\WinSock\SafeNativeOverlapped.cs"

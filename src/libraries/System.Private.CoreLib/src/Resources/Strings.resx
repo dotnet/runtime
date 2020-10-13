@@ -1843,6 +1843,9 @@
   <data name="ArgumentOutOfRange_RoundingDigits" xml:space="preserve">
     <value>Rounding digits must be between 0 and 15, inclusive.</value>
   </data>
+  <data name="ArgumentOutOfRange_RoundingDigits_MathF" xml:space="preserve">
+    <value>Rounding digits must be between 0 and 6, inclusive.</value>
+  </data>
   <data name="ArgumentOutOfRange_SmallCapacity" xml:space="preserve">
     <value>capacity was less than the current size.</value>
   </data>
@@ -3636,6 +3639,9 @@
   </data>
   <data name="InvalidOp_InvalidNewEnumVariant" xml:space="preserve">
     <value>The returned enumerator does not implement IEnumVARIANT.</value>
+  </data>
+  <data name="InvalidSysctl" xml:space="preserve">
+    <value>sysctl {0} failed with {1} error.</value>
   </data>
   <data name="Argument_StructArrayTooLarge" xml:space="preserve">
     <value>Array size exceeds addressing limitations.</value>

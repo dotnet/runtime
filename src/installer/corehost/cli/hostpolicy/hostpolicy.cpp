@@ -369,10 +369,20 @@ int corehost_main_init(
 
     if (bundle::info_t::is_single_file_bundle())
     {
-        StatusCode status = bundle::runner_t::process_manifest_and_extract();
+        const bundle::runner_t* bundle = bundle::runner_t::app();
+        StatusCode status = bundle->process_manifest_and_extract();
         if (status != StatusCode::Success)
         {
             return status;
+        }
+
+        if (bundle->is_netcoreapp3_compat_mode())
+        {
+            auto extracted_assembly = bundle->extraction_path();
+            auto app_name = hostpolicy_init.host_info.get_app_name() + _X(".dll");
+            append_path(&extracted_assembly, app_name.c_str());
+            assert(pal::file_exists(extracted_assembly));
+            hostpolicy_init.host_info.app_path = extracted_assembly;
         }
     }
 

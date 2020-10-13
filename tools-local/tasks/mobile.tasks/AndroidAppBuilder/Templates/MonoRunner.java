@@ -28,14 +28,22 @@ import java.util.zip.ZipInputStream;
 public class MonoRunner extends Instrumentation
 {
     static MonoRunner inst;
+    static String entryPointLibName = "%EntryPointLibName%";
 
     static {
         System.loadLibrary("monodroid");
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
+    public void onCreate(Bundle arguments) {
+        if (arguments != null) {
+            String lib = arguments.getString("entryPointLibName");
+            if (lib != null) {
+                entryPointLibName = lib;
+            }
+        }
+
+        super.onCreate(arguments);
         start();
     }
 
@@ -56,14 +64,25 @@ public class MonoRunner extends Instrumentation
         // unzip libs and test files to filesDir
         unzipAssets(context, filesDir, "assets.zip");
 
+        if (entryPointLibName == "") {
+            Log.e("DOTNET", "Missing entryPointLibName argument, pass '-e entryPointLibName <name.dll>' to adb to specify which program to run.");
+            finish(1, null);
+            return;
+        }
+
         Log.i("DOTNET", "initRuntime");
-        int retcode = initRuntime(filesDir, cacheDir, docsDir);
+        int retcode = initRuntime(filesDir, cacheDir, docsDir, entryPointLibName);
         runOnMainSync(new Runnable() {
             public void run() {
                 Bundle result = new Bundle();
                 result.putInt("return-code", retcode);
+
                 // Xharness cli expects "test-results-path" with test results
-                result.putString("test-results-path", docsDir + "/testResults.xml");
+                File testResults = new File(docsDir + "/testResults.xml");
+                if (testResults.exists()) {
+                    result.putString("test-results-path", testResults.getAbsolutePath());
+                }
+
                 finish(retcode, result);
             }
         });
@@ -103,5 +122,5 @@ public class MonoRunner extends Instrumentation
         }
     }
 
-    native int initRuntime(String libsDir, String cacheDir, String docsDir);
+    native int initRuntime(String libsDir, String cacheDir, String docsDir, String entryPointLibName);
 }

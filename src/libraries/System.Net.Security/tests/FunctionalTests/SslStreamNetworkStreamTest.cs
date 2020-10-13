@@ -211,11 +211,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_NestedAuth_Throws()
         {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var ssl = new SslStream(clientStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var ssl = new SslStream(stream1))
+            using (stream2)
             {
                 // Start handshake.
                 Task task = ssl.AuthenticateAsClientAsync("foo.com", null, SslProtocols.Tls12, false);
@@ -230,6 +228,7 @@ namespace System.Net.Security.Tests
         public async Task SslStream_TargetHostName_Succeeds(bool useEmptyName)
         {
             string targetName = useEmptyName ? string.Empty : Guid.NewGuid().ToString("N");
+            int count = 0;
 
             (Stream clientStream, Stream serverStream) = TestHelper.GetConnectedStreams();
             using (clientStream)
@@ -248,7 +247,7 @@ namespace System.Net.Security.Tests
                     {
                         SslStream stream = (SslStream)sender;
                         Assert.Equal(targetName, stream.TargetHostName);
-
+                        count++;
                         return true;
                     };
 
@@ -265,8 +264,12 @@ namespace System.Net.Security.Tests
                 await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
                                 client.AuthenticateAsClientAsync(clientOptions),
                                 server.AuthenticateAsServerAsync(serverOptions));
+
+                await TestHelper.PingPong(client, server);
+
                 Assert.Equal(targetName, client.TargetHostName);
                 Assert.Equal(targetName, server.TargetHostName);
+                Assert.Equal(1, count);
             }
         }
 

@@ -98,7 +98,7 @@ typedef struct {
  */
 
 gpointer
-mono_arch_get_unbox_trampoline (MonoMethod *method, gpointer addr)
+mono_arch_get_unbox_trampoline (MonoMethod *m, gpointer addr)
 {
 	guint8 *code, *start;
 	int this_pos = s390_r2;
@@ -115,9 +115,9 @@ mono_arch_get_unbox_trampoline (MonoMethod *method, gpointer addr)
 	g_assert ((code - start) <= 28);
 
 	mono_arch_flush_icache (start, code - start);
-	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, method));
+	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_UNBOX_TRAMPOLINE, m));
 
-	snprintf(trampName, sizeof(trampName), "%s_unbox_trampoline", method->name);
+	snprintf(trampName, sizeof(trampName), "%s_unbox_trampoline", m->name);
 
 	mono_tramp_info_register (mono_tramp_info_create (trampName, start, code - start, NULL, NULL), domain);
 
