@@ -324,8 +324,16 @@ else
   __Command+=" dotnet"
 fi
 
+if [ ! -z "$XHARNESS_CLI_PATH" ]; then
+	# When running in CI, we only have the .NET runtime available
+	# We need to call the XHarness CLI DLL directly via dotnet exec
+	HARNESS_RUNNER="exec $XHARNESS_CLI_PATH"
+else
+	HARNESS_RUNNER="xharness"
+fi
+
 cd $TestBinaryBase/AndroidApp
-$__Command xharness android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$NameSpace" --app=apk/bin/$NameSpace.apk --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100
+$__Command $HARNESS_RUNNER android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$NameSpace" --app=apk/bin/$NameSpace.apk --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100
 CLRTestExitCode=$?
 
 # Exist code of xharness is zero when tests finished successfully
