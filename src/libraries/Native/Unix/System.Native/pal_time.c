@@ -12,8 +12,8 @@
 #include <fcntl.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#if HAVE_MACH_ABSOLUTE_TIME
-#include <mach/mach_time.h>
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+#include <time.h>
 #endif
 
 enum
@@ -53,20 +53,12 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
 // that is "nanoseconds per tick" in which case we need to scale before returning.
 uint64_t SystemNative_GetTimestampResolution()
 {
-#if HAVE_MACH_ABSOLUTE_TIME
-    mach_timebase_info_data_t mtid;
-
-    if (mach_timebase_info(&mtid) != KERN_SUCCESS)
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    if (clock_gettime_nsec_np(CLOCK_UPTIME_RAW) == 0)
     {
         return 0;
     }
-
-    // (numer / denom) gives you the nanoseconds per tick, so the below code
-    // computes the number of ticks per second. We explicitly do the multiplication
-    // first in order to help minimize the error that is produced by integer division.
-
-    return (SecondsToNanoSeconds * (uint64_t)(mtid.denom)) / (uint64_t)(mtid.numer);
-#else
+#endif
     // clock_gettime() returns a result in terms of nanoseconds rather than a count. This
     // means that we need to either always scale the result by the actual resolution (to
     // get a count) or we need to say the resolution is in terms of nanoseconds. We prefer
@@ -74,13 +66,13 @@ uint64_t SystemNative_GetTimestampResolution()
     // to the user.
 
     return SecondsToNanoSeconds;
-#endif
+
 }
 
 uint64_t SystemNative_GetTimestamp()
 {
-#if HAVE_MACH_ABSOLUTE_TIME
-    return mach_absolute_time();
+#if HAVE_CLOCK_GETTIME_NSEC_NP
+    return clock_gettime_nsec_np(CLOCK_UPTIME_RAW);
 #else
     struct timespec ts;
 
