@@ -5,6 +5,7 @@
 
 using System.Diagnostics;
 using System.Net.Quic.Implementations.Managed.Internal.Headers;
+using System.Numerics;
 
 namespace System.Net.Quic.Implementations.Managed.Internal
 {
@@ -163,100 +164,121 @@ namespace System.Net.Quic.Implementations.Managed.Internal
                 _ => false
             };
 
-        internal static bool Read(QuicReader reader, bool isServer, out TransportParameters? parameters)
+        internal static bool Read(ReadOnlySpan<byte> buffer, bool isServer, out TransportParameters? parameters)
         {
             parameters = new TransportParameters();
 
             // maintain field of present transport parameters
             Span<bool> presentParameters = stackalloc bool[(int)TransportParameterName.NParams];
 
-            while (reader.BytesLeft > 0)
+            while (buffer.Length > 0)
             {
-                if (!reader.TryReadTransportParameterName(out TransportParameterName name) ||
-                    !isServer && IsServerOnlyParameter(name) ||
-                    !reader.TryReadLengthPrefixedSpan(out var data) ||
+                int read = QuicPrimitives.TryReadVarInt(buffer, out long name);
+                if (read <= 0 ||
+                    !isServer && IsServerOnlyParameter((TransportParameterName)name) ||
                     // we do not really care about duplicate unknown parameters
-                    (int) name < presentParameters.Length && presentParameters[(int) name])
+                    name < presentParameters.Length && presentParameters[(int)name])
+                {
+                    goto Error;
+                }
+
+                buffer = buffer.Slice(read);
+                read = QuicPrimitives.TryReadVarInt(buffer, out long len);
+                if (read <= 0 ||
+                    buffer.Length < read + len)
                 {
                     // encoding failure
                     goto Error;
                 }
+
+                ReadOnlySpan<byte> data = buffer.Slice(read, (int)len);
+                buffer = buffer.Slice((int) len + read);
 
                 // mark presence of parameter
                 if ((int)name < presentParameters.Length)
                     presentParameters[(int)name] = true;
 
                 long varIntValue;
-                switch (name)
+                switch ((TransportParameterName) name)
                 {
                     case TransportParameterName.OriginalConnectionId:
+                        if (len > ConnectionId.MaximumLength)
+                            goto Error;
                         parameters.OriginalConnectionId = new ConnectionId(data.ToArray(), 0, Internal.StatelessResetToken.Random());
                         break;
                     case TransportParameterName.MaxIdleTimeout:
-                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) != data.Length)
+                            goto Error;
                         parameters.MaxIdleTimeout = varIntValue;
                         break;
                     case TransportParameterName.StatelessResetToken:
-                        if (data.Length != Internal.StatelessResetToken.Length) goto Error;
+                        if (data.Length != Internal.StatelessResetToken.Length)
+                            goto Error;
                         parameters.StatelessResetToken = Internal.StatelessResetToken.FromSpan(data);
                         break;
                     case TransportParameterName.MaxPacketSize:
-                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0 ||
-                            varIntValue < MinimumPacketSize) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) != data.Length ||
+                            varIntValue < MinimumPacketSize)
+                            goto Error;
                         parameters.MaxPacketSize = varIntValue;
                         break;
                     case TransportParameterName.InitialMaxData:
-                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) != data.Length)
+                            goto Error;
                         parameters.InitialMaxData = varIntValue;
                         break;
                     case TransportParameterName.InitialMaxStreamDataBidiLocal:
-                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) != data.Length)
+                            goto Error;
                         parameters.InitialMaxStreamDataBidiLocal = varIntValue;
                         break;
                     case TransportParameterName.InitialMaxStreamDataBidiRemote:
-                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) != data.Length)
+                            goto Error;
                         parameters.InitialMaxStreamDataBidiRemote = varIntValue;
                         break;
                     case TransportParameterName.InitialMaxStreamDataUni:
-                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) != data.Length)
+                            goto Error;
                         parameters.InitialMaxStreamDataUni = varIntValue;
                         break;
                     case TransportParameterName.InitialMaxStreamsBidi:
-                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) != data.Length)
+                            goto Error;
                         parameters.InitialMaxStreamsBidi = varIntValue;
                         break;
                     case TransportParameterName.InitialMaxStreamsUni:
-                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) != data.Length)
+                            goto Error;
                         parameters.InitialMaxStreamsUni = varIntValue;
                         break;
                     case TransportParameterName.AckDelayExponent:
-                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0 ||
-                            varIntValue > MaxAckDelayExponent) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) != data.Length ||
+                            varIntValue > MaxAckDelayExponent)
+                            goto Error;
                         parameters.AckDelayExponent = varIntValue;
                         break;
                     case TransportParameterName.MaxAckDelay:
-                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0 ||
-                            varIntValue > MaxMaxAckDelay) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) != data.Length ||
+                            varIntValue > MaxMaxAckDelay)
+                            goto Error;
                         parameters.MaxAckDelay = varIntValue;
                         break;
                     case TransportParameterName.DisableActiveMigration:
-                        if (data.Length > 0) goto Error;
+                        if (data.Length > 0)
+                            goto Error;
                         parameters.DisableActiveMigration = true;
                         break;
                     case TransportParameterName.PreferredAddress:
-                    {
                         // HACK: move back a bit and read the data inside PreferredAddress.Read
-                        int pos = reader.BytesRead;
-                        reader.Advance(-data.Length);
-                        if (!Internal.PreferredAddress.Read(reader, out var addr)) goto Error;
+                        if (!Internal.PreferredAddress.Read(data, out var addr))
+                            goto Error;
                         parameters.PreferredAddress = addr;
-                        // make sure we are at the correct position now
-                        reader.Advance(pos - reader.BytesRead);
                         break;
-                    }
                     case TransportParameterName.ActiveConnectionIdLimit:
-                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) == 0 ||
-                            varIntValue < MinActiveConnectionIdLimit) goto Error;
+                        if (QuicPrimitives.TryReadVarInt(data, out varIntValue) != data.Length ||
+                            varIntValue < MinActiveConnectionIdLimit)
+                            goto Error;
                         parameters.ActiveConnectionIdLimit = varIntValue;
                         break;
                     default:
@@ -272,73 +294,82 @@ namespace System.Net.Quic.Implementations.Managed.Internal
             return false;
         }
 
-
-        internal static void Write(QuicWriter writer, bool isServer, TransportParameters parameters)
+        internal static int Write(Span<byte> buffer, bool isServer, TransportParameters parameters)
         {
-            static void WriteVarIntParameterIfNotDefault(QuicWriter w, TransportParameterName name, long value,
+            static int WriteVarIntParameterIfNotDefault(Span<byte> b, TransportParameterName name, long value,
                 long defaultValue = 0)
             {
-                if (value == defaultValue) return;
+                if (value == defaultValue) return 0;
 
-                w.WriteTransportParameterName(name);
-                w.WriteVarInt(QuicPrimitives.GetVarIntLength(value));
-                w.WriteVarInt(value);
+                int written = 0;
+                written += QuicPrimitives.WriteVarInt(b.Slice(written), (long)name);
+                written += QuicPrimitives.WriteVarInt(b.Slice(written), QuicPrimitives.GetVarIntLength(value));
+                written += QuicPrimitives.WriteVarInt(b.Slice(written), value);
+
+                return written;
             }
+
+            int written = 0;
 
             if (parameters.OriginalConnectionId != null)
             {
                 Debug.Assert(isServer, "Trying to send server-only parameter as a client.");
-                writer.WriteTransportParameterName(TransportParameterName.OriginalConnectionId);
-                writer.WriteLengthPrefixedSpan(parameters.OriginalConnectionId.Data);
+                written += QuicPrimitives.WriteVarInt(buffer.Slice(written), (long)TransportParameterName.OriginalConnectionId);
+                written += QuicPrimitives.WriteVarInt(buffer.Slice(written), parameters.OriginalConnectionId.Data.Length);
+                parameters.OriginalConnectionId.Data.CopyTo(buffer.Slice(written));
+                written += parameters.OriginalConnectionId.Data.Length;
             }
 
-            WriteVarIntParameterIfNotDefault(writer, TransportParameterName.MaxIdleTimeout, parameters.MaxIdleTimeout);
+            written += WriteVarIntParameterIfNotDefault(buffer.Slice(written), TransportParameterName.MaxIdleTimeout, parameters.MaxIdleTimeout);
 
             if (parameters.StatelessResetToken != null)
             {
                 Debug.Assert(isServer, "Trying to send server-only parameter as a client.");
-                writer.WriteTransportParameterName(TransportParameterName.StatelessResetToken);
-                writer.WriteVarInt(Internal.StatelessResetToken.Length);
-                Internal.StatelessResetToken.ToSpan(writer.GetWritableSpan(Internal.StatelessResetToken.Length),
+                written += QuicPrimitives.WriteVarInt(buffer.Slice(written), (long)TransportParameterName.StatelessResetToken);
+                written += QuicPrimitives.WriteVarInt(buffer.Slice(written), Internal.StatelessResetToken.Length);
+                Internal.StatelessResetToken.ToSpan(buffer.Slice(written, Internal.StatelessResetToken.Length),
                     parameters.StatelessResetToken.Value);
+                written += Internal.StatelessResetToken.Length;
             }
 
-            WriteVarIntParameterIfNotDefault(writer, TransportParameterName.MaxPacketSize, parameters.MaxPacketSize,
+            written += WriteVarIntParameterIfNotDefault(buffer.Slice(written), TransportParameterName.MaxPacketSize, parameters.MaxPacketSize,
                 DefaultMaxPacketSize);
-            WriteVarIntParameterIfNotDefault(writer, TransportParameterName.InitialMaxData, parameters.InitialMaxData);
-            WriteVarIntParameterIfNotDefault(writer, TransportParameterName.InitialMaxStreamDataBidiLocal,
+            written += WriteVarIntParameterIfNotDefault(buffer.Slice(written), TransportParameterName.InitialMaxData, parameters.InitialMaxData);
+            written += WriteVarIntParameterIfNotDefault(buffer.Slice(written), TransportParameterName.InitialMaxStreamDataBidiLocal,
                 parameters.InitialMaxStreamDataBidiLocal);
-            WriteVarIntParameterIfNotDefault(writer, TransportParameterName.InitialMaxStreamDataBidiRemote,
+            written += WriteVarIntParameterIfNotDefault(buffer.Slice(written), TransportParameterName.InitialMaxStreamDataBidiRemote,
                 parameters.InitialMaxStreamDataBidiRemote);
-            WriteVarIntParameterIfNotDefault(writer, TransportParameterName.InitialMaxStreamDataUni,
+            written += WriteVarIntParameterIfNotDefault(buffer.Slice(written), TransportParameterName.InitialMaxStreamDataUni,
                 parameters.InitialMaxStreamDataUni);
-            WriteVarIntParameterIfNotDefault(writer, TransportParameterName.InitialMaxStreamsBidi,
+            written += WriteVarIntParameterIfNotDefault(buffer.Slice(written), TransportParameterName.InitialMaxStreamsBidi,
                 parameters.InitialMaxStreamsBidi);
-            WriteVarIntParameterIfNotDefault(writer, TransportParameterName.InitialMaxStreamsUni,
+            written += WriteVarIntParameterIfNotDefault(buffer.Slice(written), TransportParameterName.InitialMaxStreamsUni,
                 parameters.InitialMaxStreamsUni);
-            WriteVarIntParameterIfNotDefault(writer, TransportParameterName.AckDelayExponent,
+            written += WriteVarIntParameterIfNotDefault(buffer.Slice(written), TransportParameterName.AckDelayExponent,
                 parameters.AckDelayExponent, DefaultAckDelayExponent);
-            WriteVarIntParameterIfNotDefault(writer, TransportParameterName.MaxAckDelay, parameters.MaxAckDelay,
+            written += WriteVarIntParameterIfNotDefault(buffer.Slice(written), TransportParameterName.MaxAckDelay, parameters.MaxAckDelay,
                 DefaultMaxAckDelay);
 
             if (parameters.DisableActiveMigration)
             {
-                writer.WriteTransportParameterName(TransportParameterName.DisableActiveMigration);
-                writer.WriteVarInt(0); // empty parameter
+                written += QuicPrimitives.WriteVarInt(buffer.Slice(written), (long)TransportParameterName.DisableActiveMigration);
+                buffer[written++] = 0; // empty value
             }
 
             if (parameters.PreferredAddress != null)
             {
                 Debug.Assert(isServer, "Trying to send server-only parameter as a client.");
-                writer.WriteTransportParameterName(TransportParameterName.PreferredAddress);
+                written += QuicPrimitives.WriteVarInt(buffer.Slice(written), (long)TransportParameterName.PreferredAddress);
                 // the only non-fixed length field is the connection id the rest of the parameter is 41 bytes
-                writer.WriteVarInt(41 + parameters.PreferredAddress.Value.ConnectionId.Length);
-                Internal.PreferredAddress.Write(writer, parameters.PreferredAddress.Value);
+                written += QuicPrimitives.WriteVarInt(buffer.Slice(written), 41 + parameters.PreferredAddress.Value.ConnectionId.Length);
+                written += Internal.PreferredAddress.Write(buffer, parameters.PreferredAddress.Value);
             }
 
             // TODO-RZ: don't send this if zero length connection id is used
-            WriteVarIntParameterIfNotDefault(writer, TransportParameterName.ActiveConnectionIdLimit,
+            written += WriteVarIntParameterIfNotDefault(buffer.Slice(written), TransportParameterName.ActiveConnectionIdLimit,
                 parameters.ActiveConnectionIdLimit, DefaultActiveConnectionIdLimit);
+
+            return written;
         }
     }
 }

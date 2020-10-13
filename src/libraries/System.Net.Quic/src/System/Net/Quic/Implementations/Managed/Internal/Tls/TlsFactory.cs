@@ -8,10 +8,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tls
     internal abstract class TlsFactory
     {
         internal static readonly TlsFactory Instance =
-            // Environment.GetEnvironmentVariable("DOTNETQUIC_OPENSSL") != null
-                // ? (TlsFactory)new OpenSslTlsFactory()
-                // : (TlsFactory) new MockTlsFactory();
-                new OpenSslTlsFactory();
+            Environment.GetEnvironmentVariable("DOTNETQUIC_OPENSSL") != null
+                ? (TlsFactory)new OpenSslTlsFactory()
+                : (TlsFactory) new MockTlsFactory();
+                // new OpenSslTlsFactory();
 
         internal abstract ITls CreateClient(ManagedQuicConnection connection, QuicClientConnectionOptions options,
             TransportParameters localTransportParams);

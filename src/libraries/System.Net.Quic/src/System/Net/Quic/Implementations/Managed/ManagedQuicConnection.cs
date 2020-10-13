@@ -575,7 +575,7 @@ namespace System.Net.Quic.Implementations.Managed
             DisposeAsync().AsTask().ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-        internal void SetEncryptionSecrets(EncryptionLevel level, TlsCipherSuite algorithm,
+        private void SetEncryptionSecrets(EncryptionLevel level, TlsCipherSuite algorithm,
             ReadOnlySpan<byte> readSecret, ReadOnlySpan<byte> writeSecret)
         {
             // TODO-RZ: is it wise to log secrets to event source?
@@ -591,33 +591,29 @@ namespace System.Net.Quic.Implementations.Managed
             _trace?.OnKeyUpdated(writeSecret, level, IsServer, KeyUpdateTrigger.Tls, null);
         }
 
-        internal int SetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,
+        internal void SetEncryptionSecrets(EncryptionLevel level, ReadOnlySpan<byte> readSecret,
             ReadOnlySpan<byte> writeSecret)
         {
             var alg = Tls.GetNegotiatedCipher();
             SetEncryptionSecrets(level, alg, readSecret, writeSecret);
-
-            return 1;
         }
 
-        internal int AddHandshakeData(EncryptionLevel level, ReadOnlySpan<byte> data)
+        internal void AddHandshakeData(EncryptionLevel level, ReadOnlySpan<byte> data)
         {
             OutboundBuffer cryptoOutboundStream = GetPacketNumberSpace(level).CryptoOutboundStream;
             cryptoOutboundStream.Enqueue(data);
-            return 1;
         }
 
-        internal int FlushHandshakeData()
+        internal void FlushHandshakeData()
         {
             for (int i = 0; i < 3; i++)
             {
                 OutboundBuffer cryptoOutboundStream = GetPacketNumberSpace((EncryptionLevel)i).CryptoOutboundStream;
                 cryptoOutboundStream.ForceFlushPartialChunk();
             }
-            return 1;
         }
 
-        internal int SendTlsAlert(EncryptionLevel level, int alert)
+        internal void SendTlsAlert(EncryptionLevel level, int alert)
         {
             // RFC: A TLS alert is turned into a QUIC connection error by converting the
             // one-byte alert description into a QUIC error code.  The alert
@@ -626,10 +622,9 @@ namespace System.Net.Quic.Implementations.Managed
             // QUIC CONNECTION_CLOSE frame.
 
             CloseConnection((TransportErrorCode)alert + 0x100, $"Tls alert - {alert}");
-            return 1;
         }
 
-        internal enum ProcessPacketResult
+        private enum ProcessPacketResult
         {
             /// <summary>
             ///     Packet processed without errors.

@@ -43,9 +43,9 @@ namespace System.Net.Quic.Tests
                 InitialMaxStreamDataBidiRemote = 4339,
             };
 
-            TransportParameters.Write(writer, true, expected);
+            int written = TransportParameters.Write(buffer, true, expected);
             reader.Reset(buffer.AsMemory(0, writer.BytesWritten));
-            Assert.True(TransportParameters.Read(reader, true, out var actual));
+            Assert.True(TransportParameters.Read(buffer.AsSpan(0, written), true, out var actual));
 
             Assert.Equal(expected.PreferredAddress, actual.PreferredAddress);
             Assert.Equal(expected.AckDelayExponent, actual.AckDelayExponent);

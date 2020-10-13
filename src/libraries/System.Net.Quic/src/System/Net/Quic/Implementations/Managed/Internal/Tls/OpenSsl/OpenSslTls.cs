@@ -6,6 +6,7 @@
 using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -155,11 +156,10 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tls.OpenSsl
 
             // init transport parameters
             byte[] buffer = new byte[1024];
-            var writer = new QuicWriter(buffer);
-            TransportParameters.Write(writer, isServer, localTransportParams);
+            int written = TransportParameters.Write(buffer, isServer, localTransportParams);
             fixed (byte* pData = buffer)
             {
-                Interop.OpenSslQuic.SslSetQuicTransportParams(_ssl, pData, new IntPtr(writer.BytesWritten));
+                Interop.OpenSslQuic.SslSetQuicTransportParams(_ssl, pData, new IntPtr(written));
             }
 
             if (applicationProtocols == null)
@@ -393,13 +393,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tls.OpenSsl
                 return TransportParameters.Default;
             }
 
-            byte[] buffer = ArrayPool<byte>.Shared.Rent(length.ToInt32());
-
-            new Span<byte>(data, length.ToInt32()).CopyTo(buffer);
-            var reader = new QuicReader(buffer.AsMemory(0, length.ToInt32()));
-
-            TransportParameters.Read(reader, !isServer, out var parameters);
-            ArrayPool<byte>.Shared.Return(buffer);
+            var dataSpan = new Span<byte>(data, length.ToInt32());
+            TransportParameters.Read(dataSpan, !isServer, out var parameters);
 
             return parameters;
         }
@@ -435,7 +430,8 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tls.OpenSsl
             var readS = new ReadOnlySpan<byte>(readSecret, (int)secretLen.ToUInt32());
             var writeS = new ReadOnlySpan<byte>(writeSecret, (int)secretLen.ToUInt32());
 
-            return tls._connection.SetEncryptionSecrets(ToManagedEncryptionLevel(level), readS, writeS);
+            tls._connection.SetEncryptionSecrets(ToManagedEncryptionLevel(level), readS, writeS);
+            return 1;
         }
 
         private static unsafe int AddHandshakeDataImpl(IntPtr ssl, OpenSslEncryptionLevel level, byte* data,
@@ -445,21 +441,24 @@ namespace System.Net.Quic.Implementations.Managed.Internal.Tls.OpenSsl
 
             var span = new ReadOnlySpan<byte>(data, (int)len.ToUInt32());
 
-            return tls._connection.AddHandshakeData(ToManagedEncryptionLevel(level), span);
+            tls._connection.AddHandshakeData(ToManagedEncryptionLevel(level), span);
+            return 1;
         }
 
         private static int FlushFlightImpl(IntPtr ssl)
         {
             var tls = GetTlsInstance(ssl);
 
-            return tls._connection.FlushHandshakeData();
+            tls._connection.FlushHandshakeData();
+            return 1;
         }
 
         private static int SendAlertImpl(IntPtr ssl, OpenSslEncryptionLevel level, byte alert)
         {
             var tls = GetTlsInstance(ssl);
 
-            return tls._connection.SendTlsAlert(ToManagedEncryptionLevel(level), alert);
+            tls._connection.SendTlsAlert(ToManagedEncryptionLevel(level), alert);
+            return 1;
         }
 
         private static unsafe int AlpnSelectCbImpl(IntPtr ssl, ref byte* pOut, ref byte outLen, byte* pIn, int inLen, IntPtr arg)
