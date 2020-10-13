@@ -48,10 +48,10 @@ jobs:
       testGroup: innerloop
       nameSuffix: Runtime_Debug
       buildArgs: -c release -runtimeConfiguration debug
-    extraStepsTemplate: /eng/pipelines/common/templates/innerloop-steps.yml
-    extraStepsParameters:
-      testLibrary: System.AppContext
-      testRunner: xunit
+      extraStepsTemplate: /eng/pipelines/common/templates/innerloop-steps.yml
+      extraStepsParameters:
+        testLibrary: System.AppContext
+        testRunner: xunit
 
 #
 # Build with Debug config and Release runtimeConfiguration
