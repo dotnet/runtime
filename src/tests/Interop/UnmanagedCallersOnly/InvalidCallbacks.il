@@ -1,8 +1,16 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-.assembly extern System.Runtime { }
-.assembly extern System.Runtime.InteropServices { }
+.assembly extern System.Runtime
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 5:0:0:0
+}
+.assembly extern System.Runtime.InteropServices
+{
+  .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
+  .ver 5:0:0:0
+}
 
 .assembly InvalidCSharp { }
 
@@ -74,7 +82,7 @@
     }
 }
 
-.class public auto ansi beforefieldinit InvalidCSharp.CallingUnmanagedCalllersOnlyDirectly
+.class public auto ansi beforefieldinit InvalidCSharp.CallingUnmanagedCallersOnlyDirectly
     extends [System.Runtime]System.Object
 {
     .method public hidebysig specialname rtspecialname 
@@ -101,7 +109,7 @@
 
         IL_0000: nop
         IL_0001: ldarg.0
-        IL_0002: call int32 InvalidCSharp.CallingUnmanagedCalllersOnlyDirectly::DoubleImpl(int32)
+        IL_0002: call int32 InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::DoubleImpl(int32)
         IL_0007: stloc.0
         IL_0008: br.s IL_000a
 
@@ -136,7 +144,7 @@
         .maxstack 8
 
         IL_0000: ldnull
-        IL_0001: ldftn int32 InvalidCSharp.CallingUnmanagedCalllersOnlyDirectly::ManagedDoubleCallback(int32)
+        IL_0001: ldftn int32 InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::ManagedDoubleCallback(int32)
         IL_0007: newobj instance void class [System.Runtime]System.Func`2<int32, int32>::.ctor(object, native int)
         IL_000c: ret
     }
@@ -159,7 +167,7 @@
         .maxstack 1
 
         ldarg.0
-        call int32 InvalidCSharp.CallingUnmanagedCalllersOnlyDirectly::PInvokeMarkedWithUnmanagedCallersOnly(int32)
+        call int32 InvalidCSharp.CallingUnmanagedCallersOnlyDirectly::PInvokeMarkedWithUnmanagedCallersOnly(int32)
         ret
     }
 }
