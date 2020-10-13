@@ -900,7 +900,7 @@
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x64'" Include="-DCMAKE_OSX_ARCHITECTURES=x86_64"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'x86'" Include="-DCMAKE_OSX_ARCHITECTURES=i386"/>
       <_MonoCMakeArgs Condition="'$(Platform)' == 'arm64'" Include="-DCMAKE_OSX_ARCHITECTURES=arm64"/>
-      <_MonoCMakeArgs Condition="'$(Platform)' == 'arm'" Include="-DCMAKE_OSX_ARCHITECTURES=armv7s"/>
+      <_MonoCMakeArgs Condition="'$(Platform)' == 'arm'" Include="&quot;-DCMAKE_OSX_ARCHITECTURES=armv7%3Barmv7s&quot;"/>
       <_MonoCFLAGS Include="-Wl,-application_extension" />
       <_MonoCXXFLAGS Include="-Wl,-application_extension" />
     </ItemGroup>
