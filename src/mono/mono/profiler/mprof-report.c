@@ -18,7 +18,9 @@
 #if !defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__OpenBSD__)
 #include <malloc.h>
 #endif
+#ifndef HOST_WIN32
 #include <unistd.h>
+#endif
 #include <stdlib.h>
 #if defined (HAVE_SYS_ZLIB)
 #include <zlib.h>
