@@ -716,7 +716,8 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
             unsigned cnsSize  = sizeof(constArgValues);
             unsigned cnsAlign = (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : 1;
 
-            CORINFO_FIELD_HANDLE hnd = comp->GetEmitter()->emitBlkConst(constArgValues, cnsSize, cnsAlign);
+            CORINFO_FIELD_HANDLE hnd =
+                comp->GetEmitter()->emitBlkConst(constArgValues, cnsSize, cnsAlign, simdNode->gtSIMDBaseType);
             GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
             BlockRange().InsertBefore(simdNode, clsVarAddr);
             simdNode->ChangeOper(GT_IND);

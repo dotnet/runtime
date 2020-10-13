@@ -6469,7 +6469,7 @@ protected:
         ValueNum csdConstDefVN;    // When we CSE similar constants, this is the ValueNumber that we use for the LclVar
                                    // assignment
         unsigned csdIndex;         // 1..optCSECandidateCount
-        bool     csdIsSharedConst; 
+        bool     csdIsSharedConst;
         bool     csdLiveAcrossCall;
 
         unsigned short csdDefCount; // definition   count

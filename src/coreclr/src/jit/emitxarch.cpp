@@ -8347,10 +8347,23 @@ void emitter::emitDispIns(
                 // Munge any pointers if we want diff-able disassembly
                 if (emitComp->opts.disDiffable)
                 {
-                    ssize_t top14bits = (val >> 18);
-                    if ((top14bits != 0) && (top14bits != -1))
+#ifdef TARGET_64BIT
+                    ssize_t top32bits = (val >> 32);
+                    if ((top32bits != 0) && (top32bits != -1))
                     {
-                        val = 0xD1FFAB1E;
+                        val = 0xD1FFAB1ED1FFAB1Eull;
+                    }
+                    else
+#endif // TARGET_64BIT
+                    {
+                        // We know the upper 32 bits are all the same (or non-exsistent)
+                        INT32 lo32bits  = (INT32)val;
+                        INT32 top12bits = (lo32bits >> 20);
+                        if ((top12bits != 0) && (top12bits != -1))
+                        {
+                            // we have differences in bits 31-20
+                            val = 0xD1FFAB1E;
+                        }
                     }
                 }
                 if ((val > -1000) && (val < 1000))

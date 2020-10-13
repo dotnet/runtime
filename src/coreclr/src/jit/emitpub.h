@@ -92,6 +92,10 @@ void emitDataGenData(unsigned offs, BasicBlock* label);
 
 void emitDataGenEnd();
 
+static const UNATIVE_OFFSET INVALID_UNATIVE_OFFSET = (UNATIVE_OFFSET)-1;
+
+UNATIVE_OFFSET emitDataGenFind(const void* cnsAddr, unsigned size, unsigned alignment, var_types dataType);
+
 UNATIVE_OFFSET emitDataConst(const void* cnsAddr, unsigned cnsSize, unsigned cnsAlign, var_types dataType);
 
 UNATIVE_OFFSET emitDataSize();

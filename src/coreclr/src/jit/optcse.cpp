@@ -506,7 +506,7 @@ unsigned Compiler::optValnumCSE_Index(GenTree* tree, Statement* stmt)
         if (!tree->AsIntConCommon()->ImmedValNeedsReloc(this))
         {
             // Make constants that have the same upper bits use the same key
-            key = Encode_Shared_Const_CSE_Value(key);
+            key           = Encode_Shared_Const_CSE_Value(key);
             isSharedConst = true;
         }
         else
@@ -3509,7 +3509,7 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
         return false;
     }
 
-// Remove these two below to enable 
+    // Remove these two below to enable
 
     unsigned cost;
     if (compCodeOpt() == SMALL_CODE)
