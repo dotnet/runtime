@@ -417,9 +417,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
     </PropertyGroup>
 
-    <Message Importance="High" Text="~~~_CMDDIR: $(_CMDDIR)" />
-    <Message Importance="High" Text="~~~OutputDir: $(OutputDir)" />
-
     <MakeDir Directories="$(OutputDir)"/>
 
     <ItemGroup>
@@ -430,11 +427,6 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
       <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib/$(NetCoreAppCurrent)"/>
     </ItemGroup>
-
-    <Message Importance="High" Text="~~~TestAssemblies: @(TestAssemblies)" />
-    <Message Importance="High" Text="~~~TestAssemblyDirs: @(TestAssemblyDirs)" />
-    <Message Importance="High" Text="~~~AssemblySearchPaths: @(AssemblySearchPaths)" />
-    <Message Importance="High" Text="~~~Category: $(Category)" />
 
     <RemoveDir Directories="$(ApkDir)" />
 

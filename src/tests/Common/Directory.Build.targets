@@ -129,29 +129,6 @@
           TargetDir="runtime-test/"/>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetOS)' == 'Android'">
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\native\**"
-          TargetDir="runtimepack/native/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\lib\**"
-          TargetDir="runtimepack/lib/"/>
-
-       <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsDir)\TargetingPack\**"
-          TargetDir="TargetingPack/"/>
-
-        <!-- Android App Builder always builds in Debug -->
-        <RunTimeDependencyCopyLocal
-          Include="$(ArtifactsBinDir)AndroidAppBuilder\Debug\$(NetCoreAppCurrent)\**"
-          TargetDir="AndroidAppBuilder/"/>
-
-        <RunTimeDependencyCopyLocal
-          Include="$(RepoRoot)\src\tests\Common\android-test-runner\AndroidTestRunner.proj"
-          TargetDir="android-test-runner/"/>
-    </ItemGroup>
-
     <Copy
       SourceFiles="@(RunTimeDependencyCopyLocal)"
       DestinationFiles="@(RunTimeDependencyCopyLocal -> '$(CORE_ROOT)/%(TargetDir)%(RecursiveDir)%(Filename)%(Extension)')"
