@@ -52,6 +52,7 @@
 #include "mono/utils/mono-counters.h"
 #include "mono/utils/mono-hwcap.h"
 #include "mono/utils/mono-logger-internals.h"
+#include "mono/utils/options.h"
 #include "mono/metadata/w32handle.h"
 #include "mono/metadata/callspec.h"
 #include "mono/metadata/custom-attrs-internals.h"
@@ -1655,6 +1656,9 @@ mini_usage (void)
 		"    --handlers             Install custom handlers, use --help-handlers for details.\n"
 		"    --aot-path=PATH        List of additional directories to search for AOT images.\n"
 	  );
+
+	g_print ("\nOptions:\n");
+	mono_options_print_usage ();
 }
 
 static void
@@ -2115,6 +2119,7 @@ mono_main (int argc, char* argv[])
 #ifdef HOST_WIN32
 	int mixed_mode = FALSE;
 #endif
+	ERROR_DECL (error);
 
 #ifdef MOONLIGHT
 #ifndef HOST_WIN32
@@ -2156,6 +2161,13 @@ mono_main (int argc, char* argv[])
 #ifdef ENABLE_NETCORE
 	enable_debugging = TRUE;
 #endif
+
+	mono_options_parse_options ((const char**)argv, argc, &argc, error);
+	if (!is_ok (error)) {
+		g_printerr ("%s", mono_error_get_message (error));
+		mono_error_cleanup (error);
+		return 1;
+	}
 
 	for (i = 1; i < argc; ++i) {
 		if (argv [i] [0] != '-')
