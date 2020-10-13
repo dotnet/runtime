@@ -10,7 +10,7 @@ endif
 
 noinst_LTLIBRARIES = $(shared_libraries)
 
-coreclr_srcdir = ../../../coreclr
+coreclr_srcdir = $(top_srcdir)/../coreclr
 
 
 AM_CPPFLAGS = -I$(top_srcdir) -I$(top_srcdir)/mono \
