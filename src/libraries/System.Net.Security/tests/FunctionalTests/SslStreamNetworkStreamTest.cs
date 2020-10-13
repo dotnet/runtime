@@ -211,7 +211,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_NestedAuth_Throws()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var ssl = new SslStream(stream1))
             using (stream2)
             {

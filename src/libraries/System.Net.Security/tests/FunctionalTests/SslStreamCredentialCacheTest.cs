@@ -19,7 +19,7 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_SameCertUsedForClientAndServer_Ok()
         {
-            (Stream stream1, Stream stream2) = ConnectedStreams.CreateBidirectional();
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
             using (var client = new SslStream(stream1, true, AllowAnyCertificate))
             using (var server = new SslStream(stream2, true, AllowAnyCertificate))
             using (X509Certificate2 certificate = Configuration.Certificates.GetServerCertificate())

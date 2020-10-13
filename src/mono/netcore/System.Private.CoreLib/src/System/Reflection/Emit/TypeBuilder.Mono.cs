@@ -1121,7 +1121,7 @@ namespace System.Reflection.Emit
             return created!.GetMembers(bindingAttr);
         }
 
-        private MethodInfo[] GetMethodsByName(string? name, BindingFlags bindingAttr, bool ignoreCase, Type reflected_type)
+        private MethodInfo[] GetMethodsByName(string? name, BindingFlags bindingAttr, bool ignoreCase)
         {
             MethodInfo[]? candidates;
             bool match;
@@ -1221,7 +1221,7 @@ namespace System.Reflection.Emit
         {
             check_created();
 
-            return GetMethodsByName(null, bindingAttr, false, this);
+            return GetMethodsByName(null, bindingAttr, false);
         }
 
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods)]
@@ -1411,7 +1411,7 @@ namespace System.Reflection.Emit
 
             Type[] copy = new Type[typeArguments.Length];
             typeArguments.CopyTo(copy, 0);
-            return pmodule.assemblyb.MakeGenericType(this, copy);
+            return AssemblyBuilder.MakeGenericType(this, copy);
         }
 
         public override Type MakePointerType()
@@ -1682,7 +1682,7 @@ namespace System.Reflection.Emit
             }
         }
 
-        private Exception not_supported()
+        private static Exception not_supported()
         {
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
@@ -1699,7 +1699,7 @@ namespace System.Reflection.Emit
                 throw not_supported();
         }
 
-        private void check_name(string argName, string name)
+        private static void check_name(string argName, string name)
         {
             if (name == null)
                 throw new ArgumentNullException(argName);

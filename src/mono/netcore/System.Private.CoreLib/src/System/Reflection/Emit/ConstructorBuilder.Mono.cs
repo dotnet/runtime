@@ -387,17 +387,17 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException("Type definition of the method is complete.");
         }
 
-        private Exception not_supported()
+        private static Exception not_supported()
         {
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
 
-        private Exception not_after_created()
+        private static Exception not_after_created()
         {
             return new InvalidOperationException("Unable to change after type has been created.");
         }
 
-        private Exception not_created()
+        private static Exception not_created()
         {
             return new NotSupportedException("The type is not yet created.");
         }
