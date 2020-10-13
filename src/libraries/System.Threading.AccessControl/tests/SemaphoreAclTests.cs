@@ -140,6 +140,37 @@ namespace System.Threading.Tests
 
         }
 
+        [Fact]
+        public void Semaphore_OpenExisting()
+        {
+            string name = GetRandomName();
+            SemaphoreSecurity expectedSecurity = GetSemaphoreSecurity(WellKnownSidType.BuiltinUsersSid, SemaphoreRights.FullControl, AccessControlType.Allow);
+            using Semaphore semaphoreNew = CreateAndVerifySemaphore(initialCount: 1, maximumCount: 2, name, expectedSecurity, expectedCreatedNew: true);
+
+            using Semaphore semaphoreExisting = SemaphoreAcl.OpenExisting(name, SemaphoreRights.FullControl);
+
+            VerifyHandles(semaphoreNew, semaphoreExisting);
+            SemaphoreSecurity actualSecurity = semaphoreExisting.GetAccessControl();
+            VerifySemaphoreSecurity(expectedSecurity, actualSecurity);
+        }
+
+        [Fact]
+        public void Semaphore_TryOpenExisting()
+        {
+            string name = GetRandomName();
+            SemaphoreSecurity expectedSecurity = GetSemaphoreSecurity(WellKnownSidType.BuiltinUsersSid, SemaphoreRights.FullControl, AccessControlType.Allow);
+            using Semaphore semaphoreNew = CreateAndVerifySemaphore(initialCount: 1, maximumCount: 2, name, expectedSecurity, expectedCreatedNew: true);
+
+            Assert.True(SemaphoreAcl.TryOpenExisting(name, SemaphoreRights.FullControl, out Semaphore semaphoreExisting));
+            Assert.NotNull(semaphoreExisting);
+
+            VerifyHandles(semaphoreNew, semaphoreExisting);
+            SemaphoreSecurity actualSecurity = semaphoreExisting.GetAccessControl();
+            VerifySemaphoreSecurity(expectedSecurity, actualSecurity);
+
+            semaphoreExisting.Dispose();
+        }
+
         private SemaphoreSecurity GetBasicSemaphoreSecurity()
         {
             return GetSemaphoreSecurity(
@@ -172,6 +203,18 @@ namespace System.Threading.Tests
             return Semaphore;
         }
 
+        private void VerifyHandles(Semaphore expected, Semaphore actual)
+        {
+            Assert.NotNull(expected.SafeWaitHandle);
+            Assert.NotNull(actual.SafeWaitHandle);
+
+            Assert.False(expected.SafeWaitHandle.IsClosed);
+            Assert.False(actual.SafeWaitHandle.IsClosed);
+
+            Assert.False(expected.SafeWaitHandle.IsInvalid);
+            Assert.False(actual.SafeWaitHandle.IsInvalid);
+        }
+
         private void VerifySemaphoreSecurity(SemaphoreSecurity expectedSecurity, SemaphoreSecurity actualSecurity)
         {
             Assert.Equal(typeof(SemaphoreRights), expectedSecurity.AccessRightType);
@@ -198,9 +241,9 @@ namespace System.Threading.Tests
         {
             return
                 expectedRule.AccessControlType == actualRule.AccessControlType &&
-                expectedRule.SemaphoreRights   == actualRule.SemaphoreRights &&
-                expectedRule.InheritanceFlags  == actualRule.InheritanceFlags &&
-                expectedRule.PropagationFlags  == actualRule.PropagationFlags;
+                expectedRule.SemaphoreRights == actualRule.SemaphoreRights &&
+                expectedRule.InheritanceFlags == actualRule.InheritanceFlags &&
+                expectedRule.PropagationFlags == actualRule.PropagationFlags;
         }
     }
 }
