@@ -4,13 +4,12 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
-    <TargetOS>Android</TargetOS>
     <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
     <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
-    <PublishTrimmed>true</PublishTrimmed>
-    <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
+    <PublishTrimmed Condition="'$(Configuration)' == 'Release'">true</PublishTrimmed>
+    <_TrimmerDefaultAction Condition="'$(Configuration)' == 'Release'">link</_TrimmerDefaultAction>
     <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
-    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
+    <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
   </PropertyGroup>
 
@@ -18,7 +17,7 @@
   <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
       <RuntimePack>
-        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)</PackageDirectory>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.$(RuntimeIdentifier)\$(Configuration)</PackageDirectory>
       </RuntimePack>
     </ItemGroup>
     <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
@@ -28,10 +27,6 @@
 
   <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
-      <AndroidAbi Condition="'$(Platform)'=='arm64'">arm64-v8a</AndroidAbi>
-      <AndroidAbi Condition="'$(Platform)'=='arm'">armeabi-v7a</AndroidAbi>
-      <AndroidAbi Condition="'$(Platform)'=='x64'">x86_64</AndroidAbi>
-      <AndroidAbi Condition="'$(AndroidAbi)'==''">$(Platform)</AndroidAbi>
       <StripDebugSymbols>False</StripDebugSymbols>
       <StripDebugSymbols Condition="'$(Configuration)' == 'Release'">True</StripDebugSymbols>
       <AdbTool>$(ANDROID_SDK_ROOT)\platform-tools\adb</AdbTool>
@@ -41,8 +36,8 @@
     <RemoveDir Directories="$(ApkDir)" />
 
     <AndroidAppBuilderTask
+        RuntimeIdentifier="$(RuntimeIdentifier)"
         SourceDir="$(OutputPath)"
-        Abi="$(AndroidAbi)"
         ProjectName="HelloAndroid"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
         MainLibraryFileName="$(AssemblyName).dll"
