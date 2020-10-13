@@ -14,7 +14,6 @@ namespace System.Net.NameResolution.PalTests
 
         public NameResolutionPalTests(ITestOutputHelper output)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
             _output = output;
         }
 
