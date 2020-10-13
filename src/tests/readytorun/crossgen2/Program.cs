@@ -1995,7 +1995,12 @@ internal class Program
         RunTest("SealedDefaultInterfaceMethodTest", SealedDefaultInterfaceMethodTest());
         RunTest("FunctionPointerFromAnotherModuleTest", FunctionPointerFromAnotherModuleTest());
         RunTest("ExplicitlySizedStructTest", ExplicitlySizedStructTest());
-        RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
+        if ((System.Runtime.InteropServices.RuntimeInformation.ProcessArchitecture != Architecture.Arm) ||
+            (System.Runtime.InteropServices.RuntimeInformation.IsOSPlatform(OSPlatform.Windows)))
+        {
+            // Linux Arm32 may run with alignment faults enabled, which will cause this test to fail.
+            RunTest("ExplicitlySizedClassTest", ExplicitlySizedClassTest());
+        }
         RunTest("GenericLdtokenTest", GenericLdtokenTest());
         RunTest("ArrayLdtokenTests", ArrayLdtokenTests());
         RunTest("TestGenericMDArrayBehavior", TestGenericMDArrayBehavior());
