@@ -234,7 +234,7 @@ namespace System.Reflection.Emit
             throw CreateNotSupportedException();
         }
 
-        private Exception CreateNotSupportedException()
+        private static Exception CreateNotSupportedException()
         {
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
