@@ -180,7 +180,7 @@ namespace Microsoft.Extensions.Http
         internal ActiveHandlerTrackingEntry CreateHandlerEntry(string name, IServiceProvider? scopedServices)
         {
             HttpClientFactoryOptions options = _optionsMonitor.Get(name);
-            if (options.SuppressHandlerScope || scopedServices == null)
+            if (!options.PreserveExistingScope || options.SuppressHandlerScope || scopedServices == null)
             {
                 return CreateHandlerEntryInManualScope(name);
             }
@@ -231,7 +231,7 @@ namespace Microsoft.Extensions.Http
             LifetimeTrackingHttpMessageHandler handler;
             bool isPrimary;
 
-            if (builder.PrimaryHandlerExposed)
+            if (!options.PreserveExistingScope || options.SuppressHandlerScope || builder.PrimaryHandlerExposed)
             {
                 var topHandler = builder.Build();
 

@@ -100,5 +100,7 @@ namespace Microsoft.Extensions.Http
         /// </para>
         /// </remarks>
         public bool SuppressHandlerScope { get; set; }
+
+        public bool PreserveExistingScope { get; set; }
     }
 }

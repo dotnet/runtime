@@ -26,6 +26,7 @@ namespace Microsoft.Extensions.Http
             string name = "test";
 
             serviceCollection.AddHttpClient(name)
+                .PreserveExistingScope(false)
                 .AddHttpMessageHandler<MessageHandlerWithScopedService>()
                 .SetHandlerLifetime(TimeSpan.FromSeconds(10));
 
@@ -67,7 +68,7 @@ namespace Microsoft.Extensions.Http
                 Assert.Same(scopedServiceFromHandler, scopedServiceFromHandler2);
                 Assert.NotSame(scopedServiceFromHandler, scopedServiceFromHandler3);
 
-                Assert.NotSame(topHandler, topHandler2);
+                Assert.Same(topHandler, topHandler2);
                 Assert.NotSame(topHandler2, topHandler3);
 
                 Assert.Same(primaryHandler, primaryHandler2);
@@ -86,6 +87,7 @@ namespace Microsoft.Extensions.Http
             string name = "test";
 
             serviceCollection.AddHttpClient(name)
+                .PreserveExistingScope(true)
                 .AddHttpMessageHandler<MessageHandlerWithScopedService>()
                 .SetHandlerLifetime(TimeSpan.FromSeconds(10));
 
@@ -103,21 +105,23 @@ namespace Microsoft.Extensions.Http
 
                 Assert.Same(scopeServices, scopeServices.GetRequiredService<IServiceProvider>());
 
+                var scopedFactory = scopeServices.GetRequiredService<IScopedHttpClientFactory>();
+
                 var scopedServiceFromContainer = scopeServices.GetRequiredService<ScopedService>();
 
-                var client = factory.CreateClient(name, scopeServices);
+                var client = scopedFactory.CreateClient(name);
 
                 var (topHandler, primaryHandler) = GetTopAndPrimaryHandlers(name, client, factory);
                 var scopedServiceFromHandler = ((MessageHandlerWithScopedService)topHandler).ScopedService;
 
-                var client2 = factory.CreateClient(name, scopeServices);
+                var client2 = scopedFactory.CreateClient(name);
 
                 var (topHandler2, primaryHandler2) = GetTopAndPrimaryHandlers(name, client2, factory);
                 var scopedServiceFromHandler2 = ((MessageHandlerWithScopedService)topHandler2).ScopedService;
 
                 Thread.Sleep(20 * 1000);
 
-                var client3 = factory.CreateClient(name, scopeServices);
+                var client3 = scopedFactory.CreateClient(name);
 
                 var (topHandler3, primaryHandler3) = GetTopAndPrimaryHandlers(name, client3, factory);
                 var scopedServiceFromHandler3 = ((MessageHandlerWithScopedService)topHandler3).ScopedService;
@@ -144,6 +148,7 @@ namespace Microsoft.Extensions.Http
             serviceCollection.AddTransient<MessageHandlerWithScopedService>();
 
             serviceCollection.AddHttpClient<TypedClient>()
+                .PreserveExistingScope(false)
                 .AddHttpMessageHandler<MessageHandlerWithScopedService>()
                 .SetHandlerLifetime(TimeSpan.FromSeconds(10));
 
@@ -165,13 +170,13 @@ namespace Microsoft.Extensions.Http
 
                 var scopedServiceFromContainer = scopeServices.GetRequiredService<ScopedService>();
 
-                var typedClient = services.GetRequiredService<TypedClient>();
+                var typedClient = scopeServices.GetRequiredService<TypedClient>();
                 var scopedServiceFromTypedClient = typedClient.ScopedService;
 
                 var (topHandler, primaryHandler) = GetTopAndPrimaryHandlers(name, typedClient.HttpClient, factory);
                 var scopedServiceFromHandler = ((MessageHandlerWithScopedService)topHandler).ScopedService;
 
-                var typedClient2 = services.GetRequiredService<TypedClient>();
+                var typedClient2 = scopeServices.GetRequiredService<TypedClient>();
                 var scopedServiceFromTypedClient2 = typedClient2.ScopedService;
 
                 var (topHandler2, primaryHandler2) = GetTopAndPrimaryHandlers(name, typedClient2.HttpClient, factory);
@@ -179,7 +184,7 @@ namespace Microsoft.Extensions.Http
 
                 Thread.Sleep(20 * 1000);
 
-                var typedClient3 = services.GetRequiredService<TypedClient>();
+                var typedClient3 = scopeServices.GetRequiredService<TypedClient>();
                 var scopedServiceFromTypedClient3 = typedClient3.ScopedService;
 
                 var (topHandler3, primaryHandler3) = GetTopAndPrimaryHandlers(name, typedClient3.HttpClient, factory);
@@ -188,18 +193,18 @@ namespace Microsoft.Extensions.Http
                 Assert.NotSame(scopedServiceFromContainer, scopedServiceFromHandler);
                 Assert.NotSame(scopedServiceFromContainer, scopedServiceFromHandler3);
                 Assert.Same(scopedServiceFromHandler, scopedServiceFromHandler2);
-                Assert.Same(scopedServiceFromHandler, scopedServiceFromHandler3);
+                Assert.NotSame(scopedServiceFromHandler, scopedServiceFromHandler3);
 
                 Assert.NotSame(typedClient, typedClient2);
                 Assert.NotSame(typedClient2, typedClient3);
-                Assert.NotSame(scopedServiceFromContainer, scopedServiceFromTypedClient);
+                Assert.Same(scopedServiceFromContainer, scopedServiceFromTypedClient);
                 Assert.Same(scopedServiceFromTypedClient, scopedServiceFromTypedClient2);
                 Assert.Same(scopedServiceFromTypedClient2, scopedServiceFromTypedClient3);
-                Assert.Same(scopedServiceFromTypedClient, scopedServiceFromHandler);
-                Assert.Same(scopedServiceFromTypedClient2, scopedServiceFromHandler2);
-                Assert.Same(scopedServiceFromTypedClient3, scopedServiceFromHandler3);
+                Assert.NotSame(scopedServiceFromTypedClient, scopedServiceFromHandler);
+                Assert.NotSame(scopedServiceFromTypedClient2, scopedServiceFromHandler2);
+                Assert.NotSame(scopedServiceFromTypedClient3, scopedServiceFromHandler3);
 
-                Assert.NotSame(topHandler, topHandler2);
+                Assert.Same(topHandler, topHandler2);
                 Assert.NotSame(topHandler2, topHandler3);
 
                 Assert.Same(primaryHandler, primaryHandler2);
@@ -216,6 +221,7 @@ namespace Microsoft.Extensions.Http
             serviceCollection.AddTransient<MessageHandlerWithScopedService>();
 
             serviceCollection.AddHttpClient<TypedClient>()
+                .PreserveExistingScope(true)
                 .AddHttpMessageHandler<MessageHandlerWithScopedService>()
                 .SetHandlerLifetime(TimeSpan.FromSeconds(10));
 

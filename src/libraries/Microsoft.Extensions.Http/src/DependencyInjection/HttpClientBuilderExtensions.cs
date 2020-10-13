@@ -337,8 +337,22 @@ namespace Microsoft.Extensions.DependencyInjection
 
             builder.Services.AddTransient<TClient>(s =>
             {
-                IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
-                HttpClient httpClient = httpClientFactory.CreateClient(builder.Name, s); // TODO: check for opt-in/opt-out
+                string name = builder.Name;
+
+                var optionsMonitor = s.GetRequiredService<IOptionsMonitor<HttpClientFactoryOptions>>();
+                var options = optionsMonitor.Get(name);
+
+                HttpClient httpClient;
+                if (options.PreserveExistingScope)
+                {
+                    IScopedHttpClientFactory scopedFactory = s.GetRequiredService<IScopedHttpClientFactory>();
+                    httpClient = scopedFactory.CreateClient(name);
+                }
+                else
+                {
+                    IHttpClientFactory httpClientFactory = s.GetRequiredService<IHttpClientFactory>();
+                    httpClient = httpClientFactory.CreateClient(builder.Name);
+                }
 
                 ITypedHttpClientFactory<TClient> typedClientFactory = s.GetRequiredService<ITypedHttpClientFactory<TClient>>();
                 return typedClientFactory.CreateClient(httpClient);
@@ -549,6 +563,21 @@ namespace Microsoft.Extensions.DependencyInjection
             builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
             {
                 options.ShouldRedactHeaderValue = shouldRedactHeaderValue;
+            });
+
+            return builder;
+        }
+
+        public static IHttpClientBuilder PreserveExistingScope(this IHttpClientBuilder builder, bool preserveExistingScope)
+        {
+            if (builder == null)
+            {
+                throw new ArgumentNullException(nameof(builder));
+            }
+
+            builder.Services.Configure<HttpClientFactoryOptions>(builder.Name, options =>
+            {
+                options.PreserveExistingScope = preserveExistingScope;
             });
 
             return builder;

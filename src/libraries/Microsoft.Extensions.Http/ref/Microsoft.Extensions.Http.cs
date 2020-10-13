@@ -21,6 +21,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RedactLoggedHeaders(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Collections.Generic.IEnumerable<string> redactedLoggedHeaderNames) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder RedactLoggedHeaders(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.Func<string, bool> shouldRedactHeaderValue) { throw null; }
         public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder SetHandlerLifetime(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, System.TimeSpan handlerLifetime) { throw null; }
+        public static Microsoft.Extensions.DependencyInjection.IHttpClientBuilder PreserveExistingScope(this Microsoft.Extensions.DependencyInjection.IHttpClientBuilder builder, bool preserveExistingScope) { throw null; }
     }
     public static partial class HttpClientFactoryServiceCollectionExtensions
     {
@@ -61,6 +62,7 @@ namespace Microsoft.Extensions.Http
         public System.Collections.Generic.IList<System.Action<Microsoft.Extensions.Http.HttpMessageHandlerBuilder>> HttpMessageHandlerBuilderActions { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
         public System.Func<string, bool> ShouldRedactHeaderValue { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
         public bool SuppressHandlerScope { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
+        public bool PreserveExistingScope { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute] set { } }
     }
     public abstract partial class HttpMessageHandlerBuilder
     {
@@ -111,7 +113,10 @@ namespace System.Net.Http
     public partial interface IHttpClientFactory
     {
         System.Net.Http.HttpClient CreateClient(string name);
-        System.Net.Http.HttpClient CreateClient(string name, System.IServiceProvider services); // TODO: :(
+    }
+    public partial interface IScopedHttpClientFactory
+    {
+        System.Net.Http.HttpClient CreateClient(string name);
     }
     public partial interface IHttpMessageHandlerFactory
     {
