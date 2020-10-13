@@ -83,7 +83,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         private Task<VoidTaskResult> InitializeTaskAsPromise()
         {
-            Debug.Assert(m_task == null);
+            Debug.Assert(m_task is null);
             return m_task = new Task<VoidTaskResult>();
         }
 

@@ -186,7 +186,7 @@ namespace System.Runtime.CompilerServices
             if (taskField is AsyncStateMachineBox<IAsyncStateMachine> weaklyTypedBox)
             {
                 // If this is the first await, we won't yet have a state machine, so store it.
-                if (weaklyTypedBox.StateMachine == null)
+                if (weaklyTypedBox.StateMachine is null)
                 {
                     Debugger.NotifyOfCrossThreadDependency(); // same explanation as with usage below
                     weaklyTypedBox.StateMachine = stateMachine;
@@ -313,7 +313,7 @@ namespace System.Runtime.CompilerServices
                 }
 
             Start:
-                Debug.Assert(StateMachine != null);
+                Debug.Assert(StateMachine is not null);
 
                 ExecutionContext? context = Context;
                 if (context is not null && !context.IsDefault)
@@ -379,18 +379,18 @@ namespace System.Runtime.CompilerServices
                 }
 
             Start:
-                Debug.Assert(StateMachine != null);
+                Debug.Assert(StateMachine is not null);
 
                 ExecutionContext? context = Context;
 
-                if (context != null)
+                if (context is not null)
                 {
                     if (context.IsDefault)
                     {
                         // 1st preference: Default context.
                         Thread currentThread = Thread.CurrentThread;
                         ExecutionContext? currentContext = currentThread._executionContext;
-                        if (currentContext == null || currentContext.IsDefault)
+                        if (currentContext is null || currentContext.IsDefault)
                         {
                             // Preferred: On Default and to run on Default; however we need to undo any changes that happen in call.
                             SynchronizationContext? previousSyncCtx = currentThread._synchronizationContext;
@@ -405,7 +405,7 @@ namespace System.Runtime.CompilerServices
                                 edi = ExceptionDispatchInfo.Capture(ex);
                             }
 
-                            if (currentThread._executionContext == null)
+                            if (currentThread._executionContext is null)
                             {
                                 if (currentThread._synchronizationContext != previousSyncCtx)
                                 {
@@ -499,7 +499,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.NoInlining)]
         private Task<TResult> InitializeTaskAsPromise()
         {
-            Debug.Assert(m_task == null);
+            Debug.Assert(m_task is null);
             return m_task = new Task<TResult>();
         }
 
@@ -531,7 +531,7 @@ namespace System.Runtime.CompilerServices
             if (m_task is null)
             {
                 m_task = GetTaskForResult(result);
-                Debug.Assert(m_task != null, $"{nameof(GetTaskForResult)} should never return null");
+                Debug.Assert(m_task is not null, $"{nameof(GetTaskForResult)} should never return null");
             }
             else
             {
@@ -545,7 +545,7 @@ namespace System.Runtime.CompilerServices
         /// <param name="task">The task to complete.</param>
         internal static void SetExistingTaskResult(Task<TResult> task, TResult? result)
         {
-            Debug.Assert(task != null, "Expected non-null task");
+            Debug.Assert(task is not null, "Expected non-null task");
 
             if (TplEventSource.Log.IsEnabled())
             {
@@ -569,7 +569,7 @@ namespace System.Runtime.CompilerServices
 
         internal static void SetException(Exception exception, ref Task<TResult>? taskField)
         {
-            if (exception == null)
+            if (exception is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.exception);
             }
@@ -711,7 +711,7 @@ namespace System.Runtime.CompilerServices
                     return s_defaultResultTask;
                 }
             }
-            else if (result == null) // optimized away for value types
+            else if (result is null) // optimized away for value types
             {
                 return s_defaultResultTask;
             }
