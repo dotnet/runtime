@@ -317,13 +317,19 @@ CLRTestExitCode=$?
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'BuildAndRun' And $(TargetOS) == 'Android' ">
       <![CDATA[
 # run Android app
+__Command=""
+if [ ! -z ${__TestDotNetCmd+x} ] %3B then
+  __Command+=" $__TestDotNetCmd"
+else
+  __Command+=" dotnet"
+fi
+
 cd $TestBinaryBase/AndroidApp
-AdbTool=$ANDROID_SDK_ROOT/platform-tools/adb
-$AdbTool kill-server
-$AdbTool start-server
-$AdbTool uninstall net.dot.$NameSpace || true
-$AdbTool install apk/bin/$NameSpace.apk
-CLRTestExitCode=%24%28$AdbTool shell am instrument -w net.dot.$NameSpace/net.dot.MonoRunner | grep "return-code" | cut -d "=" -f2%29
+$__Command xharness android test --instrumentation="net.dot.MonoRunner" --package-name="net.dot.$NameSpace" --app=apk/bin/$NameSpace.apk --output-directory=`pwd` --arg=entryPointLibName=$(MsBuildProjectName).dll --expected-exit-code=100
+CLRTestExitCode=$?
+
+# Exist code of xharness is zero when tests finished successfully
+CLRTestExpectedExitCode=0
       ]]>
       </BashCLRTestLaunchCmds>
       <BashCLRTestLaunchCmds Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[

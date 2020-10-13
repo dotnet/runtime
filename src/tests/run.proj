@@ -442,7 +442,7 @@ namespace $([System.String]::Copy($(Category)).Replace(".","_").Replace("\","").
         ProjectName="$(Category)"
         Abi="$(AndroidAbi)"
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)/native/include/mono-2.0"
-        MainLibraryFileName="@(TestAssemblies)"
+        ExtraAssemblies="@(TestAssemblies)"
         AssemblySearchPaths="@(AssemblySearchPaths)"
         StripDebugSymbols="$(StripDebugSymbols)"
         SourceDir="$(OutputDir)"
