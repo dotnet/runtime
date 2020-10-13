@@ -1,13 +1,12 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Text;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Text;
 using System.Xml.Schema;
 
 namespace System.Xml
@@ -333,15 +332,11 @@ namespace System.Xml
         private readonly bool _ignoreComments;
         private readonly DtdProcessing _dtdProcessing;
 
-        private readonly Encoding _unicode;
-
         // current version of the protocol
         private byte _version;
 
         public XmlSqlBinaryReader(Stream stream, byte[] data, int len, string baseUri, bool closeInput, XmlReaderSettings settings)
         {
-            _unicode = System.Text.Encoding.Unicode;
-
             _xnt = settings.NameTable!;
             if (_xnt == null)
             {
@@ -2349,28 +2344,21 @@ namespace System.Xml
         private string GetString(int pos, int cch)
         {
             Debug.Assert(pos >= 0 && cch >= 0);
-            if (checked(pos + (cch * 2)) > _end)
+            if (checked(pos + (cch * sizeof(char))) > _end)
                 throw new XmlException(SR.Xml_UnexpectedEOF1, (string[]?)null);
             if (cch == 0)
                 return string.Empty;
-            // GetStringUnaligned is _significantly_ faster than unicode.GetString()
-            // but since IA64 doesn't support unaligned reads, we can't do it if
-            // the address is not aligned properly.  Since the byte[] will be aligned,
-            // we can detect address alignment my just looking at the offset
-            if ((pos & 1) == 0)
-                return GetStringAligned(_data, pos, cch);
-            else
-                return _unicode.GetString(_data, pos, checked(cch * 2));
-        }
 
-        private unsafe string GetStringAligned(byte[] data, int offset, int cch)
-        {
-            Debug.Assert((offset & 1) == 0);
-            fixed (byte* pb = data)
+            return string.Create(cch, (_data, pos), static (dstChars, state) =>
             {
-                char* p = (char*)(pb + offset);
-                return new string(p, 0, cch);
-            }
+                // bitblt source bytes directly into the destination char span
+                // n.b. source buffer assumed to be well-formed UTF-16 machine endian
+
+                int cch = dstChars.Length;
+                ReadOnlySpan<byte> srcBytes = state._data.AsSpan(state.pos, checked(cch * sizeof(char)));
+                Span<byte> dstBytes = MemoryMarshal.AsBytes(dstChars);
+                srcBytes.CopyTo(dstBytes);
+            });
         }
 
         private string GetAttributeText(int i)
