@@ -87,9 +87,8 @@ namespace System.Threading
         /// <exception cref="ArgumentNullException"><paramref name="name"/> is <see langword="null" />.</exception>
         /// <exception cref="ArgumentException"><paramref name="name"/> is an empty string.</exception>
         /// <exception cref="WaitHandleCannotBeOpenedException">The named event wait handle does not exist or is invalid.</exception>
-        /// <exception cref="IOException">The path was not found.
-        /// -or-
-        /// A Win32 error occurred.</exception>
+        /// <exception cref="DirectoryNotFoundException">The path was not found.</exception>
+        /// <exception cref="IOException">A Win32 error occurred.</exception>
         /// <exception cref="UnauthorizedAccessException">The named event wait handle exists, but the user does not have the security access required to use it.</exception>
         public static EventWaitHandle OpenExisting(string name, EventWaitHandleRights rights)
         {
@@ -102,7 +101,7 @@ namespace System.Threading
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
                 case OpenExistingResult.PathNotFound:
-                    throw new IOException(SR.Format(SR.IO_PathNotFound_Path, name));
+                    throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, name));
 
                 case OpenExistingResult.Success:
                 default:
