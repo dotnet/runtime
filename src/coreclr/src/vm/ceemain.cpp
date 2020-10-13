@@ -1868,24 +1868,24 @@ BOOL STDMETHODCALLTYPE EEDllMain( // TRUE on success, FALSE on error.
                 Thread* thread = GetThread();
                 if (thread)
                 {
-#ifdef FEATURE_COMINTEROP
-                    // reset the CoInitialize state
-                    // so we don't call CoUninitialize during thread detach
-                    thread->ResetCoInitialized();
-#endif // FEATURE_COMINTEROP
-                    // For case where thread calls ExitThread directly, we need to reset the
-                    // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
-                    // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
-                    if (thread->m_pFrame != FRAME_TOP)
-                    {
-#ifdef _DEBUG
-                        thread->m_GCOnTransitionsOK = FALSE;
-#endif
-                        GCX_COOP_NO_DTOR();
-                        thread->m_pFrame = FRAME_TOP;
-                        GCX_COOP_NO_DTOR_END();
-                    }
-                    thread->DetachThread(TRUE);
+//#ifdef FEATURE_COMINTEROP
+//                    // reset the CoInitialize state
+//                    // so we don't call CoUninitialize during thread detach
+//                    thread->ResetCoInitialized();
+//#endif // FEATURE_COMINTEROP
+//                    // For case where thread calls ExitThread directly, we need to reset the
+//                    // frame pointer. Otherwise stackwalk would AV. We need to do it in cooperative mode.
+//                    // We need to set m_GCOnTransitionsOK so this thread won't trigger GC when toggle GC mode
+//                    if (thread->m_pFrame != FRAME_TOP)
+//                    {
+//#ifdef _DEBUG
+//                        thread->m_GCOnTransitionsOK = FALSE;
+//#endif
+//                        GCX_COOP_NO_DTOR();
+//                        thread->m_pFrame = FRAME_TOP;
+//                        GCX_COOP_NO_DTOR_END();
+//                    }
+//                    thread->DetachThread(TRUE);
                 }
             }
         }
