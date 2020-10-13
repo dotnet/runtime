@@ -10,7 +10,6 @@ runtimepack:
 run:
 	$(DOTNET) publish \
 	/p:TargetArchitecture=$(MONO_ARCH) \
-	/p:TargetOS=Android \
 	/p:Configuration=$(MONO_CONFIG) \
 	/p:DeployAndRun=true
 
