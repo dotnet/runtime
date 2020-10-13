@@ -40,7 +40,7 @@
       </_PropertiesToPass>
 
       
-      <_PropertiesToPass Condition="'$(TargetArchitecture)' == 'wasm' Or '$(TargetOS)' == 'Android'">
+      <_PropertiesToPass Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
         $(_PropertiesToPass);
         IncludeDotNetCli=$(IncludeDotNetCli);
         DotNetCliRuntime=$(DotNetCliRuntime);
@@ -81,7 +81,7 @@
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'OSX'">osx-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux'">linux-$(TargetArchitecture)</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Linux_musl'">linux-musl-$(TargetArchitecture)</HelixRuntimeRid>
-    <HelixRuntimeRid Condition="'$(TargetArchitecture)' == 'wasm'">browser-wasm</HelixRuntimeRid>
+    <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Browser'">browser-wasm</HelixRuntimeRid>
     <HelixRuntimeRid Condition="'$(TargetOSSpec)' == 'Android'">android-$(TargetArchitecture)</HelixRuntimeRid>
   </PropertyGroup>
 
@@ -98,12 +98,16 @@
     <DotNetCliRuntime>$(HelixRuntimeRid)</DotNetCliRuntime> 
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(TargetArchitecture)' == 'wasm' Or '$(TargetOS)' == 'Android'">
+  <PropertyGroup Condition="'$(TargetOS)' == 'Browser' Or '$(TargetOS)' == 'Android'">
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
     <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
     <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-    <!-- wasm needs to use the host OS DotnetCliRuntime, which on its queue is linux-x64 -->
+    <!-- wasm and Android needs to use the host OS DotnetCliRuntime, which on its queue is linux-x64 -->
     <DotNetCliRuntime>linux-x64</DotNetCliRuntime>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(TargetOS)' == 'Android'">
+    <IncludeXHarnessCli>true</IncludeXHarnessCli>
   </PropertyGroup>
 
   <Import Project="testgrouping.proj" />
