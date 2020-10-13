@@ -8,8 +8,8 @@ steps:
   # Build and test leaf solution
   - ${{ if ne(parameters.testLibrary, '') }}:
     - script: dotnet test
-              $(Build.SourcesDirectory)/src/libraries/{{ parameters.library }}/
-              -c {{ parameters.buildConfig }}
-              /p:TestRunner={{ parameters.testRunner }}
+              $(Build.SourcesDirectory)/src/libraries/${{ parameters.library }}/
+              -c ${{ parameters.buildConfig }}
+              /p:TestRunner=${{ parameters.testRunner }}
               /bl:$(Build.SourcesDirectory)/artifacts/log/$(_BuildConfig)/innerloop-steps-test.binlog
       displayName: Build and test leaf solution
