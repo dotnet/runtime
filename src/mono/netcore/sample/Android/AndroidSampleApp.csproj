@@ -5,25 +5,28 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetArchitecture Condition="'$(TargetArchitecture)'==''">x64</TargetArchitecture>
     <TargetOS>Android</TargetOS>
+    <EnableTargetingPackDownload>false</EnableTargetingPackDownload>
+    <RuntimeIdentifier>android-$(TargetArchitecture)</RuntimeIdentifier>
+    <PublishTrimmed>true</PublishTrimmed>
+    <_TrimmerDefaultAction>link</_TrimmerDefaultAction>
+    <Optimized Condition="'$(Configuration)' == 'Release'">True</Optimized>
     <MicrosoftNetCoreAppRuntimePackDir>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)\runtimes\android-$(TargetArchitecture)\</MicrosoftNetCoreAppRuntimePackDir>
     <NoWarn>$(NoWarn),CA1050</NoWarn>
   </PropertyGroup>
 
-  <Target Name="RebuildAndroidAppBuilder">
+  <!-- Redirect 'dotnet publish' to in-tree runtime pack -->
+  <Target Name="TrickRuntimePackLocation" AfterTargets="ProcessFrameworkReferences">
     <ItemGroup>
-      <AndroidAppBuilderProject Include="$(RepoTasksDir)mobile.tasks\AndroidAppBuilder\AndroidAppBuilder.csproj" />
+      <RuntimePack>
+        <PackageDirectory>$(ArtifactsBinDir)microsoft.netcore.app.runtime.android-$(TargetArchitecture)\$(Configuration)</PackageDirectory>
+      </RuntimePack>
     </ItemGroup>
-    <MSBuild Projects="@(AndroidAppBuilderProject)"
-             Properties="Configuration=$(Configuration);MSBuildRestoreSessionId=$([System.Guid]::NewGuid())"
-             Targets="Restore"/>
-    <MSBuild Projects="@(AndroidAppBuilderProject)"
-             Properties="Configuration=$(Configuration)"
-             Targets="Build;Publish"/>
+    <Message Text="Packaged ID: %(RuntimePack.PackageDirectory)" Importance="high" />
   </Target>
 
   <UsingTask TaskName="AndroidAppBuilderTask" AssemblyFile="$(AndroidAppBuilderTasksAssemblyPath)"/>
 
-  <Target Name="BuildApp" DependsOnTargets="RebuildAndroidAppBuilder;Build">
+  <Target Name="BuildApp" AfterTargets="CopyFilesToPublishDirectory">
     <PropertyGroup>
       <AndroidAbi Condition="'$(Platform)'=='arm64'">arm64-v8a</AndroidAbi>
       <AndroidAbi Condition="'$(Platform)'=='arm'">armeabi-v7a</AndroidAbi>
@@ -35,12 +38,6 @@
       <ApkDir>$(OutputPath)apk\</ApkDir>
     </PropertyGroup>
 
-    <ItemGroup>
-      <AssemblySearchPaths Include="$(OutputPath)" />
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)native"/>
-      <AssemblySearchPaths Include="$(MicrosoftNetCoreAppRuntimePackDir)lib\$(NetCoreAppCurrent)"/>
-    </ItemGroup>
-
     <RemoveDir Directories="$(ApkDir)" />
 
     <AndroidAppBuilderTask
@@ -50,7 +47,6 @@
         MonoRuntimeHeaders="$(MicrosoftNetCoreAppRuntimePackDir)\native\include\mono-2.0"
         MainLibraryFileName="$(AssemblyName).dll"
         StripDebugSymbols="$(StripDebugSymbols)"
-        AssemblySearchPaths="@(AssemblySearchPaths)"
         OutputDir="$(ApkDir)">
         <Output TaskParameter="ApkBundlePath" PropertyName="ApkBundlePath" />
         <Output TaskParameter="ApkPackageId" PropertyName="ApkPackageId" />

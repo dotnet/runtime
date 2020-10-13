@@ -12,10 +12,6 @@ public class AndroidAppBuilderTask : Task
     [Required]
     public string SourceDir { get; set; } = ""!;
 
-    public ITaskItem[]? AssemblySearchPaths { get; set; }
-
-    public ITaskItem[]? ExtraAssemblies { get; set; }
-
     [Required]
     public string MonoRuntimeHeaders { get; set; } = ""!;
 
@@ -66,8 +62,6 @@ public class AndroidAppBuilderTask : Task
         apkBuilder.BuildApiLevel = BuildApiLevel;
         apkBuilder.BuildToolsVersion = BuildToolsVersion;
         apkBuilder.StripDebugSymbols = StripDebugSymbols;
-        apkBuilder.AssemblySearchPaths = AssemblySearchPaths?.Select(a => a.ItemSpec)?.ToArray();
-        apkBuilder.ExtraAssemblies = ExtraAssemblies?.Select(a => a.ItemSpec)?.ToArray();
         (ApkBundlePath, ApkPackageId) = apkBuilder.BuildApk(SourceDir, Abi, MainLibraryFileName, MonoRuntimeHeaders);
 
         return true;
