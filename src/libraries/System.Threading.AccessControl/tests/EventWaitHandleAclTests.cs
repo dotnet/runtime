@@ -208,6 +208,87 @@ namespace System.Threading.Tests
             EventWaitHandleExisting.Dispose();
         }
 
+        [Fact]
+        public void EventWaitHandle_OpenExisting_NameNotFound()
+        {
+            string name = "ThisShouldNotExist";
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting(name, EventWaitHandleRights.FullControl).Dispose();
+            });
+
+            Assert.False(EventWaitHandleAcl.TryOpenExisting(name, EventWaitHandleRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void EventWaitHandle_OpenExisting_NameInvalid()
+        {
+            string name = '\0'.ToString();
+            Assert.Throws<WaitHandleCannotBeOpenedException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting(name, EventWaitHandleRights.FullControl).Dispose();
+            });
+
+            Assert.False(EventWaitHandleAcl.TryOpenExisting(name, EventWaitHandleRights.FullControl, out _));
+        }
+
+        [Fact]
+        public void EventWaitHandle_OpenExisting_BadPathName()
+        {
+            string name = @"\\?\Path";
+            Assert.Throws<System.IO.IOException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting(name, EventWaitHandleRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<System.IO.IOException>(() =>
+            {
+                EventWaitHandleAcl.TryOpenExisting(name, EventWaitHandleRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void EventWaitHandle_OpenExisting_NullName()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting(null, EventWaitHandleRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<ArgumentNullException>(() =>
+            {
+                EventWaitHandleAcl.TryOpenExisting(null, EventWaitHandleRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void EventWaitHandle_OpenExisting_EmptyName()
+        {
+            Assert.Throws<ArgumentException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting(string.Empty, EventWaitHandleRights.FullControl).Dispose();
+            });
+
+            Assert.Throws<ArgumentException>(() =>
+            {
+                EventWaitHandleAcl.TryOpenExisting(string.Empty, EventWaitHandleRights.FullControl, out _);
+            });
+        }
+
+        [Fact]
+        public void EventWaitHandle_OpenExisting_RightsOutOfRange()
+        {
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                EventWaitHandleAcl.OpenExisting("name", (EventWaitHandleRights)(-1)).Dispose();
+            });
+
+            Assert.Throws<ArgumentOutOfRangeException>(() =>
+            {
+                EventWaitHandleAcl.TryOpenExisting("name", (EventWaitHandleRights)(-1), out _);
+            });
+        }
+
         private EventWaitHandleSecurity GetBasicEventWaitHandleSecurity()
         {
             return GetEventWaitHandleSecurity(
