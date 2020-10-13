@@ -58,9 +58,12 @@ To run all tests, including "outer loop" tests (which are typically slower and i
 dotnet test /p:Outerloop=true
 ```
 
-#### Running tests on a different target framework
+#### Running tests on a single target framework
 
-Each test project can potentially have multiple target frameworks. There are some tests that might be OS-specific, or might be testing an API that is available only on some target frameworks, so the `TargetFrameworks` property specifies the valid target frameworks. By default we will build and run only the default build target framework which is `net5.0`. The rest of the `TargetFrameworks` will need to be built and ran by specifying the `BuildTargetFramework` option, e.g.:
+Each test project can potentially have multiple target frameworks. There are some tests that might be OS-specific, or might be testing an API that is available only on some target frameworks, so the `TargetFrameworks` property specifies the valid target frameworks. To run against a single target framework you can specify the `TargetFramework` via the framework `-f` switch:
 ```cmd
 dotnet test -f net48 src\libraries\System.Text.RegularExpressions\tests
 ```
+
+#### Using an alternative test runner (advanced)
+For non mobile configurations, the default test runner is VSTest (locally and in CI). By passing in `/p:TestRunner=xunit` when invoking `dotnet test`, an alternative test runner `xunit.console` is used. Even though that test runner is out-of-support and deprecated, it is still useful when debugging runtime issues or when adding support for new operating systems or devices. Our plan is to eventually get rid of `xunit.console` by adding a lightweight mode to the VSTest runner.
