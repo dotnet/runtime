@@ -26,13 +26,6 @@ namespace System.Net.Sockets
             socketTime.Microseconds = (int)(microseconds % microcnv);
         }
 
-        public static void Initialize()
-        {
-            // Ensure that WSAStartup has been called once per process.
-            // The System.Net.NameResolution contract is responsible for the initialization.
-            Dns.GetHostName();
-        }
-
         public static SocketError GetLastSocketError()
         {
             int win32Error = Marshal.GetLastWin32Error();
@@ -42,6 +35,8 @@ namespace System.Net.Sockets
 
         public static SocketError CreateSocket(AddressFamily addressFamily, SocketType socketType, ProtocolType protocolType, out SafeSocketHandle socket)
         {
+            Interop.Winsock.EnsureInitialized();
+
             IntPtr handle = Interop.Winsock.WSASocketW(addressFamily, socketType, protocolType, IntPtr.Zero, 0, Interop.Winsock.SocketConstructorFlags.WSA_FLAG_OVERLAPPED |
                                                                                                                 Interop.Winsock.SocketConstructorFlags.WSA_FLAG_NO_HANDLE_INHERIT);
 
@@ -69,6 +64,8 @@ namespace System.Net.Sockets
             {
                 throw new ArgumentException(SR.net_sockets_invalid_socketinformation, nameof(socketInformation));
             }
+
+            Interop.Winsock.EnsureInitialized();
 
             fixed (byte* protocolInfoBytes = socketInformation.ProtocolInformation)
             {
