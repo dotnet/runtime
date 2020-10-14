@@ -132,7 +132,7 @@ jobs:
       displayName: RichCodeNav Upload
       inputs:
         languages: 'csharp'
-        environment: ${{ coalesce(parameters.richCodeNavigationEnvironment, 'production') }}
+        environment: ${{ coalesce(parameters.richCodeNavigationEnvironment, 'prod') }}
         richNavLogOutputDirectory: $(Build.SourcesDirectory)/artifacts/bin
       continueOnError: true
 
