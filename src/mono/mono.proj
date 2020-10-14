@@ -88,7 +88,7 @@
     <Error Condition="'$(Destination)' == ''" Text="Destination should not be empty" />
     <Error Condition="@(_MonoRuntimeArtifacts->Count()) &lt; 2" Text="Mono artifacts were not found at $(RuntimeBinDir)" />
     <Message Text="Copying Mono Runtime artifacts from '$(RuntimeBinDir)' to '$(Destination)'.'" Importance="High" />
-    <Copy SourceFiles="@(_MonoRuntimeArtifacts)" 
+    <Copy SourceFiles="@(_MonoRuntimeArtifacts)"
           DestinationFolder="$(Destination)"
           OverwriteReadOnlyFiles="true"
           SkipUnchangedFiles="true" />
