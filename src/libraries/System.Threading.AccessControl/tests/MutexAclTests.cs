@@ -34,7 +34,7 @@ namespace System.Threading.Tests
             string name = GetRandomName();
             MutexSecurity security = GetBasicMutexSecurity();
 
-            using Mutex mutexNew = CreateAndVerifyMutex(initiallyOwned: true, name, security, expectedCreatedNew: true);
+            using Mutex mutexNew      = CreateAndVerifyMutex(initiallyOwned: true, name, security, expectedCreatedNew: true);
             using Mutex mutexExisting = CreateAndVerifyMutex(initiallyOwned: true, name, security, expectedCreatedNew: false);
         }
 
@@ -251,9 +251,9 @@ namespace System.Threading.Tests
         {
             return
                 expectedRule.AccessControlType == actualRule.AccessControlType &&
-                expectedRule.MutexRights == actualRule.MutexRights &&
-                expectedRule.InheritanceFlags == actualRule.InheritanceFlags &&
-                expectedRule.PropagationFlags == actualRule.PropagationFlags;
+                expectedRule.MutexRights       == actualRule.MutexRights &&
+                expectedRule.InheritanceFlags  == actualRule.InheritanceFlags &&
+                expectedRule.PropagationFlags  == actualRule.PropagationFlags;
         }
     }
 }

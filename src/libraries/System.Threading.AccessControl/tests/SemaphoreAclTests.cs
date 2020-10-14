@@ -319,9 +319,9 @@ namespace System.Threading.Tests
         {
             return
                 expectedRule.AccessControlType == actualRule.AccessControlType &&
-                expectedRule.SemaphoreRights == actualRule.SemaphoreRights &&
-                expectedRule.InheritanceFlags == actualRule.InheritanceFlags &&
-                expectedRule.PropagationFlags == actualRule.PropagationFlags;
+                expectedRule.SemaphoreRights   == actualRule.SemaphoreRights &&
+                expectedRule.InheritanceFlags  == actualRule.InheritanceFlags &&
+                expectedRule.PropagationFlags  == actualRule.PropagationFlags;
         }
     }
 }

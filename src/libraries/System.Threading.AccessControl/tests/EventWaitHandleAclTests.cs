@@ -361,10 +361,10 @@ namespace System.Threading.Tests
         private bool AreAccessRulesEqual(EventWaitHandleAccessRule expectedRule, EventWaitHandleAccessRule actualRule)
         {
             return
-                expectedRule.AccessControlType == actualRule.AccessControlType &&
+                expectedRule.AccessControlType     == actualRule.AccessControlType &&
                 expectedRule.EventWaitHandleRights == actualRule.EventWaitHandleRights &&
-                expectedRule.InheritanceFlags == actualRule.InheritanceFlags &&
-                expectedRule.PropagationFlags == actualRule.PropagationFlags;
+                expectedRule.InheritanceFlags      == actualRule.InheritanceFlags &&
+                expectedRule.PropagationFlags      == actualRule.PropagationFlags;
         }
     }
 }
