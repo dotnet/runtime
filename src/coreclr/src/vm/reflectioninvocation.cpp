@@ -1696,7 +1696,7 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
                 break;
             }
         }
-    // drop through
+    __fallthrough;
     case ELEMENT_TYPE_FNPTR:
     {
         value = 0;

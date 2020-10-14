@@ -5884,6 +5884,7 @@ bool DebuggerStepper::TrapStep(ControllerStackInfo *info, bool in)
                 fIsJump = true;
 
                 // fall through...
+                __fallthrough;
 
             case WALK_CALL:
                 LOG((LF_CORDB,LL_INFO10000, "DC::TS:Imm:WALK_CALL ip=%p nextip=%p skipip=%p\n", walker.GetIP(), walker.GetNextIP(), walker.GetSkipIP()));

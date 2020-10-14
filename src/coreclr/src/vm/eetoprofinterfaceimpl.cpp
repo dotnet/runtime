@@ -1677,6 +1677,7 @@ DWORD EtwRootKindToProfApiRootKind(EtwGCRootKind dwEtwRootKind)
         // the appropriate case below
         _ASSERTE(!"Unrecognized ETW root kind");
         // Deliberately fall through to kEtwGCRootKindOther
+        __fallthrough;
 
     case kEtwGCRootKindOther:
         return COR_PRF_GC_ROOT_OTHER;

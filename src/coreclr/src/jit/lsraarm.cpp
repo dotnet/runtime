@@ -701,7 +701,8 @@ int LinearScan::BuildNode(GenTree* tree)
             // that overlaps with all the source registers.
             assert(!"Should never see GT_NULLCHECK on Arm/32");
 #endif
-        // For Arm64 we simply fall through to the GT_IND case, and will use REG_ZR as the target.
+            // For Arm64 we simply fall through to the GT_IND case, and will use REG_ZR as the target.
+            __fallthrough;
         case GT_IND:
             assert(dstCount == (tree->OperIs(GT_NULLCHECK) ? 0 : 1));
             srcCount = BuildIndir(tree->AsIndir());

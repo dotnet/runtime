@@ -13920,6 +13920,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                     perfScoreUnhandledInstruction(id, &result);
                     break;
             }
+            break;
 
         // ALU, basic immediate
         case IF_DI_1A: // cmp, cmn

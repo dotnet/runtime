@@ -792,8 +792,10 @@ bool ReadMemoryValueFromFile(const char* filename, uint64_t* val)
     {
     case 'g':
     case 'G': multiplier = 1024;
+              [[fallthrough]];
     case 'm':
     case 'M': multiplier = multiplier * 1024;
+              [[fallthrough]];
     case 'k':
     case 'K': multiplier = multiplier * 1024;
     }

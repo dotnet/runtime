@@ -5594,6 +5594,7 @@ void Lowering::ContainCheckHWIntrinsic(GenTreeHWIntrinsic* node)
                             }
                         }
                     }
+                    break;
                 }
 
                 case HW_Category_IMM:

@@ -551,6 +551,7 @@ int WriteBarrierManager::UpdateEphemeralBounds(bool isRuntimeSuspended)
         //
         // INTENTIONAL FALL-THROUGH!
         //
+        __fallthrough;
         case WRITE_BARRIER_PREGROW64:
 #ifdef FEATURE_USE_SOFTWARE_WRITE_WATCH_FOR_GC_HEAP
         case WRITE_BARRIER_WRITE_WATCH_PREGROW64:

@@ -731,6 +731,7 @@ void CodeGen::genCodeForBBlist()
 
             case BBJ_EHCATCHRET:
                 noway_assert(!"Unexpected BBJ_EHCATCHRET"); // not used on x86
+                break;
 
             case BBJ_EHFINALLYRET:
             case BBJ_EHFILTERRET:

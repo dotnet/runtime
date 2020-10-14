@@ -2133,7 +2133,6 @@ void emitter::emitIns_R_R(
                 assert(isFloatReg(reg1));
                 assert(isFloatReg(reg2));
             }
-            __fallthrough;
 
         VCVT_COMMON:
             fmt = IF_T2_VFP2;
@@ -2847,7 +2846,6 @@ void emitter::emitIns_R_R_I(instruction ins,
             //
             // If we did not find a thumb-1 encoding above
             //
-            __fallthrough;
 
         COMMON_THUMB2_LDST:
             assert(fmt == IF_NONE);
@@ -3070,9 +3068,9 @@ void emitter::emitIns_R_R_R(instruction ins,
                     assert(!"Instruction cannot be encoded");
                 }
             }
-            __fallthrough;
 
 #if !defined(USE_HELPERS_FOR_INT_DIV)
+            __fallthrough;
         case INS_sdiv:
         case INS_udiv:
 #endif // !USE_HELPERS_FOR_INT_DIV

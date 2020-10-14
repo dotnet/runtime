@@ -4183,7 +4183,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                         break;
                     }
 
-                // fall through and set GTF_REVERSE_OPS
+                    // fall through and set GTF_REVERSE_OPS
+                    __fallthrough;
 
                 case GT_LCL_VAR:
                 case GT_LCL_FLD:
@@ -5689,9 +5690,9 @@ bool GenTree::OperMayThrow(Compiler* comp)
                 //
                 return true;
             }
+            break;
         }
 #endif // FEATURE_HW_INTRINSICS
-
         default:
             break;
     }
@@ -11320,6 +11321,7 @@ void Compiler::gtDispLeaf(GenTree* tree, IndentStack* indentStack)
         case GT_JCMP:
             printf(" cond=%s%s", (tree->gtFlags & GTF_JCMP_TST) ? "TEST_" : "",
                    (tree->gtFlags & GTF_JCMP_EQ) ? "EQ" : "NE");
+            break;
 
         default:
             assert(!"don't know how to display tree leaf node");
@@ -14581,6 +14583,7 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
 #endif
                         goto DONE;
                     }
+                    break;
 
                 default:
                     break;
@@ -17456,8 +17459,8 @@ GenTree* Compiler::gtGetSIMDZero(var_types simdType, var_types baseType, CORINFO
                         break;
                     case TYP_UINT:
                         assert(simdHandle == m_simdHandleCache->Vector64UIntHandle);
-                        break;
 #endif // defined(TARGET_ARM64) && defined(FEATURE_HW_INTRINSICS)
+                        break;
                     default:
                         break;
                 }

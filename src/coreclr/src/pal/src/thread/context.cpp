@@ -811,6 +811,7 @@ DWORD CONTEXTGetExceptionCodeForSignal(const siginfo_t *siginfo,
                 default:
                     break;
             }
+            break;
         case SIGTRAP:
             switch (siginfo->si_code)
             {

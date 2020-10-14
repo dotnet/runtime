@@ -2231,8 +2231,10 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
             {
                 case TYP_FLOAT:
                     NYI("long to float");
+                    break;
                 case TYP_DOUBLE:
                     NYI("long to double");
+                    break;
                 default:
                     unreached();
             }
@@ -2246,6 +2248,7 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
                     return INS_vcvt_f2u;
                 case TYP_LONG:
                     NYI("float to long");
+                    break;
                 case TYP_DOUBLE:
                     return INS_vcvt_f2d;
                 case TYP_FLOAT:
@@ -2263,6 +2266,7 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
                     return INS_vcvt_d2u;
                 case TYP_LONG:
                     NYI("double to long");
+                    break;
                 case TYP_FLOAT:
                     return INS_vcvt_d2f;
                 case TYP_DOUBLE:
@@ -2274,6 +2278,7 @@ instruction CodeGen::ins_FloatConv(var_types to, var_types from)
         default:
             unreached();
     }
+    unreached();
 }
 
 #elif defined(TARGET_ARM64)

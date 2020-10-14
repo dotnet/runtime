@@ -2428,7 +2428,8 @@ SigPointer::PeekElemTypeClosed(
                     return type;
             }
 
-            // intentionally fall through
+            __fallthrough;
+
             case ELEMENT_TYPE_INTERNAL:
             {
                 TypeHandle th;
@@ -3761,6 +3762,7 @@ MetaSig::CompareElementType(
         {
             // Unknown type!
             THROW_BAD_FORMAT(BFA_BAD_COMPLUS_SIG, pModule1);
+            break;
         }
 
         case ELEMENT_TYPE_U:
@@ -4059,6 +4061,7 @@ MetaSig::CompareElementType(
         }
     } // switch
     // Unreachable
+    UNREACHABLE();
 } // MetaSig::CompareElementType
 #ifdef _PREFAST_
 #pragma warning(pop)
@@ -4539,6 +4542,7 @@ MetaSig::CompareElementTypeToToken(
         default:
         {   // Unknown type!
             THROW_BAD_FORMAT(BFA_BAD_COMPLUS_SIG, pModule1);
+            break;
         }
 
         case ELEMENT_TYPE_U:

@@ -358,7 +358,11 @@ void StgIO::Close()
             break;
         }
 
+        __fallthrough;
+
         case STGIO_MEM:
+        __fallthrough;
+
         case STGIO_HFILEMEM:
         if (m_bFreeMem && m_pBaseData)
         {
@@ -366,6 +370,7 @@ void StgIO::Close()
             m_pBaseData = m_pData = 0;
         }
         // Intentional fall through to file case, if we kept handle open.
+        __fallthrough;
 
         case STGIO_HFILE:
         {

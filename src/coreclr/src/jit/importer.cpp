@@ -5630,6 +5630,7 @@ void Compiler::verVerifyCall(OPCODE                  opcode,
             }
         }
         // fall thru to default checks
+        __fallthrough;
         default:
             VerifyOrReturn(!(mflags & CORINFO_FLG_ABSTRACT), "method abstract");
     }
@@ -13139,6 +13140,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                         case CEE_CONV_OVF_U_UN:
                         case CEE_CONV_U:
                             isNative = true;
+                            break;
                         default:
                             // leave 'isNative' = false;
                             break;
@@ -14108,7 +14110,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
-            // fall through
+                __fallthrough;
 
             case CEE_CALLVIRT:
             case CEE_CALL:
@@ -16346,6 +16348,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
             case 0xCC:
                 OutputDebugStringA("CLR: Invalid x86 breakpoint in IL stream\n");
+                __fallthrough;
 
             case CEE_ILLEGAL:
             case CEE_MACRO_END:

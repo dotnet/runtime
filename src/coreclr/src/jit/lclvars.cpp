@@ -3055,7 +3055,8 @@ unsigned Compiler::lvaLclSize(unsigned varNum)
             NO_WAY("Target doesn't support TYP_LCLBLK");
 
             // Keep prefast happy
-            __fallthrough;
+            // TODO: do we need to keep the fallthrough? Clang complains about it.
+            // __fallthrough;
 
 #endif // FEATURE_FIXED_OUT_ARGS
 
@@ -3101,7 +3102,7 @@ unsigned Compiler::lvaLclExactSize(unsigned varNum)
             NO_WAY("Target doesn't support TYP_LCLBLK");
 
             // Keep prefast happy
-            __fallthrough;
+            // __fallthrough; // TODO: is this still necessary for prefast?
 
 #endif // FEATURE_FIXED_OUT_ARGS
 

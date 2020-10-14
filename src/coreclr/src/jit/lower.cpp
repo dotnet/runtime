@@ -6278,6 +6278,7 @@ void Lowering::ContainCheckNode(GenTree* node)
             break;
         case GT_STOREIND:
             ContainCheckStoreIndir(node->AsIndir());
+            __fallthrough; // TODO: is this actually a bug?
         case GT_IND:
             ContainCheckIndir(node->AsIndir());
             break;

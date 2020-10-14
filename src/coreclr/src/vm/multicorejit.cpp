@@ -847,6 +847,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
             case 'd':
             case 'D':
                 g_MulticoreJitEnabled = false;
+                break;
 
             default:
                 break;

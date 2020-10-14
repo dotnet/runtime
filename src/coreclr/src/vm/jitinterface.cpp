@@ -3326,7 +3326,7 @@ NoSpecialCase:
         _ASSERTE(pTemplateMD != NULL);
         sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
         sigBuilder.AppendPointer(pTemplateMD->GetMethodTable());
-        // fall through
+        __fallthrough;
 
     case TypeHandleSlot:
         {
@@ -3362,7 +3362,7 @@ NoSpecialCase:
             sigBuilder.AppendElementType(ELEMENT_TYPE_INTERNAL);
             sigBuilder.AppendPointer(pConstrainedResolvedToken->hClass);
         }
-        // fall through
+        __fallthrough;
 
     case MethodDescSlot:
     case MethodEntrySlot:

@@ -1578,6 +1578,7 @@ void Assembler::EmitInstrVarByName(Instr* instr, __in __nullterminated char* lab
         case CEE_STARG:
         case CEE_STARG_S:
             nArgVarFlag++;
+            __fallthrough;
         case CEE_LDLOCA:
         case CEE_LDLOCA_S:
         case CEE_LDLOC:

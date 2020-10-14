@@ -4968,6 +4968,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
                 break;
             case CEE_RET:
                 retBlocks++;
+                break;
 
             default:
                 break;
@@ -5299,7 +5300,8 @@ void Compiler::fgLinkBasicBlocks()
                     BADCODE("Fall thru the end of a method");
                 }
 
-            // Fall through, the next block is also reachable
+                // Fall through, the next block is also reachable
+                __fallthrough;
 
             case BBJ_NONE:
                 curBBdesc->bbNext->bbRefs++;
@@ -5661,7 +5663,7 @@ unsigned Compiler::fgMakeBasicBlocks(const BYTE* codeAddr, IL_OFFSET codeSize, F
                the target of a jump.
              */
 
-            // fall-through
+            __fallthrough;
 
             case CEE_JMP:
             /* These are equivalent to a return from the current method
@@ -16628,6 +16630,7 @@ void Compiler::fgDetermineFirstColdBlock()
             {
                 default:
                     noway_assert(!"Unhandled jumpkind in fgDetermineFirstColdBlock()");
+                    break;
 
                 case BBJ_CALLFINALLY:
                     // A BBJ_CALLFINALLY that falls through is always followed
@@ -21507,6 +21510,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 break;
             case GT_ADDR:
                 assert(!op1->CanCSE());
+                break;
 
             case GT_IND:
                 // Do we have a constant integer address as op1?
@@ -21578,6 +21582,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                         //                 +--------------+----------------+
                     }
                 }
+                break;
 
             default:
                 break;

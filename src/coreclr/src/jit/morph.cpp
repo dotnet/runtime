@@ -14291,6 +14291,7 @@ DONE_MORPHING_CHILDREN:
 
                 return tree;
             }
+            break;
 
         default:
             break;
