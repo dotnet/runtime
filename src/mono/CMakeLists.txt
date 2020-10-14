@@ -247,11 +247,9 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Android")
   set(ENABLE_MONODROID 1)
   set(DISABLE_EXECUTABLES 1)
   set(GC_SUSPEND "hybrid")
-  add_definitions(-DNO_GLOBALIZATION_SHIM)
   # Force some defines
   set(HAVE_SCHED_GETAFFINITY 0)
   set(HAVE_SCHED_SETAFFINITY 0)
-  set(MONO_DL_NEED_USCORE 1)
   # FIXME: Rest of the flags from configure.ac
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Emscripten")
   set(HOST_WASM 1)
@@ -417,7 +415,8 @@ elseif(TARGET_WASM)
 elseif(TARGET_IOS)
   # FIXME:
 elseif(TARGET_ANDROID)
-  # FIXME:
+  set(ICU_FLAGS "-DPALEXPORT=\"\" -DHAVE_UDAT_STANDALONE_SHORTER_WEEKDAYS -DHAVE_SET_MAX_VARIABLE -DTARGET_UNIX -DTARGET_ANDROID -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option")
+  set(HAVE_SYS_ICU 1)
 elseif(HOST_LINUX)
   pkg_check_modules(ICU icu-uc)
   set(ICU_FLAGS "-DTARGET_UNIX -DU_DISABLE_RENAMING -Wno-reserved-id-macro -Wno-documentation -Wno-documentation-unknown-command -Wno-switch-enum -Wno-covered-switch-default -Wno-extra-semi-stmt -Wno-unknown-warning-option -Wno-deprecated-declarations")
