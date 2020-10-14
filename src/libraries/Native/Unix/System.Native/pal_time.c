@@ -47,28 +47,6 @@ int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
     return result;
 }
 
-// Gets the number of "ticks per second" of the underlying monotonic timer.
-//
-// On most Unix platforms, the methods that query the resolution return a value
-// that is "nanoseconds per tick" in which case we need to scale before returning.
-uint64_t SystemNative_GetTimestampResolution()
-{
-#if HAVE_CLOCK_GETTIME_NSEC_NP
-    if (clock_gettime_nsec_np(CLOCK_UPTIME_RAW) == 0)
-    {
-        return 0;
-    }
-#endif
-    // clock_gettime() returns a result in terms of nanoseconds rather than a count. This
-    // means that we need to either always scale the result by the actual resolution (to
-    // get a count) or we need to say the resolution is in terms of nanoseconds. We prefer
-    // the latter since it allows the highest throughput and should minimize error propagated
-    // to the user.
-
-    return SecondsToNanoSeconds;
-
-}
-
 uint64_t SystemNative_GetTimestamp()
 {
 #if HAVE_CLOCK_GETTIME_NSEC_NP
@@ -105,10 +83,7 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
             ((uint64_t)(resUsage.ru_utime.tv_usec) * MicroSecondsToNanoSeconds);
     }
 
-    uint64_t resolution = SystemNative_GetTimestampResolution();
-    uint64_t timestamp = SystemNative_GetTimestamp();
-
-    uint64_t currentTime = (uint64_t)((double)timestamp * ((double)SecondsToNanoSeconds / (double)resolution));
+    uint64_t currentTime = SystemNative_GetTimestamp()
 
     uint64_t lastRecordedCurrentTime = previousCpuInfo->lastRecordedCurrentTime;
     uint64_t lastRecordedKernelTime = previousCpuInfo->lastRecordedKernelTime;
