@@ -146,14 +146,9 @@ void GCInfo::gcDspByrefSetChanges(regMaskTP gcRegByrefSetNew DEBUGARG(bool force
 
 void GCInfo::gcMarkRegSetGCref(regMaskTP regMask DEBUGARG(bool forceOutput))
 {
-#ifdef DEBUG
-    if (compiler->compRegSetCheckLevel == 0)
-    {
-        // This set of registers are going to hold REFs.
-        // Make sure they were not holding BYREFs.
-        assert((gcRegByrefSetCur & regMask) == 0);
-    }
-#endif
+    // This set of registers are going to hold REFs.
+    // Make sure they were not holding BYREFs.
+    assert((gcRegByrefSetCur & regMask) == 0);
 
     regMaskTP gcRegByrefSetNew = gcRegByrefSetCur & ~regMask; // Clear it if set in Byref mask
     regMaskTP gcRegGCrefSetNew = gcRegGCrefSetCur | regMask;  // Set it in GCref mask

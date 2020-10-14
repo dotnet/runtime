@@ -15,7 +15,7 @@ namespace System.Security.Cryptography
     public class HMACMD5 : HMAC
     {
         public HMACMD5()
-            : this(Helpers.GenerateRandom(BlockSize))
+            : this(RandomNumberGenerator.GetBytes(BlockSize))
         {
         }
 

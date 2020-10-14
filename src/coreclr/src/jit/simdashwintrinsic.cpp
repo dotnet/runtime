@@ -428,7 +428,7 @@ GenTree* Compiler::impSimdAsHWIntrinsicSpecial(NamedIntrinsic       intrinsic,
     // Vector<T>, when 32-bytes, requires at least AVX2
     assert(!isVectorT256 || compIsaSupportedDebugOnly(InstructionSet_AVX2));
 #elif defined(TARGET_ARM64)
-    // We should have alredy exited early if AdvSimd isn't supported
+    // We should have already exited early if AdvSimd isn't supported
     assert(compIsaSupportedDebugOnly(InstructionSet_AdvSimd));
 #else
 #error Unsupported platform

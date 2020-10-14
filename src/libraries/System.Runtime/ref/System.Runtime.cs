@@ -10873,9 +10873,11 @@ namespace System.Threading
         public System.Threading.CancellationTokenRegistration Register(System.Action callback) { throw null; }
         public System.Threading.CancellationTokenRegistration Register(System.Action callback, bool useSynchronizationContext) { throw null; }
         public System.Threading.CancellationTokenRegistration Register(System.Action<object?> callback, object? state) { throw null; }
+        public System.Threading.CancellationTokenRegistration Register(System.Action<object?, System.Threading.CancellationToken> callback, object? state) { throw null; }
         public System.Threading.CancellationTokenRegistration Register(System.Action<object?> callback, object? state, bool useSynchronizationContext) { throw null; }
         public void ThrowIfCancellationRequested() { }
         public System.Threading.CancellationTokenRegistration UnsafeRegister(System.Action<object?> callback, object? state) { throw null; }
+        public System.Threading.CancellationTokenRegistration UnsafeRegister(System.Action<object?, System.Threading.CancellationToken> callback, object? state) { throw null; }
     }
     public readonly partial struct CancellationTokenRegistration : System.IAsyncDisposable, System.IDisposable, System.IEquatable<System.Threading.CancellationTokenRegistration>
     {

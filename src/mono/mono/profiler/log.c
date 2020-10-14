@@ -49,6 +49,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/os-event.h>
+#include <mono/utils/w32subset.h>
 #include "log.h"
 #include "helper.h"
 
@@ -310,7 +311,9 @@ struct _MonoProfiler {
 	LARGE_INTEGER pcounter_freq;
 #endif
 
+#if HAVE_API_SUPPORT_WIN32_PIPE_OPEN_CLOSE && !defined (HOST_WIN32)
 	int pipe_output;
+#endif
 	int command_port;
 	int server_socket;
 
@@ -2926,8 +2929,8 @@ signal_helper_thread (char c)
 	if (client_socket != INVALID_SOCKET) {
 		struct sockaddr_in client_addr;
 		client_addr.sin_family = AF_INET;
-		client_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
 		client_addr.sin_port = htons(log_profiler.command_port);
+		inet_pton (client_addr.sin_family, "127.0.0.1", &client_addr.sin_addr);
 
 		gulong non_blocking = 1;
 		ioctlsocket (client_socket, FIONBIO, &non_blocking);
@@ -3064,9 +3067,11 @@ log_shutdown (MonoProfiler *prof)
 	if (prof->gzfile)
 		gzclose (prof->gzfile);
 #endif
+#if HAVE_API_SUPPORT_WIN32_PIPE_OPEN_CLOSE && !defined (HOST_WIN32)
 	if (prof->pipe_output)
 		pclose (prof->file);
 	else
+#endif
 		fclose (prof->file);
 
 	mono_conc_hashtable_destroy (prof->method_table);
@@ -3300,9 +3305,11 @@ helper_thread (void *arg)
 			int fd = accept (log_profiler.server_socket, NULL, NULL);
 
 			if (fd != -1) {
+#ifndef HOST_WIN32
 				if (fd >= FD_SETSIZE)
 					mono_profhelper_close_socket_fd (fd);
 				else
+#endif
 					g_array_append_val (command_sockets, fd);
 			}
 		}
@@ -4102,8 +4109,12 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		}
 	}
 	if (*nf == '|') {
+#if HAVE_API_SUPPORT_WIN32_PIPE_OPEN_CLOSE && !defined (HOST_WIN32)
 		log_profiler.file = popen (nf + 1, "w");
 		log_profiler.pipe_output = 1;
+#else
+		mono_profiler_printf_err ("Platform doesn't support popen");
+#endif
 	} else if (*nf == '#') {
 		int fd = strtol (nf + 1, NULL, 10);
 		log_profiler.file = fdopen (fd, "a");

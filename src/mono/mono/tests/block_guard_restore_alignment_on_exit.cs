@@ -11,7 +11,7 @@ class Driver {
 		} finally {
 			res = 4;
 			Console.WriteLine ("EEE");
-			while (!foo); 
+			while (!foo);
 			res = 5;
 			Console.WriteLine ("in the finally block");
 			Thread.ResetAbort ();
@@ -28,7 +28,7 @@ class Driver {
 			res = 0;
 		}
 	}
-	
+
 	static int Main () {
 		Thread t = new Thread (Func);
 		t.Start ();

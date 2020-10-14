@@ -1254,6 +1254,59 @@ namespace System.IO.Compression
                 Assert.Equal(sourceData, decompressedStream.ToArray());
             })));
         }
+
+        [Fact]
+        public void Precancellation()
+        {
+            var ms = new MemoryStream();
+            using (Stream compressor = CreateStream(ms, CompressionMode.Compress, leaveOpen: true))
+            {
+                Assert.True(compressor.WriteAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
+                Assert.True(compressor.FlushAsync(new CancellationToken(true)).IsCanceled);
+            }
+            using (Stream decompressor = CreateStream(ms, CompressionMode.Decompress, leaveOpen: true))
+            {
+                Assert.True(decompressor.ReadAsync(new byte[1], 0, 1, new CancellationToken(true)).IsCanceled);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DisposeAsync_Flushes(bool leaveOpen)
+        {
+            var ms = new MemoryStream();
+            var cs = CreateStream(ms, CompressionMode.Compress, leaveOpen);
+            cs.WriteByte(1);
+            await cs.FlushAsync();
+
+            long pos = ms.Position;
+            cs.WriteByte(1);
+            Assert.Equal(pos, ms.Position);
+
+            await cs.DisposeAsync();
+            Assert.InRange(ms.ToArray().Length, pos + 1, int.MaxValue);
+            if (leaveOpen)
+            {
+                Assert.InRange(ms.Position, pos + 1, int.MaxValue);
+            }
+            else
+            {
+                Assert.Throws<ObjectDisposedException>(() => ms.Position);
+            }
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task DisposeAsync_MultipleCallsAllowed(bool leaveOpen)
+        {
+            using (var cs = CreateStream(new MemoryStream(), CompressionMode.Compress, leaveOpen))
+            {
+                await cs.DisposeAsync();
+                await cs.DisposeAsync();
+            }
+        }
     }
 
     internal sealed class BadWrappedStream : MemoryStream

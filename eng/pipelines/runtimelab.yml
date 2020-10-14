@@ -110,7 +110,7 @@ stages:
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         testGroup: innerloop
-        nameSuffix: All_Configurations
+        nameSuffix: AllConfigurations
         buildArgs: -s libs -c $(_BuildConfig) -allConfigurations
         ${{ if eq(variables.isOfficialBuild, true) }}:
           extraStepsTemplate: /eng/pipelines/runtimelab/runtimelab-post-build-steps.yml

@@ -211,11 +211,9 @@ namespace System.Net.Security.Tests
         [Fact]
         public async Task SslStream_NestedAuth_Throws()
         {
-            VirtualNetwork network = new VirtualNetwork();
-
-            using (var clientStream = new VirtualNetworkStream(network, isServer: false))
-            using (var serverStream = new VirtualNetworkStream(network, isServer: true))
-            using (var ssl = new SslStream(clientStream))
+            (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();
+            using (var ssl = new SslStream(stream1))
+            using (stream2)
             {
                 // Start handshake.
                 Task task = ssl.AuthenticateAsClientAsync("foo.com", null, SslProtocols.Tls12, false);

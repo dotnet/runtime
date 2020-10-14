@@ -116,7 +116,7 @@ jobs:
 
         # OSX Build Pool (we don't have on-prem OSX BuildPool
         ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS') }}:
-          vmImage: 'macOS-10.14'
+          vmImage: 'macOS-10.15'
 
         ${{ if eq(parameters.osGroup, 'Browser') }}:
           vmImage: 'ubuntu-latest'

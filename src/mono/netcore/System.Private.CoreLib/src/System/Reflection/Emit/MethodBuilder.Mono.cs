@@ -534,7 +534,7 @@ namespace System.Reflection.Emit
             return type.get_next_table_index(obj, table, count);
         }
 
-        private void ExtendArray<T>([NotNull] ref T[]? array, T elem)
+        private static void ExtendArray<T>([NotNull] ref T[]? array, T elem)
         {
             if (array == null)
             {
@@ -560,7 +560,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException("Type definition of the method is complete.");
         }
 
-        private Exception NotSupported()
+        private static Exception NotSupported()
         {
             return new NotSupportedException("The invoked member is not supported in a dynamic module.");
         }
