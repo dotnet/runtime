@@ -864,7 +864,7 @@ Stub *UMThunkMarshInfo::CompileNExportThunk(LoaderHeap *pLoaderHeap, PInvokeStat
             fPassPointer = TRUE;
         }
 
-        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type))
+        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type, thValueType))
         {
             _ASSERTE(numRegistersUsed - 1 < NUM_ARGUMENT_REGISTERS);
             psrcofsregs[NUM_ARGUMENT_REGISTERS - numRegistersUsed] =
@@ -1448,7 +1448,7 @@ VOID UMThunkMarshInfo::RunTimeInit()
         TypeHandle thValueType;
         CorElementType type = sig.NextArgNormalized(&thValueType);
         int cbSize = sig.GetElemSize(type, thValueType);
-        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type))
+        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type, thValueType))
         {
             offs += STACK_ELEM_SIZE;
         }
@@ -1533,7 +1533,7 @@ VOID UMThunkMarshInfo::SetupArguments(char *pSrc, ArgumentRegisters *pArgRegs, c
         int cbSize = sig.GetElemSize(type, thValueType);
         int elemSize = StackElemSize(cbSize);
 
-        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type))
+        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type, thValueType))
         {
             _ASSERTE(elemSize == STACK_ELEM_SIZE);
 

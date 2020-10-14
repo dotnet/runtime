@@ -862,7 +862,7 @@ void ComCallMethodDesc::InitRuntimeNativeInfo(MethodDesc *pStubMD)
 
         UINT cbSize = MetaSig::GetElemSize(type, thValueType);
 
-        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type))
+        if (ArgIterator::IsArgumentInRegister(&numRegistersUsed, type, thValueType))
         {
             wSourceSlotEDX = wInputStack / STACK_ELEM_SIZE;
             wInputStack += STACK_ELEM_SIZE;

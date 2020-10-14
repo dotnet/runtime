@@ -387,11 +387,47 @@ public:
     //
     //  typ:                 the signature type
     //=========================================================================
-    static BOOL IsArgumentInRegister(int * pNumRegistersUsed, CorElementType typ)
+    static BOOL IsArgumentInRegister(int * pNumRegistersUsed, CorElementType typ, TypeHandle hnd)
     {
         LIMITED_METHOD_CONTRACT;
-        if ( (*pNumRegistersUsed) < NUM_ARGUMENT_REGISTERS) {
-            if (gElementTypeInfo[typ].m_enregister) {
+        if ( (*pNumRegistersUsed) < NUM_ARGUMENT_REGISTERS)
+        {
+            if (typ == ELEMENT_TYPE_VALUETYPE)
+            {
+                // The JIT enables passing trivial pointer sized structs in registers.
+                MethodTable* pMT = hnd.GetMethodTable();
+
+                while (typ == ELEMENT_TYPE_VALUETYPE &&
+                    pMT->GetNumInstanceFields() == 1 && (!pMT->HasLayout()	||
+                    pMT->GetNumInstanceFieldBytes() == 4	
+                    )) // Don't do the optimization if we're getting specified anything but the trivial layout.	
+                {	
+                    FieldDesc * pFD = pMT->GetApproxFieldDescListRaw();	
+                    CorElementType type = pFD->GetFieldType();
+
+                    switch (type)	
+                    {
+                        case ELEMENT_TYPE_VALUETYPE:
+                        {
+                            //@todo: Is it more apropos to call LookupApproxFieldTypeHandle() here?	
+                            TypeHandle fldHnd = pFD->GetApproxFieldTypeHandleThrowing();	
+                            CONSISTENCY_CHECK(!fldHnd.IsNull());
+                            pMT = fldHnd->GetMethodTable();	
+                        }	
+                        case ELEMENT_TYPE_PTR:	
+                        case ELEMENT_TYPE_I:	
+                        case ELEMENT_TYPE_U:	
+                        case ELEMENT_TYPE_I4:	
+                        case ELEMENT_TYPE_U4:
+                        {	
+                            typ = type;
+                            break;	
+                        }	
+                    }	
+                }
+            }
+            if (gElementTypeInfo[typ].m_enregister)
+            {
                 (*pNumRegistersUsed)++;
                 return(TRUE);
             }
@@ -1050,7 +1086,7 @@ int ArgIteratorTemplate<ARGITERATOR_BASE>::GetNextOffset()
         return argOfs;
     }
 #endif
-    if (IsArgumentInRegister(&m_numRegistersUsed, argType))
+    if (IsArgumentInRegister(&m_numRegistersUsed, argType, thValueType))
     {
         return TransitionBlock::GetOffsetOfArgumentRegisters() + (NUM_ARGUMENT_REGISTERS - m_numRegistersUsed) * sizeof(void *);
     }
@@ -1627,7 +1663,7 @@ void ArgIteratorTemplate<ARGITERATOR_BASE>::ForceSigWalk()
         TypeHandle thValueType;
         CorElementType type = this->GetNextArgumentType(i, &thValueType);
 
-        if (!IsArgumentInRegister(&numRegistersUsed, type))
+        if (!IsArgumentInRegister(&numRegistersUsed, type, thValueType))
         {
             int structSize = MetaSig::GetElemSize(type, thValueType);
 
