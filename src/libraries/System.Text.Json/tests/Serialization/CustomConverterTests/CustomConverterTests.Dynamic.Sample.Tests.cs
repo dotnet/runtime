@@ -198,7 +198,7 @@ namespace System.Text.Json.Serialization.Tests
             obj.MyArray.Clear();
             obj.MyArray.Add("2");
 
-            // Use ExandoObject for new property
+            // Use ExpandoObject for new property
             dynamic child = new ExpandoObject();
             child.ChildProp = 1;
             obj.Child = child;
