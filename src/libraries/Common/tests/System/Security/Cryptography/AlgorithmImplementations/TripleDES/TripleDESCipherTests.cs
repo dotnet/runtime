@@ -828,7 +828,7 @@ namespace System.Security.Cryptography.Encryption.TripleDes.Tests
             Assert.Equal(ExpectedOutput, decrypted);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindows7))]
         public static void VerifyNetFxCompat_CFB8_PKCS7Padding()
         {
             // .NET Framework would always pad to the nearest block
