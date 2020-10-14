@@ -450,7 +450,7 @@ namespace System.Threading
         {
             Debug.Assert((callback is IThreadPoolWorkItem) ^ (callback is Task));
 
-            if (loggingEnabled)
+            if (loggingEnabled && FrameworkEventSource.Log.IsEnabled())
                 System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolEnqueueWorkObject(callback);
 
             ThreadPoolWorkQueueThreadLocals? tl = null;
@@ -595,7 +595,7 @@ namespace System.Threading
                         return true;
                     }
 
-                    if (workQueue.loggingEnabled)
+                    if (workQueue.loggingEnabled && FrameworkEventSource.Log.IsEnabled())
                         System.Diagnostics.Tracing.FrameworkEventSource.Log.ThreadPoolDequeueWorkObject(workItem);
 
                     //
@@ -711,7 +711,7 @@ namespace System.Threading
         public readonly ThreadPoolWorkQueue workQueue;
         public readonly ThreadPoolWorkQueue.WorkStealingQueue workStealingQueue;
         public readonly Thread currentThread;
-        public FastRandom random = new FastRandom(Thread.CurrentThread.ManagedThreadId); // mutable struct, do not copy or make readonly
+        public FastRandom random = new FastRandom(Environment.CurrentManagedThreadId); // mutable struct, do not copy or make readonly
 
         public ThreadPoolWorkQueueThreadLocals(ThreadPoolWorkQueue tpq)
         {

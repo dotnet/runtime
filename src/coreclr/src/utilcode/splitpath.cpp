@@ -137,7 +137,7 @@ void    SplitPathInterior(
 
     /* extract path string, if any.  Path now points to the first character
      * of the path, if any, or the filename or extension, if no path was
-     * specified.  Scan ahead for the last occurence, if any, of a '/' or
+     * specified.  Scan ahead for the last occurrence, if any, of a '/' or
      * '\' path separator character.  If none is found, there is no path.
      * We will also note the last '.' character found, if any, to aid in
      * handling the extension.

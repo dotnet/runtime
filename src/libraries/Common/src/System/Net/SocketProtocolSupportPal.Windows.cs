@@ -17,6 +17,8 @@ namespace System.Net
 
         private static bool IsSupported(AddressFamily af)
         {
+            Interop.Winsock.EnsureInitialized();
+
             IntPtr INVALID_SOCKET = (IntPtr)(-1);
             IntPtr socket = INVALID_SOCKET;
             try

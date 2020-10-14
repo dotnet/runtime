@@ -202,11 +202,11 @@ MKBUNDLE = \
 	$(RUNTIME) $(CLASS)/mkbundle.exe
 
 if FULL_AOT_TESTS
-PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY,FULL_AOT_DESKTOP 
+PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY,FULL_AOT_DESKTOP
 endif
 
 if HYBRID_AOT_TESTS
-PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY 
+PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY
 endif
 
 if FULL_AOT_INTERP_TESTS
@@ -614,7 +614,7 @@ TESTS_CS_SRC=		\
 	bug-10127.cs	\
 	bug-18026.cs	\
 	allow-synchronous-major.cs	\
-	block_guard_restore_aligment_on_exit.cs	\
+	block_guard_restore_alignment_on_exit.cs	\
 	thread_static_gc_layout.cs \
 	sleep.cs \
 	bug-27147.cs	\
@@ -1471,8 +1471,8 @@ PROFILE_DISABLED_TESTS += \
 	assembly-loadfrom-simplename.exe
 endif
 
-# constraints-load.il: 
-# Failed to load method 0x6000007 from '..../mono/tests/constraints-load.exe' due to 
+# constraints-load.il:
+# Failed to load method 0x6000007 from '..../mono/tests/constraints-load.exe' due to
 # Could not resolve type with token 01000002 assembly:mscorlib, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089 type:System.BrokenIComparable`1 member:<none>.
 PROFILE_DISABLED_TESTS += \
 	constraints-load.exe \
@@ -1713,7 +1713,7 @@ CI_PR_DISABLED_TESTS += process-stress-3.exe
 
 if HOST_WIN32
 # https://github.com/mono/mono/issues/12839
-CI_PR_DISABLED_TESTS += block_guard_restore_aligment_on_exit.exe
+CI_PR_DISABLED_TESTS += block_guard_restore_alignment_on_exit.exe
 endif
 
 # appdomain-threadpool-unload.exe creates 100 appdomains, takes too long with llvm
@@ -2068,10 +2068,10 @@ TestingReferenceAssembly.dll: TestingReferenceAssembly.cs
 TestingReferenceReferenceAssembly.dll: TestingReferenceReferenceAssembly.cs TestingReferenceAssembly.dll
 	$(MCS) -r:TestingReferenceAssembly.dll -target:library -out:$@ $<
 
-%.exe$(PLATFORM_AOT_SUFFIX): %.exe 
+%.exe$(PLATFORM_AOT_SUFFIX): %.exe
 	$(RUNTIME) $(TEST_AOT_BUILD_FLAGS) $<
 
-%.dll$(PLATFORM_AOT_SUFFIX): %.dll 
+%.dll$(PLATFORM_AOT_SUFFIX): %.dll
 	$(RUNTIME) $(TEST_AOT_BUILD_FLAGS) $<
 
 # mkbundle works on ppc, but the pkg-config POC doesn't when run with make test
@@ -2777,7 +2777,7 @@ assemblyresolve_asm.dll$(PLATFORM_AOT_SUFFIX): assemblyresolve_asm.dll assemblyr
 	MONO_PATH="assemblyresolve_deps:$(CLASS)" $(top_builddir)/runtime/mono-wrapper $(TEST_AOT_BUILD_FLAGS) assemblyresolve_asm.dll
 assemblyresolve_deps/Test.dll$(PLATFORM_AOT_SUFFIX): assemblyresolve_deps/Test.dll assemblyresolve_deps/TestBase.dll$(PLATFORM_AOT_SUFFIX)
 
-EXTRA_DIST += assemblyresolve_TestBase.cs assemblyresolve_Test.cs assemblyresolve_asm.cs 
+EXTRA_DIST += assemblyresolve_TestBase.cs assemblyresolve_Test.cs assemblyresolve_asm.cs
 assemblyresolve_deps:
 	mkdir -p assemblyresolve_deps
 assemblyresolve_deps/TestBase.dll: assemblyresolve_deps $(srcdir)/assemblyresolve_TestBase.cs
@@ -2794,7 +2794,7 @@ assemblyresolve_event4.exe$(PLATFORM_AOT_SUFFIX): assemblyresolve_deps/Test.dll$
 assemblyresolve_event4.exe: assemblyresolve_deps/Test.dll assemblyresolve_deps/TestBase.dll
 
 EXTRA_DIST += assemblyresolve_event5_label.cs assemblyresolve_event5_helper.cs
-assemblyresolve_deps/assemblyresolve_event5_label.dll: assemblyresolve_event5_label.cs assemblyresolve_deps 
+assemblyresolve_deps/assemblyresolve_event5_label.dll: assemblyresolve_event5_label.cs assemblyresolve_deps
 	$(MCS) -target:library -out:assemblyresolve_deps/assemblyresolve_event5_label.dll $(srcdir)/assemblyresolve_event5_label.cs
 assemblyresolve_event5_helper.dll: assemblyresolve_event5_helper.cs assemblyresolve_deps/assemblyresolve_event5_label.dll
 	$(MCS) -target:library -out:assemblyresolve_event5_helper.dll -r:assemblyresolve_deps/assemblyresolve_event5_label.dll $(srcdir)/assemblyresolve_event5_helper.cs
@@ -2828,7 +2828,7 @@ EXTRA_DIST += bug-81691-a.cs bug-81691-b.cs
 
 bug-81691.exe$(PLATFORM_AOT_SUFFIX): bug-81691-b.dll$(PLATFORM_AOT_SUFFIX)
 bug-81691.exe bug-81691-a.dll bug-81691-b.dll: $(srcdir)/bug-81691.cs $(srcdir)/bug-81691-a.cs $(srcdir)/bug-81691-b.cs
-	$(MCS) -target:library -out:bug-81691-a.dll $(srcdir)/bug-81691-a.cs 
+	$(MCS) -target:library -out:bug-81691-a.dll $(srcdir)/bug-81691-a.cs
 	$(MCS) -r:bug-81691-a.dll -target:library -out:bug-81691-b.dll $(srcdir)/bug-81691-b.cs
 	$(MCS) -r:bug-81691-b.dll -out:bug-81691.exe $(srcdir)/bug-81691.cs
 	rm -f bug-81691-a.dll
@@ -3002,7 +3002,7 @@ test-generic-sharing-normal: $(TESTS_GSHARED) $(TESTSAOT_GSHARED)
 		if [ x$(AOT) = x1 ]; then $(with_mono_path) $(JITTEST_PROG_RUN) --aot --debug $$fn > /dev/null || exit 1; $(RUNTIME) $$fn > $$fn.stdout || exit 1; fi; \
 	done
 
-test-generic-sharing-managed: test-runner.exe $(TESTS_GSHARED) $(TESTSAOT_GSHARED) 
+test-generic-sharing-managed: test-runner.exe $(TESTS_GSHARED) $(TESTSAOT_GSHARED)
 	$(Q) $(TOOLS_RUNTIME) $(TEST_RUNNER) -j a --testsuite-name "gshared" --disabled "$(DISABLED_TESTS)" --opt-sets "gshared gshared,shared gshared,-inline gshared,-inline,shared" $(TESTS_GSHARED)
 
 test-generic-sharing:
@@ -3018,7 +3018,7 @@ test-async-exceptions : async-exceptions.exe
 EXTRA_DIST += modules.cs modules-m1.cs
 modules-m1.netmodule: modules-m1.cs
 	$(MCS) -out:$@ /target:module $(srcdir)/modules-m1.cs
-modules.exe: modules.cs modules-m1.netmodule $(TEST_DRIVER_DEPEND) 
+modules.exe: modules.cs modules-m1.netmodule $(TEST_DRIVER_DEPEND)
 	$(MCS) -out:$@ /addmodule:modules-m1.netmodule -r:TestDriver.dll $(srcdir)/modules.cs
 
 # Useful if mono is compiled with --enable-shared=no
@@ -3216,14 +3216,14 @@ test-internalsvisibleto: test-runner.exe $(INTERNALSVISIBLETO_TEST) $(INTERNALSV
 	$(TOOLS_RUNTIME) $(TEST_RUNNER) --testsuite-name $@ $(INTERNALSVISIBLETO_TEST)
 
 internalsvisibleto-correctcase.dll internalsvisibleto-wrongcase.dll internalsvisibleto-runtimetest.exe: internalsvisibleto-runtimetest.cs internalsvisibleto-library.cs
-	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase.dll -target:library -d:CORRECT_CASE -d:PERMISSIVE internalsvisibleto-library.cs	
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase.dll -target:library -d:CORRECT_CASE -d:PERMISSIVE internalsvisibleto-library.cs
 	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-wrongcase.dll -target:library -d:WRONG_CASE -d:PERMISSIVE internalsvisibleto-library.cs
 	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-runtimetest.exe -warn:0 -r:internalsvisibleto-correctcase.dll -r:internalsvisibleto-wrongcase.dll internalsvisibleto-runtimetest.cs
-	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase.dll -target:library -d:CORRECT_CASE internalsvisibleto-library.cs	
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase.dll -target:library -d:CORRECT_CASE internalsvisibleto-library.cs
 	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-wrongcase.dll -target:library -d:WRONG_CASE internalsvisibleto-library.cs
 
 internalsvisibleto-correctcase-2.dll internalsvisibleto-wrongcase-2.dll  internalsvisibleto-compilertest.exe: internalsvisibleto-compilertest.cs internalsvisibleto-library.cs
-	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase-2.dll -target:library -d:CORRECT_CASE internalsvisibleto-library.cs	
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase-2.dll -target:library -d:CORRECT_CASE internalsvisibleto-library.cs
 	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-wrongcase-2.dll -target:library -d:WRONG_CASE internalsvisibleto-library.cs
 	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-compilertest.exe -warn:0 -r:internalsvisibleto-correctcase-2.dll -r:internalsvisibleto-wrongcase-2.dll internalsvisibleto-compilertest.cs
 
@@ -3235,7 +3235,7 @@ internalsvisibleto-correctcase-sign2048.dll internalsvisibleto-wrongcase-sign204
 	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-wrongcase-sign2048.dll -target:library -d:WRONG_CASE -d:SIGN2048 internalsvisibleto-library.cs
 
 internalsvisibleto-correctcase-2-sign2048.dll internalsvisibleto-wrongcase-2-sign2048.dll internalsvisibleto-compilertest-sign2048.exe: internalsvisibleto-compilertest.cs internalsvisibleto-library.cs internalsvisibleto-2048.snk
-	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase-2-sign2048.dll -target:library -d:CORRECT_CASE -d:SIGN2048 internalsvisibleto-library.cs	
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase-2-sign2048.dll -target:library -d:CORRECT_CASE -d:SIGN2048 internalsvisibleto-library.cs
 	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-wrongcase-2-sign2048.dll -target:library -d:WRONG_CASE -d:SIGN2048 internalsvisibleto-library.cs
 	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-compilertest-sign2048.exe -warn:0 -r:internalsvisibleto-correctcase-2-sign2048.dll -r:internalsvisibleto-wrongcase-2-sign2048.dll -d:SIGN2048 internalsvisibleto-compilertest.cs
 
@@ -3260,6 +3260,6 @@ Mono.Runtime.Testing.dll: weakattribute.cs
 weak-fields.exe: weak-fields.cs Mono.Runtime.Testing.dll
 	$(MCS) -r:Mono.Runtime.Testing.dll -r:$(CLASS)/System.dll -r:$(CLASS)/System.Xml.dll -r:$(CLASS)/System.Core.dll -r:TestDriver.dll $(TEST_DRIVER_HARD_KILL_FEATURE) -out:$@ $<
 
-CLEANFILES = $(TESTS_REGULAR) $(TESTS_STRESS) $(TESTSAOT_CS) $(TESTSAOT_IL) $(TESTSAOT_BENCH) $(TESTSAOT_STRESS) *.dll *.stdout *.aotlog *.exe stest.dat LeafAssembly.dll MidAssembly.dll appdomain-marshalbyref-assemblyload2/*.dll 
+CLEANFILES = $(TESTS_REGULAR) $(TESTS_STRESS) $(TESTSAOT_CS) $(TESTSAOT_IL) $(TESTSAOT_BENCH) $(TESTSAOT_STRESS) *.dll *.stdout *.aotlog *.exe stest.dat LeafAssembly.dll MidAssembly.dll appdomain-marshalbyref-assemblyload2/*.dll
 CLEANFILES += $(TESTS_TAILCALL_COMPILE) $(TESTSAOT_TAILCALL)
 CLEANFILES += $(BUILT_SOURCES)

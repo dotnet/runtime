@@ -17,8 +17,6 @@ namespace System.Net
         /// <summary>Gets the host name of the local machine.</summary>
         public static string GetHostName()
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             ValueStopwatch stopwatch = NameResolutionTelemetry.Log.BeforeResolution(string.Empty);
 
             string name;
@@ -41,8 +39,6 @@ namespace System.Net
 
         public static IPHostEntry GetHostEntry(IPAddress address)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (address is null)
             {
                 throw new ArgumentNullException(nameof(address));
@@ -62,8 +58,6 @@ namespace System.Net
 
         public static IPHostEntry GetHostEntry(string hostNameOrAddress)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (hostNameOrAddress is null)
             {
                 throw new ArgumentNullException(nameof(hostNameOrAddress));
@@ -107,8 +101,6 @@ namespace System.Net
 
         public static Task<IPHostEntry> GetHostEntryAsync(IPAddress address)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (address is null)
             {
                 throw new ArgumentNullException(nameof(address));
@@ -138,8 +130,6 @@ namespace System.Net
 
         public static IPAddress[] GetHostAddresses(string hostNameOrAddress)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (hostNameOrAddress is null)
             {
                 throw new ArgumentNullException(nameof(hostNameOrAddress));
@@ -178,8 +168,6 @@ namespace System.Net
         [Obsolete("GetHostByName is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry GetHostByName(string hostName)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (hostName is null)
             {
                 throw new ArgumentNullException(nameof(hostName));
@@ -204,8 +192,6 @@ namespace System.Net
         [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry GetHostByAddress(string address)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (address is null)
             {
                 throw new ArgumentNullException(nameof(address));
@@ -220,8 +206,6 @@ namespace System.Net
         [Obsolete("GetHostByAddress is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry GetHostByAddress(IPAddress address)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (address is null)
             {
                 throw new ArgumentNullException(nameof(address));
@@ -236,8 +220,6 @@ namespace System.Net
         [Obsolete("Resolve is obsoleted for this type, please use GetHostEntry instead. https://go.microsoft.com/fwlink/?linkid=14202")]
         public static IPHostEntry Resolve(string hostName)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (hostName is null)
             {
                 throw new ArgumentNullException(nameof(hostName));
@@ -430,8 +412,6 @@ namespace System.Net
         // If hostName is an IPString and justReturnParsedIP==true then no reverse lookup will be attempted, but the original address is returned.
         private static Task GetHostEntryOrAddressesCoreAsync(string hostName, bool justReturnParsedIp, bool throwOnIIPAny, bool justAddresses)
         {
-            NameResolutionPal.EnsureSocketsAreInitialized();
-
             if (hostName is null)
             {
                 throw new ArgumentNullException(nameof(hostName));

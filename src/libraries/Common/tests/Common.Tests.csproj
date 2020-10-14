@@ -14,6 +14,8 @@
              Link="Common\Interop\Linux\cgroups\Interop.cgroups.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.cs"
              Link="Common\Interop\Linux\procfs\Interop.ProcFsStat.cs" />
+    <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs"
+             Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
     <Compile Include="$(CommonPath)System\CharArrayHelpers.cs"
              Link="Common\System\CharArrayHelpers.cs" />
     <Compile Include="$(CommonPath)System\Marvin.cs"
@@ -64,8 +66,6 @@
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs"
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs" />
-    <Compile Include="$(CommonPath)System\Text\ReusableTextReader.cs"
-             Link="Common\System\Text\ReusableTextReader.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
              Link="Common\System\Text\SimpleRegex.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
@@ -96,12 +96,6 @@
     <Compile Include="Tests\System\Net\aspnetcore\Http2\HuffmanDecodingTests.cs" />
     <Compile Include="System\Net\Sockets\Fletcher32.cs"
              Link="System\Net\Sockets\Fletcher32.cs" />
-    <Compile Include="System\Net\VirtualNetwork\VirtualNetwork.cs"
-             Link="System\Net\VirtualNetwork\VirtualNetwork.cs" />
-    <Compile Include="System\Net\VirtualNetwork\VirtualNetworkStream.cs"
-             Link="System\Net\VirtualNetwork\VirtualNetworkStream.cs" />
-    <Compile Include="Tests\System\Net\VirtualNetworkTest.cs" />
-    <Compile Include="Tests\System\Net\VirtualNetworkStreamTest.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
              Link="Common\System\Net\Logging\NetEventSource.Common.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
