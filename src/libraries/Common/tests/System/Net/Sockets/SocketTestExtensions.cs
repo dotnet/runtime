@@ -38,10 +38,10 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        public static (Socket client, Socket server) CreateConnectedSocketPair() => CreateConnectedSocketPair(IPAddress.Loopback, false);
-
-        public static (Socket client, Socket server) CreateConnectedSocketPair(IPAddress serverAddress, bool dualModeClient)
+        public static (Socket client, Socket server) CreateConnectedSocketPair(bool ipv6 = false, bool dualModeClient = false)
         {
+            IPAddress serverAddress = ipv6 ? IPAddress.IPv6Loopback : IPAddress.Loopback;
+
             using Socket listener = new Socket(serverAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
             listener.Bind(new IPEndPoint(serverAddress, 0));
             listener.Listen(1);

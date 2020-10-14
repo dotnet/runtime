@@ -1018,22 +1018,22 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        public static readonly TheoryData<bool, IPAddress, bool> TcpReceiveSendGetsCanceledByDispose_Data = new TheoryData<bool, IPAddress, bool>
+        public static readonly TheoryData<bool, bool, bool> TcpReceiveSendGetsCanceledByDispose_Data = new TheoryData<bool, bool, bool>
         {
-            { true, IPAddress.Loopback, false },
-            { true, IPAddress.Loopback, true },
-            { true, IPAddress.IPv6Loopback, false },
-            { false, IPAddress.Loopback, false },
-            { false, IPAddress.Loopback, true },
-            { false, IPAddress.IPv6Loopback, false },
+            { true, false, false },
+            { true, false, true },
+            { true, true, false },
+            { false, false, false },
+            { false, false, true },
+            { false, true, false },
         };
 
         [Theory(Timeout = 40000)]
         [MemberData(nameof(TcpReceiveSendGetsCanceledByDispose_Data))]
-        public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, IPAddress serverAddress, bool dualModeClient)
+        public async Task TcpReceiveSendGetsCanceledByDispose(bool receiveOrSend, bool ipv6Server, bool dualModeClient)
         {
             if (UsesSync && PlatformDetection.IsRedHatFamily7 &&
-                receiveOrSend && (serverAddress.AddressFamily == AddressFamily.InterNetworkV6 || dualModeClient))
+                receiveOrSend && (ipv6Server || dualModeClient))
             {
                 // TODO: open a new issue for this case, if the PR gets accepted.
                 throw new SkipTestException("The IPV6 synchronous Receive case times out on RedHat7 systems");
@@ -1046,7 +1046,7 @@ namespace System.Net.Sockets.Tests
             int retries = 10;
             while (true)
             {
-                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair(serverAddress, dualModeClient);
+                (Socket socket1, Socket socket2) = SocketTestExtensions.CreateConnectedSocketPair(ipv6Server, dualModeClient);
                 using (socket2)
                 {
                     Task socketOperation;
