@@ -127,6 +127,7 @@ namespace System.Net.Sockets.Tests
             { IPAddress.Parse("1.1.1.1").MapToIPv6() },
         };
 
+        [OuterLoop("Uses external server")]
         [Theory]
         [MemberData(nameof(ConnectGetsCanceledByDispose_Data))]
         [PlatformSpecific(~(TestPlatforms.OSX | TestPlatforms.FreeBSD))] // Not supported on BSD like OSes.
