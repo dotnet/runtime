@@ -1853,8 +1853,6 @@
              Link="Common\Interop\BSD\System.Native\Interop.Sysctl.cs" />
     <Compile Include="$(CommonPath)Interop\Linux\procfs\Interop.ProcFsStat.TryReadStatusFile.cs" Condition="'$(TargetsLinux)' == 'true'"
              Link="Common\Interop\Linux\Interop.ProcFsStat.TryReadStatusFile.cs" />
-    <Compile Include="$(CommonPath)System\Text\ReusableTextReader.cs" Condition="'$(TargetsLinux)' == 'true'"
-             Link="Common\System\Text\ReusableTextReader.cs" />
     <Compile Include="$(CommonPath)System\IO\StringParser.cs" Condition="'$(TargetsLinux)' == 'true'"
              Link="Common\System\IO\StringParser.cs" />
     <Compile Include="$(CommonPath)Interop\OSX\Interop.libproc.GetProcessInfoById.cs" Condition="'$(IsOSXLike)' == 'true'"

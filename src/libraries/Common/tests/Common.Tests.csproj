@@ -66,8 +66,6 @@
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\H2StaticTable.cs" />
     <Compile Include="$(CommonPath)System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs"
              Link="Common\System\Net\Http\aspnetcore\Http2\Hpack\StatusCodes.cs" />
-    <Compile Include="$(CommonPath)System\Text\ReusableTextReader.cs"
-             Link="Common\System\Text\ReusableTextReader.cs" />
     <Compile Include="$(CommonPath)System\Text\SimpleRegex.cs"
              Link="Common\System\Text\SimpleRegex.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
