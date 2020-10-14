@@ -7215,6 +7215,7 @@ void emitter::emitInitIG(insGroup* ig)
     ig->igSize   = 0;
     ig->igGCregs = RBM_NONE;
     ig->igInsCnt = 0;
+    ig->igLoopBackEdge = nullptr;
 }
 
 /*****************************************************************************

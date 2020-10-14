@@ -264,6 +264,7 @@ struct insGroup
 #define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
 #define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
+#define IGF_ALIGN_LOOP 0x0400
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -292,6 +293,7 @@ struct insGroup
 #endif
     regMaskSmall  igGCregs; // set of registers with live GC refs
     unsigned char igInsCnt; // # of instructions  in this group
+    insGroup*     igLoopBackEdge;
 
 #else // REGMASK_BITS
 
@@ -307,6 +309,7 @@ struct insGroup
 #endif
 
     unsigned char igInsCnt; // # of instructions  in this group
+    // TODO: Add loopBackEdge?
 
 #endif // REGMASK_BITS
 

@@ -12598,9 +12598,33 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             // the loop alignment pseudo instruction
             if (ins == INS_align)
             {
-                sz  = SMALL_IDSC_SIZE;
-                dst = emitOutputNOP(dst, (-(int)(size_t)dst) & 0x0f);
-                assert(((size_t)dst & 0x0f) == 0);
+                sz = SMALL_IDSC_SIZE;
+
+                // Candidate for loop alignment
+                if (ig->igFlags & IGF_ALIGN_LOOP)
+                {
+                    unsigned totalInstrCount = 0;
+                    bool foundBackEdge   = false;
+                    for (insGroup* igInLoop = ig->igNext; igInLoop; igInLoop = igInLoop->igNext)
+                    {
+                        totalInstrCount += igInLoop->igInsCnt;
+                        if (igInLoop->igLoopBackEdge == ig)
+                        {
+                            foundBackEdge = true;
+                            break;
+                        }
+                    }
+
+                    assert(foundBackEdge);
+
+                    // Only align if it matches the heuristics
+                    if (totalInstrCount <= emitComp->compJitAlignLoopMaxInstrCount)
+                    {
+                        dst = emitOutputNOP(dst, (-(int)(size_t)dst) & 0x0f);
+                        assert(((size_t)dst & 0x0f) == 0);
+                    }
+                }
+
                 break;
             }
 

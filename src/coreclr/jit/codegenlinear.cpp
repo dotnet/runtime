@@ -734,8 +734,30 @@ void CodeGen::genCodeForBBlist()
 #endif // !FEATURE_EH_FUNCLETS
 
             case BBJ_NONE:
-            case BBJ_COND:
+                break;
+
+            //TODO: Should this be done for BB_ALWAYS as well?
             case BBJ_SWITCH:
+            case BBJ_COND:
+                if (block->bbJumpDest->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP)
+                {
+                    // Track the destination IG which is the first block of inner loop.
+                    // In emitter, this will be used to calculate total instructions present
+                    // in all IGs that participate in a loop.
+
+                    insGroup* srcIG = GetEmitter()->emitCurIG;
+                    insGroup* dstIG = (insGroup*)block->bbJumpDest->bbEmitCookie;
+
+                    // Only track back edges to the loop.
+                    if (dstIG->igNum <= srcIG->igNum)
+                    {
+                        srcIG->igLoopBackEdge = dstIG;
+                        if (verbose)
+                        {
+                            printf("** IG_%d jumps back to IG_%d forming a loop.\n", srcIG->igNum, dstIG->igNum);
+                        }
+                    }
+                }
                 break;
 
             default:
@@ -743,17 +765,18 @@ void CodeGen::genCodeForBBlist()
                 break;
         }
 
-        if (ShouldAlignLoops())
+        if ((block->bbNext != nullptr) && (block->bbNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP))
         {
-            if ((block->bbNext != nullptr) && (block->bbNext->bbFlags & BBF_FIRST_BLOCK_IN_INNERLOOP))
+            assert(false);
+            if (verbose)
             {
-                if (verbose)
-                {
-                    printf("To align next block, add padding.\n");
-                }
-                //GetEmitter()->emitIns_Nop(10);
-                GetEmitter()->emitLoopAlign();
+                printf("Adding 'align' instruction to align loop header block " FMT_BB, block->bbNext->bbNum);
             }
+            GetEmitter()->emitLoopAlign();
+
+            // Mark this IG as need alignment so during emitter we can check the instruction count heuristics of
+            // all IGs that follows this IG and participate in a loop.
+            GetEmitter()->emitCurIG->igFlags |= IGF_ALIGN_LOOP;
         }
 
 #if defined(DEBUG) && defined(USING_VARIABLE_LIVE_RANGE)

@@ -2543,10 +2543,16 @@ NO_MORE_LOOPS:
             assert(blk->bbNext != nullptr); // We should never reach nullptr.
         }
 
-        // An innerloop candidate that might need alignment
-        if ((optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP) && (compJitAlignLoopMinBlockWeight <= first->getBBWeight(this)))
+        //TODO: Move should align loops flag to jitconfigvalues.h
+        if (codeGen->ShouldAlignLoops())
         {
-            first->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
+            // An innerloop candidate that might need alignment
+            if ((optLoopTable[loopInd].lpChild == BasicBlock::NOT_IN_LOOP) &&
+                (compJitAlignLoopMinBlockWeight <= first->getBBWeight(this)))
+            {
+                assert(false);
+                first->bbFlags |= BBF_FIRST_BLOCK_IN_INNERLOOP;
+            }
         }
     }
 
