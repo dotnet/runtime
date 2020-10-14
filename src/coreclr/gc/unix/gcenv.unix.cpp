@@ -432,7 +432,7 @@ void GCToOSInterface::Shutdown()
 {
     int ret = munlock(g_helperPage, OS_PAGE_SIZE);
     assert(ret == 0);
-    ret = pthread_mutex_destroy(&g_flushProcessWriteBuffersMutex);
+        ret = pthread_mutex_destroy(&g_flushProcessWriteBuffersMutex);
     assert(ret == 0);
 
     munmap(g_helperPage, OS_PAGE_SIZE);
@@ -495,7 +495,12 @@ uint32_t GCToOSInterface::GetCurrentProcessorNumber()
 // Check if the OS supports getting current processor number
 bool GCToOSInterface::CanGetCurrentProcessorNumber()
 {
+// TODO: where is HAVE_SCHED_GETCPU supposed to come from?
+#ifdef HAVE_CORE_GC
+    return 1;
+#else
     return HAVE_SCHED_GETCPU;
+#endif
 }
 
 // Flush write buffers of processors that are executing threads of the current process
